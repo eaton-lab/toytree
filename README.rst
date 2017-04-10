@@ -90,7 +90,6 @@ Additional styling options
 .. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig2.svg
 
 
-
 Combine with standard ``Toyplot`` figures
 --------------------------------------------
 The ``toyplot.Canvas`` and ``toyplot.axes.cartesian`` objects are returned
@@ -137,4 +136,4 @@ the canvas in a number of formats.
                       );
 
 
-.. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig3.svg                    
+.. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig3.svg
