@@ -23,8 +23,8 @@ See the [`full documentation`] for more details.
 The ``toytree`` Class object
 ------------------------------
 
-The help documentation for toytree objects can be accessed with ``?`` or
-``<tab>-completion``, which I've printed below. Toytree brings together the
+Toytree is a Python tree plotting library designed for use inside 
+jupyter-notebooks. The help documentation for toytree objects can be accessed with ``?`` or ``<tab>-completion``. Toytree brings together the
 rich tree manipulation library [`ete3`](link) and the rich plotting library
 [`toyplot`](link). 
 
@@ -50,9 +50,6 @@ Tree plotting basics
 
 
 .. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig1.svg
-
-
-.. image:: ./docs/readme_fig1.png
 
 
 Additional styling options
@@ -90,7 +87,54 @@ Additional styling options
         );
 
 
-.. image:: ./docs/readme_fig2.png
+.. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig2.svg
 
 
 
+Combine with standard ``Toyplot`` figures
+--------------------------------------------
+The ``toyplot.Canvas`` and ``toyplot.axes.cartesian`` objects are returned
+by toytree which enables further modification of the canvas and axes, 
+to combine multiple plots onto a single or multiple axes, and to save the
+the canvas in a number of formats. 
+
+
+.. code:: python
+
+    import toyplot
+    import numpy as np
+
+    ## create a canvas with three subplots
+    canvas = toyplot.Canvas(width=900, height=400)
+    axes1 = canvas.cartesian(grid=(1, 3, 0))
+    axes2 = canvas.cartesian(grid=(1, 3, 1))
+    axes3 = canvas.cartesian(grid=(1, 3, 2))
+
+    ## draw a tree into each space by designating the axes
+    _, axes1 = tre.draw(axes=axes1, orient='right')
+    _, axes2 = tre.draw(axes=axes2, orient='down', 
+                        tip_labels_style={"-toyplot-anchor-shift": "95px"})
+    _, axes3 = tre.draw(axes=axes3, 
+                        tip_labels_style={"-toyplot-anchor-shift": "25px"})
+
+    ## add more styling to axes
+    axes1.show = True
+    axes2.show = False
+    axes3.show = False
+
+    ## add additional plots to axes (axes.show shows coordinates)
+    heights = np.random.randint(-5, 0, 13)
+    axes2.bars(heights, 
+               baseline=[-0.5]*13,
+               style={"stroke": "#262626"},
+               );
+
+    heights = np.random.randint(5, 15, 13)
+    axes3.scatterplot(a=[1]*heights.shape[0], 
+                      b=range(heights.shape[0]),
+                      size=heights,
+                      mstyle={"stroke": "#262626"}
+                      );
+
+
+.. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig3.svg                    
