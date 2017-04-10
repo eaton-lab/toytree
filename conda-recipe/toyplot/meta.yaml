@@ -1,0 +1,55 @@
+package:
+  name: toyplot
+  version: {{ environ['GIT_DESCRIBE_TAG'] }}
+
+source:
+  git_url: https://github.com/sandialabs/toyplot.git
+
+build:
+  script: python setup.py install
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
+
+requirements:
+  build:
+    - python {{PY_VER}}*,>=2.7
+    - setuptools
+    - colormath >=2.1.0
+    - multipledispatch
+    - numpy >=1.8.2
+    - pillow
+    - reportlab
+    - pip
+    - graphviz
+    - mock
+    - networkx
+    - pandas >=0.14.1
+    - arrow
+    - behave
+    - coverage
+    - coveralls
+    - pypng
+  run:
+    - python {{PY_VER}}*,>=2.7
+    - setuptools
+    - colormath >=2.1.0
+    - multipledispatch
+    - numpy >=1.8.2
+    - pillow
+    - reportlab
+    - pip
+    - graphviz
+    - mock
+    - networkx
+    - pandas >=0.14.1
+    - arrow
+    - behave
+    - coverage
+    - coveralls
+    - pypng
+    
+
+about:
+  home: http://github.com/sandialabs/toyplot
+  license: BSD
+  summary: A modern plotting toolkit supporting electronic publishing and reproducibility.
+

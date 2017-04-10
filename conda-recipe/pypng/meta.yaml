@@ -1,0 +1,16 @@
+package:
+  name: pypng
+  version: '0.0.18'
+
+source:
+  fn: pypng-pypng-0.0.18.tar.gz
+  url: https://github.com/drj11/pypng/archive/pypng-0.0.18.tar.gz
+  md5: 2bc0d7e9153568d5bdaa404f047b2cf9
+
+build:
+  script: python setup.py install
+
+about:
+  home: https://github.com/drj11/pypng
+  license: MIT
+  summary: Pure Python PNG image encoder/decoder
