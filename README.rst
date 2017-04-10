@@ -21,7 +21,7 @@ See the [`full documentation`] for more details.
 
 
 The ``toytree`` Class object
-------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Toytree is a Python tree plotting library designed for use inside 
 jupyter-notebooks. The help documentation for toytree objects can be accessed with ``?`` or ``<tab>-completion``. Toytree brings together the
@@ -51,7 +51,7 @@ Tree plotting basics
 
 .. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig1.svg
    :align: center
-   
+
 
 Additional styling options
 --------------------------
