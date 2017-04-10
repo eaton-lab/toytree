@@ -48,13 +48,15 @@ to generate trees as graph figures. Examples below demonstrate simple usage.
 
 Tree plotting basics
 ~~~~~~~~~~~~~~~~~~~~~
-The ``.draw()`` function generates a plot which is returned as a toyplot.Canvas and 
-toyplot.axes.cartesian objects. In a jupyter-notebook these will automatically render
-within cells of the notebook. 
+The ``.draw()`` function generates a plot which is returned as two objects, 
+a ``toyplot.Canvas`` object and a ``toyplot.axes.cartesian`` object. 
+In a jupyter-notebook the ``canvas`` will automatically render as a figure
+in a cell of the notebook. 
 
 .. code:: python
 
-    tre.draw(width=400, node_labels=True)
+    canvas, axes = tre.draw(width=400, node_labels=True)
+    canvas
 
 
 .. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig1.svg
