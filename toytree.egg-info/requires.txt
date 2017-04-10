@@ -1,3 +1,0 @@
-ete3
-toyplot
-numpy

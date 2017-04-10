@@ -1,0 +1,10 @@
+## ignore these files
+*.pyc
+*~
+.DS_Store
+.ipynb_checkpoints
+build
+dist
+toyplot.egg-info/
+tests/*
+

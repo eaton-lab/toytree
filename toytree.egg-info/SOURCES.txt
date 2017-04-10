@@ -1,8 +1,0 @@
-README.rst
-toytree/Toytree.py
-toytree/__init__.py
-toytree.egg-info/PKG-INFO
-toytree.egg-info/SOURCES.txt
-toytree.egg-info/dependency_links.txt
-toytree.egg-info/requires.txt
-toytree.egg-info/top_level.txt
