@@ -50,7 +50,8 @@ Tree plotting basics
 
 
 .. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig1.svg
-
+   :align: center
+   
 
 Additional styling options
 --------------------------
@@ -83,6 +84,7 @@ Additional styling options
 
 
 .. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig2.svg
+   :align: center
 
 
 Combine with standard ``Toyplot`` figures
@@ -138,4 +140,4 @@ the canvas in a number of formats.
 
 
 .. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig3.svg
-
+   :align: center
