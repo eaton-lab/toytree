@@ -130,6 +130,12 @@ the canvas in a number of formats.
                       mstyle={"stroke": "#262626"}
                       );
 
+    ## save figure as HTML & SVG
+    import toyplot.html
+    import toyplot.svg
+    toyplot.html.render(canvas, "figure.html")
+    toyplot.svg.render(canvas, "figure.svg")
+
 
 .. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig3.svg
 
