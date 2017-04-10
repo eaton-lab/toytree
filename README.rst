@@ -12,7 +12,7 @@ On the backend ``toytree`` uses the rich tree manipulation package
 `ete3 <http://etetoolkit.org>`_ to parse tree objects 
 and the modern and minimalist plotting library 
 `toyplot <http://toyplot.readthedocs.io/en/stable/index.html>`_
-to generate trees as graph figures. 
+to generate trees as graph figures. Examples below demonstrate simple usage.
 
 
 .. code:: python
@@ -30,27 +30,17 @@ to generate trees as graph figures.
     (41954_cyathophylloides:100,41478_cyathophylloides:100)100:100)100:100);"""
 
 
-
-The ``toytree`` Class object
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-The help documentation for toytree objects can be accessed with ``?`` or ``<tab>-completion``. Toytree brings together the rich tree manipulation library 
-
 .. code:: python
 
     tre = toytree.tree(newick)
     tre
 
 
-.. parsed-literal::
-
-    <toytree.Toytree.Tree at 0x7f8d0c0f1bd0>
-
-
-
 Tree plotting basics
 ~~~~~~~~~~~~~~~~~~~~~
-The ``.draw()`` function generates a plot and returns a toyplot Canvas and axes
-object. 
+The ``.draw()`` function generates a plot which is returned as a toyplot.Canvas and 
+toyplot.axes.cartesian objects. In a jupyter-notebook these will automatically render
+within cells of the notebook. 
 
 .. code:: python
 
@@ -63,12 +53,12 @@ object.
 
 Styling options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-toytree utilizes toyplot to generate tree figures, a modern Python plotting 
-library that is designed for the web. The default format used by toyplot
-is HTML (though you can save figures in additional formats like SVG), 
-and it uses familiar CSS styling options to modify plot components. 
-The figure below demonstrates how many styling options can be applied
-to a tree plot. 
+By default toytree generates figures in HTML, following the design 
+ethos of toyplot, which is designed to generate figures for the web
+(though they can also be saved in common formats like SVG). 
+It uses CSS styling options to modify plot components that will be 
+familiar to users with web-design experience. The figure below 
+demonstrates several styling options that can be applied to a tree plot. 
 
 
 .. code:: python
@@ -104,10 +94,13 @@ to a tree plot.
 
 Combine with standard ``Toyplot`` figures
 --------------------------------------------
-The ``toyplot.Canvas`` and ``toyplot.axes.cartesian`` objects are returned
-by toytree which enables further modification of the canvas and axes, 
-to combine multiple plots onto a single or multiple axes, and to save the
-the canvas in a number of formats. 
+The ``toyplot.Canvas`` and ``toyplot.axes.cartesian`` objects that 
+are returned by toytree can be further modified to combine multiple 
+plots onto a single or multiple axes, or to save the the canvas in 
+a number of formats. Trees can easily be combined with other types
+of data to add barplots or scatterplots to the axes. Here we 
+generate three plots, apply different styling to each, and save 
+the final canvas as HTML and SVG. 
 
 
 .. code:: python
