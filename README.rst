@@ -2,12 +2,12 @@
 Installation
 --------------
 
-``toytree`` and its dependencies (``numpy``, ``ete3``, and ``toyplot``) 
-are easy to install with ``conda``. 
+Using conda you can install ``toytree`` and all of its dependencies (``numpy``, ``ete3``, and ``toyplot``) with a single command. 
+
 
 .. code:: bash
 
-    conda install -toytree -c eaton-lab
+    conda install toytree -c eaton-lab
 
 
 
