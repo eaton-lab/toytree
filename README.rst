@@ -34,7 +34,7 @@ to generate trees as graph figures. Some example usage is demonstrated below.
 
     import toytree
 
-
+    ## store a newick string representation of a tree
     newick = \
     """((33588_przewalskii:100,32082_przewalskii:100)100:100,(33413_thamno:100,
     ((35236_rex:100,30556_thamno:100)82:82,((35855_rex:100,40578_rex:100)100:100,

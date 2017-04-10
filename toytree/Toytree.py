@@ -32,7 +32,17 @@ class Tree(object):
         ## let ete check whether tree can parse
         self.tree = ete.Tree(newick)
         self.tree.ladderize()
-        self.newick = self.tree.write()
+
+        ## check features on a node that is not root for NHX, since root
+        ## is sometimes not appended with values that other nodes have
+        testnode = self.tree.children[0]
+        features = {"name", "dist", "support"}
+        extrafeat = {i for i in testnode.features if i not in features}
+        features.update(extrafeat)
+        if any(extrafeat):
+            self.newick = self.tree.write(format=9, features=features)
+        else:
+            self.newick = self.tree.write(format=0)
 
         ## parse newick, assigns idx to nodes, returns tre, edges, verts, names
         ## assigns node_labels, tip_labels, edge_lengths and support values
@@ -44,7 +54,8 @@ class Tree(object):
         self._default_style = {
             ## edge defaults
             "edge_style": {"stroke": "#292724", 
-                           "stroke-width": 2},
+                           "stroke-width": 2, 
+                           "stroke-linecap": "round"},
 
             ## node label defaults
             "node_labels": False,       
@@ -81,10 +92,10 @@ class Tree(object):
         """
         ## access nodes in the order they will be plotted
         return [self.tree.search_nodes(name=str(i))[0].dist \
-                for i in self.get_node_labels.values()]
+                for i in self.get_node_values("dist")]
 
 
-    def get_support_values(self):
+    def get_node_values(self, feature=None):
         """
         Returns support values from tree object in node plot order. To modify
         support values you must modify the .tree object directly. For example, 
@@ -94,14 +105,21 @@ class Tree(object):
 
         """
         ## access nodes in the order they will be plotted
+        ## this is a customized order best sampled this way
         nodes = [self.tree.search_nodes(name=str(i))[0] \
                  for i in self.get_node_labels().values()]
-        supps = [i.dist if not i.is_leaf() and not i.is_root() \
-                 else "" for i in nodes]
+
+        if not feature:
+            feature = "support"
+        vals = [i.__getattribute__(feature) if \
+               (hasattr(i, feature) and not i.is_leaf() and not i.is_root()) \
+               else "" for i in nodes]
+
         ## convert float to ints for prettier printing unless all floats
-        if all([Decimal(str(i)) % 1 == 0 for i in supps if i]):
-            supps = [int(i) if isinstance(i, float) else i for i in supps]
-        return supps
+        if all([Decimal(str(i)) % 1 == 0 for i in vals if i]):
+            vals = [int(i) if isinstance(i, float) else i for i in vals]
+
+        return vals
 
 
     def get_node_labels(self):
@@ -162,11 +180,20 @@ class Tree(object):
         if sum(1 for i in self.tree.traverse()) != nnodes:
             self.tree.children[0].dist = 2.*float(self.tree.children[0].dist)
             self.tree.children[1].dist = 2.*float(self.tree.children[1].dist)
-            self.tree.support = 100.
 
         ## store tree back into newick and reinit Toytree with new newick
-        newick = self.tree.write()
-        self.__init__(newick=newick, 
+        ## if NHX format then preserve the NHX features. 
+        testnode = self.tree.children[0]
+        features = {"name", "dist", "support"}
+        extrafeat = {i for i in testnode.features if i not in features}
+        features.update(extrafeat)
+        if any(extrafeat):
+            self.newick = self.tree.write(format=9, features=features)
+        else:
+            self.newick = self.tree.write(format=0)
+
+        ## reinit
+        self.__init__(newick=self.newick, 
                       orient=self._orient,
                       use_edge_lengths=self._use_edge_lengths
                       )
@@ -205,7 +232,6 @@ class Tree(object):
 
         else:
             ## ensure a large size for node unless user set it explicitly
-            ## using get_support_values() here just to exclude tips and root 
             self._kwargs["vlshow"] = True
             if not self._kwargs["node_size"]:
                 self._kwargs["node_size"] = 18
