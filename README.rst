@@ -18,6 +18,176 @@ Tree plotting with ``toytree``
     (41954_cyathophylloides:100,41478_cyathophylloides:100)100:100)100:100);"""
 
 
+
+
+
+.. raw:: html
+
+    <div align="center" class="toyplot" id="t9d8747535bec4023ae6beaf5442d88f3"><svg class="toyplot-canvas-Canvas" height="200.0px" id="tb879e33ee0284e5db03be174eccafa82" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 600.0 200.0" width="600.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="t32f8715c60854d93800f2b019a047dfe"><clipPath id="tdac54d4241644427be16d972a4b04d8a"><rect height="120.0" width="520.0" x="40.0" y="40.0"></rect></clipPath><g clip-path="url(#tdac54d4241644427be16d972a4b04d8a)"><g class="toyplot-mark-FillMagnitudes" id="te07b1996f9f64d0d8faf2107c9279093" style="stroke:none"><polygon points="50.0,150.0 55.0,150.0 60.0,150.0 65.0,150.0 70.0,150.0 75.0,150.0 80.0,150.0 85.0,150.0 90.0,150.0 95.0,150.0 100.0,150.0 105.0,150.0 110.0,150.0 115.0,150.0 120.00000000000001,150.0 125.0,150.0 130.0,150.0 135.0,150.0 140.0,150.0 145.0,150.0 150.0,150.0 155.0,150.0 160.0,150.0 165.0,150.0 170.0,150.0 175.0,150.0 180.0,150.0 185.0,150.0 190.00000000000003,150.0 195.0,150.0 200.0,150.0 205.0,150.0 210.0,150.0 215.0,150.0 220.0,150.0 225.0,150.0 230.0,150.0 235.0,150.0 240.0,150.0 245.0,150.0 250.0,150.0 255.0,150.0 260.0,150.0 265.0,150.0 270.0,150.0 275.0,150.0 280.0,150.0 285.0,150.0 290.0,150.0 295.0,150.0 300.0,150.0 305.0,150.0 310.0,150.0 315.0,150.0 320.0,150.0 325.0,150.0 330.00000000000006,150.0 335.0,150.0 340.0,150.0 345.0,150.0 350.0,150.0 355.0,150.0 360.0,150.0 365.0,150.0 370.0,150.0 375.0,150.0 380.0,150.0 385.0,150.0 390.0,150.0 394.99999999999994,150.0 400.0,150.0 405.0,150.0 410.0,150.0 415.0,150.0 420.0,150.0 425.0,150.0 430.0,150.0 435.0,150.0 440.0,150.0 445.0,150.0 450.0,150.0 455.00000000000006,150.0 460.0,150.0 465.0,150.0 470.0,150.0 475.0,150.0 480.0,150.0 485.0,150.0 490.0,150.0 495.0,150.0 500.0,150.0 505.0,150.0 510.0,150.0 515.0,150.0 520.0,150.0 525.0,150.0 530.0,150.0 535.0,150.0 540.0,150.0 545.0,150.0 545.0,112.6639832703618 540.0,110.54150991449181 535.0,108.10123828249748 530.0,105.37408095780421 525.0,102.39458470037424 520.0,99.200492819360761 515.0,95.832267052893641 510.0,92.332575011675004 505.0,88.745749679283236 500.0,85.117227816063092 495.0,81.4929743807254 490.0,77.918900260896606 485.0,74.440280688624284 480.0,71.101181708164788 475.0,67.943901961376582 470.0,65.008436862003805 465.0,62.331971946519914 460.0,59.948411819600942 455.00000000000006,57.887950661397568 450.0,56.176689737282068 445.0,54.83630675533675 440.0,53.883781260054796 435.0,53.331179540881948 430.0,53.185501780306446 425.0,53.448593377778145 420.0,54.117121572776071 415.0,55.182617663156989 410.0,56.631584283975322 405.0,58.445666387801388 400.0,60.60188376061317 394.99999999999994,63.072922127824938 390.0,65.827479162813546 385.0,68.830661014817593 380.0,72.04442433311975 375.0,75.428058188090802 370.0,78.938699784273268 365.0,82.531877432615971 360.0,86.162073903659575 355.0,89.783303025295098 350.0,93.34969222093828 345.0,96.816063608712341 340.0,100.13850630045914 335.0,103.27493265087813 330.00000000000006,106.18561141040512 325.0,108.8336710280216 320.0,111.1855667283133 315.0,113.21150544599614 310.0,114.8858232349733 305.0,116.18731037102648 300.0,117.09948002984365 295.0,117.61077713685586 290.0,117.71472474323969 285.0,117.41000607384103 280.0,116.70048120766322 275.0,115.5951381796162 270.0,114.10797912295439 265.0,112.25784289471446 260.0,110.06816643107757 255.0,107.56668785573018 250.0,104.78509510215204 245.0,101.75862450097254 240.0,98.525614417362419 235.0,95.12701959284081 230.0,91.605892343659931 225.0,88.006837187781883 220.0,84.375445809058505 215.0,80.757719516308612 210.0,77.199486513396167 205.0,73.745821362147581 200.0,70.440473992165607 195.0,67.325315490662234 190.00000000000003,64.439807692868655 185.0,61.820503292081099 180.0,59.500582801790024 175.0,57.509434235508408 170.0,55.872280828781186 165.0,54.609861519275007 160.0,53.738168232524423 155.0,53.268243301315103 150.0,53.206039584930963 145.0,53.552345060229491 140.0,54.302772839802131 135.0,55.44781674366611 130.0,56.972971720523056 125.0,58.858917593126904 120.00000000000001,61.081763800132663 115.0,63.613352034114676 110.0,66.42161294203224 105.0,69.47097236957481 100.0,72.722802003212877 95.0,76.135908701364599 90.0,79.667056315986883 85.0,83.271513394321289 80.0,86.903619822683609 75.0,90.517365234234148 70.0,94.066971853643366 65.0,97.507474395362237 60.0,100.79528966953121 55.0,103.88876867994128 50.0,106.74872422024615" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"></polygon></g></g><g class="toyplot-coordinates-Axis" id="te6d10599a2384e2eae664434813f1816" transform="translate(50.0,150.0)translate(0,10.0)"><line style="" x1="0" x2="495.0" y1="0" y2="0"></line><g><text style="dominant-baseline:hanging;font-size:10px;font-weight:normal;stroke:none;text-anchor:middle" transform="translate(0.0,6)"><tspan style="dominant-baseline:inherit">0</tspan></text><text style="dominant-baseline:hanging;font-size:10px;font-weight:normal;stroke:none;text-anchor:middle" transform="translate(250.0,6)"><tspan style="dominant-baseline:inherit">50</tspan></text><text style="dominant-baseline:hanging;font-size:10px;font-weight:normal;stroke:none;text-anchor:middle" transform="translate(500.0,6)"><tspan style="dominant-baseline:inherit">100</tspan></text></g><g class="toyplot-coordinates-Axis-coordinates" style="visibility:hidden" transform=""><line style="stroke:rgb(43.9%,50.2%,56.5%);stroke-opacity:1.0;stroke-width:1.0" x1="0" x2="0" y1="-3.0" y2="4.5"></line><text style="alignment-baseline:alphabetic;fill:rgb(43.9%,50.2%,56.5%);fill-opacity:1.0;font-size:10px;font-weight:normal;stroke:none;text-anchor:middle" x="0" y="-6"></text></g></g><g class="toyplot-coordinates-Axis" id="tb7e191e255dd4efd94888c399aa454f5" transform="translate(50.0,150.0)rotate(-90.0)translate(0,-10.0)"><line style="" x1="0" x2="96.81449821969356" y1="0" y2="0"></line><g><text style="dominant-baseline:alphabetic;font-size:10px;font-weight:normal;stroke:none;text-anchor:middle" transform="translate(0.0,-6)"><tspan style="dominant-baseline:inherit">0.0</tspan></text><text style="dominant-baseline:alphabetic;font-size:10px;font-weight:normal;stroke:none;text-anchor:middle" transform="translate(20.0,-6)"><tspan style="dominant-baseline:inherit">0.5</tspan></text><text style="dominant-baseline:alphabetic;font-size:10px;font-weight:normal;stroke:none;text-anchor:middle" transform="translate(40.0,-6)"><tspan style="dominant-baseline:inherit">1.0</tspan></text><text style="dominant-baseline:alphabetic;font-size:10px;font-weight:normal;stroke:none;text-anchor:middle" transform="translate(60.0,-6)"><tspan style="dominant-baseline:inherit">1.5</tspan></text><text style="dominant-baseline:alphabetic;font-size:10px;font-weight:normal;stroke:none;text-anchor:middle" transform="translate(80.0,-6)"><tspan style="dominant-baseline:inherit">2.0</tspan></text><text style="dominant-baseline:alphabetic;font-size:10px;font-weight:normal;stroke:none;text-anchor:middle" transform="translate(100.0,-6)"><tspan style="dominant-baseline:inherit">2.5</tspan></text></g><g class="toyplot-coordinates-Axis-coordinates" style="visibility:hidden" transform=""><line style="stroke:rgb(43.9%,50.2%,56.5%);stroke-opacity:1.0;stroke-width:1.0" x1="0" x2="0" y1="3.0" y2="-4.5"></line><text style="alignment-baseline:hanging;fill:rgb(43.9%,50.2%,56.5%);fill-opacity:1.0;font-size:10px;font-weight:normal;stroke:none;text-anchor:middle" x="0" y="6"></text></g></g></g></svg><div class="toyplot-interactive"><ul class="toyplot-mark-popup" onmouseleave="this.style.visibility='hidden'" style="background:rgba(0%,0%,0%,0.75);border:0;border-radius:6px;color:white;cursor:default;list-style:none;margin:0;padding:5px;position:fixed;visibility:hidden">
+                <li class="toyplot-mark-popup-title" style="color:lightgray;cursor:default;padding:5px;list-style:none;margin:0"></li>
+                <li class="toyplot-mark-popup-save-csv" onmouseout="this.style.color='white';this.style.background='steelblue'" onmouseover="this.style.color='steelblue';this.style.background='white'" style="border-radius:3px;padding:5px;list-style:none;margin:0">
+                    Save as .csv
+                </li>
+            </ul><script>
+            (function()
+            {
+              var data_tables = [{"title": "Fill Data", "names": ["x", "y0"], "id": "te07b1996f9f64d0d8faf2107c9279093", "columns": [[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63, 64, 65, 66, 67, 68, 69, 70, 71, 72, 73, 74, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99], [1.0812818944938463, 1.1527807830014682, 1.2301177582617198, 1.3123131401159442, 1.398325703658916, 1.487065869144146, 1.5774095044329097, 1.668212165141968, 1.7583235921003277, 1.8466022824658848, 1.9319299499196778, 2.01322569076063, 2.089459676449194, 2.159666199147133, 2.2229559049966836, 2.2785270601718275, 2.3256757069869236, 2.3638045814083473, 2.3924306790049465, 2.4111913734942627, 2.419849010376726, 2.4182939174671225, 2.4065457941868895, 2.384753462018125, 2.3531929792804704, 2.31226414411229, 2.2624854299552495, 2.2044874176979725, 2.1390048076782837, 2.066867112733444, 1.9889881501958602, 1.9063544659463105, 1.8200128371650959, 1.731057012092285, 1.6406138547735374, 1.549829070305453, 1.4598526914085017, 1.3718245101789797, 1.2868596395659397, 1.2060343874756865, 1.130372622446199, 1.0608328036067451, 0.9982958392230604, 0.9435539276321386, 0.8973005219261405, 0.8601215455095949, 0.8324879698084195, 0.8147498481539741, 0.8071318814190079, 0.8097305715786033, 0.8225129992539086, 0.8453172407243382, 0.8778544191256678, 0.9197123638500967, 0.9703608317921676, 1.0291582242994601, 1.0953597147398721, 1.1681266837280468, 1.246537342488521, 1.3295984097821913, 1.416257694476543, 1.5054174243676226, 1.5959481524085106, 1.6867030641846008, 1.7765325053931684, 1.8642985452977299, 1.9488893916720063, 2.02923347462956, 2.1043130209296614, 2.1731769468043765, 2.2349529059846707, 2.2888583403049654, 2.334210392900617, 2.370434558421075, 2.397071960680598, 2.4137851655555465, 2.420362455492339, 2.4167205114779513, 2.40290546849863, 2.3790923311165812, 2.345582756567948, 2.3028012334650607, 2.2512897045099765, 2.1917007013370022, 2.1247890784499046, 2.0514024509655857, 1.9724704572958802, 1.888992982784393, 1.802027493477585, 1.7126756404818653, 1.6220693045984225, 1.531356258017919, 1.441685624708125, 1.3541933236776589, 1.269987679515981, 1.1901353824906442, 1.1156479760548947, 1.0474690429375633, 0.9864622521377046, 0.9334004182409549]], "filename": "toyplot"}];
+    
+              function save_csv(data_table)
+              {
+                var uri = "data:text/csv;charset=utf-8,";
+                uri += data_table.names.join(",") + "\n";
+                for(var i = 0; i != data_table.columns[0].length; ++i)
+                {
+                  for(var j = 0; j != data_table.columns.length; ++j)
+                  {
+                    if(j)
+                      uri += ",";
+                    uri += data_table.columns[j][i];
+                  }
+                  uri += "\n";
+                }
+                uri = encodeURI(uri);
+    
+                var link = document.createElement("a");
+                if(typeof link.download != "undefined")
+                {
+                  link.href = uri;
+                  link.style = "visibility:hidden";
+                  link.download = data_table.filename + ".csv";
+    
+                  document.body.appendChild(link);
+                  link.click();
+                  document.body.removeChild(link);
+                }
+                else
+                {
+                  window.open(uri);
+                }
+              }
+    
+              function open_popup(data_table)
+              {
+                return function(e)
+                {
+                  var popup = document.querySelector("#t9d8747535bec4023ae6beaf5442d88f3 .toyplot-mark-popup");
+                  popup.querySelector(".toyplot-mark-popup-title").innerHTML = data_table.title;
+                  popup.querySelector(".toyplot-mark-popup-save-csv").onclick = function() { popup.style.visibility = "hidden"; save_csv(data_table); }
+                  popup.style.left = (e.clientX - 50) + "px";
+                  popup.style.top = (e.clientY - 20) + "px";
+                  popup.style.visibility = "visible";
+                  e.stopPropagation();
+                  e.preventDefault();
+                }
+    
+              }
+    
+              for(var i = 0; i != data_tables.length; ++i)
+              {
+                var data_table = data_tables[i];
+                var event_target = document.querySelector("#" + data_table.id);
+                event_target.oncontextmenu = open_popup(data_table);
+              }
+            })();
+            </script><script>
+            (function()
+            {
+                function _sign(x)
+                {
+                    return x < 0 ? -1 : x > 0 ? 1 : 0;
+                }
+    
+                function _mix(a, b, amount)
+                {
+                    return ((1.0 - amount) * a) + (amount * b);
+                }
+    
+                function _log(x, base)
+                {
+                    return Math.log(Math.abs(x)) / Math.log(base);
+                }
+    
+                function _in_range(a, x, b)
+                {
+                    var left = Math.min(a, b);
+                    var right = Math.max(a, b);
+                    return left <= x && x <= right;
+                }
+    
+                function inside(range, projection)
+                {
+                    for(var i = 0; i != projection.length; ++i)
+                    {
+                        var segment = projection[i];
+                        if(_in_range(segment.range.min, range, segment.range.max))
+                            return true;
+                    }
+                    return false;
+                }
+    
+                function to_domain(range, projection)
+                {
+                    for(var i = 0; i != projection.length; ++i)
+                    {
+                        var segment = projection[i];
+                        if(_in_range(segment.range.bounds.min, range, segment.range.bounds.max))
+                        {
+                            if(segment.scale == "linear")
+                            {
+                                var amount = (range - segment.range.min) / (segment.range.max - segment.range.min);
+                                return _mix(segment.domain.min, segment.domain.max, amount)
+                            }
+                            else if(segment.scale[0] == "log")
+                            {
+                                var amount = (range - segment.range.min) / (segment.range.max - segment.range.min);
+                                var base = segment.scale[1];
+                                return _sign(segment.domain.min) * Math.pow(base, _mix(_log(segment.domain.min, base), _log(segment.domain.max, base), amount));
+                            }
+                        }
+                    }
+                }
+    
+                function display_coordinates(e)
+                {
+                    var current = svg.createSVGPoint();
+                    current.x = e.clientX;
+                    current.y = e.clientY;
+    
+                    for(var axis_id in axes)
+                    {
+                        var axis = document.querySelector("#" + axis_id);
+                        var coordinates = axis.querySelector(".toyplot-coordinates-Axis-coordinates");
+                        if(coordinates)
+                        {
+                            var projection = axes[axis_id];
+                            var local = current.matrixTransform(axis.getScreenCTM().inverse());
+                            if(inside(local.x, projection))
+                            {
+                                var domain = to_domain(local.x, projection);
+                                coordinates.style.visibility = "visible";
+                                coordinates.setAttribute("transform", "translate(" + local.x + ")");
+                                var text = coordinates.querySelector("text");
+                                text.textContent = domain.toFixed(2);
+                            }
+                            else
+                            {
+                                coordinates.style.visibility= "hidden";
+                            }
+                        }
+                    }
+                }
+    
+                var root_id = "t9d8747535bec4023ae6beaf5442d88f3";
+                var axes = {"tb7e191e255dd4efd94888c399aa454f5": [{"domain": {"bounds": {"max": Infinity, "min": -Infinity}, "max": 2.5, "min": 0.0}, "range": {"bounds": {"max": Infinity, "min": -Infinity}, "max": 100.0, "min": 0.0}, "scale": "linear"}], "te6d10599a2384e2eae664434813f1816": [{"domain": {"bounds": {"max": Infinity, "min": -Infinity}, "max": 100.0, "min": 0.0}, "range": {"bounds": {"max": Infinity, "min": -Infinity}, "max": 500.0, "min": 0.0}, "scale": "linear"}]};
+    
+                var svg = document.querySelector("#" + root_id + " svg");
+                svg.addEventListener("click", display_coordinates);
+            })();
+            </script></div></div>
+
+
+
+
 The basic toytree Class object
 ------------------------------
 
