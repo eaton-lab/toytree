@@ -60,27 +60,22 @@ Additional styling options
     tre.draw(
         width=500, 
         height=500,
-        
         node_labels=True,
         node_labels_style={"font-size": "10px", 
                            "fill": "white"},
-        
         node_size=16,
         node_style={"stroke": "green", 
                     "stroke-width": 2, 
                     "fill": "#333333", 
                     "opacity": 0.5},  
-             
         tip_labels=True,
         tip_labels_style={"font-size": "14px", 
                           "-toyplot-anchor-shift": "18px", 
                           "fill": "darkcyan"},
-             
         edge_style={"stroke": "orange", 
                     "stroke-opacity": 0.8, 
                     "stroke-dasharray": "3,3",
                     "stroke-width": 3},
-             
         use_edge_lengths=False,
         tree_style="c",
         orient="down",
@@ -88,9 +83,6 @@ Additional styling options
 
 
 .. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig2.svg
-
-
-.. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig1.svg
 
 
 Combine with standard ``Toyplot`` figures
