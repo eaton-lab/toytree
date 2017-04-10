@@ -9,9 +9,12 @@ import ete3 as ete
 import copy
 from decimal import Decimal
 
-COLORS = [toyplot.color.to_css(i) for i in toyplot.color.Palette()]
 
+## color palette as a list
+PALETTE = toyplot.color.Palette()
+COLORS = [toyplot.color.to_css(i) for i in PALETTE]
 
+## the main tree class
 class Tree(object):
     """
     The toytree Tree Class object, a plotting wrapper around an 
@@ -36,6 +39,7 @@ class Tree(object):
         self._decompose_tree(**kwargs)
 
         ## some plotting defaults
+        self.color_palette = [toyplot.color.to_css(i) for i in PALETTE]
         self._kwargs = {}
         self._default_style = {
             ## edge defaults
@@ -43,19 +47,19 @@ class Tree(object):
                            "stroke-width": 2},
 
             ## node label defaults
-            "node_labels": False,         ## [True, False, list]
-            "node_labels_style": {"font-size": "9px"},     ## dict
+            "node_labels": False,       
+            "node_labels_style": {"font-size": "9px"}, 
 
             ## node defaults
-            "node_size": 0,              ## int
+            "node_size": 0,             
             "node_color": COLORS[0],
             "node_style": {"fill": COLORS[0], 
                            "stroke": COLORS[0]},
             "vmarker": "o",
 
             ## tip label defaults
-            "tip_labels": True,          ## [True, False, list]
-            "tip_labels_color": toyplot.color.near_black,    ## [str, list]
+            "tip_labels": True,         
+            "tip_labels_color": toyplot.color.near_black,    
             "tip_labels_style": {"font-size": "12px",
                                  "text-anchor":"start", 
                                  "-toyplot-anchor-shift":"10px", 
@@ -135,6 +139,9 @@ class Tree(object):
 
     ## re-rooting the tree
     def root(self, outgroup=None, wildcard=None):
+        ## starting nnodes
+        nnodes = sum(1 for i in self.tree.traverse())
+
         ## set names or wildcard as the outgroup
         if outgroup:
             outs = [i for i in self.tree.get_leaf_names() if i in outgroup]
@@ -148,12 +155,16 @@ class Tree(object):
         else:
             out = outs[0]
 
-        ## we split a branch to root it, so let's double each edge so that the 
-        ## distance remains the same (i.e., it would be 0.5 but we make it 1).
+        ## set new outgroup
         self.tree.set_outgroup(out)
-        self.tree.children[0].dist = 2. * self.tree.children[0].dist
-        self.tree.children[1].dist = 2. * self.tree.children[1].dist 
-        self.tree.support = 100
+
+        ## IF we split a branch to root then double those edges
+        if sum(1 for i in self.tree.traverse()) != nnodes:
+            self.tree.children[0].dist = 2.*float(self.tree.children[0].dist)
+            self.tree.children[1].dist = 2.*float(self.tree.children[1].dist)
+            self.tree.support = 100.
+
+        ## store tree back into newick and reinit Toytree with new newick
         newick = self.tree.write()
         self.__init__(newick=newick, 
                       orient=self._orient,
