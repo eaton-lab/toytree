@@ -49,6 +49,8 @@ Tree plotting basics
     tre.draw(width=400, node_labels=True)
 
 
+..image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig1.svg
+
 
 .. image:: ./docs/readme_fig1.png
 
@@ -88,7 +90,7 @@ Additional styling options
         );
 
 
-.. image:: ./docs/readme_fig1.png
+.. image:: ./docs/readme_fig2.png
 
 
 
