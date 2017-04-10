@@ -10,11 +10,15 @@ Using conda you can install ``toytree`` and all of its dependencies (``numpy``, 
     conda install toytree -c eaton-lab
 
 
+Tutorial
+--------
+
+See the `tutorial notebook <http://nbviewer.jupyter.org/github/eaton-lab/toytree/blob/master/docs/tutorial.ipynb>`_ for a detailed walk-through of available plotting options with ``Toytree``. 
+
 
 Tree plotting with ``Toytree``
 ------------------------------
 
-See the `tutorial notebook <http://nbviewer.jupyter.org/github/eaton-lab/toytree/blob/master/docs/tutorial.ipynb>`_ for more details. 
 ``Toytree`` is a Python tree plotting library designed for use inside 
 `jupyter notebooks <http://jupyter.org>`_. It was motivated out of a 
 desire for a simple and minimalist tree plotting library with a
