@@ -39,7 +39,7 @@ class Tree(object):
         self._decompose_tree(**kwargs)
 
         ## some plotting defaults
-        self.color_palette = [toyplot.color.to_css(i) for i in PALETTE]
+        #self.color_palette = [toyplot.color.to_css(i) for i in PALETTE]
         self._kwargs = {}
         self._default_style = {
             ## edge defaults
@@ -176,7 +176,27 @@ class Tree(object):
         _decompose_tree(self, orient, use_edge_lengths)
 
 
+
+    def _assign_tip_labels(self):
+        """ parse arg or arglist for tip_labels and tip_colors """
+
+        ## True=magic (use tip labels), False=None, list=use list
+        if self._kwargs["tip_labels"] == False:
+            self._kwargs["tip_labels"] = ["" for i in self.get_tip_labels()]
+
+        else:
+            if isinstance(self._kwargs["tip_labels"], list):
+                self._kwargs["tip_labels"] = self._kwargs["tip_labels"]
+
+            ## True shows tip labels from .tree
+            else: 
+                self._kwargs["tip_labels"] = self.get_tip_labels()
+
+
+
     def _assign_node_labels(self):
+        """ parse arg or arglist for node_labels and node_colors """
+
         ## True=magic (hide tip nodes), False=None, list=list all including tips
         if self._kwargs["node_labels"] == False:
             self._kwargs["node_labels"] = self.get_node_labels().keys()
@@ -295,7 +315,7 @@ class Tree(object):
             axes.show = False
         
         self._assign_node_labels()
-        _assign_tip_labels(self)
+        self._assign_tip_labels()
 
         if print_args:
             print(self._kwargs)
@@ -405,23 +425,6 @@ def _decompose_tree(ttree, orient='right', use_edge_lengths=True):
 
 
 
-
-
-
-def _assign_tip_labels(ttree):
-    ttree._kwargs["tip_labels"] = ttree.get_tip_labels()
-    ## get tip labels. Order is from top to bottom on right-facing
-    # if ttree._kwargs["tip_labels"] == True:
-    #     ttree._kwargs["tip_labels"] = ttree.get_tip_labels()
-    # elif isinstance(panel.kwargs["tip_labels"], list):
-    #     ttree._kwargs["tip_labels"] = ttree._kwargs["tip_labels"]
-    # elif panel.kwargs["tip_labels"] == False:
-    #     names = ["" for _ in panel.tip_labels] 
-    # else:
-    #     names = panel.tip_labels
-
-
-
 ## add the tree plot 
 def _add_tree_to_axes(ttree, axes):
 
@@ -477,8 +480,8 @@ def _add_tip_labels_to_axes(ttree, axes):
         angle = -90.
 
     ## tip color overrides tipstyle[fill]
-    #if panel.kwargs.get("tip_labels_color"):
-    #    tipstyle.pop("fill")
+    if ttree._kwargs.get("tip_labels_color"):
+        ttree._kwargs["tip_labels_style"].pop("fill")
 
     ## plot on axes. color is added from top to bottom (right-facing)
     _ = axes.text(xpos, ypos, 
