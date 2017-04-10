@@ -7,4 +7,3 @@ build
 dist
 toyplot.egg-info/
 tests/*
-
