@@ -36,7 +36,7 @@ to generate trees as graph figures. Some example usage is demonstrated below.
 
     ## store a newick string representation of a tree
     newick = \
-    """"""(41954_cyathophylloides:0.00008888031167776559,(((32082_przewalskii:
+    """(41954_cyathophylloides:0.00008888031167776559,(((32082_przewalskii:
     0.00259326350604092027,33588_przewalskii:0.00247133969857381459)100:
     0.03587422609749137820,(33413_thamno:0.00565358258838428562,(30556_thamno:
     0.00653218253974622003,((40578_rex:0.00335406134690998791,35855_rex:
