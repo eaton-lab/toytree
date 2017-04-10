@@ -1,7 +1,7 @@
 
 Tree plotting with ``toytree``
 -------------------------------
-See the [`full documentation`] for more details.
+See the .. _tutorial notebook: http://nbviewer.jupyter.org/github/eaton-lab/toytree/blob/master/docs/tutorial.ipynb for more details.
 
 
 .. code:: python
@@ -25,8 +25,9 @@ The ``toytree`` Class object
 
 Toytree is a Python tree plotting library designed for use inside 
 jupyter-notebooks. The help documentation for toytree objects can be accessed with ``?`` or ``<tab>-completion``. Toytree brings together the
-rich tree manipulation library [`ete3`](link) and the rich plotting library
-[`toyplot`](link). 
+rich tree manipulation library 
+.. _ete3: http://etetoolkit.org and the rich plotting library
+.. _toyplot: http://toyplot.readthedocs.io/en/stable/index.html.
 
 
 .. code:: python
