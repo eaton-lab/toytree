@@ -42,7 +42,9 @@ rich tree manipulation library [`ete3`](link) and the rich plotting library
 
 
 Tree plotting basics
----------------------
+~~~~~~~~~~~~~~~~~~~~~
+The ``.draw()`` function generates a plot and returns a toyplot Canvas and axes
+object. 
 
 .. code:: python
 
@@ -53,8 +55,15 @@ Tree plotting basics
    :align: center
 
 
-Additional styling options
---------------------------
+Styling options
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+toytree utilizes toyplot to generate tree figures, a modern Python plotting 
+library that is designed for the web. The default format used by toyplot
+is HTML (though you can save figures in additional formats like SVG), 
+and it uses familiar CSS styling options to modify plot components. 
+The figure below demonstrates how many styling options can be applied
+to a tree plot. 
+
 
 .. code:: python
 
