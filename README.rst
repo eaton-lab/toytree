@@ -1,6 +1,6 @@
 
 Tree plotting with ``toytree``
-==============================
+-------------------------------
 
 .. code:: python
 
@@ -17,11 +17,15 @@ Tree plotting with ``toytree``
     ((30686_cyathophylla:100,29154_superba:100)100:100,
     (41954_cyathophylloides:100,41478_cyathophylloides:100)100:100)100:100);"""
 
+
 The basic toytree Class object
 ------------------------------
 
 The help documentation for toytree objects can be accessed with ``?`` or
-``<tab>-completion``, which I've printed below.
+``<tab>-completion``, which I've printed below. Toytree brings together the
+rich tree manipulation library [`ete3`](link) and the rich plotting library
+[`toyplot`](link). 
+
 
 .. code:: python
 
@@ -29,13 +33,14 @@ The help documentation for toytree objects can be accessed with ``?`` or
     tre
 
 
-
-
 .. parsed-literal::
 
     <toytree.Toytree.Tree at 0x7f8d0c0f1bd0>
 
 
+.. code:: python
+
+    tre.draw(width=400, node_labels=True)
 
 
 .. raw:: html
