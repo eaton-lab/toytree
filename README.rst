@@ -6,12 +6,13 @@ Tree plotting with ``Toytree``
 See the `tutorial notebook <http://nbviewer.jupyter.org/github/eaton-lab/toytree/blob/master/docs/tutorial.ipynb>`_ for more details. 
 ``Toytree`` is a Python tree plotting library designed for use inside 
 `jupyter notebooks <http://jupyter.org>`_. It was motivated out of a 
-desire for a simple and minimalist tree plotting library with similar
-affinities to the `ape` package for ``R``. On the backend ``toytree`` 
-uses the rich tree manipulation package
-`ete3 <http://etetoolkit.org and the rich plotting library>`_ 
+desire for a simple and minimalist tree plotting library with a
+similar design to the ``'ape'`` package for ``R``. 
+On the backend ``toytree`` uses the rich tree manipulation package
+`ete3 <http://etetoolkit.org>`_ to parse tree objects 
 and the modern and minimalist plotting library 
-`toyplot <http://toyplot.readthedocs.io/en/stable/index.html>`_. 
+`toyplot <http://toyplot.readthedocs.io/en/stable/index.html>`_
+to generate trees as graph figures. 
 
 
 .. code:: python
