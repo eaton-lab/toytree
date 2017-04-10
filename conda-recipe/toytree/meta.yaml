@@ -1,0 +1,28 @@
+package:
+  name: toytree
+  version: {{ environ.get('GIT_DESCRIBE_TAG', '') }}
+
+source:
+  git_url: https://github.com/eaton-lab/toytree.git
+
+build:
+  script: build.sh
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
+
+requirements:
+  build:
+    - pypng
+    - reportlab
+    - colormath
+    - ete3 >=3.0
+    - numpy >=1.7
+    - toyplot >=0.13
+  run:
+    - ete3 >=3.0
+    - numpy >=1.7
+    - toyplot >=0.13
+
+about:
+  home: http://github.com/eaton-lab/toytree
+  license: GPLv3
+  summary: Minimalist tree plotting library using toyplot graphs
