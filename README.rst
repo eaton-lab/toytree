@@ -1,8 +1,19 @@
 
+Installation
+--------------
+
+``toytree`` and its dependencies (``numpy``, ``ete3``, and ``toyplot``) 
+are easy to install with ``conda``. 
+
+.. code:: bash
+
+    conda install -toytree -c eaton-lab
+
 
 
 Tree plotting with ``Toytree``
--------------------------------
+------------------------------
+
 See the `tutorial notebook <http://nbviewer.jupyter.org/github/eaton-lab/toytree/blob/master/docs/tutorial.ipynb>`_ for more details. 
 ``Toytree`` is a Python tree plotting library designed for use inside 
 `jupyter notebooks <http://jupyter.org>`_. It was motivated out of a 
@@ -33,7 +44,6 @@ to generate trees as graph figures. Examples below demonstrate simple usage.
 .. code:: python
 
     tre = toytree.tree(newick)
-    tre
 
 
 Tree plotting basics
