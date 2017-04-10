@@ -90,6 +90,8 @@ Additional styling options
 .. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig2.svg
 
 
+.. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig1.svg
+
 
 Combine with standard ``Toyplot`` figures
 --------------------------------------------
@@ -138,3 +140,4 @@ the canvas in a number of formats.
 
 
 .. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig3.svg
+
