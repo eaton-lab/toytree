@@ -7,9 +7,6 @@ source:
   fn: ghostscript-9.21.tar.gz
   url: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs921/ghostscript-9.21.tar.gz
   md5: 5f213281761d2750fcf27476c404d17f
-  #fn: ghostscript-9.16.tar.gz
-  #url: https://github.com/ArtifexSoftware/ghostpdl-downloads/archive/gs921.tar.gz
-  #md5: 5d69e7a467ccaea5110efe7bea98130f
 
 test:
   commands:

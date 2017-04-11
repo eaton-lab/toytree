@@ -13,7 +13,7 @@ You can install ``toytree`` and its dependencies (``toyplot`` and ``numpy``) wit
 Tutorial
 --------
 
-See the `tutorial notebook <http://nbviewer.jupyter.org/github/eaton-lab/toytree/blob/master/docs/tutorial.ipynb>`_ for a detailed walk-through of available plotting options in ``Toytree``. Lauch a jupyter-notebook on your machine to try it out for yourself, or, *click on the badge below* to launch a jupyter notebook in the cloud where you can try it without even having to install anything (the web notebook will take a minute or two to spin up).
+See the `tutorial notebook <http://nbviewer.jupyter.org/github/eaton-lab/toytree/blob/master/docs/tutorial.ipynb>`_ for a detailed walk-through of available plotting options in ``Toytree``. Lauch a jupyter-notebook on your machine to try it out for yourself, or, *click on the "binder" badge below* to launch a jupyter notebook in the cloud where you can try it without having to install anything (the web notebook might take a minute or two to spin up).
 
 .. image:: http://mybinder.org/badge.svg 
     :target: http://mybinder.org:/repo/eaton-lab/toytree
@@ -52,7 +52,7 @@ desire for a simple tree plotting library with a design similar to the ``'ape'``
 Tree plotting basics
 ~~~~~~~~~~~~~~~~~~~~~
 The ``.draw()`` function generates a plot which is returned as two objects, 
-a ``toyplot.Canvas`` object and a ``toyplot.axes.cartesian`` object. 
+a ``toyplot.Canvas`` object and a ``toyplot.Canvas.cartesian`` object. 
 In a jupyter-notebook the ``canvas`` will automatically render as a figure
 in a cell of the notebook. Toytree applies a default styling to the tree
 which can be modified.  
