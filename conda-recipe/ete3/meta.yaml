@@ -17,12 +17,9 @@ requirements:
     - pyqt 4.11.*
     - python
     - six
-    - xorg-libxext
-    - xorg-xextproto
-    - xorg-libxdmcp
-    - xorg-libsm
-    - xorg-libxrender
-    - xorg-libxau
+    - libxml2
+    - libiconv
+    - libxslt
 
   run:
     - lxml
