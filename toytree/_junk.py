@@ -1,7 +1,6 @@
 
 
 ## DEPRECATED
-
 def _simulate(self, nreps=1000, admix=None, Ns=int(5e5), gen=10):
     sims = _simulate(self, nreps, admix, Ns, gen)
     debug = 0  ## msprime debug

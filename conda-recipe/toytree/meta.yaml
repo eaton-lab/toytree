@@ -14,13 +14,11 @@ requirements:
     - pypng
     - reportlab
     - colormath
-    - ete3 >=3.0.0
     - numpy >=1.7
-    - toyplot >=0.13
+    - toyplot >=v0.13.0
   run:
-    - ete3 >=3.0.0
     - numpy >=1.7
-    - toyplot >=0.13
+    - toyplot >=v0.13.0
 
 about:
   home: http://github.com/eaton-lab/toytree
