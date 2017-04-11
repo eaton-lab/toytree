@@ -1,0 +1,20 @@
+
+package:
+  name: ghostscript
+  version: 9.21
+
+source:
+  fn: ghostscript-9.21.tar.gz
+  url: https://github.com/ArtifexSoftware/ghostpdl-downloads/releases/download/gs921/ghostscript-9.21.tar.gz
+  md5: 5f213281761d2750fcf27476c404d17f
+
+test:
+  commands:
+    - gs --help
+
+about:
+  home: http://ghostscript.com/
+  summary: An interpreter for the PostScript language and for PDF.
+  license: AGPL
+
+

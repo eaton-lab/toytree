@@ -2,7 +2,7 @@
 Installation
 --------------
 
-Using conda you can install ``toytree`` and its dependencies (``numpy``, and ``toyplot``) with a single command. 
+You can install ``toytree`` and its dependencies (``toyplot`` and ``numpy``) with a single command using conda. 
 
 
 .. code:: bash
@@ -13,22 +13,19 @@ Using conda you can install ``toytree`` and its dependencies (``numpy``, and ``t
 Tutorial
 --------
 
-See the `tutorial notebook <http://nbviewer.jupyter.org/github/eaton-lab/toytree/blob/master/docs/tutorial.ipynb>`_ for a detailed walk-through of available plotting options with ``Toytree``. 
+See the `tutorial notebook <http://nbviewer.jupyter.org/github/eaton-lab/toytree/blob/master/docs/tutorial.ipynb>`_ for a detailed walk-through of available plotting options in ``Toytree``. Lauch a jupyter-notebook on your machine to try it out for yourself, or, *click on the "binder" badge below* to launch a jupyter notebook in the cloud where you can try it without having to install anything (the web notebook might take a minute or two to spin up).
+
+.. image:: http://mybinder.org/badge.svg 
+    :target: http://mybinder.org:/repo/eaton-lab/toytree
 
 
 Tree plotting with ``Toytree``
 ------------------------------
 
 ``Toytree`` is a Python tree plotting library designed for use inside 
-`jupyter notebooks <http://jupyter.org>`_. It was motivated out of a 
-desire for a simple and minimalist tree plotting library with a
-design similar to the ``'ape'`` package for ``R``. 
-For its backend ``toytree`` uses a stripped-down version of the 
-`ete3 <http://etetoolkit.org>`_ library to parse and manipulate
-tree objects, and it uses the minimalist plotting library 
-`toyplot <http://toyplot.readthedocs.io/en/stable/index.html>`_
-to generate trees as graph figures. Some example usage is demonstrated below.
-
+`jupyter notebooks <http://jupyter.org>`_. It was motivated from of a 
+desire for a simple tree plotting library with a design similar to the ``'ape'`` package for ``R``. To parse, represent, and manipulate tree objects ``toytree`` uses a stripped-down version of the 
+`ete3 <http://etetoolkit.org>`_ library (which we call `ete3mini`), and to generate plots ``toytree`` uses the 'graph' functionality from the minimalist plotting library `toyplot <http://toyplot.readthedocs.io/en/stable/index.html>`_. Some example usage is demonstrated below.
 
 .. code:: python
 
@@ -55,7 +52,7 @@ to generate trees as graph figures. Some example usage is demonstrated below.
 Tree plotting basics
 ~~~~~~~~~~~~~~~~~~~~~
 The ``.draw()`` function generates a plot which is returned as two objects, 
-a ``toyplot.Canvas`` object and a ``toyplot.axes.cartesian`` object. 
+a ``toyplot.Canvas`` object and a ``toyplot.Canvas.cartesian`` object. 
 In a jupyter-notebook the ``canvas`` will automatically render as a figure
 in a cell of the notebook. Toytree applies a default styling to the tree
 which can be modified.  
