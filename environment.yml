@@ -1,5 +1,8 @@
 name: toytree
 
+channels: 
+  - eaton-lab
+
 dependencies: 
   - python=2.7
   - pip
