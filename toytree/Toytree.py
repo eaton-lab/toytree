@@ -6,7 +6,7 @@ from __future__ import print_function, division
 import toyplot
 import numpy as np
 import copy
-from Tree import TreeNode
+from ete3mini import TreeNode
 from decimal import Decimal
 
 ## color palette as a list

@@ -12,6 +12,9 @@ import itertools
 import random
 import copy
 import six
+import re
+import os
+
 from six.moves import (cPickle, map, range, zip)
 from .newick import read_newick, write_newick
 
@@ -2138,8 +2141,4 @@ def _translate_nodes(root, *nodes):
     else:
         return valid_nodes
 
-
-# Alias
-#: .. currentmodule:: ete3
-Tree = TreeNode
 
