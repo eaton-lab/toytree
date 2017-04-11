@@ -14,7 +14,7 @@ PALETTE = toyplot.color.Palette()
 COLORS = [toyplot.color.to_css(i) for i in PALETTE]
 
 ## the main tree class
-class Tree(object):
+class Toytree(object):
     """
     The toytree Tree Class object, a plotting wrapper around an 
     ete3 Tree Class object which can be accessed from the .tree

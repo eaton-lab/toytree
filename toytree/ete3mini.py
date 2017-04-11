@@ -2112,6 +2112,10 @@ class TreeNode(object):
     #    _ph.call()
         
 
+## alias
+Tree = TreeNode        
+
+
 def _translate_nodes(root, *nodes):
     """unknown function ..."""
     #name2node = {[n, None] for n in nodes if type(n) is str}
