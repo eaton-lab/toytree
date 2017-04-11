@@ -17,6 +17,9 @@ See the `tutorial notebook <http://nbviewer.jupyter.org/github/eaton-lab/toytree
 
 .. image:: http://mybinder.org/badge.svg :target: http://mybinder.org:/repo/eaton-lab/toytree  
 
+.. image:: http://mybinder.org/badge.svg 
+    :target: http://mybinder.org:/repo/eaton-lab/toytree
+
 
 Tree plotting with ``Toytree``
 ------------------------------
