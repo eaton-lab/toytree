@@ -1,5 +1,8 @@
 name: toytree
+
 dependencies: 
+  - python=2.7
   - pip
   - numpy
-  - toyplot
+  - toytree
+
