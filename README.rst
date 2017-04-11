@@ -2,7 +2,7 @@
 Installation
 --------------
 
-Using conda you can install ``toytree`` and all of its dependencies (``numpy``, ``ete3``, and ``toyplot``) with a single command. 
+Using conda you can install ``toytree`` and its dependencies (``numpy``, and ``toyplot``) with a single command. 
 
 
 .. code:: bash
@@ -23,9 +23,9 @@ Tree plotting with ``Toytree``
 `jupyter notebooks <http://jupyter.org>`_. It was motivated out of a 
 desire for a simple and minimalist tree plotting library with a
 design similar to the ``'ape'`` package for ``R``. 
-For its backend ``toytree`` uses the rich tree manipulation package
-`ete3 <http://etetoolkit.org>`_ to parse and represent tree objects, 
-and it uses the minimalist plotting library 
+For its backend ``toytree`` uses a stripped-down version of the 
+`ete3 <http://etetoolkit.org>`_ library to parse and manipulate
+tree objects, and it uses the minimalist plotting library 
 `toyplot <http://toyplot.readthedocs.io/en/stable/index.html>`_
 to generate trees as graph figures. Some example usage is demonstrated below.
 

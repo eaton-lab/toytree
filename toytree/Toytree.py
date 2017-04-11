@@ -5,10 +5,9 @@ from __future__ import print_function, division
 
 import toyplot
 import numpy as np
-import ete3 as ete
 import copy
+from Tree import TreeNode
 from decimal import Decimal
-
 
 ## color palette as a list
 PALETTE = toyplot.color.Palette()
@@ -30,7 +29,7 @@ class Tree(object):
     def __init__(self, newick=None, admix=None, **kwargs):
 
         ## let ete check whether tree can parse
-        self.tree = ete.Tree(newick)
+        self.tree = TreeNode(newick)
         self.tree.ladderize()
 
         ## check features on a node that is not root for NHX, since root
@@ -179,7 +178,7 @@ class Tree(object):
         ## set new outgroup
         self.tree.set_outgroup(out)
         self.tree.resolve_polytomy()
-        
+
         ## IF we split a branch to root then double those edges
         if sum(1 for i in self.tree.traverse()) != nnodes:
             self.tree.children[0].dist = 2.*float(self.tree.children[0].dist)

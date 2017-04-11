@@ -5,4 +5,5 @@ __author__ = "Deren Eaton"
 
 
 from Toytree import Tree as tree
-
+#from Tree import TreeNode
+#import newick
