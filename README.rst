@@ -2,7 +2,7 @@
 Installation
 --------------
 
-Using conda you can install ``toytree`` and its dependencies (``numpy``, and ``toyplot``) with a single command. 
+You can install ``toytree`` and its dependencies (``toyplot`` and ``numpy``) with a single command using conda. 
 
 
 .. code:: bash
@@ -13,22 +13,16 @@ Using conda you can install ``toytree`` and its dependencies (``numpy``, and ``t
 Tutorial
 --------
 
-See the `tutorial notebook <http://nbviewer.jupyter.org/github/eaton-lab/toytree/blob/master/docs/tutorial.ipynb>`_ for a detailed walk-through of available plotting options with ``Toytree``. 
+The `tutorial notebook <http://nbviewer.jupyter.org/github/eaton-lab/toytree/blob/master/docs/tutorial.ipynb>`_ for a detailed walk-through of available plotting options in ``Toytree``. Lauch a jupyter-notebook and try it out for yourself. 
 
 
 Tree plotting with ``Toytree``
 ------------------------------
 
 ``Toytree`` is a Python tree plotting library designed for use inside 
-`jupyter notebooks <http://jupyter.org>`_. It was motivated out of a 
-desire for a simple and minimalist tree plotting library with a
-design similar to the ``'ape'`` package for ``R``. 
-For its backend ``toytree`` uses a stripped-down version of the 
-`ete3 <http://etetoolkit.org>`_ library to parse and manipulate
-tree objects, and it uses the minimalist plotting library 
-`toyplot <http://toyplot.readthedocs.io/en/stable/index.html>`_
-to generate trees as graph figures. Some example usage is demonstrated below.
-
+`jupyter notebooks <http://jupyter.org>`_. It was motivated from of a 
+desire for a simple tree plotting library with a design similar to the ``'ape'`` package for ``R``. To parse, represent, and manipulate tree objects ``toytree`` uses a stripped-down version of the 
+`ete3 <http://etetoolkit.org>`_ library (which we call `ete3mini`), and to generate plots ``toytree`` uses the 'graph' functionality from the minimalist plotting library `toyplot <http://toyplot.readthedocs.io/en/stable/index.html>`_. Some example usage is demonstrated below.
 
 .. code:: python
 
