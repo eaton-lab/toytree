@@ -160,6 +160,9 @@ class Tree(object):
         ## starting nnodes
         nnodes = sum(1 for i in self.tree.traverse())
 
+        ## split root node if more than di-
+        self.tree.resolve_polytomy()
+
         ## set names or wildcard as the outgroup
         if outgroup:
             outs = [i for i in self.tree.get_leaf_names() if i in outgroup]
@@ -175,7 +178,8 @@ class Tree(object):
 
         ## set new outgroup
         self.tree.set_outgroup(out)
-
+        self.tree.resolve_polytomy()
+        
         ## IF we split a branch to root then double those edges
         if sum(1 for i in self.tree.traverse()) != nnodes:
             self.tree.children[0].dist = 2.*float(self.tree.children[0].dist)
