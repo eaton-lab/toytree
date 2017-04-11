@@ -13,7 +13,7 @@ You can install ``toytree`` and its dependencies (``toyplot`` and ``numpy``) wit
 Tutorial
 --------
 
-See the `tutorial notebook <http://nbviewer.jupyter.org/github/eaton-lab/toytree/blob/master/docs/tutorial.ipynb>`_ for a detailed walk-through of available plotting options in ``Toytree``. Lauch a jupyter-notebook on your machine to try it out for yourself, or, *click on the badge below* to launch a jupyter notebook in the cloud where you can try it out (this takes a few minutes to spin up) 
+See the `tutorial notebook <http://nbviewer.jupyter.org/github/eaton-lab/toytree/blob/master/docs/tutorial.ipynb>`_ for a detailed walk-through of available plotting options in ``Toytree``. Lauch a jupyter-notebook on your machine to try it out for yourself, or, *click on the badge below* to launch a jupyter notebook in the cloud where you can try it without even having to install anything (the web notebook will take a minute or two to spin up).
 
 .. image:: http://mybinder.org/badge.svg 
     :target: http://mybinder.org:/repo/eaton-lab/toytree
