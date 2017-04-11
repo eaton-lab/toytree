@@ -23,10 +23,7 @@ requirements:
     - mock
     - networkx
     - pandas >=0.14.1
-    #- arrow
-    #- behave
-    #- coverage
-    #- coveralls
+    - ghostscript >=9.16
     - pypng
   run:
     - python {{PY_VER}}*,>=2.7
@@ -41,13 +38,9 @@ requirements:
     - mock
     - networkx
     - pandas >=0.14.1
-    #- arrow
-    #- behave
-    #- coverage
-    #- coveralls
+    - ghostscript >=9.16
     - pypng
     
-
 about:
   home: http://github.com/sandialabs/toyplot
   license: BSD
