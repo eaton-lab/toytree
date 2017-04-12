@@ -94,7 +94,7 @@ class Toytree(object):
                 for i in self.get_node_values("dist")]
 
 
-    def get_node_values(self, feature=None):
+    def get_node_values(self, feature=None, hide_root=True, hide_tips=True):
         """
         Returns support values from tree object in node plot order. To modify
         support values you must modify the .tree object directly. For example, 
@@ -108,11 +108,19 @@ class Toytree(object):
         nodes = [self.tree.search_nodes(name=str(i))[0] \
                  for i in self.get_node_labels().values()]
 
+        ## default feature is support
         if not feature:
             feature = "support"
-        vals = [i.__getattribute__(feature) if \
-               (hasattr(i, feature) and not i.is_leaf() and not i.is_root()) \
-               else "" for i in nodes]
+
+        ## get features
+        vals = [i.__getattribute__(feature) \
+                if hasattr(i, feature) else "" for i in nodes]
+
+        ## apply hiding rules
+        if hide_root:
+            vals = [i if not j.is_root() else "" for i, j  in zip(vals, nodes)]
+        if hide_tips:
+            vals = [i if not j.is_leaf() else "" for i, j  in zip(vals, nodes)]
 
         ## convert float to ints for prettier printing unless all floats
         if all([Decimal(str(i)) % 1 == 0 for i in vals if i]):
