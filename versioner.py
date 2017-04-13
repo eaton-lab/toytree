@@ -75,7 +75,7 @@ except Exception as e:
 
 print("Push new version of conda installer")
 
-#try:
-#    subprocess.call(["conda", "build", "conda.recipe/ipyrad"])
-#except Exception as e:
-#    print("something broke - {}".format(e))
+try:
+    subprocess.call(["conda", "build", "conda.recipe/toytree"])
+except Exception as e:
+    print("something broke - {}".format(e))
