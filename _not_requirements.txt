@@ -1,3 +1,0 @@
-toyplot
-numpy
-toytree
