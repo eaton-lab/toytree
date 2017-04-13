@@ -1,2 +1,2 @@
-toyplot
 numpy
+toyplot

@@ -1,0 +1,14 @@
+
+site_name: toytree
+theme: readthedocs
+pages: 
+    - Home: index.md
+    - Installation: installation.md
+    - Tutorial: tutorial.md
+    - Tip-labels: tip-labels.md
+    - Node-labels: node-labels.md    
+    #- Rendering: rendering.md
+    #- Contributing: contributing.md
+    #- Release Notes: release.md
+    #- Contact: contact.md
+    #- References: references.md

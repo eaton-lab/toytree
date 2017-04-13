@@ -15,8 +15,12 @@ import six
 import re
 import os
 
-from six.moves import (cPickle, map, range, zip)
+#from six.moves import (cPickle, map, range, zip)
+from six.moves import (map, range, zip)
 from .newick import read_newick, write_newick
+
+DEFAULT_EDGE_LENGTH = 1.
+DEFAULT_SUPPORT = 1.
 
 
 class TreeError(Exception):
@@ -76,9 +80,8 @@ class TreeNode(object):
         """doc-string"""
         self._children = []
         self._up = None
-        self._dist = 1.0
-        self._support = 1.0
-        self._img_style = None
+        self._dist = DEFAULT_EDGE_LENGTH
+        self._support = DEFAULT_SUPPORT
         self.features = set([])
 
         # Add basic features
@@ -854,6 +857,7 @@ class TreeNode(object):
             return True
         else:
             return False
+
 
     #########################################################
     ## Distance related functions
