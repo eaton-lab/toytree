@@ -208,10 +208,15 @@ class Toytree(object):
         return self.tree.get_leaf_names()
 
 
-    ## print ascii tree 
     def __str__(self):
+        """ return ascii tree ... (not sure whether to keep this) """
         return self.tree.__str__()
 
+
+    def __len__(self):
+        """ return len of Tree (ntips) """
+        return len(self.tree)
+        
 
     ## re-rooting the tree
     def root(self, outgroup=None, wildcard=None):
