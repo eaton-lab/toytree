@@ -8,5 +8,4 @@ dependencies:
   - pip
   - numpy
   - toyplot
-  - toytree
 
