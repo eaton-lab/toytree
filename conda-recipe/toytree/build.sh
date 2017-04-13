@@ -1,4 +1,4 @@
 #!/bin/bash
 
-#$PYTHON setup.py install 
-pip install toytree
+$PYTHON setup.py install --single-version-externally-managed --record record.txt  
+#pip install toytree
