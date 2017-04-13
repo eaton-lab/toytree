@@ -445,8 +445,11 @@ class Toytree(object):
 
         if print_args:
             print(self._kwargs)
-        _add_tree_to_axes(self, axes)
+
+        ## order of tree/nodes last (on top) is preferred
         _add_tip_labels_to_axes(self, axes)
+        _add_tree_to_axes(self, axes)
+        
         return canvas, axes
 
 
