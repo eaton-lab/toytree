@@ -1,5 +1,5 @@
 
-site_name: Toytree
+site_name: toytree
 theme: readthedocs
 pages: 
     - Home: index.md
@@ -7,7 +7,7 @@ pages:
     - Tutorial: tutorial.md
     - Tip-labels: tip-labels.md
     - Node-labels: node-labels.md    
-    - Rendering: rendering.md
+    #- Rendering: rendering.md
     #- Contributing: contributing.md
     #- Release Notes: release.md
     #- Contact: contact.md
