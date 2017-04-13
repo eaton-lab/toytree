@@ -24,7 +24,7 @@ requirements:
     - mock
     - networkx
     - pandas >=0.14.1
-    - ghostscript >=9.16
+    #- ghostscript >=9.16
   run:
     - python {{PY_VER}}*,>=2.7
     - setuptools
@@ -39,7 +39,7 @@ requirements:
     - mock
     - networkx
     - pandas >=0.14.1
-    - ghostscript >=9.16
+    #- ghostscript >=9.16
     
 about:
   home: http://github.com/sandialabs/toyplot
