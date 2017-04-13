@@ -113,7 +113,7 @@ class Toytree(object):
             "tip_labels_style": {
                 "font-size": "12px",
                 "text-anchor":"start", 
-                "-toyplot-anchor-shift": "0px", #None,
+                "-toyplot-anchor-shift": None, #"0px", #None,
                 "fill": "#292724", 
                 },
 
@@ -268,7 +268,7 @@ class Toytree(object):
 
     def _assign_tip_labels(self):
         """ parse arg or arglist for tip_labels and tip_colors """
-
+        
         ## tip color overrides tipstyle[fill]
         if self._kwargs.get("tip_labels_color"):
             self._kwargs["tip_labels_style"].pop("fill")
@@ -276,6 +276,8 @@ class Toytree(object):
         ## False = hide tip labels
         if self._kwargs["tip_labels"] == False:
             self._kwargs["tip_labels"] = ["" for i in self.get_tip_labels()]
+            self._kwargs["tip_labels_style"]["-toyplot-anchor-shift"] = "0px"
+
         else:
             ## if user did not change label-offset then shift it here, using 
             ## either anchor-shift or baseline-shift depending on orientation
@@ -290,7 +292,7 @@ class Toytree(object):
                     ## todo
                     self._kwargs["tip_labels_style"]["-toyplot-anchor-shift"] = "15px"
             else:
-                self._kwargs["tip_labels_style"]["-toyplot-anchor-shift"] = "10px"
+                pass#self._kwargs["tip_labels_style"]["-toyplot-anchor-shift"] = "10px"
 
 
             ## User-defined tip labels list
@@ -320,7 +322,7 @@ class Toytree(object):
             ## ensure a large size for node unless user set it explicitly
             self._kwargs["vlshow"] = True
             if not self._kwargs["node_size"]:
-                self._kwargs["node_size"] = 12
+                self._kwargs["node_size"] = 15
 
             ## True = magic interactive shows all features
             if self._kwargs["node_labels"] == True:
