@@ -6,7 +6,7 @@ source:
   git_url: https://github.com/eaton-lab/toytree.git
 
 build:
-  script: python setup.py install
+  script: build.sh
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
 
 requirements:
@@ -19,6 +19,9 @@ requirements:
   run:
     - numpy >=1.7
     - toyplot >=v0.13.0
+    - ipython >=5.3.0
+    - jupyter >=1.0
+    - notebook >=5.0.0
 
 about:
   home: http://github.com/eaton-lab/toytree
