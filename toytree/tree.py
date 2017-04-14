@@ -607,7 +607,6 @@ def _add_tree_to_axes(ttree, axes):
                 color=ttree._kwargs["node_color"],
                 title=title,
                 )
-
             ## add idx features to nodes
             #axes.text(
             #    ttree.verts[:, 0], ttree.verts[:, 1], 
