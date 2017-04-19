@@ -509,7 +509,11 @@ class RandomTree(Toytree):
             node = self.tree.search_nodes(name=tip)[0]
             node.name = "t-{}".format(ntip)
             ntip += 1
-        self._decompose_tree()
+        self._decompose_tree(
+            orient=self._orient, 
+            use_edge_lengths=self._use_edge_lengths, 
+            fixed_order=self._fixed_order
+            )
 
 ################################################################################
 ## TREE FUNCTIONS ##############################################################
