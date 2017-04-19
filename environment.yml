@@ -11,4 +11,6 @@ dependencies:
   - pypng
   - colormath
   - toyplot
+  - jupyter
+  - notebook
 
