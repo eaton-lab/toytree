@@ -253,7 +253,7 @@ class Toytree(object):
         elif wildcard:
             outs = [i for i in self.tree.get_leaves() if wildcard in i.name]
         else:
-            raise IPyradError(\
+            raise Exception(\
             "must enter either a list of outgroup names or a wildcard selector")
         if len(outs) > 1:
             out = self.tree.get_common_ancestor(outs)

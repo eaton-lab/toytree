@@ -11,7 +11,6 @@ import toyplot
 import copy
 import re
 import os
-from ipyrad.assemble.util import IPyradError
 
 
 
@@ -286,7 +285,7 @@ class MultiTree(object):
         elif wildcard:
             outs = [i for i in self.treelist[0].tree.get_leaves() if wildcard in i.name]
         else:
-            raise IPyradError(\
+            raise Exception(
             "must enter either a list of outgroup names or a wildcard selector")
 
         if len(outs) > 1:
