@@ -9,7 +9,6 @@ dependencies:
   - pip
   - numpy
   - pypng
-  - ghostscript
   - colormath
   - toyplot
 
