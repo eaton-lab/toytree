@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-__version__ = "0.0.9"
+__version__ = "0.0.10"
 __author__ = "Deren Eaton"
 
 
