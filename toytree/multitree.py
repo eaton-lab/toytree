@@ -5,7 +5,6 @@
 from tree import Toytree as tree
 from tree import COLORS
 from collections import defaultdict
-from bitarray import bitarray
 import ete3mini as ete
 import numpy as np
 import toyplot
@@ -367,10 +366,14 @@ def _find_clades(trees, names):
     for tree in trees:
         #tree.tree.unroot()
         for node in tree.tree.traverse('postorder'):
-            bits = bitarray('0'*len(tree))
+            #bits = bitarray('0'*len(tree))
+            bits = np.zeros(len(tree), dtype=np.bool_)
             for child in node.iter_leaf_names():
-                bits[ndict[child]] = 1
-            clade_counts[bits.to01()] += 1
+                bits[ndict[child]] = True
+                #bits[ndict[child]] = 1
+            bitstring = "".join([np.binary_repr(i) for i in bits])
+            clade_counts[bitstring] += 1
+            #clade_counts[bits.to01()] += 1
 
     ## convert to freq
     for key, val in clade_counts.items():
