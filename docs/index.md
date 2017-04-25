@@ -2,19 +2,24 @@
 
 
 Welcome to <span style="color:rgba(20%,65%,65%)">**Toytree**</span> a minimalist tree manipulation and plotting library for Python based on <span style="color:rgba(98%,55%,38%)">**Toyplot**</span> ([http://toyplot.readthedocs.io](http://toyplot.rtfd.io)). 
+If you have questions about usage or want to contribute to the Toytree code please join the discussion on [gitter](https://gitter.im/toytree-help/Lobby), and if you have feature requests or bugs to report please raise a ticket on [the github repo.](http://github.com/eaton-lab/toytree)
 
 
 ## The Toytree ethos
 
-**Toytree** was conceived with the intention of providing a Python equivalent to the popular tree plotting package **ape** in R, which is rich in features but simple in design. Following the ethos of [Toyplot](http://toyplot.readthedocs.io/en/stable/index.html), **Toytree** is similarly designed to be a kid-sized library with grownup-sized goals:
-
-+ Elegance: Tree objects are represented with a simple hierarchical structure that is easy to traverse, modify, and annotate. Toytree uses a stripped-down version the Tree (TreeNode) object from the [ete3](http://etetoolkit.org) library.
-
-<p></p>
-+ Simplicity: Toytree provides beautiful "out-of-the-box” figures that look good with minimal stlying, but offers a wide-variety of styling through simple CSS semantics, and can include advanced interactive features through Toyplots interactivity and animation features. 
+**Toytree** is intended to provide a Python equivalent to the popular tree plotting package **ape** in R. Following the design ethos of Toyplot, **Toytree** aims to be
+rich in features but simple in design, with the following aesthetic goals:
 
 <p></p>
-+ Reproducibility: Toytree plots can be embedded directly in jupyter notebooks, a tool used for reproducible science. Tree figures as well as the code to produce them can be easily embedded in a document alongside other analyses. 
++ <span style="text-decoration:underline;">Simplicity</span>: Toytree provides beautiful "out-of-the-box” figures that look good with minimal stlying, but offers a wide-variety of styling options through simple CSS semantics. 
+
+<p></p>
++ <span style="text-decoration:underline;">Transparency</span>: Tree objects are represented with a simple hierarchical structure that is easy to traverse, modify, and annotate. You can access and download the raw data (newick file) from a Toytree HTML figure by simply clicking on the file and selecting download.
+
+<p></p>
++ <span style="text-decoration:underline;">Reproducibility</span>: Toytree plots can be embedded directly in jupyter notebooks, a tool used for reproducible science. Tree figures as well as the code to produce them can be easily embedded in a document alongside analyses, and tree figures can be combined with
+barplots and scatterplots using to display data using Toyplot. 
+
 
 ## Jupyter notebooks
 
