@@ -188,3 +188,8 @@ display its axis coordinates to show how data points are aligned.
 .. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig3.svg
    :align: center
 
+
+
+.. image:: https://badges.gitter.im/toytree-help/Lobby.svg
+   :alt: Join the chat at https://gitter.im/toytree-help/Lobby
+   :target: https://gitter.im/toytree-help/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
