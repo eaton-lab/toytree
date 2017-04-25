@@ -33,11 +33,14 @@ Some examples are shown below. See the `full documentation <http://toytree.readt
     :target: http://mybinder.org:/repo/eaton-lab/toytree
 
 
-Some example usage is demonstrated below.
+.. code:: python
+    
+    ## import the toyplot and toytree modules
+    import toytree
+    import toyplot
+
 
 .. code:: python
-
-    import toytree
 
     ## store a newick string representation of a tree
     newick = \
