@@ -114,7 +114,7 @@ class Toytree(object):
 
             ## node defaults
             "node_size": None,             
-            "node_color": COLORS[0],
+            "node_color": None, #COLORS[0],
             "node_style": {
                 "fill": COLORS[0], 
                 "stroke": COLORS[0],
@@ -342,14 +342,17 @@ class Toytree(object):
             self._kwargs["vlshow"] = False
             ## just put in placeholder vals
             self._kwargs["node_labels"] = self.get_node_values("idx")
-            self._kwargs["node_size"] = 0
+            if not self._kwargs["node_size"]:
+                self._kwargs["node_size"] = 0
             
+        ## True = Show nodes, no labels b/c we are adding interactives
         elif self._kwargs["node_labels"] == True:
             self._kwargs["vlshow"] = False
             if not self._kwargs["node_size"]:
                 self._kwargs["node_size"] = 15
 
-        else: ## user list
+        ## user list
+        else: 
             ## show labels
             self._kwargs["vlshow"] = True
 
@@ -609,11 +612,12 @@ def _decompose_tree(ttree, orient, use_edge_lengths, fixed_order):
         ttree.verts = ttree.verts[:, [1, 0]]
         ttree._coords[:, 1] = ttree._coords[:, 1] * -1
         ttree._coords = ttree._coords[:, [1, 0]]
+
     if ttree._orient in ['down', 0]:
         ttree.verts[:, 1] = ttree.verts[:, 1] * -1
         ttree._coords[:, 1] = ttree._coords[:, 1] * -1
-        ttree.verts[:, 1] += ttree.verts[:, 0].max()
-        ttree._coords[:, 1] += ttree._coords[:, 0].max()
+        ttree.verts[:, 1] += ttree.verts[:, 0].min()
+        ttree._coords[:, 1] += ttree._coords[:, 0].min()
 
     if ttree._orient in ['right', 3]:
         ttree.verts = ttree.verts[:, [1, 0]]
