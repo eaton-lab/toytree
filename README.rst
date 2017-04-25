@@ -42,7 +42,7 @@ Some examples are shown below. See the `full documentation <http://toytree.readt
 
 .. code:: python
 
-    ## store a newick string representation of a tree
+    ## a string representation of a tree in newick format
     newick = \
     """(41954_cyathophylloides:0.00008888031167776559,(((32082_przewalskii:
     0.00259326350604092027,33588_przewalskii:0.00247133969857381459)100:
