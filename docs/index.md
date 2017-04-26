@@ -11,14 +11,14 @@ Welcome to **Toytree** a minimalist tree manipulation and plotting library for P
 rich in features but simple in design, with the following aesthetic goals:
 
 <p></p>
-+ <span style="text-decoration:underline;">Simplicity</span>: Toytree provides beautiful "out-of-the-box” figures that look good with minimal stlying, but offers a wide-variety of styling options through simple CSS semantics. 
++ <span style="text-decoration:underline;">Simplicity</span>: Toytree provides beautiful "out-of-the-box” figures that look good with minimal styling, but offers a wide-variety of styling options through simple CSS semantics. 
 
 <p></p>
 + <span style="text-decoration:underline;">Transparency</span>: Tree objects are represented with a simple hierarchical structure that is easy to traverse, modify, and annotate. You can access and download the raw data (newick file) from a Toytree HTML figure by simply clicking on the file and selecting download.
 
 <p></p>
 + <span style="text-decoration:underline;">Reproducibility</span>: Toytree plots can be embedded directly in jupyter notebooks, a tool used for reproducible science. Tree figures as well as the code to produce them can be easily embedded in a document alongside analyses, and tree figures can be combined with
-barplots and scatterplots using to display data using Toyplot. 
+barplots and scatterplots using Toyplot. 
 
 
 ## Jupyter notebooks
