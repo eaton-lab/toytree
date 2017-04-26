@@ -31,7 +31,7 @@ Some examples are shown below. See the `full documentation <http://toytree.readt
 
 .. , or, *click on the "binder" badge below* to launch a jupyter notebook in the cloud where you can try it without having to install anything (the web notebook might take a minute or two to spin up -- it's a bit buggy and may not work at the moment).
 
-.. .. image:: http://mybinder.org/badge.svg 
+.. image: http://mybinder.org/badge.svg 
 ..     :target: http://mybinder.org:/repo/eaton-lab/toytree
 
 
