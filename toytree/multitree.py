@@ -107,7 +107,12 @@ class MultiTree(object):
                 with open(self.newick) as infile:
                     testdat = infile.readline()
             else:
-                testdat = self.newick.strip().split("\n")[0]
+                if ("http://" in newick) or ("https://" in newick):
+                    import urllib2
+                    response = urllib2.urlopen(newick)
+                    testdat = response.readline()
+                else:
+                    testdat = self.newick.strip().split("\n")[0]
             ## check if a bpp tree
             if (" #" in testdat) and (": " in testdat):
                 tformat = "bpp"
@@ -120,7 +125,14 @@ class MultiTree(object):
                     intrees = infile.readlines()\
                         [treeslice[0]:treeslice[1]:treeslice[2]]
             else:
-                intrees = self.newick.strip().split("\n")\
+                if ("http://" in newick) or ("https://" in newick):
+                    #response = urllib2.urlopen(newick)
+                    response = urllib2.urlopen(newick)
+                    intrees = response.readlines()\
+                        [treeslice[0]:treeslice[1]:treeslice[2]]
+                    intrees = [i.strip() for i in intrees]
+                else:
+                    intrees = self.newick.strip().split("\n")\
                         [treeslice[0]:treeslice[1]:treeslice[2]]
             ## badnewick to goodnewick
             if tformat == "bpp":
@@ -149,17 +161,17 @@ class MultiTree(object):
         return tree(constre.write())
 
 
-    def rootlist(self, outgroup=None, wildcard=None):
-        ## root trees
-        if not wildcard:
-            _ = [i.root(outgroup=outgroup) for i in self.treelist]
-        else:
-            _ = [i.root(wildcard=wildcard) for i in self.treelist]
-        _ = [i._decompose_tree(
-                orient=i._orient, 
-                use_edge_lengths=i._use_edge_lengths,
-                fixed_order=i._fixed_order)
-                for i in self.treelist]
+    # def rootlist(self, outgroup=None, wildcard=None):
+    #     ## root trees
+    #     if not wildcard:
+    #         _ = [i.root(outgroup=outgroup) for i in self.treelist]
+    #     else:
+    #         _ = [i.root(wildcard=wildcard) for i in self.treelist]
+    #     _ = [i._decompose_tree(
+    #             orient=i._orient, 
+    #             use_edge_lengths=i._use_edge_lengths,
+    #             fixed_order=i._fixed_order)
+    #             for i in self.treelist]
 
 
 
@@ -275,53 +287,53 @@ class MultiTree(object):
 
 
 
-    def root(self, outgroup=None, wildcard=None):
-        ## starting nnodes
-        nnodes = sum(1 for i in self.treelist[0].tree.traverse())
+    # def root(self, outgroup=None, wildcard=None):
+    #     ## starting nnodes
+    #     nnodes = sum(1 for i in self.treelist[0].tree.traverse())
 
-        ## set names or wildcard as the outgroup
-        if outgroup:
-            outs = [i for i in self.treelist[0].tree.get_leaf_names() if i in outgroup]
-        elif wildcard:
-            outs = [i for i in self.treelist[0].tree.get_leaves() if wildcard in i.name]
-        else:
-            raise Exception(
-            "must enter either a list of outgroup names or a wildcard selector")
+    #     ## set names or wildcard as the outgroup
+    #     if outgroup:
+    #         outs = [i for i in self.treelist[0].tree.get_leaf_names() if i in outgroup]
+    #     elif wildcard:
+    #         outs = [i for i in self.treelist[0].tree.get_leaves() if wildcard in i.name]
+    #     else:
+    #         raise Exception(
+    #         "must enter either a list of outgroup names or a wildcard selector")
 
-        if len(outs) > 1:
-            out = self.treelist[0].tree.get_common_ancestor(outs)
-        else:
-            out = outs[0]
+    #     if len(outs) > 1:
+    #         out = self.treelist[0].tree.get_common_ancestor(outs)
+    #     else:
+    #         out = outs[0]
 
-        ## set new outgroup
-        [i.tree.set_outgroup(out) for i in self.treelist]
-        [i.tree.resolve_polytomy() for i in self.treelist]
+    #     ## set new outgroup
+    #     [i.tree.set_outgroup(out) for i in self.treelist]
+    #     [i.tree.resolve_polytomy() for i in self.treelist]
 
-        ## IF we split a branch to root then double those edges
-        for tree in self.treelist:
-            if sum(1 for i in self.treelist[0].tree.traverse()) != nnodes:
-                tree.children[0].dist *= 2. 
-                tree.children[1].dist *= 2. 
+    #     ## IF we split a branch to root then double those edges
+    #     for tree in self.treelist:
+    #         if sum(1 for i in self.treelist[0].tree.traverse()) != nnodes:
+    #             tree.children[0].dist *= 2. 
+    #             tree.children[1].dist *= 2. 
 
-        ## store tree back into newick and reinit Toytree with new newick
-        ## if NHX format then preserve the NHX features. 
-        #testnode = self.treelist.tree.children[0]
-        #features = {"name", "dist", "support"}
-        #extrafeat = {i for i in testnode.features if i not in features}
-        #features.update(extrafeat)
-        #if any(extrafeat):
-        #    self.newick = self.tree.write(format=9, features=features)
-        #else:
-        #    self.newick = self.tree.write(format=0)
-        consens = self.get_consensus_tree()
-        newick = "\n".join([i.tree.write() for i in self.treelist])
+    #     ## store tree back into newick and reinit Toytree with new newick
+    #     ## if NHX format then preserve the NHX features. 
+    #     #testnode = self.treelist.tree.children[0]
+    #     #features = {"name", "dist", "support"}
+    #     #extrafeat = {i for i in testnode.features if i not in features}
+    #     #features.update(extrafeat)
+    #     #if any(extrafeat):
+    #     #    self.newick = self.tree.write(format=9, features=features)
+    #     #else:
+    #     #    self.newick = self.tree.write(format=0)
+    #     consens = self.get_consensus_tree()
+    #     newick = "\n".join([i.tree.write() for i in self.treelist])
 
-        ## reinit the multitrees object
-        self.__init__(newick=self.newick, 
-                      #orient=self._orient,
-                      #use_edge_lengths=self._use_edge_lengths,
-                      fixed_order=consens.get_tip_labels(),
-                      )    
+    #     ## reinit the multitrees object
+    #     self.__init__(newick=self.newick, 
+    #                   #orient=self._orient,
+    #                   #use_edge_lengths=self._use_edge_lengths,
+    #                   fixed_order=consens.get_tip_labels(),
+    #                   )    
 
 
 

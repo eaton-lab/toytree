@@ -6,6 +6,7 @@ from __future__ import print_function, division
 import toyplot
 import numpy as np
 import copy
+import re
 import ete3mini
 from decimal import Decimal
 
@@ -117,7 +118,7 @@ class Toytree(object):
             "node_color": None, #COLORS[0],
             "node_style": {
                 "fill": COLORS[0], 
-                "stroke": COLORS[0],
+                "stroke": 'none', #COLORS[0],
                 },
             "vmarker": "o",
 
@@ -147,8 +148,9 @@ class Toytree(object):
             node.dist = 1.
         """
         ## access nodes in the order they will be plotted
-        return [self.tree.search_nodes(name=str(i))[0].dist \
-                for i in self.get_node_values("dist")]
+        return self.get_node_values('dist', True, True)
+        #return [self.tree.search_nodes(name=str(i))[0].dist \
+        #        for i in self.get_node_values("dist")]
 
 
     def get_node_values(self, feature=None, show_root=False, show_tips=False):
@@ -251,7 +253,7 @@ class Toytree(object):
         if outgroup:
             outs = [i for i in self.tree.get_leaf_names() if i in outgroup]
         elif wildcard:
-            outs = [i for i in self.tree.get_leaves() if wildcard in i.name]
+            outs = [i for i in self.tree.get_leaves() if re.match(wildcard, i.name)]
         else:
             raise Exception(\
             "must enter either a list of outgroup names or a wildcard selector")
@@ -281,10 +283,17 @@ class Toytree(object):
             self.newick = self.tree.write(format=0)
 
         ## reinit
-        self.__init__(newick=self.newick, 
-                      orient=self._orient,
-                      use_edge_lengths=self._use_edge_lengths
-                      )
+        if isinstance(self, Toytree):
+            self.__init__(newick=self.newick, 
+                          orient=self._orient,
+                          use_edge_lengths=self._use_edge_lengths
+                          )
+        else:
+            self._decompose_tree(
+                orient=self._orient, 
+                use_edge_lengths=self._use_edge_lengths, 
+                fixed_order=self._fixed_order
+                )
 
 
     ## reset verts & edges based on args that might change
@@ -495,16 +504,43 @@ class Toytree(object):
 ## RANDOM TREE
 ################################################################################
 
+def randomtree(ntips, node_values={}):
+
+    ## generate tree
+    tmptree = ete3mini.TreeNode()
+    tmptree.populate(ntips)
+    self = Toytree(newick=tmptree.write())
+
+    ## set values
+    for fkey, vals in node_values.iteritems():
+        for idx, node in enumerate(self.tree.traverse()):
+            node.add_feature(fkey, vals[idx])
+
+    ## set tip names
+    self.tree.ladderize()
+    ntip=0
+    for tip in self.get_tip_labels():
+        node = self.tree.search_nodes(name=tip)[0]
+        node.name = "t-{}".format(ntip)
+        ntip += 1
+    return self
+
+
 
 class RandomTree(Toytree):
     def __init__(self, ntips, node_values={}):
         Toytree.__init__(self)
+
+        ## generate tree
         self.tree = ete3mini.TreeNode()
         self.tree.populate(ntips)
+        self.newick = self.tree.write()
+
         ## set values
         for fkey, vals in node_values.iteritems():
             for idx, node in enumerate(self.tree.traverse()):
                 node.add_feature(fkey, vals[idx])
+
         ## set tip names
         self.tree.ladderize()
         ntip=0
@@ -517,6 +553,12 @@ class RandomTree(Toytree):
             use_edge_lengths=self._use_edge_lengths, 
             fixed_order=self._fixed_order
             )
+
+        self.__init__(newick=self.newick, 
+                      orient=self._orient,
+                      use_edge_lengths=self._use_edge_lengths
+                          )
+
 
 ################################################################################
 ## TREE FUNCTIONS ##############################################################
