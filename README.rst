@@ -1,3 +1,6 @@
+.. image:: https://badges.gitter.im/toytree-help/Lobby.svg
+   :alt: Join the chat at https://gitter.im/toytree-help/Lobby
+   :target: https://gitter.im/toytree-help/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
 
 
 Tree plotting with ``Toytree``
@@ -27,7 +30,7 @@ You can install ``toytree`` and its dependencies (``toyplot`` and ``numpy``) wit
 
 Tutorial
 --------
-Some examples are shown below. See the `full documentation <http://toytree.readthedocs.io>`_ for more details. Launch a jupyter-notebook on your machine to try it out for yourself.
+Some examples are shown below. See the `full documentation <http://toytree.readthedocs.io>`_ for more details. Launch a jupyter-notebook on your machine to try it out for yourself. 
 
 .. , or, *click on the "binder" badge below* to launch a jupyter notebook in the cloud where you can try it without having to install anything (the web notebook might take a minute or two to spin up -- it's a bit buggy and may not work at the moment).
 
@@ -189,9 +192,3 @@ display its axis coordinates to show how data points are aligned.
 
 .. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig3.svg
    :align: center
-
-
-
-.. image:: https://badges.gitter.im/toytree-help/Lobby.svg
-   :alt: Join the chat at https://gitter.im/toytree-help/Lobby
-   :target: https://gitter.im/toytree-help/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
