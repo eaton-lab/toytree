@@ -37,6 +37,10 @@ install:
   - source activate test-environment
   
   ## build my recipe
+  - conda install conda-build
+  - conda build conda.recipe/colormath  
+  - conda build conda.recipe/pypng
+  - conda build conda.recipe/toyplot     
   - conda build conda.recipe/toytree
   - conda install conda.recipe/toytree --use-local
 
