@@ -10,7 +10,7 @@ dependencies:
   - numpy
   - pypng
   - colormath
-  - toyplot
+  - toyplot==v0.13.0
   - jupyter
   - notebook
 
