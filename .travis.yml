@@ -19,5 +19,11 @@ install: "pip install -r requirements.txt"
 # command to run tests
 script: 
   - python -c "import toytree; print toytree.__version__"
+  - jupyter-nbconvert --execute docs/tutorial.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/tip-labels.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/node-labels.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/cloud-trees.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/color-mapping.ipynb --output pytest --to html
+
   
   
