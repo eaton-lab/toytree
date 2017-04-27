@@ -1,9 +1,24 @@
 
+
+Tree plotting with ``Toytree``
+------------------------------
+
+``Toytree`` is a Python tree plotting library designed for use inside 
+`jupyter notebooks <http://jupyter.org>`_. It was motivated from a 
+desire for a simple tree plotting library with a similar aesthetic to 
+the ``'ape'`` package for ``R``. To parse, represent, and manipulate 
+tree objects ``toytree`` uses a modified (minimal) version of the 
+`ete3 <http://etetoolkit.org>`_ library (which we call `ete3mini`). 
+Toytree is written to work within the framework of the minimalist plotting 
+library `toyplot <http://toyplot.readthedocs.io/en/stable/index.html>`_, 
+which generates rich HTML figures that can be embedded in Jupyter-notebooks, 
+and include interactive features, as well as be rendered for publications
+as SVG or PDF images. 
+
+
 Installation
 --------------
-
 You can install ``toytree`` and its dependencies (``toyplot`` and ``numpy``) with a single command using conda. 
-
 
 .. code:: bash
 
@@ -12,26 +27,24 @@ You can install ``toytree`` and its dependencies (``toyplot`` and ``numpy``) wit
 
 Tutorial
 --------
+Some examples are shown below. See the `full documentation <http://toytree.readthedocs.io>`_ for more details. Launch a jupyter-notebook on your machine to try it out for yourself.
 
-See the `tutorial notebook <http://nbviewer.jupyter.org/github/eaton-lab/toytree/blob/master/docs/tutorial.ipynb>`_ for a detailed walk-through of available plotting options in ``Toytree``. Lauch a jupyter-notebook on your machine to try it out for yourself, or, *click on the "binder" badge below* to launch a jupyter notebook in the cloud where you can try it without having to install anything (the web notebook might take a minute or two to spin up).
+.. , or, *click on the "binder" badge below* to launch a jupyter notebook in the cloud where you can try it without having to install anything (the web notebook might take a minute or two to spin up -- it's a bit buggy and may not work at the moment).
 
-.. image:: http://mybinder.org/badge.svg 
-    :target: http://mybinder.org:/repo/eaton-lab/toytree
+.. image: http://mybinder.org/badge.svg 
+..     :target: http://mybinder.org:/repo/eaton-lab/toytree
 
 
-Tree plotting with ``Toytree``
-------------------------------
+.. code:: python
+    
+    ## import the toyplot and toytree modules
+    import toytree
+    import toyplot
 
-``Toytree`` is a Python tree plotting library designed for use inside 
-`jupyter notebooks <http://jupyter.org>`_. It was motivated from of a 
-desire for a simple tree plotting library with a design similar to the ``'ape'`` package for ``R``. To parse, represent, and manipulate tree objects ``toytree`` uses a stripped-down version of the 
-`ete3 <http://etetoolkit.org>`_ library (which we call `ete3mini`), and to generate plots ``toytree`` uses the 'graph' functionality from the minimalist plotting library `toyplot <http://toyplot.readthedocs.io/en/stable/index.html>`_. Some example usage is demonstrated below.
 
 .. code:: python
 
-    import toytree
-
-    ## store a newick string representation of a tree
+    ## a string representation of a tree in newick format
     newick = \
     """(41954_cyathophylloides:0.00008888031167776559,(((32082_przewalskii:
     0.00259326350604092027,33588_przewalskii:0.00247133969857381459)100:

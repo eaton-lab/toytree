@@ -1,4 +1,5 @@
-name: toytree
+name:
+  - toytree
 
 channels: 
   - eaton-lab
@@ -8,7 +9,8 @@ dependencies:
   - pip
   - numpy
   - pypng
-  - ghostscript
   - colormath
   - toyplot
+  - jupyter
+  - notebook
 

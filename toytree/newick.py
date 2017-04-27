@@ -177,7 +177,12 @@ def read_newick(newick, root_node=None, format=0):
             else:
                 nw = open(newick, 'rU').read()
         else:
-            nw = newick
+            if ("http://" in newick) or ("https://" in newick):
+                import urllib2
+                response = urllib2.urlopen(newick)
+                nw = response.read()
+            else:
+                nw = newick
 
         matcher = compile_matchers(formatcode=format)
         nw = nw.strip()        
