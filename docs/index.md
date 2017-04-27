@@ -3,7 +3,7 @@
 
 <!-- Welcome to <span style="color:rgba(20%,65%,65%)">**Toytree**</span> a minimalist tree manipulation and plotting library for Python based on <span style="color:rgba(98%,55%,38%)">**Toyplot**</span> ([http://toyplot.readthedocs.io](http://toyplot.rtfd.io)).  -->
 Welcome to **Toytree** a minimalist tree manipulation and plotting library for Python based on **Toyplot** ([http://toyplot.readthedocs.io](http://toyplot.rtfd.io)). 
-After reading the documentation if you have further questions about usage or want to contribute to the Toytree code please join the discussion on [gitter.im/toytree-help](https://gitter.im/toytree-help/Lobby), and if you have feature requests or bugs to report please raise a ticket on [the github repo.](http://github.com/eaton-lab/toytree)
+After reading the documentation if you have further questions about usage or want to contribute to the Toytree code please join the discussion on [gitter.im/toytree-help](https://gitter.im/toytree-help/Lobby), and if you have feature requests or bugs to report raise a ticket on [the github repo.](http://github.com/eaton-lab/toytree)
 
 
 ## The Toytree ethos
