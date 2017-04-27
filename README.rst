@@ -1,18 +1,27 @@
+Toytree
+==========
+
 .. image:: https://badges.gitter.im/toytree-help/Lobby.svg
    :alt: Join the chat at https://gitter.im/toytree-help/Lobby
-   :target: https://gitter.im/toytree-help/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
+   :target: https://gitter.im/toytree-help/Lobby?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge  
 
+.. image:: https://anaconda.org/eaton-lab/toytree/badges/installer/conda.svg
+   :alt: Install with conda
+   :target: https://conda.anaconda.org/eaton-lab
+   
+.. image:: https://anaconda.org/eaton-lab/toytree/badges/version.svg   
+   :target: https://anaconda.org/eaton-lab/toytree
 
-Tree plotting with ``Toytree``
+Tree plotting with **Toytree**
 ------------------------------
 
-``Toytree`` is a Python tree plotting library designed for use inside 
+**Toytree** is a Python tree plotting library designed for use inside 
 `jupyter notebooks <http://jupyter.org>`_. It was motivated from a 
 desire for a simple tree plotting library with a similar aesthetic to 
-the ``'ape'`` package for ``R``. To parse, represent, and manipulate 
-tree objects ``toytree`` uses a modified (minimal) version of the 
+the *ape* package for *R*. To parse, represent, and manipulate 
+tree objects **Toytree** uses a modified (minimal) version of the 
 `ete3 <http://etetoolkit.org>`_ library (which we call `ete3mini`). 
-Toytree is written to work within the framework of the minimalist plotting 
+**Toytree** is written within the framework of the minimalist plotting 
 library `toyplot <http://toyplot.readthedocs.io/en/stable/index.html>`_, 
 which generates rich HTML figures that can be embedded in Jupyter-notebooks, 
 and include interactive features, as well as be rendered for publications
