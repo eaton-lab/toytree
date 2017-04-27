@@ -1136,6 +1136,8 @@ class TreeNode(object):
         outgroup = _translate_nodes(self, outgroup)
 
         if self == outgroup:
+            ##return
+            ## why raise an error for this?
             raise TreeError("Cannot set myself as outgroup")
 
         parent_outgroup = outgroup.up

@@ -242,7 +242,7 @@ class Toytree(object):
         
 
     ## re-rooting the tree
-    def root(self, outgroup=None, wildcard=None):
+    def root(self, outgroup=None, wildcard=None, regex=None):
         ## starting nnodes
         nnodes = sum(1 for i in self.tree.traverse())
 
@@ -251,9 +251,18 @@ class Toytree(object):
 
         ## set names or wildcard as the outgroup
         if outgroup:
+            notfound = [i for i in outgroup if i not in self.tree.get_leaf_names()]
+            if any(notfound):
+                raise Exception("Sample {} is not in the tree".format(notfound))
             outs = [i for i in self.tree.get_leaf_names() if i in outgroup]
+        elif regex:
+            if not any([i for i in self.tree.get_leaves() if re.match(regex, i.name)]):
+                raise Exception("No Samples matched the regular expression")
+            outs = [i for i in self.tree.get_leaves() if re.match(regex, i.name)]
         elif wildcard:
-            outs = [i for i in self.tree.get_leaves() if re.match(wildcard, i.name)]
+            if not any([i for i in self.tree.get_leaves() if wildcard in i.name]):
+                raise Exception("No Samples matched the wildcard")
+            outs = [i for i in self.tree.get_leaves() if wildcard in i.name]
         else:
             raise Exception(\
             "must enter either a list of outgroup names or a wildcard selector")
