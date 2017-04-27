@@ -1,4 +1,4 @@
 numpy
-toyplot
+toyplot==v0.14.0
 jupyter
 nbconvert
