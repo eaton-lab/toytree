@@ -8,17 +8,13 @@ os:
 # command to install dependencies
 install: 
   - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
-      ## update
       brew update;
-      ## download py2 and py3 
       curl -L https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -o miniconda2.sh;
       curl -L https://repo.continuum.io/miniconda/Miniconda3-latest-OSX-x86_64.sh -o miniconda3.sh;
     fi;
 
   - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
-      ## update
       sudo apt-get update;
-      ## download py2 and py3
       wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda2.sh;
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda3.sh;
     fi;
