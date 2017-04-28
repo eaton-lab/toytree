@@ -10,29 +10,12 @@ python:
 #  - "3.2"
 #  - "3.3"
 #  - "3.4"
-#  - "3.5"
+  - "3.5"
 #  - "3.5-dev" # 3.5 development branch
 #  - "3.6"
 #  - "3.6-dev" # 3.6 development branch
 #  - "3.7-dev" # 3.7 development branch
 #  - "nightly" # currently points to 3.7-dev
-
-
-## make python available on osx
-matrix:
-  include:
-    - language: generic
-      os: osx
-      before_install:
-        - brew update
-        - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-            brew install python2;
-            virtualenv env -p python2;
-          else
-            brew install python;
-            virtualenv env -p python3;
-          fi;
-        - source env/bin/activate
 
 
 # command to install dependencies
@@ -41,9 +24,9 @@ install:
   - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
       brew update;
       if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-        wget https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -O miniconda.sh;
+        curl -L https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -o miniconda.sh;
       else
-        wget https://repo.continuum.io/miniconda/Miniconda3-latest-OSX-x86_64.sh -O miniconda.sh;
+        curl -L https://repo.continuum.io/miniconda/Miniconda3-latest-OSX-x86_64.sh -o miniconda.sh;
       fi;
     fi;
 
