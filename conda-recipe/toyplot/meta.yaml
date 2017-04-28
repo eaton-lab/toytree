@@ -12,7 +12,8 @@ build:
 
 requirements:
   build:
-    - python {{PY_VER}}*,>=2.7
+    - python 
+    #{{PY_VER}}*,>=2.7
     - setuptools
     - colormath >=2.1.0
     - multipledispatch
@@ -26,7 +27,8 @@ requirements:
     - networkx
     - pandas >=0.14.1
   run:
-    - python {{PY_VER}}*,>=2.7
+    - python 
+    #{{PY_VER}}*,>=2.7
     - setuptools
     - colormath >=2.1.0
     - multipledispatch
