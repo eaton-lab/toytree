@@ -29,6 +29,8 @@ install:
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
+  - conda install conda-build
+  
   # Useful for debugging any issues with conda
   - conda info -a
 
@@ -37,7 +39,6 @@ install:
   - source activate test-environment
   
   ## build my recipe
-  - conda install conda-build
   #- conda build conda.recipe/colormath  
   #- conda build conda.recipe/pypng
   #- conda build conda.recipe/toyplot     
