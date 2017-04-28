@@ -1,4 +1,4 @@
-#!/usr/bin/env python2.7
+#!/usr/bin/env python
 
 from setuptools import setup, find_packages
 import glob
@@ -39,8 +39,9 @@ setup(
     entry_points={},
     license='GPL',
     classifiers=[
-        'Programming Language :: Python :: 2',
-        'Programming Language :: Python :: 3',        
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.5',
+        'Programming Language :: Python :: 3.6',         
     ],
 )
 
