@@ -12,6 +12,10 @@ Toytree
 .. image:: https://anaconda.org/eaton-lab/toytree/badges/version.svg   
    :target: https://anaconda.org/eaton-lab/toytree
 
+.. image:: https://travis-ci.org/eaton-lab/toytree.svg?branch=master
+    :target: https://travis-ci.org/eaton-lab/toytree
+       
+
 Tree plotting with **Toytree**
 ------------------------------
 
