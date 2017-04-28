@@ -1,5 +1,9 @@
 language: python
 
+os:
+  - linux
+  - osx
+
 python:
 #  - "2.6"
   - "2.7"
@@ -15,35 +19,64 @@ python:
 
 # command to install dependencies
 install: 
-  - sudo apt-get update
-  # We do this conditionally because it saves us some downloading if the
-  # version is the same.
-  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+
+  - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
+        brew update
+        if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+            wget https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -O miniconda.sh;
+        else
+            wget https://repo.continuum.io/miniconda/Miniconda3-latest-OSX-x86_64.sh -O miniconda.sh;
+        fi
     else
-      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+        sudo apt-get update
+        if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+            wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+        else
+            wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+        fi
     fi
+
   - bash miniconda.sh -b -p $HOME/miniconda
   - export PATH="$HOME/miniconda/bin:$PATH"
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
-  #- conda install conda-build
 
   # Useful for debugging any issues with conda
   - conda info -a
-
-  # Replace dep1 dep2 ... with your dependencies
-  #- conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy
-  #- source activate test-environment
-  
-  ## build my recipe
-  #- conda build conda.recipe/colormath  
-  #- conda build conda.recipe/pypng
-  #- conda build conda.recipe/toyplot     
-  #- conda build conda.recipe/toytree
-  #- conda install toytree --use-local
   - conda install toytree -c eaton-lab
+
+  #   # Install some custom requirements on OS X
+  #   # e.g. brew install pyenv-virtualenv
+  # - sudo apt-get update
+  # # We do this conditionally because it saves us some downloading if the
+  # # version is the same.
+  # - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+  #     wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
+  #   else
+  #     wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
+  #   fi
+  # - bash miniconda.sh -b -p $HOME/miniconda
+  # - export PATH="$HOME/miniconda/bin:$PATH"
+  # - hash -r
+  # - conda config --set always_yes yes --set changeps1 no
+  # - conda update -q conda
+  # #- conda install conda-build
+
+  # # Useful for debugging any issues with conda
+  # - conda info -a
+
+  # # Replace dep1 dep2 ... with your dependencies
+  # #- conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION numpy
+  # #- source activate test-environment
+  
+  # ## build my recipe
+  # #- conda build conda.recipe/colormath  
+  # #- conda build conda.recipe/pypng
+  # #- conda build conda.recipe/toyplot     
+  # #- conda build conda.recipe/toytree
+  # #- conda install toytree --use-local
+  # - conda install toytree -c eaton-lab
 
 
 # command to run tests
