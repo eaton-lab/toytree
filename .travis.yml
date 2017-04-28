@@ -1,4 +1,4 @@
-language: python
+language: generic
 
 os:
   - linux
@@ -6,11 +6,11 @@ os:
 
 python:
 #  - "2.6"
-  - "2.7"
+#  - "2.7"
 #  - "3.2"
 #  - "3.3"
 #  - "3.4"
-  - "3.5"
+#  - "3.5"
 #  - "3.5-dev" # 3.5 development branch
 #  - "3.6"
 #  - "3.6-dev" # 3.6 development branch
@@ -22,36 +22,62 @@ python:
 install: 
 
   - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
+      
+      ## update
       brew update;
-      if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-        curl -L https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -o miniconda.sh;
-      else
-        curl -L https://repo.continuum.io/miniconda/Miniconda3-latest-OSX-x86_64.sh -o miniconda.sh;
-      fi;
+
+      ## download py2 and py3 
+      curl -L https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -o miniconda2.sh;
+      curl -L https://repo.continuum.io/miniconda/Miniconda3-latest-OSX-x86_64.sh -o miniconda3.sh;
     fi;
 
   - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
+
+      ## update
       sudo apt-get update;
-      if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
-        wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda.sh;
-      else
-        wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda.sh;
-      fi;
+      
+      ## download py2 and py3
+      wget https://repo.continuum.io/miniconda/Miniconda2-latest-Linux-x86_64.sh -O miniconda2.sh;
+      wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda3.sh;
     fi;
 
-  - bash miniconda.sh -b -p $HOME/miniconda
-  - export PATH="$HOME/miniconda/bin:$PATH"
+  ## install both
+  - bash miniconda2.sh -b -p $HOME/miniconda2
+  - bash miniconda3.sh -b -p $HOME/miniconda3
+
+  ## source py2 path
+  - export PATH="$HOME/miniconda2/bin:$PATH"
+  - which python
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
+  - conda info -a
+  - conda install toytree -c eaton-lab
 
-  # Useful for debugging any issues with conda
+  - export PATH="$HOME/miniconda3/bin:$PATH"
+  - which python
+  - hash -r
+  - conda config --set always_yes yes --set changeps1 no
+  - conda update -q conda
   - conda info -a
   - conda install toytree -c eaton-lab
 
 
 # command to run tests
 script: 
+
+  ## do py2 tests
+  - export PATH="$HOME/miniconda2/bin:$PATH"  
+  - python -c "import toytree; print toytree.__version__"
+  - python -c "import toyplot; print toyplot.__version__"
+  - jupyter-nbconvert --execute docs/tutorial.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/tip-labels.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/node-labels.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/cloud-trees.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/color-mapping.ipynb --output pytest --to html
+
+  ## do py3 tests
+  - export PATH="$HOME/miniconda3/bin:$PATH"  
   - python -c "import toytree; print toytree.__version__"
   - python -c "import toyplot; print toyplot.__version__"
   - jupyter-nbconvert --execute docs/tutorial.ipynb --output pytest --to html
