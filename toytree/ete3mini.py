@@ -20,7 +20,7 @@ from six.moves import (map, range, zip)
 from .newick import read_newick, write_newick
 
 DEFAULT_EDGE_LENGTH = 1.
-DEFAULT_SUPPORT = 1.
+DEFAULT_SUPPORT = 100.
 
 
 class TreeError(Exception):
@@ -1136,6 +1136,8 @@ class TreeNode(object):
         outgroup = _translate_nodes(self, outgroup)
 
         if self == outgroup:
+            ##return
+            ## why raise an error for this?
             raise TreeError("Cannot set myself as outgroup")
 
         parent_outgroup = outgroup.up

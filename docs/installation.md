@@ -11,16 +11,16 @@ conda install toytree -c eaton-lab
 <p></p>
 ### Specify versions
 Toytree is new and under active development so you may wish 
-select a specific version during installation to ensure that 
+to select a specific version during installation to ensure that 
 changes to toytree do not break compatibility with your
 scripts. You can specify version with conda.  
 ```bash
-conda install toytree=0.1.0 -c eaton-lab
+conda install toytree=0.0.11 -c eaton-lab
 ```  
 
 <p></p>
 ### Alternative installation
-You can alternatively install toytree from github and its dependencies using pip with the following commands:
+You can alternatively install toytree from github along with its dependencies using pip with the following commands:
 
 ```bash
 ## install toyplot numpy and toyplot

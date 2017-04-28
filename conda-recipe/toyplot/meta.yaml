@@ -1,17 +1,18 @@
 package:
   name: toyplot
-  version: {{ environ['GIT_DESCRIBE_TAG'] }}
+  version: {{ environ.get('GIT_DESCRIBE_TAG', '') }} 
 
 source:
-  git_url: https://github.com/sandialabs/toyplot.git
+  git_url: https://github.com/eaton-lab/toyplot.git
+  git_rev: 0.14.4
 
 build:
-  script: build.sh  ## python setup.py install
+  script: build.sh 
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
 
 requirements:
   build:
-    - python {{PY_VER}}*,>=2.7
+    - python 
     - setuptools
     - colormath >=2.1.0
     - multipledispatch
@@ -24,9 +25,8 @@ requirements:
     - mock
     - networkx
     - pandas >=0.14.1
-    #- ghostscript >=9.16
   run:
-    - python {{PY_VER}}*,>=2.7
+    - python 
     - setuptools
     - colormath >=2.1.0
     - multipledispatch
@@ -39,7 +39,7 @@ requirements:
     - mock
     - networkx
     - pandas >=0.14.1
-    #- ghostscript >=9.16
+
     
 about:
   home: http://github.com/sandialabs/toyplot

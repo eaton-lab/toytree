@@ -11,7 +11,8 @@ build:
 
 requirements:
   build:
-    - python {{PY_VER}}*,>=2.7
+    - python 
+    #{{PY_VER}}*,>=2.7
     - enum34
     - networkx
     - setuptools

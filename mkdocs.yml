@@ -7,6 +7,10 @@ pages:
     - Tutorial: tutorial.md
     - Tip-labels: tip-labels.md
     - Node-labels: node-labels.md    
+    - Color-mapping: color-mapping.md
+    - Toytree objects: toytrees.md
+    - Multitree objects: cloud-trees.md
+    
     #- Rendering: rendering.md
     #- Contributing: contributing.md
     #- Release Notes: release.md

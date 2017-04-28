@@ -73,7 +73,7 @@ try:
 except Exception as e:
     print("Something broke - {}".format(e))
 
-print("Push new version of conda installer")
+print("Pushing new version to conda installer")
 
 try:
     subprocess.call(["conda", "build", "conda.recipe/toytree"])

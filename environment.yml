@@ -5,11 +5,12 @@ channels:
   - eaton-lab
 
 dependencies: 
-  - python=2.7
+  - python
   - pip
   - numpy
   - pypng
-  - ghostscript
   - colormath
-  - toyplot
+  - toyplot==0.14.2
+  - jupyter
+  - notebook
 
