@@ -4,7 +4,7 @@ package:
 
 source:
   git_url: https://github.com/eaton-lab/toyplot.git
-  git_rev: 0.14.1
+  git_rev: 0.14.2
 
 build:
   script: build.sh 
