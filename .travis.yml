@@ -14,7 +14,6 @@ python:
 #  - "nightly" # currently points to 3.7-dev
 
 # command to install dependencies
-
 install: 
   - sudo apt-get update
   # We do this conditionally because it saves us some downloading if the
@@ -44,7 +43,7 @@ install:
   #- conda build conda.recipe/toyplot     
   #- conda build conda.recipe/toytree
   #- conda install toytree --use-local
-  conda install toytree -c eaton-lab
+  - conda install toytree -c eaton-lab
 
 
 # command to run tests
