@@ -22,6 +22,20 @@ class Toytree(object):
     ete3 Tree Class object which can be accessed from the .tree
     attribute. 
 
+    Parameters:
+    -----------
+    newick (str):
+        An input tree as a newick string, or filepath, or a functional
+        weblink to a newick string.
+    ladderize (bool):
+        Whether to automatically ladderize the tree. Default=True.
+    format (int):
+        The tree format used for parsing the tree. See ETE tree formats. 
+        The default 0 can handle most tree formats including NHX.
+    fixed_order (bool):
+        Enforce a fixed order of tip-labels. This can make the topology
+        look very strange. Default=False.
+
     Attributes:
     -----------
     tree: ete3mini.Tree
@@ -94,6 +108,9 @@ class Toytree(object):
         #_palette = [toyplot.color.to_css(i) for i in PALETTE]
         self._kwargs = {}
         self._default_style = {
+            ## add-on defaults
+            "admixture": None,
+
             ## edge defaults
             "edge_style": {
                 "stroke": "#292724", 
@@ -111,11 +128,14 @@ class Toytree(object):
             "node_labels": False,       
             "node_labels_style": {
                 "font-size": "9px", 
-                "fill": "262626"}, 
+                "fill": "#262626",
+                #"text-anchor":"start",  
+                }, 
 
             ## node defaults
             "node_size": None,             
             "node_color": None, #COLORS[0],
+            "node_hover": True,
             "node_style": {
                 "fill": COLORS[0], 
                 "stroke": 'none', #COLORS[0],
@@ -164,17 +184,13 @@ class Toytree(object):
 
         By default node and tip values are hidden (set to "") so that they
         are not shown on the tree plot. To include values for these nodes
-        use the 'hide_root'=False, or 'hide_tips'=False arguments. 
+        use the 'show_root'=True, or 'show_tips'=True arguments. 
 
         """
         ## access nodes in the order they will be plotted
         ## this is a customized order best sampled this way
         nodes = [self.tree.search_nodes(name=str(i))[0] \
                  for i in self.get_node_labels().values()]
-
-        ## default feature is support
-        #if not feature:
-        #    feature = "support"
 
         ## get features
         if feature:
@@ -310,6 +326,137 @@ class Toytree(object):
         _decompose_tree(self, orient, use_edge_lengths, fixed_order)
 
 
+
+    ## this is the user-interface where all options should be visible 
+    def draw(
+        self, 
+        height=None,
+        width=None,
+        tip_labels=True,
+        tip_labels_color=None,
+        tip_labels_style=None,
+        tip_labels_align=False,
+        node_labels=False,
+        node_labels_style=None,
+        node_size=None,
+        node_color=None,
+        node_style=None,
+        node_hover=None,
+        #edge_width=None,
+        edge_style=None,
+        edge_align_style=None,        
+        use_edge_lengths=False, 
+        orient="right",
+        tree_style="p",
+        print_args=False,
+        padding=50,
+        axes=None):
+        """
+        plot the tree using toyplot.graph. 
+
+        Parameters:
+        -----------
+            use_edge_lengths: bool
+                Use edge lengths from .tree (.get_edge_lengths) else
+                edges are set to length >=1 to make tree ultrametric.
+
+            tip_labels: [True, False, list]
+                If True then the tip labels from .tree are added to the plot.
+                If False no tip labels are added. If a list of tip labels
+                is provided it must be the same length as .get_tip_labels().
+
+            node_labels: [True, False, list] 
+                If True then then the `support` attribute from the .tree 
+                are added to the plot with default styling.
+                If False no node labels are added. If a list of node labels
+                is provided it must be the same length as .get_node_labels().
+            ...
+
+            node_hover: [True, False, list, dict]
+                Default is True in which case node hover will show the node
+                values. If False then no hover is shown. If a list or dict 
+                is provided (which should be in node order) then the values
+                will be shown in order. If a dict then labels can be provided
+                as well.
+
+
+
+        """
+        ## return nothing if tree is empty
+        if not self.tree.children:
+            print("Tree is empty")
+            return 
+
+        ## re-decompose tree for new orient and edges args
+        self._decompose_tree(
+            orient=orient, 
+            use_edge_lengths=use_edge_lengths, 
+            fixed_order=self._fixed_order)
+
+        ## stick all entered option into kwargs
+        ## start from default styles copied
+        self._kwargs = copy.deepcopy(self._default_style)
+        entered = {
+            "height": height,
+            "width": width,
+            "tip_labels": tip_labels, 
+            "tip_labels_color": tip_labels_color,
+            "tip_labels_style": tip_labels_style,
+            "tip_labels_align": tip_labels_align,        
+            "node_labels": node_labels,
+            "node_labels_style": node_labels_style,
+            "node_size": node_size,
+            "node_color": node_color,
+            "node_style": node_style,
+            "node_hover": node_hover,
+            #"edge_width": edge_width
+            "edge_style": edge_style,
+            "edge_align_style": edge_align_style,
+            "tree_style": tree_style, 
+        }
+        ## We don't allow the setting of None to update defaults.
+        entered = {i:j for i,j in entered.items() if j != None}
+        for key, val in entered.items():
+            if val != None:
+                if isinstance(val, dict):
+                    self._kwargs[key].update(entered[key])
+                else:
+                    self._kwargs[key] = val
+        ## if dims not set then guess a reasonable height & width
+        if not self._kwargs.get("width"):
+            self._kwargs["width"] = min(1000, 40*len(self.tree))
+        if not self._kwargs.get("height"):
+            self._kwargs["height"] = self._kwargs["width"]
+
+        ## if not canvas then create one else use the existing
+        if axes:
+            canvas = None
+        else:
+            canvas = toyplot.Canvas(
+                height=self._kwargs['height'], 
+                width=self._kwargs['width']
+                )
+            axes = canvas.cartesian(
+                #bounds=("10%", "90%", "10%", "90%"), 
+                padding=padding,
+                )
+            axes.show = False
+
+        self._assign_node_labels()
+        self._assign_tip_labels()
+
+        if print_args:
+            print(self._kwargs)
+
+        ## order of tree/nodes last (on top) is preferred
+        _add_tip_labels_to_axes(self, axes)
+        _add_tree_to_axes(self, axes)
+        _add_nodes_to_axes(self, axes)
+
+        return canvas, axes
+
+
+
     def _assign_tip_labels(self):
         """ parse arg or arglist for tip_labels and tip_colors """
         
@@ -350,24 +497,31 @@ class Toytree(object):
 
 
     def _assign_node_labels(self):
-        """ parse arg or arglist for node_labels and node_colors """
-        ## node color overrides node-style[fill]
-        if self._kwargs.get("node_color"):
-            self._kwargs["node_style"].pop("fill")
+        """ 
+        parse arg or arglist for node_labels and node_colors. 
+        If node_color is provided then it overrides node fill. 
+        """
 
-        ## False = Hide nodes and node labels
+        ## False = Hide nodes and node labels (default)
         if self._kwargs["node_labels"] == False:
-            self._kwargs["vlshow"] = False
-            ## just put in placeholder vals
-            self._kwargs["node_labels"] = self.get_node_values("idx")
-            if not self._kwargs["node_size"]:
-                self._kwargs["node_size"] = 0
-            
+            ## make sure node size is a list in case
+            if self._kwargs["node_size"]:
+                if isinstance(self._kwargs["node_size"], (int, str)):
+                    self._kwargs["node_size"] = [self._kwargs["node_size"]] * len(self.get_node_values())
+                    self._kwargs["node_labels"] = ["" for i in self.get_node_values("idx")]
+
         ## True = Show nodes, no labels b/c we are adding interactives
         elif self._kwargs["node_labels"] == True:
+
+            ## hide labels
             self._kwargs["vlshow"] = False
+            self._kwargs["node_labels"] = ["" for i in self.get_node_values("idx")]
+
+            ## ensure nsize is a list
             if not self._kwargs["node_size"]:
-                self._kwargs["node_size"] = 15
+                self._kwargs["node_size"] = [15] * len(self.get_node_values())
+            if isinstance(self._kwargs["node_size"], (int, str)):
+                self._kwargs["node_size"] = [ns] * len(self.get_node_values())                
 
         ## user list
         else: 
@@ -380,132 +534,23 @@ class Toytree(object):
 
             ## anything else defaults to idx
             else: 
-                self._kwargs["node_labels"] = self.get_node_values("idx")
+                self._kwargs["node_labels"] = self.get_node_values("idx", 1, 0)
 
-            ## ensure a large size for node unless user set it explicitly
-            if self._kwargs["node_size"] in [None, False] and \
-            self._kwargs["node_size"] != 0:
-                self._kwargs["node_size"] = 15
-            
             ## set node size to 0 if labels are empty including "0" but not "".
-            self._kwargs["node_size"] = \
-                [self._kwargs["node_size"] if i or i==0 else 0 \
-                for i in self._kwargs["node_labels"]]
+            if not isinstance(self._kwargs["node_size"], list):
+                ## set default size if none
+                if (self._kwargs["node_size"] in [None, False]) and \
+                   (self._kwargs["node_size"] != 0):
+                    self._kwargs["node_size"] = 22
 
-
-
-    ## this is the user-interface where all options should be visible 
-    def draw(
-        self, 
-        height=None,
-        width=None,
-        tip_labels=True,
-        tip_labels_color=None,
-        tip_labels_style=None,
-        tip_labels_align=False,
-        node_labels=False,
-        node_labels_style=None,
-        node_size=None,
-        node_color=None,
-        node_style=None,
-        #edge_width=None,
-        edge_style=None,
-        edge_align_style=None,        
-        use_edge_lengths=False, 
-        orient="right",
-        tree_style="p",
-        print_args=False,
-        #fixed_order=None,
-        axes=None):
-        """
-        plot the tree using toyplot.graph. 
-
-        Parameters:
-        -----------
-            use_edge_lengths: bool
-                Use edge lengths from .tree (.get_edge_lengths) else
-                edges are set to length >=1 to make tree ultrametric.
-
-            tip_labels: [True, False, list]
-                If True then the tip labels from .tree are added to the plot.
-                If False no tip labels are added. If a list of tip labels
-                is provided it must be the same length as .get_tip_labels().
-
-            node_labels: [True, False, list] 
-                If True then then the `support` attribute from the .tree 
-                are added to the plot with default styling.
-                If False no node labels are added. If a list of node labels
-                is provided it must be the same length as .get_node_labels().
-            ...
-
-        """
-        ## return nothing if tree is empty
-        if not self.tree.children:
-            print("Tree is empty")
-            return 
-
-        ## re-decompose tree for new orient and edges args
-        self._decompose_tree(
-            orient=orient, 
-            use_edge_lengths=use_edge_lengths, 
-            fixed_order=self._fixed_order)
-
-        ## stick all entered option into kwargs
-        ## start from default styles copied
-        self._kwargs = copy.deepcopy(self._default_style)
-        entered = {
-            "height": height,
-            "width": width,
-            "tip_labels": tip_labels, 
-            "tip_labels_color": tip_labels_color,
-            "tip_labels_style": tip_labels_style,
-            "tip_labels_align": tip_labels_align,        
-            "node_labels": node_labels,
-            "node_labels_style": node_labels_style,
-            "node_size": node_size,
-            "node_color": node_color,
-            "node_style": node_style,
-            #"edge_width": edge_width
-            "edge_style": edge_style,
-            "edge_align_style": edge_align_style,
-            "tree_style": tree_style, 
-        }
-        ## We don't allow the setting of None to update defaults.
-        entered = {i:j for i,j in entered.items() if j != None}
-        for key, val in entered.items():
-            if val != None:
-                if isinstance(val, dict):
-                    self._kwargs[key].update(entered[key])
-                else:
-                    self._kwargs[key] = val
-        ## if dims not set then guess a reasonable height & width
-        if not self._kwargs.get("width"):
-            self._kwargs["width"] = min(1000, 25*len(self.tree))
-        if not self._kwargs.get("height"):
-            self._kwargs["height"] = self._kwargs["width"]
-
-        ## if not canvas then create one else use the existing
-        if axes:
-            canvas = None
-        else:
-            canvas = toyplot.Canvas(height=self._kwargs['height'], 
-                                    width=self._kwargs['width'])
-            axes = canvas.cartesian(bounds=("10%", "90%", "10%", "90%"))    
-            axes.show = False
-
-        self._assign_node_labels()
-        self._assign_tip_labels()
-
-        if print_args:
-            print(self._kwargs)
-
-        ## order of tree/nodes last (on top) is preferred
-        _add_tip_labels_to_axes(self, axes)
-        _add_tree_to_axes(self, axes)
-        
-        return canvas, axes
-
-
+                ## fill a list of values
+                nsizes = []
+                for nidx in self.get_node_values("idx", 1, 1):
+                    if self._kwargs["node_labels"][nidx] == "":
+                        nsizes.append(0)
+                    else:
+                        nsizes.append(self._kwargs["node_size"])
+                self._kwargs["node_size"] = nsizes
 
 
 
@@ -700,11 +745,64 @@ def _add_tree_to_axes(ttree, axes):
                        #ecolor=self.kwargs["edge_color"], ## ...
                        #ewidth=self.kwargs["edge_width"], ## def: 2
                        )
-        
-    ## node_labels == True is a magic command to show interactive
-    if ttree._kwargs["node_labels"] == True:
+
+
+def _add_nodes_to_axes(ttree, axes):
+    """
+    add nodes as text-markers
+    """
+
+    ## bail out if not any visible nodes (e.g., none w/ size>0)
+    if not ttree._kwargs["node_labels"]:
+        return
+
+    ## debugging
+    #print(ttree._kwargs["node_labels"])
+    #print(ttree._kwargs["node_size"])
+    #print(ttree._kwargs["node_labels_style"])    
+
+    ## build markers
+    marks = []
+    for nidx in ttree.get_node_values('idx', 1, 1):
+
+        ## select node value
+        nlabel = ttree._kwargs["node_labels"][nidx]
+        nsize = ttree._kwargs["node_size"][nidx]
+        nstyle = copy.deepcopy(ttree._kwargs["node_style"])
+        nlstyle = copy.deepcopy(ttree._kwargs["node_labels_style"])
+
+        ## if no user specified shift, then shift based on values
+        ## to fit better within nodes
+        #hshift = "-{}px".format(len(str(nlabel)))
+        #vshift = "-1.5px"
+        #if not nlstyle.get("-toyplot-anchor-shift"):
+        #    nlstyle["-toyplot-anchor-shift"] = hshift
+        #if not nlstyle.get("baseline-shift"):
+        #    nlstyle["baseline-shift"] = vshift
+
+        ## color nodes
+        if isinstance(ttree._kwargs["node_color"], list):
+            nstyle["fill"] = ttree._kwargs["node_color"][nidx]
+
+        ## create mark if text or node
+        if (nlabel or nsize):
+            mark = toyplot.marker.create(
+                shape="o", 
+                label=str(nlabel), 
+                size=nsize,
+                mstyle=nstyle,
+                lstyle=nlstyle,
+                )
+        else:
+            mark = ""
+
+        ## store the nodes/marks
+        marks.append(mark)
+
+
+    ## build interactive hovers for specified labels
+    def fullhover(ttree, ordered_features=["idx", "name", "dist", "support"]):
         ## build full features titles
-        ordered_features = ["idx", "name", "dist", "support"]
         ordered_features += list(set(ttree.tree.features) - set(ordered_features))
         ordered_features
         title = [
@@ -712,29 +810,47 @@ def _add_tree_to_axes(ttree, axes):
              ttree.get_node_values(feature, True, True)]
              for feature in ordered_features]
         title = ["\n".join(z) for z in zip(*title[:])]
+        return title
+
+    ## node_hover == True is a magic command to show all features interactive
+    if (ttree._kwargs["node_hover"] == True):
+        title = fullhover(ttree)
+
+    elif isinstance(ttree._kwargs["node_hover"], list):
+        ## return advice if improperly formatted
+        title = ttree._kwargs["node_hover"]
+
+    ## if hover is false then no hover
     else:
         title = None
 
-
-    ## plot feature nodes with interactive hover titles
+    ## add nodes
     axes.scatterplot(
         ttree.verts[:, 0],
         ttree.verts[:, 1], 
-        mstyle=ttree._kwargs["node_style"],
-        size=ttree._kwargs["node_size"],
-        color=ttree._kwargs["node_color"],
+        marker=marks,
         title=title,
-        ##vmarker=ttree._kwargs["vmarker"],     ## def: 'o'            
         )
 
-    ## add node text ...
-    if ttree._kwargs["vlshow"]:
-        axes.text(
-            ttree.verts[:, 0], 
-            ttree.verts[:, 1], 
-            ttree._kwargs["node_labels"],
-            style=ttree._kwargs["node_labels_style"],
-            )
+    # ## plot feature nodes with interactive hover titles
+    # axes.scatterplot(
+    #     ttree.verts[:, 0],
+    #     ttree.verts[:, 1], 
+    #     mstyle=ttree._kwargs["node_style"],
+    #     size=ttree._kwargs["node_size"],
+    #     color=ttree._kwargs["node_color"],
+    #     title=title,
+    #     ##vmarker=ttree._kwargs["vmarker"],     ## def: 'o'            
+    #     )
+
+    # ## add node text ...
+    # if ttree._kwargs["vlshow"]:
+    #     axes.text(
+    #         ttree.verts[:, 0], 
+    #         ttree.verts[:, 1], 
+    #         ttree._kwargs["node_labels"],
+    #         style=ttree._kwargs["node_labels_style"],
+    #         )
 
 
 
@@ -773,7 +889,7 @@ def _add_tip_labels_to_axes(ttree, axes):
         angle=angle,
         style=ttree._kwargs["tip_labels_style"],
         color=ttree._kwargs["tip_labels_color"],
-        ) 
+        )
 
     ## copy stroke-width from the edge_style unless user set it
     if not ttree._kwargs["edge_align_style"].get("stroke-width"):
