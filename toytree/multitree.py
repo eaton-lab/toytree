@@ -44,7 +44,7 @@ class MultiTree(object):
         ):
 
         ## setting attributes
-        self.newick = newick
+        self.newick = os.path.abspath(os.path.expanduser(newick))
         self.colors = COLORS
         self._tformat = format
         self._fixed_order = fixed_order
@@ -249,9 +249,14 @@ class MultiTree(object):
         if axes:
             canvas = None
         else:
-            canvas = toyplot.Canvas(height=self._kwargs['height'], 
-                                    width=self._kwargs['width'])
-            axes = canvas.cartesian(bounds=("10%", "90%", "10%", "90%"))    
+            canvas = toyplot.Canvas(
+                height=self._kwargs['height'], 
+                width=self._kwargs['width'],
+                )
+            axes = canvas.cartesian(
+                #bounds=("10%", "90%", "10%", "90%"))
+                padding=50,
+                )
             axes.show = False
 
 

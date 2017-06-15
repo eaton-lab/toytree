@@ -15,7 +15,7 @@ to select a specific version during installation to ensure that
 changes to toytree do not break compatibility with your
 scripts. You can specify version with conda.  
 ```bash
-conda install toytree=0.0.11 -c eaton-lab
+conda install toytree=0.1.2 -c eaton-lab
 ```  
 
 <p></p>
