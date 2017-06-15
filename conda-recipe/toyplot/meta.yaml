@@ -3,8 +3,8 @@ package:
   version: {{ environ.get('GIT_DESCRIBE_TAG', '') }} 
 
 source:
-  git_url: https://github.com/eaton-lab/toyplot.git
-  git_rev: 0.14.4
+  git_url: https://github.com/sandialabs/toyplot.git
+  git_rev: 13cbce8
 
 build:
   script: build.sh 
