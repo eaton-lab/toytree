@@ -267,6 +267,8 @@ class Toytree(object):
 
         ## set names or wildcard as the outgroup
         if outgroup:
+            if isinstance(outgroup, str):
+                outgroup = [outgroup]
             notfound = [i for i in outgroup if i not in self.tree.get_leaf_names()]
             if any(notfound):
                 raise Exception("Sample {} is not in the tree".format(notfound))
@@ -281,7 +283,7 @@ class Toytree(object):
             outs = [i for i in self.tree.get_leaves() if wildcard in i.name]
         else:
             raise Exception(\
-            "must enter either a list of outgroup names or a wildcard selector")
+            "must enter an outgroup, wildcard selector, or regex pattern")
         if len(outs) > 1:
             out = self.tree.get_common_ancestor(outs)
         else:
