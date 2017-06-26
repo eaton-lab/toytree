@@ -7,13 +7,20 @@ import toyplot
 import numpy as np
 import copy
 import re
-import ete3mini
+import toytree.ete3mini as ete3mini
 from decimal import Decimal
+
+# pylint: disable=W0212
+# pylint: disable=R0902
+# pylint: disable=R0912
+# pylint: disable=R0914
+# pylint: disable=R0915
+# pylint: disable=E1101
+
 
 ## color palette as a list
 PALETTE = toyplot.color.Palette()
-COLORS = [toyplot.color.to_css(i) for i in PALETTE]
-
+COLORS = [toyplot.color.to_css(color) for color in PALETTE]
 
 ## the main tree class
 class Toytree(object):
@@ -61,7 +68,7 @@ class Toytree(object):
     def __init__(self, 
         newick=None, 
         ladderize=True, 
-        format=0, 
+        format=0,
         fixed_order=None,
         **kwargs):
 
@@ -97,7 +104,7 @@ class Toytree(object):
             else:
                 self.newick = self.tree.write(format=0)
 
-            ## parse newick, assigns idx to nodes, returns tre, edges, verts, names
+            ## parse newick, assign idx, returns tre, edges, verts, names
             ## assigns node_labels, tip_labels, edge_lengths and support values
             self._decompose_tree(
                 orient=self._orient,
@@ -158,19 +165,24 @@ class Toytree(object):
             }
 
 
+    @property
+    def features(self):
+        """ return features registered on ete3mini tree"""
+        return self.tree.features
+
+
     ## functions to return values from the ete3 .tree object
     def get_edge_lengths(self):
         """
-        Returns edge length values from tree object in node plot order. To modify
-        edge length values you must modify the .tree object directly. For example, 
+        Returns edge length values from tree object in node plot order. To 
+        modify edge length values you must modify nodes in the .tree object 
+        directly. For example:
         
         for node in tree.tree.traverse():
             node.dist = 1.
         """
         ## access nodes in the order they will be plotted
         return self.get_node_values('dist', True, True)
-        #return [self.tree.search_nodes(name=str(i))[0].dist \
-        #        for i in self.get_node_values("dist")]
 
 
     def get_node_values(self, feature=None, show_root=False, show_tips=False):
@@ -259,11 +271,21 @@ class Toytree(object):
 
     ## re-rooting the tree
     def root(self, outgroup=None, wildcard=None, regex=None):
-        ## starting nnodes
-        nnodes = sum(1 for i in self.tree.traverse())
+        """
+        Re-root a tree on a selected tip or group of tip names. Rooting is 
+        done in-place, meaning the tree object will be modified and there is no
+        return object. 
 
-        ## split root node if more than di-
-        self.tree.resolve_polytomy()
+        The new root can be selected by entering either a list of outgroup 
+        names, by entering a wildcard selector that matches their names, or 
+        using a regex command to match their names. For example, to root a tree
+        on a clade that includes the samples "1-A" and "1-B" you can do any of 
+        the following:
+
+        tre.root(outgroup=["1-A", "1-B"])
+        tre.root(wildcard="1-")
+        tre.root(regex="1-[A,B]")   
+        """
 
         ## set names or wildcard as the outgroup
         if outgroup:
@@ -274,13 +296,14 @@ class Toytree(object):
                 raise Exception("Sample {} is not in the tree".format(notfound))
             outs = [i for i in self.tree.get_leaf_names() if i in outgroup]
         elif regex:
-            if not any([i for i in self.tree.get_leaves() if re.match(regex, i.name)]):
-                raise Exception("No Samples matched the regular expression")
             outs = [i for i in self.tree.get_leaves() if re.match(regex, i.name)]
+            if not any(outs):
+                raise Exception("No Samples matched the regular expression")
         elif wildcard:
-            if not any([i for i in self.tree.get_leaves() if wildcard in i.name]):
-                raise Exception("No Samples matched the wildcard")
             outs = [i for i in self.tree.get_leaves() if wildcard in i.name]
+            if not any(outs):
+                raise Exception("No Samples matched the wildcard")
+            
         else:
             raise Exception(\
             "must enter an outgroup, wildcard selector, or regex pattern")
@@ -289,21 +312,48 @@ class Toytree(object):
         else:
             out = outs[0]
 
-        ## set new outgroup
-        self.tree.set_outgroup(out)
+        ## split root node if more than di-
         self.tree.resolve_polytomy()
+        self.tree.set_outgroup(out)
 
-        ## IF we split a branch to root then double those edges
-        if sum(1 for i in self.tree.traverse()) != nnodes:
-            self.tree.children[0].dist = 2.*float(self.tree.children[0].dist)
-            self.tree.children[1].dist = 2.*float(self.tree.children[1].dist)
+        ## get features
+        testnode = self.tree.get_leaves()[0]
+        features = {"name", "dist", "support"}
+        extrafeat = {i for i in testnode.features if i not in features}
+        features.update(extrafeat)        
+
+        ## if there is a new node now, clean up its features
+        nnode = [i for i in self.tree.traverse() if not hasattr(i, "idx")]
+        if nnode:
+            ## nnode is the node that was added
+            ## rnode is the location where it *should* have been added
+            nnode = nnode[0]
+            rnode = [i for i in self.tree.children if i != out][0]
+
+            ## if rnode==nnode, then simple, otherwise they need to be swapped
+            idxs = [int(i.idx) for i in self.tree.traverse() if hasattr(i, "idx")]
+            if nnode == rnode:
+                nnode.add_feature("idx", max(idxs) + 1)
+                nnode.name = str("added-node")
+                nnode.dist *= 2
+                sister = nnode.get_sisters()[0]
+                sister.dist *= 2
+                nnode.support = 100
+            else:
+                nnode.idx = rnode.idx
+                rnode.add_feature("idx", max(idxs) + 1)
+                nnode.name = rnode.name
+                rnode.name = str("added-node")
+                rnode.dist *= 2
+                sister = rnode.get_sisters()[0]
+                sister.dist *= 2
+                rnode.support = 100                
+                for feature in extrafeat:
+                    nnode.add_feature(feature, getattr(rnode, feature))
+                    rnode.del_feature(feature)
 
         ## store tree back into newick and reinit Toytree with new newick
         ## if NHX format then preserve the NHX features. 
-        testnode = self.tree.children[0]
-        features = {"name", "dist", "support"}
-        extrafeat = {i for i in testnode.features if i not in features}
-        features.update(extrafeat)
         if any(extrafeat):
             self.newick = self.tree.write(format=9, features=features)
         else:
