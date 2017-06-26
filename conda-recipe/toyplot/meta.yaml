@@ -4,7 +4,8 @@ package:
 
 source:
   git_url: https://github.com/sandialabs/toyplot.git
-  git_rev: 13cbce8
+  giv_rev: 0e55d4d
+  # git_rev: 13cbce8
 
 build:
   script: build.sh 
