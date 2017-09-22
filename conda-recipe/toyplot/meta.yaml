@@ -1,45 +1,54 @@
 package:
   name: toyplot
-  version: {{ environ.get('GIT_DESCRIBE_TAG', '') }} 
+  version: "0.16.0" ## need to set this explicit b/c the git version is v0.15.0
 
 source:
-  git_url: https://github.com/sandialabs/toyplot.git
-  giv_rev: 0e55d4d
-  # git_rev: 13cbce8
+  ## eaton-lab branch is up-to-date with sandialabs, but excludes requirements
+  ## that are only used to build the documentation. 
+  #git_url: https://github.com/sandialabs/toyplot.git
+  #git_tag: 5f0271f1d9c478917096c8b0496cd6a590f00a0a
+  git_url: https://github.com/eaton-lab/toyplot.git
 
 build:
-  script: build.sh 
-  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
+  string: {{ environ.get('GIT_DESCRIBE_HASH', '') }}
+  number: 0  ##{{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
 
 requirements:
   build:
     - python 
     - setuptools
-    - colormath >=2.1.0
-    - multipledispatch
     - numpy >=1.8.2
-    - pypng >=0.0.18
-    - pillow
-    - reportlab
-    - pip
-    - graphviz
-    - mock
-    - networkx
     - pandas >=0.14.1
+    - pip
+    - pypng >=0.0.18   ## png
+    - pillow           ## pdf 
+    - reportlab        ## pdf
+    - graphviz         ## graphs
+    - networkx         ## graphs
+    - multipledispatch ## render
+    - six               ## not really being used
+    #- custom_inherit   ## not really being used
+    #- arrow            ## used for date-times 
+    - mock ## docs
   run:
     - python 
     - setuptools
-    - colormath >=2.1.0
-    - multipledispatch
+    - pip
     - numpy >=1.8.2
     - pypng >=0.0.18
+    - pandas >=0.14.1    
     - pillow
     - reportlab
-    - pip
     - graphviz
-    - mock
     - networkx
-    - pandas >=0.14.1
+    - multipledispatch
+    - six
+    #- custom_inherit
+    #- arrow
+
+test:
+  imports:
+    - toyplot
 
     
 about:
