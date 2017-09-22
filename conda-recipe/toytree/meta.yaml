@@ -1,31 +1,38 @@
 package:
   name: toytree
-  version: {{ environ.get('GIT_DESCRIBE_TAG', '') }}
+  version: {{ environ.get('GIT_DESCRIBE_TAG', '') }}  ## current tag on master
 
 source:
   git_url: https://github.com/eaton-lab/toytree.git
+  ## git_tag: {{ environ.get('GIT_DESCRIBE_TAG', '') }}  ## current tag on master
 
 build:
-  script: build.sh
-  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
+  string: 'beta'  ## {{ environ.get('GIT_DESCRIBE_HASH', '') }}
+  number: 0       ## {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
 
 requirements:
   build:
     - python
+    - setuptools
     - pypng
-    - reportlab
-    - colormath
+    - nbconvert
+    - jupyter
     - numpy >=1.7
-    - toyplot ==0.14.0
+    - toyplot >=0.16
   run:
     - python
     - numpy >=1.7
-    - toyplot ==0.14.0
-    - ipython >=5.3.0
-    - jupyter >=1.0
+    - toyplot >=0.16
+    - reportlab
     - notebook >=5.0.0
+    - nbconvert
+    - jupyter
+
+test:
+  imports:
+    - toytree
 
 about:
   home: http://github.com/eaton-lab/toytree
   license: GPLv3
-  summary: Minimalist tree plotting library using toyplot graphs
+  summary: Minimalist tree plotting library using Toyplot.
