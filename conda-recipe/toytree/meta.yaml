@@ -4,11 +4,12 @@ package:
 
 source:
   git_url: https://github.com/eaton-lab/toytree.git
+  git_tag: 0.1.4
   ## git_tag: {{ environ.get('GIT_DESCRIBE_TAG', '') }}  ## current tag on master
 
 build:
-  string: 'beta'  ## {{ environ.get('GIT_DESCRIBE_HASH', '') }}
-  number: 0       ## {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
+  ##string: 'beta'  ## {{ environ.get('GIT_DESCRIBE_HASH', '') }}
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
 
 requirements:
   build:
@@ -18,11 +19,13 @@ requirements:
     - nbconvert
     - jupyter
     - numpy >=1.7
-    - toyplot >=0.16
+    - toyplot >=0.16.0
   run:
     - python
+    - setuptools
     - numpy >=1.7
-    - toyplot >=0.16
+    - toyplot >=0.16.0
+    - pypng
     - reportlab
     - notebook >=5.0.0
     - nbconvert
