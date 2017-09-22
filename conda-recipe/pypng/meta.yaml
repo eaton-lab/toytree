@@ -3,14 +3,18 @@ package:
   version: '0.0.18'
 
 source:
-  fn: pypng-0.0.18.tar.gz
-  url: https://pypi.python.org/packages/2f/b1/c8dfcf50feb12a30be7d95c5f45d638704682487d8e50419ef41463febcd/pypng-0.0.18.tar.gz#md5=182bf08e8eb363344d57f2ee5303ba76
-  md5: 182bf08e8eb363344d57f2ee5303ba76
-  #url: https://github.com/drj11/pypng/archive/pypng-0.0.18.tar.gz
-  #md5: 2bc0d7e9153568d5bdaa404f047b2cf9
+  git_url: https://github.com/drj11/pypng.git
 
-build:
-  script: build.sh
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+
+test:
+  imports:
+    - png
 
 about:
   home: https://github.com/drj11/pypng
