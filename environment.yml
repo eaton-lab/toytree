@@ -9,8 +9,7 @@ dependencies:
   - pip
   - numpy
   - pypng
-  - colormath
-  - toyplot>=0.14.2
+  - toyplot>=0.16.0
   - jupyter
   - notebook
 
