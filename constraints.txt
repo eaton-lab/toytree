@@ -1,2 +1,2 @@
 numpy>1.7
-toyplot
+toyplot>=0.16
