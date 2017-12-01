@@ -917,7 +917,7 @@ def _add_tip_labels_to_axes(ttree, axes):
             start = xpos
             finish = ttree.verts[-1*len(ttree.tree):, 0]
             align_edges = np.array([(i, i+len(xpos)) for i in range(len(xpos))])
-            align_verts = np.array(zip(start, ypos) + zip(finish, ypos))
+            align_verts = np.array(list(zip(start, ypos)) + list(zip(finish, ypos)))
         else:
             xpos = ttree.verts[-1*len(ttree.tree):, 0]
             
@@ -929,7 +929,7 @@ def _add_tip_labels_to_axes(ttree, axes):
             start = ypos
             finish = ttree.verts[-1*len(ttree.tree):, 1]
             align_edges = np.array([(i, i+len(ypos)) for i in range(len(ypos))])
-            align_verts = np.array(zip(xpos, start) + zip(xpos, finish))
+            align_verts = np.array(list(zip(xpos, start)) + list(zip(xpos, finish)))
         else:
             ypos = ttree.verts[-1*len(ttree.tree):, 1]
 
@@ -957,4 +957,3 @@ def _add_tip_labels_to_axes(ttree, axes):
             vlshow=False,
             vsize=0,
             )
-
