@@ -573,7 +573,7 @@ class Toytree(object):
             if not self._kwargs["node_size"]:
                 self._kwargs["node_size"] = [15] * len(self.get_node_values())
             if isinstance(self._kwargs["node_size"], (int, str)):
-                self._kwargs["node_size"] = [ns] * len(self.get_node_values())                
+                self._kwargs["node_size"] = [int(self._kwargs["node_size"])] * len(self.get_node_values())
 
         ## user list
         else: 
