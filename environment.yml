@@ -9,7 +9,7 @@ dependencies:
   - pip
   - numpy
   - pypng
-  - toyplot>=0.16
+  - toyplot>=0.16.0
   - jupyter
   - notebook
 
