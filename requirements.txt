@@ -1,4 +1,6 @@
 numpy
-jupyter
 nbconvert
 toyplot
+
+
+#jupyter
