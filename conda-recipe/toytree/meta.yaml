@@ -15,11 +15,12 @@ requirements:
   build:
     - python
     - setuptools
-    - pypng
-    - nbconvert
-    - jupyter
     - numpy >=1.7
     - toyplot >=0.16.0
+    - pypng
+    - reportlab
+    - nbconvert
+    - jupyter
   run:
     - python
     - setuptools
@@ -27,9 +28,8 @@ requirements:
     - toyplot >=0.16.0
     - pypng
     - reportlab
-    - notebook >=5.0.0
-    - nbconvert
     - jupyter
+    - nbconvert
 
 test:
   imports:
