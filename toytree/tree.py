@@ -20,7 +20,57 @@ from decimal import Decimal
 
 ## color palette as a list
 PALETTE = toyplot.color.Palette()
-COLORS = [toyplot.color.to_css(color) for color in PALETTE]
+COLORS = [toyplot.color.to_css(i) for i in PALETTE]
+DEFAULT_TREESTYLE = {
+    ## add-on defaults
+    "admixture": None,
+
+    ## edge defaults
+    "edge_style": {
+        "stroke": "#292724", 
+        "stroke-width": 2, 
+        "stroke-linecap": "round", 
+        },
+
+    "edge_align_style": {
+        "stroke": "darkgrey",       ## copies edge_style
+        "stroke-linecap": "round", 
+        "stroke-dasharray": "2, 4",
+        },  
+
+    ## node label defaults
+    "node_labels": False,       
+    "node_labels_style": {
+        "font-size": "9px", 
+        "fill": "#262626",
+        #"text-anchor":"start",  
+        }, 
+
+    ## node defaults
+    "node_size": None,             
+    "node_color": None, #COLORS[0],
+    "node_hover": True,
+    "node_style": {
+        "fill": COLORS[0], 
+        "stroke": 'none', #COLORS[0],
+        },
+    "vmarker": "o", # "r2x1"
+
+    ## tip label defaults
+    "tip_labels": True,         
+    "tip_labels_color": toyplot.color.near_black,    
+    "tip_labels_align": False,
+    "tip_labels_style": {
+        "font-size": "12px",
+        "text-anchor":"start", 
+        "-toyplot-anchor-shift": None, #"0px", #None,
+        "fill": "#292724", 
+        },
+
+    ## tree style and axes
+    "tree_style": "p",
+}
+
 
 
 ## the main tree class
@@ -74,7 +124,6 @@ class Toytree(object):
         **kwargs):
 
         ## let ete check whether tree can parse
-        self.colors = COLORS         
         if newick:
             self.tree = ete3mini.TreeNode(newick, format=format)
             if ladderize and not fixed_order:
@@ -82,8 +131,8 @@ class Toytree(object):
         else:
             self.tree = ete3mini.TreeNode()
 
-        ## check features on a node that is not root for NHX, since root
-        ## is sometimes not appended with values that other nodes have
+        ## attributes
+        self.colors = COLORS         
         self._orient = "right"
         self._use_edge_lengths = False
         self._fixed_order = fixed_order
@@ -95,6 +144,7 @@ class Toytree(object):
         self._coords = []   
 
         ## plotting node values (features)
+        ## checks one of root's children for features and extra feats.
         if self.tree.children:
             features = {"name", "dist", "support"}
             testnode = self.tree.children[0]
@@ -113,57 +163,8 @@ class Toytree(object):
                 fixed_order=self._fixed_order)
 
         ## some plotting defaults
-        #_palette = [toyplot.color.to_css(i) for i in PALETTE]
         self._kwargs = {}
-        self._default_style = {
-            ## add-on defaults
-            "admixture": None,
-
-            ## edge defaults
-            "edge_style": {
-                "stroke": "#292724", 
-                "stroke-width": 2, 
-                "stroke-linecap": "round", 
-                },
-
-            "edge_align_style": {
-                "stroke": "darkgrey",       ## copies edge_style
-                "stroke-linecap": "round", 
-                "stroke-dasharray": "2, 4",
-                },  
-
-            ## node label defaults
-            "node_labels": False,       
-            "node_labels_style": {
-                "font-size": "9px", 
-                "fill": "#262626",
-                #"text-anchor":"start",  
-                }, 
-
-            ## node defaults
-            "node_size": None,             
-            "node_color": None, #COLORS[0],
-            "node_hover": True,
-            "node_style": {
-                "fill": COLORS[0], 
-                "stroke": 'none', #COLORS[0],
-                },
-            "vmarker": "o",
-
-            ## tip label defaults
-            "tip_labels": True,         
-            "tip_labels_color": toyplot.color.near_black,    
-            "tip_labels_align": False,
-            "tip_labels_style": {
-                "font-size": "12px",
-                "text-anchor":"start", 
-                "-toyplot-anchor-shift": None, #"0px", #None,
-                "fill": "#292724", 
-                },
-
-            ## tree style and axes
-            "tree_style": "p",
-            }
+        self._default_style = DEFAULT_TREESTYLE
 
 
     @property
@@ -829,6 +830,10 @@ def _add_nodes_to_axes(ttree, axes):
         nstyle = copy.deepcopy(ttree._kwargs["node_style"])
         nlstyle = copy.deepcopy(ttree._kwargs["node_labels_style"])
 
+        ## --------------------------------------------------------
+        ## wtf, this looks good in HTML but not in PDF
+        ## OK, fixed now. It was different defaults in Firefox.
+        ## --------------------------------------------------------
         ## if no user specified shift, then shift based on values
         ## to fit better within nodes
         #hshift = "-{}px".format(len(str(nlabel)))
