@@ -2,10 +2,10 @@
 
 """ MultiTree objects """
 
-from tree import Toytree as tree
-from tree import COLORS
+from .tree import Toytree as tree
+from .tree import COLORS
 from collections import defaultdict
-import ete3mini as ete
+from . import ete3mini as ete
 import numpy as np
 import toyplot
 import copy
@@ -19,7 +19,7 @@ import os
 ###############################################
 class MultiTree(object):
     """
-    Toytree MultiTree object for representing multiple trees. 
+    Toytree MultiTree object for representing multiple trees.
 
     Attributes:
     -----------
@@ -32,9 +32,9 @@ class MultiTree(object):
         Returns a consenus tree object...
 
     """
-    def __init__(self, 
-        newick, 
-        format=None, 
+    def __init__(self,
+        newick,
+        format=None,
         treeslice=(None, None, None),
         skip=None,
         fixed_order=None,
@@ -55,42 +55,42 @@ class MultiTree(object):
         self._default_style = {
             ## edge defaults
             "edge_style": {
-                "stroke": "#292724", 
-                "stroke-width": 2, 
-                #"stroke-linecap": "round", 
+                "stroke": "#292724",
+                "stroke-width": 2,
+                #"stroke-linecap": "round",
                 "opacity": 0.2,
                 },
 
             "edge_align_style": {
                 "stroke": "darkgrey",       ## copies edge_style
-                #"stroke-linecap": "round", 
+                #"stroke-linecap": "round",
                 "stroke-dasharray": "2, 4",
-                },  
+                },
 
             ## node label defaults
-            "node_labels": False,       
+            "node_labels": False,
             "node_labels_style": {
-                "font-size": "9px", 
-                "fill": "262626"}, 
+                "font-size": "9px",
+                "fill": "262626"},
 
             ## node defaults
-            "node_size": None,             
+            "node_size": None,
             "node_color": COLORS[0],
             "node_style": {
-                "fill": COLORS[0], 
+                "fill": COLORS[0],
                 "stroke": COLORS[0],
                 },
             "vmarker": "o",
 
             ## tip label defaults
-            "tip_labels": True,         
-            "tip_labels_color": toyplot.color.near_black,    
+            "tip_labels": True,
+            "tip_labels_color": toyplot.color.near_black,
             "tip_labels_align": False,
             "tip_labels_style": {
                 "font-size": "12px",
-                "text-anchor":"start", 
-                "-toyplot-anchor-shift": "12px", 
-                "fill": "#292724", 
+                "text-anchor":"start",
+                "-toyplot-anchor-shift": "12px",
+                "fill": "#292724",
                 },
 
             ## tree style and axes
@@ -98,7 +98,7 @@ class MultiTree(object):
             }
 
         ## parse and build tree list. There are several types
-        ## of tree lists. The first we'll support is BPP. 
+        ## of tree lists. The first we'll support is BPP.
 
         ## check format of multitree
         if not format:
@@ -148,7 +148,7 @@ class MultiTree(object):
                 #    constre.root(root)
                 self._fixed_order = constre.get_tip_labels()[::-1]
                 kwargs = {"format": 0, "fixed_order": fixed_order}
-                self.treelist = [tree(i.tree.write(), 
+                self.treelist = [tree(i.tree.write(),
                     fixed_order=self._fixed_order) for i in self.treelist]
 
 
@@ -168,14 +168,14 @@ class MultiTree(object):
     #     else:
     #         _ = [i.root(wildcard=wildcard) for i in self.treelist]
     #     _ = [i._decompose_tree(
-    #             orient=i._orient, 
+    #             orient=i._orient,
     #             use_edge_lengths=i._use_edge_lengths,
     #             fixed_order=i._fixed_order)
     #             for i in self.treelist]
 
 
 
-    def draw_cloudtree(self, 
+    def draw_cloudtree(self,
         axes=None,
         height=None,
         width=None,
@@ -190,8 +190,8 @@ class MultiTree(object):
         node_style=None,
         #edge_width=None,
         edge_style=None,
-        edge_align_style=None,        
-        use_edge_lengths=False, 
+        edge_align_style=None,
+        use_edge_lengths=False,
         orient="down",
         tree_style="c",
         #print_args=False,
@@ -201,7 +201,7 @@ class MultiTree(object):
         ## return nothing if tree is empty
         if not self.treelist:
             print("Tree is empty")
-            return 
+            return
 
         ## re-decompose tree for new orient and edges args
         for tidx in xrange(len(self.treelist)):
@@ -217,10 +217,10 @@ class MultiTree(object):
         entered = {
             "height": height,
             "width": width,
-            "tip_labels": tip_labels, 
+            "tip_labels": tip_labels,
             "tip_labels_color": tip_labels_color,
             "tip_labels_style": tip_labels_style,
-            #"tip_labels_align": tip_labels_align,        
+            #"tip_labels_align": tip_labels_align,
             "node_labels": node_labels,
             "node_labels_style": node_labels_style,
             "node_size": node_size,
@@ -229,7 +229,7 @@ class MultiTree(object):
             #"edge_width": edge_width
             "edge_style": edge_style,
             "edge_align_style": edge_align_style,
-            "tree_style": tree_style, 
+            "tree_style": tree_style,
         }
         ## We don't allow the setting of None to update defaults.
         entered = {i:j for i,j in entered.items() if j != None}
@@ -250,7 +250,7 @@ class MultiTree(object):
             canvas = None
         else:
             canvas = toyplot.Canvas(
-                height=self._kwargs['height'], 
+                height=self._kwargs['height'],
                 width=self._kwargs['width'],
                 )
             axes = canvas.cartesian(
@@ -268,7 +268,7 @@ class MultiTree(object):
                 node_labels=False,
                 orient=orient,
                 tree_style=self._kwargs["tree_style"],
-                edge_style=self._kwargs["edge_style"], 
+                edge_style=self._kwargs["edge_style"],
                 tip_labels=False,
                 )
 
@@ -317,11 +317,11 @@ class MultiTree(object):
     #     ## IF we split a branch to root then double those edges
     #     for tree in self.treelist:
     #         if sum(1 for i in self.treelist[0].tree.traverse()) != nnodes:
-    #             tree.children[0].dist *= 2. 
-    #             tree.children[1].dist *= 2. 
+    #             tree.children[0].dist *= 2.
+    #             tree.children[1].dist *= 2.
 
     #     ## store tree back into newick and reinit Toytree with new newick
-    #     ## if NHX format then preserve the NHX features. 
+    #     ## if NHX format then preserve the NHX features.
     #     #testnode = self.treelist.tree.children[0]
     #     #features = {"name", "dist", "support"}
     #     #extrafeat = {i for i in testnode.features if i not in features}
@@ -334,19 +334,19 @@ class MultiTree(object):
     #     newick = "\n".join([i.tree.write() for i in self.treelist])
 
     #     ## reinit the multitrees object
-    #     self.__init__(newick=self.newick, 
+    #     self.__init__(newick=self.newick,
     #                   #orient=self._orient,
     #                   #use_edge_lengths=self._use_edge_lengths,
     #                   fixed_order=consens.get_tip_labels(),
-    #                   )    
+    #                   )
 
 
 
 def consensus_tree(trees, names=None, cutoff=0.0):
-    """ 
-    An extended majority rule consensus function for ete. 
-    Modelled on the similar function from scikit-bio tree module. If 
-    cutoff=0.5 then it is a normal majority rule consensus, while if 
+    """
+    An extended majority rule consensus function for ete.
+    Modelled on the similar function from scikit-bio tree module. If
+    cutoff=0.5 then it is a normal majority rule consensus, while if
     cutoff=0.0 then subsequent non-conflicting clades are added to the tree.
     """
     assert cutoff < 1, "cutoff should be a float proportion (e.g., 0.5)"
@@ -365,10 +365,10 @@ def consensus_tree(trees, names=None, cutoff=0.0):
 
 
 def _find_clades(trees, names):
-    """ 
-    A subfunc of consensus_tree(). Traverses trees to count clade 
-    occurrences. Names are ordered by names, else they are in 
-    the order of the first tree. 
+    """
+    A subfunc of consensus_tree(). Traverses trees to count clade
+    occurrences. Names are ordered by names, else they are in
+    the order of the first tree.
     """
     ## index names from the first tree
     if not names:
@@ -396,7 +396,7 @@ def _find_clades(trees, names):
         clade_counts[key] = val / float(len(trees))
 
     ## return in sorted order
-    clade_counts = sorted(clade_counts.items(), 
+    clade_counts = sorted(clade_counts.items(),
                           key=lambda x: x[1],
                           reverse=True)
     return namedict, clade_counts
@@ -404,8 +404,8 @@ def _find_clades(trees, names):
 
 
 def _filter_clades(clade_counts, cutoff):
-    """ 
-    A subfunc of consensus_tree(). Removes clades that occur 
+    """
+    A subfunc of consensus_tree(). Removes clades that occur
     with freq < cutoff.
     """
 
@@ -413,13 +413,13 @@ def _filter_clades(clade_counts, cutoff):
     passed = []
     clades = np.array([list(i[0]) for i in clade_counts], dtype=np.int8)
     counts = np.array([i[1] for i in clade_counts], dtype=np.float64)
-    
+
     for idx in xrange(clades.shape[0]):
         conflict = False
-    
+
         if counts[idx] < cutoff:
             continue
-            
+
         if np.sum(clades[idx]) > 1:
             # check the current clade against all the accepted clades to see if
             # it conflicts. A conflict is defined as:
@@ -456,9 +456,9 @@ def _filter_clades(clade_counts, cutoff):
 
 
 def _build_trees(fclade_counts, namedict):
-    """ 
-    A subfunc of consensus_tree(). Build an unrooted consensus tree 
-    from filtered clade counts. 
+    """
+    A subfunc of consensus_tree(). Build an unrooted consensus tree
+    from filtered clade counts.
     """
 
     ## storage
@@ -478,7 +478,7 @@ def _build_trees(fclade_counts, namedict):
         queue.sort()
         (clade_size, clade) = queue.pop(0)
         new_queue = []
-    
+
         # search for ancestors of clade
         for (_, ancestor) in queue:
             if clade.issubset(ancestor):
@@ -486,22 +486,22 @@ def _build_trees(fclade_counts, namedict):
                 # ancestor == {1, 2, 3, 4}
                 # clade == {2, 3}
                 # new_ancestor == {1, {2, 3}, 4}
-                new_ancestor = (ancestor - clade) | frozenset([clade])          
+                new_ancestor = (ancestor - clade) | frozenset([clade])
                 countdict[new_ancestor] = countdict.pop(ancestor)
                 ancestor = new_ancestor
-            
+
             new_queue.append((len(ancestor), ancestor))
-   
+
         # if the clade is a tip, then we have a name
         if clade_size == 1:
             name = list(clade)[0]
             name = namedict[name]
         else:
-            name = None 
-        
+            name = None
+
         # the clade will not be in nodes if it is a tip
         children = [nodes.pop(c) for c in clade if c in nodes]
-        node = ete.Tree(name=name)    
+        node = ete.Tree(name=name)
         #node = toytree.tree(name=name).tree
         for child in children:
             node.add_child(child)
@@ -509,9 +509,9 @@ def _build_trees(fclade_counts, namedict):
             node.dist = int(round(100*countdict[clade]))
             node.support = int(round(100*countdict[clade]))
         else:
-            node.dist = int(100) 
+            node.dist = int(100)
             node.support = int(100)
-        
+
         nodes[clade] = node
         queue = new_queue
     tre = nodes.values()[0]
@@ -529,7 +529,3 @@ def bpp2newick(bppnewick):
     new = regex2.sub(";", new)
     new = regex3.sub(":", new)
     return new
-
-
-
-

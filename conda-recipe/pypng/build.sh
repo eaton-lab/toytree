@@ -1,6 +1,2 @@
-#!/bin/bash
 
-#pip install . #pypng
-
-python setup.py install 
-
+python setup.py install     # Python command to install the script.
