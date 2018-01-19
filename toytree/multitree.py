@@ -13,6 +13,51 @@ import re
 import os
 
 
+DEFAULTS_MULTITREE = {
+    ## edge defaults
+    "edge_style": {
+        "stroke": "#292724",
+        "stroke-width": 2,
+        #"stroke-linecap": "round",
+        "opacity": 0.2,
+        },
+
+    "edge_align_style": {
+        "stroke": "darkgrey",       ## copies edge_style
+        #"stroke-linecap": "round",
+        "stroke-dasharray": "2, 4",
+        },
+
+    ## node label defaults
+    "node_labels": False,
+    "node_labels_style": {
+        "font-size": "9px",
+        "fill": "262626"},
+
+    ## node defaults
+    "node_size": None,
+    "node_color": COLORS[0],
+    "node_style": {
+        "fill": COLORS[0],
+        "stroke": COLORS[0],
+        },
+    "vmarker": "o",
+
+    ## tip label defaults
+    "tip_labels": True,
+    "tip_labels_color": toyplot.color.near_black,
+    "tip_labels_align": False,
+    "tip_labels_style": {
+        "font-size": "12px",
+        "text-anchor":"start",
+        "-toyplot-anchor-shift": "12px",
+        "fill": "#292724",
+        },
+
+    ## tree style and axes
+    "tree_style": "p",
+}
+
 
 ###############################################
 ## MultiTree Class object
@@ -52,50 +97,7 @@ class MultiTree(object):
         self._use_edge_lengths = use_edge_lengths
         #self.color_palette = [toyplot.color.to_css(i) for i in PALETTE]
         self._kwargs = {}
-        self._default_style = {
-            ## edge defaults
-            "edge_style": {
-                "stroke": "#292724",
-                "stroke-width": 2,
-                #"stroke-linecap": "round",
-                "opacity": 0.2,
-                },
-
-            "edge_align_style": {
-                "stroke": "darkgrey",       ## copies edge_style
-                #"stroke-linecap": "round",
-                "stroke-dasharray": "2, 4",
-                },
-
-            ## node label defaults
-            "node_labels": False,
-            "node_labels_style": {
-                "font-size": "9px",
-                "fill": "262626"},
-
-            ## node defaults
-            "node_size": None,
-            "node_color": COLORS[0],
-            "node_style": {
-                "fill": COLORS[0],
-                "stroke": COLORS[0],
-                },
-            "vmarker": "o",
-
-            ## tip label defaults
-            "tip_labels": True,
-            "tip_labels_color": toyplot.color.near_black,
-            "tip_labels_align": False,
-            "tip_labels_style": {
-                "font-size": "12px",
-                "text-anchor":"start",
-                "-toyplot-anchor-shift": "12px",
-                "fill": "#292724",
-                },
-
-            ## tree style and axes
-            "tree_style": "p",
-            }
+        self._default_style = DEFAULTS_MULTITREE
 
         ## parse and build tree list. There are several types
         ## of tree lists. The first we'll support is BPP.
@@ -183,7 +185,7 @@ class MultiTree(object):
         tip_labels_color=None,
         tip_labels_style=None,
         #tip_labels_align=False,
-        node_labels=False,
+        node_labels=None, #False,
         node_labels_style=None,
         node_size=None,
         node_color=None,
@@ -191,8 +193,8 @@ class MultiTree(object):
         #edge_width=None,
         edge_style=None,
         edge_align_style=None,
-        use_edge_lengths=False,
-        orient="down",
+        use_edge_lengths=None, #False,
+        orient=None, #"down",
         tree_style="c",
         #print_args=False,
         #fixed_order=None,
