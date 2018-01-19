@@ -17,7 +17,7 @@ import os
 
 #from six.moves import (cPickle, map, range, zip)
 from six.moves import (map, range, zip)
-from .newick import read_newick, write_newick
+from newick import read_newick, write_newick
 
 DEFAULT_EDGE_LENGTH = 1.
 DEFAULT_SUPPORT = 100.
@@ -85,7 +85,7 @@ class TreeNode(object):
         self.features = set([])
 
         # Add basic features
-        self.features.update(["dist", "support", "name"])
+        self.features.update(["dist", "support", "name", "height"])
         if dist is not None:
             self.dist = dist
         if support is not None:
@@ -96,7 +96,7 @@ class TreeNode(object):
         # Initialize tree
         if newick is not None:
             self._dist = 0.0
-            read_newick(newick, root_node = self, format=format)
+            read_newick(newick, root_node=self, format=format)
 
 
     ############################################################
@@ -111,6 +111,11 @@ class TreeNode(object):
             self._dist = float(value)
         except ValueError:
             raise TreeError('node dist must be a float number')
+
+    @property
+    def height(self): 
+        return self.get_distance(self.get_farthest_leaf()[0])
+
 
     @property
     def support(self):
