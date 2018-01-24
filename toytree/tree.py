@@ -6,9 +6,8 @@ import toyplot
 import numpy as np
 import copy
 import re
-import ete3mini
-from decimal import Decimal
-#from toytree.ete3mini 
+from . import ete3mini
+from decimal import Decimal 
 
 # pylint: disable=W0212
 # pylint: disable=R0902
