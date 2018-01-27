@@ -82,6 +82,7 @@ class TreeNode(object):
         self._up = None
         self._dist = DEFAULT_EDGE_LENGTH
         self._support = DEFAULT_SUPPORT
+        self._height = 0
         self.features = set([])
 
         # Add basic features
@@ -114,7 +115,15 @@ class TreeNode(object):
 
     @property
     def height(self): 
-        return self.get_distance(self.get_farthest_leaf()[0])
+        _root = self.get_tree_root()
+        _treeheight = _root.get_distance(_root.get_farthest_leaf()[0])
+        return _treeheight - _root.get_distance(self)
+    @height.setter
+    def height(self, value):
+        try:
+            self._height = float(value)
+        except ValueError:
+            raise TreeError('node support must be a float number')
 
 
     @property
