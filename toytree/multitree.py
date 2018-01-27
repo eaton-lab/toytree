@@ -5,7 +5,7 @@
 from .tree import Toytree as tree
 from .tree import COLORS
 from collections import defaultdict
-from . import ete3mini as ete
+from . import ete3mini 
 import numpy as np
 import toyplot
 import copy
@@ -44,7 +44,10 @@ class MultiTree(object):
         ):
 
         ## setting attributes
-        self.newick = os.path.abspath(os.path.expanduser(newick))
+        if os.path.exists(newick):
+            self.newick = os.path.abspath(os.path.expanduser(newick))
+        else:
+            self.newick = newick
         self.colors = COLORS
         self._tformat = format
         self._fixed_order = fixed_order
@@ -501,7 +504,7 @@ def _build_trees(fclade_counts, namedict):
 
         # the clade will not be in nodes if it is a tip
         children = [nodes.pop(c) for c in clade if c in nodes]
-        node = ete.Tree(name=name)
+        node = ete3mini.Tree(name=name)
         #node = toytree.tree(name=name).tree
         for child in children:
             node.add_child(child)

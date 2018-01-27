@@ -7,7 +7,7 @@ import toyplot
 import numpy as np
 import copy
 import re
-import toytree.ete3mini as ete3mini
+from . import ete3mini
 from decimal import Decimal
 
 # pylint: disable=W0212
@@ -33,7 +33,8 @@ DEFAULT_TREESTYLE = {
         },
 
     "edge_align_style": {
-        "stroke": "darkgrey",       ## copies edge_style
+        "stroke": "darkgrey",       
+        #"stroke-width": 2,   ## copies edge_style for width by default
         "stroke-linecap": "round", 
         "stroke-dasharray": "2, 4",
         },  
@@ -54,11 +55,11 @@ DEFAULT_TREESTYLE = {
         "fill": COLORS[0], 
         "stroke": 'none', #COLORS[0],
         },
-    "vmarker": "o", # "r2x1"
+    "vmarker": "o", # "r2x1" for rectangles
 
     ## tip label defaults
     "tip_labels": True,         
-    "tip_labels_color": toyplot.color.near_black,    
+    "tip_labels_color": toyplot.color.black,    
     "tip_labels_align": False,
     "tip_labels_style": {
         "font-size": "12px",
@@ -92,28 +93,37 @@ class Toytree(object):
         The default 0 can handle most tree formats including NHX.
     fixed_order (bool):
         Enforce a fixed order of tip-labels. This can make the topology
-        look very strange. Default=False.
+        look very strange, but is useful for showing differences between
+        topologies. Default=False.
 
     Attributes:
     -----------
     tree: ete3mini.Tree
         An ete TreeNode object representation of the tree. See the
-        ete docs for full documentation. 
+        ete docs for full documentation. Toytree users will not typically
+        need to interact with this object, but advanced users can benefit
+        from learning the TreeNode object. 
     edges: ndarray
         An array of edges connecting nodes in the tree. Used internally
         for plotting, not of significant use to users.
     verts: ndarray
-        An array of node (vertex) locations used for plotting. These
-        locations are useful for adding additional node information
-        using Toyplot.scatterplot or related functions.
+        An array of node (vertex) locations used for plotting. Used internally
+        for plotting, not of significant use to users.
     newick: str
         A New Hampshire Newick format string representation of the tree.
+    features: 
+        A set of string names of features that are accessible from the tree 
+        object. All trees will have {'dist', 'name', 'support'}, although the
+        values 
 
     Functions:
     ----------
+    get_tip_labels(): 
+        See func docstring.
     get_edge_lengths():
-        returns 
-
+        See func docstring.
+    root(): 
+        See func docstring.
     """
 
     def __init__(self, 
@@ -123,11 +133,12 @@ class Toytree(object):
         fixed_order=None,
         **kwargs):
 
-        ## let ete check whether tree can parse
+        ## use ETE to parse the tree and ladderize
         if newick:
             self.tree = ete3mini.TreeNode(newick, format=format)
             if ladderize and not fixed_order:
                 self.tree.ladderize()
+        ## otherwise make an empty TreeNode object        
         else:
             self.tree = ete3mini.TreeNode()
 
@@ -146,7 +157,9 @@ class Toytree(object):
         ## plotting node values (features)
         ## checks one of root's children for features and extra feats.
         if self.tree.children:
+            ## default features
             features = {"name", "dist", "support"}
+            ## look for additional features
             testnode = self.tree.children[0]
             extrafeat = {i for i in testnode.features if i not in features}
             features.update(extrafeat)
@@ -155,8 +168,9 @@ class Toytree(object):
             else:
                 self.newick = self.tree.write(format=0)
 
-            ## parse newick, assign idx, returns tre, edges, verts, names
-            ## assigns node_labels, tip_labels, edge_lengths and support values
+            ## reparse tree from newick string, assign idx, returns tre, edges, 
+            ## verts, names. Assigns node_labels, tip_labels, edge_lengths and 
+            ## support values
             self._decompose_tree(
                 orient=self._orient,
                 use_edge_lengths=self._use_edge_lengths, 
@@ -204,7 +218,7 @@ class Toytree(object):
         ## access nodes in the order they will be plotted
         ## this is a customized order best sampled this way
         nodes = [self.tree.search_nodes(name=str(i))[0] \
-                 for i in self.get_node_labels().values()]
+                 for i in self.get_node_dict().values()]
 
         ## get features
         if feature:
@@ -230,7 +244,7 @@ class Toytree(object):
         return vals
 
 
-    def get_node_labels(self):
+    def get_node_dict(self):
         """
         return node labels as a dictionary mapping {idx: name}
         """
@@ -406,7 +420,8 @@ class Toytree(object):
         padding=50,
         axes=None):
         """
-        plot the tree using toyplot.graph. 
+        Plot a Toytree tree, returns a tuple of (Canvas, Axes). 
+
 
         Parameters:
         -----------
@@ -419,11 +434,39 @@ class Toytree(object):
                 If False no tip labels are added. If a list of tip labels
                 is provided it must be the same length as .get_tip_labels().
 
+            tip_labels_color: 
+                ...
+
+            tip_labels_style:
+                ...
+
+            tip_labels_align:
+                ...
+
             node_labels: [True, False, list] 
-                If True then then the `support` attribute from the .tree 
-                are added to the plot with default styling.
-                If False no node labels are added. If a list of node labels
-                is provided it must be the same length as .get_node_labels().
+                If True then nodes are shown, if False then nodes are suppressed.
+                If a list of node labels is provided it must be the same length 
+                and order as nodes in .get_node_dict(). Node labels can be 
+                generated in the proper order using the the .get_node_labels() 
+                function from a Toytree tree to draw info from the tree features.
+                For example: node_labels=tree.get_node_labels("support").
+
+            node_size: [int, list, None]
+                If None then nodes are not shown, otherwise, if node_labels 
+                then node_size can be modified. If a list of node sizes is 
+                provided it must be the same length and order as nodes in 
+                .get_node_dict().
+
+            node_color: [list]
+                Use this argument only if you wish to set different colors for
+                different nodes, in which case you must enter a list of colors
+                as string names or HEX values the length and order of nodes in 
+                .get_node_dict(). If all nodes will be the same color then use
+                instead the node_style dictionary: 
+                e.g., node_style={"fill": 'red'}
+
+            node_style: [dict]
+
             ...
 
             node_hover: [True, False, list, dict]
@@ -503,9 +546,9 @@ class Toytree(object):
             print(self._kwargs)
 
         ## order of tree/nodes last (on top) is preferred
-        _add_tip_labels_to_axes(self, axes)
-        _add_tree_to_axes(self, axes)
-        _add_nodes_to_axes(self, axes)
+        tips = _add_tip_labels_to_axes(self, axes)
+        tree = _add_tree_to_axes(self, axes)
+        node = _add_nodes_to_axes(self, axes)
 
         return canvas, axes
 
@@ -618,17 +661,18 @@ def randomtree(ntips, node_values={}):
     'populate()'. Branch lengths can be added after the tree is 
     generated by modifying its features. 
     """
-    ## generate tree
+
+    ## generate tree with N tips.
     tmptree = ete3mini.TreeNode()
     tmptree.populate(ntips)
     self = Toytree(newick=tmptree.write())
 
-    ## set values
+    ## (optional) set node values from node_values dict
     for fkey, vals in node_values.iteritems():
         for idx, node in enumerate(self.tree.traverse()):
             node.add_feature(fkey, vals[idx])
 
-    ## set tip names
+    ## set tip names by labeling sequentially from t-0
     self.tree.ladderize()
     ntip=0
     for tip in self.get_tip_labels():
@@ -637,39 +681,9 @@ def randomtree(ntips, node_values={}):
         ntip += 1
     return self
 
+## TODO: functions to generate trees under different branch length
+## processes (Yule, BD) by adding nodes to a TreeNode object...
 
-
-class RandomTree(Toytree):
-    def __init__(self, ntips, node_values={}):
-        Toytree.__init__(self)
-
-        ## generate tree
-        self.tree = ete3mini.TreeNode()
-        self.tree.populate(ntips)
-        self.newick = self.tree.write()
-
-        ## set values
-        for fkey, vals in node_values.iteritems():
-            for idx, node in enumerate(self.tree.traverse()):
-                node.add_feature(fkey, vals[idx])
-
-        ## set tip names
-        self.tree.ladderize()
-        ntip=0
-        for tip in self.get_tip_labels():
-            node = self.tree.search_nodes(name=tip)[0]
-            node.name = "t-{}".format(ntip)
-            ntip += 1
-        self._decompose_tree(
-            orient=self._orient, 
-            use_edge_lengths=self._use_edge_lengths, 
-            fixed_order=self._fixed_order
-            )
-
-        self.__init__(newick=self.newick, 
-                      orient=self._orient,
-                      use_edge_lengths=self._use_edge_lengths
-                          )
 
 
 ################################################################################
@@ -782,20 +796,23 @@ def _decompose_tree(ttree, orient, use_edge_lengths, fixed_order):
 
 ## add the tree plot 
 def _add_tree_to_axes(ttree, axes):
+    """
+    TODO: add edge color controls.
+    """
 
     ## add the tree/graph ------------------------------------------------
     if ttree._kwargs["tree_style"] in ["c", "cladogram"]:
-        _ = axes.graph(ttree.edges, 
+        mark = axes.graph(ttree.edges, 
                        vcoordinates=ttree.verts, 
-                       estyle=ttree._kwargs["edge_style"], #... add round edges 
                        vsize=0,
                        vlshow=False,
+                       estyle=ttree._kwargs["edge_style"],
                        #ecolor=self.kwargs["edge_color"], ## ...
                        #ewidth=self.kwargs["edge_width"], ## def: 2
                        )
     else:
         ## add lines for phylogram
-        _ = axes.graph(ttree._lines,                      ## fixed
+        mark = axes.graph(ttree._lines,                   ## fixed
                        vcoordinates=ttree._coords,        ## fixed
                        vlshow=False,                      ## fixed
                        vsize=0.,                          ## fixed
@@ -803,6 +820,7 @@ def _add_tree_to_axes(ttree, axes):
                        #ecolor=self.kwargs["edge_color"], ## ...
                        #ewidth=self.kwargs["edge_width"], ## def: 2
                        )
+    return mark
 
 
 
@@ -829,19 +847,6 @@ def _add_nodes_to_axes(ttree, axes):
         nsize = ttree._kwargs["node_size"][nidx]
         nstyle = copy.deepcopy(ttree._kwargs["node_style"])
         nlstyle = copy.deepcopy(ttree._kwargs["node_labels_style"])
-
-        ## --------------------------------------------------------
-        ## wtf, this looks good in HTML but not in PDF
-        ## OK, fixed now. It was different defaults in Firefox.
-        ## --------------------------------------------------------
-        ## if no user specified shift, then shift based on values
-        ## to fit better within nodes
-        #hshift = "-{}px".format(len(str(nlabel)))
-        #vshift = "-1.5px"
-        #if not nlstyle.get("-toyplot-anchor-shift"):
-        #    nlstyle["-toyplot-anchor-shift"] = hshift
-        #if not nlstyle.get("baseline-shift"):
-        #    nlstyle["baseline-shift"] = vshift
 
         ## color nodes
         if isinstance(ttree._kwargs["node_color"], list):
@@ -888,32 +893,13 @@ def _add_nodes_to_axes(ttree, axes):
         title = None
 
     ## add nodes
-    axes.scatterplot(
+    mark = axes.scatterplot(
         ttree.verts[:, 0],
         ttree.verts[:, 1], 
         marker=marks,
         title=title,
         )
-
-    # ## plot feature nodes with interactive hover titles
-    # axes.scatterplot(
-    #     ttree.verts[:, 0],
-    #     ttree.verts[:, 1], 
-    #     mstyle=ttree._kwargs["node_style"],
-    #     size=ttree._kwargs["node_size"],
-    #     color=ttree._kwargs["node_color"],
-    #     title=title,
-    #     ##vmarker=ttree._kwargs["vmarker"],     ## def: 'o'            
-    #     )
-
-    # ## add node text ...
-    # if ttree._kwargs["vlshow"]:
-    #     axes.text(
-    #         ttree.verts[:, 0], 
-    #         ttree.verts[:, 1], 
-    #         ttree._kwargs["node_labels"],
-    #         style=ttree._kwargs["node_labels_style"],
-    #         )
+    return mark
 
 
 
@@ -931,7 +917,8 @@ def _add_tip_labels_to_axes(ttree, axes):
             align_verts = np.array(list(zip(start, ypos)) + list(zip(finish, ypos)))
         else:
             xpos = ttree.verts[-1*len(ttree.tree):, 0]
-            
+
+    ## get coordinates for text from left to right for down-facing            
     elif ttree._orient in ['down']:
         angle = -90.
         xpos = ttree.verts[-1*len(ttree.tree):, 0]
@@ -944,8 +931,8 @@ def _add_tip_labels_to_axes(ttree, axes):
         else:
             ypos = ttree.verts[-1*len(ttree.tree):, 1]
 
-    ## add tip names 
-    _ = axes.text(
+    ## add tip names to coordinates calculated above
+    mark = axes.text(
         xpos, 
         ypos, 
         ttree._kwargs["tip_labels"],
@@ -954,17 +941,20 @@ def _add_tip_labels_to_axes(ttree, axes):
         color=ttree._kwargs["tip_labels_color"],
         )
 
+    ## get stroke-width for aligned tip-label lines (optional)
     ## copy stroke-width from the edge_style unless user set it
     if not ttree._kwargs["edge_align_style"].get("stroke-width"):
         ttree._kwargs["edge_align_style"]["stroke-width"] = \
             ttree._kwargs["edge_style"]["stroke-width"]
 
-    ## add lines to connect tree tips to aligned tips
+    ## add lines to connect tree tips to aligned tips. We don't 
+    ## return this mark since it's optional.
     if ttree._kwargs["tip_labels_align"]:
-        axes.graph(
+        dash = axes.graph(
             align_edges,
             vcoordinates=align_verts,
             estyle=ttree._kwargs["edge_align_style"], 
             vlshow=False,
             vsize=0,
             )
+    return mark
