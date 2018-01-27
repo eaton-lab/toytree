@@ -8,7 +8,6 @@ import copy
 import re
 import ete3mini
 from decimal import Decimal
-#from toytree.ete3mini 
 
 # pylint: disable=W0212
 # pylint: disable=R0902
@@ -296,6 +295,92 @@ class Toytree(object):
         return len(self.tree)
         
 
+    def copy(self):
+        """ returns a deepcopy of the tree object"""
+        return copy.deepcopy(self)
+
+
+    ## unlike ete this returns a copy unrooted, not in-place!
+    def unroot(self):
+        """
+        Returns a copy of the tree unrooted. Does not transform tree in-place.
+        """
+        newtree = copy.deepcopy(self)
+        newtree.tree.unroot()
+
+        ## get features
+        testnode = newtree.tree.get_leaves()[0] 
+        features = {"name", "dist", "support", "height"}
+        extrafeat = {i for i in testnode.features if i not in features}
+        features.update(extrafeat)        
+        if any(extrafeat):
+            newtree.newick = newtree.tree.write(format=9, features=features)
+        else:
+            newtree.newick = newtree.tree.write(format=0)
+        return newtree
+
+
+    ## unlike ete this returns a copy resolved, not in-place!
+    def resolve_polytomy(self, default_dist=0.0, default_support=0.0, recursive=False):
+        """
+        Returns a copy of the tree with resolved polytomies. 
+        Does not transform tree in-place.
+        """
+        newtree = copy.deepcopy(self)
+        newtree.tree.resolve_polytomy(
+            default_dist=default_dist,
+            default_support=default_support,
+            recursive=recursive)
+
+        ## get features
+        testnode = newtree.tree.get_leaves()[0] 
+        features = {"name", "dist", "support", "height"}
+        extrafeat = {i for i in testnode.features if i not in features}
+        features.update(extrafeat)        
+        if any(extrafeat):
+            newtree.newick = newtree.tree.write(format=9, features=features)
+        else:
+            newtree.newick = newtree.tree.write(format=0)
+        return newtree
+
+
+    def is_rooted(self):
+        """
+        Returns False if the tree is unrooted.
+        """
+        if len(self.tree.children) > 2:
+            return False
+        else:
+            return True
+
+
+    def is_bifurcating(self, count_basal_polytomy=True):
+        """
+        Returns False if there is a polytomy in the tree, including if the tree
+        is unrooted (basal polytomy), unless you use the count_basal_polytomy=False
+        argument.
+        """
+
+        if self.is_rooted():
+            if ((2 * len(self)) - 1) == sum(1 for i in self.tree.traverse()):
+                return True
+            else:
+                return False
+        else:
+            if include_root:
+                if ((2 * len(self)) - 2) == sum(1 for i in self.tree.traverse())-1:
+                    return True
+                else:
+                    return False
+            else:
+                if ((2 * len(self)) - 2) == sum(1 for i in self.tree.traverse()):
+                    return True
+                else:
+                    return False
+
+
+
+
     ## re-rooting the tree
     def root(self, outgroup=None, wildcard=None, regex=None):
         """
@@ -309,68 +394,77 @@ class Toytree(object):
         on a clade that includes the samples "1-A" and "1-B" you can do any of 
         the following:
 
-        tre.root(outgroup=["1-A", "1-B"])
-        tre.root(wildcard="1-")
-        tre.root(regex="1-[A,B]")   
+        rtre = tre.root(outgroup=["1-A", "1-B"])
+        rtre = tre.root(wildcard="1-")
+        rtre = tre.root(regex="1-[A,B]")
+
         """
+
+        ## make a deepcopy of the tree
+        nself = self.copy()
 
         ## set names or wildcard as the outgroup
         if outgroup:
             if isinstance(outgroup, str):
                 outgroup = [outgroup]
-            notfound = [i for i in outgroup if i not in self.tree.get_leaf_names()]
+            notfound = [i for i in outgroup if i not in nself.tree.get_leaf_names()]
             if any(notfound):
                 raise Exception("Sample {} is not in the tree".format(notfound))
-            outs = [i for i in self.tree.get_leaf_names() if i in outgroup]
+            outs = [i for i in nself.tree.get_leaf_names() if i in outgroup]
         elif regex:
-            outs = [i for i in self.tree.get_leaves() if re.match(regex, i.name)]
+            outs = [i.name for i in nself.tree.get_leaves() if re.match(regex, i.name)]
             if not any(outs):
                 raise Exception("No Samples matched the regular expression")
         elif wildcard:
-            outs = [i for i in self.tree.get_leaves() if wildcard in i.name]
+            outs = [i.name for i in nself.tree.get_leaves() if wildcard in i.name]
             if not any(outs):
                 raise Exception("No Samples matched the wildcard")
-            
         else:
             raise Exception(\
             "must enter an outgroup, wildcard selector, or regex pattern")
+
         if len(outs) > 1:
-            out = self.tree.get_common_ancestor(outs)
+            ## check if they're monophyletic
+            mbool, mtype, mnames = nself.tree.check_monophyly(
+                                        outs, "name", ignore_missing=True)
+            if not mbool:
+                if mtype == "paraphyletic":
+                    outs = [i.name for i in mnames]
+                else:
+                    raise Exception("Tips entered to root() cannot be paraphyletic")
+            out = nself.tree.get_common_ancestor(outs)
         else:
             out = outs[0]
 
-        ## split root node if more than di-
-        self.tree.resolve_polytomy()
-        self.tree.set_outgroup(out)
+        ## split root node if more than di- as this is the unrooted state
+        if not nself.is_bifurcating():
+            nself.tree.resolve_polytomy()
+
+        ## root the object with ete's translate
+        nself.tree.set_outgroup(out)
 
         ## get features
-        testnode = self.tree.get_leaves()[0]
-        features = {"name", "dist", "support"}
+        testnode = nself.tree.get_leaves()[0] 
+        features = {"name", "dist", "support", "height"}
         extrafeat = {i for i in testnode.features if i not in features}
         features.update(extrafeat)        
 
         ## if there is a new node now, clean up its features
-        nnode = [i for i in self.tree.traverse() if not hasattr(i, "idx")]
+        nnode = [i for i in nself.tree.traverse() if not hasattr(i, "idx")]
         if nnode:
             ## nnode is the node that was added
             ## rnode is the location where it *should* have been added
             nnode = nnode[0]
-            rnode = [i for i in self.tree.children if i != out][0]
+            rnode = [i for i in nself.tree.children if i != out][0]
 
-            ## if rnode==nnode, then simple, otherwise they need to be swapped
-            idxs = [int(i.idx) for i in self.tree.traverse() if hasattr(i, "idx")]
-            if nnode == rnode:
-                nnode.add_feature("idx", max(idxs) + 1)
-                nnode.name = str("added-node")
-                nnode.dist *= 2
-                sister = nnode.get_sisters()[0]
-                sister.dist *= 2
-                nnode.support = 100
-            else:
-                nnode.idx = rnode.idx
+            ## get idxs of existing nodes
+            idxs = [int(i.idx) for i in nself.tree.traverse() if hasattr(i, "idx")]
+
+            ## newnode is a tip
+            if len(outs) == 1:
+                nnode.name = str("rerooted")
+                rnode.name = out
                 rnode.add_feature("idx", max(idxs) + 1)
-                nnode.name = rnode.name
-                rnode.name = str("added-node")
                 rnode.dist *= 2
                 sister = rnode.get_sisters()[0]
                 sister.dist *= 2
@@ -379,25 +473,24 @@ class Toytree(object):
                     nnode.add_feature(feature, getattr(rnode, feature))
                     rnode.del_feature(feature)
 
+            ## newnode is internal
+            else:
+                nnode.add_feature("idx", max(idxs) + 1)
+                nnode.name = str("rerooted")
+                nnode.dist *= 2
+                sister = nnode.get_sisters()[0]
+                sister.dist *= 2
+                nnode.support = 100
+
+
         ## store tree back into newick and reinit Toytree with new newick
         ## if NHX format then preserve the NHX features. 
         if any(extrafeat):
-            self.newick = self.tree.write(format=9, features=features)
+            nself.newick = nself.tree.write(format=9, features=features)
         else:
-            self.newick = self.tree.write(format=0)
+            nself.newick = nself.tree.write(format=0)
+        return nself
 
-        ## reinit
-        if isinstance(self, Toytree):
-            self.__init__(newick=self.newick, 
-                          orient=self._orient,
-                          use_edge_lengths=self._use_edge_lengths
-                          )
-        else:
-            self._decompose_tree(
-                orient=self._orient, 
-                use_edge_lengths=self._use_edge_lengths, 
-                fixed_order=self._fixed_order
-                )
 
 
     ## reset verts & edges based on args that might change
