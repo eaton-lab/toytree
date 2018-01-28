@@ -110,10 +110,12 @@ class MultiTree(object):
                 with open(self.newick) as infile:
                     testdat = infile.readline()
             else:
-                if ("http://" in newick) or ("https://" in newick):
-                    import urllib2
-                    response = urllib2.urlopen(newick)
-                    testdat = response.readline()
+                if any(i in newick for i in ("http://", "https://")):
+                    response = requests.get(newick)
+                    if response.status_code == 200:
+                        testdat = response.text.strip()
+                    else:
+                        raise Exception("bad newick argument")
                 else:
                     testdat = self.newick.strip().split("\n")[0]
             ## check if a bpp tree
@@ -129,11 +131,15 @@ class MultiTree(object):
                     intrees = infile.readlines()\
                         [treeslice[0]:treeslice[1]:treeslice[2]]
             else:
-                if ("http://" in newick) or ("https://" in newick):
-                    #response = urllib2.urlopen(newick)
-                    response = urllib2.urlopen(newick)
-                    intrees = response.readlines()\
+                if any(i in newick for i in ("http://", "https://")):
+                    response = requests.get(newick)
+                    if response.status_code == 200:
+                        intrees = response.text.strip().split("\n")\
                         [treeslice[0]:treeslice[1]:treeslice[2]]
+                    else:
+                        raise Exception("bad newick argument")
+                    # intrees = response.readlines()\
+                    #     [treeslice[0]:treeslice[1]:treeslice[2]]
                     intrees = [i.strip() for i in intrees]
                 else:
                     intrees = self.newick.strip().split("\n")\
@@ -148,8 +154,6 @@ class MultiTree(object):
                 ## order nodes for plotting
                 self.treelist = [tree(i.strip()) for i in intrees]
                 constre = self.get_consensus_tree()
-                #if root:
-                #    constre.root(root)
                 self._fixed_order = constre.get_tip_labels()[::-1]
                 kwargs = {"format": 0, "fixed_order": fixed_order}
                 self.treelist = [tree(i.tree.write(),
