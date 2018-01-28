@@ -10,7 +10,7 @@ install:
   - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
       brew update;
       curl -L https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -o miniconda2.sh;
-      curl -L https://repo.continuum.io/miniconda/Miniconda3-latest-OSX-x86_64.sh -o miniconda3.sh;
+      curl -L https://repo.continuum.io/miniconda/Miniconda3-latest-MacOSX-x86_64.sh -o miniconda3.sh;
     fi;
 
   - if [[ $TRAVIS_OS_NAME == 'linux' ]]; then
@@ -49,19 +49,21 @@ script:
   - export PATH="$HOME/miniconda2/bin:$PATH"  
   - python -c "import toytree; print toytree.__version__"
   - python -c "import toyplot; print toyplot.__version__"
-  #- jupyter-nbconvert --execute docs/tutorial.ipynb --output pytest --to html
-  #- jupyter-nbconvert --execute docs/tip-labels.ipynb --output pytest --to html
-  #- jupyter-nbconvert --execute docs/node-labels.ipynb --output pytest --to html
-  #- jupyter-nbconvert --execute docs/cloud-trees.ipynb --output pytest --to html
-  #- jupyter-nbconvert --execute docs/color-mapping.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/tutorial.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/tip-labels.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/node-labels.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/color-mapping.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/cloud-trees.ipynb --output pytest --to html
+  
 
   # ## do py3 tests
   - export PATH="$HOME/miniconda3/bin:$PATH"  
   - python -c "import toytree; print(toytree.__version__)"
   - python -c "import toyplot; print(toyplot.__version__)"
-  # - jupyter-nbconvert --execute docs/tutorial.ipynb --output pytest --to html
-  # - jupyter-nbconvert --execute docs/tip-labels.ipynb --output pytest --to html
-  # - jupyter-nbconvert --execute docs/node-labels.ipynb --output pytest --to html
-  # - jupyter-nbconvert --execute docs/cloud-trees.ipynb --output pytest --to html
-  # - jupyter-nbconvert --execute docs/color-mapping.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/tutorial.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/tip-labels.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/node-labels.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/color-mapping.ipynb --output pytest --to html
+  - jupyter-nbconvert --execute docs/cloud-trees.ipynb --output pytest --to html
+  
 
