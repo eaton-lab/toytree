@@ -502,6 +502,7 @@ class Toytree(object):
             "use_edge_lengths": use_edge_lengths,
             "tree_style": tree_style, 
         }
+
         ## We don't allow the setting of None to update defaults.
         entered = {i:j for i,j in entered.items() if j != None}
         for key, val in entered.items():
@@ -510,6 +511,21 @@ class Toytree(object):
                     self._kwargs[key].update(entered[key])
                 else:
                     self._kwargs[key] = val
+
+        ## explitit loop to avoid list comparison to None warning
+        # parsed = {}
+        # for i,j in entered.items():
+        #     if isinstance(j, (str, int, float, bool, list, dict, tuple, np.ndarray)):
+        #         parsed[i] = j
+
+        # #entered = {i:j for i,j in entered.items() if j != None}
+        # for key, val in parsed.items():
+        #     #if val != None:
+        #     if isinstance(val, (str, int, float, bool, list, dict, tuple, np.ndarray)):
+        #         if isinstance(val, dict):
+        #             self._kwargs[key].update(parsed[key])
+        #         else:
+        #             self._kwargs[key] = val
 
         ## stick all entered option into kwargs
         ## start from default styles copied
@@ -891,6 +907,7 @@ def _decompose_tree(ttree, orient, use_edge_lengths, fixed_order):
         ttree._coords[:, 1] = ttree._coords[:, 1] * -1
         ttree._coords = ttree._coords[:, [1, 0]]
 
+    ## TODO: there's a bug in cloud trees 'down' orientation drawings
     if ttree._orient in ['down', 0]:
         ttree.verts[:, 1] = ttree.verts[:, 1] * -1
         ttree._coords[:, 1] = ttree._coords[:, 1] * -1
@@ -955,8 +972,15 @@ def _add_nodes_to_axes(ttree, axes):
         nlstyle = copy.deepcopy(ttree._kwargs["node_labels_style"])
 
         ## color nodes
-        if isinstance(ttree._kwargs["node_color"], list):
-            nstyle["fill"] = ttree._kwargs["node_color"][nidx]
+        if isinstance(ttree._kwargs["node_color"], str):
+            nstyle["fill"] = ttree._kwargs["node_color"]
+        elif isinstance(ttree._kwargs["node_color"], (np.ndarray, list, tuple)):
+            color = ttree._kwargs["node_color"][nidx]
+            if isinstance(color, (np.ndarray, list, tuple)):
+                color = toyplot.color.to_css(color)
+            nstyle["fill"] = color
+        else:
+            pass
 
         ## create mark if text or node
         if (nlabel or nsize):
