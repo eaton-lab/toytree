@@ -17,7 +17,7 @@ import os
 
 #from six.moves import (cPickle, map, range, zip)
 from six.moves import (map, range, zip)
-from newick import read_newick, write_newick
+from .newick import read_newick, write_newick
 
 DEFAULT_EDGE_LENGTH = 1.
 DEFAULT_SUPPORT = 100.
