@@ -79,7 +79,7 @@ class MultiTree(object):
     """
     def __init__(self,
         newick,
-        format=None,
+        tree_format=None,
         treeslice=(None, None, None),
         skip=None,
         fixed_order=None,
@@ -89,9 +89,9 @@ class MultiTree(object):
         ):
 
         ## setting attributes
-        self.newick = os.path.abspath(os.path.expanduser(newick))
+        self.newick = newick
         self.colors = COLORS
-        self._tformat = format
+        self._tformat = tree_format
         self._fixed_order = fixed_order
         self._orient = orient
         self._use_edge_lengths = use_edge_lengths
@@ -103,9 +103,10 @@ class MultiTree(object):
         ## of tree lists. The first we'll support is BPP.
 
         ## check format of multitree
-        if not format:
+        if not tree_format:
             ## get line for testing
             if os.path.isfile(self.newick):
+                self.newick = os.path.abspath(os.path.expanduser(newick))
                 with open(self.newick) as infile:
                     testdat = infile.readline()
             else:
@@ -123,6 +124,7 @@ class MultiTree(object):
 
             ## parse the treefile
             if os.path.isfile(self.newick):
+                self.newick = os.path.abspath(os.path.expanduser(newick))
                 with open(self.newick) as infile:
                     intrees = infile.readlines()\
                         [treeslice[0]:treeslice[1]:treeslice[2]]
@@ -163,6 +165,26 @@ class MultiTree(object):
         return tree(constre.write())
 
 
+    def _set_dims_from_tree_size(self):
+        """
+        Calculate reasonable height and width for tree given N tips
+        """
+        tlen = len(self.treelist[0])
+        if self._kwargs.get("orient") in ["right", "left"]:
+            ## long tip-wise dimension 
+            if not self._kwargs.get("height"):
+                self._kwargs["height"] = max(275, min(1000, 18*(tlen)))
+            if not self._kwargs.get("width"):
+                self._kwargs["width"] = max(225, min(500, 18*(tlen)))
+        else:
+            ## long tip-wise dimension 
+            if not self._kwargs.get("width"):
+                self._kwargs["width"] = max(275, min(1000, 18*(tlen)))
+            if not self._kwargs.get("height"):
+                self._kwargs["height"] = max(225, min(500, 18*(tlen)))
+
+
+
     # def rootlist(self, outgroup=None, wildcard=None):
     #     ## root trees
     #     if not wildcard:
@@ -193,8 +215,8 @@ class MultiTree(object):
         #edge_width=None,
         edge_style=None,
         edge_align_style=None,
-        use_edge_lengths=None, #False,
-        orient=None, #"down",
+        use_edge_lengths=True, #False,
+        orient="down",
         tree_style="c",
         #print_args=False,
         #fixed_order=None,
@@ -242,10 +264,10 @@ class MultiTree(object):
                 else:
                     self._kwargs[key] = val
         ## if dims not set then guess a reasonable height & width
-        if not self._kwargs.get("width"):
-            self._kwargs["width"] = min(1000, 25*len(self.treelist[0].tree))
-        if not self._kwargs.get("height"):
-            self._kwargs["height"] = self._kwargs["width"]
+        self._set_dims_from_tree_size()
+        #    self._kwargs["width"] = min(1000, 25*len(self.treelist[0].tree))
+        #if not 
+        #    self._kwargs["height"] = self._kwargs["width"]
 
         ## if not canvas then create one else use the existing
         if axes:
@@ -282,8 +304,10 @@ class MultiTree(object):
             self._kwargs["tip_labels"] = self._fixed_order
         if self._kwargs["tip_labels"]:
             axes.text(
-                tre.verts[-1*len(tre):, 0],
-                tre.verts[-1*len(tre):, 1],
+                #tre.verts[-1*len(tre):, 0],
+                #tre.verts[-1*len(tre):, 1],
+                tre.verts[:len(tre), 0],
+                tre.verts[:len(tre), 1],
                 self._kwargs["tip_labels"],
                 style=self._kwargs["tip_labels_style"],
                 angle=angle,
