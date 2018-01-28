@@ -5,10 +5,10 @@ import glob
 import re
 
 
-def requires():
-    """ gets packages from requirements.txt """
-    with open('requirements.txt') as infile:
-        return infile.read().splitlines()
+#def requires():
+#    """ gets packages from requirements.txt """
+#    with open('requirements.txt') as infile:
+#        return infile.read().splitlines()
 
 
 #def dependency_links():
@@ -34,7 +34,7 @@ setup(
     description="minimalist tree plotting using toyplot",
     long_description=open('README.rst').read(),
     packages=find_packages(),
-    install_requires=requires(),
+    #install_requires=requires(),
     #dependencies=dependency_links(),
     entry_points={},
     license='GPL',
