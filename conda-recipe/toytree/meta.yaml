@@ -4,7 +4,7 @@ package:
 
 source:
   git_url: https://github.com/eaton-lab/toytree.git
-  #git_tag: 0.1.4
+  git_tag: 0.1.5
   ## git_tag: {{ environ.get('GIT_DESCRIBE_TAG', '') }}  ## current tag on master
 
 build:
@@ -16,7 +16,7 @@ requirements:
     - python
     - setuptools
     - numpy >=1.7
-    - toyplot >=0.16.0  ## eaton-lab forked version for now
+    - toyplot >=0.16.1  ## eaton-lab forked version for now
     - pypng
     - reportlab
     - nbconvert
@@ -25,7 +25,7 @@ requirements:
     - python
     - setuptools
     - numpy >=1.7
-    - toyplot >=0.16.0  ## eaton-lab forked version for now
+    - toyplot >=0.16.1  ## eaton-lab forked version for now
     - pypng
     - reportlab
     - jupyter

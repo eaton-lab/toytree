@@ -1,6 +1,6 @@
 package:
   name: toyplot
-  version: "0.16.0" ## need to set this explicit b/c the git version is v0.15.0
+  version: "0.16.1" ## need to set this explicit b/c the git version is v0.15.0
 
 source:
   ## eaton-lab branch is up-to-date with sandialabs, but excludes requirements
@@ -8,7 +8,7 @@ source:
   #git_url: https://github.com/sandialabs/toyplot.git
   #git_tag: 5f0271f1d9c478917096c8b0496cd6a590f00a0a
   git_url: https://github.com/eaton-lab/toyplot.git
-  git_tag: 0.16.0
+  git_tag: 0.16.1
 
 build:
   ##string: dev   ## {{ environ.get('GIT_DESCRIBE_HASH', '') }}
