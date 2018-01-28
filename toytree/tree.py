@@ -320,12 +320,13 @@ class Toytree(object):
         """
         newtree = copy.deepcopy(self)
         newtree.tree.unroot()
-
+        newtree.tree.ladderize()
+        
         ## get features
         testnode = newtree.tree.get_leaves()[0] 
         features = {"name", "dist", "support", "height"}
         extrafeat = {i for i in testnode.features if i not in features}
-        features.update(extrafeat)        
+        features.update(extrafeat)
         if any(extrafeat):
             newtree.newick = newtree.tree.write(format=9, features=features)
         else:
@@ -367,7 +368,7 @@ class Toytree(object):
             return True
 
 
-    def is_bifurcating(self, count_basal_polytomy=True):
+    def is_bifurcating(self, include_root=True):
         """
         Returns False if there is a polytomy in the tree, including if the tree
         is unrooted (basal polytomy), unless you use the count_basal_polytomy=False
@@ -498,6 +499,7 @@ class Toytree(object):
 
         ## store tree back into newick and reinit Toytree with new newick
         ## if NHX format then preserve the NHX features. 
+        nself.tree.ladderize()
         if any(extrafeat):
             nself.newick = nself.tree.write(format=9, features=features)
         else:
@@ -639,32 +641,14 @@ class Toytree(object):
         }
 
         ## We don't allow the setting of None to update defaults.
-        entered = {i:j for i,j in entered.items() if j != None}
+        ## stick all entered option into kwargs
+        entered = {i:j for i,j in entered.items() if j is not None}
         for key, val in entered.items():
-            if val != None:
+            if val is not None:
                 if isinstance(val, dict):
                     self._kwargs[key].update(entered[key])
                 else:
                     self._kwargs[key] = val
-
-        ## explitit loop to avoid list comparison to None warning
-        # parsed = {}
-        # for i,j in entered.items():
-        #     if isinstance(j, (str, int, float, bool, list, dict, tuple, np.ndarray)):
-        #         parsed[i] = j
-
-        # #entered = {i:j for i,j in entered.items() if j != None}
-        # for key, val in parsed.items():
-        #     #if val != None:
-        #     if isinstance(val, (str, int, float, bool, list, dict, tuple, np.ndarray)):
-        #         if isinstance(val, dict):
-        #             self._kwargs[key].update(parsed[key])
-        #         else:
-        #             self._kwargs[key] = val
-
-        ## stick all entered option into kwargs
-        ## start from default styles copied
-
 
         ## re-decompose tree for new orient and edges args
         self._decompose_tree(
@@ -875,8 +859,8 @@ def randomtree(ntips, node_values={}):
     ## generate tree with N tips.
     tmptree = ete3mini.TreeNode()
     tmptree.populate(ntips)
-    tmptree.convert_to_ultrametric()
-    self = Toytree(newick=tmptree.write(format=9))
+    #tmptree.convert_to_ultrametric()
+    self = Toytree(newick=tmptree.write())
 
     ## set values
     for fkey, vals in node_values.items():
@@ -1036,10 +1020,10 @@ def _add_tree_to_axes(ttree, axes):
 
     ## add the tree/graph ------------------------------------------------
     if ttree._kwargs["tree_style"] in ["c", "cladogram", "a", "admixture"]:
-        _ = axes.graph(ttree.edges, 
+        mark = axes.graph(ttree.edges, 
                        vcoordinates=ttree.verts, 
-                       vsize=0,
                        vlshow=False,
+                       vsize=0,
                        estyle=ttree._kwargs["edge_style"],
                        #ecolor=self.kwargs["edge_color"], ## ...
                        #ewidth=self.kwargs["edge_width"], ## def: 2
@@ -1082,12 +1066,12 @@ def _add_nodes_to_axes(ttree, axes):
         nstyle = copy.deepcopy(ttree._kwargs["node_style"])
         nlstyle = copy.deepcopy(ttree._kwargs["node_labels_style"])
 
-        ## color nodes
+        ## parsing color types is bit tricky b/c there are many accepted formats
         if isinstance(ttree._kwargs["node_color"], str):
             nstyle["fill"] = ttree._kwargs["node_color"]
         elif isinstance(ttree._kwargs["node_color"], (np.ndarray, list, tuple)):
             color = ttree._kwargs["node_color"][nidx]
-            if isinstance(color, (np.ndarray, list, tuple)):
+            if isinstance(color, (np.ndarray, np.void, list, tuple)):
                 color = toyplot.color.to_css(color)
             nstyle["fill"] = color
         else:
