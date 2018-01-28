@@ -234,9 +234,9 @@ class Toytree(object):
 
         ## access nodes in the order they will be plotted
         ## this is a customized order best sampled this way
-        #nodes = [self.tree.search_nodes(name=str(i))[0] \
-        #         for i in self.get_node_dict().values()]
-        nodes = [i for i in self.tree.traverse("preorder")]
+        nodes = [self.tree.search_nodes(name=str(i))[0] \
+                 for i in self.get_node_dict().values()]
+        #nodes = [i for i in self.tree.traverse("preorder")]
 
 
         ## get features
@@ -781,7 +781,8 @@ def randomtree(ntips, node_values={}):
     ## generate tree with N tips.
     tmptree = ete3mini.TreeNode()
     tmptree.populate(ntips)
-    self = Toytree(newick=tmptree.write())
+    tmptree.convert_to_ultrametric()
+    self = Toytree(newick=tmptree.write(format=9))
 
     ## set values
     for fkey, vals in node_values.items():
