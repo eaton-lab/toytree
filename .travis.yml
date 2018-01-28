@@ -21,7 +21,7 @@ install:
 
   ## install both
   - bash miniconda2.sh -b -p $HOME/miniconda2
-  #- bash miniconda3.sh -b -p $HOME/miniconda3
+  - bash miniconda3.sh -b -p $HOME/miniconda3
 
   ## source py2 path
   - export PATH="$HOME/miniconda2/bin:$PATH"
@@ -32,6 +32,7 @@ install:
   - conda info -a
   - conda install toytree -c eaton-lab
 
+  ## source py3 path
   - export PATH="$HOME/miniconda3/bin:$PATH"
   - which python
   - hash -r
