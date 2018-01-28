@@ -265,3 +265,57 @@
 -simpler travis for now
 -relaxed deps in env and consts
 -fewer deps in env.yml
+==========
+0.1.5
+-updated docs; fixed print() for py3 in CI test
+-Updating toytree/__init__.py to version 0.1.5
+-Updating toytree/__init__.py to version 0.1.5
+-py3 fix in consens func for indexed dict
+-Updating toytree/__init__.py to version 0.1.5
+-update travis for specifying kernel in nbconvert
+-updated docs build for 0.1.5
+-update conda rec and versioner
+-Merge branch 'master' of https://github.com/eaton-lab/toytree
+-travis update
+-updated docs notebooks for CI testing
+-fixed color list warning; ladderize when root or unroot
+-bug typo on travis build for osx
+-Merge branch 'rootfix'
+-keep node order by node_dict
+-merge fix
+-node color fixes
+-multitree fix orient down, and dims auto
+-update travis test
+-Updating toytree/__init__.py to version 0.1.5
+-simplify conda build by removing requirements
+-Updating toytree/__init__.py to version 0.1.5
+-update travis CI
+-fix py3 import; gonna work this time!
+-Updating toytree/__init__.py to version 0.1.5
+-Updating toyplot/__init__.py to version 0.1.5
+-resolved merge conflicts
+-py3/py2 working imports
+-working on deps
+-rooting now works for rooted and unrooted trees, and toytree objects have root and unroot functions that return a copy. Also added some query funcs like is_rooted to toytree obj
+-made height attr work with rooting
+-better default spacing of toytree objects to fit within the boundaries of canvas objects and align easier with additional toyplots
+-modified organization of default params in multitree objects
+-added a height property attribute to the ete3mini base class
+-Merge branch 'master' of https://github.com/eaton-lab/toytree
+-merged conflicts
+-cleaned up Tree object code
+-updating conda recipe for Py3 and to avoid new jupyter error
+-updating conda recipe for Py3 and to avoid new jupyter error
+-updating conda recipe for Py3 and to avoid new jupyter error
+-Merge branch 'master' of https://github.com/eaton-lab/toytree
+-environment.yml update minor
+-Zsailor's fix for ns bad val
+-Merge pull request #10 from Zsailer/python3-bug
+-retype zips to lists for add operator
+-built back up reqs and consts for pip
+-better version naming of toytree
+-better naming of toyplot version for now
+-added py3 test to travis
+-simpler travis for now
+-relaxed deps in env and consts
+-fewer deps in env.yml
