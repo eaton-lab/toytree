@@ -21,6 +21,7 @@ requirements:
     - reportlab
     - nbconvert
     - jupyter
+    - requests
   run:
     - python
     - setuptools
@@ -30,6 +31,7 @@ requirements:
     - reportlab
     - jupyter
     - nbconvert
+    - requests
 
 test:
   imports:
