@@ -23,42 +23,200 @@ tre = toytree.tree(newick)
 ```
 
 ### Hide/Show node labels
-The argument `node_labels` can be entered as *True*, *False*, or as a list of names, with the default being *False* in which case the node labels are not shown. If you enter *True* a special feature is applied to the nodes in which case they will become **interactive** and show information for all available *features* (node values stored in the Tree object metadata) in the Tree. Hover your cursor over the green node labels below for an example. 
+The argument `node_labels` can be entered as a list of names or left as None or *False* in which case the node labels are not shown. If you enter *True* a special feature is applied to the nodes in which case they will become **interactive** and show information for all available *features* (node values stored in the Tree object metadata) in the Tree. Hover your cursor over the green node labels below for an example. 
 
 
 ```python
 ## no node labels
-tre.draw(width=200);
+tre.draw();
 
 ## default node labels
-tre.draw(width=200, node_labels=True);
+tre.draw(node_labels=True);
 ```
 
 
-<div align="center" class="toyplot" id="t84d6f2c453e3499db8478f8a0a06a396"><svg class="toyplot-canvas-Canvas" height="200.0px" id="t8ab2460facca4610a5b5deca34f3b0d4" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 200.0 200.0" width="200.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="t74dfbf34fc2d4850863e59340b6f2817"><clipPath id="t6368f48a43f3443996f5cfdd1bce5464"><rect height="180.0" width="180.0" x="10.0" y="10.0"></rect></clipPath><g clip-path="url(#t6368f48a43f3443996f5cfdd1bce5464)"><g class="toyplot-mark-Text" id="ta3edbacbd4ea4b66be2aafaa7b3d9f95" style="-toyplot-anchor-shift:15px;alignment-baseline:middle;font-size:12px;font-weight:normal;stroke:none;text-anchor:start"><g class="toyplot-Series"><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,25.581395348837205)translate(15.0,3.375)"><tspan style="font-size:12.0px">apple</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,55.348837209302317)translate(15.0,3.375)"><tspan style="font-size:12.0px">orange</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,85.11627906976743)translate(15.0,3.375)"><tspan style="font-size:12.0px">tomatillo</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,114.88372093023254)translate(15.0,3.375)"><tspan style="font-size:12.0px">pepper</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,144.65116279069767)translate(15.0,3.375)"><tspan style="font-size:12.0px">tomato</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,174.41860465116281)translate(15.0,3.375)"><tspan style="font-size:12.0px">eggplant</tspan></text></g></g><g class="toyplot-mark-Graph" id="t9d5189aa0a734a9dab8e2cca047ccc83"><g class="toyplot-Edges"><path d="M 20.0 75.8139534884 L 20.0 40.4651162791" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 20.0 40.4651162791 L 87.8445229682 40.4651162791" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 20.0 75.8139534884 L 20.0 111.162790698" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 20.0 111.162790698 L 42.6148409894 111.162790698" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 40.4651162791 L 87.8445229682 25.5813953488" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 25.5813953488 L 110.459363958 25.5813953488" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 40.4651162791 L 87.8445229682 55.3488372093" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 55.3488372093 L 110.459363958 55.3488372093" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 42.6148409894 111.162790698 L 42.6148409894 85.1162790698" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 42.6148409894 85.1162790698 L 110.459363958 85.1162790698" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 42.6148409894 111.162790698 L 42.6148409894 137.209302326" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 42.6148409894 137.209302326 L 65.2296819788 137.209302326" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 65.2296819788 137.209302326 L 65.2296819788 114.88372093" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 65.2296819788 114.88372093 L 110.459363958 114.88372093" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 65.2296819788 137.209302326 L 65.2296819788 159.534883721" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 65.2296819788 159.534883721 L 87.8445229682 159.534883721" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 159.534883721 L 87.8445229682 144.651162791" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 144.651162791 L 110.459363958 144.651162791" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 159.534883721 L 87.8445229682 174.418604651" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 174.418604651 L 110.459363958 174.418604651" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="20.0" cy="75.813953488372078" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="20.0" cy="40.465116279069768" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="40.465116279069768" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="20.0" cy="111.16279069767442" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="42.614840989399298" cy="111.16279069767442" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="40.465116279069768" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="25.581395348837205" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="25.581395348837205" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="55.348837209302317" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="55.348837209302317" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="42.614840989399298" cy="111.16279069767442" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="42.614840989399298" cy="85.11627906976743" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="85.11627906976743" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="42.614840989399298" cy="137.2093023255814" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="65.229681978798581" cy="137.2093023255814" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="65.229681978798581" cy="137.2093023255814" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="65.229681978798581" cy="114.88372093023254" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="114.88372093023254" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="65.229681978798581" cy="159.53488372093022" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="159.53488372093022" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="159.53488372093022" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="144.65116279069767" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="144.65116279069767" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="174.41860465116281" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="174.41860465116281" r="0.0"></circle></g></g></g><g class="toyplot-mark-Scatterplot" id="te292c6b1f807464a8606819b4781525f" style=""><g class="toyplot-Series"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="20.0" cy="75.813953488372078" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="87.844522968197879" cy="40.465116279069768" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="42.614840989399298" cy="111.16279069767442" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="65.229681978798581" cy="137.2093023255814" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="87.844522968197879" cy="159.53488372093022" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="110.45936395759718" cy="25.581395348837205" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="110.45936395759718" cy="55.348837209302317" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="110.45936395759718" cy="85.11627906976743" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="110.45936395759718" cy="114.88372093023254" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="110.45936395759718" cy="144.65116279069767" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="110.45936395759718" cy="174.41860465116281" r="0.0"></circle></g></g></g></g></g></svg><div class="toyplot-interactive"><ul class="toyplot-mark-popup" onmouseleave="this.style.visibility='hidden'" style="background:rgba(0%,0%,0%,0.75);border:0;border-radius:6px;color:white;cursor:default;list-style:none;margin:0;padding:5px;position:fixed;visibility:hidden">
-            <li class="toyplot-mark-popup-title" style="color:lightgray;cursor:default;padding:5px;list-style:none;margin:0"></li>
-            <li class="toyplot-mark-popup-save-csv" onmouseout="this.style.color='white';this.style.background='steelblue'" onmouseover="this.style.color='steelblue';this.style.background='white'" style="border-radius:3px;padding:5px;list-style:none;margin:0">
-                Save as .csv
-            </li>
-        </ul><script>
-        (function()
-        {
-          var data_tables = [{"title": "Scatterplot Data", "names": ["x", "y0"], "id": "te292c6b1f807464a8606819b4781525f", "columns": [[-4.0, -1.0, -3.0, -2.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [3.3125, 4.5, 2.125, 1.25, 0.5, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0]], "filename": "toyplot"}];
+<div class="toyplot" id="t06f63969863a495ab4c2dc022b62fe1c" style="text-align:center"><svg class="toyplot-canvas-Canvas" height="275.0px" id="t5b92f41c95c84dabbf75edf515a6ec06" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 225.0 275.0" width="225.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="tbb02b0033f6c49a88286180614879b8b"><clipPath id="t531b358b69164d808377bd72871c1790"><rect height="275.0" width="225.0" x="0.0" y="0.0"></rect></clipPath><g clip-path="url(#t531b358b69164d808377bd72871c1790)"><g class="toyplot-mark-Text" id="t8e4064d1facf437782c6484ccdadc1bc"><g class="toyplot-Series"><g class="toyplot-Datum" transform="translate(123.41636783268305,218.34741288278775)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">eggplant</text></g><g class="toyplot-Datum" transform="translate(138.09964139921965,186.00844772967267)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">tomato</text></g><g class="toyplot-Datum" transform="translate(123.41636783268305,153.66948257655756)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">pepper</text></g><g class="toyplot-Datum" transform="translate(94.049820699609825,121.33051742344244)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">tomatillo</text></g><g class="toyplot-Datum" transform="translate(138.09964139921965,88.991552270327347)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">orange</text></g><g class="toyplot-Datum" transform="translate(108.73309426614644,56.652587117212242)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">apple</text></g></g></g><g class="toyplot-mark-Graph" id="t19b4bdccace0489e94e0e16c3816eea9"><g class="toyplot-Edges"><path d="M 50.0 111.224590813 L 50.0 72.8220696938" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 72.8220696938 L 79.3665471331 72.8220696938" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 111.224590813 L 50.0 149.627111932" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 149.627111932 L 64.6832735665 149.627111932" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 72.8220696938 L 79.3665471331 56.6525871172" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 56.6525871172 L 108.733094266 56.6525871172" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 72.8220696938 L 79.3665471331 88.9915522703" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 88.9915522703 L 138.099641399 88.9915522703" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 64.6832735665 149.627111932 L 64.6832735665 121.330517423" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 64.6832735665 121.330517423 L 94.0498206996 121.330517423" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 64.6832735665 149.627111932 L 64.6832735665 177.923706441" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 64.6832735665 177.923706441 L 79.3665471331 177.923706441" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 177.923706441 L 79.3665471331 153.669482577" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 153.669482577 L 123.416367833 153.669482577" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 177.923706441 L 79.3665471331 202.177930306" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 202.177930306 L 108.733094266 202.177930306" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 108.733094266 202.177930306 L 108.733094266 186.00844773" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 108.733094266 186.00844773 L 138.099641399 186.00844773" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 108.733094266 202.177930306 L 108.733094266 218.347412883" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 108.733094266 218.347412883 L 123.416367833 218.347412883" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><g class="toyplot-HeadMarkers"></g><g class="toyplot-MiddleMarkers"></g><g class="toyplot-TailMarkers"></g></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 111.22459081309398)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(64.683273566536613, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 56.652587117212242)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 56.652587117212242)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 88.991552270327347)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(138.09964139921965, 88.991552270327347)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(64.683273566536613, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(64.683273566536613, 121.33051742344244)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(94.049820699609825, 121.33051742344244)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(64.683273566536613, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 153.66948257655756)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(123.41636783268305, 153.66948257655756)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 186.00844772967267)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(138.09964139921965, 186.00844772967267)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 218.34741288278775)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(123.41636783268305, 218.34741288278775)"><circle r="0.0"></circle></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+modules["toyplot/tables"] = (function()
+    {
+        var tables = [];
 
-          function save_csv(data_table)
-          {
-            var uri = "data:text/csv;charset=utf-8,";
-            uri += data_table.names.join(",") + "\n";
-            for(var i = 0; i != data_table.columns[0].length; ++i)
+        var module = {};
+
+        module.set = function(owner, key, names, columns)
+        {
+            tables.push({owner: owner, key: key, names: names, columns: columns});
+        }
+
+        module.get = function(owner, key)
+        {
+            for(var i = 0; i != tables.length; ++i)
             {
-              for(var j = 0; j != data_table.columns.length; ++j)
-              {
-                if(j)
-                  uri += ",";
-                uri += data_table.columns[j][i];
-              }
-              uri += "\n";
+                var table = tables[i];
+                if(table.owner != owner)
+                    continue;
+                if(table.key != key)
+                    continue;
+                return {names: table.names, columns: table.columns};
             }
+        }
+
+        module.get_csv = function(owner, key)
+        {
+            var table = module.get(owner, key);
+            if(table != undefined)
+            {
+                var csv = "";
+                csv += table.names.join(",") + "\n";
+                for(var i = 0; i != table.columns[0].length; ++i)
+                {
+                  for(var j = 0; j != table.columns.length; ++j)
+                  {
+                    if(j)
+                      csv += ",";
+                    csv += table.columns[j][i];
+                  }
+                  csv += "\n";
+                }
+                return csv;
+            }
+        }
+
+        return module;
+    })();
+modules["toyplot/root/id"] = "t06f63969863a495ab4c2dc022b62fe1c";
+modules["toyplot/root"] = (function(root_id)
+    {
+        return document.querySelector("#" + root_id);
+    })(modules["toyplot/root/id"]);
+modules["toyplot/canvas/id"] = "t5b92f41c95c84dabbf75edf515a6ec06";
+modules["toyplot/canvas"] = (function(canvas_id)
+    {
+        return document.querySelector("#" + canvas_id);
+    })(modules["toyplot/canvas/id"]);
+modules["toyplot/menus/context"] = (function(root, canvas)
+    {
+        var wrapper = document.createElement("div");
+        wrapper.innerHTML = "<ul class='toyplot-context-menu' style='background:#eee; border:1px solid #b8b8b8; border-radius:5px; box-shadow: 0px 0px 8px rgba(0%,0%,0%,0.25); margin:0; padding:3px 0; position:fixed; visibility:hidden;'></ul>"
+        var menu = wrapper.firstChild;
+
+        root.appendChild(menu);
+
+        var items = [];
+
+        var ignore_mouseup = null;
+        function open_menu(e)
+        {
+            var show_menu = false;
+            for(var index=0; index != items.length; ++index)
+            {
+                var item = items[index];
+                if(item.show(e))
+                {
+                    item.item.style.display = "block";
+                    show_menu = true;
+                }
+                else
+                {
+                    item.item.style.display = "none";
+                }
+            }
+
+            if(show_menu)
+            {
+                ignore_mouseup = true;
+                menu.style.left = (e.clientX + 1) + "px";
+                menu.style.top = (e.clientY - 5) + "px";
+                menu.style.visibility = "visible";
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }
+
+        function close_menu()
+        {
+            menu.style.visibility = "hidden";
+        }
+
+        function contextmenu(e)
+        {
+            open_menu(e);
+        }
+
+        function mousemove(e)
+        {
+            ignore_mouseup = false;
+        }
+
+        function mouseup(e)
+        {
+            if(ignore_mouseup)
+            {
+                ignore_mouseup = false;
+                return;
+            }
+            close_menu();
+        }
+
+        function keydown(e)
+        {
+            if(e.key == "Escape" || e.key == "Esc" || e.keyCode == 27)
+            {
+                close_menu();
+            }
+        }
+
+        canvas.addEventListener("contextmenu", contextmenu);
+        canvas.addEventListener("mousemove", mousemove);
+        document.addEventListener("mouseup", mouseup);
+        document.addEventListener("keydown", keydown);
+
+        var module = {};
+        module.add_item = function(label, show, activate)
+        {
+            var wrapper = document.createElement("div");
+            wrapper.innerHTML = "<li class='toyplot-context-menu-item' style='background:#eee; color:#333; padding:2px 20px; list-style:none; margin:0; text-align:left;'>" + label + "</li>"
+            var item = wrapper.firstChild;
+
+            items.push({item: item, show: show});
+
+            function mouseover()
+            {
+                this.style.background = "steelblue";
+                this.style.color = "white";
+            }
+
+            function mouseout()
+            {
+                this.style.background = "#eee";
+                this.style.color = "#333";
+            }
+
+            function choose_item(e)
+            {
+                close_menu();
+                activate();
+
+                e.stopPropagation();
+                e.preventDefault();
+            }
+
+            item.addEventListener("mouseover", mouseover);
+            item.addEventListener("mouseout", mouseout);
+            item.addEventListener("mouseup", choose_item);
+            item.addEventListener("contextmenu", choose_item);
+
+            menu.appendChild(item);
+        };
+        return module;
+    })(modules["toyplot/root"],modules["toyplot/canvas"]);
+modules["toyplot/io"] = (function()
+    {
+        var module = {};
+        module.save_file = function(mime_type, charset, data, filename)
+        {
+            var uri = "data:" + mime_type + ";charset=" + charset + "," + data;
             uri = encodeURI(uri);
 
             var link = document.createElement("a");
@@ -66,7 +224,7 @@ tre.draw(width=200, node_labels=True);
             {
               link.href = uri;
               link.style = "visibility:hidden";
-              link.download = data_table.filename + ".csv";
+              link.download = filename;
 
               document.body.appendChild(link);
               link.click();
@@ -76,92 +234,273 @@ tre.draw(width=200, node_labels=True);
             {
               window.open(uri);
             }
-          }
+        };
+        return module;
+    })();
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
 
-          function open_popup(data_table)
-          {
-            return function(e)
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
             {
-              var popup = document.querySelector("#t84d6f2c453e3499db8478f8a0a06a396 .toyplot-mark-popup");
-              popup.querySelector(".toyplot-mark-popup-title").innerHTML = data_table.title;
-              popup.querySelector(".toyplot-mark-popup-save-csv").onclick = function() { popup.style.visibility = "hidden"; save_csv(data_table); }
-              popup.style.left = (e.clientX - 50) + "px";
-              popup.style.top = (e.clientY - 20) + "px";
-              popup.style.visibility = "visible";
-              e.stopPropagation();
-              e.preventDefault();
+                return owner.contains(e.target);
             }
 
-          }
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
 
-          for(var i = 0; i != data_tables.length; ++i)
-          {
-            var data_table = data_tables[i];
-            var event_target = document.querySelector("#" + data_table.id);
-            event_target.oncontextmenu = open_popup(data_table);
-          }
-        })();
-        </script></div></div>
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t19b4bdccace0489e94e0e16c3816eea9","vertex_data","graph vertex data",["x", "y"],[[-6.0, -6.0, -4.0, -6.0, -5.0, -4.0, -4.0, -2.0, -4.0, 0.0, -5.0, -5.0, -3.0, -5.0, -4.0, -4.0, -4.0, -1.0, -4.0, -2.0, -2.0, -2.0, 0.0, -2.0, -1.0], [3.3125, 4.5, 4.5, 2.125, 2.125, 4.5, 5.0, 5.0, 4.0, 4.0, 2.125, 3.0, 3.0, 1.25, 1.25, 1.25, 2.0, 2.0, 0.5, 0.5, 0.5, 1.0, 1.0, 0.0, 0.0]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t19b4bdccace0489e94e0e16c3816eea9","edge_data","graph edge data",["source", "target"],[[0, 1, 0, 3, 5, 6, 5, 8, 10, 11, 10, 13, 15, 16, 15, 18, 20, 21, 20, 23], [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 19, 21, 22, 23, 24]],"toyplot");
+})();</script></div></div>
 
 
 
-<div align="center" class="toyplot" id="t369271a860d2411aaf330c0e6b2650e7"><svg class="toyplot-canvas-Canvas" height="200.0px" id="t17de9b65c762486c9f1da4f6ff2ae759" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 200.0 200.0" width="200.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="t9b3725ce16654c5fbd0dbc76f8935bac"><clipPath id="t624adfafcf0647d78657013caa41f7aa"><rect height="180.0" width="180.0" x="10.0" y="10.0"></rect></clipPath><g clip-path="url(#t624adfafcf0647d78657013caa41f7aa)"><g class="toyplot-mark-Text" id="ta6f436c6610e4181ad3d132ce6c3af62" style="-toyplot-anchor-shift:15px;alignment-baseline:middle;font-size:12px;font-weight:normal;stroke:none;text-anchor:start"><g class="toyplot-Series"><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,25.581395348837205)translate(15.0,3.375)"><tspan style="font-size:12.0px">apple</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,55.348837209302317)translate(15.0,3.375)"><tspan style="font-size:12.0px">orange</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,85.11627906976743)translate(15.0,3.375)"><tspan style="font-size:12.0px">tomatillo</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,114.88372093023254)translate(15.0,3.375)"><tspan style="font-size:12.0px">pepper</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,144.65116279069767)translate(15.0,3.375)"><tspan style="font-size:12.0px">tomato</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,174.41860465116281)translate(15.0,3.375)"><tspan style="font-size:12.0px">eggplant</tspan></text></g></g><g class="toyplot-mark-Graph" id="t43d4bd8eaee4443cb7d750f87bad126c"><g class="toyplot-Edges"><path d="M 20.0 75.8139534884 L 20.0 40.4651162791" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 20.0 40.4651162791 L 87.8445229682 40.4651162791" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 20.0 75.8139534884 L 20.0 111.162790698" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 20.0 111.162790698 L 42.6148409894 111.162790698" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 40.4651162791 L 87.8445229682 25.5813953488" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 25.5813953488 L 110.459363958 25.5813953488" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 40.4651162791 L 87.8445229682 55.3488372093" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 55.3488372093 L 110.459363958 55.3488372093" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 42.6148409894 111.162790698 L 42.6148409894 85.1162790698" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 42.6148409894 85.1162790698 L 110.459363958 85.1162790698" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 42.6148409894 111.162790698 L 42.6148409894 137.209302326" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 42.6148409894 137.209302326 L 65.2296819788 137.209302326" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 65.2296819788 137.209302326 L 65.2296819788 114.88372093" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 65.2296819788 114.88372093 L 110.459363958 114.88372093" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 65.2296819788 137.209302326 L 65.2296819788 159.534883721" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 65.2296819788 159.534883721 L 87.8445229682 159.534883721" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 159.534883721 L 87.8445229682 144.651162791" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 144.651162791 L 110.459363958 144.651162791" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 159.534883721 L 87.8445229682 174.418604651" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 174.418604651 L 110.459363958 174.418604651" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="20.0" cy="75.813953488372078" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="20.0" cy="40.465116279069768" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="40.465116279069768" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="20.0" cy="111.16279069767442" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="42.614840989399298" cy="111.16279069767442" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="40.465116279069768" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="25.581395348837205" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="25.581395348837205" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="55.348837209302317" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="55.348837209302317" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="42.614840989399298" cy="111.16279069767442" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="42.614840989399298" cy="85.11627906976743" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="85.11627906976743" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="42.614840989399298" cy="137.2093023255814" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="65.229681978798581" cy="137.2093023255814" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="65.229681978798581" cy="137.2093023255814" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="65.229681978798581" cy="114.88372093023254" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="114.88372093023254" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="65.229681978798581" cy="159.53488372093022" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="159.53488372093022" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="159.53488372093022" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="144.65116279069767" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="144.65116279069767" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="174.41860465116281" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="174.41860465116281" r="0.0"></circle></g></g></g><g class="toyplot-mark-Scatterplot" id="t9a5a548e535c42758ad7be0632c688a1" style=""><g class="toyplot-Series"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><title>idx: 0
-name: 0
-dist: 0
-support: 100</title><circle cx="20.0" cy="75.813953488372078" r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><title>idx: 1
-name: 1
-dist: 2
-support: 100</title><circle cx="87.844522968197879" cy="40.465116279069768" r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><title>idx: 2
-name: 2
-dist: 1
-support: 100</title><circle cx="42.614840989399298" cy="111.16279069767442" r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><title>idx: 3
-name: 3
-dist: 1
-support: 90</title><circle cx="65.229681978798581" cy="137.2093023255814" r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><title>idx: 4
-name: 4
-dist: 2
-support: 100</title><circle cx="87.844522968197879" cy="159.53488372093022" r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><title>idx: 5
-name: apple
-dist: 2
-support: 100</title><circle cx="110.45936395759718" cy="25.581395348837205" r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><title>idx: 6
-name: orange
-dist: 4
-support: 100</title><circle cx="110.45936395759718" cy="55.348837209302317" r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><title>idx: 7
-name: tomatillo
-dist: 2
-support: 100</title><circle cx="110.45936395759718" cy="85.11627906976743" r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><title>idx: 8
-name: pepper
-dist: 3
-support: 100</title><circle cx="110.45936395759718" cy="114.88372093023254" r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><title>idx: 9
-name: tomato
-dist: 2
-support: 100</title><circle cx="110.45936395759718" cy="144.65116279069767" r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><title>idx: 10
+<div class="toyplot" id="t3b975c4303c54495a7b544a69ee57c6d" style="text-align:center"><svg class="toyplot-canvas-Canvas" height="275.0px" id="tc11aa77fa8c24ea682b373766aea6829" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 225.0 275.0" width="225.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="t2e93bdbb7758451c990e0f383fe1e22f"><clipPath id="ta273acc818f34b4cbacbb59fc27c2f3d"><rect height="275.0" width="225.0" x="0.0" y="0.0"></rect></clipPath><g clip-path="url(#ta273acc818f34b4cbacbb59fc27c2f3d)"><g class="toyplot-mark-Text" id="tb01069494b2746debe8bbfed3a614974"><g class="toyplot-Series"><g class="toyplot-Datum" transform="translate(123.41636783268305,218.34741288278775)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">eggplant</text></g><g class="toyplot-Datum" transform="translate(138.09964139921965,186.00844772967267)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">tomato</text></g><g class="toyplot-Datum" transform="translate(123.41636783268305,153.66948257655756)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">pepper</text></g><g class="toyplot-Datum" transform="translate(94.049820699609825,121.33051742344244)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">tomatillo</text></g><g class="toyplot-Datum" transform="translate(138.09964139921965,88.991552270327347)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">orange</text></g><g class="toyplot-Datum" transform="translate(108.73309426614644,56.652587117212242)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">apple</text></g></g></g><g class="toyplot-mark-Graph" id="tf5a832f2ccca4911ba34e548ba4af858"><g class="toyplot-Edges"><path d="M 50.0 111.224590813 L 50.0 72.8220696938" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 72.8220696938 L 79.3665471331 72.8220696938" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 111.224590813 L 50.0 149.627111932" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 149.627111932 L 64.6832735665 149.627111932" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 72.8220696938 L 79.3665471331 56.6525871172" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 56.6525871172 L 108.733094266 56.6525871172" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 72.8220696938 L 79.3665471331 88.9915522703" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 88.9915522703 L 138.099641399 88.9915522703" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 64.6832735665 149.627111932 L 64.6832735665 121.330517423" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 64.6832735665 121.330517423 L 94.0498206996 121.330517423" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 64.6832735665 149.627111932 L 64.6832735665 177.923706441" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 64.6832735665 177.923706441 L 79.3665471331 177.923706441" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 177.923706441 L 79.3665471331 153.669482577" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 153.669482577 L 123.416367833 153.669482577" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 177.923706441 L 79.3665471331 202.177930306" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 202.177930306 L 108.733094266 202.177930306" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 108.733094266 202.177930306 L 108.733094266 186.00844773" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 108.733094266 186.00844773 L 138.099641399 186.00844773" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 108.733094266 202.177930306 L 108.733094266 218.347412883" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 108.733094266 218.347412883 L 123.416367833 218.347412883" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><g class="toyplot-HeadMarkers"></g><g class="toyplot-MiddleMarkers"></g><g class="toyplot-TailMarkers"></g></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 111.22459081309398)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(64.683273566536613, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 56.652587117212242)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 56.652587117212242)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 88.991552270327347)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(138.09964139921965, 88.991552270327347)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(64.683273566536613, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(64.683273566536613, 121.33051742344244)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(94.049820699609825, 121.33051742344244)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(64.683273566536613, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 153.66948257655756)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(123.41636783268305, 153.66948257655756)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 186.00844772967267)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(138.09964139921965, 186.00844772967267)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 218.34741288278775)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(123.41636783268305, 218.34741288278775)"><circle r="0.0"></circle></g></g></g><g class="toyplot-mark-Scatterplot" id="t2d180330cffe423d829af53536c8e992"><g class="toyplot-Series"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(123.41636783268305, 218.34741288278775)"><title>idx: 0
 name: eggplant
 dist: 1
-support: 100</title><circle cx="110.45936395759718" cy="174.41860465116281" r="7.5"></circle></g></g></g></g></g></svg><div class="toyplot-interactive"><ul class="toyplot-mark-popup" onmouseleave="this.style.visibility='hidden'" style="background:rgba(0%,0%,0%,0.75);border:0;border-radius:6px;color:white;cursor:default;list-style:none;margin:0;padding:5px;position:fixed;visibility:hidden">
-            <li class="toyplot-mark-popup-title" style="color:lightgray;cursor:default;padding:5px;list-style:none;margin:0"></li>
-            <li class="toyplot-mark-popup-save-csv" onmouseout="this.style.color='white';this.style.background='steelblue'" onmouseover="this.style.color='steelblue';this.style.background='white'" style="border-radius:3px;padding:5px;list-style:none;margin:0">
-                Save as .csv
-            </li>
-        </ul><script>
-        (function()
-        {
-          var data_tables = [{"title": "Scatterplot Data", "names": ["x", "y0"], "id": "t9a5a548e535c42758ad7be0632c688a1", "columns": [[-4.0, -1.0, -3.0, -2.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [3.3125, 4.5, 2.125, 1.25, 0.5, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0]], "filename": "toyplot"}];
+support: 100
+height: 1</title><circle r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(138.09964139921965, 186.00844772967267)"><title>idx: 1
+name: tomato
+dist: 2
+support: 100
+height: 0</title><circle r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(123.41636783268305, 153.66948257655756)"><title>idx: 2
+name: pepper
+dist: 3
+support: 100
+height: 1</title><circle r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(94.049820699609825, 121.33051742344244)"><title>idx: 3
+name: tomatillo
+dist: 2
+support: 100
+height: 3</title><circle r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(138.09964139921965, 88.991552270327347)"><title>idx: 4
+name: orange
+dist: 4
+support: 100
+height: 0</title><circle r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(108.73309426614644, 56.652587117212242)"><title>idx: 5
+name: apple
+dist: 2
+support: 100
+height: 2</title><circle r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(108.73309426614644, 202.17793030623019)"><title>idx: 6
+name: i6
+dist: 2
+support: 100
+height: 2</title><circle r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(79.366547133073226, 177.92370644139388)"><title>idx: 7
+name: i7
+dist: 1
+support: 90
+height: 4</title><circle r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(64.683273566536613, 149.62711193241816)"><title>idx: 8
+name: i8
+dist: 1
+support: 100
+height: 5</title><circle r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(79.366547133073226, 72.822069693769805)"><title>idx: 9
+name: i9
+dist: 2
+support: 100
+height: 4</title><circle r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(50.0, 111.22459081309398)"><title>idx: 10
+name: i10
+dist: 0
+support: 100
+height: 6</title><circle r="7.5"></circle></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+modules["toyplot/tables"] = (function()
+    {
+        var tables = [];
 
-          function save_csv(data_table)
-          {
-            var uri = "data:text/csv;charset=utf-8,";
-            uri += data_table.names.join(",") + "\n";
-            for(var i = 0; i != data_table.columns[0].length; ++i)
+        var module = {};
+
+        module.set = function(owner, key, names, columns)
+        {
+            tables.push({owner: owner, key: key, names: names, columns: columns});
+        }
+
+        module.get = function(owner, key)
+        {
+            for(var i = 0; i != tables.length; ++i)
             {
-              for(var j = 0; j != data_table.columns.length; ++j)
-              {
-                if(j)
-                  uri += ",";
-                uri += data_table.columns[j][i];
-              }
-              uri += "\n";
+                var table = tables[i];
+                if(table.owner != owner)
+                    continue;
+                if(table.key != key)
+                    continue;
+                return {names: table.names, columns: table.columns};
             }
+        }
+
+        module.get_csv = function(owner, key)
+        {
+            var table = module.get(owner, key);
+            if(table != undefined)
+            {
+                var csv = "";
+                csv += table.names.join(",") + "\n";
+                for(var i = 0; i != table.columns[0].length; ++i)
+                {
+                  for(var j = 0; j != table.columns.length; ++j)
+                  {
+                    if(j)
+                      csv += ",";
+                    csv += table.columns[j][i];
+                  }
+                  csv += "\n";
+                }
+                return csv;
+            }
+        }
+
+        return module;
+    })();
+modules["toyplot/root/id"] = "t3b975c4303c54495a7b544a69ee57c6d";
+modules["toyplot/root"] = (function(root_id)
+    {
+        return document.querySelector("#" + root_id);
+    })(modules["toyplot/root/id"]);
+modules["toyplot/canvas/id"] = "tc11aa77fa8c24ea682b373766aea6829";
+modules["toyplot/canvas"] = (function(canvas_id)
+    {
+        return document.querySelector("#" + canvas_id);
+    })(modules["toyplot/canvas/id"]);
+modules["toyplot/menus/context"] = (function(root, canvas)
+    {
+        var wrapper = document.createElement("div");
+        wrapper.innerHTML = "<ul class='toyplot-context-menu' style='background:#eee; border:1px solid #b8b8b8; border-radius:5px; box-shadow: 0px 0px 8px rgba(0%,0%,0%,0.25); margin:0; padding:3px 0; position:fixed; visibility:hidden;'></ul>"
+        var menu = wrapper.firstChild;
+
+        root.appendChild(menu);
+
+        var items = [];
+
+        var ignore_mouseup = null;
+        function open_menu(e)
+        {
+            var show_menu = false;
+            for(var index=0; index != items.length; ++index)
+            {
+                var item = items[index];
+                if(item.show(e))
+                {
+                    item.item.style.display = "block";
+                    show_menu = true;
+                }
+                else
+                {
+                    item.item.style.display = "none";
+                }
+            }
+
+            if(show_menu)
+            {
+                ignore_mouseup = true;
+                menu.style.left = (e.clientX + 1) + "px";
+                menu.style.top = (e.clientY - 5) + "px";
+                menu.style.visibility = "visible";
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }
+
+        function close_menu()
+        {
+            menu.style.visibility = "hidden";
+        }
+
+        function contextmenu(e)
+        {
+            open_menu(e);
+        }
+
+        function mousemove(e)
+        {
+            ignore_mouseup = false;
+        }
+
+        function mouseup(e)
+        {
+            if(ignore_mouseup)
+            {
+                ignore_mouseup = false;
+                return;
+            }
+            close_menu();
+        }
+
+        function keydown(e)
+        {
+            if(e.key == "Escape" || e.key == "Esc" || e.keyCode == 27)
+            {
+                close_menu();
+            }
+        }
+
+        canvas.addEventListener("contextmenu", contextmenu);
+        canvas.addEventListener("mousemove", mousemove);
+        document.addEventListener("mouseup", mouseup);
+        document.addEventListener("keydown", keydown);
+
+        var module = {};
+        module.add_item = function(label, show, activate)
+        {
+            var wrapper = document.createElement("div");
+            wrapper.innerHTML = "<li class='toyplot-context-menu-item' style='background:#eee; color:#333; padding:2px 20px; list-style:none; margin:0; text-align:left;'>" + label + "</li>"
+            var item = wrapper.firstChild;
+
+            items.push({item: item, show: show});
+
+            function mouseover()
+            {
+                this.style.background = "steelblue";
+                this.style.color = "white";
+            }
+
+            function mouseout()
+            {
+                this.style.background = "#eee";
+                this.style.color = "#333";
+            }
+
+            function choose_item(e)
+            {
+                close_menu();
+                activate();
+
+                e.stopPropagation();
+                e.preventDefault();
+            }
+
+            item.addEventListener("mouseover", mouseover);
+            item.addEventListener("mouseout", mouseout);
+            item.addEventListener("mouseup", choose_item);
+            item.addEventListener("contextmenu", choose_item);
+
+            menu.appendChild(item);
+        };
+        return module;
+    })(modules["toyplot/root"],modules["toyplot/canvas"]);
+modules["toyplot/io"] = (function()
+    {
+        var module = {};
+        module.save_file = function(mime_type, charset, data, filename)
+        {
+            var uri = "data:" + mime_type + ";charset=" + charset + "," + data;
             uri = encodeURI(uri);
 
             var link = document.createElement("a");
@@ -169,7 +508,7 @@ support: 100</title><circle cx="110.45936395759718" cy="174.41860465116281" r="7
             {
               link.href = uri;
               link.style = "visibility:hidden";
-              link.download = data_table.filename + ".csv";
+              link.download = filename;
 
               document.body.appendChild(link);
               link.click();
@@ -179,71 +518,278 @@ support: 100</title><circle cx="110.45936395759718" cy="174.41860465116281" r="7
             {
               window.open(uri);
             }
-          }
+        };
+        return module;
+    })();
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
 
-          function open_popup(data_table)
-          {
-            return function(e)
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
             {
-              var popup = document.querySelector("#t369271a860d2411aaf330c0e6b2650e7 .toyplot-mark-popup");
-              popup.querySelector(".toyplot-mark-popup-title").innerHTML = data_table.title;
-              popup.querySelector(".toyplot-mark-popup-save-csv").onclick = function() { popup.style.visibility = "hidden"; save_csv(data_table); }
-              popup.style.left = (e.clientX - 50) + "px";
-              popup.style.top = (e.clientY - 20) + "px";
-              popup.style.visibility = "visible";
-              e.stopPropagation();
-              e.preventDefault();
+                return owner.contains(e.target);
             }
 
-          }
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
 
-          for(var i = 0; i != data_tables.length; ++i)
-          {
-            var data_table = data_tables[i];
-            var event_target = document.querySelector("#" + data_table.id);
-            event_target.oncontextmenu = open_popup(data_table);
-          }
-        })();
-        </script></div></div>
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"tf5a832f2ccca4911ba34e548ba4af858","vertex_data","graph vertex data",["x", "y"],[[-6.0, -6.0, -4.0, -6.0, -5.0, -4.0, -4.0, -2.0, -4.0, 0.0, -5.0, -5.0, -3.0, -5.0, -4.0, -4.0, -4.0, -1.0, -4.0, -2.0, -2.0, -2.0, 0.0, -2.0, -1.0], [3.3125, 4.5, 4.5, 2.125, 2.125, 4.5, 5.0, 5.0, 4.0, 4.0, 2.125, 3.0, 3.0, 1.25, 1.25, 1.25, 2.0, 2.0, 0.5, 0.5, 0.5, 1.0, 1.0, 0.0, 0.0]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"tf5a832f2ccca4911ba34e548ba4af858","edge_data","graph edge data",["source", "target"],[[0, 1, 0, 3, 5, 6, 5, 8, 10, 11, 10, 13, 15, 16, 15, 18, 20, 21, 20, 23], [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 19, 21, 22, 23, 24]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t2d180330cffe423d829af53536c8e992","data","scatterplot",["x", "y0"],[[-1.0, 0.0, -1.0, -3.0, 0.0, -2.0, -2.0, -4.0, -5.0, -4.0, -6.0], [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 0.5, 1.25, 2.125, 4.5, 3.3125]],"toyplot");
+})();</script></div></div>
 
 
 ### The order of nodes
-The order in which nodes and node values are plotted can be accessed from two attributes of a Toytree object, either from `.get_node_labels()` which returns a dictionary mapping node indices to node names, or from `.get_node_values()` which returns a list of node values for the given "feature" argument that is provided. All trees will always have the features `["idx", "name", "support", "dist"]` available. Below we grab the 'idx' values and plot them on the nodes of the tree. The `.get_node_values()` function does not return values for the root node or for leaves by default, since these often are not meaningful on trees where the values represent support values or distances (i.e, the values are actually relevant to edges not nodes), but we want those values here, so we enter True for those arguments. 
+The order in which nodes and node values are plotted can be accessed from two attributes of a Toytree object, either from `.get_node_labels()` which returns a dictionary mapping node indices to node names, or from `.get_node_values()` which returns a list of node values for the given "feature" argument that is provided. All trees will always have the features `["idx", "name", "support", "dist", "height"]` available. Below we grab the 'idx' values and plot them on the nodes of the tree. The `.get_node_values()` function does not return values for the root node or for leaves by default, since these often are not meaningful on trees where the values represent support values or distances (i.e, the values are actually relevant to edges not nodes), but we want those values here, so we enter True for those arguments. 
 
 
 ```python
 ## get node index (idx) values
-idxs = tre.get_node_values("idx", show_root=False, show_tips=False)
+idxs = tre.get_node_values("height", show_root=True, show_tips=False)
 
 ## plot tree with node values
-tre.draw(width=200, node_labels=idxs);
+tre.draw(node_labels=idxs, tip_labels_align=True, orient='down');
 ```
 
 
-<div align="center" class="toyplot" id="tced4ce9b26de4902a6932c64a7c03948"><svg class="toyplot-canvas-Canvas" height="200.0px" id="ted43c62a033d46db9a5294267c374321" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 200.0 200.0" width="200.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="tbd3c1d79c83d4991b2ce5f7497aeb8c1"><clipPath id="t58abf5ffe0cd41739066bfd857d0b6d0"><rect height="180.0" width="180.0" x="10.0" y="10.0"></rect></clipPath><g clip-path="url(#t58abf5ffe0cd41739066bfd857d0b6d0)"><g class="toyplot-mark-Text" id="t3624b196110a452b92f234fe97a7cb6c" style="-toyplot-anchor-shift:15px;alignment-baseline:middle;font-size:12px;font-weight:normal;stroke:none;text-anchor:start"><g class="toyplot-Series"><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,25.581395348837205)translate(15.0,3.375)"><tspan style="font-size:12.0px">apple</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,55.348837209302317)translate(15.0,3.375)"><tspan style="font-size:12.0px">orange</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,85.11627906976743)translate(15.0,3.375)"><tspan style="font-size:12.0px">tomatillo</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,114.88372093023254)translate(15.0,3.375)"><tspan style="font-size:12.0px">pepper</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,144.65116279069767)translate(15.0,3.375)"><tspan style="font-size:12.0px">tomato</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(110.45936395759718,174.41860465116281)translate(15.0,3.375)"><tspan style="font-size:12.0px">eggplant</tspan></text></g></g><g class="toyplot-mark-Graph" id="t87a4c8d8adf244f29b8e2960018b7cb1"><g class="toyplot-Edges"><path d="M 20.0 75.8139534884 L 20.0 40.4651162791" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 20.0 40.4651162791 L 87.8445229682 40.4651162791" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 20.0 75.8139534884 L 20.0 111.162790698" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 20.0 111.162790698 L 42.6148409894 111.162790698" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 40.4651162791 L 87.8445229682 25.5813953488" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 25.5813953488 L 110.459363958 25.5813953488" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 40.4651162791 L 87.8445229682 55.3488372093" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 55.3488372093 L 110.459363958 55.3488372093" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 42.6148409894 111.162790698 L 42.6148409894 85.1162790698" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 42.6148409894 85.1162790698 L 110.459363958 85.1162790698" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 42.6148409894 111.162790698 L 42.6148409894 137.209302326" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 42.6148409894 137.209302326 L 65.2296819788 137.209302326" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 65.2296819788 137.209302326 L 65.2296819788 114.88372093" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 65.2296819788 114.88372093 L 110.459363958 114.88372093" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 65.2296819788 137.209302326 L 65.2296819788 159.534883721" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 65.2296819788 159.534883721 L 87.8445229682 159.534883721" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 159.534883721 L 87.8445229682 144.651162791" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 144.651162791 L 110.459363958 144.651162791" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 159.534883721 L 87.8445229682 174.418604651" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 87.8445229682 174.418604651 L 110.459363958 174.418604651" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="20.0" cy="75.813953488372078" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="20.0" cy="40.465116279069768" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="40.465116279069768" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="20.0" cy="111.16279069767442" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="42.614840989399298" cy="111.16279069767442" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="40.465116279069768" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="25.581395348837205" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="25.581395348837205" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="55.348837209302317" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="55.348837209302317" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="42.614840989399298" cy="111.16279069767442" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="42.614840989399298" cy="85.11627906976743" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="85.11627906976743" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="42.614840989399298" cy="137.2093023255814" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="65.229681978798581" cy="137.2093023255814" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="65.229681978798581" cy="137.2093023255814" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="65.229681978798581" cy="114.88372093023254" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="114.88372093023254" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="65.229681978798581" cy="159.53488372093022" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="159.53488372093022" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="159.53488372093022" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="144.65116279069767" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="144.65116279069767" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="87.844522968197879" cy="174.41860465116281" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="110.45936395759718" cy="174.41860465116281" r="0.0"></circle></g></g></g><g class="toyplot-mark-Scatterplot" id="t56c0ad2e530d4457831cb562cea3c5f3" style=""><g class="toyplot-Series"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="20.0" cy="75.813953488372078" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="87.844522968197879" cy="40.465116279069768" r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="42.614840989399298" cy="111.16279069767442" r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="65.229681978798581" cy="137.2093023255814" r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="87.844522968197879" cy="159.53488372093022" r="7.5"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="110.45936395759718" cy="25.581395348837205" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="110.45936395759718" cy="55.348837209302317" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="110.45936395759718" cy="85.11627906976743" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="110.45936395759718" cy="114.88372093023254" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="110.45936395759718" cy="144.65116279069767" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="110.45936395759718" cy="174.41860465116281" r="0.0"></circle></g></g></g><g class="toyplot-mark-Text" id="t2faa4ea4e89249efb7d529e5a95037ae" style="alignment-baseline:middle;fill:262626;font-size:9px;font-weight:normal;stroke:none;text-anchor:middle"><g class="toyplot-Series"><text class="toyplot-Datum" style="fill:262626;font-weight:normal;opacity:1.0;stroke:none;text-anchor:middle" transform="translate(87.844522968197879,40.465116279069768)translate(0,2.53125)"><tspan style="font-size:9.0px">1</tspan></text><text class="toyplot-Datum" style="fill:262626;font-weight:normal;opacity:1.0;stroke:none;text-anchor:middle" transform="translate(42.614840989399298,111.16279069767442)translate(0,2.53125)"><tspan style="font-size:9.0px">2</tspan></text><text class="toyplot-Datum" style="fill:262626;font-weight:normal;opacity:1.0;stroke:none;text-anchor:middle" transform="translate(65.229681978798581,137.2093023255814)translate(0,2.53125)"><tspan style="font-size:9.0px">3</tspan></text><text class="toyplot-Datum" style="fill:262626;font-weight:normal;opacity:1.0;stroke:none;text-anchor:middle" transform="translate(87.844522968197879,159.53488372093022)translate(0,2.53125)"><tspan style="font-size:9.0px">4</tspan></text></g></g></g></g></svg><div class="toyplot-interactive"><ul class="toyplot-mark-popup" onmouseleave="this.style.visibility='hidden'" style="background:rgba(0%,0%,0%,0.75);border:0;border-radius:6px;color:white;cursor:default;list-style:none;margin:0;padding:5px;position:fixed;visibility:hidden">
-            <li class="toyplot-mark-popup-title" style="color:lightgray;cursor:default;padding:5px;list-style:none;margin:0"></li>
-            <li class="toyplot-mark-popup-save-csv" onmouseout="this.style.color='white';this.style.background='steelblue'" onmouseover="this.style.color='steelblue';this.style.background='white'" style="border-radius:3px;padding:5px;list-style:none;margin:0">
-                Save as .csv
-            </li>
-        </ul><script>
-        (function()
-        {
-          var data_tables = [{"title": "Scatterplot Data", "names": ["x", "y0"], "id": "t56c0ad2e530d4457831cb562cea3c5f3", "columns": [[-4.0, -1.0, -3.0, -2.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [3.3125, 4.5, 2.125, 1.25, 0.5, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0]], "filename": "toyplot"}];
+<div class="toyplot" id="tf60ffc63d12340c2a528d3a256bdce0b" style="text-align:center"><svg class="toyplot-canvas-Canvas" height="225.0px" id="tc074246ef73f402cacf70c98889f09f3" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 275.0 225.0" width="275.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="t12403528cce14f29ae8f2d3deb15a216"><clipPath id="tf8cd2e1812c94f3d8684434d545d06a9"><rect height="225.0" width="275.0" x="0.0" y="0.0"></rect></clipPath><g clip-path="url(#tf8cd2e1812c94f3d8684434d545d06a9)"><g class="toyplot-mark-Text" id="tfa24fda2330a4e10ab018be828ae67d0"><g class="toyplot-Series"><g class="toyplot-Datum" transform="translate(56.652587117212249,133.9909262922508)rotate(90.0)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">eggplant</text></g><g class="toyplot-Datum" transform="translate(88.991552270327361,133.9909262922508)rotate(90.0)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">tomato</text></g><g class="toyplot-Datum" transform="translate(121.33051742344246,133.9909262922508)rotate(90.0)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">pepper</text></g><g class="toyplot-Datum" transform="translate(153.66948257655756,133.9909262922508)rotate(90.0)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">tomatillo</text></g><g class="toyplot-Datum" transform="translate(186.00844772967267,133.9909262922508)rotate(90.0)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">orange</text></g><g class="toyplot-Datum" transform="translate(218.34741288278775,133.9909262922508)rotate(90.0)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">apple</text></g></g></g><g class="toyplot-mark-Graph" id="t891cab0016834c41b3fc07f20ab44164"><g class="toyplot-Edges"><path d="M 56.6525871172 133.990926292 L 56.6525871172 119.992438577" style="fill:none;stroke:rgb(66.3%,66.3%,66.3%);stroke-dasharray:2, 4;stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.9915522703 133.990926292 L 88.9915522703 133.990926292" style="fill:none;stroke:rgb(66.3%,66.3%,66.3%);stroke-dasharray:2, 4;stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 121.330517423 133.990926292 L 121.330517423 119.992438577" style="fill:none;stroke:rgb(66.3%,66.3%,66.3%);stroke-dasharray:2, 4;stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 153.669482577 133.990926292 L 153.669482577 91.9954631461" style="fill:none;stroke:rgb(66.3%,66.3%,66.3%);stroke-dasharray:2, 4;stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 186.00844773 133.990926292 L 186.00844773 133.990926292" style="fill:none;stroke:rgb(66.3%,66.3%,66.3%);stroke-dasharray:2, 4;stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 218.347412883 133.990926292 L 218.347412883 105.993950862" style="fill:none;stroke:rgb(66.3%,66.3%,66.3%);stroke-dasharray:2, 4;stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><g class="toyplot-HeadMarkers"></g><g class="toyplot-MiddleMarkers"></g><g class="toyplot-TailMarkers"></g></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(56.652587117212249, 133.9909262922508)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(88.991552270327361, 133.9909262922508)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(121.33051742344246, 133.9909262922508)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(153.66948257655756, 133.9909262922508)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(186.00844772967267, 133.9909262922508)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(218.34741288278775, 133.9909262922508)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(56.652587117212249, 119.99243857687566)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(88.991552270327361, 133.9909262922508)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(121.33051742344246, 119.99243857687566)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(153.66948257655756, 91.995463146125402)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(186.00844772967267, 133.9909262922508)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(218.34741288278775, 105.99395086150052)"><circle r="0.0"></circle></g></g></g><g class="toyplot-mark-Graph" id="t1f24a41f13604358b7b1c4aada53a87f"><g class="toyplot-Edges"><path d="M 163.775409187 50.0 L 202.177930306 50.0" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 202.177930306 50.0 L 202.177930306 77.9969754308" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 163.775409187 50.0 L 125.372888068 50.0" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 125.372888068 50.0 L 125.372888068 63.9984877154" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 202.177930306 77.9969754308 L 218.347412883 77.9969754308" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 218.347412883 77.9969754308 L 218.347412883 105.993950862" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 202.177930306 77.9969754308 L 186.00844773 77.9969754308" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 186.00844773 77.9969754308 L 186.00844773 133.990926292" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 125.372888068 63.9984877154 L 153.669482577 63.9984877154" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 153.669482577 63.9984877154 L 153.669482577 91.9954631461" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 125.372888068 63.9984877154 L 97.0762935586 63.9984877154" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 97.0762935586 63.9984877154 L 97.0762935586 77.9969754308" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 97.0762935586 77.9969754308 L 121.330517423 77.9969754308" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 121.330517423 77.9969754308 L 121.330517423 119.992438577" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 97.0762935586 77.9969754308 L 72.8220696938 77.9969754308" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 72.8220696938 77.9969754308 L 72.8220696938 105.993950862" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 72.8220696938 105.993950862 L 88.9915522703 105.993950862" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.9915522703 105.993950862 L 88.9915522703 133.990926292" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 72.8220696938 105.993950862 L 56.6525871172 105.993950862" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 56.6525871172 105.993950862 L 56.6525871172 119.992438577" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><g class="toyplot-HeadMarkers"></g><g class="toyplot-MiddleMarkers"></g><g class="toyplot-TailMarkers"></g></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(163.77540918690602, 50.0)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(202.17793030623019, 50.0)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(202.17793030623019, 77.996975430750268)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(125.37288806758184, 50.0)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(125.37288806758184, 63.998487715375141)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(202.17793030623019, 77.996975430750268)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(218.34741288278775, 77.996975430750268)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(218.34741288278775, 105.99395086150052)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(186.00844772967267, 77.996975430750268)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(186.00844772967267, 133.9909262922508)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(125.37288806758184, 63.998487715375141)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(153.66948257655756, 63.998487715375141)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(153.66948257655756, 91.995463146125402)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(97.076293558606125, 63.998487715375141)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(97.076293558606125, 77.996975430750268)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(97.076293558606125, 77.996975430750268)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(121.33051742344246, 77.996975430750268)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(121.33051742344246, 119.99243857687566)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(72.822069693769805, 77.996975430750268)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(72.822069693769805, 105.99395086150052)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(72.822069693769805, 105.99395086150052)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(88.991552270327361, 105.99395086150052)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(88.991552270327361, 133.9909262922508)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(56.652587117212249, 105.99395086150052)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(98.8%,55.3%,38.4%);fill-opacity:1.0;opacity:1.0;stroke:rgb(98.8%,55.3%,38.4%);stroke-opacity:1.0" transform="translate(56.652587117212249, 119.99243857687566)"><circle r="0.0"></circle></g></g></g><g class="toyplot-mark-Scatterplot" id="td69e0192ed0a4373bb7d27400ae97582"><g class="toyplot-Series"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(72.822069693769805, 105.99395086150052)"><title>idx: 6
+name: i6
+dist: 2
+support: 100
+height: 2</title><circle r="11.0"></circle><g><text style="fill:rgb(14.9%,14.9%,14.9%);fill-opacity:1.0;font-family:helvetica;font-size:9.0px;font-weight:normal;stroke:none;vertical-align:baseline;white-space:pre" x="-2.502" y="2.2995">2</text></g></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(97.076293558606125, 77.996975430750268)"><title>idx: 7
+name: i7
+dist: 1
+support: 90
+height: 4</title><circle r="11.0"></circle><g><text style="fill:rgb(14.9%,14.9%,14.9%);fill-opacity:1.0;font-family:helvetica;font-size:9.0px;font-weight:normal;stroke:none;vertical-align:baseline;white-space:pre" x="-2.502" y="2.2995">4</text></g></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(125.37288806758184, 63.998487715375141)"><title>idx: 8
+name: i8
+dist: 1
+support: 100
+height: 5</title><circle r="11.0"></circle><g><text style="fill:rgb(14.9%,14.9%,14.9%);fill-opacity:1.0;font-family:helvetica;font-size:9.0px;font-weight:normal;stroke:none;vertical-align:baseline;white-space:pre" x="-2.502" y="2.2995">5</text></g></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(202.17793030623019, 77.996975430750268)"><title>idx: 9
+name: i9
+dist: 2
+support: 100
+height: 4</title><circle r="11.0"></circle><g><text style="fill:rgb(14.9%,14.9%,14.9%);fill-opacity:1.0;font-family:helvetica;font-size:9.0px;font-weight:normal;stroke:none;vertical-align:baseline;white-space:pre" x="-2.502" y="2.2995">4</text></g></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(163.77540918690602, 50.0)"><title>idx: 10
+name: i10
+dist: 0
+support: 100
+height: 6</title><circle r="11.0"></circle><g><text style="fill:rgb(14.9%,14.9%,14.9%);fill-opacity:1.0;font-family:helvetica;font-size:9.0px;font-weight:normal;stroke:none;vertical-align:baseline;white-space:pre" x="-2.502" y="2.2995">6</text></g></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+modules["toyplot/tables"] = (function()
+    {
+        var tables = [];
 
-          function save_csv(data_table)
-          {
-            var uri = "data:text/csv;charset=utf-8,";
-            uri += data_table.names.join(",") + "\n";
-            for(var i = 0; i != data_table.columns[0].length; ++i)
+        var module = {};
+
+        module.set = function(owner, key, names, columns)
+        {
+            tables.push({owner: owner, key: key, names: names, columns: columns});
+        }
+
+        module.get = function(owner, key)
+        {
+            for(var i = 0; i != tables.length; ++i)
             {
-              for(var j = 0; j != data_table.columns.length; ++j)
-              {
-                if(j)
-                  uri += ",";
-                uri += data_table.columns[j][i];
-              }
-              uri += "\n";
+                var table = tables[i];
+                if(table.owner != owner)
+                    continue;
+                if(table.key != key)
+                    continue;
+                return {names: table.names, columns: table.columns};
             }
+        }
+
+        module.get_csv = function(owner, key)
+        {
+            var table = module.get(owner, key);
+            if(table != undefined)
+            {
+                var csv = "";
+                csv += table.names.join(",") + "\n";
+                for(var i = 0; i != table.columns[0].length; ++i)
+                {
+                  for(var j = 0; j != table.columns.length; ++j)
+                  {
+                    if(j)
+                      csv += ",";
+                    csv += table.columns[j][i];
+                  }
+                  csv += "\n";
+                }
+                return csv;
+            }
+        }
+
+        return module;
+    })();
+modules["toyplot/root/id"] = "tf60ffc63d12340c2a528d3a256bdce0b";
+modules["toyplot/root"] = (function(root_id)
+    {
+        return document.querySelector("#" + root_id);
+    })(modules["toyplot/root/id"]);
+modules["toyplot/canvas/id"] = "tc074246ef73f402cacf70c98889f09f3";
+modules["toyplot/canvas"] = (function(canvas_id)
+    {
+        return document.querySelector("#" + canvas_id);
+    })(modules["toyplot/canvas/id"]);
+modules["toyplot/menus/context"] = (function(root, canvas)
+    {
+        var wrapper = document.createElement("div");
+        wrapper.innerHTML = "<ul class='toyplot-context-menu' style='background:#eee; border:1px solid #b8b8b8; border-radius:5px; box-shadow: 0px 0px 8px rgba(0%,0%,0%,0.25); margin:0; padding:3px 0; position:fixed; visibility:hidden;'></ul>"
+        var menu = wrapper.firstChild;
+
+        root.appendChild(menu);
+
+        var items = [];
+
+        var ignore_mouseup = null;
+        function open_menu(e)
+        {
+            var show_menu = false;
+            for(var index=0; index != items.length; ++index)
+            {
+                var item = items[index];
+                if(item.show(e))
+                {
+                    item.item.style.display = "block";
+                    show_menu = true;
+                }
+                else
+                {
+                    item.item.style.display = "none";
+                }
+            }
+
+            if(show_menu)
+            {
+                ignore_mouseup = true;
+                menu.style.left = (e.clientX + 1) + "px";
+                menu.style.top = (e.clientY - 5) + "px";
+                menu.style.visibility = "visible";
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }
+
+        function close_menu()
+        {
+            menu.style.visibility = "hidden";
+        }
+
+        function contextmenu(e)
+        {
+            open_menu(e);
+        }
+
+        function mousemove(e)
+        {
+            ignore_mouseup = false;
+        }
+
+        function mouseup(e)
+        {
+            if(ignore_mouseup)
+            {
+                ignore_mouseup = false;
+                return;
+            }
+            close_menu();
+        }
+
+        function keydown(e)
+        {
+            if(e.key == "Escape" || e.key == "Esc" || e.keyCode == 27)
+            {
+                close_menu();
+            }
+        }
+
+        canvas.addEventListener("contextmenu", contextmenu);
+        canvas.addEventListener("mousemove", mousemove);
+        document.addEventListener("mouseup", mouseup);
+        document.addEventListener("keydown", keydown);
+
+        var module = {};
+        module.add_item = function(label, show, activate)
+        {
+            var wrapper = document.createElement("div");
+            wrapper.innerHTML = "<li class='toyplot-context-menu-item' style='background:#eee; color:#333; padding:2px 20px; list-style:none; margin:0; text-align:left;'>" + label + "</li>"
+            var item = wrapper.firstChild;
+
+            items.push({item: item, show: show});
+
+            function mouseover()
+            {
+                this.style.background = "steelblue";
+                this.style.color = "white";
+            }
+
+            function mouseout()
+            {
+                this.style.background = "#eee";
+                this.style.color = "#333";
+            }
+
+            function choose_item(e)
+            {
+                close_menu();
+                activate();
+
+                e.stopPropagation();
+                e.preventDefault();
+            }
+
+            item.addEventListener("mouseover", mouseover);
+            item.addEventListener("mouseout", mouseout);
+            item.addEventListener("mouseup", choose_item);
+            item.addEventListener("contextmenu", choose_item);
+
+            menu.appendChild(item);
+        };
+        return module;
+    })(modules["toyplot/root"],modules["toyplot/canvas"]);
+modules["toyplot/io"] = (function()
+    {
+        var module = {};
+        module.save_file = function(mime_type, charset, data, filename)
+        {
+            var uri = "data:" + mime_type + ";charset=" + charset + "," + data;
             uri = encodeURI(uri);
 
             var link = document.createElement("a");
@@ -251,7 +797,7 @@ tre.draw(width=200, node_labels=idxs);
             {
               link.href = uri;
               link.style = "visibility:hidden";
-              link.download = data_table.filename + ".csv";
+              link.download = filename;
 
               document.body.appendChild(link);
               link.click();
@@ -261,32 +807,95 @@ tre.draw(width=200, node_labels=idxs);
             {
               window.open(uri);
             }
-          }
+        };
+        return module;
+    })();
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
 
-          function open_popup(data_table)
-          {
-            return function(e)
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
             {
-              var popup = document.querySelector("#tced4ce9b26de4902a6932c64a7c03948 .toyplot-mark-popup");
-              popup.querySelector(".toyplot-mark-popup-title").innerHTML = data_table.title;
-              popup.querySelector(".toyplot-mark-popup-save-csv").onclick = function() { popup.style.visibility = "hidden"; save_csv(data_table); }
-              popup.style.left = (e.clientX - 50) + "px";
-              popup.style.top = (e.clientY - 20) + "px";
-              popup.style.visibility = "visible";
-              e.stopPropagation();
-              e.preventDefault();
+                return owner.contains(e.target);
             }
 
-          }
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
 
-          for(var i = 0; i != data_tables.length; ++i)
-          {
-            var data_table = data_tables[i];
-            var event_target = document.querySelector("#" + data_table.id);
-            event_target.oncontextmenu = open_popup(data_table);
-          }
-        })();
-        </script></div></div>
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t891cab0016834c41b3fc07f20ab44164","vertex_data","graph vertex data",["x", "y"],[[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 0.0, 1.0, 2.0, 3.0, 4.0, 5.0], [-6.0, -6.0, -6.0, -6.0, -6.0, -6.0, -5.0, -6.0, -5.0, -3.0, -6.0, -4.0]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t891cab0016834c41b3fc07f20ab44164","edge_data","graph edge data",["source", "target"],[[0, 1, 2, 3, 4, 5], [6, 7, 8, 9, 10, 11]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t1f24a41f13604358b7b1c4aada53a87f","vertex_data","graph vertex data",["x", "y"],[[3.3125, 4.5, 4.5, 2.125, 2.125, 4.5, 5.0, 5.0, 4.0, 4.0, 2.125, 3.0, 3.0, 1.25, 1.25, 1.25, 2.0, 2.0, 0.5, 0.5, 0.5, 1.0, 1.0, 0.0, 0.0], [0.0, 0.0, -2.0, 0.0, -1.0, -2.0, -2.0, -4.0, -2.0, -6.0, -1.0, -1.0, -3.0, -1.0, -2.0, -2.0, -2.0, -5.0, -2.0, -4.0, -4.0, -4.0, -6.0, -4.0, -5.0]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t1f24a41f13604358b7b1c4aada53a87f","edge_data","graph edge data",["source", "target"],[[0, 1, 0, 3, 5, 6, 5, 8, 10, 11, 10, 13, 15, 16, 15, 18, 20, 21, 20, 23], [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 19, 21, 22, 23, 24]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"td69e0192ed0a4373bb7d27400ae97582","data","scatterplot",["x", "y0"],[[0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 0.5, 1.25, 2.125, 4.5, 3.3125], [-5.0, -6.0, -5.0, -3.0, -6.0, -4.0, -4.0, -2.0, -1.0, -2.0, 0.0]],"toyplot");
+})();</script></div></div>
 
 
 ### Show specific node features
@@ -297,38 +906,211 @@ Similarly, in this case we are plotting support values so we will let the defaul
 ```python
 ## plot tree with node values
 tre.draw(
-    width=250, 
     node_labels=tre.get_node_values("support"), 
     node_size=24, 
-    node_labels_style={"font-size": "12px"},
+    node_labels_style={"font-size": "11px"},
     );
 ```
 
 
-<div align="center" class="toyplot" id="t47c95a4a9aa94a5da7692dbb7a57adf6"><svg class="toyplot-canvas-Canvas" height="250.0px" id="tb90a09164072483ba9148e9b8d43c2d7" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 250.0 250.0" width="250.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="t88883addc61d48e58e345e8975c23f9c"><clipPath id="tf7f5bc04905f49e7847646869571f289"><rect height="220.0" width="220.0" x="15.0" y="15.0"></rect></clipPath><g clip-path="url(#tf7f5bc04905f49e7847646869571f289)"><g class="toyplot-mark-Text" id="td92bddfdf8f849fb8a9ab9a992520dfe" style="-toyplot-anchor-shift:15px;alignment-baseline:middle;font-size:12px;font-weight:normal;stroke:none;text-anchor:start"><g class="toyplot-Series"><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(148.83900928792571,30.660377358490585)translate(15.0,3.375)"><tspan style="font-size:12.0px">apple</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(148.83900928792571,68.396226415094361)translate(15.0,3.375)"><tspan style="font-size:12.0px">orange</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(148.83900928792571,106.13207547169814)translate(15.0,3.375)"><tspan style="font-size:12.0px">tomatillo</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(148.83900928792571,143.8679245283019)translate(15.0,3.375)"><tspan style="font-size:12.0px">pepper</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(148.83900928792571,181.60377358490567)translate(15.0,3.375)"><tspan style="font-size:12.0px">tomato</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(148.83900928792571,219.33962264150944)translate(15.0,3.375)"><tspan style="font-size:12.0px">eggplant</tspan></text></g></g><g class="toyplot-mark-Graph" id="t96833936ea354311b2f40058d1f8a437"><g class="toyplot-Edges"><path d="M 25.0 94.3396226415 L 25.0 49.5283018868" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 25.0 49.5283018868 L 117.879256966 49.5283018868" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 25.0 94.3396226415 L 25.0 139.150943396" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 25.0 139.150943396 L 55.959752322 139.150943396" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 117.879256966 49.5283018868 L 117.879256966 30.6603773585" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 117.879256966 30.6603773585 L 148.839009288 30.6603773585" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 117.879256966 49.5283018868 L 117.879256966 68.3962264151" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 117.879256966 68.3962264151 L 148.839009288 68.3962264151" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 55.959752322 139.150943396 L 55.959752322 106.132075472" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 55.959752322 106.132075472 L 148.839009288 106.132075472" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 55.959752322 139.150943396 L 55.959752322 172.169811321" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 55.959752322 172.169811321 L 86.919504644 172.169811321" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 86.919504644 172.169811321 L 86.919504644 143.867924528" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 86.919504644 143.867924528 L 148.839009288 143.867924528" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 86.919504644 172.169811321 L 86.919504644 200.471698113" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 86.919504644 200.471698113 L 117.879256966 200.471698113" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 117.879256966 200.471698113 L 117.879256966 181.603773585" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 117.879256966 181.603773585 L 148.839009288 181.603773585" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 117.879256966 200.471698113 L 117.879256966 219.339622642" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 117.879256966 219.339622642 L 148.839009288 219.339622642" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="25.0" cy="94.339622641509465" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="25.0" cy="49.52830188679247" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="117.87925696594426" cy="49.52830188679247" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="25.0" cy="139.15094339622644" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="55.959752321981426" cy="139.15094339622644" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="117.87925696594426" cy="49.52830188679247" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="117.87925696594426" cy="30.660377358490585" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="148.83900928792571" cy="30.660377358490585" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="117.87925696594426" cy="68.396226415094361" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="148.83900928792571" cy="68.396226415094361" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="55.959752321981426" cy="139.15094339622644" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="55.959752321981426" cy="106.13207547169814" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="148.83900928792571" cy="106.13207547169814" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="55.959752321981426" cy="172.16981132075475" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="86.919504643962853" cy="172.16981132075475" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="86.919504643962853" cy="172.16981132075475" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="86.919504643962853" cy="143.8679245283019" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="148.83900928792571" cy="143.8679245283019" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="86.919504643962853" cy="200.47169811320754" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="117.87925696594426" cy="200.47169811320754" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="117.87925696594426" cy="200.47169811320754" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="117.87925696594426" cy="181.60377358490567" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="148.83900928792571" cy="181.60377358490567" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="117.87925696594426" cy="219.33962264150944" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="148.83900928792571" cy="219.33962264150944" r="0.0"></circle></g></g></g><g class="toyplot-mark-Scatterplot" id="tdf14003c75cd49e89db9c047921bc34a" style=""><g class="toyplot-Series"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="25.0" cy="94.339622641509465" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="117.87925696594426" cy="49.52830188679247" r="12.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="55.959752321981426" cy="139.15094339622644" r="12.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="86.919504643962853" cy="172.16981132075475" r="12.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="117.87925696594426" cy="200.47169811320754" r="12.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="148.83900928792571" cy="30.660377358490585" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="148.83900928792571" cy="68.396226415094361" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="148.83900928792571" cy="106.13207547169814" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="148.83900928792571" cy="143.8679245283019" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="148.83900928792571" cy="181.60377358490567" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="148.83900928792571" cy="219.33962264150944" r="0.0"></circle></g></g></g><g class="toyplot-mark-Text" id="t101fb7a29e934d378586c0a3aa8a116b" style="alignment-baseline:middle;fill:262626;font-size:12px;font-weight:normal;stroke:none;text-anchor:middle"><g class="toyplot-Series"><text class="toyplot-Datum" style="fill:262626;font-weight:normal;opacity:1.0;stroke:none;text-anchor:middle" transform="translate(117.87925696594426,49.52830188679247)translate(0,3.375)"><tspan style="font-size:12.0px">100</tspan></text><text class="toyplot-Datum" style="fill:262626;font-weight:normal;opacity:1.0;stroke:none;text-anchor:middle" transform="translate(55.959752321981426,139.15094339622644)translate(0,3.375)"><tspan style="font-size:12.0px">100</tspan></text><text class="toyplot-Datum" style="fill:262626;font-weight:normal;opacity:1.0;stroke:none;text-anchor:middle" transform="translate(86.919504643962853,172.16981132075475)translate(0,3.375)"><tspan style="font-size:12.0px">90</tspan></text><text class="toyplot-Datum" style="fill:262626;font-weight:normal;opacity:1.0;stroke:none;text-anchor:middle" transform="translate(117.87925696594426,200.47169811320754)translate(0,3.375)"><tspan style="font-size:12.0px">100</tspan></text></g></g></g></g></svg><div class="toyplot-interactive"><ul class="toyplot-mark-popup" onmouseleave="this.style.visibility='hidden'" style="background:rgba(0%,0%,0%,0.75);border:0;border-radius:6px;color:white;cursor:default;list-style:none;margin:0;padding:5px;position:fixed;visibility:hidden">
-            <li class="toyplot-mark-popup-title" style="color:lightgray;cursor:default;padding:5px;list-style:none;margin:0"></li>
-            <li class="toyplot-mark-popup-save-csv" onmouseout="this.style.color='white';this.style.background='steelblue'" onmouseover="this.style.color='steelblue';this.style.background='white'" style="border-radius:3px;padding:5px;list-style:none;margin:0">
-                Save as .csv
-            </li>
-        </ul><script>
-        (function()
-        {
-          var data_tables = [{"title": "Scatterplot Data", "names": ["x", "y0"], "id": "tdf14003c75cd49e89db9c047921bc34a", "columns": [[-4.0, -1.0, -3.0, -2.0, -1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], [3.3125, 4.5, 2.125, 1.25, 0.5, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0]], "filename": "toyplot"}];
+<div class="toyplot" id="t00c05562d86d44a3b15d3971882c6064" style="text-align:center"><svg class="toyplot-canvas-Canvas" height="275.0px" id="t4e651cdcf5244f5dae24281f0e18cf86" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 225.0 275.0" width="225.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="t8509f5476643479db79d98c67f21ea77"><clipPath id="t678056e1de1f42de8d289eb007503947"><rect height="275.0" width="225.0" x="0.0" y="0.0"></rect></clipPath><g clip-path="url(#t678056e1de1f42de8d289eb007503947)"><g class="toyplot-mark-Text" id="t9e3b9b0a91274178b246fc2f678b4341"><g class="toyplot-Series"><g class="toyplot-Datum" transform="translate(123.41636783268305,218.34741288278775)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">eggplant</text></g><g class="toyplot-Datum" transform="translate(138.09964139921965,186.00844772967267)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">tomato</text></g><g class="toyplot-Datum" transform="translate(123.41636783268305,153.66948257655756)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">pepper</text></g><g class="toyplot-Datum" transform="translate(94.049820699609825,121.33051742344244)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">tomatillo</text></g><g class="toyplot-Datum" transform="translate(138.09964139921965,88.991552270327347)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">orange</text></g><g class="toyplot-Datum" transform="translate(108.73309426614644,56.652587117212242)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">apple</text></g></g></g><g class="toyplot-mark-Graph" id="t18b9254563324225a58c5c337fd95e69"><g class="toyplot-Edges"><path d="M 50.0 111.224590813 L 50.0 72.8220696938" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 72.8220696938 L 79.3665471331 72.8220696938" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 111.224590813 L 50.0 149.627111932" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 149.627111932 L 64.6832735665 149.627111932" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 72.8220696938 L 79.3665471331 56.6525871172" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 56.6525871172 L 108.733094266 56.6525871172" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 72.8220696938 L 79.3665471331 88.9915522703" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 88.9915522703 L 138.099641399 88.9915522703" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 64.6832735665 149.627111932 L 64.6832735665 121.330517423" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 64.6832735665 121.330517423 L 94.0498206996 121.330517423" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 64.6832735665 149.627111932 L 64.6832735665 177.923706441" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 64.6832735665 177.923706441 L 79.3665471331 177.923706441" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 177.923706441 L 79.3665471331 153.669482577" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 153.669482577 L 123.416367833 153.669482577" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 177.923706441 L 79.3665471331 202.177930306" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 79.3665471331 202.177930306 L 108.733094266 202.177930306" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 108.733094266 202.177930306 L 108.733094266 186.00844773" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 108.733094266 186.00844773 L 138.099641399 186.00844773" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 108.733094266 202.177930306 L 108.733094266 218.347412883" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 108.733094266 218.347412883 L 123.416367833 218.347412883" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><g class="toyplot-HeadMarkers"></g><g class="toyplot-MiddleMarkers"></g><g class="toyplot-TailMarkers"></g></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 111.22459081309398)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(64.683273566536613, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 56.652587117212242)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 56.652587117212242)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 88.991552270327347)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(138.09964139921965, 88.991552270327347)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(64.683273566536613, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(64.683273566536613, 121.33051742344244)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(94.049820699609825, 121.33051742344244)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(64.683273566536613, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 153.66948257655756)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(123.41636783268305, 153.66948257655756)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(79.366547133073226, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 186.00844772967267)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(138.09964139921965, 186.00844772967267)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(108.73309426614644, 218.34741288278775)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(123.41636783268305, 218.34741288278775)"><circle r="0.0"></circle></g></g></g><g class="toyplot-mark-Scatterplot" id="t80b2ba6885c0402ab7cce7213934e3da"><g class="toyplot-Series"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(108.73309426614644, 202.17793030623019)"><title>idx: 6
+name: i6
+dist: 2
+support: 100
+height: 2</title><circle r="12.0"></circle><g><text style="fill:rgb(14.9%,14.9%,14.9%);fill-opacity:1.0;font-family:helvetica;font-size:11.0px;font-weight:normal;stroke:none;vertical-align:baseline;white-space:pre" x="-9.174" y="2.8105">100</text></g></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(79.366547133073226, 177.92370644139388)"><title>idx: 7
+name: i7
+dist: 1
+support: 90
+height: 4</title><circle r="12.0"></circle><g><text style="fill:rgb(14.9%,14.9%,14.9%);fill-opacity:1.0;font-family:helvetica;font-size:11.0px;font-weight:normal;stroke:none;vertical-align:baseline;white-space:pre" x="-6.116" y="2.8105">90</text></g></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(64.683273566536613, 149.62711193241816)"><title>idx: 8
+name: i8
+dist: 1
+support: 100
+height: 5</title><circle r="12.0"></circle><g><text style="fill:rgb(14.9%,14.9%,14.9%);fill-opacity:1.0;font-family:helvetica;font-size:11.0px;font-weight:normal;stroke:none;vertical-align:baseline;white-space:pre" x="-9.174" y="2.8105">100</text></g></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(79.366547133073226, 72.822069693769805)"><title>idx: 9
+name: i9
+dist: 2
+support: 100
+height: 4</title><circle r="12.0"></circle><g><text style="fill:rgb(14.9%,14.9%,14.9%);fill-opacity:1.0;font-family:helvetica;font-size:11.0px;font-weight:normal;stroke:none;vertical-align:baseline;white-space:pre" x="-9.174" y="2.8105">100</text></g></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+modules["toyplot/tables"] = (function()
+    {
+        var tables = [];
 
-          function save_csv(data_table)
-          {
-            var uri = "data:text/csv;charset=utf-8,";
-            uri += data_table.names.join(",") + "\n";
-            for(var i = 0; i != data_table.columns[0].length; ++i)
+        var module = {};
+
+        module.set = function(owner, key, names, columns)
+        {
+            tables.push({owner: owner, key: key, names: names, columns: columns});
+        }
+
+        module.get = function(owner, key)
+        {
+            for(var i = 0; i != tables.length; ++i)
             {
-              for(var j = 0; j != data_table.columns.length; ++j)
-              {
-                if(j)
-                  uri += ",";
-                uri += data_table.columns[j][i];
-              }
-              uri += "\n";
+                var table = tables[i];
+                if(table.owner != owner)
+                    continue;
+                if(table.key != key)
+                    continue;
+                return {names: table.names, columns: table.columns};
             }
+        }
+
+        module.get_csv = function(owner, key)
+        {
+            var table = module.get(owner, key);
+            if(table != undefined)
+            {
+                var csv = "";
+                csv += table.names.join(",") + "\n";
+                for(var i = 0; i != table.columns[0].length; ++i)
+                {
+                  for(var j = 0; j != table.columns.length; ++j)
+                  {
+                    if(j)
+                      csv += ",";
+                    csv += table.columns[j][i];
+                  }
+                  csv += "\n";
+                }
+                return csv;
+            }
+        }
+
+        return module;
+    })();
+modules["toyplot/root/id"] = "t00c05562d86d44a3b15d3971882c6064";
+modules["toyplot/root"] = (function(root_id)
+    {
+        return document.querySelector("#" + root_id);
+    })(modules["toyplot/root/id"]);
+modules["toyplot/canvas/id"] = "t4e651cdcf5244f5dae24281f0e18cf86";
+modules["toyplot/canvas"] = (function(canvas_id)
+    {
+        return document.querySelector("#" + canvas_id);
+    })(modules["toyplot/canvas/id"]);
+modules["toyplot/menus/context"] = (function(root, canvas)
+    {
+        var wrapper = document.createElement("div");
+        wrapper.innerHTML = "<ul class='toyplot-context-menu' style='background:#eee; border:1px solid #b8b8b8; border-radius:5px; box-shadow: 0px 0px 8px rgba(0%,0%,0%,0.25); margin:0; padding:3px 0; position:fixed; visibility:hidden;'></ul>"
+        var menu = wrapper.firstChild;
+
+        root.appendChild(menu);
+
+        var items = [];
+
+        var ignore_mouseup = null;
+        function open_menu(e)
+        {
+            var show_menu = false;
+            for(var index=0; index != items.length; ++index)
+            {
+                var item = items[index];
+                if(item.show(e))
+                {
+                    item.item.style.display = "block";
+                    show_menu = true;
+                }
+                else
+                {
+                    item.item.style.display = "none";
+                }
+            }
+
+            if(show_menu)
+            {
+                ignore_mouseup = true;
+                menu.style.left = (e.clientX + 1) + "px";
+                menu.style.top = (e.clientY - 5) + "px";
+                menu.style.visibility = "visible";
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }
+
+        function close_menu()
+        {
+            menu.style.visibility = "hidden";
+        }
+
+        function contextmenu(e)
+        {
+            open_menu(e);
+        }
+
+        function mousemove(e)
+        {
+            ignore_mouseup = false;
+        }
+
+        function mouseup(e)
+        {
+            if(ignore_mouseup)
+            {
+                ignore_mouseup = false;
+                return;
+            }
+            close_menu();
+        }
+
+        function keydown(e)
+        {
+            if(e.key == "Escape" || e.key == "Esc" || e.keyCode == 27)
+            {
+                close_menu();
+            }
+        }
+
+        canvas.addEventListener("contextmenu", contextmenu);
+        canvas.addEventListener("mousemove", mousemove);
+        document.addEventListener("mouseup", mouseup);
+        document.addEventListener("keydown", keydown);
+
+        var module = {};
+        module.add_item = function(label, show, activate)
+        {
+            var wrapper = document.createElement("div");
+            wrapper.innerHTML = "<li class='toyplot-context-menu-item' style='background:#eee; color:#333; padding:2px 20px; list-style:none; margin:0; text-align:left;'>" + label + "</li>"
+            var item = wrapper.firstChild;
+
+            items.push({item: item, show: show});
+
+            function mouseover()
+            {
+                this.style.background = "steelblue";
+                this.style.color = "white";
+            }
+
+            function mouseout()
+            {
+                this.style.background = "#eee";
+                this.style.color = "#333";
+            }
+
+            function choose_item(e)
+            {
+                close_menu();
+                activate();
+
+                e.stopPropagation();
+                e.preventDefault();
+            }
+
+            item.addEventListener("mouseover", mouseover);
+            item.addEventListener("mouseout", mouseout);
+            item.addEventListener("mouseup", choose_item);
+            item.addEventListener("contextmenu", choose_item);
+
+            menu.appendChild(item);
+        };
+        return module;
+    })(modules["toyplot/root"],modules["toyplot/canvas"]);
+modules["toyplot/io"] = (function()
+    {
+        var module = {};
+        module.save_file = function(mime_type, charset, data, filename)
+        {
+            var uri = "data:" + mime_type + ";charset=" + charset + "," + data;
             uri = encodeURI(uri);
 
             var link = document.createElement("a");
@@ -336,7 +1118,7 @@ tre.draw(
             {
               link.href = uri;
               link.style = "visibility:hidden";
-              link.download = data_table.filename + ".csv";
+              link.download = filename;
 
               document.body.appendChild(link);
               link.click();
@@ -346,32 +1128,61 @@ tre.draw(
             {
               window.open(uri);
             }
-          }
+        };
+        return module;
+    })();
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
 
-          function open_popup(data_table)
-          {
-            return function(e)
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
             {
-              var popup = document.querySelector("#t47c95a4a9aa94a5da7692dbb7a57adf6 .toyplot-mark-popup");
-              popup.querySelector(".toyplot-mark-popup-title").innerHTML = data_table.title;
-              popup.querySelector(".toyplot-mark-popup-save-csv").onclick = function() { popup.style.visibility = "hidden"; save_csv(data_table); }
-              popup.style.left = (e.clientX - 50) + "px";
-              popup.style.top = (e.clientY - 20) + "px";
-              popup.style.visibility = "visible";
-              e.stopPropagation();
-              e.preventDefault();
+                return owner.contains(e.target);
             }
 
-          }
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
 
-          for(var i = 0; i != data_tables.length; ++i)
-          {
-            var data_table = data_tables[i];
-            var event_target = document.querySelector("#" + data_table.id);
-            event_target.oncontextmenu = open_popup(data_table);
-          }
-        })();
-        </script></div></div>
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t18b9254563324225a58c5c337fd95e69","vertex_data","graph vertex data",["x", "y"],[[-6.0, -6.0, -4.0, -6.0, -5.0, -4.0, -4.0, -2.0, -4.0, 0.0, -5.0, -5.0, -3.0, -5.0, -4.0, -4.0, -4.0, -1.0, -4.0, -2.0, -2.0, -2.0, 0.0, -2.0, -1.0], [3.3125, 4.5, 4.5, 2.125, 2.125, 4.5, 5.0, 5.0, 4.0, 4.0, 2.125, 3.0, 3.0, 1.25, 1.25, 1.25, 2.0, 2.0, 0.5, 0.5, 0.5, 1.0, 1.0, 0.0, 0.0]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t18b9254563324225a58c5c337fd95e69","edge_data","graph edge data",["source", "target"],[[0, 1, 0, 3, 5, 6, 5, 8, 10, 11, 10, 13, 15, 16, 15, 18, 20, 21, 20, 23], [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 19, 21, 22, 23, 24]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t80b2ba6885c0402ab7cce7213934e3da","data","scatterplot",["x", "y0"],[[-1.0, 0.0, -1.0, -3.0, 0.0, -2.0, -2.0, -4.0, -5.0, -4.0, -6.0], [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 0.5, 1.25, 2.125, 4.5, 3.3125]],"toyplot");
+})();</script></div></div>
 
 
 ### Add/modify/del node features
@@ -394,36 +1205,214 @@ feature = tre.get_node_values("is_long_branch", 0, 0)
 ## plot tree with node values
 tre.draw(width=300, 
          node_labels=feature,
-         node_size=20,
+         node_size=25,
          use_edge_lengths=True,
          );
 ```
 
 
-<div align="center" class="toyplot" id="t25b38fb1b5c34b32b02260934b9e1f2e"><svg class="toyplot-canvas-Canvas" height="300.0px" id="tc6e38db635124aea98cb501bf6b965fb" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 300.0 300.0" width="300.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="t1eaecadfaac744af96b0c86b2f6379cc"><clipPath id="tf00f568a81c5483c8ff8beb87d2ebb56"><rect height="260.0" width="260.0" x="20.0" y="20.0"></rect></clipPath><g clip-path="url(#tf00f568a81c5483c8ff8beb87d2ebb56)"><g class="toyplot-mark-Text" id="t9a916f61372c4bfeb98cb6354cdca299" style="-toyplot-anchor-shift:15px;alignment-baseline:middle;font-size:12px;font-weight:normal;stroke:none;text-anchor:start"><g class="toyplot-Series"><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(147.43119266055044,35.714285714285722)translate(15.0,3.375)"><tspan style="font-size:12.0px">apple</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(206.14678899082568,81.428571428571431)translate(15.0,3.375)"><tspan style="font-size:12.0px">orange</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(118.07339449541283,127.14285714285715)translate(15.0,3.375)"><tspan style="font-size:12.0px">tomatillo</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(176.78899082568807,172.85714285714286)translate(15.0,3.375)"><tspan style="font-size:12.0px">pepper</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(206.14678899082568,218.57142857142856)translate(15.0,3.375)"><tspan style="font-size:12.0px">tomato</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(176.78899082568807,264.28571428571428)translate(15.0,3.375)"><tspan style="font-size:12.0px">eggplant</tspan></text></g></g><g class="toyplot-mark-Graph" id="ta392c32b95894005aea36cc0e418c23b"><g class="toyplot-Edges"><path d="M 30.0 112.857142857 L 30.0 58.5714285714" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 30.0 58.5714285714 L 88.7155963303 58.5714285714" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 30.0 112.857142857 L 30.0 167.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 30.0 167.142857143 L 59.3577981651 167.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 58.5714285714 L 88.7155963303 35.7142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 35.7142857143 L 147.431192661 35.7142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 58.5714285714 L 88.7155963303 81.4285714286" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 81.4285714286 L 206.146788991 81.4285714286" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 59.3577981651 167.142857143 L 59.3577981651 127.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 59.3577981651 127.142857143 L 118.073394495 127.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 59.3577981651 167.142857143 L 59.3577981651 207.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 59.3577981651 207.142857143 L 88.7155963303 207.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 207.142857143 L 88.7155963303 172.857142857" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 172.857142857 L 176.788990826 172.857142857" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 207.142857143 L 88.7155963303 241.428571429" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 241.428571429 L 147.431192661 241.428571429" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 147.431192661 241.428571429 L 147.431192661 218.571428571" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 147.431192661 218.571428571 L 206.146788991 218.571428571" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 147.431192661 241.428571429 L 147.431192661 264.285714286" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 147.431192661 264.285714286 L 176.788990826 264.285714286" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="30.0" cy="112.85714285714285" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="30.0" cy="58.571428571428569" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="58.571428571428569" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="30.0" cy="167.14285714285714" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="59.357798165137609" cy="167.14285714285714" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="58.571428571428569" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="35.714285714285722" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="35.714285714285722" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="81.428571428571431" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="206.14678899082568" cy="81.428571428571431" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="59.357798165137609" cy="167.14285714285714" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="59.357798165137609" cy="127.14285714285715" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="118.07339449541283" cy="127.14285714285715" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="59.357798165137609" cy="207.14285714285717" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="207.14285714285717" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="207.14285714285717" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="172.85714285714286" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="176.78899082568807" cy="172.85714285714286" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="241.42857142857144" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="241.42857142857144" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="241.42857142857144" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="218.57142857142856" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="206.14678899082568" cy="218.57142857142856" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="264.28571428571428" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="176.78899082568807" cy="264.28571428571428" r="0.0"></circle></g></g></g><g class="toyplot-mark-Scatterplot" id="t8d97027f6e854063a324ef083b30dc6e" style=""><g class="toyplot-Series"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="30.0" cy="112.85714285714285" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="88.715596330275218" cy="58.571428571428569" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="59.357798165137609" cy="167.14285714285714" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="88.715596330275218" cy="207.14285714285717" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="147.43119266055044" cy="241.42857142857144" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="147.43119266055044" cy="35.714285714285722" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="206.14678899082568" cy="81.428571428571431" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="118.07339449541283" cy="127.14285714285715" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="176.78899082568807" cy="172.85714285714286" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="206.14678899082568" cy="218.57142857142856" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none"><circle cx="176.78899082568807" cy="264.28571428571428" r="0.0"></circle></g></g></g><g class="toyplot-mark-Text" id="tf3fb481c3cdd46638d082c72219050f0" style="alignment-baseline:middle;fill:262626;font-size:9px;font-weight:normal;stroke:none;text-anchor:middle"><g class="toyplot-Series"><text class="toyplot-Datum" style="fill:262626;font-weight:normal;opacity:1.0;stroke:none;text-anchor:middle" transform="translate(88.715596330275218,58.571428571428569)translate(0,2.53125)"><tspan style="font-size:9.0px">False</tspan></text><text class="toyplot-Datum" style="fill:262626;font-weight:normal;opacity:1.0;stroke:none;text-anchor:middle" transform="translate(59.357798165137609,167.14285714285714)translate(0,2.53125)"><tspan style="font-size:9.0px">False</tspan></text><text class="toyplot-Datum" style="fill:262626;font-weight:normal;opacity:1.0;stroke:none;text-anchor:middle" transform="translate(88.715596330275218,207.14285714285717)translate(0,2.53125)"><tspan style="font-size:9.0px">False</tspan></text><text class="toyplot-Datum" style="fill:262626;font-weight:normal;opacity:1.0;stroke:none;text-anchor:middle" transform="translate(147.43119266055044,241.42857142857144)translate(0,2.53125)"><tspan style="font-size:9.0px">False</tspan></text></g></g></g></g></svg><div class="toyplot-interactive"><ul class="toyplot-mark-popup" onmouseleave="this.style.visibility='hidden'" style="background:rgba(0%,0%,0%,0.75);border:0;border-radius:6px;color:white;cursor:default;list-style:none;margin:0;padding:5px;position:fixed;visibility:hidden">
-            <li class="toyplot-mark-popup-title" style="color:lightgray;cursor:default;padding:5px;list-style:none;margin:0"></li>
-            <li class="toyplot-mark-popup-save-csv" onmouseout="this.style.color='white';this.style.background='steelblue'" onmouseover="this.style.color='steelblue';this.style.background='white'" style="border-radius:3px;padding:5px;list-style:none;margin:0">
-                Save as .csv
-            </li>
-        </ul><script>
-        (function()
-        {
-          var data_tables = [{"title": "Scatterplot Data", "names": ["x", "y0"], "id": "t8d97027f6e854063a324ef083b30dc6e", "columns": [[-6.0, -4.0, -5.0, -4.0, -2.0, -2.0, 0.0, -3.0, -1.0, 0.0, -1.0], [3.3125, 4.5, 2.125, 1.25, 0.5, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0]], "filename": "toyplot"}];
+<div class="toyplot" id="t4c479e2fc3964acc9c4e3e142af6ffe5" style="text-align:center"><svg class="toyplot-canvas-Canvas" height="275.0px" id="tebd284daa82a453aa07935944d631063" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 300.0 275.0" width="300.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="t0e00303da74d4b2abc3594ebb3e8040b"><clipPath id="tb0795dae25c9400e82b63df19de80196"><rect height="275.0" width="300.0" x="0.0" y="0.0"></rect></clipPath><g clip-path="url(#tb0795dae25c9400e82b63df19de80196)"><g class="toyplot-mark-Text" id="t3e74bfea5a31454fad4db5ec25284d62"><g class="toyplot-Series"><g class="toyplot-Datum" transform="translate(182.08853101702886,218.34741288278775)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">eggplant</text></g><g class="toyplot-Datum" transform="translate(208.50623722043466,186.00844772967267)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">tomato</text></g><g class="toyplot-Datum" transform="translate(182.08853101702886,153.66948257655756)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">pepper</text></g><g class="toyplot-Datum" transform="translate(129.25311861021731,121.33051742344244)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">tomatillo</text></g><g class="toyplot-Datum" transform="translate(208.50623722043466,88.991552270327347)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">orange</text></g><g class="toyplot-Datum" transform="translate(155.67082481362308,56.652587117212242)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">apple</text></g></g></g><g class="toyplot-mark-Graph" id="t9142c736d9224b828e14682383f8a0b8"><g class="toyplot-Edges"><path d="M 50.0 111.224590813 L 50.0 72.8220696938" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 72.8220696938 L 102.835412407 72.8220696938" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 111.224590813 L 50.0 149.627111932" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 149.627111932 L 76.4177062034 149.627111932" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 72.8220696938 L 102.835412407 56.6525871172" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 56.6525871172 L 155.670824814 56.6525871172" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 72.8220696938 L 102.835412407 88.9915522703" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 88.9915522703 L 208.50623722 88.9915522703" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 76.4177062034 149.627111932 L 76.4177062034 121.330517423" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 76.4177062034 121.330517423 L 129.25311861 121.330517423" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 76.4177062034 149.627111932 L 76.4177062034 177.923706441" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 76.4177062034 177.923706441 L 102.835412407 177.923706441" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 177.923706441 L 102.835412407 153.669482577" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 153.669482577 L 182.088531017 153.669482577" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 177.923706441 L 102.835412407 202.177930306" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 202.177930306 L 155.670824814 202.177930306" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 155.670824814 202.177930306 L 155.670824814 186.00844773" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 155.670824814 186.00844773 L 208.50623722 186.00844773" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 155.670824814 202.177930306 L 155.670824814 218.347412883" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 155.670824814 218.347412883 L 182.088531017 218.347412883" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><g class="toyplot-HeadMarkers"></g><g class="toyplot-MiddleMarkers"></g><g class="toyplot-TailMarkers"></g></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 111.22459081309398)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(76.417706203405771, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 56.652587117212242)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 56.652587117212242)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 88.991552270327347)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(208.50623722043466, 88.991552270327347)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(76.417706203405771, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(76.417706203405771, 121.33051742344244)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(129.25311861021731, 121.33051742344244)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(76.417706203405771, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 153.66948257655756)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(182.08853101702886, 153.66948257655756)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 186.00844772967267)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(208.50623722043466, 186.00844772967267)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 218.34741288278775)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(182.08853101702886, 218.34741288278775)"><circle r="0.0"></circle></g></g></g><g class="toyplot-mark-Scatterplot" id="td0d9c86a067d44718f4c8639b6c145f8"><g class="toyplot-Series"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(155.67082481362308, 202.17793030623019)"><title>idx: 6
+name: i6
+dist: 2
+support: 100
+is_long_branch: False
+height: 2</title><circle r="12.5"></circle><g><text style="fill:rgb(14.9%,14.9%,14.9%);fill-opacity:1.0;font-family:helvetica;font-size:9.0px;font-weight:normal;stroke:none;vertical-align:baseline;white-space:pre" x="-11.0025" y="2.2995">False</text></g></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(102.83541240681154, 177.92370644139388)"><title>idx: 7
+name: i7
+dist: 1
+support: 90
+is_long_branch: False
+height: 4</title><circle r="12.5"></circle><g><text style="fill:rgb(14.9%,14.9%,14.9%);fill-opacity:1.0;font-family:helvetica;font-size:9.0px;font-weight:normal;stroke:none;vertical-align:baseline;white-space:pre" x="-11.0025" y="2.2995">False</text></g></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(76.417706203405771, 149.62711193241816)"><title>idx: 8
+name: i8
+dist: 1
+support: 100
+is_long_branch: False
+height: 5</title><circle r="12.5"></circle><g><text style="fill:rgb(14.9%,14.9%,14.9%);fill-opacity:1.0;font-family:helvetica;font-size:9.0px;font-weight:normal;stroke:none;vertical-align:baseline;white-space:pre" x="-11.0025" y="2.2995">False</text></g></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:none" transform="translate(102.83541240681154, 72.822069693769805)"><title>idx: 9
+name: i9
+dist: 2
+support: 100
+is_long_branch: False
+height: 4</title><circle r="12.5"></circle><g><text style="fill:rgb(14.9%,14.9%,14.9%);fill-opacity:1.0;font-family:helvetica;font-size:9.0px;font-weight:normal;stroke:none;vertical-align:baseline;white-space:pre" x="-11.0025" y="2.2995">False</text></g></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+modules["toyplot/tables"] = (function()
+    {
+        var tables = [];
 
-          function save_csv(data_table)
-          {
-            var uri = "data:text/csv;charset=utf-8,";
-            uri += data_table.names.join(",") + "\n";
-            for(var i = 0; i != data_table.columns[0].length; ++i)
+        var module = {};
+
+        module.set = function(owner, key, names, columns)
+        {
+            tables.push({owner: owner, key: key, names: names, columns: columns});
+        }
+
+        module.get = function(owner, key)
+        {
+            for(var i = 0; i != tables.length; ++i)
             {
-              for(var j = 0; j != data_table.columns.length; ++j)
-              {
-                if(j)
-                  uri += ",";
-                uri += data_table.columns[j][i];
-              }
-              uri += "\n";
+                var table = tables[i];
+                if(table.owner != owner)
+                    continue;
+                if(table.key != key)
+                    continue;
+                return {names: table.names, columns: table.columns};
             }
+        }
+
+        module.get_csv = function(owner, key)
+        {
+            var table = module.get(owner, key);
+            if(table != undefined)
+            {
+                var csv = "";
+                csv += table.names.join(",") + "\n";
+                for(var i = 0; i != table.columns[0].length; ++i)
+                {
+                  for(var j = 0; j != table.columns.length; ++j)
+                  {
+                    if(j)
+                      csv += ",";
+                    csv += table.columns[j][i];
+                  }
+                  csv += "\n";
+                }
+                return csv;
+            }
+        }
+
+        return module;
+    })();
+modules["toyplot/root/id"] = "t4c479e2fc3964acc9c4e3e142af6ffe5";
+modules["toyplot/root"] = (function(root_id)
+    {
+        return document.querySelector("#" + root_id);
+    })(modules["toyplot/root/id"]);
+modules["toyplot/canvas/id"] = "tebd284daa82a453aa07935944d631063";
+modules["toyplot/canvas"] = (function(canvas_id)
+    {
+        return document.querySelector("#" + canvas_id);
+    })(modules["toyplot/canvas/id"]);
+modules["toyplot/menus/context"] = (function(root, canvas)
+    {
+        var wrapper = document.createElement("div");
+        wrapper.innerHTML = "<ul class='toyplot-context-menu' style='background:#eee; border:1px solid #b8b8b8; border-radius:5px; box-shadow: 0px 0px 8px rgba(0%,0%,0%,0.25); margin:0; padding:3px 0; position:fixed; visibility:hidden;'></ul>"
+        var menu = wrapper.firstChild;
+
+        root.appendChild(menu);
+
+        var items = [];
+
+        var ignore_mouseup = null;
+        function open_menu(e)
+        {
+            var show_menu = false;
+            for(var index=0; index != items.length; ++index)
+            {
+                var item = items[index];
+                if(item.show(e))
+                {
+                    item.item.style.display = "block";
+                    show_menu = true;
+                }
+                else
+                {
+                    item.item.style.display = "none";
+                }
+            }
+
+            if(show_menu)
+            {
+                ignore_mouseup = true;
+                menu.style.left = (e.clientX + 1) + "px";
+                menu.style.top = (e.clientY - 5) + "px";
+                menu.style.visibility = "visible";
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }
+
+        function close_menu()
+        {
+            menu.style.visibility = "hidden";
+        }
+
+        function contextmenu(e)
+        {
+            open_menu(e);
+        }
+
+        function mousemove(e)
+        {
+            ignore_mouseup = false;
+        }
+
+        function mouseup(e)
+        {
+            if(ignore_mouseup)
+            {
+                ignore_mouseup = false;
+                return;
+            }
+            close_menu();
+        }
+
+        function keydown(e)
+        {
+            if(e.key == "Escape" || e.key == "Esc" || e.keyCode == 27)
+            {
+                close_menu();
+            }
+        }
+
+        canvas.addEventListener("contextmenu", contextmenu);
+        canvas.addEventListener("mousemove", mousemove);
+        document.addEventListener("mouseup", mouseup);
+        document.addEventListener("keydown", keydown);
+
+        var module = {};
+        module.add_item = function(label, show, activate)
+        {
+            var wrapper = document.createElement("div");
+            wrapper.innerHTML = "<li class='toyplot-context-menu-item' style='background:#eee; color:#333; padding:2px 20px; list-style:none; margin:0; text-align:left;'>" + label + "</li>"
+            var item = wrapper.firstChild;
+
+            items.push({item: item, show: show});
+
+            function mouseover()
+            {
+                this.style.background = "steelblue";
+                this.style.color = "white";
+            }
+
+            function mouseout()
+            {
+                this.style.background = "#eee";
+                this.style.color = "#333";
+            }
+
+            function choose_item(e)
+            {
+                close_menu();
+                activate();
+
+                e.stopPropagation();
+                e.preventDefault();
+            }
+
+            item.addEventListener("mouseover", mouseover);
+            item.addEventListener("mouseout", mouseout);
+            item.addEventListener("mouseup", choose_item);
+            item.addEventListener("contextmenu", choose_item);
+
+            menu.appendChild(item);
+        };
+        return module;
+    })(modules["toyplot/root"],modules["toyplot/canvas"]);
+modules["toyplot/io"] = (function()
+    {
+        var module = {};
+        module.save_file = function(mime_type, charset, data, filename)
+        {
+            var uri = "data:" + mime_type + ";charset=" + charset + "," + data;
             uri = encodeURI(uri);
 
             var link = document.createElement("a");
@@ -431,7 +1420,7 @@ tre.draw(width=300,
             {
               link.href = uri;
               link.style = "visibility:hidden";
-              link.download = data_table.filename + ".csv";
+              link.download = filename;
 
               document.body.appendChild(link);
               link.click();
@@ -441,32 +1430,61 @@ tre.draw(width=300,
             {
               window.open(uri);
             }
-          }
+        };
+        return module;
+    })();
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
 
-          function open_popup(data_table)
-          {
-            return function(e)
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
             {
-              var popup = document.querySelector("#t25b38fb1b5c34b32b02260934b9e1f2e .toyplot-mark-popup");
-              popup.querySelector(".toyplot-mark-popup-title").innerHTML = data_table.title;
-              popup.querySelector(".toyplot-mark-popup-save-csv").onclick = function() { popup.style.visibility = "hidden"; save_csv(data_table); }
-              popup.style.left = (e.clientX - 50) + "px";
-              popup.style.top = (e.clientY - 20) + "px";
-              popup.style.visibility = "visible";
-              e.stopPropagation();
-              e.preventDefault();
+                return owner.contains(e.target);
             }
 
-          }
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
 
-          for(var i = 0; i != data_tables.length; ++i)
-          {
-            var data_table = data_tables[i];
-            var event_target = document.querySelector("#" + data_table.id);
-            event_target.oncontextmenu = open_popup(data_table);
-          }
-        })();
-        </script></div></div>
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t9142c736d9224b828e14682383f8a0b8","vertex_data","graph vertex data",["x", "y"],[[-6.0, -6.0, -4.0, -6.0, -5.0, -4.0, -4.0, -2.0, -4.0, 0.0, -5.0, -5.0, -3.0, -5.0, -4.0, -4.0, -4.0, -1.0, -4.0, -2.0, -2.0, -2.0, 0.0, -2.0, -1.0], [3.3125, 4.5, 4.5, 2.125, 2.125, 4.5, 5.0, 5.0, 4.0, 4.0, 2.125, 3.0, 3.0, 1.25, 1.25, 1.25, 2.0, 2.0, 0.5, 0.5, 0.5, 1.0, 1.0, 0.0, 0.0]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t9142c736d9224b828e14682383f8a0b8","edge_data","graph edge data",["source", "target"],[[0, 1, 0, 3, 5, 6, 5, 8, 10, 11, 10, 13, 15, 16, 15, 18, 20, 21, 20, 23], [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 19, 21, 22, 23, 24]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"td0d9c86a067d44718f4c8639b6c145f8","data","scatterplot",["x", "y0"],[[-1.0, 0.0, -1.0, -3.0, 0.0, -2.0, -2.0, -4.0, -5.0, -4.0, -6.0], [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 0.5, 1.25, 2.125, 4.5, 3.3125]],"toyplot");
+})();</script></div></div>
 
 
 ### Node colors
@@ -489,74 +1507,243 @@ tre.draw(width=300,
 ```
 
 
-<div align="center" class="toyplot" id="tfd298f6dfc52436996fbfeadb89c8500"><svg class="toyplot-canvas-Canvas" height="300.0px" id="t384f1d0aa97040288cc6c8681dfd5f12" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 300.0 300.0" width="300.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="t17fde19e09f047cd8769bfde4729bd4a"><clipPath id="t85c0a7148bf1442a806c53c00f796964"><rect height="260.0" width="260.0" x="20.0" y="20.0"></rect></clipPath><g clip-path="url(#t85c0a7148bf1442a806c53c00f796964)"><g class="toyplot-mark-Text" id="t10c20c53a6f74a92902ceca9146cc359" style="-toyplot-anchor-shift:15px;alignment-baseline:middle;font-size:12px;font-weight:normal;stroke:none;text-anchor:start"><g class="toyplot-Series"><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(147.43119266055044,35.714285714285722)translate(15.0,3.375)"><tspan style="font-size:12.0px">apple</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(206.14678899082568,81.428571428571431)translate(15.0,3.375)"><tspan style="font-size:12.0px">orange</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(118.07339449541283,127.14285714285715)translate(15.0,3.375)"><tspan style="font-size:12.0px">tomatillo</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(176.78899082568807,172.85714285714286)translate(15.0,3.375)"><tspan style="font-size:12.0px">pepper</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(206.14678899082568,218.57142857142856)translate(15.0,3.375)"><tspan style="font-size:12.0px">tomato</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(176.78899082568807,264.28571428571428)translate(15.0,3.375)"><tspan style="font-size:12.0px">eggplant</tspan></text></g></g><g class="toyplot-mark-Graph" id="ta460d47682d34347809c88fed0023430"><g class="toyplot-Edges"><path d="M 30.0 112.857142857 L 30.0 58.5714285714" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 30.0 58.5714285714 L 88.7155963303 58.5714285714" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 30.0 112.857142857 L 30.0 167.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 30.0 167.142857143 L 59.3577981651 167.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 58.5714285714 L 88.7155963303 35.7142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 35.7142857143 L 147.431192661 35.7142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 58.5714285714 L 88.7155963303 81.4285714286" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 81.4285714286 L 206.146788991 81.4285714286" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 59.3577981651 167.142857143 L 59.3577981651 127.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 59.3577981651 127.142857143 L 118.073394495 127.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 59.3577981651 167.142857143 L 59.3577981651 207.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 59.3577981651 207.142857143 L 88.7155963303 207.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 207.142857143 L 88.7155963303 172.857142857" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 172.857142857 L 176.788990826 172.857142857" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 207.142857143 L 88.7155963303 241.428571429" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 241.428571429 L 147.431192661 241.428571429" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 147.431192661 241.428571429 L 147.431192661 218.571428571" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 147.431192661 218.571428571 L 206.146788991 218.571428571" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 147.431192661 241.428571429 L 147.431192661 264.285714286" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 147.431192661 264.285714286 L 176.788990826 264.285714286" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="30.0" cy="112.85714285714285" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="30.0" cy="58.571428571428569" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="58.571428571428569" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="30.0" cy="167.14285714285714" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="59.357798165137609" cy="167.14285714285714" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="58.571428571428569" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="35.714285714285722" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="35.714285714285722" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="81.428571428571431" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="206.14678899082568" cy="81.428571428571431" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="59.357798165137609" cy="167.14285714285714" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="59.357798165137609" cy="127.14285714285715" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="118.07339449541283" cy="127.14285714285715" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="59.357798165137609" cy="207.14285714285717" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="207.14285714285717" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="207.14285714285717" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="172.85714285714286" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="176.78899082568807" cy="172.85714285714286" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="241.42857142857144" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="241.42857142857144" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="241.42857142857144" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="218.57142857142856" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="206.14678899082568" cy="218.57142857142856" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="264.28571428571428" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="176.78899082568807" cy="264.28571428571428" r="0.0"></circle></g></g></g><g class="toyplot-mark-Scatterplot" id="t952ebca7dc0a42a58e7c14156d39186e" style=""><g class="toyplot-Series"><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0"><title>idx: 0
-name: 0
-dist: 0
-support: 100
-is_long_branch: False</title><circle cx="30.0" cy="112.85714285714285" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0"><title>idx: 1
-name: 1
-dist: 2
-support: 100
-is_long_branch: False</title><circle cx="88.715596330275218" cy="58.571428571428569" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0"><title>idx: 2
-name: 2
-dist: 1
-support: 100
-is_long_branch: False</title><circle cx="59.357798165137609" cy="167.14285714285714" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0"><title>idx: 3
-name: 3
-dist: 1
-support: 90
-is_long_branch: False</title><circle cx="88.715596330275218" cy="207.14285714285717" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0"><title>idx: 4
-name: 4
-dist: 2
-support: 100
-is_long_branch: False</title><circle cx="147.43119266055044" cy="241.42857142857144" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0"><title>idx: 5
-name: apple
-dist: 2
-support: 100
-is_long_branch: False</title><circle cx="147.43119266055044" cy="35.714285714285722" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0"><title>idx: 6
-name: orange
-dist: 4
-support: 100
-is_long_branch: True</title><circle cx="206.14678899082568" cy="81.428571428571431" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0"><title>idx: 7
-name: tomatillo
-dist: 2
-support: 100
-is_long_branch: False</title><circle cx="118.07339449541283" cy="127.14285714285715" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0"><title>idx: 8
-name: pepper
-dist: 3
-support: 100
-is_long_branch: True</title><circle cx="176.78899082568807" cy="172.85714285714286" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0"><title>idx: 9
-name: tomato
-dist: 2
-support: 100
-is_long_branch: False</title><circle cx="206.14678899082568" cy="218.57142857142856" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0"><title>idx: 10
+<div class="toyplot" id="t25b4bc5679944d3d9dfaaf4cfc917b83" style="text-align:center"><svg class="toyplot-canvas-Canvas" height="275.0px" id="t254d8183f2ca44b1a5d3db00d498c6fb" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 300.0 275.0" width="300.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="tddcd79a7e8c2415483c7ecdb8be4e17e"><clipPath id="tde2e139570f3434b9b539b3e398c7789"><rect height="275.0" width="300.0" x="0.0" y="0.0"></rect></clipPath><g clip-path="url(#tde2e139570f3434b9b539b3e398c7789)"><g class="toyplot-mark-Text" id="t630fe8aea424404985399e78e06bc4f8"><g class="toyplot-Series"><g class="toyplot-Datum" transform="translate(182.08853101702886,218.34741288278775)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">eggplant</text></g><g class="toyplot-Datum" transform="translate(208.50623722043466,186.00844772967267)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">tomato</text></g><g class="toyplot-Datum" transform="translate(182.08853101702886,153.66948257655756)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">pepper</text></g><g class="toyplot-Datum" transform="translate(129.25311861021731,121.33051742344244)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">tomatillo</text></g><g class="toyplot-Datum" transform="translate(208.50623722043466,88.991552270327347)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">orange</text></g><g class="toyplot-Datum" transform="translate(155.67082481362308,56.652587117212242)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">apple</text></g></g></g><g class="toyplot-mark-Graph" id="t5d0148dda62e4b08b9a906177415f439"><g class="toyplot-Edges"><path d="M 50.0 111.224590813 L 50.0 72.8220696938" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 72.8220696938 L 102.835412407 72.8220696938" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 111.224590813 L 50.0 149.627111932" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 149.627111932 L 76.4177062034 149.627111932" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 72.8220696938 L 102.835412407 56.6525871172" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 56.6525871172 L 155.670824814 56.6525871172" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 72.8220696938 L 102.835412407 88.9915522703" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 88.9915522703 L 208.50623722 88.9915522703" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 76.4177062034 149.627111932 L 76.4177062034 121.330517423" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 76.4177062034 121.330517423 L 129.25311861 121.330517423" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 76.4177062034 149.627111932 L 76.4177062034 177.923706441" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 76.4177062034 177.923706441 L 102.835412407 177.923706441" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 177.923706441 L 102.835412407 153.669482577" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 153.669482577 L 182.088531017 153.669482577" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 177.923706441 L 102.835412407 202.177930306" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 202.177930306 L 155.670824814 202.177930306" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 155.670824814 202.177930306 L 155.670824814 186.00844773" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 155.670824814 186.00844773 L 208.50623722 186.00844773" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 155.670824814 202.177930306 L 155.670824814 218.347412883" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 155.670824814 218.347412883 L 182.088531017 218.347412883" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><g class="toyplot-HeadMarkers"></g><g class="toyplot-MiddleMarkers"></g><g class="toyplot-TailMarkers"></g></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 111.22459081309398)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(76.417706203405771, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 56.652587117212242)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 56.652587117212242)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 88.991552270327347)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(208.50623722043466, 88.991552270327347)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(76.417706203405771, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(76.417706203405771, 121.33051742344244)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(129.25311861021731, 121.33051742344244)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(76.417706203405771, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 153.66948257655756)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(182.08853101702886, 153.66948257655756)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 186.00844772967267)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(208.50623722043466, 186.00844772967267)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 218.34741288278775)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(182.08853101702886, 218.34741288278775)"><circle r="0.0"></circle></g></g></g><g class="toyplot-mark-Scatterplot" id="t394c80c72f384b7c8465f36ae356e6b9"><g class="toyplot-Series"><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0" transform="translate(182.08853101702886, 218.34741288278775)"><title>idx: 0
 name: eggplant
 dist: 1
 support: 100
-is_long_branch: False</title><circle cx="176.78899082568807" cy="264.28571428571428" r="10.0"></circle></g></g></g></g></g></svg><div class="toyplot-interactive"><ul class="toyplot-mark-popup" onmouseleave="this.style.visibility='hidden'" style="background:rgba(0%,0%,0%,0.75);border:0;border-radius:6px;color:white;cursor:default;list-style:none;margin:0;padding:5px;position:fixed;visibility:hidden">
-            <li class="toyplot-mark-popup-title" style="color:lightgray;cursor:default;padding:5px;list-style:none;margin:0"></li>
-            <li class="toyplot-mark-popup-save-csv" onmouseout="this.style.color='white';this.style.background='steelblue'" onmouseover="this.style.color='steelblue';this.style.background='white'" style="border-radius:3px;padding:5px;list-style:none;margin:0">
-                Save as .csv
-            </li>
-        </ul><script>
-        (function()
-        {
-          var data_tables = [{"title": "Scatterplot Data", "names": ["x", "y0"], "id": "t952ebca7dc0a42a58e7c14156d39186e", "columns": [[-6.0, -4.0, -5.0, -4.0, -2.0, -2.0, 0.0, -3.0, -1.0, 0.0, -1.0], [3.3125, 4.5, 2.125, 1.25, 0.5, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0]], "filename": "toyplot"}];
+is_long_branch: False
+height: 1</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0" transform="translate(208.50623722043466, 186.00844772967267)"><title>idx: 1
+name: tomato
+dist: 2
+support: 100
+is_long_branch: False
+height: 0</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0" transform="translate(182.08853101702886, 153.66948257655756)"><title>idx: 2
+name: pepper
+dist: 3
+support: 100
+is_long_branch: True
+height: 1</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0" transform="translate(129.25311861021731, 121.33051742344244)"><title>idx: 3
+name: tomatillo
+dist: 2
+support: 100
+is_long_branch: False
+height: 3</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0" transform="translate(208.50623722043466, 88.991552270327347)"><title>idx: 4
+name: orange
+dist: 4
+support: 100
+is_long_branch: True
+height: 0</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0" transform="translate(155.67082481362308, 56.652587117212242)"><title>idx: 5
+name: apple
+dist: 2
+support: 100
+is_long_branch: False
+height: 2</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0" transform="translate(155.67082481362308, 202.17793030623019)"><title>idx: 6
+name: i6
+dist: 2
+support: 100
+is_long_branch: False
+height: 2</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0" transform="translate(102.83541240681154, 177.92370644139388)"><title>idx: 7
+name: i7
+dist: 1
+support: 90
+is_long_branch: False
+height: 4</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0" transform="translate(76.417706203405771, 149.62711193241816)"><title>idx: 8
+name: i8
+dist: 1
+support: 100
+is_long_branch: False
+height: 5</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0" transform="translate(102.83541240681154, 72.822069693769805)"><title>idx: 9
+name: i9
+dist: 2
+support: 100
+is_long_branch: False
+height: 4</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,0%,0%);stroke-opacity:1.0" transform="translate(50.0, 111.22459081309398)"><title>idx: 10
+name: i10
+dist: 0
+support: 100
+is_long_branch: False
+height: 6</title><circle r="10.0"></circle></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+modules["toyplot/tables"] = (function()
+    {
+        var tables = [];
 
-          function save_csv(data_table)
-          {
-            var uri = "data:text/csv;charset=utf-8,";
-            uri += data_table.names.join(",") + "\n";
-            for(var i = 0; i != data_table.columns[0].length; ++i)
+        var module = {};
+
+        module.set = function(owner, key, names, columns)
+        {
+            tables.push({owner: owner, key: key, names: names, columns: columns});
+        }
+
+        module.get = function(owner, key)
+        {
+            for(var i = 0; i != tables.length; ++i)
             {
-              for(var j = 0; j != data_table.columns.length; ++j)
-              {
-                if(j)
-                  uri += ",";
-                uri += data_table.columns[j][i];
-              }
-              uri += "\n";
+                var table = tables[i];
+                if(table.owner != owner)
+                    continue;
+                if(table.key != key)
+                    continue;
+                return {names: table.names, columns: table.columns};
             }
+        }
+
+        module.get_csv = function(owner, key)
+        {
+            var table = module.get(owner, key);
+            if(table != undefined)
+            {
+                var csv = "";
+                csv += table.names.join(",") + "\n";
+                for(var i = 0; i != table.columns[0].length; ++i)
+                {
+                  for(var j = 0; j != table.columns.length; ++j)
+                  {
+                    if(j)
+                      csv += ",";
+                    csv += table.columns[j][i];
+                  }
+                  csv += "\n";
+                }
+                return csv;
+            }
+        }
+
+        return module;
+    })();
+modules["toyplot/root/id"] = "t25b4bc5679944d3d9dfaaf4cfc917b83";
+modules["toyplot/root"] = (function(root_id)
+    {
+        return document.querySelector("#" + root_id);
+    })(modules["toyplot/root/id"]);
+modules["toyplot/canvas/id"] = "t254d8183f2ca44b1a5d3db00d498c6fb";
+modules["toyplot/canvas"] = (function(canvas_id)
+    {
+        return document.querySelector("#" + canvas_id);
+    })(modules["toyplot/canvas/id"]);
+modules["toyplot/menus/context"] = (function(root, canvas)
+    {
+        var wrapper = document.createElement("div");
+        wrapper.innerHTML = "<ul class='toyplot-context-menu' style='background:#eee; border:1px solid #b8b8b8; border-radius:5px; box-shadow: 0px 0px 8px rgba(0%,0%,0%,0.25); margin:0; padding:3px 0; position:fixed; visibility:hidden;'></ul>"
+        var menu = wrapper.firstChild;
+
+        root.appendChild(menu);
+
+        var items = [];
+
+        var ignore_mouseup = null;
+        function open_menu(e)
+        {
+            var show_menu = false;
+            for(var index=0; index != items.length; ++index)
+            {
+                var item = items[index];
+                if(item.show(e))
+                {
+                    item.item.style.display = "block";
+                    show_menu = true;
+                }
+                else
+                {
+                    item.item.style.display = "none";
+                }
+            }
+
+            if(show_menu)
+            {
+                ignore_mouseup = true;
+                menu.style.left = (e.clientX + 1) + "px";
+                menu.style.top = (e.clientY - 5) + "px";
+                menu.style.visibility = "visible";
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }
+
+        function close_menu()
+        {
+            menu.style.visibility = "hidden";
+        }
+
+        function contextmenu(e)
+        {
+            open_menu(e);
+        }
+
+        function mousemove(e)
+        {
+            ignore_mouseup = false;
+        }
+
+        function mouseup(e)
+        {
+            if(ignore_mouseup)
+            {
+                ignore_mouseup = false;
+                return;
+            }
+            close_menu();
+        }
+
+        function keydown(e)
+        {
+            if(e.key == "Escape" || e.key == "Esc" || e.keyCode == 27)
+            {
+                close_menu();
+            }
+        }
+
+        canvas.addEventListener("contextmenu", contextmenu);
+        canvas.addEventListener("mousemove", mousemove);
+        document.addEventListener("mouseup", mouseup);
+        document.addEventListener("keydown", keydown);
+
+        var module = {};
+        module.add_item = function(label, show, activate)
+        {
+            var wrapper = document.createElement("div");
+            wrapper.innerHTML = "<li class='toyplot-context-menu-item' style='background:#eee; color:#333; padding:2px 20px; list-style:none; margin:0; text-align:left;'>" + label + "</li>"
+            var item = wrapper.firstChild;
+
+            items.push({item: item, show: show});
+
+            function mouseover()
+            {
+                this.style.background = "steelblue";
+                this.style.color = "white";
+            }
+
+            function mouseout()
+            {
+                this.style.background = "#eee";
+                this.style.color = "#333";
+            }
+
+            function choose_item(e)
+            {
+                close_menu();
+                activate();
+
+                e.stopPropagation();
+                e.preventDefault();
+            }
+
+            item.addEventListener("mouseover", mouseover);
+            item.addEventListener("mouseout", mouseout);
+            item.addEventListener("mouseup", choose_item);
+            item.addEventListener("contextmenu", choose_item);
+
+            menu.appendChild(item);
+        };
+        return module;
+    })(modules["toyplot/root"],modules["toyplot/canvas"]);
+modules["toyplot/io"] = (function()
+    {
+        var module = {};
+        module.save_file = function(mime_type, charset, data, filename)
+        {
+            var uri = "data:" + mime_type + ";charset=" + charset + "," + data;
             uri = encodeURI(uri);
 
             var link = document.createElement("a");
@@ -564,7 +1751,7 @@ is_long_branch: False</title><circle cx="176.78899082568807" cy="264.28571428571
             {
               link.href = uri;
               link.style = "visibility:hidden";
-              link.download = data_table.filename + ".csv";
+              link.download = filename;
 
               document.body.appendChild(link);
               link.click();
@@ -574,32 +1761,61 @@ is_long_branch: False</title><circle cx="176.78899082568807" cy="264.28571428571
             {
               window.open(uri);
             }
-          }
+        };
+        return module;
+    })();
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
 
-          function open_popup(data_table)
-          {
-            return function(e)
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
             {
-              var popup = document.querySelector("#tfd298f6dfc52436996fbfeadb89c8500 .toyplot-mark-popup");
-              popup.querySelector(".toyplot-mark-popup-title").innerHTML = data_table.title;
-              popup.querySelector(".toyplot-mark-popup-save-csv").onclick = function() { popup.style.visibility = "hidden"; save_csv(data_table); }
-              popup.style.left = (e.clientX - 50) + "px";
-              popup.style.top = (e.clientY - 20) + "px";
-              popup.style.visibility = "visible";
-              e.stopPropagation();
-              e.preventDefault();
+                return owner.contains(e.target);
             }
 
-          }
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
 
-          for(var i = 0; i != data_tables.length; ++i)
-          {
-            var data_table = data_tables[i];
-            var event_target = document.querySelector("#" + data_table.id);
-            event_target.oncontextmenu = open_popup(data_table);
-          }
-        })();
-        </script></div></div>
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t5d0148dda62e4b08b9a906177415f439","vertex_data","graph vertex data",["x", "y"],[[-6.0, -6.0, -4.0, -6.0, -5.0, -4.0, -4.0, -2.0, -4.0, 0.0, -5.0, -5.0, -3.0, -5.0, -4.0, -4.0, -4.0, -1.0, -4.0, -2.0, -2.0, -2.0, 0.0, -2.0, -1.0], [3.3125, 4.5, 4.5, 2.125, 2.125, 4.5, 5.0, 5.0, 4.0, 4.0, 2.125, 3.0, 3.0, 1.25, 1.25, 1.25, 2.0, 2.0, 0.5, 0.5, 0.5, 1.0, 1.0, 0.0, 0.0]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t5d0148dda62e4b08b9a906177415f439","edge_data","graph edge data",["source", "target"],[[0, 1, 0, 3, 5, 6, 5, 8, 10, 11, 10, 13, 15, 16, 15, 18, 20, 21, 20, 23], [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 19, 21, 22, 23, 24]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t394c80c72f384b7c8465f36ae356e6b9","data","scatterplot",["x", "y0"],[[-1.0, 0.0, -1.0, -3.0, 0.0, -2.0, -2.0, -4.0, -5.0, -4.0, -6.0], [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 0.5, 1.25, 2.125, 4.5, 3.3125]],"toyplot");
+})();</script></div></div>
 
 
 ### Node styling
@@ -622,74 +1838,243 @@ tre.draw(width=300,
 ```
 
 
-<div align="center" class="toyplot" id="tf402608cf454425bbc096bed0273226e"><svg class="toyplot-canvas-Canvas" height="300.0px" id="tdff3a8cf0133475b9aa91443996512b3" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 300.0 300.0" width="300.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="tc361585e5c36406e991cfecefcfc5fd1"><clipPath id="t236c67e01aad409ba2aadb35f96f8143"><rect height="260.0" width="260.0" x="20.0" y="20.0"></rect></clipPath><g clip-path="url(#t236c67e01aad409ba2aadb35f96f8143)"><g class="toyplot-mark-Text" id="ta8890d284bf84676be24f141468e4d23" style="-toyplot-anchor-shift:15px;alignment-baseline:middle;font-size:12px;font-weight:normal;stroke:none;text-anchor:start"><g class="toyplot-Series"><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(147.43119266055044,35.714285714285722)translate(15.0,3.375)"><tspan style="font-size:12.0px">apple</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(206.14678899082568,81.428571428571431)translate(15.0,3.375)"><tspan style="font-size:12.0px">orange</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(118.07339449541283,127.14285714285715)translate(15.0,3.375)"><tspan style="font-size:12.0px">tomatillo</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(176.78899082568807,172.85714285714286)translate(15.0,3.375)"><tspan style="font-size:12.0px">pepper</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(206.14678899082568,218.57142857142856)translate(15.0,3.375)"><tspan style="font-size:12.0px">tomato</tspan></text><text class="toyplot-Datum" style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-weight:normal;opacity:1.0;stroke:none;text-anchor:start" transform="translate(176.78899082568807,264.28571428571428)translate(15.0,3.375)"><tspan style="font-size:12.0px">eggplant</tspan></text></g></g><g class="toyplot-mark-Graph" id="t07642c34fcb249b89cf854e4b5d6ebb8"><g class="toyplot-Edges"><path d="M 30.0 112.857142857 L 30.0 58.5714285714" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 30.0 58.5714285714 L 88.7155963303 58.5714285714" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 30.0 112.857142857 L 30.0 167.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 30.0 167.142857143 L 59.3577981651 167.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 58.5714285714 L 88.7155963303 35.7142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 35.7142857143 L 147.431192661 35.7142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 58.5714285714 L 88.7155963303 81.4285714286" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 81.4285714286 L 206.146788991 81.4285714286" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 59.3577981651 167.142857143 L 59.3577981651 127.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 59.3577981651 127.142857143 L 118.073394495 127.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 59.3577981651 167.142857143 L 59.3577981651 207.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 59.3577981651 207.142857143 L 88.7155963303 207.142857143" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 207.142857143 L 88.7155963303 172.857142857" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 172.857142857 L 176.788990826 172.857142857" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 207.142857143 L 88.7155963303 241.428571429" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 88.7155963303 241.428571429 L 147.431192661 241.428571429" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 147.431192661 241.428571429 L 147.431192661 218.571428571" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 147.431192661 218.571428571 L 206.146788991 218.571428571" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 147.431192661 241.428571429 L 147.431192661 264.285714286" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 147.431192661 264.285714286 L 176.788990826 264.285714286" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="30.0" cy="112.85714285714285" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="30.0" cy="58.571428571428569" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="58.571428571428569" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="30.0" cy="167.14285714285714" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="59.357798165137609" cy="167.14285714285714" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="58.571428571428569" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="35.714285714285722" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="35.714285714285722" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="81.428571428571431" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="206.14678899082568" cy="81.428571428571431" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="59.357798165137609" cy="167.14285714285714" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="59.357798165137609" cy="127.14285714285715" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="118.07339449541283" cy="127.14285714285715" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="59.357798165137609" cy="207.14285714285717" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="207.14285714285717" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="207.14285714285717" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="172.85714285714286" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="176.78899082568807" cy="172.85714285714286" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="88.715596330275218" cy="241.42857142857144" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="241.42857142857144" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="241.42857142857144" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="218.57142857142856" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="206.14678899082568" cy="218.57142857142856" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="147.43119266055044" cy="264.28571428571428" r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0"><circle cx="176.78899082568807" cy="264.28571428571428" r="0.0"></circle></g></g></g><g class="toyplot-mark-Scatterplot" id="t62ce107424a342b9bf5e6264533152b9" style=""><g class="toyplot-Series"><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px"><title>idx: 0
-name: 0
-dist: 0
-support: 100
-is_long_branch: False</title><circle cx="30.0" cy="112.85714285714285" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px"><title>idx: 1
-name: 1
-dist: 2
-support: 100
-is_long_branch: False</title><circle cx="88.715596330275218" cy="58.571428571428569" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px"><title>idx: 2
-name: 2
-dist: 1
-support: 100
-is_long_branch: False</title><circle cx="59.357798165137609" cy="167.14285714285714" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px"><title>idx: 3
-name: 3
-dist: 1
-support: 90
-is_long_branch: False</title><circle cx="88.715596330275218" cy="207.14285714285717" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px"><title>idx: 4
-name: 4
-dist: 2
-support: 100
-is_long_branch: False</title><circle cx="147.43119266055044" cy="241.42857142857144" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px"><title>idx: 5
-name: apple
-dist: 2
-support: 100
-is_long_branch: False</title><circle cx="147.43119266055044" cy="35.714285714285722" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px"><title>idx: 6
-name: orange
-dist: 4
-support: 100
-is_long_branch: True</title><circle cx="206.14678899082568" cy="81.428571428571431" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px"><title>idx: 7
-name: tomatillo
-dist: 2
-support: 100
-is_long_branch: False</title><circle cx="118.07339449541283" cy="127.14285714285715" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px"><title>idx: 8
-name: pepper
-dist: 3
-support: 100
-is_long_branch: True</title><circle cx="176.78899082568807" cy="172.85714285714286" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px"><title>idx: 9
-name: tomato
-dist: 2
-support: 100
-is_long_branch: False</title><circle cx="206.14678899082568" cy="218.57142857142856" r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px"><title>idx: 10
+<div class="toyplot" id="tbbb693f60f6c4c0285fc5d3a68070af2" style="text-align:center"><svg class="toyplot-canvas-Canvas" height="275.0px" id="t346c1234bc51481e8e61b74796963886" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" viewBox="0 0 300.0 275.0" width="300.0px" xmlns="http://www.w3.org/2000/svg" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink"><g class="toyplot-coordinates-Cartesian" id="t6c11261c96204a9a9be7902d1ccc1054"><clipPath id="tcecaaf36ace1499391a7d3f2e5ddd661"><rect height="275.0" width="300.0" x="0.0" y="0.0"></rect></clipPath><g clip-path="url(#tcecaaf36ace1499391a7d3f2e5ddd661)"><g class="toyplot-mark-Text" id="t85d840fcaa2b4f34839e907fb6a85a2b"><g class="toyplot-Series"><g class="toyplot-Datum" transform="translate(182.08853101702886,218.34741288278775)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">eggplant</text></g><g class="toyplot-Datum" transform="translate(208.50623722043466,186.00844772967267)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">tomato</text></g><g class="toyplot-Datum" transform="translate(182.08853101702886,153.66948257655756)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">pepper</text></g><g class="toyplot-Datum" transform="translate(129.25311861021731,121.33051742344244)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">tomatillo</text></g><g class="toyplot-Datum" transform="translate(208.50623722043466,88.991552270327347)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">orange</text></g><g class="toyplot-Datum" transform="translate(155.67082481362308,56.652587117212242)"><text style="fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:helvetica;font-size:12.0px;font-weight:normal;opacity:1.0;stroke:none;vertical-align:baseline;white-space:pre" x="15.0" y="3.066">apple</text></g></g></g><g class="toyplot-mark-Graph" id="t97e92b91b3854bf99045dcf98d80a1a1"><g class="toyplot-Edges"><path d="M 50.0 111.224590813 L 50.0 72.8220696938" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 72.8220696938 L 102.835412407 72.8220696938" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 111.224590813 L 50.0 149.627111932" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 50.0 149.627111932 L 76.4177062034 149.627111932" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 72.8220696938 L 102.835412407 56.6525871172" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 56.6525871172 L 155.670824814 56.6525871172" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 72.8220696938 L 102.835412407 88.9915522703" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 88.9915522703 L 208.50623722 88.9915522703" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 76.4177062034 149.627111932 L 76.4177062034 121.330517423" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 76.4177062034 121.330517423 L 129.25311861 121.330517423" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 76.4177062034 149.627111932 L 76.4177062034 177.923706441" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 76.4177062034 177.923706441 L 102.835412407 177.923706441" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 177.923706441 L 102.835412407 153.669482577" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 153.669482577 L 182.088531017 153.669482577" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 177.923706441 L 102.835412407 202.177930306" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 102.835412407 202.177930306 L 155.670824814 202.177930306" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 155.670824814 202.177930306 L 155.670824814 186.00844773" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 155.670824814 186.00844773 L 208.50623722 186.00844773" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 155.670824814 202.177930306 L 155.670824814 218.347412883" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><path d="M 155.670824814 218.347412883 L 182.088531017 218.347412883" style="fill:none;stroke:rgb(16.1%,15.3%,14.1%);stroke-linecap:round;stroke-opacity:1.0;stroke-width:2"></path><g class="toyplot-HeadMarkers"></g><g class="toyplot-MiddleMarkers"></g><g class="toyplot-TailMarkers"></g></g><g class="toyplot-Vertices"><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 111.22459081309398)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(50.0, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(76.417706203405771, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 72.822069693769805)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 56.652587117212242)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 56.652587117212242)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 88.991552270327347)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(208.50623722043466, 88.991552270327347)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(76.417706203405771, 149.62711193241816)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(76.417706203405771, 121.33051742344244)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(129.25311861021731, 121.33051742344244)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(76.417706203405771, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 177.92370644139388)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 153.66948257655756)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(182.08853101702886, 153.66948257655756)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(102.83541240681154, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 202.17793030623019)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 186.00844772967267)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(208.50623722043466, 186.00844772967267)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(155.67082481362308, 218.34741288278775)"><circle r="0.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(40%,76.1%,64.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(40%,76.1%,64.7%);stroke-opacity:1.0" transform="translate(182.08853101702886, 218.34741288278775)"><circle r="0.0"></circle></g></g></g><g class="toyplot-mark-Scatterplot" id="t34516adbacb6459ab240dd72df7ca788"><g class="toyplot-Series"><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px" transform="translate(182.08853101702886, 218.34741288278775)"><title>idx: 0
 name: eggplant
 dist: 1
 support: 100
-is_long_branch: False</title><circle cx="176.78899082568807" cy="264.28571428571428" r="10.0"></circle></g></g></g></g></g></svg><div class="toyplot-interactive"><ul class="toyplot-mark-popup" onmouseleave="this.style.visibility='hidden'" style="background:rgba(0%,0%,0%,0.75);border:0;border-radius:6px;color:white;cursor:default;list-style:none;margin:0;padding:5px;position:fixed;visibility:hidden">
-            <li class="toyplot-mark-popup-title" style="color:lightgray;cursor:default;padding:5px;list-style:none;margin:0"></li>
-            <li class="toyplot-mark-popup-save-csv" onmouseout="this.style.color='white';this.style.background='steelblue'" onmouseover="this.style.color='steelblue';this.style.background='white'" style="border-radius:3px;padding:5px;list-style:none;margin:0">
-                Save as .csv
-            </li>
-        </ul><script>
-        (function()
-        {
-          var data_tables = [{"title": "Scatterplot Data", "names": ["x", "y0"], "id": "t62ce107424a342b9bf5e6264533152b9", "columns": [[-6.0, -4.0, -5.0, -4.0, -2.0, -2.0, 0.0, -3.0, -1.0, 0.0, -1.0], [3.3125, 4.5, 2.125, 1.25, 0.5, 5.0, 4.0, 3.0, 2.0, 1.0, 0.0]], "filename": "toyplot"}];
+is_long_branch: False
+height: 1</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px" transform="translate(208.50623722043466, 186.00844772967267)"><title>idx: 1
+name: tomato
+dist: 2
+support: 100
+is_long_branch: False
+height: 0</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px" transform="translate(182.08853101702886, 153.66948257655756)"><title>idx: 2
+name: pepper
+dist: 3
+support: 100
+is_long_branch: True
+height: 1</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px" transform="translate(129.25311861021731, 121.33051742344244)"><title>idx: 3
+name: tomatillo
+dist: 2
+support: 100
+is_long_branch: False
+height: 3</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px" transform="translate(208.50623722043466, 88.991552270327347)"><title>idx: 4
+name: orange
+dist: 4
+support: 100
+is_long_branch: True
+height: 0</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px" transform="translate(155.67082481362308, 56.652587117212242)"><title>idx: 5
+name: apple
+dist: 2
+support: 100
+is_long_branch: False
+height: 2</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px" transform="translate(155.67082481362308, 202.17793030623019)"><title>idx: 6
+name: i6
+dist: 2
+support: 100
+is_long_branch: False
+height: 2</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px" transform="translate(102.83541240681154, 177.92370644139388)"><title>idx: 7
+name: i7
+dist: 1
+support: 90
+is_long_branch: False
+height: 4</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px" transform="translate(76.417706203405771, 149.62711193241816)"><title>idx: 8
+name: i8
+dist: 1
+support: 100
+is_long_branch: False
+height: 5</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px" transform="translate(102.83541240681154, 72.822069693769805)"><title>idx: 9
+name: i9
+dist: 2
+support: 100
+is_long_branch: False
+height: 4</title><circle r="10.0"></circle></g><g class="toyplot-Datum" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;opacity:1.0;stroke:rgb(0%,54.5%,54.5%);stroke-opacity:1.0;stroke-width:2px" transform="translate(50.0, 111.22459081309398)"><title>idx: 10
+name: i10
+dist: 0
+support: 100
+is_long_branch: False
+height: 6</title><circle r="10.0"></circle></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+modules["toyplot/tables"] = (function()
+    {
+        var tables = [];
 
-          function save_csv(data_table)
-          {
-            var uri = "data:text/csv;charset=utf-8,";
-            uri += data_table.names.join(",") + "\n";
-            for(var i = 0; i != data_table.columns[0].length; ++i)
+        var module = {};
+
+        module.set = function(owner, key, names, columns)
+        {
+            tables.push({owner: owner, key: key, names: names, columns: columns});
+        }
+
+        module.get = function(owner, key)
+        {
+            for(var i = 0; i != tables.length; ++i)
             {
-              for(var j = 0; j != data_table.columns.length; ++j)
-              {
-                if(j)
-                  uri += ",";
-                uri += data_table.columns[j][i];
-              }
-              uri += "\n";
+                var table = tables[i];
+                if(table.owner != owner)
+                    continue;
+                if(table.key != key)
+                    continue;
+                return {names: table.names, columns: table.columns};
             }
+        }
+
+        module.get_csv = function(owner, key)
+        {
+            var table = module.get(owner, key);
+            if(table != undefined)
+            {
+                var csv = "";
+                csv += table.names.join(",") + "\n";
+                for(var i = 0; i != table.columns[0].length; ++i)
+                {
+                  for(var j = 0; j != table.columns.length; ++j)
+                  {
+                    if(j)
+                      csv += ",";
+                    csv += table.columns[j][i];
+                  }
+                  csv += "\n";
+                }
+                return csv;
+            }
+        }
+
+        return module;
+    })();
+modules["toyplot/root/id"] = "tbbb693f60f6c4c0285fc5d3a68070af2";
+modules["toyplot/root"] = (function(root_id)
+    {
+        return document.querySelector("#" + root_id);
+    })(modules["toyplot/root/id"]);
+modules["toyplot/canvas/id"] = "t346c1234bc51481e8e61b74796963886";
+modules["toyplot/canvas"] = (function(canvas_id)
+    {
+        return document.querySelector("#" + canvas_id);
+    })(modules["toyplot/canvas/id"]);
+modules["toyplot/menus/context"] = (function(root, canvas)
+    {
+        var wrapper = document.createElement("div");
+        wrapper.innerHTML = "<ul class='toyplot-context-menu' style='background:#eee; border:1px solid #b8b8b8; border-radius:5px; box-shadow: 0px 0px 8px rgba(0%,0%,0%,0.25); margin:0; padding:3px 0; position:fixed; visibility:hidden;'></ul>"
+        var menu = wrapper.firstChild;
+
+        root.appendChild(menu);
+
+        var items = [];
+
+        var ignore_mouseup = null;
+        function open_menu(e)
+        {
+            var show_menu = false;
+            for(var index=0; index != items.length; ++index)
+            {
+                var item = items[index];
+                if(item.show(e))
+                {
+                    item.item.style.display = "block";
+                    show_menu = true;
+                }
+                else
+                {
+                    item.item.style.display = "none";
+                }
+            }
+
+            if(show_menu)
+            {
+                ignore_mouseup = true;
+                menu.style.left = (e.clientX + 1) + "px";
+                menu.style.top = (e.clientY - 5) + "px";
+                menu.style.visibility = "visible";
+                e.stopPropagation();
+                e.preventDefault();
+            }
+        }
+
+        function close_menu()
+        {
+            menu.style.visibility = "hidden";
+        }
+
+        function contextmenu(e)
+        {
+            open_menu(e);
+        }
+
+        function mousemove(e)
+        {
+            ignore_mouseup = false;
+        }
+
+        function mouseup(e)
+        {
+            if(ignore_mouseup)
+            {
+                ignore_mouseup = false;
+                return;
+            }
+            close_menu();
+        }
+
+        function keydown(e)
+        {
+            if(e.key == "Escape" || e.key == "Esc" || e.keyCode == 27)
+            {
+                close_menu();
+            }
+        }
+
+        canvas.addEventListener("contextmenu", contextmenu);
+        canvas.addEventListener("mousemove", mousemove);
+        document.addEventListener("mouseup", mouseup);
+        document.addEventListener("keydown", keydown);
+
+        var module = {};
+        module.add_item = function(label, show, activate)
+        {
+            var wrapper = document.createElement("div");
+            wrapper.innerHTML = "<li class='toyplot-context-menu-item' style='background:#eee; color:#333; padding:2px 20px; list-style:none; margin:0; text-align:left;'>" + label + "</li>"
+            var item = wrapper.firstChild;
+
+            items.push({item: item, show: show});
+
+            function mouseover()
+            {
+                this.style.background = "steelblue";
+                this.style.color = "white";
+            }
+
+            function mouseout()
+            {
+                this.style.background = "#eee";
+                this.style.color = "#333";
+            }
+
+            function choose_item(e)
+            {
+                close_menu();
+                activate();
+
+                e.stopPropagation();
+                e.preventDefault();
+            }
+
+            item.addEventListener("mouseover", mouseover);
+            item.addEventListener("mouseout", mouseout);
+            item.addEventListener("mouseup", choose_item);
+            item.addEventListener("contextmenu", choose_item);
+
+            menu.appendChild(item);
+        };
+        return module;
+    })(modules["toyplot/root"],modules["toyplot/canvas"]);
+modules["toyplot/io"] = (function()
+    {
+        var module = {};
+        module.save_file = function(mime_type, charset, data, filename)
+        {
+            var uri = "data:" + mime_type + ";charset=" + charset + "," + data;
             uri = encodeURI(uri);
 
             var link = document.createElement("a");
@@ -697,7 +2082,7 @@ is_long_branch: False</title><circle cx="176.78899082568807" cy="264.28571428571
             {
               link.href = uri;
               link.style = "visibility:hidden";
-              link.download = data_table.filename + ".csv";
+              link.download = filename;
 
               document.body.appendChild(link);
               link.click();
@@ -707,30 +2092,59 @@ is_long_branch: False</title><circle cx="176.78899082568807" cy="264.28571428571
             {
               window.open(uri);
             }
-          }
+        };
+        return module;
+    })();
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
 
-          function open_popup(data_table)
-          {
-            return function(e)
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
             {
-              var popup = document.querySelector("#tf402608cf454425bbc096bed0273226e .toyplot-mark-popup");
-              popup.querySelector(".toyplot-mark-popup-title").innerHTML = data_table.title;
-              popup.querySelector(".toyplot-mark-popup-save-csv").onclick = function() { popup.style.visibility = "hidden"; save_csv(data_table); }
-              popup.style.left = (e.clientX - 50) + "px";
-              popup.style.top = (e.clientY - 20) + "px";
-              popup.style.visibility = "visible";
-              e.stopPropagation();
-              e.preventDefault();
+                return owner.contains(e.target);
             }
 
-          }
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
 
-          for(var i = 0; i != data_tables.length; ++i)
-          {
-            var data_table = data_tables[i];
-            var event_target = document.querySelector("#" + data_table.id);
-            event_target.oncontextmenu = open_popup(data_table);
-          }
-        })();
-        </script></div></div>
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t97e92b91b3854bf99045dcf98d80a1a1","vertex_data","graph vertex data",["x", "y"],[[-6.0, -6.0, -4.0, -6.0, -5.0, -4.0, -4.0, -2.0, -4.0, 0.0, -5.0, -5.0, -3.0, -5.0, -4.0, -4.0, -4.0, -1.0, -4.0, -2.0, -2.0, -2.0, 0.0, -2.0, -1.0], [3.3125, 4.5, 4.5, 2.125, 2.125, 4.5, 5.0, 5.0, 4.0, 4.0, 2.125, 3.0, 3.0, 1.25, 1.25, 1.25, 2.0, 2.0, 0.5, 0.5, 0.5, 1.0, 1.0, 0.0, 0.0]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t97e92b91b3854bf99045dcf98d80a1a1","edge_data","graph edge data",["source", "target"],[[0, 1, 0, 3, 5, 6, 5, 8, 10, 11, 10, 13, 15, 16, 15, 18, 20, 21, 20, 23], [1, 2, 3, 4, 6, 7, 8, 9, 11, 12, 13, 14, 16, 17, 18, 19, 21, 22, 23, 24]],"toyplot");
+(function(tables, context_menu, io, owner_id, key, label, names, columns, filename)
+        {
+            tables.set(owner_id, key, names, columns);
+
+            var owner = document.querySelector("#" + owner_id);
+            function show_item(e)
+            {
+                return owner.contains(e.target);
+            }
+
+            function choose_item()
+            {
+                io.save_file("text/csv", "utf-8", tables.get_csv(owner_id, key), filename + ".csv");
+            }
+
+            context_menu.add_item("Save " + label + " as CSV", show_item, choose_item);
+        })(modules["toyplot/tables"],modules["toyplot/menus/context"],modules["toyplot/io"],"t34516adbacb6459ab240dd72df7ca788","data","scatterplot",["x", "y0"],[[-1.0, 0.0, -1.0, -3.0, 0.0, -2.0, -2.0, -4.0, -5.0, -4.0, -6.0], [0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 0.5, 1.25, 2.125, 4.5, 3.3125]],"toyplot");
+})();</script></div></div>
 
