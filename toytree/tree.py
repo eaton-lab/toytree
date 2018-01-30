@@ -100,7 +100,7 @@ class Toytree(object):
         weblink to a newick string.
     ladderize (bool):
         Whether to automatically ladderize the tree. Default=True.
-    format (int):
+    tree_format (int):
         The tree format used for parsing the tree. See ETE tree formats.
         The default 0 can handle most tree formats including NHX.
     fixed_order (bool):

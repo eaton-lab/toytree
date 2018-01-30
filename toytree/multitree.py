@@ -123,8 +123,9 @@ class MultiTree(object):
 
         # badnewick to goodnewick
         if self._tformat == "bpp":
-            self.treelist = [bpp2newick(i.strip()) for i in treelines]
-        # newick to toytree
+            treelines = [bpp2newick(i.strip()) for i in treelines]
+
+        # if good newick to toytree
         if self._fixed_order:
             self.treelist = [Toytree(i.strip(), fixed_order=self._fixed_order)
                              for i in treelines]
