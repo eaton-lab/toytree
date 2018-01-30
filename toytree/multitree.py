@@ -2,11 +2,12 @@
 
 """ MultiTree objects """
 
-from .tree import Toytree as tree
-from .tree import COLORS
 from collections import defaultdict
-from . import ete3mini 
+from .tree import Toytree
+from .tree import COLORS
+from . import ete3mini
 import numpy as np
+import requests
 import toyplot
 import copy
 import re
@@ -14,27 +15,27 @@ import os
 
 
 DEFAULTS_MULTITREE = {
-    ## edge defaults
+    # edge defaults
     "edge_style": {
         "stroke": "#292724",
         "stroke-width": 2,
-        #"stroke-linecap": "round",
+        # "stroke-linecap": "round",
         "opacity": 0.2,
         },
 
     "edge_align_style": {
-        "stroke": "darkgrey",       ## copies edge_style
-        #"stroke-linecap": "round",
+        "stroke": "darkgrey",  # copies edge_style
+        # "stroke-linecap": "round",
         "stroke-dasharray": "2, 4",
         },
 
-    ## node label defaults
+    # node label defaults
     "node_labels": False,
     "node_labels_style": {
         "font-size": "9px",
         "fill": "262626"},
 
-    ## node defaults
+    # node defaults
     "node_size": None,
     "node_color": COLORS[0],
     "node_style": {
@@ -43,24 +44,24 @@ DEFAULTS_MULTITREE = {
         },
     "vmarker": "o",
 
-    ## tip label defaults
+    # tip label defaults
     "tip_labels": True,
     "tip_labels_color": toyplot.color.near_black,
     "tip_labels_align": False,
     "tip_labels_style": {
         "font-size": "12px",
-        "text-anchor":"start",
+        "text-anchor": "start",
         "-toyplot-anchor-shift": "12px",
         "fill": "#292724",
         },
 
-    ## tree style and axes
+    # tree style and axes
     "tree_style": "p",
 }
 
 
 ###############################################
-## MultiTree Class object
+# MultiTree Class object
 ###############################################
 class MultiTree(object):
     """
@@ -78,95 +79,95 @@ class MultiTree(object):
 
     """
     def __init__(self,
-        newick,
-        tree_format=None,
-        treeslice=(None, None, None),
-        skip=None,
-        fixed_order=None,
-        orient='down',
-        use_edge_lengths=True,
-        #root=None,
-        ):
+            newick,
+            tree_format=None,
+            treeslice=(None, None, None),
+            skip=None,
+            fixed_order=None,
+            orient='down',
+            use_edge_lengths=True,
+            # root=None,
+            ):
 
-        ## setting attributes
+        # setting attributes
         self.newick = newick
         self.colors = COLORS
+        self._ts = treeslice
         self._tformat = tree_format
         self._fixed_order = fixed_order
         self._orient = orient
         self._use_edge_lengths = use_edge_lengths
-        #self.color_palette = [toyplot.color.to_css(i) for i in PALETTE]
         self._kwargs = {}
         self._default_style = DEFAULTS_MULTITREE
 
-        ## parse and build tree list. There are several types
-        ## of tree lists. The first we'll support is BPP.
-
-        ## check format of multitree
-        if not tree_format:
-            ## get line for testing
-            if os.path.isfile(self.newick):
-                self.newick = os.path.abspath(os.path.expanduser(newick))
-                with open(self.newick) as infile:
-                    testdat = infile.readline()
-            else:
-                if any(i in newick for i in ("http://", "https://")):
-                    response = requests.get(newick)
-                    if response.status_code == 200:
-                        testdat = response.text.strip()
-                    else:
-                        raise Exception("bad newick argument")
-                else:
-                    testdat = self.newick.strip().split("\n")[0]
-            ## check if a bpp tree
-            if (" #" in testdat) and (": " in testdat):
-                tformat = "bpp"
-            else:
-                tformat = "normal"
-
-            ## parse the treefile
-            if os.path.isfile(self.newick):
-                self.newick = os.path.abspath(os.path.expanduser(newick))
-                with open(self.newick) as infile:
-                    intrees = infile.readlines()\
-                        [treeslice[0]:treeslice[1]:treeslice[2]]
-            else:
-                if any(i in newick for i in ("http://", "https://")):
-                    response = requests.get(newick)
-                    if response.status_code == 200:
-                        intrees = response.text.strip().split("\n")\
-                        [treeslice[0]:treeslice[1]:treeslice[2]]
-                    else:
-                        raise Exception("bad newick argument")
-                    # intrees = response.readlines()\
-                    #     [treeslice[0]:treeslice[1]:treeslice[2]]
-                    intrees = [i.strip() for i in intrees]
-                else:
-                    intrees = self.newick.strip().split("\n")\
-                        [treeslice[0]:treeslice[1]:treeslice[2]]
-            ## badnewick to goodnewick
-            if tformat == "bpp":
-                intrees = [bpp2newick(i.strip()) for i in intrees]
-            ## newick to toytree
-            if fixed_order:
-                self.treelist = [tree(i.strip(), fixed_order=fixed_order) for i in intrees]
-            else:
-                ## order nodes for plotting
-                self.treelist = [tree(i.strip()) for i in intrees]
-                constre = self.get_consensus_tree()
-                self._fixed_order = constre.get_tip_labels()[::-1]
-                kwargs = {"format": 0, "fixed_order": fixed_order}
-                self.treelist = [tree(i.tree.write(),
-                    fixed_order=self._fixed_order) for i in self.treelist]
+        # parse the newick treefile
+        self._parse_multinewick()
 
 
+    # attributes of multitrees
     def __len__(self):
         return len(self.treelist)
 
 
-    def get_consensus_tree(self, cutoff=0.0):
-        constre, clade_counts = consensus_tree(self.treelist, cutoff=cutoff)
-        return tree(constre.write())
+    # private functions --------------------------------------------
+    def _treelines_to_treelist(self, treelines):
+        """
+        Parses a multi-line newick file based on detected format
+        to allow weird tree file types like the bpp outputs
+        """
+        # check if a bpp tree
+        if (" #" in treelines[0]) and (": " in treelines[0]):
+            self._tformat = "bpp"
+        else:
+            self._tformat = "normal"
+
+        # badnewick to goodnewick
+        if self._tformat == "bpp":
+            self.treelist = [bpp2newick(i.strip()) for i in treelines]
+        # newick to toytree
+        if self._fixed_order:
+            self.treelist = [Toytree(i.strip(), fixed_order=self._fixed_order)
+                             for i in treelines]
+        else:
+            # order nodes for plotting
+            self.treelist = [Toytree(i.strip()) for i in treelines]
+            self._fixed_order = self.get_consensus_tree().get_tip_labels()[::-1]
+            # redefine treelist with trees plotted in consensus tip order
+            self.treelist = [
+                Toytree(i.tree.write(), fixed_order=self._fixed_order)
+                for i in self.treelist]
+
+
+    def _parse_multinewick(self):
+        """
+        Parse a multiline newick from str, file, or url, and store
+        new attributes to self for .newick, .tree_list, and ._tformat
+        """
+
+        # sample one line for testing --------------------------------
+        # check if newick is a url
+        if any(i in self.newick for i in ("http://", "https://")):
+            try:
+                response = requests.get(self.newick)
+                treelines = response.text.strip().split("\n")
+                treelines = treelines[self._ts[0]:self._ts[1]:self._ts[2]]
+                self._treelines_to_treelist(treelines)
+            except Exception as inst:
+                raise inst
+
+        # check if newick is a file handle
+        elif os.path.isfile(self.newick):
+            self.newick = os.path.abspath(os.path.expanduser(self.newick))
+            with open(self.newick) as infile:
+                treelines = infile.read().split("\n")
+                treelines = treelines[self._ts[0]:self._ts[1]:self._ts[2]]
+                self._treelines_to_treelist(treelines)
+
+        # assume remaining type is a str
+        else:
+            treelines = self.newick.strip().split("\n")
+            treelines = treelines[self._ts[0]:self._ts[1]:self._ts[2]]
+            self._treelines_to_treelist(treelines)
 
 
     def _set_dims_from_tree_size(self):
@@ -175,32 +176,23 @@ class MultiTree(object):
         """
         tlen = len(self.treelist[0])
         if self._kwargs.get("orient") in ["right", "left"]:
-            ## long tip-wise dimension 
+            # long tip-wise dimension
             if not self._kwargs.get("height"):
-                self._kwargs["height"] = max(275, min(1000, 18*(tlen)))
+                self._kwargs["height"] = max(275, min(1000, 18 * (tlen)))
             if not self._kwargs.get("width"):
-                self._kwargs["width"] = max(225, min(500, 18*(tlen)))
+                self._kwargs["width"] = max(225, min(500, 18 * (tlen)))
         else:
-            ## long tip-wise dimension 
+            # long tip-wise dimension
             if not self._kwargs.get("width"):
-                self._kwargs["width"] = max(275, min(1000, 18*(tlen)))
+                self._kwargs["width"] = max(275, min(1000, 18 * (tlen)))
             if not self._kwargs.get("height"):
-                self._kwargs["height"] = max(225, min(500, 18*(tlen)))
+                self._kwargs["height"] = max(225, min(500, 18 * (tlen)))
 
 
-
-    # def rootlist(self, outgroup=None, wildcard=None):
-    #     ## root trees
-    #     if not wildcard:
-    #         _ = [i.root(outgroup=outgroup) for i in self.treelist]
-    #     else:
-    #         _ = [i.root(wildcard=wildcard) for i in self.treelist]
-    #     _ = [i._decompose_tree(
-    #             orient=i._orient,
-    #             use_edge_lengths=i._use_edge_lengths,
-    #             fixed_order=i._fixed_order)
-    #             for i in self.treelist]
-
+    # public API functions of multitrees ------------
+    def get_consensus_tree(self, cutoff=0.0):
+        constre, clade_counts = consensus_tree(self.treelist, cutoff=cutoff)
+        return Toytree(constre.write())
 
 
     def draw_cloudtree(self,
