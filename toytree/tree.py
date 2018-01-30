@@ -17,71 +17,72 @@ from decimal import Decimal
 # pylint: disable=E1101
 
 
-## color palette as a list
+# color palette as a list
 PALETTE = toyplot.color.Palette()
 COLORS = [toyplot.color.to_css(i) for i in PALETTE]
 DEFAULTS_ALL = {
-    ## add-on defaults
+    # add-on defaults
     "admixture": None,
     "orient": "right",
-    "tree_style": "p", 
+    "tree_style": "p",
     "use_edge_lengths": False,
 
-    ## edge defaults
+    # edge defaults
     "edge_style": {
-        "stroke": "#292724", 
-        "stroke-width": 2, 
-        "stroke-linecap": "round", 
-        },
+        "stroke": "#292724",
+        "stroke-width": 2,
+        "stroke-linecap": "round",
+    },
+
     "edge_align_style": {
         "stroke": "darkgrey",       
-        #"stroke-width": 2,   ## copies edge_style for width by default
+        # "stroke-width": 2,   ## copies edge_style for width by default
         "stroke-linecap": "round", 
         "stroke-dasharray": "2, 4",
-        },  
+    },  
 
-    ## node label defaults
+    # node label defaults
     "node_labels": False,       
     "node_labels_style": {
         "font-size": "9px", 
         "fill": "#262626",
-        #"text-anchor":"start",  
-        }, 
+        # "text-anchor":"start",  
+    }, 
 
-    ## node defaults
+    # node defaults
     "node_size": None,             
-    "node_color": None, #COLORS[0],
+    "node_color": None,  # COLORS[0],
     "node_hover": True,
     "node_style": {
         "fill": COLORS[0], 
-        "stroke": 'none', #COLORS[0],
-        },
-    "vmarker": "o", # "r2x1" for rectangles
+        "stroke": 'none',  # COLORS[0],
+    },
+    "vmarker": "o",  # "r2x1" for rectangles
 
-    ## tip label defaults
+    # tip label defaults
     "tip_labels": True,         
     "tip_labels_color": toyplot.color.black,    
     "tip_labels_align": False,
     "tip_labels_style": {
         "font-size": "12px",
-        "text-anchor":"start", 
-        "-toyplot-anchor-shift": None, #"0px", #None,
+        "text-anchor": "start", 
+        "-toyplot-anchor-shift": None,  # "0px", #None,
         "fill": "#292724", 
-        },
+    },
 }
 DEFAULTS_CTREES = {
     "tree_style": "c",    
     "orient": "down", 
     "use_edge_lengths": True,
     "tip_labels_align": False,
-    #"tip_labels_angle": None,    
+    # "tip_labels_angle": None,    
 }
 DEFAULTS_PTREES = {
     "tree_style": "p",    
     "orient": "right", 
     "use_edge_lengths": True,
     "tip_labels_align": False,
-    #"tip_labels_angle": None,    
+    # "tip_labels_angle": None,    
 }
 DEFAULTS_ATREES = {
     "tree_style": "c",
@@ -93,7 +94,7 @@ DEFAULTS_ATREES = {
 }
 
 
-## the main tree class
+# the main tree class
 class Toytree(object):
     """
     The toytree Tree Class object, a plotting wrapper around an 
@@ -146,37 +147,38 @@ class Toytree(object):
     """
 
     def __init__(self, 
-        newick=None, 
-        ladderize=True, 
-        format=0,
-        fixed_order=None,
-        **kwargs):
+                 newick=None, 
+                 ladderize=True, 
+                 format=0,
+                 fixed_order=None,
+                 **kwargs):
 
-        ## use ETE to parse the tree and ladderize
+        # use ETE to parse the tree and ladderize
         if newick:
             self.tree = ete3mini.TreeNode(newick, format=format)
             if ladderize and not fixed_order:
                 self.tree.ladderize()
-        ## otherwise make an empty TreeNode object        
+
+        # otherwise make an empty TreeNode object        
         else:
             self.tree = ete3mini.TreeNode()
 
-        ## default attributes and plot settings
-        self.colors = COLORS         
+        # default attributes and plot settings
+        self.colors = COLORS      
         self._kwargs = {}
         self._default_style = DEFAULTS_ALL
 
-        ## ensures ladderized top-down order for entered tip order
+        # ensures ladderized top-down order for entered tip order
         self._fixed_order = fixed_order
 
-        ## plotting coords
+        # plotting coords
         self.edges = None
         self.verts = None
-        self._lines = []    
-        self._coords = []   
+        self._lines = []
+        self._coords = []
 
-        ## plotting node values (features)
-        ## checks one of root's children for features and extra feats.
+        # plotting node values (features)
+        # checks one of root's children for features and extra feats.
         if self.tree.children:
             features = {"name", "dist", "support", "height", "idx"}
             testnode = self.tree.children[0]
@@ -187,12 +189,12 @@ class Toytree(object):
             else:
                 self.newick = self.tree.write(format=0)
 
-            ## parse newick, assign idx, returns tre, edges, verts, names
-            ## assigns node_labels, tip_labels, edge_lengths and support values
-            ## use default orient and edge_lengths right now for init.
+            # parse newick, assign idx, returns tre, edges, verts, names
+            # assigns node_labels, tip_labels, edge_lengths and support values
+            # use default orient and edge_lengths right now for init.
             self._decompose_tree(
-                orient="right", #self._kwargs["orient"],
-                use_edge_lengths=True, #self._kwargs["use_edge_lengths"], 
+                orient="right",  # self._kwargs["orient"],
+                use_edge_lengths=True,  # self._kwargs["use_edge_lengths"],
                 fixed_order=self._fixed_order)
 
 
@@ -234,23 +236,21 @@ class Toytree(object):
 
         ## access nodes in the order they will be plotted
         ## this is a customized order best sampled this way
-        nodes = [self.tree.search_nodes(name=str(i))[0] \
+        nodes = [self.tree.search_nodes(name=str(i))[0] 
                  for i in self.get_node_dict().values()]
-        #nodes = [i for i in self.tree.traverse("preorder")]
-
 
         ## get features
         if feature:
-            vals = [i.__getattribute__(feature) \
+            vals = [i.__getattribute__(feature) 
                     if hasattr(i, feature) else "" for i in nodes]
         else:
             vals = [" " for i in nodes]
 
         ## apply hiding rules
         if not show_root:
-            vals = [i if not j.is_root() else "" for i, j  in zip(vals, nodes)]
+            vals = [i if not j.is_root() else "" for i, j in zip(vals, nodes)]
         if not show_tips:
-            vals = [i if not j.is_leaf() else "" for i, j  in zip(vals, nodes)]
+            vals = [i if not j.is_leaf() else "" for i, j in zip(vals, nodes)]
 
         ## convert float to ints for prettier printing unless all floats
         ## raise exception and skip if there are true strings (names)
@@ -270,7 +270,7 @@ class Toytree(object):
         by get_node_values() to return values in proper order. 
         """
         names = {}
-        idx = sum(1 for i in self.tree.traverse()) -1
+        idx = -1 + sum(1 for i in self.tree.traverse())
         ## preorder: first parent and then children
         for node in self.tree.traverse("preorder"):
             if not node.is_leaf():
@@ -321,7 +321,7 @@ class Toytree(object):
         newtree = copy.deepcopy(self)
         newtree.tree.unroot()
         newtree.tree.ladderize()
-        
+
         ## get features
         testnode = newtree.tree.get_leaves()[0] 
         features = {"name", "dist", "support", "height"}
@@ -335,7 +335,10 @@ class Toytree(object):
 
 
     ## unlike ete this returns a copy resolved, not in-place!
-    def resolve_polytomy(self, default_dist=0.0, default_support=0.0, recursive=False):
+    def resolve_polytomy(self, 
+                         default_dist=0.0, 
+                         default_support=0.0, 
+                         recursive=False):
         """
         Returns a copy of the tree with resolved polytomies. 
         Does not transform tree in-place.
@@ -371,23 +374,25 @@ class Toytree(object):
     def is_bifurcating(self, include_root=True):
         """
         Returns False if there is a polytomy in the tree, including if the tree
-        is unrooted (basal polytomy), unless you use the count_basal_polytomy=False
+        is unrooted (basal polytomy), unless you use the include_root=False
         argument.
         """
 
+        ctn1 = -1 + (2 * len(self))
+        ctn2 = -2 + (2 * len(self))
         if self.is_rooted():
-            if ((2 * len(self)) - 1) == sum(1 for i in self.tree.traverse()):
+            if ctn == sum(1 for i in self.tree.traverse()):
                 return True
             else:
                 return False
         else:
             if include_root:
-                if ((2 * len(self)) - 2) == sum(1 for i in self.tree.traverse())-1:
+                if ctn2 == -1 + sum(1 for i in self.tree.traverse()):
                     return True
                 else:
                     return False
             else:
-                if ((2 * len(self)) - 2) == sum(1 for i in self.tree.traverse()):
+                if ctn2 == sum(1 for i in self.tree.traverse()):
                     return True
                 else:
                     return False
@@ -398,14 +403,14 @@ class Toytree(object):
     ## re-rooting the tree
     def root(self, outgroup=None, wildcard=None, regex=None):
         """
-        Re-root a tree on a selected tip or group of tip names. Rooting is 
+        Re-root a tree on a selected tip or group of tip names. Rooting is
         done in-place, meaning the tree object will be modified and there is no
-        return object. 
+        return object.
 
-        The new root can be selected by entering either a list of outgroup 
-        names, by entering a wildcard selector that matches their names, or 
+        The new root can be selected by entering either a list of outgroup
+        names, by entering a wildcard selector that matches their names, or
         using a regex command to match their names. For example, to root a tree
-        on a clade that includes the samples "1-A" and "1-B" you can do any of 
+        on a clade that includes the samples "1-A" and "1-B" you can do any of
         the following:
 
         rtre = tre.root(outgroup=["1-A", "1-B"])
@@ -434,13 +439,13 @@ class Toytree(object):
             if not any(outs):
                 raise Exception("No Samples matched the wildcard")
         else:
-            raise Exception(\
-            "must enter an outgroup, wildcard selector, or regex pattern")
+            raise Exception(
+                "must enter an outgroup, wildcard selector, or regex pattern")
 
         if len(outs) > 1:
             ## check if they're monophyletic
             mbool, mtype, mnames = nself.tree.check_monophyly(
-                                        outs, "name", ignore_missing=True)
+                outs, "name", ignore_missing=True)
             if not mbool:
                 if mtype == "paraphyletic":
                     outs = [i.name for i in mnames]
@@ -523,18 +528,18 @@ class Toytree(object):
         tip_labels_color=None,
         tip_labels_style=None,
         tip_labels_align=None,
-        #tip_labels_angle=None,
+        # tip_labels_angle=None,
         node_labels=False,
         node_labels_style=None,
         node_size=None,
         node_color=None,
         node_style=None,
         node_hover=None,
-        #edge_width=None,
+        # edge_width=None,
         edge_style=None,
         edge_align_style=None,        
         use_edge_lengths=None, 
-        orient=None,#"right",
+        orient=None,  # "right",
         tree_style=None,
         print_args=False,
         padding=50,
