@@ -19,11 +19,11 @@ install:
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda3.sh;
     fi;
 
-  ## install both
+  ## INSTALL CONDA PY2 BUILD
   - bash miniconda2.sh -b -p $HOME/miniconda2
   - bash miniconda3.sh -b -p $HOME/miniconda3
 
-  ## source py2 path
+  ## CONDA PY2 BUILD
   - export PATH="$HOME/miniconda2/bin:$PATH"
   - which python
   - hash -r
@@ -31,6 +31,12 @@ install:
   - conda update -q conda
   - conda info -a
   - conda install toytree -c eaton-lab
+  - conda create -n pip2 -y
+  - source activate pip2
+  - git clone https://github.com/eaton-lab/toytree.git
+  - cd toytree/
+  - pip install -e .
+  - cd ..
 
   ## source py3 path
   - export PATH="$HOME/miniconda3/bin:$PATH"
@@ -40,10 +46,28 @@ install:
   - conda update -q conda
   - conda info -a
   - conda install toytree -c eaton-lab
+  - conda create -n pip3 -y
+  - source activate pip3
+  - git clone https://github.com/eaton-lab/toytree.git
+  - cd toytree/
+  - pip install -e .
+  - cd ..
 
 
 # command to run tests
 script: 
+
+  ## github pip2
+  - export PATH="$HOME/miniconda2/bin:$PATH"  
+  - source activate pip2
+  - python -c "import toytree; print toytree.__version__"
+  - python -c "import toyplot; print toyplot.__version__"
+  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/tutorial.ipynb --output pytest --to html
+  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/tip-labels.ipynb --output pytest --to html
+  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/node-labels.ipynb --output pytest --to html
+  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/color-mapping.ipynb --output pytest --to html
+  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/cloud-trees.ipynb --output pytest --to html
+  - source deactivate
 
   ## do py2 tests
   - export PATH="$HOME/miniconda2/bin:$PATH"  
@@ -55,8 +79,19 @@ script:
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/color-mapping.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/cloud-trees.ipynb --output pytest --to html
   
+  ## github pip3
+  - export PATH="$HOME/miniconda3/bin:$PATH"  
+  - source activate pip3
+  - python -c "import toytree; print(toytree.__version__)"
+  - python -c "import toyplot; print(toyplot.__version__)"
+  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/tutorial.ipynb --output pytest --to html
+  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/tip-labels.ipynb --output pytest --to html
+  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/node-labels.ipynb --output pytest --to html
+  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/color-mapping.ipynb --output pytest --to html
+  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/cloud-trees.ipynb --output pytest --to html
+  - source deactivate  
 
-  # ## do py3 tests
+  ## do py3 tests
   - export PATH="$HOME/miniconda3/bin:$PATH"  
   - python -c "import toytree; print(toytree.__version__)"
   - python -c "import toyplot; print(toyplot.__version__)"
