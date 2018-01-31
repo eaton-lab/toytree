@@ -4,7 +4,6 @@
 A minified version of ete3.parser.newick
 """
 
-#from __future__ import absolute_import
 from __future__ import print_function
 import re
 import os
@@ -27,8 +26,11 @@ NAME_FORMATTER = "%s"
 # different convenctions. You can also add your own formats in an easy way.
 #
 #
-# FORMAT: [[LeafAttr1, LeafAttr1Type, Strict?], [LeafAttr2, LeafAttr2Type, Strict?],\
-#    [InternalAttr1, InternalAttr1Type, Strict?], [InternalAttr2, InternalAttr2Type, Strict?]]
+# FORMAT: 
+#   [[LeafAttr1, LeafAttr1Type, Strict?], 
+#   [LeafAttr2, LeafAttr2Type, Strict?],
+#   [InternalAttr1, InternalAttr1Type, Strict?], 
+#   [InternalAttr2, InternalAttr2Type, Strict?]]
 #
 # Attributes are placed in the newick as follows:
 #
@@ -43,13 +45,13 @@ NAME_FORMATTER = "%s"
 #                     \E-------|
 #                               \-G
 #
-# Format 0 = (A:0.350596,(B:0.728431,(D:0.609498,G:0.125729)1.000000:0.642905)1.000000:0.567737);
-# Format 1 = (A:0.350596,(B:0.728431,(D:0.609498,G:0.125729)E:0.642905)C:0.567737);
-# Format 2 = (A:0.350596,(B:0.728431,(D:0.609498,G:0.125729)1.000000:0.642905)1.000000:0.567737);
-# Format 3 = (A:0.350596,(B:0.728431,(D:0.609498,G:0.125729)E:0.642905)C:0.567737);
-# Format 4 = (A:0.350596,(B:0.728431,(D:0.609498,G:0.125729)));
-# Format 5 = (A:0.350596,(B:0.728431,(D:0.609498,G:0.125729):0.642905):0.567737);
-# Format 6 = (A:0.350596,(B:0.728431,(D:0.609498,G:0.125729)E)C);
+# Format 0 = (A:0.35,(B:0.72,(D:0.60,G:0.12)1.00:0.64)1.00:0.56);
+# Format 1 = (A:0.35,(B:0.72,(D:0.60,G:0.12)E:0.64)C:0.56);
+# Format 2 = (A:0.35,(B:0.72,(D:0.60,G:0.12)1.00:0.64)1.00:0.56);
+# Format 3 = (A:0.35,(B:0.72,(D:0.60,G:0.12)E:0.64)C:0.56);
+# Format 4 = (A:0.35,(B:0.72,(D:0.60,G:0.12)));
+# Format 5 = (A:0.35,(B:0.72,(D:0.60,G:0.12):0.64):0.56);
+# Format 6 = (A:0.35,(B:0.72,(D:0.60,G:0.12)E)C);
 # Format 7 = (A,(B,(D,G)E)C);
 # Format 8 = (A,(B,(D,G)));
 # Format 9 = (,(,(,)));
@@ -88,10 +90,11 @@ def set_float_format(formatter):
     Scientific notation (%e) or any other custom format is allowed. The
     formatter string should not contain any character that may break newick
     structure (i.e.: ":;,()")
-	"""
+    """
     global FLOAT_FORMATTER
     FLOAT_FORMATTER = formatter
     #DIST_FORMATTER = ":"+FLOAT_FORMATTER
+
 
 
 def format_node(node, 
@@ -155,6 +158,7 @@ def format_node(node,
     return "%s%s" %(FIRST_PART, SECOND_PART)
 
 
+
 def read_newick(newick, root_node=None, format=0):
     """ 
     Reads a newick tree from either a string or a file, and returns
@@ -167,8 +171,8 @@ def read_newick(newick, root_node=None, format=0):
     You can also take advantage from this behaviour to concatenate
     several tree structures.
     """
-    #if root_node is None:
-    #    root_node = TreeNode()
+
+    ## check newick type as a string or filepath, Toytree parses urls to str's
     if isinstance(newick, six.string_types):   
         if os.path.exists(newick):
             if newick.endswith('.gz'):
@@ -177,13 +181,9 @@ def read_newick(newick, root_node=None, format=0):
             else:
                 nw = open(newick, 'rU').read()
         else:
-            if ("http://" in newick) or ("https://" in newick):
-                import urllib2
-                response = urllib2.urlopen(newick)
-                nw = response.read()
-            else:
-                nw = newick
+            nw = newick
 
+        ## get re matcher for testing newick formats
         matcher = compile_matchers(formatcode=format)
         nw = nw.strip()        
         if not nw.startswith('(') and nw.endswith(';'):
@@ -195,6 +195,7 @@ def read_newick(newick, root_node=None, format=0):
             return _read_newick_from_string(nw, root_node, matcher, format)
     else:
         raise NewickError("'newick' argument must be either a filename or a newick string.")
+
 
 
 def _read_newick_from_string(nw, root_node, matcher, formatcode):
@@ -249,6 +250,7 @@ def _read_newick_from_string(nw, root_node, matcher, formatcode):
     return root_node
 
 
+
 def _parse_extra_features(node, NHX_string):
     """ 
     Reads node's extra data form its NHX string. NHX uses this
@@ -264,7 +266,12 @@ def _parse_extra_features(node, NHX_string):
         node.add_feature(pname, pvalue)
 
 
+
+## compiles a re matcher for checking newick formats
 def compile_matchers(formatcode):
+    """
+    Tests newick string against format types? and makes a re.compile
+    """
     matchers = {}
     for node_type in ["leaf", "single", "internal"]:
         if node_type == "leaf" or node_type == "single":
@@ -308,9 +315,11 @@ def compile_matchers(formatcode):
     return matchers
 
 
+
 def _read_node_data(subnw, current_node, node_type, matcher, formatcode):
-    """ Reads a leaf node from a subpart of the original newick
-    tree """
+    """
+    Reads a leaf node from a subpart of the original newicktree 
+    """
 
     if node_type == "leaf" or node_type == "single":
         if node_type == "leaf":
@@ -347,6 +356,7 @@ def _read_node_data(subnw, current_node, node_type, matcher, formatcode):
     else:
         raise NewickError("Unexpected newick format '%s' " %subnw[0:50])
     return
+
 
 
 def write_newick(rootnode, 
@@ -389,6 +399,7 @@ def write_newick(rootnode,
 
     newick.append(";")
     return ''.join(newick)
+
 
 
 def _get_features_string(self, features=None):
