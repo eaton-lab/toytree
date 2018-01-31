@@ -34,8 +34,11 @@ install:
 
   ## GITHUB BRANCH BUILD
   - conda create -n pip2 -y
+  - activate pip2
   - conda activate pip2
   - pip install -e .
+  - deactivate
+  - conda deactivate
 
   ## source py3 path
   - export PATH="$HOME/miniconda3/bin:$PATH"
@@ -48,14 +51,18 @@ install:
 
   ## GITHUB BRANCH BUILD  
   - conda create -n pip3 -y
+  - activate pip3
   - conda activate pip3
   - pip install -e .
+  - deactivate
+  - conda deactivate
 
 # command to run tests
 script: 
 
   ## do GITBRANCH pip2
   - export PATH="$HOME/miniconda2/bin:$PATH"  
+  - activate pip2
   - conda activate pip2
   - python -c "import toytree; print toytree.__version__"
   - python -c "import toyplot; print toyplot.__version__"
@@ -64,10 +71,12 @@ script:
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/node-labels.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/color-mapping.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/cloud-trees.ipynb --output pytest --to html
+  - deactivate
   - conda deactivate
 
   ## do GIT BRANCH pip3
   - export PATH="$HOME/miniconda3/bin:$PATH"  
+  - activate pip3
   - conda activate pip3
   - python -c "import toytree; print(toytree.__version__)"
   - python -c "import toyplot; print(toyplot.__version__)"
@@ -76,6 +85,7 @@ script:
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/node-labels.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/color-mapping.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/cloud-trees.ipynb --output pytest --to html
+  - deactivate
   - conda deactivate  
 
   ## do CONDA py2 tests
