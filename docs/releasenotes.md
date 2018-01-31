@@ -94,3 +94,5 @@ pystyling
 -update travis test
 -rooting now works for rooted and unrooted trees, and toytree objects have root and unroot functions that return a copy. Also added some query funcs like is_rooted to toytree obj
 -made height attr work with rooting
+==========
+pystyling
