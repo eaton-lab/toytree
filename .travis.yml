@@ -1,7 +1,6 @@
-language: python
-python: 
-  - "2.7"
-  - "3.5"
+language:
+  - generic
+
 os:
   - linux
   - osx
@@ -30,7 +29,8 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - python setup.py install  ## install the branch !
+  - pip install -e .
+  #- python setup.py install  ## installs with no deps
   #- conda install toytree -c eaton-lab
 
   - export PATH="$HOME/miniconda3/bin:$PATH"
@@ -39,7 +39,8 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - python setup.py install 
+  - pip install -e .
+  #- python setup.py install 
   #- conda install toytree -c eaton-lab
 
 # command to run tests
