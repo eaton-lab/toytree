@@ -79,15 +79,15 @@ class MultiTree(object):
 
     """
     def __init__(self,
-            newick,
-            tree_format=None,
-            treeslice=(None, None, None),
-            skip=None,
-            fixed_order=None,
-            orient='down',
-            use_edge_lengths=True,
-            # root=None,
-            ):
+        newick,
+        tree_format=None,
+        treeslice=(None, None, None),
+        skip=None,
+        fixed_order=None,
+        orient='down',
+        use_edge_lengths=True,
+        # root=None,
+        ):
 
         # setting attributes
         self.newick = newick
@@ -315,55 +315,7 @@ class MultiTree(object):
 
 
 
-    # def root(self, outgroup=None, wildcard=None):
-    #     ## starting nnodes
-    #     nnodes = sum(1 for i in self.treelist[0].tree.traverse())
-
-    #     ## set names or wildcard as the outgroup
-    #     if outgroup:
-    #         outs = [i for i in self.treelist[0].tree.get_leaf_names() if i in outgroup]
-    #     elif wildcard:
-    #         outs = [i for i in self.treelist[0].tree.get_leaves() if wildcard in i.name]
-    #     else:
-    #         raise Exception(
-    #         "must enter either a list of outgroup names or a wildcard selector")
-
-    #     if len(outs) > 1:
-    #         out = self.treelist[0].tree.get_common_ancestor(outs)
-    #     else:
-    #         out = outs[0]
-
-    #     ## set new outgroup
-    #     [i.tree.set_outgroup(out) for i in self.treelist]
-    #     [i.tree.resolve_polytomy() for i in self.treelist]
-
-    #     ## IF we split a branch to root then double those edges
-    #     for tree in self.treelist:
-    #         if sum(1 for i in self.treelist[0].tree.traverse()) != nnodes:
-    #             tree.children[0].dist *= 2.
-    #             tree.children[1].dist *= 2.
-
-    #     ## store tree back into newick and reinit Toytree with new newick
-    #     ## if NHX format then preserve the NHX features.
-    #     #testnode = self.treelist.tree.children[0]
-    #     #features = {"name", "dist", "support"}
-    #     #extrafeat = {i for i in testnode.features if i not in features}
-    #     #features.update(extrafeat)
-    #     #if any(extrafeat):
-    #     #    self.newick = self.tree.write(format=9, features=features)
-    #     #else:
-    #     #    self.newick = self.tree.write(format=0)
-    #     consens = self.get_consensus_tree()
-    #     newick = "\n".join([i.tree.write() for i in self.treelist])
-
-    #     ## reinit the multitrees object
-    #     self.__init__(newick=self.newick,
-    #                   #orient=self._orient,
-    #                   #use_edge_lengths=self._use_edge_lengths,
-    #                   fixed_order=consens.get_tip_labels(),
-    #                   )
-
-
+# some functions called by Toytree class objects -----------------------
 
 def consensus_tree(trees, names=None, cutoff=0.0):
     """
@@ -546,6 +498,9 @@ def _build_trees(fclade_counts, namedict):
 
 
 def bpp2newick(bppnewick):
+    """
+    converts bpp newick format to normal newick
+    """
     regex1 = re.compile(r" #[-+]?[0-9]*\.?[0-9]*[:]")
     regex2 = re.compile(r" #[-+]?[0-9]*\.?[0-9]*[;]")
     regex3 = re.compile(r": ")
@@ -553,3 +508,4 @@ def bpp2newick(bppnewick):
     new = regex2.sub(";", new)
     new = regex3.sub(":", new)
     return new
+
