@@ -24,4 +24,33 @@
 -added py3 test to travis
 -simpler travis for now
 -relaxed deps in env and consts
--fewer deps in env.yml
+-fewer deps in env.yml==========
+0.1.6
+-fix for url newick input
+-newick input as tree,file,url and pystyle update
+-newick input as tree,file,url and pystyle update
+-fix for http requests
+-update docs tut
+-added requests to recipe
+-Updating toytree/__init__.py to version 0.1.5
+-updated docs; fixed print() for py3 in CI test
+-Updating toytree/__init__.py to version 0.1.5
+-Updating toytree/__init__.py to version 0.1.5
+-py3 fix in consens func for indexed dict
+-Updating toytree/__init__.py to version 0.1.5
+-update travis for specifying kernel in nbconvert
+-updated docs build for 0.1.5
+-update conda rec and versioner
+-Merge branch 'master' of https://github.com/eaton-lab/toytree
+-travis update
+-updated docs notebooks for CI testing
+-fixed color list warning; ladderize when root or unroot
+-bug typo on travis build for osx
+-Merge branch 'rootfix'
+-keep node order by node_dict
+-merge fix
+-node color fixes
+-multitree fix orient down, and dims auto
+-update travis test
+-rooting now works for rooted and unrooted trees, and toytree objects have root and unroot functions that return a copy. Also added some query funcs like is_rooted to toytree obj
+-made height attr work with rooting
