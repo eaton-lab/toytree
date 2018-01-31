@@ -1,12 +1,12 @@
-language: 
-  - generic
-
+language: python
+python: 
+  - "2.7"
+  - "3.5"
 os:
   - linux
   - osx
 
-# command to install dependencies
-install: 
+install:
   - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
       brew update;
       curl -L https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -o miniconda2.sh;
@@ -30,63 +30,20 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda install toytree -c eaton-lab
+  - python setup.py install  ## install the branch !
+  #- conda install toytree -c eaton-lab
 
-  ## GITHUB BRANCH BUILD
-  - conda create -n pip2 -y
-  - activate pip2
-  - conda activate pip2
-  - pip install -e .
-  - deactivate
-  - conda deactivate
-
-  ## source py3 path
   - export PATH="$HOME/miniconda3/bin:$PATH"
   - which python
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda install toytree -c eaton-lab
-
-  ## GITHUB BRANCH BUILD  
-  - conda create -n pip3 -y
-  - activate pip3
-  - conda activate pip3
-  - pip install -e .
-  - deactivate
-  - conda deactivate
+  - python setup.py install 
+  #- conda install toytree -c eaton-lab
 
 # command to run tests
 script: 
-
-  ## do GITBRANCH pip2
-  - export PATH="$HOME/miniconda2/bin:$PATH"  
-  - activate pip2
-  - conda activate pip2
-  - python -c "import toytree; print toytree.__version__"
-  - python -c "import toyplot; print toyplot.__version__"
-  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/tutorial.ipynb --output pytest --to html
-  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/tip-labels.ipynb --output pytest --to html
-  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/node-labels.ipynb --output pytest --to html
-  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/color-mapping.ipynb --output pytest --to html
-  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/cloud-trees.ipynb --output pytest --to html
-  - deactivate
-  - conda deactivate
-
-  ## do GIT BRANCH pip3
-  - export PATH="$HOME/miniconda3/bin:$PATH"  
-  - activate pip3
-  - conda activate pip3
-  - python -c "import toytree; print(toytree.__version__)"
-  - python -c "import toyplot; print(toyplot.__version__)"
-  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/tutorial.ipynb --output pytest --to html
-  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/tip-labels.ipynb --output pytest --to html
-  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/node-labels.ipynb --output pytest --to html
-  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/color-mapping.ipynb --output pytest --to html
-  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/cloud-trees.ipynb --output pytest --to html
-  - deactivate
-  - conda deactivate  
 
   ## do CONDA py2 tests
   - export PATH="$HOME/miniconda2/bin:$PATH"  
