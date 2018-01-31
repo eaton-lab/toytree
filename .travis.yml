@@ -31,13 +31,11 @@ install:
   - conda update -q conda
   - conda info -a
   - conda install toytree -c eaton-lab
+
+  ## GITHUB BRANCH BUILD
   - conda create -n pip2 -y
   - source activate pip2
-  #- git clone https://github.com/eaton-lab/toytree.git toytree-git2/
-  #- cd toytree-git2/
-  - cd toytree/
   - pip install .
-  - cd ..
 
   ## source py3 path
   - export PATH="$HOME/miniconda3/bin:$PATH"
@@ -47,14 +45,11 @@ install:
   - conda update -q conda
   - conda info -a
   - conda install toytree -c eaton-lab
+
+  ## GITHUB BRANCH BUILD  
   - conda create -n pip3 -y
   - source activate pip3
-  #- git clone https://github.com/eaton-lab/toytree.git toytree-git3/
-  #- cd toytree-git3/
-  - cd toytree/
   - pip install .
-  - cd ..
-
 
 # command to run tests
 script: 
