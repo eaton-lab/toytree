@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-__version__ = "devel-pystyling"
+__version__ = "devel-test"
 __author__ = "Deren Eaton"
 
 
