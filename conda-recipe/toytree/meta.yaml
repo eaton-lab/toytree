@@ -22,8 +22,8 @@ requirements:
     - toyplot >=0.16.1  ## eaton-lab forked version for now
     - pypng
     - reportlab
-    - nbconvert
     - jupyter
+    - nbconvert
     - requests
   run:
     - python
