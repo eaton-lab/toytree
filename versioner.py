@@ -169,16 +169,24 @@ class Version(object):
 
 
 
-    def _write_new_tag_to_meta_yaml(self):
+    def _write_branch_and_tag_to_meta_yaml(self):
         """
-        Write branch to meta.yaml by editing in place
+        Write branch and tag to meta.yaml by editing in place
         """
+
+        ## set the branch to pull source from
         for line in fileinput.input(self.meta_yaml, inplace=1):
             if line.strip().startswith("  git_tag: "):
                 if self.deploy:
                     line = "  git tag: {}".format(self.tag)
                 else:
                     line = "  git tag: {}".format(self.branch)
+            print(line.strip("\n"))        
+
+        ## set the tag to use for the package name
+        for line in fileinput.input(self.meta_yaml, inplace=1):
+            if line.strip().startswith("  version: "):
+                line = "  version: {}".format(self.tag)
             print(line.strip("\n"))        
 
 

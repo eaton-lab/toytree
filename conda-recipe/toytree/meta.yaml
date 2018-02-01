@@ -2,17 +2,17 @@
 ## tag grabs latest commit tag on the git_tag branch/tag
 package:
   name: toytree
-  version: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
-  #version: {{ GIT_DESCRIBE_TAG }}        ## 'toytree-0.1.5-py27_0.tar.bz2
+  version: {tag}
 
 source:
   git_url: https://github.com/eaton-lab/toytree.git
-  git_tag: pystyling
+  git_tag: {branch}
 
 ## increments build of the same number
 build:
+  number: 0
   #number: {{ GIT_DESCRIBE_NUMBER }}
-  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
+  #number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
 
 requirements:
   build:
