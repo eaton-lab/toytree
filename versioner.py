@@ -262,14 +262,12 @@ class Version(object):
 
             ## build and upload Linux to anaconda.org
             build = api.build(
-                "conda-recipe/{}".format(self.package), 
-                python=pybuild,
-                anaconda_upload=True)
-
+                "conda-recipe/{}".format(self.package),
+                 python=pybuild)
+                
             ## upload Linux build
             if not self.deploy:
-                cmd = ["anaconda", "upload", build[0], 
-                        "--label", "conda-test", "--force"]
+                cmd = ["anaconda", "upload", build[0], "--label", "test", "--force"]
             else:
                 cmd = ["anaconda", "upload", build[0]]
             err = subprocess.Popen(cmd).communicate()
@@ -278,8 +276,7 @@ class Version(object):
             api.convert(build[0], output_dir=bldir, platforms=["osx-64"])
             osxdir = os.path.join(bldir, "osx-64", os.path.basename(build[0]))
             if not self.deploy:
-                cmd = ["anaconda", "upload", osxdir, 
-                       "--label", "conda-test", "--force"]
+                cmd = ["anaconda", "upload", osxdir, "--label", "test", "--force"]
             else:
                 cmd = ["anaconda", "upload", osxdir]
             err = subprocess.Popen(cmd).communicate()

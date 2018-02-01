@@ -1,18 +1,19 @@
-
-
 ## tag and version are updated by the versioner.py script in the toytree repo
 ## which then writes to meta.yaml during the conda build.
 package:
   name: toytree
-  version: '0.1.6'
+  #version: '0.1.6'
+  version: {{ environ.get('GIT_DESCRIBE_TAG', '') }}
 
 source:
   git_url: https://github.com/eaton-lab/toytree.git
-  git_tag: pystyling
+  git_tag: 0.1.6
+  #pystyling
 
 build:
-  str: '0.1.6'
-  number: 0
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
+  #str: '0.1.6'   ## the string before it: toytree-0.1.5-0
+  #number: 0      ## the version number given to the build
 
 requirements:
   build:
