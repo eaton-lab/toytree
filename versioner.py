@@ -362,5 +362,9 @@ if __name__ == "__main__":
         else:
             raise Exception("git updates code only available for pkg toytree")
 
-    ## 
+    ## build the conda packages and upload
     v.build_conda_packages()
+
+    ## write version back to starting if not a deployed version
+    if not args.deploy:
+        v._revert_tag_in_init()
