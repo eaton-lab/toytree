@@ -29,7 +29,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda install -c eaton-lab/label/conda-test toytree
+  - conda install -c eaton-lab/label/test toytree
 
   ## CONDA PY3 BUILD
   - export PATH="$HOME/miniconda3/bin:$PATH"
@@ -38,7 +38,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda install -c eaton-lab/label/conda-test toytree
+  - conda install -c eaton-lab/label/test toytree
 
 
 # command to run tests

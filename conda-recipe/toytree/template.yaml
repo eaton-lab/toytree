@@ -4,15 +4,17 @@
 ## which then writes to meta.yaml during the conda build.
 package:
   name: toytree
-  version: '{tag}'
+  version: {{ environ.get('GIT_DESCRIBE_TAG', '') }}
+  #version: '{tag}'
 
 source:
   git_url: https://github.com/eaton-lab/toytree.git
   git_tag: {branch}
 
 build:
-  str: '{tag}'   ## the string before it: toytree-0.1.5-0
-  number: 0      ## the version number given to the build
+  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
+  #str: '{tag}'   ## the string before it: toytree-0.1.5-0
+  #number: 0      ## the version number given to the build
 
 requirements:
   build:
