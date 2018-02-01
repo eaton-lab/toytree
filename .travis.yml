@@ -46,8 +46,11 @@ script:
 
   ## do CONDA py2 tests
   - export PATH="$HOME/miniconda2/bin:$PATH"  
+  - which python
+  - hash -r
   - python -c "import toytree; print toytree.__version__"
   - python -c "import toyplot; print toyplot.__version__"
+  - python -c "import sys; print(sys.version)"  
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/tutorial.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/tip-labels.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/node-labels.ipynb --output pytest --to html
@@ -55,9 +58,13 @@ script:
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/cloud-trees.ipynb --output pytest --to html
   
   ## do CONDA py3 tests
-  - export PATH="$HOME/miniconda3/bin:$PATH"  
+  - export PATH="$HOME/miniconda3/bin:$PATH"
+  - which python
+  - hash -r
+  - which jupyter-nbconvert
   - python -c "import toytree; print(toytree.__version__)"
   - python -c "import toyplot; print(toyplot.__version__)"
+  - python -c "import sys; print(sys.version)"
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/tutorial.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/tip-labels.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/node-labels.ipynb --output pytest --to html
