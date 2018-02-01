@@ -540,10 +540,11 @@ def _build_trees(fclade_counts, namedict):
 
         nodes[clade] = node
         queue = new_queue
-    tre = nodes.values()[0]
+    nodelist = list(nodes.values())
+    tre = nodelist[0]
     #tre.unroot()
     ## return the tree and other trees if present
-    return tre, list(nodes.values())
+    return tre, nodelist
 
 
 
