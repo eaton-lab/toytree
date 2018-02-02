@@ -300,7 +300,7 @@ class Toytree(object):
         ctn1 = -1 + (2 * len(self))
         ctn2 = -2 + (2 * len(self))
         if self.is_rooted():
-            if ctn == sum(1 for i in self.tree.traverse()):
+            if ctn1 == sum(1 for i in self.tree.traverse()):
                 return True
             else:
                 return False
@@ -662,6 +662,7 @@ class Toytree(object):
             if any(i in newick for i in ("http://", "https://")):
                 try:
                     response = requests.get(newick)
+                    response.raise_for_status()
                     self.newick = response.text.strip()
                 except Exception as inst:
                     raise inst
