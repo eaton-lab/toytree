@@ -1,14 +1,12 @@
 package:
   name: toytree
-  version: {{ environ.get('GIT_DESCRIBE_TAG', '') }}  ## current tag on master
+  version: "0.1.6"
 
 source:
   git_url: https://github.com/eaton-lab/toytree.git
-  git_tag: 0.1.5
-  ## git_tag: {{ environ.get('GIT_DESCRIBE_TAG', '') }}  ## current tag on master
+  git_tag: 0.1.6
 
 build:
-  ##string: 'beta'  ## {{ environ.get('GIT_DESCRIBE_HASH', '') }}
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
 
 requirements:
