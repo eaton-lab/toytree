@@ -150,6 +150,7 @@ class MultiTree(object):
         if any(i in self.newick for i in ("http://", "https://")):
             try:
                 response = requests.get(self.newick)
+                response.raise_for_status()
                 treelines = response.text.strip().split("\n")
                 treelines = treelines[self._ts[0]:self._ts[1]:self._ts[2]]
                 self._treelines_to_treelist(treelines)
