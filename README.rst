@@ -7,10 +7,7 @@ Toytree
 
 .. image:: https://anaconda.org/eaton-lab/toytree/badges/installer/conda.svg
    :alt: Install with conda
-   :target: https://conda.anaconda.org/eaton-lab
-   
-.. image:: https://anaconda.org/eaton-lab/toytree/badges/version.svg   
-   :target: https://anaconda.org/eaton-lab/toytree
+   :target: https://conda.anaconda.org/eaton-lab  
 
 .. image:: https://travis-ci.org/eaton-lab/toytree.svg?branch=master
     :target: https://travis-ci.org/eaton-lab/toytree
@@ -27,9 +24,8 @@ tree objects **Toytree** uses a modified (minimal) version of the
 `ete3 <http://etetoolkit.org>`_ library (which we call `ete3mini`). 
 **Toytree** is written within the framework of the minimalist plotting 
 library `toyplot <http://toyplot.readthedocs.io/en/stable/index.html>`_, 
-which generates rich HTML figures that can be embedded in Jupyter-notebooks, 
-and include interactive features, as well as be rendered for publications
-as SVG or PDF images. 
+which generates rich interactive figures (SVG+HTML+JS) that can be embedded in 
+Jupyter-notebooks or webpages, or rendered in SVG or PDF format for publications. 
 
 
 Installation
@@ -41,9 +37,13 @@ You can install ``toytree`` and its dependencies (``toyplot`` and ``numpy``) wit
     conda install toytree -c eaton-lab
 
 
-Tutorial
+Documentation
 --------
-Some examples are shown below. See the `full documentation <http://toytree.readthedocs.io>`_ for more details. Launch a jupyter-notebook on your machine to try it out for yourself. 
+See the `full documentation <http://toytree.readthedocs.io>`_. Launch a jupyter-notebook on your machine to try it out for yourself. 
+
+
+Examples
+------- 
 
 .. , or, *click on the "binder" badge below* to launch a jupyter notebook in the cloud where you can try it without having to install anything (the web notebook might take a minute or two to spin up -- it's a bit buggy and may not work at the moment).
 
@@ -60,7 +60,9 @@ Some examples are shown below. See the `full documentation <http://toytree.readt
 
 .. code:: python
 
-    ## a string representation of a tree in newick format
+    ## load trees from newick str, filepath, or URL
+    url = "http://eaton-lab.org/data/Vib-Oreino.tre"
+    path = "./tree.newick"
     newick = \
     """(41954_cyathophylloides:0.00008888031167776559,(((32082_przewalskii:
     0.00259326350604092027,33588_przewalskii:0.00247133969857381459)100:
@@ -75,16 +77,19 @@ Some examples are shown below. See the `full documentation <http://toytree.readt
     0.00005282184335845886);"""
 
     ## load newick string to create a Toytree class object
-    tre = toytree.tree(newick)
+    tre1 = toytree.tree(url)
+    tre2 = toytree.tree(path)
+    tre3 = toytree.tree(newick)
+    
 
 
 Tree plotting basics
 ~~~~~~~~~~~~~~~~~~~~~
-The ``.draw()`` function generates a plot which is returned as two objects, 
-a ``toyplot.Canvas`` object and a ``toyplot.Canvas.cartesian`` object. 
-In a jupyter-notebook the ``canvas`` will automatically render as a figure
-in a cell of the notebook. Toytree applies a default styling to the tree
-which can be modified.  
+The ``.draw()`` function generates a plot that is returned as a tuple 
+containing a ``toyplot.Canvas`` object and a ``toyplot.Canvas.cartesian``
+object. In a jupyter-notebook the ``canvas`` will automatically render 
+as HTML in an output cell. Toytree applies a default styling to the tree
+which can be modified extensively.  
 
 .. code:: python
 
@@ -144,64 +149,4 @@ be applied to a tree plot.
 
 
 .. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig2.svg
-   :align: center
-
-
-Combine with standard ``Toyplot`` figures
---------------------------------------------
-The ``toyplot.Canvas`` and ``toyplot.axes.cartesian`` objects that 
-are returned by toytree can be further modified to combine multiple 
-plots onto a single or multiple axes, or to save the the canvas in 
-a number of formats. Trees can be easily combined with other types
-of data to add barplots or scatterplots to the axes. Here we 
-generate three plots, apply different styling to each, and save 
-the final canvas as HTML and SVG. The first axes object is set to 
-display its axis coordinates to show how data points are aligned.
-
-
-.. code:: python
-
-    import toyplot
-    import numpy as np
-
-    ## create a canvas with three subplots
-    canvas = toyplot.Canvas(width=900, height=400)
-    axes1 = canvas.cartesian(grid=(1, 3, 0))
-    axes2 = canvas.cartesian(grid=(1, 3, 1))
-    axes3 = canvas.cartesian(grid=(1, 3, 2))
-
-    ## draw a tree into each space by designating the axes
-    _, axes1 = tre.draw(axes=axes1, orient='right')
-    _, axes2 = tre.draw(axes=axes2, orient='down', 
-                        tip_labels_style={"-toyplot-anchor-shift": "95px"})
-    _, axes3 = tre.draw(axes=axes3, 
-                        tip_labels_style={"-toyplot-anchor-shift": "25px"})
-
-    ## add more styling to axes
-    axes1.show = True
-    axes2.show = False
-    axes3.show = False
-
-    ## add additional plots to axes (axes.show shows coordinates)
-    heights = np.random.randint(-5, 0, 13)
-    axes2.bars(heights, 
-               baseline=[-0.5]*13,
-               style={"stroke": "#262626"},
-               );
-
-    heights = np.random.randint(5, 15, 13)
-    axes3.scatterplot(a=[1]*heights.shape[0], 
-                      b=range(heights.shape[0]),
-                      size=heights,
-                      mstyle={"stroke": "#262626"}
-                      );
-
-    ## save figure as HTML & SVG
-    import toyplot.html
-    import toyplot.svg
-    toyplot.html.render(canvas, "figure.html")
-    toyplot.svg.render(canvas, "figure.svg")
-
-
-.. image:: https://cdn.rawgit.com/eaton-lab/toytree/master/docs/readme_fig3.svg
    :align: center
