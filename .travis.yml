@@ -29,7 +29,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda install -c eaton-lab/label/test toytree
+  - conda install -c eaton-lab toytree
 
   ## CONDA PY3 BUILD
   - export PATH="$HOME/miniconda3/bin:$PATH"
@@ -38,7 +38,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda install -c eaton-lab/label/test toytree
+  - conda install -c eaton-lab toytree
 
 
 # command to run tests
@@ -46,8 +46,6 @@ script:
 
   ## do CONDA py2 tests
   - export PATH="$HOME/miniconda2/bin:$PATH"  
-  - which python
-  - hash -r
   - python -c "import toytree; print toytree.__version__"
   - python -c "import toyplot; print toyplot.__version__"
   - python -c "import sys; print(sys.version)"  
@@ -59,9 +57,6 @@ script:
   
   ## do CONDA py3 tests
   - export PATH="$HOME/miniconda3/bin:$PATH"
-  - which python
-  - hash -r
-  - which jupyter-nbconvert
   - python -c "import toytree; print(toytree.__version__)"
   - python -c "import toyplot; print(toyplot.__version__)"
   - python -c "import sys; print(sys.version)"
