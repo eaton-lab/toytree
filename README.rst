@@ -93,7 +93,7 @@ which can be modified extensively.
 
 .. code:: python
 
-    canvas, axes = tre.draw(width=400, node_labels=True)
+    canvas, axes = tre3.draw(width=400, node_labels=True)
     canvas
 
 
@@ -115,7 +115,7 @@ be applied to a tree plot.
 
 .. code:: python
 
-    tre.draw(
+    tre3.draw(
         width=500, 
         height=500,
         node_labels=True,
