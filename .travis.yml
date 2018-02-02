@@ -1,12 +1,11 @@
-language: 
+language:
   - generic
 
 os:
   - linux
   - osx
 
-# command to install dependencies
-install: 
+install:
   - if [[ $TRAVIS_OS_NAME == 'osx' ]]; then
       brew update;
       curl -L https://repo.continuum.io/miniconda/Miniconda2-latest-MacOSX-x86_64.sh -o miniconda2.sh;
@@ -19,47 +18,53 @@ install:
       wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda3.sh;
     fi;
 
-  ## install both
+  ## INSTALL CONDA PY2 BUILD
   - bash miniconda2.sh -b -p $HOME/miniconda2
   - bash miniconda3.sh -b -p $HOME/miniconda3
 
-  ## source py2 path
+  ## CONDA PY2 BUILD
   - export PATH="$HOME/miniconda2/bin:$PATH"
   - which python
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda install toytree -c eaton-lab
+  - conda install -c eaton-lab/label/test toytree
 
-  ## source py3 path
+  ## CONDA PY3 BUILD
   - export PATH="$HOME/miniconda3/bin:$PATH"
   - which python
   - hash -r
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - conda install toytree -c eaton-lab
+  - conda install -c eaton-lab/label/test toytree
 
 
 # command to run tests
 script: 
 
-  ## do py2 tests
+  ## do CONDA py2 tests
   - export PATH="$HOME/miniconda2/bin:$PATH"  
+  - which python
+  - hash -r
   - python -c "import toytree; print toytree.__version__"
   - python -c "import toyplot; print toyplot.__version__"
+  - python -c "import sys; print(sys.version)"  
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/tutorial.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/tip-labels.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/node-labels.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/color-mapping.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python2" --execute docs/cloud-trees.ipynb --output pytest --to html
   
-
-  # ## do py3 tests
-  - export PATH="$HOME/miniconda3/bin:$PATH"  
+  ## do CONDA py3 tests
+  - export PATH="$HOME/miniconda3/bin:$PATH"
+  - which python
+  - hash -r
+  - which jupyter-nbconvert
   - python -c "import toytree; print(toytree.__version__)"
   - python -c "import toyplot; print(toyplot.__version__)"
+  - python -c "import sys; print(sys.version)"
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/tutorial.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/tip-labels.ipynb --output pytest --to html
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/node-labels.ipynb --output pytest --to html

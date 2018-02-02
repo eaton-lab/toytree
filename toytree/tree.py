@@ -1,20 +1,13 @@
 #!/usr/bin/env python
 
 from __future__ import print_function, division
-
-import toyplot
+from decimal import Decimal
+from . import ete3mini
 import numpy as np
+import requests
+import toyplot
 import copy
 import re
-from . import ete3mini
-from decimal import Decimal
-
-# pylint: disable=W0212
-# pylint: disable=R0902
-# pylint: disable=R0912
-# pylint: disable=R0914
-# pylint: disable=R0915
-# pylint: disable=E1101
 
 
 # color palette as a list
@@ -32,74 +25,73 @@ DEFAULTS_ALL = {
         "stroke": "#292724",
         "stroke-width": 2,
         "stroke-linecap": "round",
-    },
-
+        },
     "edge_align_style": {
-        "stroke": "darkgrey",       
-        # "stroke-width": 2,   ## copies edge_style for width by default
-        "stroke-linecap": "round", 
+        "stroke": "darkgrey",
+        # "stroke-width": 2,   # copies edge_style for width by default
+        "stroke-linecap": "round",
         "stroke-dasharray": "2, 4",
-    },  
+        },
 
     # node label defaults
-    "node_labels": False,       
+    "node_labels": False,
     "node_labels_style": {
-        "font-size": "9px", 
+        "font-size": "9px",
         "fill": "#262626",
-        # "text-anchor":"start",  
-    }, 
+        # "text-anchor":"start",
+        },
 
     # node defaults
-    "node_size": None,             
+    "node_size": None,
     "node_color": None,  # COLORS[0],
     "node_hover": True,
     "node_style": {
-        "fill": COLORS[0], 
+        "fill": COLORS[0],
         "stroke": 'none',  # COLORS[0],
-    },
+        },
     "vmarker": "o",  # "r2x1" for rectangles
 
     # tip label defaults
-    "tip_labels": True,         
-    "tip_labels_color": toyplot.color.black,    
+    "tip_labels": True,
+    "tip_labels_color": toyplot.color.black,
     "tip_labels_align": False,
     "tip_labels_style": {
         "font-size": "12px",
-        "text-anchor": "start", 
+        "text-anchor": "start",
         "-toyplot-anchor-shift": None,  # "0px", #None,
-        "fill": "#292724", 
-    },
+        "fill": "#292724",
+        },
 }
 DEFAULTS_CTREES = {
-    "tree_style": "c",    
-    "orient": "down", 
+    "tree_style": "c",
+    "orient": "down",
     "use_edge_lengths": True,
     "tip_labels_align": False,
-    # "tip_labels_angle": None,    
+    # "tip_labels_angle": None,
 }
 DEFAULTS_PTREES = {
-    "tree_style": "p",    
-    "orient": "right", 
+    "tree_style": "p",
+    "orient": "right",
     "use_edge_lengths": True,
     "tip_labels_align": False,
-    # "tip_labels_angle": None,    
+    # "tip_labels_angle": None,
 }
 DEFAULTS_ATREES = {
     "tree_style": "c",
-    "orient": "down", 
+    "orient": "down",
     "use_edge_lengths": True,
     "node_labels": "idx",
     "tip_labels": False,
-    "tip_labels_align": False,    
+    "tip_labels_align": False,
 }
 
 
 # the main tree class
 class Toytree(object):
     """
-    The toytree Tree Class object, a plotting wrapper around an 
+    The toytree Tree Class object, a plotting wrapper around an
     ete3 Tree Class object which can be accessed from the .tree
-    attribute. 
+    attribute.
 
     Parameters:
     -----------
@@ -108,8 +100,8 @@ class Toytree(object):
         weblink to a newick string.
     ladderize (bool):
         Whether to automatically ladderize the tree. Default=True.
-    format (int):
-        The tree format used for parsing the tree. See ETE tree formats. 
+    tree_format (int):
+        The tree format used for parsing the tree. See ETE tree formats.
         The default 0 can handle most tree formats including NHX.
     fixed_order (bool):
         Enforce a fixed order of tip-labels. This can make the topology
@@ -122,7 +114,7 @@ class Toytree(object):
         An ete TreeNode object representation of the tree. See the
         ete docs for full documentation. Toytree users will not typically
         need to interact with this object, but advanced users can benefit
-        from learning the TreeNode object. 
+        from learning the TreeNode object.
     edges: ndarray
         An array of edges connecting nodes in the tree. Used internally
         for plotting, not of significant use to users.
@@ -131,98 +123,72 @@ class Toytree(object):
         for plotting, not of significant use to users.
     newick: str
         A New Hampshire Newick format string representation of the tree.
-    features: 
-        A set of string names of features that are accessible from the tree 
+    features:
+        A set of string names of features that are accessible from the tree
         object. All trees will have {'dist', 'name', 'support'}, although the
-        values 
+        values
 
     Functions:
     ----------
-    get_tip_labels(): 
+    get_tip_labels():
         See func docstring.
     get_edge_lengths():
         See func docstring.
-    root(): 
+    root():
         See func docstring.
     """
 
-    def __init__(self, 
-                 newick=None, 
-                 ladderize=True, 
-                 format=0,
-                 fixed_order=None,
-                 **kwargs):
-
-        # use ETE to parse the tree and ladderize
-        if newick:
-            self.tree = ete3mini.TreeNode(newick, format=format)
-            if ladderize and not fixed_order:
-                self.tree.ladderize()
-
-        # otherwise make an empty TreeNode object        
-        else:
-            self.tree = ete3mini.TreeNode()
-
-        # default attributes and plot settings
-        self.colors = COLORS      
-        self._kwargs = {}
-        self._default_style = DEFAULTS_ALL
+    def __init__(self,
+        newick=None,
+        ladderize=True,
+        tree_format=0,
+        fixed_order=None,
+        **kwargs):
 
         # ensures ladderized top-down order for entered tip order
         self._fixed_order = fixed_order
+        self._parse_newick(newick, tree_format, ladderize)
 
-        # plotting coords
+        # default attributes and plot settings
+        self.colors = COLORS
+        self._kwargs = {}
+        self._default_style = DEFAULTS_ALL
+
+        # plotting coordinates
         self.edges = None
         self.verts = None
         self._lines = []
         self._coords = []
 
-        # plotting node values (features)
-        # checks one of root's children for features and extra feats.
-        if self.tree.children:
-            features = {"name", "dist", "support", "height", "idx"}
-            testnode = self.tree.children[0]
-            extrafeat = {i for i in testnode.features if i not in features}
-            features.update(extrafeat)
-            if any(extrafeat):
-                self.newick = self.tree.write(format=9, features=features)
-            else:
-                self.newick = self.tree.write(format=0)
-
-            # parse newick, assign idx, returns tre, edges, verts, names
-            # assigns node_labels, tip_labels, edge_lengths and support values
-            # use default orient and edge_lengths right now for init.
-            self._decompose_tree(
-                orient="right",  # self._kwargs["orient"],
-                use_edge_lengths=True,  # self._kwargs["use_edge_lengths"],
-                fixed_order=self._fixed_order)
+        # get features and do _decompose on initial tree to assign coords, etc
+        self._init_features()
 
 
-
+    # should this be a .get named func instead?
     @property
     def features(self):
         """ return features registered on ete3mini tree"""
         return self.tree.features
 
 
-    ## functions to return values from the ete3 .tree object
+    # functions to return values from the ete3 .tree object
     def get_edge_lengths(self):
         """
-        Returns edge length values from tree object in node plot order. To 
-        modify edge length values you must modify nodes in the .tree object 
+        Returns edge length values from tree object in node plot order. To
+        modify edge length values you must modify nodes in the .tree object
         directly. For example:
-        
+
         for node in tree.tree.traverse():
             node.dist = 1.
         """
-        ## access nodes in the order they will be plotted
+        # access nodes in the order they will be plotted
         return self.get_node_values('dist', True, True)
 
 
     def get_node_values(self, feature=None, show_root=False, show_tips=False):
         """
         Returns node values from tree object in node plot order. To modify
-        values you must modify the .tree object directly by setting new 
+        values you must modify the .tree object directly by setting new
         'features'. For example, 
         
         for node in tree.tree.traverse():
@@ -234,26 +200,26 @@ class Toytree(object):
 
         """
 
-        ## access nodes in the order they will be plotted
-        ## this is a customized order best sampled this way
-        nodes = [self.tree.search_nodes(name=str(i))[0] 
+        # access nodes in the order they will be plotted
+        # this is a customized order best sampled this way
+        nodes = [self.tree.search_nodes(name=str(i))[0]
                  for i in self.get_node_dict().values()]
 
-        ## get features
+        # get features
         if feature:
-            vals = [i.__getattribute__(feature) 
+            vals = [i.__getattribute__(feature)
                     if hasattr(i, feature) else "" for i in nodes]
         else:
             vals = [" " for i in nodes]
 
-        ## apply hiding rules
+        # apply hiding rules
         if not show_root:
             vals = [i if not j.is_root() else "" for i, j in zip(vals, nodes)]
         if not show_tips:
             vals = [i if not j.is_leaf() else "" for i, j in zip(vals, nodes)]
 
-        ## convert float to ints for prettier printing unless all floats
-        ## raise exception and skip if there are true strings (names)
+        # convert float to ints for prettier printing unless all floats
+        # raise exception and skip if there are true strings (names)
         try:
             if all([Decimal(str(i)) % 1 == 0 for i in vals if i]):
                 vals = [int(i) if isinstance(i, float) else i for i in vals]
@@ -267,18 +233,19 @@ class Toytree(object):
         """
         Return node labels as a dictionary mapping {idx: name} where
         idx is the order of nodes in 'preorder' traversal. Used internally
-        by get_node_values() to return values in proper order. 
+        by get_node_values() to return values in proper order.
         """
         names = {}
         idx = -1 + sum(1 for i in self.tree.traverse())
-        ## preorder: first parent and then children
+
+        # preorder: first parent and then children
         for node in self.tree.traverse("preorder"):
             if not node.is_leaf():
                 if node.name:
                     names[idx] = node.name
                 idx -= 1
 
-        ## names are in ladderized plotting order
+        # names are in ladderized plotting order
         tiporder = self.tree.get_leaves()
         for node in tiporder:
             names[idx] = node.name
@@ -288,9 +255,9 @@ class Toytree(object):
 
     def get_tip_labels(self):
         """
-        returns tip labels in ladderized order from tip to bottom on 
-        right-facing tree. Take care because this is the reverse of the 
-        y-axis order, i.e., the tree plot bottom is at X=0. 
+        returns tip labels in ladderized order from tip to bottom on
+        right-facing tree. Take care because this is the reverse of the
+        y-axis order, i.e., the tree plot bottom is at X=0.
         """
         if self._fixed_order:
             return self._fixed_order[::-1]
@@ -306,59 +273,11 @@ class Toytree(object):
     def __len__(self):
         """ return len of Tree (ntips) """
         return len(self.tree)
-        
+
 
     def copy(self):
         """ returns a deepcopy of the tree object"""
         return copy.deepcopy(self)
-
-
-    ## unlike ete this returns a copy unrooted, not in-place!
-    def unroot(self):
-        """
-        Returns a copy of the tree unrooted. Does not transform tree in-place.
-        """
-        newtree = copy.deepcopy(self)
-        newtree.tree.unroot()
-        newtree.tree.ladderize()
-
-        ## get features
-        testnode = newtree.tree.get_leaves()[0] 
-        features = {"name", "dist", "support", "height"}
-        extrafeat = {i for i in testnode.features if i not in features}
-        features.update(extrafeat)
-        if any(extrafeat):
-            newtree.newick = newtree.tree.write(format=9, features=features)
-        else:
-            newtree.newick = newtree.tree.write(format=0)
-        return newtree
-
-
-    ## unlike ete this returns a copy resolved, not in-place!
-    def resolve_polytomy(self, 
-                         default_dist=0.0, 
-                         default_support=0.0, 
-                         recursive=False):
-        """
-        Returns a copy of the tree with resolved polytomies. 
-        Does not transform tree in-place.
-        """
-        newtree = copy.deepcopy(self)
-        newtree.tree.resolve_polytomy(
-            default_dist=default_dist,
-            default_support=default_support,
-            recursive=recursive)
-
-        ## get features
-        testnode = newtree.tree.get_leaves()[0] 
-        features = {"name", "dist", "support", "height"}
-        extrafeat = {i for i in testnode.features if i not in features}
-        features.update(extrafeat)        
-        if any(extrafeat):
-            newtree.newick = newtree.tree.write(format=9, features=features)
-        else:
-            newtree.newick = newtree.tree.write(format=0)
-        return newtree
 
 
     def is_rooted(self):
@@ -398,9 +317,55 @@ class Toytree(object):
                     return False
 
 
+    # unlike ete this returns a copy resolved, not in-place!
+    def resolve_polytomy(self,
+        default_dist=0.0,
+        default_support=0.0,
+        recursive=False):
+        """
+        Returns a copy of the tree with resolved polytomies.
+        Does not transform tree in-place.
+        """
+        newtree = copy.deepcopy(self)
+        newtree.tree.resolve_polytomy(
+            default_dist=default_dist,
+            default_support=default_support,
+            recursive=recursive)
+
+        # get features
+        testnode = newtree.tree.get_leaves()[0] 
+        features = {"name", "dist", "support", "height"}
+        extrafeat = {i for i in testnode.features if i not in features}
+        features.update(extrafeat)        
+        if any(extrafeat):
+            newtree.newick = newtree.tree.write(format=9, features=features)
+        else:
+            newtree.newick = newtree.tree.write(format=0)
+        return newtree
 
 
-    ## re-rooting the tree
+    # unlike ete this returns a copy unrooted, not in-place!
+    def unroot(self):
+        """
+        Returns a copy of the tree unrooted. Does not transform tree in-place.
+        """
+        newtree = copy.deepcopy(self)
+        newtree.tree.unroot()
+        newtree.tree.ladderize()
+        
+        ## get features
+        testnode = newtree.tree.get_leaves()[0] 
+        features = {"name", "dist", "support", "height"}
+        extrafeat = {i for i in testnode.features if i not in features}
+        features.update(extrafeat)
+        if any(extrafeat):
+            newtree.newick = newtree.tree.write(format=9, features=features)
+        else:
+            newtree.newick = newtree.tree.write(format=0)
+        return newtree
+
+
+    # re-rooting the tree
     def root(self, outgroup=None, wildcard=None, regex=None):
         """
         Re-root a tree on a selected tip or group of tip names. Rooting is
@@ -512,14 +477,7 @@ class Toytree(object):
         return nself
 
 
-
-    ## reset verts & edges based on args that might change
-    def _decompose_tree(self, orient, use_edge_lengths, fixed_order):
-        _decompose_tree(self, orient, use_edge_lengths, fixed_order)
-
-
-
-    ## this is the user-interface where all options should be visible 
+    # this is the user-interface where all options should be visible 
     def draw(
         self, 
         height=None,
@@ -542,7 +500,7 @@ class Toytree(object):
         orient=None,  # "right",
         tree_style=None,
         print_args=False,
-        padding=50,
+        padding=25,
         axes=None, 
         *args,
         **kwargs):
@@ -692,6 +650,66 @@ class Toytree(object):
         return canvas, axes
 
 
+    # private functions -------------------------------------------------
+    def _parse_newick(self, newick, tree_format, ladderize):
+        """
+        Parse the newick string as either text, filepath or URL, 
+        and create an ete.TreeNode object as .tree. If no newick
+        then init an empty TreeNode object.
+        """
+        if newick:
+            # is newick a URL or string, path?
+            if any(i in newick for i in ("http://", "https://")):
+                try:
+                    response = requests.get(newick)
+                    self.newick = response.text.strip()
+                except Exception as inst:
+                    raise inst
+            # newick is string or path
+            else:
+                self.newick = newick
+
+            # create .tree attribute as TreeNode
+            self.tree = ete3mini.TreeNode(self.newick, format=tree_format)
+            if ladderize and not self._fixed_order:
+                self.tree.ladderize()
+
+        # otherwise make an empty TreeNode object
+        else:
+            self.tree = ete3mini.TreeNode()
+            self.newick = self.tree.write()
+
+
+    # updates .newick and runs decompose on initial tree
+    def _init_features(self):
+        """
+        Get features from tree and update newick. Calls decompose to
+        assign verts, coords, etc.
+        """
+        # checks one of root's children for features and extra feats.
+        if self.tree.children:
+            features = {"name", "dist", "support", "height", "idx"}
+            testnode = self.tree.children[0]
+            extrafeat = {i for i in testnode.features if i not in features}
+            features.update(extrafeat)
+            if any(extrafeat):
+                self.newick = self.tree.write(format=9, features=features)
+            else:
+                self.newick = self.tree.write(format=0)
+
+            # parse newick, assign idx, returns tre, edges, verts, names
+            # assigns node_labels, tip_labels, edge_lengths and support values
+            # use default orient and edge_lengths right now for init.
+            self._decompose_tree(
+                orient="right",  
+                use_edge_lengths=True, 
+                fixed_order=self._fixed_order)
+
+
+    # reset verts & edges based on args that might change
+    def _decompose_tree(self, orient, use_edge_lengths, fixed_order):
+        _decompose_tree(self, orient, use_edge_lengths, fixed_order)
+
 
     def _assign_tip_labels(self):
         """ parse arg or arglist for tip_labels and tip_colors """
@@ -817,9 +835,13 @@ class Toytree(object):
                 self._kwargs["height"] = max(225, min(500, 18*(len(self.tree))))
 
 
-################################################################################
-## RANDOM TREES
-################################################################################
+
+#############################################################################
+# RANDOM TREES
+#############################################################################
+
+# TODO: functions to generate trees under different branch length
+# processes (Yule, BD) by adding nodes to a TreeNode object...
 
 
 def _node_dates_yule(nnodes, b):
@@ -845,12 +867,12 @@ def _node_dates_coal(nnodes, b):
 
 def randomtree(ntips, node_values={}):
     """
-    Function to return a random tree w/ N tips using the ete function 
-    'populate()'. Branch lengths can be added after the tree is 
+    Function to return a random tree w/ N tips using the ete function
+    'populate()'. Branch lengths can be added after the tree is
     generated by modifying its features, or you can use one the preset
-    modes for generating divergence times by setting nodes to one of 
-    ['coalescent', 'yule', 'bd'], and adding params in paramsdict. 
-    Examples below. 
+    modes for generating divergence times by setting nodes to one of
+    ['coalescent', 'yule', 'bd'], and adding params in paramsdict.
+    Examples below.
 
     Parameters
     -----------
@@ -858,65 +880,61 @@ def randomtree(ntips, node_values={}):
         The number of tips in the randomly generated tree
 
     node_values:
-    
+
     """
 
-    ## generate tree with N tips.
+    # generate tree with N tips.
     tmptree = ete3mini.TreeNode()
     tmptree.populate(ntips)
-    #tmptree.convert_to_ultrametric()
+    # tmptree.convert_to_ultrametric()
     self = Toytree(newick=tmptree.write())
 
-    ## set values
+    # set values
     for fkey, vals in node_values.items():
         for idx, node in enumerate(self.tree.traverse()):
             node.add_feature(fkey, vals[idx])
 
-    ## set tip names by labeling sequentially from t-0
+    # set tip names by labeling sequentially from t-0
     self.tree.ladderize()
-    ntip=0
+    ntip = 0
     for tip in self.get_tip_labels():
         node = self.tree.search_nodes(name=tip)[0]
         node.name = "t-{}".format(ntip)
         ntip += 1
     return self
 
-## TODO: functions to generate trees under different branch length
-## processes (Yule, BD) by adding nodes to a TreeNode object...
+
+##############################################################################
+# TREE FUNCTIONS #############################################################
+##############################################################################
 
 
-
-################################################################################
-## TREE FUNCTIONS ##############################################################
-################################################################################
-
-
-def _decompose_tree(ttree, orient, use_edge_lengths, fixed_order): 
-    """ 
+def _decompose_tree(ttree, orient, use_edge_lengths, fixed_order):
+    """
     Decomposes tree into component coordinates for plotting. Assigns
-    a name and idx to every node. 
+    a name and idx to every node.
 
     """
 
-    ## set tmp attributes 
+    # set tmp attributes
     ttree._orient = orient
     ttree._use_edge_lengths = use_edge_lengths
-    ult = ttree._use_edge_lengths == False
+    ult = ttree._use_edge_lengths is False
 
-    ## name indexes, start from zero to match normal idx, unless
-    ## tip names are already numeric, in which case we assign names
-    ## to internal nodes starting from the highest number
+    # name indexes, start from zero to match normal idx, unless
+    # tip names are already numeric, in which case we assign names
+    # to internal nodes starting from the highest number
     nnodes = sum(1 for i in ttree.tree.traverse())
     idx = nnodes - 1
 
-    ## store node heights 
-    #root_height = ttree.tree.get_leaves()[0].dist
+    # store node heights 
+    # root_height = ttree.tree.get_leaves()[0].dist
 
-    ## highest numbering is for internals (N-M)    
+    # highest numbering is for internals (N-M)    
     for node in ttree.tree.traverse("levelorder"):
         if not node.is_leaf():
             if not node.name:
-                node.name = "i"+str(idx)
+                node.name = "i" + str(idx)
             node.add_feature("idx", idx)
             idx -= 1
             #height = root_height - ttree.tree.get_distance(node)

@@ -1,3 +1,5 @@
+## tag and version are updated by the versioner.py script in the toytree repo
+## which then writes to meta.yaml during the conda build.
 package:
   name: toytree
   version: "0.1.6"
@@ -8,6 +10,8 @@ source:
 
 build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
+  #str: '0.1.6'   ## the string before it: toytree-0.1.5-0
+  #number: 0      ## the version number given to the build
 
 requirements:
   build:
@@ -17,8 +21,9 @@ requirements:
     - toyplot >=0.16.1  ## eaton-lab forked version for now
     - pypng
     - reportlab
-    - nbconvert
     - jupyter
+    - nbconvert
+    - requests
   run:
     - python
     - setuptools
@@ -28,6 +33,7 @@ requirements:
     - reportlab
     - jupyter
     - nbconvert
+    - requests
 
 test:
   imports:
