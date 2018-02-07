@@ -317,6 +317,54 @@ class Toytree(object):
                     return False
 
 
+
+    # unlike ete this returns a copy with dropped tips, not in-place!
+    def prune(self, node_idx):
+        """
+        Returns a subtree pruned from the full tree at the selected
+        node index. To find the appropriate index try using
+        tre.draw(node_labels=True) and use the interactive hover
+        feature, or tre.draw(node_labels='idx') to find the 'idx'
+        value of the node on which you wish to prune the tree. If you
+        simply want to drop tips from the tree rather than prune on an
+        internal node, see the .drop_tip() function instead.
+
+        ptre = tre.prune(15)
+        """
+        # make a deepcopy of the tree
+        nself = self.copy()
+
+        # ensure node_idx is int
+        node = nself.tree.search_nodes(idx=int(node_idx))[0]
+        nself.tree.prune(node)
+        return nself
+
+
+    # unlike ete this returns a copy with dropped tips, not in-place!
+    def drop_tips(self, tips):
+        """
+        Returns a copy of the tree with the selected tips pruned from
+        the tree. The entered value can be a name or list of names. To
+        prune on an internal node to create a subtree of the existing
+        tree see the .prune() function instead.
+
+        ptre = tre.drop_tips(['a', 'b'])
+        """
+        # make a deepcopy of the tree
+        nself = self.copy()
+
+        # if tips is a string or Treenode
+        if type(tips) == str:
+            tips = [tips]
+        elif type(tips) == ete3mini.TreeNode:
+            tips = [tips.name]
+
+        keeptips = [i for i in nself.get_tip_labels()
+                    if i not in tips]
+        nself.tree.prune(keeptips)
+        return nself
+
+
     # unlike ete this returns a copy resolved, not in-place!
     def resolve_polytomy(self,
         default_dist=0.0,
@@ -477,9 +525,9 @@ class Toytree(object):
         return nself
 
 
-    # this is the user-interface where all options should be visible 
+    # this is the user-interface where all options should be visible
     def draw(
-        self, 
+        self,
         height=None,
         width=None,
         tip_labels=True,
@@ -495,18 +543,17 @@ class Toytree(object):
         node_hover=None,
         # edge_width=None,
         edge_style=None,
-        edge_align_style=None,        
-        use_edge_lengths=None, 
+        edge_align_style=None,
+        use_edge_lengths=None,
         orient=None,  # "right",
         tree_style=None,
         print_args=False,
         padding=25,
-        axes=None, 
+        axes=None,
         *args,
         **kwargs):
         """
-        Plot a Toytree tree, returns a tuple of (Canvas, Axes). 
-
+        Plot a Toytree tree, returns a tuple of (Canvas, Axes).
 
         Parameters:
         -----------
@@ -519,7 +566,7 @@ class Toytree(object):
                 If False no tip labels are added. If a list of tip labels
                 is provided it must be the same length as .get_tip_labels().
 
-            tip_labels_color: 
+            tip_labels_color:
                 ...
 
             tip_labels_style:
@@ -528,7 +575,7 @@ class Toytree(object):
             tip_labels_align:
                 ...
 
-            node_labels: [True, False, list] 
+            node_labels: [True, False, list]
                 If True then nodes are shown, if False then nodes are suppressed.
                 If a list of node labels is provided it must be the same length 
                 and order as nodes in .get_node_dict(). Node labels can be 
