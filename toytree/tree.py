@@ -264,8 +264,7 @@ class Toytree(object):
         """
         if self._fixed_order:
             return self._fixed_order[::-1]
-        else:
-            return self.tree.get_leaf_names()
+        return self.tree.get_leaf_names()
 
 
     def __str__(self):
@@ -289,8 +288,7 @@ class Toytree(object):
         """
         if len(self.tree.children) > 2:
             return False
-        else:
-            return True
+        return True
 
 
     def is_bifurcating(self, include_root=True):
@@ -303,22 +301,10 @@ class Toytree(object):
         ctn1 = -1 + (2 * len(self))
         ctn2 = -2 + (2 * len(self))
         if self.is_rooted():
-            if ctn1 == sum(1 for i in self.tree.traverse()):
-                return True
-            else:
-                return False
-        else:
-            if include_root:
-                if ctn2 == -1 + sum(1 for i in self.tree.traverse()):
-                    return True
-                else:
-                    return False
-            else:
-                if ctn2 == sum(1 for i in self.tree.traverse()):
-                    return True
-                else:
-                    return False
-
+            return bool(ctn1 == sum(1 for i in self.tree.traverse()))
+        if include_root:
+            return bool(ctn2 == -1 + sum(1 for i in self.tree.traverse()))
+        return bool(ctn2 == sum(1 for i in self.tree.traverse()))
 
 
     # unlike ete this returns a copy with dropped tips, not in-place!
@@ -357,13 +343,12 @@ class Toytree(object):
         nself = self.copy()
 
         # if tips is a string or Treenode
-        if type(tips) == str:
+        if isinstance(tips, str):
             tips = [tips]
-        elif type(tips) == ete3mini.TreeNode:
+        elif isinstance(tips, ete3mini.TreeNode):
             tips = [tips.name]
 
-        keeptips = [i for i in nself.get_tip_labels()
-                    if i not in tips]
+        keeptips = [i for i in nself.get_tip_labels() if i not in tips]
         nself.tree.prune(keeptips)
         return nself
 
