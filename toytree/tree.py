@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import print_function, division, absolute_import
-#from builtins import object
+from builtins import object
 from decimal import Decimal
 from . import ete3mini
 import numpy as np
@@ -22,7 +22,7 @@ import re
 # a.y.ticks.show = True
 
 
-# color palette as a list
+# GLOBALS
 PALETTE = toyplot.color.Palette()
 COLORS = [toyplot.color.to_css(i) for i in PALETTE]
 DEFAULTS_ALL = {
@@ -672,7 +672,7 @@ class Toytree(object):
         self._decompose_tree(
             orient=self._kwargs["orient"],
             use_edge_lengths=self._kwargs["use_edge_lengths"],
-            fixed_order=self._fixed_order)
+        )
 
         # if dims not entered in kwargs then set a reasonable height & width
         self._set_dims_from_tree_size()
@@ -758,12 +758,11 @@ class Toytree(object):
             self._decompose_tree(
                 orient="right",
                 use_edge_lengths=True,
-                fixed_order=self._fixed_order)
-
+            )
 
     # reset verts & edges based on args that might change
-    def _decompose_tree(self, orient, use_edge_lengths, fixed_order):
-        _decompose_tree(self, orient, use_edge_lengths, fixed_order)
+    def _decompose_tree(self, orient, use_edge_lengths):
+        _decompose_tree(self, orient, use_edge_lengths)
 
 
     def _assign_tip_labels(self):
@@ -897,10 +896,10 @@ class Toytree(object):
 #############################################################################
 
 
-class randomtree(object):
+class RandomTree(object):
 
     @staticmethod
-    def coaltree(ntips, Ne=None):
+    def coaltree(ntips, ne=None):
         """
         Returns a coalescent tree with ntips samples and waiting times 
         between coalescent events drawn from the kingman coalescent:
@@ -912,22 +911,22 @@ class randomtree(object):
         """
 
         coalunits = False
-        if not Ne:
+        if not ne:
             coalunits = True
-            Ne = 10000
+            ne = 10000
 
         # build tree
         tips = [
             Toytree().tree.add_child(name=str(i)) for i in range(ntips)]
         while len(tips) > 1:
-            r = Toytree()
-            t1 = tips.pop(random.choice(range(len(tips))))
-            t2 = tips.pop(random.choice(range(len(tips))))
-            kingman = (4. * Ne) / float(ntips * (ntips - 1))
+            rtree = Toytree()
+            tip1 = tips.pop(random.choice(range(len(tips))))
+            tip2 = tips.pop(random.choice(range(len(tips))))
+            kingman = (4. * ne) / float(ntips * (ntips - 1))
             dist = random.expovariate(1. / kingman)
-            r.tree.add_child(t1, dist=t2.height + dist)
-            r.tree.add_child(t2, dist=t1.height + dist)
-            tips.append(r.tree)
+            rtree.tree.add_child(tip1, dist=tip2.height + dist)
+            rtree.tree.add_child(tip2, dist=tip1.height + dist)
+            tips.append(rtree.tree)
 
         # build tree
         self = Toytree(tips[0].write())    
@@ -936,7 +935,7 @@ class randomtree(object):
         # make tree edges in units of 2N (then N doesn't matter!)
         if coalunits:
             for node in self.tree.traverse():
-                node.dist /= (2. * Ne)
+                node.dist /= (2. * ne)
 
         ## ensure tips are at zero
         for node in self.tree.traverse():
@@ -1008,7 +1007,7 @@ class randomtree(object):
 ##############################################################################
 
 
-def _decompose_tree(ttree, orient, use_edge_lengths, fixed_order):
+def _decompose_tree(ttree, orient, use_edge_lengths):
     """
     Decomposes tree into component coordinates for plotting. Assigns
     a name and idx to every node. Plotting coordinates are stored to
