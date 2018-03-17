@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 
 from __future__ import print_function, division, absolute_import
-from builtins import object
+
 from decimal import Decimal
-from . import ete3mini
+from .ete3mini import TreeNode
+from .style import TreeStyle
 import numpy as np
 import requests
 import toyplot
@@ -11,93 +12,7 @@ import random  # b/c ete uses random seed.
 import copy
 import re
 
-# coalescent tree style
-
-# tree = toytree.rtree.coaltree(ntips=5, Ne=10000)
-# c, a = tree.draw(tree_style='c', node_labels='idx', 
-#   tip_labels=False, padding=15);
-# a.show = True
-# a.x.show = False
-# a.y.ticks.labels.angle = -90
-# a.y.ticks.show = True
-
-
-# GLOBALS
-PALETTE = toyplot.color.Palette()
-COLORS = [toyplot.color.to_css(i) for i in PALETTE]
-DEFAULTS_ALL = {
-    # add-on defaults
-    "admixture": None,
-    "orient": "right",
-    "tree_style": "p",
-    "use_edge_lengths": False,
-
-    # edge defaults
-    "edge_style": {
-        "stroke": "#292724",
-        "stroke-width": 2,
-        "stroke-linecap": "round",
-    },
-    "edge_align_style": {
-        "stroke": "darkgrey",
-        # "stroke-width": 2,   # copies edge_style for width by default
-        "stroke-linecap": "round",
-        "stroke-dasharray": "2, 4",
-    },
-
-    # node label defaults
-    "node_labels": False,
-    "node_labels_style": {
-        "font-size": "9px",
-        "fill": "#262626",
-        # "text-anchor":"start",
-    },
-
-    # node defaults
-    "node_size": None,
-    "node_color": None,  # COLORS[0],
-    "node_hover": True,
-    "node_style": {
-        "fill": COLORS[0],
-        "stroke": 'none',  # COLORS[0],
-    },
-    "vmarker": "o",  # "r2x1" for rectangles
-
-    # tip label defaults
-    "tip_labels": True,
-    "tip_labels_color": toyplot.color.black,
-    "tip_labels_align": False,
-    "tip_labels_style": {
-        "font-size": "12px",
-        "text-anchor": "start",
-        "-toyplot-anchor-shift": None,  # "0px", #None,
-        "fill": "#292724",
-    },
-}
-
-DEFAULTS_CTREES = {
-    "tree_style": "c",
-    "orient": "down",
-    "use_edge_lengths": True,
-    "tip_labels_align": False,
-    # "tip_labels_angle": None,
-}
-DEFAULTS_PTREES = {
-    "tree_style": "p",
-    "orient": "right",
-    "use_edge_lengths": True,
-    "tip_labels_align": False,
-    # "tip_labels_angle": None,
-}
-DEFAULTS_ATREES = {
-    "tree_style": "c",
-    "orient": "down",
-    "use_edge_lengths": True,
-    "node_labels": "idx",
-    "tip_labels": False,
-    "tip_labels_align": False,
-    "scale_bar": True,
-}
+# from builtins import object
 
 
 # the main tree class
@@ -110,8 +25,9 @@ class Toytree(object):
     Parameters:
     -----------
     newick (str):
-        An input tree as a newick string, or filepath, or a functional
-        weblink to a newick string.
+        The input tree as a newick string, or filepath, or a functional
+        weblink to a newick string. This is stored and updated if the tree
+        structure is modified. 
     ladderize (bool):
         Whether to automatically ladderize the tree. Default=True.
     tree_format (int):
@@ -124,7 +40,7 @@ class Toytree(object):
 
     Attributes:
     -----------
-    tree: ete3mini.Tree
+    tree: ete3mini.TreeNode
         An ete TreeNode object representation of the tree. See the
         ete docs for full documentation. Toytree users will not typically
         need to interact with this object, but advanced users can benefit
@@ -142,14 +58,21 @@ class Toytree(object):
         object. All trees will have {'dist', 'name', 'support'}, although the
         values
 
-    Functions:
+    Functions: (see function docstrings)
     ----------
-    get_tip_labels():
-        See func docstring.
-    get_edge_lengths():
-        See func docstring.
-    root():
-        See func docstring.
+    get_tip_labels  
+    get_edge_lengths  
+    get_node_values  
+    get_node_dict  
+    is_rooted  
+    is_bifurcating 
+    copy
+    prune 
+    drop_tips
+    resolve_polytomy 
+    root 
+    unroot 
+    draw 
     """
 
     def __init__(
@@ -158,32 +81,49 @@ class Toytree(object):
         ladderize=True,
         tree_format=0,
         fixed_order=None,
-        **kwargs):
+        **style):
 
         # ensures ladderized top-down order for entered tip order
+        self.jitter = Jitter(self)
         self._fixed_order = fixed_order
         self._parse_newick(newick, tree_format, ladderize)
 
         # default attributes and plot settings
-        self.colors = COLORS
-        self._kwargs = {}
-        self._default_style = DEFAULTS_ALL
+        self._style = TreeStyle(tree_style='p')
 
         # plotting coordinates
-        self.edges = None
-        self.verts = None
+        self.edges = np.zeros((self.nnodes - 1, 2), dtype=int)
+        self.verts = np.zeros((self.nnodes, 2), dtype=float)
         self._lines = []
         self._coords = []
 
-        # get features and do _decompose on initial tree to assign coords, etc
-        self._init_features()
+        # assign idx, orient, verts, and update newick with features
+        self._decompose_tree()
 
 
     # should this be a .get named func instead?
     @property
     def features(self):
-        """ return features registered on ete3mini tree"""
+        """ return features saved on nodes of the tree"""
         return self.tree.features
+
+    @property
+    def nnodes(self):
+        return sum(1 for i in self.tree.traverse())
+
+
+    @property
+    def newick(self, fmt=0):
+        """
+        Returns newick represenation of the tree in its current state.
+        """
+        # checks one of root's children for features and extra feats.
+        if self.tree.children:
+            features = {"name", "dist", "support", "height", "idx"}
+            testnode = self.tree.children[0]
+            extrafeat = {i for i in testnode.features if i not in features}
+            features.update(extrafeat)
+            return self.tree.write(format=0)
 
 
     # functions to return values from the ete3 .tree object
@@ -212,9 +152,7 @@ class Toytree(object):
         By default node and tip values are hidden (set to "") so that they
         are not shown on the tree plot. To include values for these nodes
         use the 'show_root'=True, or 'show_tips'=True arguments.
-
         """
-
         # access nodes in the order they will be plotted
         # this is a customized order best sampled this way
         nodes = [self.tree.search_nodes(name=str(i))[0]
@@ -270,7 +208,7 @@ class Toytree(object):
 
     def get_tip_labels(self):
         """
-        returns tip labels in ladderized order from tip to bottom on
+        returns tip labels in ladderized order from top to bottom on
         right-facing tree. Take care because this is the reverse of the
         y-axis order, i.e., the tree plot bottom is at X=0.
         """
@@ -309,7 +247,6 @@ class Toytree(object):
         is unrooted (basal polytomy), unless you use the include_root=False
         argument.
         """
-
         ctn1 = -1 + (2 * len(self))
         ctn2 = -2 + (2 * len(self))
         if self.is_rooted():
@@ -357,7 +294,7 @@ class Toytree(object):
         # if tips is a string or Treenode
         if isinstance(tips, str):
             tips = [tips]
-        elif isinstance(tips, ete3mini.TreeNode):
+        elif isinstance(tips, TreeNode):
             tips = [tips.name]
 
         keeptips = [i for i in nself.get_tip_labels() if i not in tips]
@@ -375,46 +312,26 @@ class Toytree(object):
         Returns a copy of the tree with resolved polytomies.
         Does not transform tree in-place.
         """
-        newtree = copy.deepcopy(self)
+        newtree = self.copy()
         newtree.tree.resolve_polytomy(
             default_dist=default_dist,
             default_support=default_support,
             recursive=recursive)
-
-        # get features
-        testnode = newtree.tree.get_leaves()[0]
-        features = {"name", "dist", "support", "height"}
-        extrafeat = {i for i in testnode.features if i not in features}
-        features.update(extrafeat)
-        if any(extrafeat):
-            newtree.newick = newtree.tree.write(format=9, features=features)
-        else:
-            newtree.newick = newtree.tree.write(format=0)
         return newtree
 
 
-    # unlike ete this returns a copy unrooted, not in-place!
+    # returns a copy unrooted, not in place
     def unroot(self):
         """
         Returns a copy of the tree unrooted. Does not transform tree in-place.
         """
-        newtree = copy.deepcopy(self)
+        newtree = self.copy()
         newtree.tree.unroot()
         newtree.tree.ladderize()
-
-        # get features
-        testnode = newtree.tree.get_leaves()[0] 
-        features = {"name", "dist", "support", "height"}
-        extrafeat = {i for i in testnode.features if i not in features}
-        features.update(extrafeat)
-        if any(extrafeat):
-            newtree.newick = newtree.tree.write(format=9, features=features)
-        else:
-            newtree.newick = newtree.tree.write(format=0)
         return newtree
 
 
-    # re-rooting the tree
+    # returns a copy rooted, not in place
     def root(self, outgroup=None, wildcard=None, regex=None):
         """
         Re-root a tree on a selected tip or group of tip names. Rooting is
@@ -527,180 +444,164 @@ class Toytree(object):
         # store tree back into newick and reinit Toytree with new newick
         # if NHX format then preserve the NHX features.
         nself.tree.ladderize()
-        if any(extrafeat):
-            nself.newick = nself.tree.write(format=9, features=features)
-        else:
-            nself.newick = nself.tree.write(format=0)
         return nself
 
 
-    # this is the user-interface where all options should be visible
+    # returns a (canvas, axes) tuple
     def draw(
         self,
         height=None,
         width=None,
-        tip_labels=True,
+        axes=None,        
+        tip_labels=None,
         tip_labels_color=None,
         tip_labels_style=None,
         tip_labels_align=None,
-        # tip_labels_angle=None,
-        node_labels=False,
+        node_labels=None,
         node_labels_style=None,
         node_size=None,
         node_color=None,
         node_style=None,
         node_hover=None,
-        # edge_width=None,
+        edge_type=None,
         edge_style=None,
         edge_align_style=None,
         use_edge_lengths=None,
-        orient=None,  # "right",
+        orient=None,  
         tree_style=None,
-        print_args=False,
-        padding=25,
-        axes=None,
-        *args,
-        **kwargs):
+        scalebar=None,
+        padding=None,
+        # edge_width=None,
+        # tip_labels_angle=None,        
+        ):
         """
         Plot a Toytree tree, returns a tuple of (Canvas, Axes).
 
         Parameters:
         -----------
-            use_edge_lengths: bool
-                Use edge lengths from .tree (.get_edge_lengths) else
-                edges are set to length >=1 to make tree ultrametric.
+        use_edge_lengths: bool
+            Use edge lengths from .tree (.get_edge_lengths) else
+            edges are set to length >=1 to make tree ultrametric.
 
-            tip_labels: [True, False, list]
-                If True then the tip labels from .tree are added to the plot.
-                If False no tip labels are added. If a list of tip labels
-                is provided it must be the same length as .get_tip_labels().
+        tip_labels: [True, False, list]
+            If True then the tip labels from .tree are added to the plot.
+            If False no tip labels are added. If a list of tip labels
+            is provided it must be the same length as .get_tip_labels().
 
-            tip_labels_color:
-                ...
-
-            tip_labels_style:
-                ...
-
-            tip_labels_align:
-                ...
-
-            node_labels: [True, False, list]
-                If True then nodes are shown, if False then nodes are
-                suppressed. If a list of node labels is provided it must be the
-                same length and order as nodes in .get_node_dict(). Node labels
-                can be generated in the proper order using the the
-                .get_node_labels() function from a Toytree tree to draw info
-                from the tree features.
-                For example: node_labels=tree.get_node_labels("support").
-
-            node_size: [int, list, None]
-                If None then nodes are not shown, otherwise, if node_labels
-                then node_size can be modified. If a list of node sizes is
-                provided it must be the same length and order as nodes in
-                .get_node_dict().
-
-            node_color: [list]
-                Use this argument only if you wish to set different colors for
-                different nodes, in which case you must enter a list of colors
-                as string names or HEX values the length and order of nodes in
-                .get_node_dict(). If all nodes will be the same color then use
-                instead the node_style dictionary:
-                e.g., node_style={"fill": 'red'}
-
-            node_style: [dict]
-
+        tip_labels_color:
             ...
 
-            node_hover: [True, False, list, dict]
-                Default is True in which case node hover will show the node
-                values. If False then no hover is shown. If a list or dict
-                is provided (which should be in node order) then the values
-                will be shown in order. If a dict then labels can be provided
-                as well.
+        tip_labels_style:
+            ...
+
+        tip_labels_align:
+            ...
+
+        node_labels: [True, False, list]
+            If True then nodes are shown, if False then nodes are
+            suppressed. If a list of node labels is provided it must be the
+            same length and order as nodes in .get_node_dict(). Node labels
+            can be generated in the proper order using the the
+            .get_node_labels() function from a Toytree tree to draw info
+            from the tree features.
+            For example: node_labels=tree.get_node_labels("support").
+
+        node_size: [int, list, None]
+            If None then nodes are not shown, otherwise, if node_labels
+            then node_size can be modified. If a list of node sizes is
+            provided it must be the same length and order as nodes in
+            .get_node_dict().
+
+        node_color: [list]
+            Use this argument only if you wish to set different colors for
+            different nodes, in which case you must enter a list of colors
+            as string names or HEX values the length and order of nodes in
+            .get_node_dict(). If all nodes will be the same color then use
+            instead the node_style dictionary:
+            e.g., node_style={"fill": 'red'}
+
+        node_style: [dict]
+
+        ...
+
+        node_hover: [True, False, list, dict]
+            Default is True in which case node hover will show the node
+            values. If False then no hover is shown. If a list or dict
+            is provided (which should be in node order) then the values
+            will be shown in order. If a dict then labels can be provided
+            as well.
         """
-        # return nothing if tree is empty
-        if not self.tree.children:
-            print("Tree is empty")
-            return
-
-        # load default styling in 'p'
-        if tree_style == "c":
-            self._kwargs = copy.deepcopy(self._default_style)
-            self._kwargs.update(DEFAULTS_CTREES)
-        # elif tree_style == "a":
-        #     self._kwargs = copy.deepcopy(self._default_style)
-        #     self._kwargs.update(DEFAULTS_ATREES)
-        else:  # if tree_style == "c":
-            self._kwargs = copy.deepcopy(self._default_style)
-            self._kwargs.update(DEFAULTS_PTREES)
-
-        # self._kwargs = copy.deepcopy(self._default_style)
-        entered = {
+        # store entered args
+        canvas_args = {
             "height": height,
             "width": width,
+        }
+        axes_args = {
+            "padding": padding,
+            "scalebar": scalebar,
+        }
+        mark_args = {
             "orient": orient,
             "tip_labels": tip_labels,
             "tip_labels_color": tip_labels_color,
             "tip_labels_style": tip_labels_style,
             "tip_labels_align": tip_labels_align,
-            # "tip_labels_angle": tip_labels_angle,
             "node_labels": node_labels,
             "node_labels_style": node_labels_style,
             "node_size": node_size,
             "node_color": node_color,
             "node_style": node_style,
             "node_hover": node_hover,
-            # "edge_width": edge_width,  ## todo
-            # "edge_color": edge_color,  ## todo
+            "edge_type": edge_type,  
             "edge_style": edge_style,
             "edge_align_style": edge_align_style,
             "use_edge_lengths": use_edge_lengths,
             "tree_style": tree_style,
+            # "edge_width": edge_width,  ## todo
+            # "edge_color": edge_color,  ## todo
+            # "tip_labels_angle": tip_labels_angle,
         }
 
-        # We don't allow the setting of None to update defaults.
-        # stick all entered option into kwargs
-        entered = {i: j for i, j in entered.items() if j is not None}
-        for key, val in entered.items():
-            if val is not None:
-                if isinstance(val, dict):
-                    self._kwargs[key].update(entered[key])
-                else:
-                    self._kwargs[key] = val
+        # update mark option in TreeStyle
+        ts = (tree_style if tree_style else 'normal')
+        self._style = TreeStyle(tree_style=ts)
+        self._style.update_mark(mark_args)
+        self._style.update_axes(axes_args)
+        self._style.update_canvas(canvas_args)
 
-        # re-decompose tree for new orient and edges args
-        self._decompose_tree(
-            orient=self._kwargs["orient"],
-            use_edge_lengths=self._kwargs["use_edge_lengths"],
-        )
+        # reset plotting coordinates for new orient and edges args
+        self._decompose_tree()
 
-        # if dims not entered in kwargs then set a reasonable height & width
+        # if dims not entered in style then set a reasonable height & width
         self._set_dims_from_tree_size()
 
-        # if not canvas then create one else use the existing
+        # if axes arg then assume existing canvas, else create one
         if axes:
             canvas = None
         else:
             canvas = toyplot.Canvas(
-                height=self._kwargs['height'],
-                width=self._kwargs['width']
+                height=self._style['height'],
+                width=self._style['width'],
             )
-            axes = canvas.cartesian(
-                padding=padding,
-            )
+            axes = canvas.cartesian(padding=self._style["axes"]["padding"])
             axes.show = False
 
+        # return nothing if tree is empty
+        if not self.tree.children:
+            print("Tree is empty")
+            canvas, axes
+
+        # build tree style 
         self._assign_node_labels()
         self._assign_tip_labels()
 
-        if print_args:
-            print(self._kwargs)
-
         # order of tree/nodes last (on top) is preferred
-        tips = _add_tip_labels_to_axes(self, axes)
-        tree = _add_tree_to_axes(self, axes)
-        node = _add_nodes_to_axes(self, axes)
+        self._add_tip_labels_to_axes(axes)
+        self._add_tree_to_axes(axes)
+        self._add_nodes_to_axes(axes)
 
+        # update axes for scalebar, etc.
+        axes = self._add_axes_style(axes)
         return canvas, axes
 
 
@@ -717,52 +618,177 @@ class Toytree(object):
                 try:
                     response = requests.get(newick)
                     response.raise_for_status()
-                    self.newick = response.text.strip()
+                    self.tree = TreeNode(response.text.strip())
                 except Exception as inst:
                     raise inst
-            # newick is string or path
-            else:
-                self.newick = newick
 
             # create .tree attribute as TreeNode
-            self.tree = ete3mini.TreeNode(self.newick, format=tree_format)
+            self.tree = TreeNode(newick, format=tree_format)
             if ladderize and not self._fixed_order:
                 self.tree.ladderize()
 
         # otherwise make an empty TreeNode object
         else:
-            self.tree = ete3mini.TreeNode()
-            self.newick = self.tree.write()
+            self.tree = TreeNode()
 
 
-    # updates .newick and runs decompose on initial tree
-    def _init_features(self):
+    def _set_dims_from_tree_size(self):
         """
-        Get features from tree and update newick. Calls decompose to
-        assign verts, coords, etc.
+        Calculate reasonable height and width for tree given N tips
         """
-        # checks one of root's children for features and extra feats.
-        if self.tree.children:
-            features = {"name", "dist", "support", "height", "idx"}
-            testnode = self.tree.children[0]
-            extrafeat = {i for i in testnode.features if i not in features}
-            features.update(extrafeat)
-            if any(extrafeat):
-                self.newick = self.tree.write(format=9, features=features)
+        ntips = len(self.tree)
+        if self._style.get("orient") in ["right", "left"]:
+            # long tip-wise dimension
+            if not self._style.get("height"):
+                self._style["height"] = max(275, min(1000, 18 * ntips))
+            if not self._style.get("width"):
+                self._style["width"] = max(225, min(500, 18 * ntips))
+        else:
+            # long tip-wise dimension
+            if not self._style.get("width"):
+                self._style["width"] = max(275, min(1000, 18 * ntips))
+            if not self._style.get("height"):
+                self._style["height"] = max(225, min(500, 18 * ntips))
+
+
+    def _decompose_tree(self): 
+        """
+        Update cartesian coordinates for plotting tree graph.
+
+        Assigns updated name and idx features to every node. Coordinates are 
+        stored to .edges and .verts.
+        """
+        # internal nodes: root is highest idx
+        idx = self.nnodes - 1
+        for node in self.tree.traverse("levelorder"):
+            if not node.is_leaf():
+                node.add_feature("idx", idx)
+                if not node.name:
+                    node.name = "i" + str(idx)
+                idx -= 1
+
+        # external nodes: lowest numbers are for tips (0-N)
+        for node in self.tree.get_leaves()[::-1]:
+            node.add_feature("idx", idx)
+            if not node.name:
+                node.name = "t" + str(idx)
+            idx -= 1
+
+        # get coordinates and then reorient 
+        self._assign_coordinates()
+        self._reorient_coordinates()
+        #self._update_newick()
+
+
+    def _assign_coordinates(self):
+        """
+        Update _coords and _verts
+        """
+        # postorder: first children and then parents. This moves up the list.
+        # counting down from tip_num to ensure ladderized order.
+        nidx = 0
+        tidx = len(self) - 1
+
+        # tips to root to fill in the verts and edges
+        for node in self.tree.traverse("postorder"):
+            if node.is_leaf() and not node.is_root():
+
+                # get y-pos of tip
+                node.y = self.tree.get_distance(node)
+                if self._style["use_edge_lengths"] is False:
+                    node.y = 0.
+
+                # get x-pos of tip
+                if self._fixed_order:
+                    node.x = tidx - self._fixed_order.index(node.name)
+                else:
+                    node.x = tidx
+                    tidx -= 1
+
+                # verts are coordinates, edges connect parent-child
+                self.verts[node.idx] = [node.x, node.y]
+                self.edges[nidx] = [node.up.idx, node.idx]
+
             else:
-                self.newick = self.tree.write(format=0)
+                # create new nodes left and right
+                node.y = self.tree.get_distance(node)
+                if self._style["use_edge_lengths"] is False:
+                    node.y = -1 * node.get_farthest_leaf(True)[1] - 1
+                if node.children:
+                    nch = node.children
+                    node.x = sum(i.x for i in nch) / float(len(nch))
+                else:
+                    node.x = tidx
 
-            # parse newick, assign idx, returns tre, edges, verts, names
-            # assigns node_labels, tip_labels, edge_lengths and support values
-            # use default orient and edge_lengths right now for init.
-            self._decompose_tree(
-                orient="right",
-                use_edge_lengths=True,
-            )
+                self.verts[node.idx] = [node.x, node.y]
+                if not node.is_root():
+                    self.edges[nidx, :] = [node.up.idx, node.idx]
+            nidx += 1
 
-    # reset verts & edges based on args that might change
-    def _decompose_tree(self, orient, use_edge_lengths):
-        _decompose_tree(self, orient, use_edge_lengths)
+        # root to tips to fill in the coords and lines
+        self._lines = []
+        self._coords = []
+        cidx = 0
+        for node in self.tree.traverse():
+            # add yourself
+            if not node.is_leaf():
+                self._coords += [[node.x, node.y]]
+                pidx = cidx
+                cidx += 1
+                for child in node.children:
+                    # add children
+                    self._coords += [[child.x, node.y], [child.x, child.y]]
+                    self._lines += [[pidx, cidx]]      # connect to newx
+                    self._lines += [[cidx, cidx + 1]]  # connect newx to child
+                    cidx += 2
+
+        # convert to arrays
+        self._coords = np.array(self._coords, dtype=float)
+        self._lines = np.array(self._lines, dtype=int)
+
+
+    def _reorient_coordinates(self):
+        # invert for sideways trees; TODO
+        if self.nnodes > 1:
+
+            if self._style["orient"] in ['up', 0]:
+                raise NotImplementedError()
+
+            if self._style["orient"] in ['left', 1]:
+                raise NotImplementedError()
+                #self.verts[:, 1] = self.verts[:, 1] * -1
+                #self.verts = self.verts[:, [1, 0]]
+                #self._coords[:, 1] = self._coords[:, 1] * -1
+                #self._coords = self._coords[:, [1, 0]]
+
+            # TODO: there's a bug in cloud trees 'down' orientation drawings
+            if self._style["orient"] in ['down', 0]:
+                self.verts[:, 1] -= self.verts[:, 1].max()
+                self.verts[:, 1] *= -1
+                self._coords[:, 1] -= self._coords[:, 1].max()  # * -1
+                self._coords[:, 1] *= -1
+                #self.verts[:, 1] = self.verts[:, 1]  # * -1
+                #self.verts = self.verts[:, [1, 0]]
+                #self.verts[:, 1] += self.verts[:, 0].min()
+                #self._coords[:, 1] += self._coords[:, 0].min()
+
+            if self._style["orient"] in ['right', 3]:
+                self.verts = self.verts[:, [1, 0]]
+                self.verts[:, 0] -= self.verts[:, 0].max()
+                self._coords = self._coords[:, [1, 0]]
+                self._coords[:, 0] -= self._coords[:, 0].max()
+
+
+    def _fullhover(self, ordered_features=["idx", "name", "dist", "support"]):
+        # build full features titles
+        lfeatures = list(set(self.tree.features) - set(ordered_features))
+        ordered_features += lfeatures
+        title = [
+            ["{}: {}".format(feature, i) for i in
+             self.get_node_values(feature, True, True)]
+            for feature in ordered_features]
+        title = ["\n".join(z) for z in zip(*title[:])]
+        return title
 
 
     def _assign_tip_labels(self):
@@ -772,32 +798,31 @@ class Toytree(object):
         anchorshift = "-toyplot-anchor-shift"
 
         # tip color overrides tipstyle[fill]
-        if self._kwargs.get("tip_labels_color"):
-            if 'fill' in self._kwargs["tip_labels_style"]:
-                self._kwargs["tip_labels_style"].pop("fill")
+        if self._style.get("tip_labels_color"):
+            if 'fill' in self._style["tip_labels_style"]:
+                self._style["tip_labels_style"].pop("fill")
 
         # tip_labels is False then hide tip labels
-        if self._kwargs["tip_labels"] is False:
-            self._kwargs["tip_labels"] = ["" for i in self.get_tip_labels()]
-            self._kwargs["tip_labels_style"][anchorshift] = "0px"
+        if self._style["tip_labels"] is False:
+            self._style["tip_labels"] = ["" for i in self.get_tip_labels()]
+            self._style["tip_labels_style"][anchorshift] = "0px"
 
         # tip labels is not false, figure out tiplabels
         else:
             # if user did not change label-offset then shift it here
-            if not self._kwargs["tip_labels_style"][anchorshift]:
-                self._kwargs["tip_labels_style"][anchorshift] = "15px"
+            if not self._style["tip_labels_style"][anchorshift]:
+                self._style["tip_labels_style"][anchorshift] = "15px"
 
             # if user-defined tip labels as list [reversed]
-            if isinstance(self._kwargs["tip_labels"], list):
-                self._kwargs["tip_labels"] = self._kwargs["tip_labels"]
+            if isinstance(self._style["tip_labels"], list):
+                self._style["tip_labels"] = self._style["tip_labels"]
 
             # True assigns tip labels from tree
             else:
                 if self._fixed_order:
-                    self._kwargs["tip_labels"] = self._fixed_order
+                    self._style["tip_labels"] = self._fixed_order
                 else:
-                    self._kwargs["tip_labels"] = self.get_tip_labels()
-
+                    self._style["tip_labels"] = self.get_tip_labels()
 
 
     def _assign_node_labels(self):
@@ -811,83 +836,351 @@ class Toytree(object):
         nidxs = self.get_node_values("idx")
 
         # False = Hide nodes and node labels (default)
-        if self._kwargs["node_labels"] is False:
+        if self._style["node_labels"] is False:
             # make sure node size is a list in case
-            if self._kwargs["node_size"]:
-                if isinstance(self._kwargs["node_size"], (int, str)):
-                    self._kwargs["node_size"] = [
-                        self._kwargs["node_size"]] * len(nvals)
-                    self._kwargs["node_labels"] = ["" for i in nvals]
+            if self._style["node_size"]:
+                if isinstance(self._style["node_size"], (int, str)):
+                    self._style["node_size"] = [
+                        self._style["node_size"]] * len(nvals)
+                    self._style["node_labels"] = ["" for i in nvals]
 
         # True = Show nodes, no labels b/c we are adding interactives
-        elif self._kwargs["node_labels"] is True:
+        elif self._style["node_labels"] is True:
 
             # hide labels
-            self._kwargs["vlshow"] = False
-            self._kwargs["node_labels"] = ["" for i in nidxs]
+            self._style["vlshow"] = False
+            self._style["node_labels"] = ["" for i in nidxs]
 
             # use default node size as a list if not provided
-            if not self._kwargs["node_size"]:
-                self._kwargs["node_size"] = [15] * len(nvals)
+            if not self._style["node_size"]:
+                self._style["node_size"] = [15] * len(nvals)
 
             # ensure entered node size arg is a list
-            if isinstance(self._kwargs["node_size"], (int, str)):
-                self._kwargs["node_size"] = [
-                    int(self._kwargs["node_size"])] * len(nvals)
+            if isinstance(self._style["node_size"], (int, str)):
+                self._style["node_size"] = [
+                    int(self._style["node_size"])] * len(nvals)
 
         # user list
         else:
             # show labels
-            self._kwargs["vlshow"] = True
+            self._style["vlshow"] = True
 
             # user-provided list is shown
-            if isinstance(self._kwargs["node_labels"], list):
-                self._kwargs["node_labels"] = self._kwargs["node_labels"]
+            if isinstance(self._style["node_labels"], list):
+                self._style["node_labels"] = self._style["node_labels"]
 
-            elif isinstance(self._kwargs["node_labels"], str) and \
-                (self._kwargs["node_labels"] in self.features):
-                label = (self._kwargs["node_labels"], 1, 1)
-                self._kwargs["node_labels"] = self.get_node_values(*label)
+            elif isinstance(self._style["node_labels"], str) and \
+                (self._style["node_labels"] in self.features):
+                label = (self._style["node_labels"], 1, 1)
+                self._style["node_labels"] = self.get_node_values(*label)
 
             # anything else defaults to idx
             else:
-                self._kwargs["node_labels"] = self.get_node_values("idx", 1, 0)
+                self._style["node_labels"] = self.get_node_values("idx", 1, 0)
 
             # set node size to 0 if labels are empty including "0" but not "".
-            if not isinstance(self._kwargs["node_size"], list):
+            if not isinstance(self._style["node_size"], list):
                 # set default size if none
-                if (self._kwargs["node_size"] in [None, False]) and \
-                   (self._kwargs["node_size"] != 0):
-                    self._kwargs["node_size"] = 22
+                if (self._style["node_size"] in [None, False]) and \
+                   (self._style["node_size"] != 0):
+                    self._style["node_size"] = 22
 
                 # fill a list of values
                 nsizes = []
                 for nidx in self.get_node_values("idx", 1, 1):
-                    if self._kwargs["node_labels"][nidx] == "":
+                    if self._style["node_labels"][nidx] == "":
                         nsizes.append(0)
                     else:
-                        nsizes.append(self._kwargs["node_size"])
-                self._kwargs["node_size"] = nsizes
+                        nsizes.append(self._style["node_size"])
+                self._style["node_size"] = nsizes
 
 
+    def _get_tip_label_coords(self):
+        # get coordinates of text from top to bottom (right-facing)
+        xpos = ypos = align_edges = align_verts = angle = None
 
-    def _set_dims_from_tree_size(self):
+        if self._style["orient"] in ["right"]:
+            angle = 0.
+            # y-positions of tips are the (first) N rows of .verts
+            # ypos = ttree.verts[-1*len(self.tree):, 1]
+            ypos = self.verts[:len(self.tree), 1]
+            if self._style["tip_labels_align"]:
+
+                # x-position (edge) start is in column 0 of first N rows of .verts
+                xpos = [self.verts[:, 0].max()] * len(self.tree)
+                start = xpos
+
+                # x-position end is in column 0 of first N rows of .verts
+                finish = self.verts[:len(self.tree), 0]
+
+                # make into arrays
+                align_edges = np.array([
+                    (i, i + len(xpos)) for i in range(len(xpos))])
+                align_verts = np.array(
+                    list(zip(start, ypos)) + list(zip(finish, ypos)))
+            else:
+                # x-position (edge) start is in column 0 of first N rows of .verts
+                xpos = self.verts[:len(self.tree), 0]
+
+            # overwrite tip order after the above stuff if fixed order
+            if self._fixed_order:
+                ypos = range(len(self.tree))
+
+        # orient text for down-facing tree, angle by -90.
+        elif self._style["orient"] in ['down']:
+            angle = -90.
+            xpos = self.verts[:len(self.tree):, 0]
+            if self._style["tip_labels_align"]:
+                ypos = [self.verts[:, 1].min()] * len(self.tree)
+                start = ypos
+                finish = self.verts[:len(self.tree), 1]
+                align_edges = np.array(
+                    [(i, i + len(ypos)) for i in range(len(ypos))])
+                align_verts = np.array(
+                    list(zip(xpos, start)) + list(zip(xpos, finish)))
+            else:
+                ypos = self.verts[:len(self.tree), 1]
+
+            # overwrite tip order after the above stuff if fixed order
+            if self._fixed_order:
+                xpos = range(len(self.tree))
+
+        return xpos, ypos, align_edges, align_verts, angle
+
+
+    def _add_tree_to_axes(self, axes):
         """
-        Calculate reasonable height and width for tree given N tips
+        Add tree as a toyplot graph
         """
-        ntips = len(self.tree)
-        if self._kwargs.get("orient") in ["right", "left"]:
-            # long tip-wise dimension
-            if not self._kwargs.get("height"):
-                self._kwargs["height"] = max(275, min(1000, 18 * ntips))
-            if not self._kwargs.get("width"):
-                self._kwargs["width"] = max(225, min(500, 18 * ntips))
+        if self._style["edge_type"] == 'c':
+            mark = axes.graph(
+                self.edges,
+                vcoordinates=self.verts,
+                vlshow=False,
+                vsize=0,
+                estyle=self._style["edge_style"],
+                # ecolor=self._style["edge_color"], ## ...
+            )
         else:
-            # long tip-wise dimension
-            if not self._kwargs.get("width"):
-                self._kwargs["width"] = max(275, min(1000, 18 * ntips))
-            if not self._kwargs.get("height"):
-                self._kwargs["height"] = max(225, min(500, 18 * ntips))
+            mark = axes.graph(
+                self._lines,
+                vcoordinates=self._coords,
+                vlshow=False,
+                vsize=0.,
+                estyle=self._style["edge_style"],
+                # ecolor=self._style["edge_color"], ## ...
+            )
+        return mark
+
+
+    def _add_tip_labels_to_axes(self, axes):
+        """
+        Positions tip labels on the coordinate axes given some orientation
+        """
+        xpos, ypos, aedges, averts, angle = self._get_tip_label_coords()
+
+        # add tip names to coordinates calculated above
+        mark = axes.text(
+            xpos,
+            ypos,
+            self._style["tip_labels"],
+            angle=angle,
+            style=self._style["tip_labels_style"],
+            color=self._style["tip_labels_color"],
+        )
+
+        # get stroke-width for aligned tip-label lines (optional)
+        # copy stroke-width from the edge_style unless user set it
+        if not self._style["edge_align_style"].get("stroke-width"):
+            self._style["edge_align_style"]["stroke-width"] = \
+                self._style["edge_style"]["stroke-width"]
+
+        # add lines to connect tree tips to aligned tips. We don't
+        # return this mark since it's optional.
+        if self._style["tip_labels_align"]:
+            axes.graph(
+                aedges,
+                vcoordinates=averts,
+                estyle=self._style["edge_align_style"],
+                vlshow=False,
+                vsize=0,
+            )
+        return mark
+
+
+    def _add_nodes_to_axes(self, axes):
+        """
+        add nodes as text-markers
+        """
+        # bail out if not any visible nodes (e.g., none w/ size>0)
+        if not self._style["node_labels"]:
+            return
+
+        # shorthand names
+        ncs = self._style["node_color"]
+
+        # build markers
+        marks = []
+        for nidx in self.get_node_values('idx', 1, 1):
+            # select node value
+            nlabel = self._style["node_labels"][nidx]
+            nsize = self._style["node_size"][nidx]
+            nstyle = copy.deepcopy(self._style["node_style"])
+            nlstyle = copy.deepcopy(self._style["node_labels_style"])
+
+            # parsing color is tricky b/c there are many accepted formats
+            if isinstance(ncs, str):
+                nstyle["fill"] = self._style["node_color"]
+
+            elif isinstance(ncs, (np.ndarray, list, tuple)):
+                color = self._style["node_color"][nidx]
+                if isinstance(color, (np.ndarray, np.void, list, tuple)):
+                    color = toyplot.color.to_css(color)
+                nstyle["fill"] = color
+            else:
+                pass
+
+            # create mark if text or node
+            if (nlabel or nsize):
+                mark = toyplot.marker.create(
+                    shape="o",
+                    label=str(nlabel),
+                    size=nsize,
+                    mstyle=nstyle,
+                    lstyle=nlstyle,
+                )
+            else:
+                mark = ""
+
+            # store the nodes/marks
+            marks.append(mark)
+
+        # node_hover == True to show all features interactive
+        if (self._style["node_hover"] is True):
+            title = self._fullhover()
+
+        elif isinstance(self._style["node_hover"], list):
+            # return advice if improperly formatted
+            title = self._style["node_hover"]
+
+        # if hover is false then no hover
+        else:
+            title = None
+
+        # add nodes
+        mark = axes.scatterplot(
+            self.verts[:, 0],
+            self.verts[:, 1],
+            marker=marks,
+            title=title,
+        )
+        return mark
+
+
+    # returns modified axes
+    def _add_axes_style(self, axes):
+        
+        axes.padding = self._style["axes"]["padding"]
+        axes.show = self._style["axes"]["show"]
+        
+        # scalebar        
+        axes.x.show = self._style["axes"]["x.show"]
+        axes.x.ticks.show = self._style["axes"]["x.ticks.show"]
+        axes.x.ticks.labels.angle = self._style["axes"]["x.ticks.labels.angle"]
+        axes.x.domain.min = self._style["axes"]["x.domain.min"]
+        axes.x.domain.max = self._style["axes"]["x.domain.max"]        
+
+        # scalebar
+        axes.y.show = self._style["axes"]["y.show"]
+        axes.y.ticks.show = self._style["axes"]["y.ticks.show"]
+        axes.y.ticks.labels.angle = self._style["axes"]["y.ticks.labels.angle"]
+        axes.y.domain.min = self._style["axes"]["y.domain.min"]
+        axes.y.domain.max = self._style["axes"]["y.domain.max"]        
+
+        # allow coloring axes
+        if (self._style["axes"]["x_label_color"] or 
+            self._style["axes"]["y_label_color"]):
+            axes.x.spine.style.update(
+                {"stroke": self._style["axes"]["x_label_color"]})
+            axes.x.ticks.style.update(
+                {"stroke": self._style["axes"]["x_label_color"]})            
+            axes.x.ticks.labels.style.update(
+                {"stroke": self._style["axes"]["x_label_color"]})                        
+            axes.y.spine.style.update(
+                {"stroke": self._style["axes"]["y_label_color"]})                                    
+            axes.y.ticks.style.update(
+                {"stroke": self._style["axes"]["y_label_color"]})                                                
+            axes.y.ticks.labels.style.update(
+                {"stroke": self._style["axes"]["y_label_color"]})                                                            
+
+        return axes
+
+
+
+class Jitter:
+    """
+    Return a tree with edge lengths modified according to one of 
+    the jitter functions. 
+
+    node_slider: 
+
+    node_multiplier:
+
+    """
+    def __init__(self, ttree):
+        self.ttree = ttree
+
+    def node_slider(self, prop=0.99):
+        """
+        Returns a toytree copy with node heights modified while retaining the 
+        same topology but not necessarily node branching order. Node heights are
+        moved up or down uniformly between their parent and highest child node 
+        heights in 'levelorder' from root to tips. The total tree height is 
+        retained at 1.0, only relative edge lengths change.
+
+        ## for example run:
+        c, a = node_slide(ctree).draw(
+            width=400,
+            orient='down', 
+            node_labels='idx',
+            node_size=15,
+            tip_labels=False
+            );
+        a.show = True
+        a.x.show = False
+        a.y.ticks.show = True
+        """
+        assert isinstance(prop, float), "prop must be a float"
+        assert prop < 1, "prop must be a proportion >0 and < 1."
+
+        ctree = self.ttree.copy()
+        for node in ctree.tree.traverse():
+
+            ## slide internal nodes 
+            if node.up and node.children:
+
+                ## get min and max slides
+                minjit = max([i.dist for i in node.children]) * prop
+                maxjit = (node.up.height * prop) - node.height
+                newheight = random.uniform(-minjit, maxjit)
+
+                ## slide children
+                for child in node.children:
+                    child.dist += newheight
+
+                ## slide self to match
+                node.dist -= newheight
+        return ctree
+
+
+    def node_multiplier(self, multiplier=0.5):
+        # make tree height = 1 * rheight
+        ctree = self.ttree.copy()
+        low, high = sorted([multiplier, 1. / multiplier])
+        mult = random.uniform(low, high)
+        for node in ctree.tree.traverse():
+            node.dist = node.dist * mult
+        return ctree
 
 
 
@@ -895,11 +1188,10 @@ class Toytree(object):
 # RANDOM TREES
 #############################################################################
 
-
 class RandomTree(object):
 
     @staticmethod
-    def coaltree(ntips, ne=None):
+    def coaltree(ntips, ne=None, seed=None):
         """
         Returns a coalescent tree with ntips samples and waiting times 
         between coalescent events drawn from the kingman coalescent:
@@ -910,6 +1202,10 @@ class RandomTree(object):
         of 2*Ne, i.e., coalescent time units. 
         """
 
+        # seed generator
+        random.seed(seed)
+
+        # convert units
         coalunits = False
         if not ne:
             coalunits = True
@@ -942,19 +1238,20 @@ class RandomTree(object):
             if node.is_leaf():
                 node.dist += node.height
 
-        # set tip names by labeling sequentially from 0
+        # set tipnames, decompose will fill internals
         ntip = 0
         for tip in self.get_tip_labels():
             node = self.tree.search_nodes(name=tip)[0]
             node.name = "r{}".format(ntip)
             ntip += 1
-        
-        # store updated newick
-        self.newick = self.tree.write()
+
+        # decompose fills in internal node names and idx
+        self._decompose_tree()
         return self
 
+
     @staticmethod
-    def unittree(ntips, treeheight=1.0):
+    def unittree(ntips, treeheight=1.0, seed=None):
         """
         Function to return a random tree w/ N tips using the ete function
         'populate()'. Branch lengths can be added after the tree is
@@ -972,8 +1269,11 @@ class RandomTree(object):
             Scale tree height (all edges) so that root is at this height.
         """
 
+        # seed generator
+        random.seed(seed)
+
         # generate tree with N tips.
-        tmptree = ete3mini.TreeNode()
+        tmptree = TreeNode()
         tmptree.populate(ntips)
         self = Toytree(newick=tmptree.write())
 
@@ -986,344 +1286,13 @@ class RandomTree(object):
         for node in self.tree.traverse():
             node.dist = (node.dist / _height) * treeheight
 
-        # set names
-        nidx = 0
+        # set tipnames, decompose will fill internals
+        nidx = 0 
         for tip in self.get_tip_labels():
             node = self.tree.search_nodes(name=tip)[0]
             node.name = "r{}".format(nidx)
             nidx += 1
-        for node in self.tree.traverse():
-            if not node.is_leaf():
-                node.name = "r{}".format(nidx)
-                nidx += 1
 
-        # update newick 
-        self.newick = self.tree.write()                
+        # fill internal node names and idx
+        self._decompose_tree()
         return self
-
-
-##############################################################################
-# TREE FUNCTIONS #############################################################
-##############################################################################
-
-
-def _decompose_tree(ttree, orient, use_edge_lengths):
-    """
-    Decomposes tree into component coordinates for plotting. Assigns
-    a name and idx to every node. Plotting coordinates are stored to
-    .edges, .verts.
-    """
-
-    # set tmp attributes
-    ttree._orient = orient
-    ttree._use_edge_lengths = use_edge_lengths
-    ult = ttree._use_edge_lengths is False
-
-    # name indexes, start from zero to match normal idx, unless
-    # tip names are already numeric, in which case we assign names
-    # to internal nodes starting from the highest number
-    nnodes = sum(1 for i in ttree.tree.traverse())
-    idx = nnodes - 1
-
-    # store node heights
-    # root_height = ttree.tree.get_leaves()[0].dist
-
-    # highest numbering is for internals (ntips-M)
-    for node in ttree.tree.traverse("levelorder"):
-        if not node.is_leaf():
-            if not node.name:
-                node.name = "i" + str(idx)
-            node.add_feature("idx", idx)
-            idx -= 1
-
-    # lowest numbers are for tips (0-N)
-    for node in ttree.tree.get_leaves():
-        if not node.name:
-            node.name = "t" + str(idx)
-        node.add_feature("idx", idx)
-        idx -= 1
-
-    # compile coordinates for vertices and edges for plotting
-    ttree.edges = np.zeros((nnodes - 1, 2), dtype=int)
-    ttree.verts = np.zeros((nnodes, 2), dtype=float)
-    ttree._lines = []
-    ttree._coords = []
-
-    # postorder: first children and then parents. This moves up the list.
-    # counting down from tip_num to ensure ladderized order.
-    nidx = 0
-    tip_num = len(ttree.tree.get_leaves()) - 1
-
-    # tips to root to fill in the verts and edges
-    # postorder: starts from children then parents.
-    for node in ttree.tree.traverse("postorder"):
-        if node.is_leaf() and not node.is_root():
-            # get y-pos of tip
-            node.y = ttree.tree.get_distance(node)
-            if ult:
-                node.y = 0.
-
-            # get x-pos of tip
-            if ttree._fixed_order:
-                node.x = tip_num - ttree._fixed_order.index(node.name)
-            else:
-                node.x = tip_num
-                tip_num -= 1
-
-            # edges connect this vert to
-            ttree.verts[node.idx] = [node.x, node.y]
-            ttree.edges[nidx] = [node.up.idx, node.idx]
-
-        else:
-            # create new nodes left and right
-            node.y = ttree.tree.get_distance(node)
-            if ult:
-                node.y = -1 * node.get_farthest_leaf(True)[1] - 1
-            nch = node.children
-            node.x = sum(i.x for i in nch) / float(len(nch))
-            ttree.verts[node.idx] = [node.x, node.y]
-            if not node.is_root():
-                ttree.edges[nidx, :] = [node.up.idx, node.idx]
-        nidx += 1
-
-    # root to tips to fill in the coords and lines
-    cidx = 0
-    for node in ttree.tree.traverse():
-        # add yourself
-        if not node.is_leaf():
-            ttree._coords += [[node.x, node.y]]
-            pidx = cidx
-            cidx += 1
-            for child in node.children:
-                # add children
-                ttree._coords += [[child.x, node.y], [child.x, child.y]]
-                ttree._lines += [[pidx, cidx]]      # connect yourself to newx
-                ttree._lines += [[cidx, cidx + 1]]  # connect newx to child
-                cidx += 2
-
-    # convert to arrays
-    ttree._coords = np.array(ttree._coords, dtype=float)
-    ttree._lines = np.array(ttree._lines, dtype=int)
-
-    # invert for sideways trees; TODO
-    if ttree._orient in ['up', 0]:
-        pass
-    if ttree._orient in ['left', 1]:
-        ttree.verts[:, 1] = ttree.verts[:, 1] * -1
-        ttree.verts = ttree.verts[:, [1, 0]]
-        ttree._coords[:, 1] = ttree._coords[:, 1] * -1
-        ttree._coords = ttree._coords[:, [1, 0]]
-
-    # TODO: there's a bug in cloud trees 'down' orientation drawings
-    if ttree._orient in ['down', 0]:
-        ttree.verts[:, 1] = ttree.verts[:, 1] * -1
-        ttree._coords[:, 1] = ttree._coords[:, 1] * -1
-        ttree.verts[:, 1] += ttree.verts[:, 0].min()
-        ttree._coords[:, 1] += ttree._coords[:, 0].min()
-
-    if ttree._orient in ['right', 3]:
-        ttree.verts = ttree.verts[:, [1, 0]]
-        ttree._coords = ttree._coords[:, [1, 0]]
-        ttree.verts[:, 0] -= ttree.verts[:, 0].max()
-        ttree._coords[:, 0] -= ttree._coords[:, 0].max()
-
-
-# add the tree plot
-def _add_tree_to_axes(ttree, axes):
-    """
-    TODO: add edge color controls.
-    """
-    # add the tree/graph ------------------------------------------------
-    if ttree._kwargs["tree_style"] in ["c", "cladogram", "a", "admixture"]:
-        mark = axes.graph(
-            ttree.edges,
-            vcoordinates=ttree.verts,
-            vlshow=False,
-            vsize=0,
-            estyle=ttree._kwargs["edge_style"],
-            # ecolor=self.kwargs["edge_color"], ## ...
-            # ewidth=self.kwargs["edge_width"], ## def: 2
-        )
-    else:
-        # add lines for phylogram
-        mark = axes.graph(
-            ttree._lines,                      # fixed
-            vcoordinates=ttree._coords,        # fixed
-            vlshow=False,                      # fixed
-            vsize=0.,                          # fixed
-            estyle=ttree._kwargs["edge_style"],
-            # ecolor=self.kwargs["edge_color"], ## ...
-            # ewidth=self.kwargs["edge_width"], ## def: 2
-        )
-    return mark
-
-
-
-def _add_nodes_to_axes(ttree, axes):
-    """
-    add nodes as text-markers
-    """
-    # bail out if not any visible nodes (e.g., none w/ size>0)
-    if not ttree._kwargs["node_labels"]:
-        return
-
-    # debugging
-    # print(ttree._kwargs["node_labels"])
-    # print(ttree._kwargs["node_size"])
-    # print(ttree._kwargs["node_labels_style"])
-
-    # shorthand names
-    ncs = ttree._kwargs["node_color"]
-
-    # build markers
-    marks = []
-    for nidx in ttree.get_node_values('idx', 1, 1):
-        # select node value
-        nlabel = ttree._kwargs["node_labels"][nidx]
-        nsize = ttree._kwargs["node_size"][nidx]
-        nstyle = copy.deepcopy(ttree._kwargs["node_style"])
-        nlstyle = copy.deepcopy(ttree._kwargs["node_labels_style"])
-
-        # parsing color types is bit tricky b/c there are many accepted formats
-        if isinstance(ncs, str):
-            nstyle["fill"] = ttree._kwargs["node_color"]
-
-        elif isinstance(ncs, (np.ndarray, list, tuple)):
-            color = ttree._kwargs["node_color"][nidx]
-            if isinstance(color, (np.ndarray, np.void, list, tuple)):
-                color = toyplot.color.to_css(color)
-            nstyle["fill"] = color
-        else:
-            pass
-
-        # create mark if text or node
-        if (nlabel or nsize):
-            mark = toyplot.marker.create(
-                shape="o",
-                label=str(nlabel),
-                size=nsize,
-                mstyle=nstyle,
-                lstyle=nlstyle,
-            )
-        else:
-            mark = ""
-
-        # store the nodes/marks
-        marks.append(mark)
-
-    # node_hover == True is a magic command to show all features interactive
-    if (ttree._kwargs["node_hover"] is True):
-        title = _fullhover(ttree)
-
-    elif isinstance(ttree._kwargs["node_hover"], list):
-        # return advice if improperly formatted
-        title = ttree._kwargs["node_hover"]
-
-    # if hover is false then no hover
-    else:
-        title = None
-
-    # add nodes
-    mark = axes.scatterplot(
-        ttree.verts[:, 0],
-        ttree.verts[:, 1],
-        marker=marks,
-        title=title,
-    )
-    return mark
-
-
-# build interactive hovers for specified labels
-def _fullhover(ttree, ordered_features=["idx", "name", "dist", "support"]):
-    # build full features titles
-    lfeatures = list(set(ttree.tree.features) - set(ordered_features))
-    ordered_features += lfeatures
-    title = [
-        ["{}: {}".format(feature, i) for i in
-         ttree.get_node_values(feature, True, True)]
-        for feature in ordered_features]
-    title = ["\n".join(z) for z in zip(*title[:])]
-    return title
-
-
-def _add_tip_labels_to_axes(ttree, axes):
-    """
-    Positions tip labels on the coordinate axes given some orientation
-    """
-
-    # get coordinates of text from top to bottom (right-facing)
-    if ttree._kwargs["orient"] in ["right"]:
-        angle = 0.
-
-        # y-positions of tips are the (first) N rows of .verts
-        # ypos = ttree.verts[-1*len(ttree.tree):, 1]
-        ypos = ttree.verts[:len(ttree.tree), 1]
-        if ttree._kwargs["tip_labels_align"]:
-
-            # x-position (edge) start is in column 0 of first N rows of .verts
-            xpos = [ttree.verts[:, 0].max()] * len(ttree.tree)
-            start = xpos
-
-            # x-position end is in column 0 of first N rows of .verts
-            finish = ttree.verts[:len(ttree.tree), 0]
-
-            # make into arrays
-            align_edges = np.array([
-                (i, i + len(xpos)) for i in range(len(xpos))])
-            align_verts = np.array(
-                list(zip(start, ypos)) + list(zip(finish, ypos)))
-        else:
-            # x-position (edge) start is in column 0 of first N rows of .verts
-            xpos = ttree.verts[:len(ttree.tree), 0]
-
-        # overwrite tip order after the above stuff if fixed order
-        if ttree._fixed_order:
-            ypos = range(len(ttree.tree))
-
-
-    # orient text for down-facing tree, angle by -90.
-    elif ttree._kwargs["orient"] in ['down']:
-        angle = -90.
-        xpos = ttree.verts[:len(ttree.tree):, 0]
-        if ttree._kwargs["tip_labels_align"]:
-            ypos = [ttree.verts[:, 1].min()] * len(ttree.tree)
-            start = ypos
-            finish = ttree.verts[:len(ttree.tree), 1]
-            align_edges = np.array(
-                [(i, i + len(ypos)) for i in range(len(ypos))])
-            align_verts = np.array(
-                list(zip(xpos, start)) + list(zip(xpos, finish)))
-        else:
-            ypos = ttree.verts[:len(ttree.tree), 1]
-
-        # overwrite tip order after the above stuff if fixed order
-        if ttree._fixed_order:
-            xpos = range(len(ttree.tree))
-
-    # add tip names to coordinates calculated above
-    mark = axes.text(
-        xpos,
-        ypos,
-        ttree._kwargs["tip_labels"][::-1],
-        angle=angle,
-        style=ttree._kwargs["tip_labels_style"],
-        color=ttree._kwargs["tip_labels_color"],
-    )
-
-    # get stroke-width for aligned tip-label lines (optional)
-    # copy stroke-width from the edge_style unless user set it
-    if not ttree._kwargs["edge_align_style"].get("stroke-width"):
-        ttree._kwargs["edge_align_style"]["stroke-width"] = \
-            ttree._kwargs["edge_style"]["stroke-width"]
-
-    # add lines to connect tree tips to aligned tips. We don't
-    # return this mark since it's optional.
-    if ttree._kwargs["tip_labels_align"]:
-        dash = axes.graph(
-            align_edges,
-            vcoordinates=align_verts,
-            estyle=ttree._kwargs["edge_align_style"],
-            vlshow=False,
-            vsize=0,
-        )
-    return mark

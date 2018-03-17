@@ -3,9 +3,9 @@
 """ MultiTree objects """
 
 from collections import defaultdict
+from .ete3mini import TreeNode
 from .tree import Toytree
-from .tree import COLORS
-from . import ete3mini
+from .style import TreeStyle
 import numpy as np
 import requests
 import toyplot
@@ -14,50 +14,50 @@ import re
 import os
 
 
-DEFAULTS_MULTITREE = {
-    # edge defaults
-    "edge_style": {
-        "stroke": "#292724",
-        "stroke-width": 2,
-        # "stroke-linecap": "round",
-        "opacity": 0.2,
-        },
+# DEFAULTS_MULTITREE = {
+#     # edge defaults
+#     "edge_style": {
+#         "stroke": "#292724",
+#         "stroke-width": 2,
+#         # "stroke-linecap": "round",
+#         "opacity": 0.2,
+#         },
 
-    "edge_align_style": {
-        "stroke": "darkgrey",  # copies edge_style
-        # "stroke-linecap": "round",
-        "stroke-dasharray": "2, 4",
-        },
+#     "edge_align_style": {
+#         "stroke": "darkgrey",  # copies edge_style
+#         # "stroke-linecap": "round",
+#         "stroke-dasharray": "2, 4",
+#         },
 
-    # node label defaults
-    "node_labels": False,
-    "node_labels_style": {
-        "font-size": "9px",
-        "fill": "262626"},
+#     # node label defaults
+#     "node_labels": False,
+#     "node_labels_style": {
+#         "font-size": "9px",
+#         "fill": "262626"},
 
-    # node defaults
-    "node_size": None,
-    "node_color": COLORS[0],
-    "node_style": {
-        "fill": COLORS[0],
-        "stroke": COLORS[0],
-        },
-    "vmarker": "o",
+#     # node defaults
+#     "node_size": None,
+#     "node_color": COLORS[0],
+#     "node_style": {
+#         "fill": COLORS[0],
+#         "stroke": COLORS[0],
+#         },
+#     "vmarker": "o",
 
-    # tip label defaults
-    "tip_labels": True,
-    "tip_labels_color": toyplot.color.near_black,
-    "tip_labels_align": False,
-    "tip_labels_style": {
-        "font-size": "12px",
-        "text-anchor": "start",
-        "-toyplot-anchor-shift": "12px",
-        "fill": "#292724",
-        },
+#     # tip label defaults
+#     "tip_labels": True,
+#     "tip_labels_color": toyplot.color.near_black,
+#     "tip_labels_align": False,
+#     "tip_labels_style": {
+#         "font-size": "12px",
+#         "text-anchor": "start",
+#         "-toyplot-anchor-shift": "12px",
+#         "fill": "#292724",
+#         },
 
-    # tree style and axes
-    "tree_style": "p",
-}
+#     # tree style and axes
+#     "tree_style": "p",
+# }
 
 
 ###############################################
@@ -78,34 +78,30 @@ class MultiTree(object):
         Returns a consenus tree object...
 
     """
-    def __init__(self,
+    def __init__(
+        self,
         newick,
         tree_format=None,
-        treeslice=(None, None, None),
+        tree_slice=(None, None, None),
         skip=None,
-        fixed_order=None,
-        orient='down',
         use_edge_lengths=True,
-        # root=None,
         ):
 
         # setting attributes
         self.newick = newick
-        self.colors = COLORS
-        self._ts = treeslice
+        self._ts = tree_slice
         self._tformat = tree_format
-        self._fixed_order = fixed_order
-        self._orient = orient
+        self._fixed_order = True 
+        self._orient = "down"
         self._use_edge_lengths = use_edge_lengths
-        self._kwargs = {}
-        self._default_style = DEFAULTS_MULTITREE
+        self._style = TreeStyle("m")
 
         # parse the newick treefile
         self._parse_multinewick()
 
 
     # attributes of multitrees
-    def __len__(self):
+    def __len__(self):  
         return len(self.treelist)
 
 
@@ -126,13 +122,18 @@ class MultiTree(object):
             treelines = [bpp2newick(i.strip()) for i in treelines]
 
         # if good newick to toytree
+        if self._fixed_order is True:
+            self._fixed_order = Toytree(treelines[0].strip()).get_tip_labels()
+
         if self._fixed_order:
-            self.treelist = [Toytree(i.strip(), fixed_order=self._fixed_order)
-                             for i in treelines]
+            self.treelist = [
+                Toytree(i.strip(), fixed_order=self._fixed_order)
+                for i in treelines]
         else:
             # order nodes for plotting
             self.treelist = [Toytree(i.strip()) for i in treelines]
-            self._fixed_order = self.get_consensus_tree().get_tip_labels()[::-1]
+            self._fixed_order = self.get_consensus_tree().get_tip_labels()
+
             # redefine treelist with trees plotted in consensus tip order
             self.treelist = [
                 Toytree(i.tree.write(), fixed_order=self._fixed_order)
@@ -144,9 +145,7 @@ class MultiTree(object):
         Parse a multiline newick from str, file, or url, and store
         new attributes to self for .newick, .tree_list, and ._tformat
         """
-
         # sample one line for testing --------------------------------
-        # check if newick is a url
         if any(i in self.newick for i in ("http://", "https://")):
             try:
                 response = requests.get(self.newick)
@@ -177,18 +176,18 @@ class MultiTree(object):
         Calculate reasonable height and width for tree given N tips
         """
         tlen = len(self.treelist[0])
-        if self._kwargs.get("orient") in ["right", "left"]:
+        if self._style.get("orient") in ["right", "left"]:
             # long tip-wise dimension
-            if not self._kwargs.get("height"):
-                self._kwargs["height"] = max(275, min(1000, 18 * (tlen)))
-            if not self._kwargs.get("width"):
-                self._kwargs["width"] = max(225, min(500, 18 * (tlen)))
+            if not self._style.get("height"):
+                self._style["height"] = max(275, min(1000, 18 * (tlen)))
+            if not self._style.get("width"):
+                self._style["width"] = max(225, min(500, 18 * (tlen)))
         else:
             # long tip-wise dimension
-            if not self._kwargs.get("width"):
-                self._kwargs["width"] = max(275, min(1000, 18 * (tlen)))
-            if not self._kwargs.get("height"):
-                self._kwargs["height"] = max(225, min(500, 18 * (tlen)))
+            if not self._style.get("width"):
+                self._style["width"] = max(275, min(1000, 18 * (tlen)))
+            if not self._style.get("height"):
+                self._style["height"] = max(225, min(500, 18 * (tlen)))
 
 
     # public API functions of multitrees ------------
@@ -197,119 +196,126 @@ class MultiTree(object):
         return Toytree(constre.write())
 
 
-    def draw_cloudtree(self,
+    def draw_cloudtree(
+        self,
         axes=None,
         height=None,
         width=None,
-        tip_labels=True,
+        tip_labels=None,
         tip_labels_color=None,
         tip_labels_style=None,
-        #tip_labels_align=False,
-        node_labels=None, #False,
+        tip_labels_align=None,
+        node_labels=None,  
         node_labels_style=None,
         node_size=None,
         node_color=None,
         node_style=None,
-        #edge_width=None,
+        edge_type=None,
         edge_style=None,
         edge_align_style=None,
-        use_edge_lengths=True, #False,
-        orient="down",
-        tree_style="c",
-        #print_args=False,
-        #fixed_order=None,
+        use_edge_lengths=None,
+        orient=None,
+        tree_style=None,
+        sub_tree_style=None,
+        scalebar=None,
+        padding=None,
         ):
 
-        ## return nothing if tree is empty
-        if not self.treelist:
-            print("Tree is empty")
-            return
+        """
+        Returns a cloudtree of many overlapping trees in a multitree object. 
+        """
 
-        ## re-decompose tree for new orient and edges args
-        for tidx in xrange(len(self.treelist)):
-            #tre = self.treelist[tidx]
-            self.treelist[tidx]._decompose_tree(
-                orient=orient,
-                use_edge_lengths=use_edge_lengths,
-                fixed_order=self._fixed_order)
-
-        ## stick all entered option into kwargs
-        ## start from default styles copied
-        self._kwargs = copy.deepcopy(self._default_style)
-        entered = {
+        # store entered args
+        canvas_args = {
             "height": height,
             "width": width,
+        }
+        axes_args = {
+            "padding": padding,
+            "scalebar": scalebar,
+        }
+        mark_args = {
+            "orient": orient,
             "tip_labels": tip_labels,
             "tip_labels_color": tip_labels_color,
             "tip_labels_style": tip_labels_style,
-            #"tip_labels_align": tip_labels_align,
+            "tip_labels_align": tip_labels_align,
             "node_labels": node_labels,
             "node_labels_style": node_labels_style,
             "node_size": node_size,
             "node_color": node_color,
             "node_style": node_style,
-            #"edge_width": edge_width
+            "edge_type": edge_type,  
             "edge_style": edge_style,
             "edge_align_style": edge_align_style,
+            "use_edge_lengths": use_edge_lengths,
+            "sub_tree_style": sub_tree_style,
             "tree_style": tree_style,
+            # "edge_width": edge_width,  ## todo
+            # "edge_color": edge_color,  ## todo
+            # "tip_labels_angle": tip_labels_angle,
         }
-        ## We don't allow the setting of None to update defaults.
-        entered = {i:j for i,j in entered.items() if j != None}
-        for key, val in entered.items():
-            if val != None:
-                if isinstance(val, dict):
-                    self._kwargs[key].update(entered[key])
-                else:
-                    self._kwargs[key] = val
-        ## if dims not set then guess a reasonable height & width
-        self._set_dims_from_tree_size()
-        #    self._kwargs["width"] = min(1000, 25*len(self.treelist[0].tree))
-        #if not 
-        #    self._kwargs["height"] = self._kwargs["width"]
 
-        ## if not canvas then create one else use the existing
+        # update mark option in TreeStyle
+        sts = (sub_tree_style if sub_tree_style else 'multi')
+        ts = (tree_style if tree_style else 'coal')
+        self._style = TreeStyle(tree_style=ts)
+        self._style.update_mark(mark_args)
+        self._style.update_axes(axes_args)
+        self._style.update_canvas(canvas_args)
+
+        # if dims not entered in style then set a reasonable height & width
+        self._set_dims_from_tree_size()
+
+        # if axes arg then assume existing canvas, else create one
         if axes:
             canvas = None
         else:
             canvas = toyplot.Canvas(
-                height=self._kwargs['height'],
-                width=self._kwargs['width'],
-                )
-            axes = canvas.cartesian(
-                #bounds=("10%", "90%", "10%", "90%"))
-                padding=50,
-                )
+                height=self._style['height'],
+                width=self._style['width'],
+            )
+            axes = canvas.cartesian(padding=self._style["axes"]["padding"])
             axes.show = False
 
+        # return nothing if tree is empty
+        if not self.treelist:
+            print("Tree is empty")
+            return canvas, axes
 
-        ## plot trees
+        ## iterate over trees, update style, and plot to axes
         for tre in self.treelist:
+            tre._style.update(sts)
             _, axes = tre.draw(
+                tree_style=sts,
                 axes=axes,
-                use_edge_lengths=use_edge_lengths,
-                node_labels=False,
-                orient=orient,
-                tree_style=self._kwargs["tree_style"],
-                edge_style=self._kwargs["edge_style"],
-                tip_labels=False,
+                #use_edge_lengths=self._style["use_edge_lengths"],
+                #node_labels=False,
+                #orient=self._style["orient"],
+                #tree_style=self._style["tree_style"],
+                #edge_style=self._style["edge_style"],
+                #tip_labels=False,
                 )
 
         ## add tip labels
         angle = 0
         if orient == "down":
             angle = -90
-        if tip_labels == True:
-            self._kwargs["tip_labels"] = self._fixed_order
-        if self._kwargs["tip_labels"]:
-            axes.text(
-                #tre.verts[-1*len(tre):, 0],
-                #tre.verts[-1*len(tre):, 1],
-                tre.verts[:len(tre), 0],
-                tre.verts[:len(tre), 1],
-                self._kwargs["tip_labels"],
-                style=self._kwargs["tip_labels_style"],
-                angle=angle,
-            )
+        if tip_labels is True:
+            self._style["tip_labels"] = self._fixed_order
+
+        print(self._fixed_order)
+        print(self._style["tip_labels"])
+
+        axes.text(
+            #tre.verts[-1*len(tre):, 0],
+            #tre.verts[-1*len(tre):, 1],
+            tre.verts[:len(tre), 0],
+            tre.verts[:len(tre), 1],
+            self._fixed_order,
+            #style=self._style["tip_labels_style"],
+            #angle=angle,
+        )
 
         return canvas, axes
 
@@ -317,7 +323,6 @@ class MultiTree(object):
 
 
 # some functions called by Toytree class objects -----------------------
-
 def consensus_tree(trees, names=None, cutoff=0.0):
     """
     An extended majority rule consensus function for ete.
@@ -477,7 +482,7 @@ def _build_trees(fclade_counts, namedict):
 
         # the clade will not be in nodes if it is a tip
         children = [nodes.pop(c) for c in clade if c in nodes]
-        node = ete3mini.Tree(name=name)
+        node = TreeNode(name=name)
         #node = toytree.tree(name=name).tree
         for child in children:
             node.add_child(child)

@@ -10,10 +10,7 @@ from collections import deque
 from hashlib import md5
 import itertools
 import random
-import copy
 import six
-import re
-import os
 
 #from six.moves import (cPickle, map, range, zip)
 from six.moves import (map, range, zip)
@@ -29,6 +26,7 @@ class TreeError(Exception):
     """
     def __init__(self, value=''):
         self.value = value
+
     def __str__(self):
         return repr(self.value)
 
@@ -169,7 +167,7 @@ class TreeNode(object):
         return True
 
     def __repr__(self):
-        return "Tree node '%s' (%s)" %(self.name, hex(self.__hash__()))
+        return "Tree node '%s' (%s)" % (self.name, hex(self.__hash__()))
 
     def __and__(self, value):
         """ Allows executing tree&'A' to obtain the node with name A"""
@@ -200,7 +198,7 @@ class TreeNode(object):
         be a node instance or its associated name."""
         if isinstance(item, self.__class__):
             return item in set(self.get_descendants())
-        elif type(item)==str:
+        elif type(item) == str:
             return item in set([n.name for n in self.traverse()])
 
     def __len__(self):
