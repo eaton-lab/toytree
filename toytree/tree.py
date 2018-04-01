@@ -91,7 +91,8 @@ class Toytree(object):
         # default attributes and plot settings
         self._style = TreeStyle(tree_style='p')
 
-        # plotting coordinates
+        # plotting coordinates (shape of edges & nodes will be changed if 
+        # tree is rooted/unrooted, or nodes are pruned).
         self.edges = np.zeros((self.nnodes - 1, 2), dtype=int)
         self.verts = np.zeros((self.nnodes, 2), dtype=float)
         self._lines = []
@@ -450,6 +451,7 @@ class Toytree(object):
     # returns a (canvas, axes) tuple
     def draw(
         self,
+        tree_style=None,
         height=None,
         width=None,
         axes=None,        
@@ -468,7 +470,6 @@ class Toytree(object):
         edge_align_style=None,
         use_edge_lengths=None,
         orient=None,  
-        tree_style=None,
         scalebar=None,
         padding=None,
         # edge_width=None,
@@ -479,6 +480,13 @@ class Toytree(object):
 
         Parameters:
         -----------
+        tree_style: str
+            One of several preset styles for tree plotting. The default is 'n'
+            (normal). Other options inlude 'c' (coalescent), 'd' (dark), ...
+            This will set a default set of styling on top of which can be 
+            combined with other plotting options that will override these 
+            defaults.
+
         use_edge_lengths: bool
             Use edge lengths from .tree (.get_edge_lengths) else
             edges are set to length >=1 to make tree ultrametric.
@@ -614,13 +622,10 @@ class Toytree(object):
         """
         if newick:
             # is newick a URL or string, path?
-            if any(i in newick for i in ("http://", "https://")):
-                try:
-                    response = requests.get(newick)
-                    response.raise_for_status()
-                    self.tree = TreeNode(response.text.strip())
-                except Exception as inst:
-                    raise inst
+            if any((i in newick for i in ("http://", "https://"))):
+                response = requests.get(newick)
+                response.raise_for_status()
+                newick = response.text.strip()
 
             # create .tree attribute as TreeNode
             self.tree = TreeNode(newick, format=tree_format)
@@ -677,13 +682,16 @@ class Toytree(object):
         # get coordinates and then reorient 
         self._assign_coordinates()
         self._reorient_coordinates()
-        #self._update_newick()
 
 
     def _assign_coordinates(self):
         """
         Update _coords and _verts
         """
+        # reset node storage in case nnodes changed
+        self.edges = np.zeros((self.nnodes - 1, 2), dtype=int)
+        self.verts = np.zeros((self.nnodes, 2), dtype=float)
+
         # postorder: first children and then parents. This moves up the list.
         # counting down from tip_num to ensure ladderized order.
         nidx = 0
@@ -691,7 +699,13 @@ class Toytree(object):
 
         # tips to root to fill in the verts and edges
         for node in self.tree.traverse("postorder"):
-            if node.is_leaf() and not node.is_root():
+
+            # store edge connecting node to its parent
+            if not node.is_root():
+                self.edges[nidx, :] = [node.up.idx, node.idx]
+
+            # get coordinates of node for plotting
+            if node.is_leaf() and (not node.is_root()):
 
                 # get y-pos of tip
                 node.y = self.tree.get_distance(node)
@@ -704,10 +718,7 @@ class Toytree(object):
                 else:
                     node.x = tidx
                     tidx -= 1
-
-                # verts are coordinates, edges connect parent-child
                 self.verts[node.idx] = [node.x, node.y]
-                self.edges[nidx] = [node.up.idx, node.idx]
 
             else:
                 # create new nodes left and right
@@ -719,10 +730,7 @@ class Toytree(object):
                     node.x = sum(i.x for i in nch) / float(len(nch))
                 else:
                     node.x = tidx
-
                 self.verts[node.idx] = [node.x, node.y]
-                if not node.is_root():
-                    self.edges[nidx, :] = [node.up.idx, node.idx]
             nidx += 1
 
         # root to tips to fill in the coords and lines
@@ -1130,25 +1138,27 @@ class Jitter:
     def __init__(self, ttree):
         self.ttree = ttree
 
+    def scale_root_height(self, treeheight=1):
+        """
+        Returns a toytree copy with all nodes scaled so that the root 
+        height equals the value entered for treeheight.
+        """
+        # make tree height = 1 * treeheight
+        ctree = self.ttree.copy()
+        _height = ctree.tree.height
+        for node in ctree.tree.traverse():
+            node.dist = (node.dist / _height) * treeheight
+        return ctree
+
+
     def node_slider(self, prop=0.99):
         """
-        Returns a toytree copy with node heights modified while retaining the 
-        same topology but not necessarily node branching order. Node heights are
-        moved up or down uniformly between their parent and highest child node 
-        heights in 'levelorder' from root to tips. The total tree height is 
-        retained at 1.0, only relative edge lengths change.
-
-        ## for example run:
-        c, a = node_slide(ctree).draw(
-            width=400,
-            orient='down', 
-            node_labels='idx',
-            node_size=15,
-            tip_labels=False
-            );
-        a.show = True
-        a.x.show = False
-        a.y.ticks.show = True
+        Returns a toytree copy with node heights modified while retaining 
+        the same topology but not necessarily node branching order. 
+        Node heights are moved up or down uniformly between their parent 
+        and highest child node heights in 'levelorder' from root to tips.
+        The total tree height is retained at 1.0, only relative edge
+        lengths change.
         """
         assert isinstance(prop, float), "prop must be a float"
         assert prop < 1, "prop must be a proportion >0 and < 1."
@@ -1174,14 +1184,16 @@ class Jitter:
 
 
     def node_multiplier(self, multiplier=0.5):
-        # make tree height = 1 * rheight
+        """
+        Returns a toytree copy with all nodes multiplied by a constant 
+        sampled uniformly between (multiplier, 1/multiplier).
+        """
         ctree = self.ttree.copy()
         low, high = sorted([multiplier, 1. / multiplier])
         mult = random.uniform(low, high)
         for node in ctree.tree.traverse():
             node.dist = node.dist * mult
         return ctree
-
 
 
 #############################################################################
