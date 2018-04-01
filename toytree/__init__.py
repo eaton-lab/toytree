@@ -8,3 +8,4 @@ from .tree import Toytree as tree
 from .tree import RandomTree as rtree
 from .multitree import MultiTree as multitree
 from .style import COLORS as colors
+# from .tree import 
