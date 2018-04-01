@@ -3,61 +3,15 @@
 """ MultiTree objects """
 
 from collections import defaultdict
+#from contextlib import contextmanager
 from .ete3mini import TreeNode
 from .tree import Toytree
 from .style import TreeStyle
 import numpy as np
 import requests
 import toyplot
-import copy
 import re
 import os
-
-
-# DEFAULTS_MULTITREE = {
-#     # edge defaults
-#     "edge_style": {
-#         "stroke": "#292724",
-#         "stroke-width": 2,
-#         # "stroke-linecap": "round",
-#         "opacity": 0.2,
-#         },
-
-#     "edge_align_style": {
-#         "stroke": "darkgrey",  # copies edge_style
-#         # "stroke-linecap": "round",
-#         "stroke-dasharray": "2, 4",
-#         },
-
-#     # node label defaults
-#     "node_labels": False,
-#     "node_labels_style": {
-#         "font-size": "9px",
-#         "fill": "262626"},
-
-#     # node defaults
-#     "node_size": None,
-#     "node_color": COLORS[0],
-#     "node_style": {
-#         "fill": COLORS[0],
-#         "stroke": COLORS[0],
-#         },
-#     "vmarker": "o",
-
-#     # tip label defaults
-#     "tip_labels": True,
-#     "tip_labels_color": toyplot.color.near_black,
-#     "tip_labels_align": False,
-#     "tip_labels_style": {
-#         "font-size": "12px",
-#         "text-anchor": "start",
-#         "-toyplot-anchor-shift": "12px",
-#         "fill": "#292724",
-#         },
-
-#     # tree style and axes
-#     "tree_style": "p",
-# }
 
 
 ###############################################
@@ -156,6 +110,17 @@ class MultiTree(object):
             except Exception as inst:
                 raise inst
 
+        # if a list then each element is either a toytree or a str
+        elif isinstance(self.newick, list):
+            if isinstance(self.newick[0], Toytree):
+                self.treelist = self.newick
+                self._fixed_order = self.get_consensus_tree().get_tip_labels()
+
+            elif isinstance(self.newick[0], str):
+                treelines = self.newick[self._ts[0]:self._ts[1]:self._ts[2]]
+                self._treelines_to_treelist(treelines)
+
+        # assume remaining type is a str -------
         # check if newick is a file handle
         elif os.path.isfile(self.newick):
             self.newick = os.path.abspath(os.path.expanduser(self.newick))
@@ -163,8 +128,6 @@ class MultiTree(object):
                 treelines = infile.read().split("\n")
                 treelines = treelines[self._ts[0]:self._ts[1]:self._ts[2]]
                 self._treelines_to_treelist(treelines)
-
-        # assume remaining type is a str
         else:
             treelines = self.newick.strip().split("\n")
             treelines = treelines[self._ts[0]:self._ts[1]:self._ts[2]]
@@ -219,6 +182,7 @@ class MultiTree(object):
         sub_tree_style=None,
         scalebar=None,
         padding=None,
+        autoformat=None,
         ):
 
         """
@@ -229,6 +193,7 @@ class MultiTree(object):
         canvas_args = {
             "height": height,
             "width": width,
+            "autoformat": "png",
         }
         axes_args = {
             "padding": padding,
@@ -258,8 +223,8 @@ class MultiTree(object):
 
         # update mark option in TreeStyle
         sts = (sub_tree_style if sub_tree_style else 'multi')
-        ts = (tree_style if tree_style else 'coal')
-        self._style = TreeStyle(tree_style=ts)
+        #ts = (tree_style if tree_style else 'coal')
+        self._style = TreeStyle(tree_style=sts)
         self._style.update_mark(mark_args)
         self._style.update_axes(axes_args)
         self._style.update_canvas(canvas_args)
@@ -283,42 +248,29 @@ class MultiTree(object):
             print("Tree is empty")
             return canvas, axes
 
-        ## iterate over trees, update style, and plot to axes
+        ## iterate over trees and plot to axes
         for tre in self.treelist:
-            tre._style.update(sts)
             _, axes = tre.draw(
                 tree_style=sts,
                 axes=axes,
-                #use_edge_lengths=self._style["use_edge_lengths"],
-                #node_labels=False,
-                #orient=self._style["orient"],
-                #tree_style=self._style["tree_style"],
-                #edge_style=self._style["edge_style"],
-                #tip_labels=False,
                 )
 
         ## add tip labels
         angle = 0
-        if orient == "down":
+        if self._style["orient"] == "down":
             angle = -90
-        if tip_labels is True:
+        if self._style["tip_labels"] is True:
             self._style["tip_labels"] = self._fixed_order
 
-        print(self._fixed_order)
-        print(self._style["tip_labels"])
-
         axes.text(
-            #tre.verts[-1*len(tre):, 0],
-            #tre.verts[-1*len(tre):, 1],
             tre.verts[:len(tre), 0],
             tre.verts[:len(tre), 1],
-            self._fixed_order,
-            #style=self._style["tip_labels_style"],
-            #angle=angle,
+            self._style["tip_labels"],
+            style=self._style["tip_labels_style"],
+            angle=angle,
+
         )
-
-        return canvas, axes
-
+        canvas.autorender(autoformat=self._style["autoformat"])
 
 
 
@@ -353,9 +305,9 @@ def _find_clades(trees, names):
     """
     ## index names from the first tree
     if not names:
-        names = trees[0].get_tip_labels() #leaf_names()
-    ndict = {j:i for i, j in enumerate(names)}
-    namedict = {i:j for i, j in enumerate(names)}
+        names = trees[0].get_tip_labels()  # leaf_names()
+    ndict = {j: i for i, j in enumerate(names)}
+    namedict = {i: j for i, j in enumerate(names)}
 
     ## store counts
     clade_counts = defaultdict(int)
@@ -428,7 +380,7 @@ def _filter_clades(clade_counts, cutoff):
             passed.append(idx)
 
     ## rebuild the dict
-    rclades = []#j for i, j in enumerate(clade_counts) if i in passed]
+    rclades = []  # j for i, j in enumerate(clade_counts) if i in passed]
     ## set the counts to include mirrors
     for idx in passed:
         rclades.append((clades[idx], counts[idx]))
@@ -487,8 +439,8 @@ def _build_trees(fclade_counts, namedict):
         for child in children:
             node.add_child(child)
         if not node.is_leaf():
-            node.dist = int(round(100*countdict[clade]))
-            node.support = int(round(100*countdict[clade]))
+            node.dist = int(round(100 * countdict[clade]))
+            node.support = int(round(100 * countdict[clade]))
         else:
             node.dist = int(100)
             node.support = int(100)
@@ -514,4 +466,3 @@ def bpp2newick(bppnewick):
     new = regex2.sub(";", new)
     new = regex3.sub(":", new)
     return new
-
