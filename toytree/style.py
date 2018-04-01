@@ -12,28 +12,6 @@ COLORS = [color.to_css(_) for _ in color.Palette()]
 BLACK = color.black
 
 
-class EdgeStyle(dict):
-    pass 
-
-class NodeStyle(dict):
-    pass
-
-class EdgeAlignStyle(dict):
-    pass
-
-class AdmixEdgeStyle(dict):
-    pass
-
-class NodeLabelsStyle(dict):
-    pass
-
-class TipLabelsStyle(dict):
-    pass
-
-class AxesStyle(dict):
-    pass
-
-
 class TreeStyle(dict):
     """
     Pre-configured tree_style objects for distinct tree plotting styles.
@@ -126,7 +104,7 @@ class TreeStyle(dict):
         # self["xticks"] = toyplot.locator.TickLocator()
 
         self["node_labels_style"]["fill"] = BLACK
-        self["node_labels_style"]["font_size"] = "9px"
+        self["node_labels_style"]["font-size"] = "9px"
 
         self["admix_edge_style"]["stroke"] = COLORS[0]
         self["admix_edge_style"]["stroke_linecap"] = "round"
@@ -194,6 +172,7 @@ class TreeStyle(dict):
             self["tip_labels"] = False
             self["axes"]["show"] = False
             self["edge_style"]["opacity"] = 0.1
+            self["tip_labels_style"]["-toyplot-anchor-shift"] = "15px"
 
 
     def update_mark(self, sdict):
