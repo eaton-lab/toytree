@@ -3,17 +3,17 @@
 """
 A Tree Class object modified as a subset of the ete3.Tree Class
 """
-
 from __future__ import print_function
 from functools import cmp_to_key
 from collections import deque
 from hashlib import md5
 import itertools
 import random
-import six
+import six      # <- can remove after dealing with six.iteritems calls...
 
-#from six.moves import (cPickle, map, range, zip)
-from six.moves import (map, range, zip)
+from builtins import range, str
+#from six.moves import (cPickle, map, range, zip)  # all removed
+#from six.moves import (map, range, zip)           # all removed
 from .newick import read_newick, write_newick
 
 DEFAULT_EDGE_LENGTH = 1.
@@ -1246,7 +1246,12 @@ class TreeNode(object):
         """
         if not attributes:
             attributes = ["name"]
-        node_name = ', '.join(map(str, [getattr(self, v) for v in attributes if hasattr(self, v)]))
+        
+        # toytree edit:
+        # removed six dependency for map with comprehension
+        # node_name = ', '.join(map(str, [getattr(self, v) for v in attributes if hasattr(self, v)]))
+        _attrlist = [getattr(self, v) for v in attributes if hasattr(self, v)]
+        node_name = ", ".join([str(i) for i in _attrlist])
 
         LEN = max(3, len(node_name) if not self.children or show_internal else 3)
         PAD = ' ' * LEN
