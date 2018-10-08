@@ -414,9 +414,10 @@ def _get_features_string(self, features=None):
         if hasattr(self, pr):
             raw = getattr(self, pr)
             if type(raw) in ITERABLE_TYPES:
-                raw = '|'.join(map(str, raw))
+                raw = '|'.join([str(i) for i in raw])
             elif type(raw) == dict:
-                raw = '|'.join(map(lambda x,y: "%s-%s" %(x, y), six.iteritems(raw)))
+                raw = '|'.join(
+                    map(lambda x,y: "%s-%s" %(x, y), six.iteritems(raw)))
             elif type(raw) == str:
                 pass
             else:
