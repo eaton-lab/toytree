@@ -406,8 +406,10 @@ class TreeGrid:
             axes.x.show = False
 
 
-
-
+# TODO:
+# This is going to require working with .fixed_order. This should be an 
+# attribute of mtree objects, not Toytrees... right?. It needs to be used 
+# by Toytrees during .update() tho..., or atleast by Coords for node positions.
 class CloudTree:
 
     def __init__(self):
@@ -417,9 +419,7 @@ class CloudTree:
         pass
 
     def set_dims_from_tree_size(self):
-        """
-        Calculate reasonable height and width for tree given N tips
-        """
+        "Calculate reasonable height and width for tree given N tips"
         tlen = len(self.treelist[0])
         if self._style.get("orient") in ["right", "left"]:
             # long tip-wise dimension
@@ -433,5 +433,3 @@ class CloudTree:
                 self._style["width"] = max(275, min(1000, 18 * (tlen)))
             if not self._style.get("height"):
                 self._style["height"] = max(225, min(500, 18 * (tlen)))
-
-
