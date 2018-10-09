@@ -35,6 +35,7 @@ class Toytree:
 
         # Object for plot coordinates. Calls .update() whenever tree modified.
         self._coords = Coords(self)
+        self._coords.update()
 
         # Object for modifying trees beyond root, prune, drop
         self.mod = TreeMod(self)
@@ -50,6 +51,10 @@ class Toytree:
     def __len__(self):
         """ return len of Tree (ntips) """
         return len(self.tree)
+
+    @property
+    def verts(self):
+        return self._coords.verts
 
     # --------------------------------------------------------------------
     # Loading Newick or ...
@@ -142,15 +147,13 @@ class Toytree:
 
         """
         # access nodes in the order they will be plotted
-        nodes = [
-            self.tree.search_nodes(name=str(i))[0]
-            for i in self.get_node_dict().values()
-        ]
+        ndict = self.get_node_dict(return_internal=True, return_nodes=True)
+        nodes = [ndict[i] for i in range(self.nnodes)[::-1]]
 
         # get features
         if feature:
-            vals = [i.__getattribute__(feature)
-                    if hasattr(i, feature) else "" for i in nodes]
+            vals = [i.__getattribute__(feature) if hasattr(i, feature)
+                    else "" for i in nodes]
         else:
             vals = [" " for i in nodes]
 
@@ -171,29 +174,32 @@ class Toytree:
         return vals
 
 
-    def get_node_dict(self):
+    def get_node_dict(self, return_internal=False, return_nodes=False):
         """
-        Return node labels as a dictionary mapping {idx: name} where
-        idx is the order of nodes in 'preorder' traversal. Used internally
-        by get_node_values() to return values in proper order.
+        Return node labels as a dictionary mapping {idx: name} where idx is 
+        the order of nodes in 'preorder' traversal. Used internally by the
+        func .get_node_values() to return values in proper order. 
+
+        return_internal: if True all nodes are returned, if False only tips.
+        return_nodes: if True returns TreeNodes, if False return node names.
         """
-        names = {}
-        idx = -1 + sum(1 for i in self.tree.traverse())
-
-        # preorder: first parent and then children
-        for node in self.tree.traverse("preorder"):
-            if not node.is_leaf():
-                if node.name:
-                    names[idx] = node.name
-                idx -= 1
-
-        # names are in ladderized plotting order
-        tiporder = self.tree.get_leaves()
-        for node in tiporder:
-            names[idx] = node.name
-            idx -= 1
-        return names
-
+        if return_internal:
+            if return_nodes:
+                return {i.idx: i for i in self.tree.traverse("preorder")}
+            else:
+                return {i.idx: i.name for i in self.tree.traverse("preorder")}
+        else:
+            if return_nodes:
+                return {
+                    i.idx: i for i in self.tree.traverse("preorder")
+                    if i.is_leaf()
+                }
+            else:
+                return {
+                    i.idx: i.name for i in self.tree.traverse("preorder")
+                    if i.is_leaf()
+                }
+               
 
     def get_tip_labels(self):
         """
@@ -205,6 +211,11 @@ class Toytree:
         if self._fixed_order:
             return self._fixed_order
         return self.tree.get_leaf_names()
+
+
+    def copy(self):
+        """ returns a deepcopy of the tree object"""
+        return deepcopy(self)
 
 
     def is_rooted(self):
@@ -231,13 +242,8 @@ class Toytree:
         return bool(ctn2 == sum(1 for i in self.tree.traverse()))
 
     # --------------------------------------------------------------------
-    # functions to modify the ete3 tree -
+    # functions to modify the ete3 tree - MUST CALL ._coords.update()
     # --------------------------------------------------------------------
-    def copy(self):
-        """ returns a deepcopy of the tree object"""
-        return deepcopy(self)
-
-
     def prune(self, node_idx):
         """
         Returns a subtree pruned from the full tree at the selected
@@ -256,6 +262,7 @@ class Toytree:
         # ensure node_idx is int
         node = nself.tree.search_nodes(idx=int(node_idx))[0]
         nself.tree.prune(node)
+        nself._coords.update()
         return nself
 
 
@@ -279,6 +286,7 @@ class Toytree:
 
         keeptips = [i for i in nself.get_tip_labels() if i not in tips]
         nself.tree.prune(keeptips)
+        nself._coords.update()
         return nself
 
 
@@ -291,22 +299,24 @@ class Toytree:
         Returns a copy of the tree with resolved polytomies.
         Does not transform tree in-place.
         """
-        newtree = self.copy()
-        newtree.tree.resolve_polytomy(
+        nself = self.copy()
+        nself.tree.resolve_polytomy(
             default_dist=default_dist,
             default_support=default_support,
             recursive=recursive)
-        return newtree
+        nself._coords.update()        
+        return nself
 
 
     def unroot(self):
         """
         Returns a copy of the tree unrooted. Does not transform tree in-place.
         """
-        newtree = self.copy()
-        newtree.tree.unroot()
-        newtree.tree.ladderize()
-        return newtree
+        nself = self.copy()
+        nself.tree.unroot()
+        nself.tree.ladderize()
+        nself._coords.update()
+        return nself
 
 
     def root(self, outgroup=None, wildcard=None, regex=None):
@@ -324,7 +334,6 @@ class Toytree:
         rtre = tre.root(wildcard="1-")
         rtre = tre.root(regex="1-[A,B]")
         """
-
         # make a deepcopy of the tree
         nself = self.copy()
 
@@ -376,6 +385,7 @@ class Toytree:
 
         # root the object with ete's translate
         nself.tree.set_outgroup(out)
+        nself._coords.update()
 
         # get features
         testnode = nself.tree.get_leaves()[0]
@@ -420,6 +430,7 @@ class Toytree:
         # store tree back into newick and reinit Toytree with new newick
         # if NHX format then preserve the NHX features.
         nself.tree.ladderize()
+        nself._coords.update()
         return nself        
 
     # --------------------------------------------------------------------
@@ -483,12 +494,11 @@ class Toytree:
             ...
 
         node_labels: [True, False, list]
-            If True then nodes are shown, if False then nodes are
-            suppressed. If a list of node labels is provided it must be the
-            same length and order as nodes in .get_node_dict(). Node labels
-            can be generated in the proper order using the the
-            .get_node_labels() function from a Toytree tree to draw info
-            from the tree features.
+            If True then nodes are shown, if False then nodes are suppressed
+            If a list of node labels is provided it must be the same length
+            and order as nodes in .get_node_values(). Node labels can be 
+            generated in the proper order using the the .get_node_labels() 
+            function from a Toytree tree to draw info from the tree features.
             For example: node_labels=tree.get_node_labels("support").
 
         node_size: [int, list, None]
@@ -554,12 +564,13 @@ class Toytree:
         self._style.update_axes(axes_args)
         self._style.update_canvas(canvas_args)
 
-        # if user provided explicity axes already for the plot
+        # init Drawing. Coords should be uptodate.
         draw = Drawing(self)
 
         # and create drawing
         if kwargs.get("debug"):
             return draw
 
+        # if user provided explicit axes then include them
         canvas, axes = draw.update(axes=axes)
         return canvas, axes
