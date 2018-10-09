@@ -139,6 +139,10 @@ class Coords:
 
     def assign_coordinates(self):
         
+        # if tree is empty then bail out
+        if len(self.ttree) < 2:
+            return
+
         # things to fill
         edges = []
         nupdict = {}
@@ -208,6 +212,10 @@ class Coords:
         of verts rows is still the same because it is still based on the tree
         branching order (ladderized usually). TODO; coords...
         """
+        # if tree is empty then bail out
+        if len(self.ttree) < 2:
+            return
+
         # down is the default orientation
         # down-facing tips align at y=0, first ladderized tip at x=0
         if self.ttree._style["orient"] in ('down', 0):
