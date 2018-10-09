@@ -123,7 +123,6 @@ class TreeNode(object):
         except ValueError:
             raise TreeError('node support must be a float number')
 
-
     @property
     def support(self):
         return self._support
