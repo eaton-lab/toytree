@@ -7,6 +7,7 @@ A class object for storing Toyplot objects for a Toyplot drawing.
 from copy import deepcopy
 import numpy as np
 import toyplot
+import toytree
 from .utils import ToytreeError
 
 # should we store node_labels, node_sizes, etc here or in Style?
@@ -25,14 +26,15 @@ class Drawing:
         # mutable plotting attributes pulled from styles and tree
         self.node_labels = [""] * self.ttree.nnodes
         self.node_sizes = [0] * self.ttree.nnodes
+
+        # color can be node_style={"fill":x}, or node_color=[...]
         self.tip_labels = None
 
         # todo...
         self.tip_colors = None
         self.edge_colors = None
-        # not automatically run in init bc we want to keep toytrees light
-        # self.update()
-        
+
+
     def update(self, axes=None):
 
         # always update coords in case style params affect the node placement
@@ -41,8 +43,15 @@ class Drawing:
         # set up base canvas and axes
         self.get_dims_from_tree_size()
         self.get_canvas_and_axes(axes)
+
+        # update attrs for style entries. Some of these can be set with style, 
+        # or as a list, e.g., node_style={'fill':'red'} or node_color="red".
         self.assign_node_labels_and_sizes()
+        #self.assign_nodes_sizes()
+        #self.assign_node_colors()
         self.assign_tip_labels_and_colors()
+
+        # draw tree, nodes, tips, axes on canvas.
         self.add_tree_to_axes()
         self.add_tip_labels_to_axes()
         self.add_nodes_to_axes()
@@ -219,33 +228,40 @@ class Drawing:
     
     
     def add_nodes_to_axes(self):
+        """
+        Creates a new marker for every node from idx indexes and lists of 
+        node_values, node_colors, node_sizes, node_style, node_label_style.
+        Pulls from node_color and adds to a copy of the style dict for each 
+        node to create marker.
+
+        Node_colors has priority to overwrite node_style['fill']
+        """
         # bail out if not any visible nodes (e.g., none w/ size>0)
         if not self.style["node_labels"]:
             return
 
-        # shorthand names
-        ncs = self.style["node_color"]
-
-        # build markers
+        # build markers for each node.
         marks = []
         for nidx in self.ttree.get_node_values('idx', 1, 1):
+
             # select node value
-            nlabel = self.node_labels[nidx]  # self.style["node_labels"][nidx]
-            nsize = self.node_sizes[nidx]  # self.style["node_size"][nidx]
+            nlabel = self.node_labels[nidx]
+            nsize = self.node_sizes[nidx]
             nstyle = deepcopy(self.style["node_style"])
             nlstyle = deepcopy(self.style["node_labels_style"])
 
-            # parsing color is tricky b/c there are many accepted formats
-            if isinstance(ncs, str):
-                nstyle["fill"] = self.style["node_color"]
-
-            elif isinstance(ncs, (np.ndarray, list, tuple)):
-                color = self.style["node_color"][nidx]
-                if isinstance(color, (np.ndarray, np.void, list, tuple)):
-                    color = toyplot.color.to_css(color)
-                nstyle["fill"] = color
-            else:
-                pass
+            # get node color
+            if self.style["node_color"]:
+                # parsing color is tricky b/c there are many accepted formats
+                if isinstance(self.style["node_color"], str):
+                    nstyle["fill"] = self.style["node_color"]
+                elif isinstance(self.style["node_color"], (np.ndarray, list, tuple)):
+                    color = self.style["node_color"][nidx]
+                    if isinstance(color, (np.ndarray, np.void, list, tuple)):
+                        color = toyplot.color.to_css(color)
+                    nstyle["fill"] = color
+                else:
+                    pass
 
             # create mark if text or node
             if (nlabel or nsize):
