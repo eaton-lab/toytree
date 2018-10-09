@@ -41,6 +41,7 @@ class TreeMod:
         _height = ctree.tree.height
         for node in ctree.tree.traverse():
             node.dist = (node.dist / _height) * treeheight
+        ctree._coords.update()
         return ctree
 
 
@@ -76,6 +77,7 @@ class TreeMod:
 
                 ## slide self to match
                 node.dist -= newheight
+        ctree._coords.update()
         return ctree
 
 
@@ -90,6 +92,7 @@ class TreeMod:
         mult = random.uniform(low, high)
         for node in ctree.tree.traverse():
             node.dist = node.dist * mult
+        ctree._coords.update()
         return ctree
 
 
