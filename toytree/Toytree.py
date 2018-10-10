@@ -461,7 +461,7 @@ class Toytree:
         padding=None,
         # edge_width=None,
         # tip_labels_angle=None,  
-        **kwargs,      
+        **kwargs,
         ):
         """
         Plot a Toytree tree, returns a tuple of (Canvas, Axes).
