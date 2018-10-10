@@ -33,9 +33,8 @@ class MultiTree:
     ------------
     consenstree: str
         Returns a consenus tree object...
-
     """
-    def __init__(self, newick, tree_slice=(None, None, None)):
+    def __init__(self, newick):
 
         # setting attributes
         self.newick = newick
@@ -44,7 +43,8 @@ class MultiTree:
         self._style = TreeStyle("m")
         self._i = 0
 
-        # parse the newick treefile
+        # parse the newick object into a list of Toytrees
+        self.treelist = []
         self._parse_treelist()
 
     # attributes of multitrees
@@ -75,7 +75,7 @@ class MultiTree:
                 response = requests.get(self.newick)
                 response.raise_for_status()
                 treelines = response.text.strip().split("\n")
-                treelines = treelines[self._ts[0]:self._ts[1]:self._ts[2]]
+                #treelines = treelines[self._ts[0]:self._ts[1]:self._ts[2]]
                 self._treelines_to_treelist(treelines)
             except Exception as inst:
                 raise inst
@@ -87,7 +87,7 @@ class MultiTree:
                 self._treelines_to_treelist(treelines)
 
             elif isinstance(self.newick[0], str):
-                treelines = self.newick[self._ts[0]:self._ts[1]:self._ts[2]]
+                treelines = self.newick#[self._ts[0]:self._ts[1]:self._ts[2]]
                 self._treelines_to_treelist(treelines)
 
         # assume remaining type is a str -------
@@ -96,12 +96,13 @@ class MultiTree:
             self.newick = os.path.abspath(os.path.expanduser(self.newick))
             with open(self.newick) as infile:
                 treelines = infile.read().split("\n")
-                treelines = treelines[self._ts[0]:self._ts[1]:self._ts[2]]
+                treelines = treelines#[self._ts[0]:self._ts[1]:self._ts[2]]
                 self._treelines_to_treelist(treelines)
         else:
             treelines = self.newick.strip().split("\n")
-            treelines = treelines[self._ts[0]:self._ts[1]:self._ts[2]]
+            treelines = treelines#[self._ts[0]:self._ts[1]:self._ts[2]]
             self._treelines_to_treelist(treelines)
+
 
     def _treelines_to_treelist(self, treelines):
 
