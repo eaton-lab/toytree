@@ -38,7 +38,6 @@ class MultiTree:
 
         # setting attributes
         self.newick = newick
-        self._ts = tree_slice
         self._fixed_order = None      # <- do we need this before plotting?
         self._style = TreeStyle("m")
         self._i = 0
@@ -167,7 +166,7 @@ class MultiTree:
     # -------------------------------------------------------------------
     # Tree List Plotting
     # -------------------------------------------------------------------
-    def draw_tree_grid(self, x=1, y=5, start=0, **kwargs):
+    def draw_tree_grid(self, x=1, y=5, start=0, shared_axis=False, **kwargs):
         """
         Draw a slice of trees into a x,y grid non-overlapping. 
         x = number of grid cells in x dimension.
@@ -178,7 +177,7 @@ class MultiTree:
         # Toyplot creates a grid and margins and puts trees in them..
         if kwargs.get("debug"):
             return TreeGrid(self)
-        TreeGrid(self).update(x, y, start, **kwargs)
+        TreeGrid(self).update(x, y, start, shared_axis, **kwargs)
 
 
     def draw_cloud_tree(self):
@@ -377,7 +376,7 @@ class TreeGrid:
         self.y = None
         self.treelist = []
 
-    def update(self, x, y, start, **kwargs):
+    def update(self, x, y, start, shared_axis, **kwargs):
 
         # store plot dims and assert that they fit well enough
         self.x = x
@@ -391,20 +390,34 @@ class TreeGrid:
             width=(kwargs.get('width') if kwargs.get('width') else wdef), 
             height=(kwargs.get('height') if kwargs.get('height') else hdef),
         ) 
-        # todo: test with kwargs
 
-        # get max treeheight
-        ymax = max([i.tree.height for i in self.mtree])
-        for tidx, tree in enumerate(self.treelist):
-            # set ymax on cartesian so that trees are on same scale
+        # todo: test with kwargs
+        if not shared_axis:
+            # get max treeheight
+            for tidx, tree in enumerate(self.treelist):
+                # set ymax on cartesian so that trees are on same scale
+                axes = self.canvas.cartesian(
+                    grid=(self.x, self.y, tidx),
+                    margin=35,
+                    padding=10,
+                )
+                tree.draw(axes=axes, **kwargs)
+                axes.x.show = False
+
+        else:
+            ymax = max([i.tree.height for i in self.mtree])
             axes = self.canvas.cartesian(
-                grid=(self.x, self.y, tidx),
-                ymax=ymax,
-                margin=35,
-                padding=10,
-            )
-            tree.draw(axes=axes, **kwargs)
-            axes.x.show = False
+                    #bounds=()
+                    margin=35,
+                    padding=10,
+                )
+            # axes = self.axes.share(...)
+            for tidx, tree in enumerate(self.treelist):
+                pass
+                # add +x to their verts?
+                # or use share-axis args for axes <- yes.
+
+
 
 
 # TODO:
