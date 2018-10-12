@@ -52,10 +52,6 @@ class Toytree:
         """ return len of Tree (ntips) """
         return len(self.tree)
 
-    @property
-    def verts(self):
-        return self._coords.verts
-
     # --------------------------------------------------------------------
     # Loading Newick or ...
     # --------------------------------------------------------------------    
@@ -123,6 +119,14 @@ class Toytree:
             node.dist = 1.
         """
         return self.get_node_values('dist', True, True)
+
+
+    def get_node_coordinates(self, orient='right'):
+        if orient == 'right':
+            return self._coords.verts[::-1]
+        elif orient == 'down':
+            return self._coords.verts
+
 
 
     def get_node_values(
@@ -526,6 +530,10 @@ class Toytree:
             will be shown in order. If a dict then labels can be provided
             as well.
         """
+        # ts is shorthand for treestyle
+        if kwargs.get("ts"):
+            tree_style = kwargs.get("ts")
+
         # store entered args
         canvas_args = {
             "height": height,
