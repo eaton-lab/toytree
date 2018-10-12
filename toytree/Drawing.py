@@ -7,7 +7,6 @@ A class object for storing Toyplot objects for a Toyplot drawing.
 from copy import deepcopy
 import numpy as np
 import toyplot
-import toytree
 from .utils import ToytreeError
 
 # should we store node_labels, node_sizes, etc here or in Style?
@@ -54,13 +53,201 @@ class Drawing:
         # draw tree, nodes, tips, axes on canvas.
         self.add_tree_to_axes()
         self.add_tip_labels_to_axes()
+        self.add_tip_lines_to_axes()
         self.add_nodes_to_axes()
         self.add_axes_style()
+
+        # add extra display space for tips on the end of tree
+        self.fit_tip_labels()
         return self.canvas, self.axes
+        #return self.canvas, self.axes, tuple(self.axes._children)
+
+    # -----------------------------------------------------------------
+    # Node and Node Labels 
+    # -----------------------------------------------------------------
+    def add_tip_labels_to_axes(self):
+        # get tip-coords and align-coords from verts
+        xpos, ypos, aedges, averts = self.get_tip_label_coords()
+
+        # add tip names to coordinates calculated above
+        self.axes.text(
+            xpos, 
+            ypos,
+            self.tip_labels, 
+            angle=(0 if self.style["orient"] in ("right", "left") else -90),
+            style=self.style["tip_labels_style"],
+            color=self.style["tip_labels_color"],
+        )
+        # get stroke-width for aligned tip-label lines (optional)
+        # copy stroke-width from the edge_style unless user set it
+        if not self.style["edge_align_style"].get("stroke-width"):
+            self.style["edge_align_style"]["stroke-width"] = (
+                self.style["edge_style"]["stroke-width"]
+            )
+
+
+    def add_tip_lines_to_axes(self):
+        "add lines to connect tips to zero axis for tip_labels_align=True"
+
+        # get tip-coords and align-coords from verts
+        xpos, ypos, aedges, averts = self.get_tip_label_coords() 
+        if self.style["tip_labels_align"]:
+            self.axes.graph(
+                aedges,
+                vcoordinates=averts,
+                estyle=self.style["edge_align_style"],
+                vlshow=False,
+                vsize=0,
+            )
+
+
+    def fit_tip_labels(self):
+        if self.style["tip_labels"]:
+            # get tree height + 25%
+            addon = self.ttree.tree.height + (self.ttree.tree.height * 0.25)
+            if self.style["orient"] == "right":
+                self.axes.x._display_max = addon
+            elif self.style["orient"] == "down":
+                self.axes.y._display_min = -1 * addon
+
+
+    def assign_tip_labels_and_colors(self):
+        "assign tip labels based on user provided kwargs"
+        # shorthand label
+        anchorshift = "-toyplot-anchor-shift"
+
+        # COLOR
+        # tip color overrides tipstyle[fill]
+        if self.style.get("tip_labels_color"):
+            if 'fill' in self.style["tip_labels_style"]:
+                self.style["tip_labels_style"].pop("fill")
+
+        # LABELS
+        # False == hide tip labels
+        if self.style["tip_labels"] is False:
+            self.style["tip_labels_style"][anchorshift] = "0px"
+            self.tip_labels = ["" for i in self.ttree.get_tip_labels()]
+
+        # LABELS
+        # user entered something...
+        else:
+            # if user did not change label-offset then shift it here
+            if not self.style["tip_labels_style"][anchorshift]:
+                self.style["tip_labels_style"][anchorshift] = "15px"
+
+            # if user entered list in get_tip_labels order [reversed] then flip 
+            if isinstance(self.style["tip_labels"], list):
+                self.tip_labels = self.style["tip_labels"][::-1]
+
+            # True assigns tip labels from tree
+            else:
+                #self._style["tip_labels"] = self.get_tip_labels()
+                if self.ttree._fixed_order:
+                    self.tip_labels = self.ttree._fixed_order
+                else:
+                    self.tip_labels = self.ttree.get_tip_labels()[::-1]
     
     # -----------------------------------------------------------------
-    # Sets Drawing.node_labels
+    # Tree / Graph plotting
     # -----------------------------------------------------------------
+    def add_tree_to_axes(self):
+        if self.style["edge_type"] == 'c':
+            self.axes.graph(
+                self.coords.edges,
+                vcoordinates=self.coords.verts,
+                vlshow=False,
+                vsize=0,
+                estyle=self.style["edge_style"],
+                # ecolor=self._style["edge_color"], ## ...
+            )
+        else:
+            self.axes.graph(
+                self.coords.lines,
+                vcoordinates=self.coords.coords,
+                vlshow=False,
+                vsize=0.,
+                estyle=self.style["edge_style"],
+                # ecolor=self._style["edge_color"], ## ...
+            )
+
+        # if we add the length of the tree to the domain a priori this leaves
+        # room for all of the text at the tips to fit.
+   
+    # -----------------------------------------------------------------
+    # Node and Node Labels 
+    # -----------------------------------------------------------------   
+    def add_nodes_to_axes(self):
+        """
+        Creates a new marker for every node from idx indexes and lists of 
+        node_values, node_colors, node_sizes, node_style, node_label_style.
+        Pulls from node_color and adds to a copy of the style dict for each 
+        node to create marker.
+
+        Node_colors has priority to overwrite node_style['fill']
+        """
+        # bail out if not any visible nodes (e.g., none w/ size>0)
+        if not self.style["node_labels"]:
+            return
+
+        # build markers for each node.
+        marks = []
+        for nidx in self.ttree.get_node_values('idx', 1, 1):
+
+            # select node value
+            nlabel = self.node_labels[nidx]
+            nsize = self.node_sizes[nidx]
+            nstyle = deepcopy(self.style["node_style"])
+            nlstyle = deepcopy(self.style["node_labels_style"])
+
+            # get node color
+            if self.style["node_color"]:
+                # parsing color is tricky b/c there are many accepted formats
+                if isinstance(self.style["node_color"], str):
+                    nstyle["fill"] = self.style["node_color"]
+                elif isinstance(self.style["node_color"], (np.ndarray, list, tuple)):
+                    color = self.style["node_color"][nidx]
+                    if isinstance(color, (np.ndarray, np.void, list, tuple)):
+                        color = toyplot.color.to_css(color)
+                    nstyle["fill"] = color
+                else:
+                    pass
+
+            # create mark if text or node
+            if (nlabel or nsize):
+                mark = toyplot.marker.create(
+                    shape="o",
+                    label=str(nlabel),
+                    size=nsize,
+                    mstyle=nstyle,
+                    lstyle=nlstyle,
+                )
+            else:
+                mark = ""
+
+            # store the nodes/marks
+            marks.append(mark)
+
+        # node_hover == True to show all features interactive
+        if self.style["node_hover"] is True:
+            title = self.get_hover()
+
+        elif isinstance(self.style["node_hover"], list):
+            # todo: return advice if improperly formatted
+            title = self.style["node_hover"]
+
+        # if hover is false then no hover
+        else:
+            title = None
+
+        # add nodes
+        self.axes.scatterplot(
+            self.coords.verts[:, 0],
+            self.coords.verts[:, 1],
+            marker=marks,
+            title=title,
+        )
+    
+
     def assign_node_labels_and_sizes(self):
         "assign features of nodes to be plotted based on user kwargs"
 
@@ -131,175 +318,9 @@ class Drawing:
                 if self.node_labels[nidx] == "":
                     self.node_sizes[nidx] = 0
 
-    
-    def assign_tip_labels_and_colors(self):
-        "assign tip labels based on user provided kwargs"
-        # shorthand label
-        anchorshift = "-toyplot-anchor-shift"
-
-        # COLOR
-        # tip color overrides tipstyle[fill]
-        if self.style.get("tip_labels_color"):
-            if 'fill' in self.style["tip_labels_style"]:
-                self.style["tip_labels_style"].pop("fill")
-
-        # LABELS
-        # False == hide tip labels
-        if self.style["tip_labels"] is False:
-            self.style["tip_labels_style"][anchorshift] = "0px"
-            self.tip_labels = ["" for i in self.ttree.get_tip_labels()]
-
-        # LABELS
-        # user entered something...
-        else:
-            # if user did not change label-offset then shift it here
-            if not self.style["tip_labels_style"][anchorshift]:
-                self.style["tip_labels_style"][anchorshift] = "15px"
-
-            # if user entered list in get_tip_labels order [reversed] then flip 
-            if isinstance(self.style["tip_labels"], list):
-                self.tip_labels = self.style["tip_labels"][::-1]
-
-            # True assigns tip labels from tree
-            else:
-                #self._style["tip_labels"] = self.get_tip_labels()
-                if self.ttree._fixed_order:
-                    self.tip_labels = self.ttree._fixed_order
-                else:
-                    self.tip_labels = self.ttree.get_tip_labels()[::-1]
-    
     # -----------------------------------------------------------------
-    # 
-    # -----------------------------------------------------------------
-    def add_tree_to_axes(self):
-        if self.style["edge_type"] == 'c':
-            mark = self.axes.graph(
-                self.coords.edges,
-                vcoordinates=self.coords.verts,
-                vlshow=False,
-                vsize=0,
-                estyle=self.style["edge_style"],
-                # ecolor=self._style["edge_color"], ## ...
-            )
-        else:
-            mark = self.axes.graph(
-                self.coords.lines,
-                vcoordinates=self.coords.coords,
-                vlshow=False,
-                vsize=0.,
-                estyle=self.style["edge_style"],
-                # ecolor=self._style["edge_color"], ## ...
-            )
-        return mark
-
-
-    def add_tip_labels_to_axes(self):
-        # get tip-coords and align-coords from verts
-        xpos, ypos, aedges, averts = self.get_tip_label_coords()
-
-        # add tip names to coordinates calculated above
-        mark = self.axes.text(
-            xpos, 
-            ypos,
-            self.tip_labels, 
-            angle=(0 if self.style["orient"] in ("right", "left") else -90),
-            style=self.style["tip_labels_style"],
-            color=self.style["tip_labels_color"],
-        )
-
-        # get stroke-width for aligned tip-label lines (optional)
-        # copy stroke-width from the edge_style unless user set it
-        if not self.style["edge_align_style"].get("stroke-width"):
-            self.style["edge_align_style"]["stroke-width"] = (
-                self.style["edge_style"]["stroke-width"]
-            )
-
-        # add lines to connect tree tips to aligned tips. We don't
-        # return this mark since it's optional.
-        if self.style["tip_labels_align"]:
-            self.axes.graph(
-                aedges,
-                vcoordinates=averts,
-                estyle=self.style["edge_align_style"],
-                vlshow=False,
-                vsize=0,
-            )
-        return mark
-    
-    
-    def add_nodes_to_axes(self):
-        """
-        Creates a new marker for every node from idx indexes and lists of 
-        node_values, node_colors, node_sizes, node_style, node_label_style.
-        Pulls from node_color and adds to a copy of the style dict for each 
-        node to create marker.
-
-        Node_colors has priority to overwrite node_style['fill']
-        """
-        # bail out if not any visible nodes (e.g., none w/ size>0)
-        if not self.style["node_labels"]:
-            return
-
-        # build markers for each node.
-        marks = []
-        for nidx in self.ttree.get_node_values('idx', 1, 1):
-
-            # select node value
-            nlabel = self.node_labels[nidx]
-            nsize = self.node_sizes[nidx]
-            nstyle = deepcopy(self.style["node_style"])
-            nlstyle = deepcopy(self.style["node_labels_style"])
-
-            # get node color
-            if self.style["node_color"]:
-                # parsing color is tricky b/c there are many accepted formats
-                if isinstance(self.style["node_color"], str):
-                    nstyle["fill"] = self.style["node_color"]
-                elif isinstance(self.style["node_color"], (np.ndarray, list, tuple)):
-                    color = self.style["node_color"][nidx]
-                    if isinstance(color, (np.ndarray, np.void, list, tuple)):
-                        color = toyplot.color.to_css(color)
-                    nstyle["fill"] = color
-                else:
-                    pass
-
-            # create mark if text or node
-            if (nlabel or nsize):
-                mark = toyplot.marker.create(
-                    shape="o",
-                    label=str(nlabel),
-                    size=nsize,
-                    mstyle=nstyle,
-                    lstyle=nlstyle,
-                )
-            else:
-                mark = ""
-
-            # store the nodes/marks
-            marks.append(mark)
-
-        # node_hover == True to show all features interactive
-        if self.style["node_hover"] is True:
-            title = self.get_hover()
-
-        elif isinstance(self.style["node_hover"], list):
-            # todo: return advice if improperly formatted
-            title = self.style["node_hover"]
-
-        # if hover is false then no hover
-        else:
-            title = None
-
-        # add nodes
-        mark = self.axes.scatterplot(
-            self.coords.verts[:, 0],
-            self.coords.verts[:, 1],
-            marker=marks,
-            title=title,
-        )
-        return mark
-    
-    
+    # Axes styling / scale bar / padding
+    # -----------------------------------------------------------------        
     def add_axes_style(self):
         self.axes.padding = self.style["axes"]["padding"]
         self.axes.show = self.style["axes"]["show"]
@@ -309,14 +330,14 @@ class Drawing:
         self.axes.x.ticks.show = self.style["axes"]["x.ticks.show"]
         self.axes.x.ticks.labels.angle = self.style["axes"]["x.ticks.labels.angle"]
         self.axes.x.domain.min = self.style["axes"]["x.domain.min"]
-        self.axes.x.domain.max = self.style["axes"]["x.domain.max"]        
+        self.axes.x.domain.max = self.style["axes"]["x.domain.max"]
 
         # scalebar
         self.axes.y.show = self.style["axes"]["y.show"]
         self.axes.y.ticks.show = self.style["axes"]["y.ticks.show"]
         self.axes.y.ticks.labels.angle = self.style["axes"]["y.ticks.labels.angle"]
         self.axes.y.domain.min = self.style["axes"]["y.domain.min"]
-        self.axes.y.domain.max = self.style["axes"]["y.domain.max"]        
+        self.axes.y.domain.max = self.style["axes"]["y.domain.max"]
 
         # allow coloring axes
         if (self.style["axes"]["x_label_color"] or self.style["axes"]["y_label_color"]):
@@ -333,8 +354,11 @@ class Drawing:
             self.axes.y.ticks.labels.style.update(
                 {"stroke": self.style["axes"]["y_label_color"]})                                                            
 
+        # beyond styledict -- 
+        #self.axes.x.domain.max *= 0.5
+
     # ------------------------------------------------------------------
-    #
+    # Other helper functions
     # ------------------------------------------------------------------
     def get_tip_label_coords(self):
         """
@@ -413,13 +437,13 @@ class Drawing:
             if not self.style.get("height"):
                 self.style["height"] = max(275, min(1000, 18 * ntips))
             if not self.style.get("width"):
-                self.style["width"] = max(225, min(500, 18 * ntips))
+                self.style["width"] = max(300, min(500, 18 * ntips))
         else:
             # long tip-wise dimension
             if not self.style.get("width"):
-                self.style["width"] = max(275, min(1000, 18 * ntips))
+                self.style["width"] = max(300, min(1000, 18 * ntips))
             if not self.style.get("height"):
-                self.style["height"] = max(225, min(500, 18 * ntips))
+                self.style["height"] = max(275, min(500, 18 * ntips))
 
 
     def get_canvas_and_axes(self, axes):
