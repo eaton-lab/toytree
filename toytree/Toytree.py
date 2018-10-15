@@ -4,6 +4,7 @@ from __future__ import print_function, absolute_import
 
 import re
 import requests
+import itertools
 from decimal import Decimal
 from copy import deepcopy
 
@@ -22,6 +23,7 @@ class Toytree:
 
         # set tips order if fixing for multi-tree plotting (default None)
         self._fixed_order = None
+        self._fixed_idx = list(range(self.ntips))
         if fixed_order:
             self._set_fixed_order(fixed_order)
 
@@ -79,6 +81,8 @@ class Toytree:
                 raise ToytreeError(
                     "fixed_order must include same tipnames as tree")
             self._fixed_order = fixed_order
+            names = self.get_tip_labels()
+            self._fixed_idx = [names.index(i) for i in self._fixed_order]
 
     # --------------------------------------------------------------------
     # properties are not changeable by the user
@@ -335,6 +339,41 @@ class Toytree:
             recursive=recursive)
         nself._coords.update()        
         return nself
+
+
+    def rotate_node(self, idx):
+        """
+        Returns a ToyTree with the selected node rotated for plotting.
+        tip colors do not align correct currently if nodes are rotated...
+        """
+        # make a copy
+        revd = {j: i for (i, j) in enumerate(self.get_tip_labels())}
+        neworder = {}
+        
+        # get node at idx
+        node = self.tree.search_nodes(idx=int(idx))[0]
+        children = node.children
+        aa = [[j.name for j in i.get_leaves()] for i in children]
+        bb = [[revd[i] for i in j] for j in aa]
+        move = max((len(i) for i in bb))
+
+        # newdict
+        tdict = {i: None for i in itertools.chain(*aa)}
+        cycle = itertools.cycle(itertools.chain(*bb))
+        for m in range(move):
+            next(cycle)
+        for t in tdict:
+            tdict[t] = next(cycle)
+            
+        for key in revd:
+            if key in tdict:
+                neworder[key] = tdict[key]
+            else:
+                neworder[key] = revd[key]
+        
+        revd = {j: i for (i, j) in neworder.items()}
+        neworder = [revd[i] for i in range(self.ntips)]
+        return Toytree(self.newick, fixed_order=neworder)
 
 
     def unroot(self):
