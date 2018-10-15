@@ -560,9 +560,8 @@ class CloudTree:
                 width=self.style.width,
             )
             self.axes = self.canvas.cartesian(
-                padding=self.style.axes_style.padding,
+                padding=self.style.padding,
             )
-            self.axes.show = self.style.axes_style.show
 
 
     def set_dims_from_tree_size(self):
