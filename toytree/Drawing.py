@@ -3,7 +3,6 @@
 """
 A class object for storing Toyplot objects for a Toyplot drawing.
 """
-
 from copy import deepcopy
 import numpy as np
 import toyplot
@@ -29,7 +28,7 @@ class Drawing:
         # color can be node_style={"fill":x}, or node_color=[...]
         self.tip_labels = None
 
-        # todo...
+        # todo: allow itemized versions of these...
         self.tip_colors = None
         self.edge_colors = None
 
@@ -66,24 +65,39 @@ class Drawing:
     # Node and Node Labels 
     # -----------------------------------------------------------------
     def add_tip_labels_to_axes(self):
-        # get tip-coords and align-coords from verts
-        xpos, ypos, aedges, averts = self.get_tip_label_coords()
+        """
+        Add text offset from tips of tree with correction for orientation, 
+        and fixed_order which is usually used in multitree plotting.
+        """
+        # get tip-coords and replace if using fixed_order
+        xpos = self.ttree.get_tip_coordinates('x')
+        if self.style.orient in ("up", "down"):
+            if self.ttree._fixed_order:
+                xpos = list(range(self.ttree.ntips))
+        ypos = self.ttree.get_tip_coordinates('y')
+        if self.style.orient in ("right", "left"):
+            if self.ttree._fixed_order:
+                ypos = list(range(self.ttree.ntips))
+
+        # pop fill from color dict if using color
+        tstyle = deepcopy(self.style.tip_labels_style.cssdict())
+        if self.style.tip_labels_color:
+            tstyle.pop("fill")
 
         # add tip names to coordinates calculated above
         self.axes.text(
             xpos, 
             ypos,
-            self.tip_labels, 
-            angle=(0 if self.style["orient"] in ("right", "left") else -90),
-            style=self.style["tip_labels_style"],
-            color=self.style["tip_labels_color"],
+            self.tip_labels,
+            angle=(0 if self.style.orient in ("right", "left") else -90),
+            style=tstyle,
+            color=self.style.tip_labels_color,
         )
         # get stroke-width for aligned tip-label lines (optional)
         # copy stroke-width from the edge_style unless user set it
-        if not self.style["edge_align_style"].get("stroke-width"):
-            self.style["edge_align_style"]["stroke-width"] = (
-                self.style["edge_style"]["stroke-width"]
-            )
+        if not self.style.edge_align_style.__dict__.get("stroke_width"):
+            self.style.edge_align_style.stroke_width = (
+                self.style.edge_style.stroke_width)
 
 
     def add_tip_lines_to_axes(self):
@@ -91,73 +105,88 @@ class Drawing:
 
         # get tip-coords and align-coords from verts
         xpos, ypos, aedges, averts = self.get_tip_label_coords() 
-        if self.style["tip_labels_align"]:
+        if self.style.tip_labels_align:
             self.axes.graph(
                 aedges,
                 vcoordinates=averts,
-                estyle=self.style["edge_align_style"],
+                estyle=self.style.edge_align_style.cssdict(),
                 vlshow=False,
                 vsize=0,
             )
 
 
     def fit_tip_labels(self):
-        if self.style["tip_labels"]:
-            # get tree height + 25%
-            addon = self.ttree.tree.height + (self.ttree.tree.height * 0.25)
-            if self.style["orient"] == "right":
-                self.axes.x._display_max = addon
-            elif self.style["orient"] == "down":
-                self.axes.y._display_min = -1 * addon
+        """
+        Modifies display range to ensure tip labels fit. This is a bit hackish
+        still. The problem is that the 'extents' range of the rendered text
+        is totally correct. So we add a little buffer here. Should add for 
+        user to be able to modify this if needed. If not using edge lengths
+        then need to use unit length for treeheight.
+        """
+        # user entered values
+        #if self.style.axes.x_domain_max or self.style.axes.y_domain_min:
+        #    self.axes.x.domain.max = self.style.axes.x_domain_max
+        #    self.axes.y.domain.min = self.style.axes.y_domain_min            
+
+        # IF USE WANTS TO CHANGE IT THEN DO IT AFTER USING AXES
+        # or auto-fit (tree height)
+        #else:
+        if self.style.use_edge_lengths:
+            addon = self.ttree.tree.height 
+        else:
+            addon = self.ttree.tree.get_farthest_leaf(True)[1]
+
+        # modify display for orientations
+        if self.style.tip_labels:
+            if self.style.orient == "right":
+                self.axes.x.domain.max = addon
+            elif self.style.orient == "down":
+                self.axes.y.domain.min = -1 * addon
 
 
     def assign_tip_labels_and_colors(self):
         "assign tip labels based on user provided kwargs"
-        # shorthand label
-        anchorshift = "-toyplot-anchor-shift"
-
         # COLOR
-        # tip color overrides tipstyle[fill]
-        if self.style.get("tip_labels_color"):
-            if 'fill' in self.style["tip_labels_style"]:
-                self.style["tip_labels_style"].pop("fill")
+        # tip color overrides tipstyle.fill
+        if self.style.tip_labels_color:
+            if self.style.tip_labels_style.fill:
+                self.style.tip_labels_style.fill = None
 
         # LABELS
         # False == hide tip labels
-        if self.style["tip_labels"] is False:
-            self.style["tip_labels_style"][anchorshift] = "0px"
+        if self.style.tip_labels is False:
+            self.style.tip_labels_style.text_anchor_shift = "0px"
             self.tip_labels = ["" for i in self.ttree.get_tip_labels()]
 
         # LABELS
         # user entered something...
         else:
             # if user did not change label-offset then shift it here
-            if not self.style["tip_labels_style"][anchorshift]:
-                self.style["tip_labels_style"][anchorshift] = "15px"
+            if not self.style.tip_labels_style.text_anchor_shift:
+                self.style.tip_labels_style.text_anchor_shift = "15px"
 
-            # if user entered list in get_tip_labels order [reversed] then flip 
-            if isinstance(self.style["tip_labels"], list):
-                self.tip_labels = self.style["tip_labels"][::-1]
+            # if user entered list in get_tip_labels order reverse it for plot
+            if isinstance(self.style.tip_labels, list):
+                self.tip_labels = self.style.tip_labels  # [::-1]
 
             # True assigns tip labels from tree
             else:
-                #self._style["tip_labels"] = self.get_tip_labels()
                 if self.ttree._fixed_order:
                     self.tip_labels = self.ttree._fixed_order
                 else:
-                    self.tip_labels = self.ttree.get_tip_labels()[::-1]
+                    self.tip_labels = self.ttree.get_tip_labels()
     
     # -----------------------------------------------------------------
     # Tree / Graph plotting
     # -----------------------------------------------------------------
     def add_tree_to_axes(self):
-        if self.style["edge_type"] == 'c':
+        if self.style.edge_type == 'c':
             self.axes.graph(
                 self.coords.edges,
                 vcoordinates=self.coords.verts,
                 vlshow=False,
                 vsize=0,
-                estyle=self.style["edge_style"],
+                estyle=self.style.edge_style.cssdict(),
                 # ecolor=self._style["edge_color"], ## ...
             )
         else:
@@ -166,13 +195,10 @@ class Drawing:
                 vcoordinates=self.coords.coords,
                 vlshow=False,
                 vsize=0.,
-                estyle=self.style["edge_style"],
+                estyle=self.style.edge_style.cssdict(),                
                 # ecolor=self._style["edge_color"], ## ...
             )
-
-        # if we add the length of the tree to the domain a priori this leaves
-        # room for all of the text at the tips to fit.
-   
+  
     # -----------------------------------------------------------------
     # Node and Node Labels 
     # -----------------------------------------------------------------   
@@ -186,7 +212,7 @@ class Drawing:
         Node_colors has priority to overwrite node_style['fill']
         """
         # bail out if not any visible nodes (e.g., none w/ size>0)
-        if not self.style["node_labels"]:
+        if not self.style.node_labels:
             return
 
         # build markers for each node.
@@ -196,19 +222,17 @@ class Drawing:
             # select node value
             nlabel = self.node_labels[nidx]
             nsize = self.node_sizes[nidx]
-            nstyle = deepcopy(self.style["node_style"])
-            nlstyle = deepcopy(self.style["node_labels_style"])
 
             # get node color
-            if self.style["node_color"]:
+            if self.style.node_color is not None:
                 # parsing color is tricky b/c there are many accepted formats
-                if isinstance(self.style["node_color"], str):
-                    nstyle["fill"] = self.style["node_color"]
-                elif isinstance(self.style["node_color"], (np.ndarray, list, tuple)):
-                    color = self.style["node_color"][nidx]
+                if isinstance(self.style.node_color, str):
+                    self.style.node_style.fill = self.style.node_color
+                elif isinstance(self.style.node_color, (np.ndarray, list, tuple)):
+                    color = self.style.node_color[nidx]
                     if isinstance(color, (np.ndarray, np.void, list, tuple)):
                         color = toyplot.color.to_css(color)
-                    nstyle["fill"] = color
+                    self.style.node_style.fill = color
                 else:
                     pass
 
@@ -218,8 +242,8 @@ class Drawing:
                     shape="o",
                     label=str(nlabel),
                     size=nsize,
-                    mstyle=nstyle,
-                    lstyle=nlstyle,
+                    mstyle=self.style.node_style.cssdict(),
+                    lstyle=self.style.node_labels_style.cssdict()
                 )
             else:
                 mark = ""
@@ -228,12 +252,12 @@ class Drawing:
             marks.append(mark)
 
         # node_hover == True to show all features interactive
-        if self.style["node_hover"] is True:
+        if self.style.node_hover is True:
             title = self.get_hover()
 
-        elif isinstance(self.style["node_hover"], list):
+        elif isinstance(self.style.node_hover, list):
             # todo: return advice if improperly formatted
-            title = self.style["node_hover"]
+            title = self.style.node_hover
 
         # if hover is false then no hover
         else:
@@ -255,61 +279,54 @@ class Drawing:
         nvals = self.ttree.get_node_values()
 
         # False == Hide nodes and labels unless user entered size 
-        if self.style["node_labels"] is False:
-            self.style["vlshow"] = False            
+        if self.style.node_labels is False:
+            self.style.vlshow = False            
             self.node_labels = ["" for i in nvals]           
-            if self.style["node_size"]:
-                assert isinstance(self.style["node_size"], (int, str))
+            if self.style.node_size:
+                assert isinstance(self.style.node_size, (int, str))
                 self.node_sizes = (
-                    [int(self.style["node_size"])] * len(nvals)
+                    [int(self.style.node_size)] * len(nvals)
                 )
                     
         # True == Show nodes, label=idx, and show hover
-        elif self.style["node_labels"] is True:
-            self.style["vlshow"] = True
+        elif self.style.node_labels is True:
+            self.style.vlshow = True
             #self.style["node_hover"] = True
             self.node_labels = self.ttree.get_node_values('idx', 1, 1)
             # use default node size as a list if not provided
-            if not self.style["node_size"]:
+            if not self.style.node_size:
                 self.node_sizes = [20] * len(nvals)
             else:
-                assert isinstance(self.style["node_size"], (int, str))
+                assert isinstance(self.style.node_size, (int, str))
                 self.node_sizes = (
-                    [int(self.style["node_size"])] * len(nvals)
+                    [int(self.style.node_size)] * len(nvals)
                 )
 
         # User entered lists or other for node labels or sizes; check lengths.
         else:
             # show labels
-            self.style["vlshow"] = True
+            self.style.vlshow = True
 
             # make node labels into a list of values 
-            if isinstance(self.style["node_labels"], list):
-                assert len(self.style["node_labels"]) == len(nvals)
-                self.node_labels = self.style["node_labels"]
-
-            elif isinstance(self.style["node_labels"], str):
-                # check if user entered a feature
-                if self.style["node_labels"] in self.ttree.features:
+            if isinstance(self.style.node_labels, list):
+                assert len(self.style.node_labels) == len(nvals)
+                self.node_labels = self.style.node_labels
+            # check if user entered a feature else use entered val
+            elif isinstance(self.style.node_labels, str):
+                self.node_labels = [self.style.node_labels] * len(nvals)
+                if self.style.node_labels in self.ttree.features:
                     self.node_labels = self.ttree.get_node_values(
-                        self.style["node_labels"], 1, 0)
-                else:
-                    self.node_labels = [self.style["node_labels"]] * len(nvals)
+                        self.style.node_labels, 1, 0)                   
+            # default to idx at internals if nothing else
             else:
                 self.node_labels = self.ttree.get_node_values("idx", 1, 0)
 
             # make node sizes as a list; set to zero if node label is ""
-            if isinstance(self.style["node_size"], list):
-                assert len(self.style["node_size"], list) == len(nvals)
-                self.node_sizes = self.style["node_size"]
-
-            elif isinstance(self.style["node_size"], (str, int, float)):
-                tmpns = float(self.style["node_size"])
-                # set default size if none
-                if tmpns in (None, False, 0):
-                    self.node_sizes = [20] * len(nvals)
-                else:
-                    self.node_sizes = [int(tmpns)] * len(nvals)
+            if isinstance(self.style.node_size, list):
+                assert len(self.style.node_size, list) == len(nvals)
+                self.node_sizes = self.style.node_size
+            elif isinstance(self.style.node_size, (str, int, float)):
+                self.node_sizes = [int(self.style.node_size)] * len(nvals)
             else:
                 self.node_sizes = [20] * len(nvals)
 
@@ -322,37 +339,34 @@ class Drawing:
     # Axes styling / scale bar / padding
     # -----------------------------------------------------------------        
     def add_axes_style(self):
-        self.axes.padding = self.style["axes"]["padding"]
-        self.axes.show = self.style["axes"]["show"]
+        self.axes.padding = self.style.axes_style.padding
+        self.axes.show = self.style.axes_style.show
         
         # scalebar        
-        self.axes.x.show = self.style["axes"]["x.show"]
-        self.axes.x.ticks.show = self.style["axes"]["x.ticks.show"]
-        self.axes.x.ticks.labels.angle = self.style["axes"]["x.ticks.labels.angle"]
-        self.axes.x.domain.min = self.style["axes"]["x.domain.min"]
-        self.axes.x.domain.max = self.style["axes"]["x.domain.max"]
+        self.axes.x.show = self.style.axes_style.x_show
+        self.axes.x.ticks.show = self.style.axes_style.x_ticks_show
+        self.axes.x.ticks.labels.angle = self.style.axes_style.x_ticks_labels_angle
+        self.axes.x.domain.min = self.style.axes_style.x_domain_min
+        self.axes.x.domain.max = self.style.axes_style.x_domain_max
 
         # scalebar
-        self.axes.y.show = self.style["axes"]["y.show"]
-        self.axes.y.ticks.show = self.style["axes"]["y.ticks.show"]
-        self.axes.y.ticks.labels.angle = self.style["axes"]["y.ticks.labels.angle"]
-        self.axes.y.domain.min = self.style["axes"]["y.domain.min"]
-        self.axes.y.domain.max = self.style["axes"]["y.domain.max"]
+        self.axes.y.show = self.style.axes_style.y_show
+        self.axes.y.ticks.show = self.style.axes_style.y_ticks_show
+        self.axes.y.ticks.labels.angle = self.style.axes_style.y_ticks_labels_angle
+        self.axes.y.domain.min = self.style.axes_style.y_domain_min
+        self.axes.y.domain.max = self.style.axes_style.y_domain_max
 
         # allow coloring axes
-        if (self.style["axes"]["x_label_color"] or self.style["axes"]["y_label_color"]):
-            self.axes.x.spine.style.update(
-                {"stroke": self.style["axes"]["x_label_color"]})
-            self.axes.x.ticks.style.update(
-                {"stroke": self.style["axes"]["x_label_color"]})            
-            self.axes.x.ticks.labels.style.update(
-                {"stroke": self.style["axes"]["x_label_color"]})                        
-            self.axes.y.spine.style.update(
-                {"stroke": self.style["axes"]["y_label_color"]})                                    
-            self.axes.y.ticks.style.update(
-                {"stroke": self.style["axes"]["y_label_color"]})                                                
-            self.axes.y.ticks.labels.style.update(
-                {"stroke": self.style["axes"]["y_label_color"]})                                                            
+        if (self.style.axes_style.x_label_color or 
+            self.style.axes_style.y_label_color):
+            xcol = {"stroke": self.style.axes_style.x_label_color}
+            ycol = {"stroke": self.style.axes_style.y_label_color}
+            self.axes.x.spine.style.update(xcol)
+            self.axes.x.ticks.style.update(xcol)
+            self.axes.x.ticks.labels.style.update(xcol)
+            self.axes.y.spine.style.update(ycol)
+            self.axes.y.ticks.style.update(ycol)
+            self.axes.y.ticks.labels.style.update(ycol)
 
         # beyond styledict -- 
         #self.axes.x.domain.max *= 0.5
@@ -368,7 +382,7 @@ class Drawing:
         already oriented for the tree face direction. 
         """
         # number of tips
-        ns = len(self.ttree)
+        ns = self.ttree.ntips
 
         # x-coordinate of tips assuming down-face
         tip_xpos = self.coords.verts[:ns, 0]
@@ -377,9 +391,9 @@ class Drawing:
         align_verts = None
 
         # handle orientations
-        if self.style['orient'] in (0, 'down'):
+        if self.style.orient in (0, 'down'):
             # align tips at zero
-            if self.style["tip_labels_align"]:               
+            if self.style.tip_labels_align:
                 tip_yend = np.zeros(ns)
                 align_edges = np.array([
                     (i, i + len(tip_ypos)) for i in range(len(tip_ypos))
@@ -391,7 +405,7 @@ class Drawing:
                 tip_ypos = tip_yend
         else:
             # tip labels align finds the zero axis for orientation...
-            if self.style["tip_labels_align"]:
+            if self.style.tip_labels_align:
                 tip_xend = np.zeros(ns)
                 align_edges = np.array([
                     (i, i + len(tip_xpos)) for i in range(len(tip_xpos))
@@ -432,18 +446,18 @@ class Drawing:
     def get_dims_from_tree_size(self):
         "Calculate reasonable height and width for tree given N tips" 
         ntips = len(self.ttree)
-        if self.style.get("orient") in ["right", "left"]:
+        if self.style.orient in ("right", "left"):
             # long tip-wise dimension
-            if not self.style.get("height"):
-                self.style["height"] = max(275, min(1000, 18 * ntips))
-            if not self.style.get("width"):
-                self.style["width"] = max(300, min(500, 18 * ntips))
+            if not self.style.height:
+                self.style.height = max(275, min(1000, 18 * ntips))
+            if not self.style.width:
+                self.style.width = max(300, min(500, 18 * ntips))
         else:
             # long tip-wise dimension
-            if not self.style.get("width"):
-                self.style["width"] = max(300, min(1000, 18 * ntips))
-            if not self.style.get("height"):
-                self.style["height"] = max(275, min(500, 18 * ntips))
+            if not self.style.width:
+                self.style.width = max(300, min(1000, 18 * ntips))
+            if not self.style.height:
+                self.style.height = max(275, min(500, 18 * ntips))
 
 
     def get_canvas_and_axes(self, axes):
@@ -452,13 +466,13 @@ class Drawing:
             self.axes = axes
         else:
             self.canvas = toyplot.Canvas(
-                height=self.style["height"],
-                width=self.style["width"],
+                height=self.style.height,
+                width=self.style.width,
             )
             self.axes = self.canvas.cartesian(
-                padding=self.style["axes"]["padding"]
+                padding=self.style.axes_style.padding
             )
-            self.axes.show = False
+            self.axes.show = self.style.axes_style.show
         
         # return nothing if tree is empty
         if not self.ttree.tree.children:
