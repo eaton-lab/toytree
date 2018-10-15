@@ -71,13 +71,20 @@ class Drawing:
         """
         # get tip-coords and replace if using fixed_order
         xpos = self.ttree.get_tip_coordinates('x')
+        ypos = self.ttree.get_tip_coordinates('y')
+
         if self.style.orient in ("up", "down"):
             if self.ttree._fixed_order:
                 xpos = list(range(self.ttree.ntips))
-        ypos = self.ttree.get_tip_coordinates('y')
+            if self.style.tip_labels_align:
+                ypos = np.zeros(self.ttree.ntips)
+
         if self.style.orient in ("right", "left"):
             if self.ttree._fixed_order:
                 ypos = list(range(self.ttree.ntips))
+                # TODO: xpos needs to be adjusted too unless tip_labels_align
+            if self.style.tip_labels_align:
+                xpos = np.zeros(self.ttree.ntips)
 
         # pop fill from color dict if using color
         tstyle = deepcopy(self.style.tip_labels_style.cssdict())
@@ -151,6 +158,10 @@ class Drawing:
         if self.style.tip_labels_color:
             if self.style.tip_labels_style.fill:
                 self.style.tip_labels_style.fill = None
+            if self.ttree._fixed_order:
+                cols = np.array(self.style.tip_labels_color)
+                orde = cols[self.ttree._fixed_idx]
+                self.style.tip_labels_color = list(orde)
 
         # LABELS
         # False == hide tip labels
@@ -212,7 +223,7 @@ class Drawing:
         Node_colors has priority to overwrite node_style['fill']
         """
         # bail out if not any visible nodes (e.g., none w/ size>0)
-        if not self.style.node_labels:
+        if all([i == "" for i in self.node_labels]):
             return
 
         # build markers for each node.
@@ -287,6 +298,7 @@ class Drawing:
                 self.node_sizes = (
                     [int(self.style.node_size)] * len(nvals)
                 )
+                self.node_labels = [" " if i else "" for i in self.node_sizes]
                     
         # True == Show nodes, label=idx, and show hover
         elif self.style.node_labels is True:
@@ -437,7 +449,7 @@ class Drawing:
             if self.style.tip_labels_align:
                 tip_yend = np.zeros(ns)
                 align_edges = np.array([
-                    (i, i + len(tip_ypos)) for i in range(len(tip_ypos))
+                    (i + len(tip_ypos), i) for i in range(len(tip_ypos))
                 ])
                 align_verts = np.array(
                     list(zip(tip_xpos, tip_ypos)) + \
@@ -449,7 +461,7 @@ class Drawing:
             if self.style.tip_labels_align:
                 tip_xend = np.zeros(ns)
                 align_edges = np.array([
-                    (i, i + len(tip_xpos)) for i in range(len(tip_xpos))
+                    (i + len(tip_xpos), i) for i in range(len(tip_xpos))
                 ])
                 align_verts = np.array(
                     list(zip(tip_xpos, tip_ypos)) + \
@@ -492,11 +504,11 @@ class Drawing:
             if not self.style.height:
                 self.style.height = max(275, min(1000, 18 * ntips))
             if not self.style.width:
-                self.style.width = max(300, min(500, 18 * ntips))
+                self.style.width = max(350, min(500, 18 * ntips))
         else:
             # long tip-wise dimension
             if not self.style.width:
-                self.style.width = max(300, min(1000, 18 * ntips))
+                self.style.width = max(350, min(1000, 18 * ntips))
             if not self.style.height:
                 self.style.height = max(275, min(500, 18 * ntips))
 
