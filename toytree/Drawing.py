@@ -339,34 +339,75 @@ class Drawing:
     # Axes styling / scale bar / padding
     # -----------------------------------------------------------------        
     def add_axes_style(self):
-        self.axes.padding = self.style.axes_style.padding
-        self.axes.show = self.style.axes_style.show
+
+        # style axes with padding and show axes
+        self.axes.padding = self.style.padding
+        self.axes.show = self.style.scalebar
         
         # scalebar        
-        self.axes.x.show = self.style.axes_style.x_show
-        self.axes.x.ticks.show = self.style.axes_style.x_ticks_show
-        self.axes.x.ticks.labels.angle = self.style.axes_style.x_ticks_labels_angle
-        self.axes.x.domain.min = self.style.axes_style.x_domain_min
-        self.axes.x.domain.max = self.style.axes_style.x_domain_max
+        if self.style.scalebar and self.style.orient == "right":
+            nticks = max((3, np.floor(self.style.width / 100).astype(int)))
+            self.axes.y.show = False
+            self.axes.x.show = True
+            self.axes.x.ticks.show = True
 
-        # scalebar
-        self.axes.y.show = self.style.axes_style.y_show
-        self.axes.y.ticks.show = self.style.axes_style.y_ticks_show
-        self.axes.y.ticks.labels.angle = self.style.axes_style.y_ticks_labels_angle
-        self.axes.y.domain.min = self.style.axes_style.y_domain_min
-        self.axes.y.domain.max = self.style.axes_style.y_domain_max
+            # generate locations
+            locs = np.linspace(0, self.ttree.tree.height, nticks) * -1
 
-        # allow coloring axes
-        if (self.style.axes_style.x_label_color or 
-            self.style.axes_style.y_label_color):
-            xcol = {"stroke": self.style.axes_style.x_label_color}
-            ycol = {"stroke": self.style.axes_style.y_label_color}
-            self.axes.x.spine.style.update(xcol)
-            self.axes.x.ticks.style.update(xcol)
-            self.axes.x.ticks.labels.style.update(xcol)
-            self.axes.y.spine.style.update(ycol)
-            self.axes.y.ticks.style.update(ycol)
-            self.axes.y.ticks.labels.style.update(ycol)
+            # generate labels formatted depending on range of locs
+            fmt = "{:.2f}"
+            if np.abs(locs).max() > 6:
+                fmt = "{:.1f}"
+            elif np.abs(locs).max() > 10:
+                fmt = "{:.0f}"
+            self.axes.x.ticks.locator = toyplot.locator.Explicit(
+                locations=locs,
+                labels=[fmt.format(i) for i in np.abs(locs)],
+                )
+        elif self.style.scalebar and self.style.orient == "down":
+            nticks = max((3, np.floor(self.style.height / 100).astype(int)))
+            self.axes.x.show = False
+            self.axes.y.show = True
+            self.axes.y.ticks.show = True            
+
+            # generate locations
+            locs = np.linspace(0, self.ttree.tree.height, nticks)
+
+            # generate labels formatted depending on range of locs
+            fmt = "{:.2f}"
+            if np.abs(locs).max() > 6:
+                fmt = "{:.1f}"
+            elif np.abs(locs).max() > 10:
+                fmt = "{:.0f}"
+            self.axes.x.ticks.locator = toyplot.locator.Explicit(
+                locations=locs,
+                labels=[fmt.format(i) for i in np.abs(locs)],
+                )
+
+        # self.axes.x.show = self.style.axes_style.x_show
+        # self.axes.x.ticks.show = self.style.axes_style.x_ticks_show
+        # self.axes.x.ticks.labels.angle = self.style.axes_style.x_ticks_labels_angle
+        # self.axes.x.domain.min = self.style.axes_style.x_domain_min
+        # self.axes.x.domain.max = self.style.axes_style.x_domain_max
+
+        # # scalebar
+        # self.axes.y.show = self.style.axes_style.y_show
+        # self.axes.y.ticks.show = self.style.axes_style.y_ticks_show
+        # self.axes.y.ticks.labels.angle = self.style.axes_style.y_ticks_labels_angle
+        # self.axes.y.domain.min = self.style.axes_style.y_domain_min
+        # self.axes.y.domain.max = self.style.axes_style.y_domain_max
+
+        # # allow coloring axes
+        # if (self.style.axes_style.x_label_color or 
+        #     self.style.axes_style.y_label_color):
+        #     xcol = {"stroke": self.style.axes_style.x_label_color}
+        #     ycol = {"stroke": self.style.axes_style.y_label_color}
+        #     self.axes.x.spine.style.update(xcol)
+        #     self.axes.x.ticks.style.update(xcol)
+        #     self.axes.x.ticks.labels.style.update(xcol)
+        #     self.axes.y.spine.style.update(ycol)
+        #     self.axes.y.ticks.style.update(ycol)
+        #     self.axes.y.ticks.labels.style.update(ycol)
 
         # beyond styledict -- 
         #self.axes.x.domain.max *= 0.5
@@ -470,9 +511,8 @@ class Drawing:
                 width=self.style.width,
             )
             self.axes = self.canvas.cartesian(
-                padding=self.style.axes_style.padding
+                padding=self.style.padding
             )
-            self.axes.show = self.style.axes_style.show
         
         # return nothing if tree is empty
         if not self.ttree.tree.children:
