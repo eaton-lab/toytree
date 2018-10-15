@@ -1,9 +1,10 @@
 name: toytree
-channel: 
+channels: 
   - eaton-lab
-requirements:
+dependencies:
+  - python>=3
   - numpy
   - requests
+  - future
   - pip
     - toyplot
-    - future
