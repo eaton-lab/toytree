@@ -16,14 +16,15 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - git clone https://github.com/eaton-lab/toytree.git t2
-  - cd t2
-  - pip install -e .
-  - cd ..
+  - pip install --index-url https://test.pypi.org/simple/ toytree
+  #- git clone https://github.com/eaton-lab/toytree.git t2
+  #- cd t2
+  #- pip install -e .
+  #- cd ..
   #- pip install 
   #- conda install pip jupyter notebook nbconvert ipykernel -qy
   #- conda install future requests numpy reportlab -qy
-  #- pip install --index-url https://test.pypi.org/simple/ toytree
+  #
   #- pip install toytree
   #- conda install -c eaton-lab toytree
 
@@ -34,3 +35,4 @@ script:
   ## do CONDA py3 tests
   - export PATH="$HOME/miniconda3/bin:$PATH"
   - python -c "import toyplot; print(toyplot.__version__)"
+  - python -c "import toytree; print(toytree.__version__)"
