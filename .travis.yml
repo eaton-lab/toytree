@@ -30,7 +30,8 @@ install:
   - conda update -q conda
   - conda info -a
   - conda install pip jupyter notebook nbconvert ipykernel -qy
-  - pip install toytree
+  - pip install --index-url https://test.pypi.org/simple/ toytree
+  #- pip install toytree
   ## - conda install -c eaton-lab toytree
 
   ## CONDA PY3 BUILD
@@ -41,7 +42,8 @@ install:
   - conda update -q conda
   - conda info -a
   - conda install pip jupyter notebook nbconvert ipykernel -qy
-  - pip install toytree
+  - pip install --index-url https://test.pypi.org/simple/ toytree
+  #- pip install toytree
   #- conda install -c eaton-lab toytree
 
 
