@@ -471,6 +471,7 @@ class Toytree:
         height=None,
         width=None,
         axes=None,        
+        orient=None,
         tip_labels=None,
         tip_labels_color=None,
         tip_labels_style=None,
@@ -486,7 +487,6 @@ class Toytree:
         edge_style=None,
         edge_align_style=None,
         use_edge_lengths=None,
-        orient=None,  
         scalebar=None,
         padding=None,
         **kwargs):
@@ -583,8 +583,6 @@ class Toytree:
         userargs = {
             "height": height,
             "width": width,
-            "padding": padding,
-            "scalebar": scalebar,
             "orient": orient,
             "tip_labels": tip_labels,
             "tip_labels_color": tip_labels_color,
@@ -601,6 +599,8 @@ class Toytree:
             "edge_style": edge_style,
             "edge_align_style": edge_align_style,
             "use_edge_lengths": use_edge_lengths,
+            "scalebar": scalebar, 
+            "padding": padding,
         } 
 
         # update tree_style to custom style with user entered args
