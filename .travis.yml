@@ -16,8 +16,9 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - pip install toyplot
-  #- pip install --index-url https://test.pypi.org/simple/ toytree
+  - git clone https://github.com/eaton-lab/toytree.git
+  - pip install -e .
+  #- pip install 
   #- conda install pip jupyter notebook nbconvert ipykernel -qy
   #- conda install future requests numpy reportlab -qy
   #- pip install --index-url https://test.pypi.org/simple/ toytree
