@@ -135,8 +135,8 @@ class TreeMod:
 #         changes. According to Sanderson this method is motivated by the 
 #         likelihood that evolutionary rates are autocorrelated in time.
 
-#         Reference: Sanderson, M. J. 1997. “A Nonparametric Approach to 
-#         Estimating Divergence Times in the Absence of Rate Constancy.” 
+#         Reference: Sanderson, M. J. 1997. "A Nonparametric Approach to 
+#         Estimating Divergence Times in the Absence of Rate Constancy."
 #         Molecular Biology and Evolution 14 (12): 1218–1218. 
 #         https://doi.org/10.1093/oxfordjournals.molbev.a025731.
 
