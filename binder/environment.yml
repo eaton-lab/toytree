@@ -6,5 +6,6 @@ dependencies:
   - numpy
   - requests
   - future
-  - pip
+  - pip:
     - toyplot
+    - toytree
