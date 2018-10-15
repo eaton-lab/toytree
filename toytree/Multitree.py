@@ -7,12 +7,14 @@ from builtins import str, range
 
 #from contextlib import contextmanager
 import os
+from copy import deepcopy
 from collections import defaultdict
 from .ete3mini import TreeNode
 from .Toytree import Toytree
-from .TreeStyle import TreeStyle
-from .utils import bpp2newick
+from .TreeStyle import multi, normal, dark, coal
+from .utils import bpp2newick, ToytreeError
 import toyplot
+import toyplot.config
 import requests
 import numpy as np
 
@@ -31,15 +33,19 @@ class MultiTree:
 
     Functions():
     ------------
-    consenstree: str
-        Returns a consenus tree object...
+    get_consensus_tree: 
+        Returns a ToyTree object with support values on nodes.
+    draw_cloud_tree:
+        Draws a plot with overlapping fixed_order trees.
+    draw_grid_tree:
+        Draws a plot with n x m trees in a grid.
     """
-    def __init__(self, newick):
+    def __init__(self, newick, fixed_order=False):
 
         # setting attributes
         self.newick = newick
-        self._fixed_order = None      # <- do we need this before plotting?
-        self._style = TreeStyle("m")
+        self._style = multi
+        self._fixed_order = fixed_order
         self._i = 0
 
         # parse the newick object into a list of Toytrees
@@ -62,6 +68,22 @@ class MultiTree:
         self._i += 1
         return result
 
+    @property
+    def ntips(self):
+        return self.treelist[0].ntips
+
+
+    def copy(self):
+        return deepcopy(self)
+
+
+    def write(self, handle=None, format=0):
+        if not handle:
+            handle = "out.tre"
+        with open(handle, 'w') as outtre:
+            for tre in self.treelist:
+                outtre.write(tre.newick + "\n")
+
     # private functions --------------------------------------------
     def _parse_treelist(self):
         """
@@ -74,7 +96,6 @@ class MultiTree:
                 response = requests.get(self.newick)
                 response.raise_for_status()
                 treelines = response.text.strip().split("\n")
-                #treelines = treelines[self._ts[0]:self._ts[1]:self._ts[2]]
                 self._treelines_to_treelist(treelines)
             except Exception as inst:
                 raise inst
@@ -86,7 +107,7 @@ class MultiTree:
                 self._treelines_to_treelist(treelines)
 
             elif isinstance(self.newick[0], str):
-                treelines = self.newick#[self._ts[0]:self._ts[1]:self._ts[2]]
+                treelines = self.newick
                 self._treelines_to_treelist(treelines)
 
         # assume remaining type is a str -------
@@ -94,47 +115,48 @@ class MultiTree:
         elif os.path.isfile(self.newick):
             self.newick = os.path.abspath(os.path.expanduser(self.newick))
             with open(self.newick) as infile:
-                treelines = infile.read().split("\n")
-                treelines = treelines#[self._ts[0]:self._ts[1]:self._ts[2]]
+                treelines = infile.read().strip().split("\n")
                 self._treelines_to_treelist(treelines)
         else:
             treelines = self.newick.strip().split("\n")
-            treelines = treelines#[self._ts[0]:self._ts[1]:self._ts[2]]
             self._treelines_to_treelist(treelines)
 
 
     def _treelines_to_treelist(self, treelines):
-
-        #### TODO: get rid of treeformat and allow automatic detection...
-        # check if a bpp tree
-        tformat = "normal"
+        # check if a bpp tree and convert to normal newick
         if (" #" in treelines[0]) and (": " in treelines[0]):
-            tformat = "bpp"
-
-        # badnewick to goodnewick
-        if tformat == "bpp":
             treelines = [bpp2newick(i.strip()) for i in treelines]
 
-        # use user-set fixed order for tip plotting
-        if self._fixed_order:
+        # if user-set fixed order for tip plotting
+        if isinstance(self._fixed_order, list):
             self.treelist = [
                 Toytree(i.strip(), fixed_order=self._fixed_order)
                 for i in treelines]
 
-        # get fixed order for tip plotting from consensus tree
+        # if True then use consensus tree tip order
+        elif self._fixed_order is True:
+            treelist = [Toytree(i.strip()) for i in treelines]
+            constre = MultiTree(treelist).get_consensus_tree()
+            self._fixed_order = constre.get_tip_labels()
+            self.treelist = [
+                Toytree(i.strip(), fixed_order=self._fixed_order)
+                for i in treelines]
+
+        # don't order nodes for aligned-tip plotting                
         else:
-            # order nodes for plotting
             self.treelist = [Toytree(i.strip()) for i in treelines]
-            #self._fixed_order = self.treelist[0].get_tip_labels()
-            # = self.get_consensus_tree().get_tip_labels()[::-1]
-            # redefine treelist with trees plotted in consensus tip order
-            #self.treelist = [
-            #    Toytree(i.tree.write(), fixed_order=self._fixed_order)
-            #    for i in self.treelist]
 
     # -------------------------------------------------------------------
     # Tree List Statistics or Calculations
     # -------------------------------------------------------------------
+    def get_tip_labels(self):
+        "returns the tip names in tree plot order starting from zero axis."
+        if self._fixed_order in (None, False):
+            return self.treelist[0].get_tip_labels()
+        else:
+            return self._fixed_order
+
+
     def get_consensus_tree(self, cutoff=0.0, best_tree=None):
         """
         Returns an extended majority rule consensus tree as a Toytree object.
@@ -166,7 +188,13 @@ class MultiTree:
     # -------------------------------------------------------------------
     # Tree List Plotting
     # -------------------------------------------------------------------
-    def draw_tree_grid(self, x=1, y=5, start=0, shared_axis=False, **kwargs):
+    def draw_tree_grid(self, 
+        x=1, 
+        y=5, 
+        start=0, 
+        fixed_order=False, 
+        shared_axis=False, 
+        **kwargs):
         """
         Draw a slice of trees into a x,y grid non-overlapping. 
         x = number of grid cells in x dimension.
@@ -176,15 +204,36 @@ class MultiTree:
         """
         # Toyplot creates a grid and margins and puts trees in them..
         if kwargs.get("debug"):
-            return TreeGrid(self)
-        TreeGrid(self).update(x, y, start, shared_axis, **kwargs)
+            return TreeGrid(self, fixed_order)
+        TreeGrid(self, fixed_order).update(x, y, start, shared_axis, **kwargs)
 
 
-    def draw_cloud_tree(self):
+    def draw_cloud_tree(self, axes=None, html=False, fixed_order=False, **kwargs):
         """
-        Docstring...
+        Draw a series of trees overlapping each other in coordinate space.
         """
-        CloudTree().update()
+        # set autorender format to png so we don't bog down notebooks
+        try:
+            changed_autoformat = False
+            if not html:
+                toyplot.config.autoformat = "png"
+                changed_autoformat = True
+            
+            # init Drawing. Fixed order is set here in treelist.
+            draw = CloudTree(self, fixed_order=fixed_order)
+
+            # and create drawing
+            if kwargs.get("debug"):
+                draw.update(axes=axes, **kwargs)
+                return draw
+
+            # if user provided explicit axes then include them
+            canvas, axes = draw.update(axes=axes, **kwargs)
+            return canvas, axes
+
+        finally:
+            if changed_autoformat:
+                toyplot.config.autoformat = "html"
 
 
 
@@ -361,15 +410,15 @@ class ConsensusTree:
 
 
 
-
 class TreeGrid:
-    def __init__(self, mtree):
+    def __init__(self, mtree, fixed_order):
         
         # plot objects are init on update()
         self.canvas = None
         self.cartesian = None
         self.trees = None
-        self.mtree = mtree
+        self.mtree = MultiTree(mtree.treelist, fixed_order=fixed_order)
+        self.style = normal
 
         # to be filled
         self.x = None
@@ -405,12 +454,11 @@ class TreeGrid:
                 axes.x.show = False
 
         else:
-            ymax = max([i.tree.height for i in self.mtree])
             axes = self.canvas.cartesian(
                     #bounds=()
                     margin=35,
                     padding=10,
-                )
+                    )
             # axes = self.axes.share(...)
             for tidx, tree in enumerate(self.treelist):
                 pass
@@ -419,31 +467,205 @@ class TreeGrid:
 
 
 
-
-# TODO:
-# This is going to require working with .fixed_order. This should be an 
-# attribute of mtree objects, not Toytrees... right?. It needs to be used 
-# by Toytrees during .update() tho..., or atleast by Coords for node positions.
 class CloudTree:
 
-    def __init__(self):
-        pass
+    def __init__(self, mtree, fixed_order=None):
+        # base style
+        self.style = mtree._style
 
-    def update(self):
-        pass
+        # inherit fixed order, take arg, or use True
+        self.fixed_order = mtree._fixed_order
+        if fixed_order:
+            self.fixed_order = fixed_order
+        if not self.fixed_order:
+            self.fixed_order = True
+
+        # tip labels get updated
+        self.tip_labels = None
+
+        # make new mtree using fixed order
+        self.mtree = MultiTree(mtree.treelist, fixed_order=self.fixed_order)
+
+
+    def update(self, **kwargs):
+
+        # return nothing if tree is empty
+        if not self.mtree.treelist:
+            print("Tree is empty")
+            return
+
+        # allow ts as a shorthand for tree_style
+        if kwargs.get("ts"):
+            kwargs["tree_style"] = kwargs.get("ts")
+
+        # update tree_style if entered as an argument
+        if kwargs.get('tree_style') in ('c', 'coal'):
+            self.style = deepcopy(coal)
+        elif kwargs.get('tree_style') in ('d', 'dark'):
+            self.style = deepcopy(dark)
+        elif kwargs.get('tree_style') in ('n', 'normal'):
+            self.style = deepcopy(normal)
+        else:
+            self.style = deepcopy(multi)
+
+        # update tree_style to custom style with user entered args
+        self.style._update_from_dict(
+            {i: j for (i, j) in kwargs.items() if j is not None})
+
+        # set reasonable dims if not user entered
+        self.set_dims_from_tree_size()
+
+        # if not canvas then create one else use the existing
+        self.get_canvas_and_axes(kwargs.get('axes'))
+
+        # grab debug flag and pop it from dict
+        debug = False
+        if self.style.__dict__.get("debug"):
+            self.style.__dict__.pop("debug")
+            debug = True
+
+        # could put something here to apply styles based on some calculation
+        # such as different colors for different topologies...
+
+
+        # pop tip labels and styles since they'll be blocked from subtrees
+        tip_labels = deepcopy(self.style.tip_labels)
+        tip_labels_style = deepcopy(self.style.tip_labels_style)
+        self.style.tip_labels = False
+
+        # plot trees on the same axes with shared style dict
+        for tre in self.mtree.treelist:           
+            tre.draw(axes=self.axes, **self.style.__dict__)
+
+        # add a single call to tip labels
+        self.style.tip_labels = tip_labels
+        self.style.tip_labels_style = tip_labels_style
+        self.assign_tip_labels_and_colors()
+        self.add_tip_labels_to_axes()
+        self.fit_tip_labels()
+
+        # debug returns CloudTree object
+        if debug:
+            return self
+        return self.canvas, self.axes
+
+
+    def get_canvas_and_axes(self, axes):
+        if axes: 
+            self.canvas = None
+            self.axes = axes
+        else:
+            self.canvas = toyplot.Canvas(
+                height=self.style.height,
+                width=self.style.width,
+            )
+            self.axes = self.canvas.cartesian(
+                padding=self.style.axes_style.padding,
+            )
+            self.axes.show = self.style.axes_style.show
+
 
     def set_dims_from_tree_size(self):
         "Calculate reasonable height and width for tree given N tips"
-        tlen = len(self.treelist[0])
-        if self._style.get("orient") in ["right", "left"]:
+        tlen = len(self.mtree.treelist[0])
+        if self.style.orient in ("right", "left"):
             # long tip-wise dimension
-            if not self._style.get("height"):
-                self._style["height"] = max(275, min(1000, 18 * (tlen)))
-            if not self._style.get("width"):
-                self._style["width"] = max(225, min(500, 18 * (tlen)))
+            if not self.style.height:
+                self.style.height = max(275, min(1000, 18 * (tlen)))
+            if not self.style.width:
+                self.style.width = max(225, min(500, 18 * (tlen)))
         else:
             # long tip-wise dimension
-            if not self._style.get("width"):
-                self._style["width"] = max(275, min(1000, 18 * (tlen)))
-            if not self._style.get("height"):
-                self._style["height"] = max(225, min(500, 18 * (tlen)))
+            if not self.style.width:
+                self.style.width = max(275, min(1000, 18 * (tlen)))
+            if not self.style.height:
+                self.style.height = max(225, min(500, 18 * (tlen)))
+
+
+    def add_tip_labels_to_axes(self):
+        """
+        Add text offset from tips of tree with correction for orientation, 
+        and fixed_order which is usually used in multitree plotting.
+        """
+        # get tip-coords and replace if using fixed_order
+        if self.style.orient in ("up", "down"):
+            ypos = np.zeros(self.mtree.ntips)
+            xpos = np.arange(self.mtree.ntips)
+
+        if self.style.orient in ("right", "left"):
+            xpos = np.zeros(self.mtree.ntips)
+            ypos = np.arange(self.mtree.ntips)
+
+        # pop fill from color dict if using color
+        tstyle = deepcopy(self.style.tip_labels_style.cssdict())
+        if self.style.tip_labels_color:
+            tstyle.pop("fill")
+
+        # add tip names to coordinates calculated above
+        self.axes.text(
+            xpos, 
+            ypos,
+            self.tip_labels,  
+            angle=(0 if self.style.orient in ("right", "left") else -90),
+            style=tstyle,
+            color=self.style.tip_labels_color,
+        )
+        # get stroke-width for aligned tip-label lines (optional)
+        # copy stroke-width from the edge_style unless user set it
+        if not self.style.edge_align_style.__dict__.get("stroke_width"):
+            self.style.edge_align_style.stroke_width = (
+                self.style.edge_style.stroke_width)
+
+
+    def fit_tip_labels(self):
+        """
+        Modifies display range to ensure tip labels fit. This is a bit hackish
+        still. The problem is that the 'extents' range of the rendered text
+        is totally correct. So we add a little buffer here. Should add for 
+        user to be able to modify this if needed. If not using edge lengths
+        then need to use unit length for treeheight.
+        """
+        if self.style.use_edge_lengths:
+            addon = (self.mtree.treelist[0].tree.height + \
+                (self.mtree.treelist[0].tree.height * 0.25))
+        else:
+            addon = self.mtree.treelist[0].tree.get_farthest_leaf(True)[1]
+
+        # modify display for orientations
+        if self.style.tip_labels:
+            if self.style.orient == "right":
+                self.axes.x.domain.max = addon
+            elif self.style.orient == "down":
+                self.axes.y.domain.min = -1 * addon
+
+
+    def assign_tip_labels_and_colors(self):
+        "assign tip labels based on user provided kwargs"
+        # COLOR
+        # tip color overrides tipstyle.fill
+        if self.style.tip_labels_color:
+            if self.style.tip_labels_style.fill:
+                self.style.tip_labels_style.fill = None
+
+        # LABELS
+        # False == hide tip labels
+        if self.style.tip_labels is False:
+            self.style.tip_labels_style.text_anchor_shift = "0px"
+            self.tip_labels = [
+                "" for i in self.mtree.treelist[0].get_tip_labels()]
+
+        # LABELS
+        # user entered something...
+        else:
+            # if user did not change label-offset then shift it here
+            if not self.style.tip_labels_style.text_anchor_shift:
+                self.style.tip_labels_style.text_anchor_shift = "15px"
+
+            # if user entered list in get_tip_labels order reverse it for plot
+            if isinstance(self.style.tip_labels, list):
+                self.tip_labels = self.style.tip_labels
+
+            # True assigns tip labels from tree
+            else:
+                self.tip_labels = self.fixed_order
+                #mtree.treelist[0].get_tip_labels()
