@@ -159,9 +159,10 @@ class Drawing:
             if self.style.tip_labels_style.fill:
                 self.style.tip_labels_style.fill = None
             if self.ttree._fixed_order:
-                cols = np.array(self.style.tip_labels_color)
-                orde = cols[self.ttree._fixed_idx]
-                self.style.tip_labels_color = list(orde)
+                if isinstance(self.style.tip_labels_color, (list, np.ndarray)):                                     
+                    cols = np.array(self.style.tip_labels_color)
+                    orde = cols[self.ttree._fixed_idx]
+                    self.style.tip_labels_color = list(orde)
 
         # LABELS
         # False == hide tip labels
