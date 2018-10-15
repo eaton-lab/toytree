@@ -16,7 +16,7 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - pip install --upgrade pip.
+  - conda install pip notebook nbconvert -qy
   - pip install --index-url https://test.pypi.org/legacy/ toytree==0.1.11
   #- git clone https://github.com/eaton-lab/toytree.git t2
   #- cd t2
