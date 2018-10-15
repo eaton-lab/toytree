@@ -7,5 +7,5 @@ dependencies:
   - requests
   - future
   - pip:
-    - toyplot
+    - toyplot>=0.17.0
     - toytree
