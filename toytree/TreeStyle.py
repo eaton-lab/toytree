@@ -34,6 +34,8 @@ class TreeStyle:
         self.tip_labels_color = BLACK
         self.tip_labels_align = False
         self.tip_labels_space = None
+        self.scalebar = False
+        self.padding = 20
 
         # substyles with default 'normal' styling
         self.edge_style = EdgeStyle()
@@ -41,7 +43,7 @@ class TreeStyle:
         self.edge_align_style = EdgeAlignStyle()
         self.node_labels_style = NodeLabelStyle()
         self.tip_labels_style = TipLabelStyle()
-        self.axes_style = AxesStyle()
+        # self.axes_style = AxesStyle()
         #self.admix_edge_style = AdmixEdgeStyle()
         # override defaults with built-in styles
 
@@ -233,54 +235,54 @@ class TipLabelStyle:
 #         self["admix_edge_style"]["stroke_dasharray"] = "2, 4"
 
 
-class AxesStyle:
-    def __init__(self):
-        # standard axes names args
-        self.show = False
-        self.padding = 20
-        self.x_show = True
-        self.x_ticks_show = True
-        self.x_ticks_labels_angle = 0
-        self.y_show = True
-        self.y_ticks_show = True
-        self.y_ticks_labels_angle = 0
+# class AxesStyle:
+#     def __init__(self):
+#         # standard axes names args
+#         self.show = False
+#         self.padding = 20
+#         self.x_show = True
+#         self.x_ticks_show = True
+#         self.x_ticks_labels_angle = 0
+#         self.y_show = True
+#         self.y_ticks_show = True
+#         self.y_ticks_labels_angle = 0
     
-        # non-standard axes name args
-        self.x_label_color = None
-        self.y_label_color = None        
-        self.y_domain_min = None
-        self.x_domain_min = None
-        self.y_domain_max = None
-        self.x_domain_max = None
-        #self.y.domain.min = ("y.domain.min", None)
-        #self["axes"]["x.domain.min"] = None
-        #self["axes"]["y.domain.max"] = None
-        #self["axes"]["x.domain.max"] = None
+#         # non-standard axes name args
+#         self.x_label_color = None
+#         self.y_label_color = None        
+#         self.y_domain_min = None
+#         self.x_domain_min = None
+#         self.y_domain_max = None
+#         self.x_domain_max = None
+#         #self.y.domain.min = ("y.domain.min", None)
+#         #self["axes"]["x.domain.min"] = None
+#         #self["axes"]["y.domain.max"] = None
+#         #self["axes"]["x.domain.max"] = None
 
-        self._t = {
-            "show": "show",
-            "padding": "padding",
-            "x_show": "x.show",
-            "x_ticks_show": "x.ticks.show",
-            "x_ticks_labels_angle": "x.ticks.labels.angle",
-            "y_show": "y.show",
-            "y_ticks_show": "y.ticks.show",
-            "y_ticks_labels_angle": "y.ticks.labels.angle",
-            "x_label_color": "x_label_color", 
-            "y_label_color": "y_label_color",
-            "x_domain_max": "x.domain.max", 
-            "y_domain_max": "y.domain.max", 
-            "x_domain_min": "x.domain.min", 
-            "y_domain_min": "y.domain.min",            
-        }
+#         self._t = {
+#             "show": "show",
+#             "padding": "padding",
+#             "x_show": "x.show",
+#             "x_ticks_show": "x.ticks.show",
+#             "x_ticks_labels_angle": "x.ticks.labels.angle",
+#             "y_show": "y.show",
+#             "y_ticks_show": "y.ticks.show",
+#             "y_ticks_labels_angle": "y.ticks.labels.angle",
+#             "x_label_color": "x_label_color", 
+#             "y_label_color": "y_label_color",
+#             "x_domain_max": "x.domain.max", 
+#             "y_domain_max": "y.domain.max", 
+#             "x_domain_min": "x.domain.min", 
+#             "y_domain_min": "y.domain.min",            
+#         }
 
-    # a pretty printed styledict
-    def __repr__(self):
-        view = []
-        for (i, j) in self.__dict__.items():
-            if i != '_t':
-                view.append("{}: {}".format(i, j))
-        return "\n".join(view)
+#     # a pretty printed styledict
+#     def __repr__(self):
+#         view = []
+#         for (i, j) in self.__dict__.items():
+#             if i != '_t':
+#                 view.append("{}: {}".format(i, j))
+#         return "\n".join(view)
 
 
 # PREFIX STYLES ---------------------
@@ -288,8 +290,8 @@ normal = TreeStyle('normal')
 normal.orient = "right"
 normal.use_edge_lengths = True
 normal.tip_labels_align = False
-normal.axes_style.show = False
-normal.axes_style.padding = 20
+# normal.axes_style.show = False
+# normal.axes_style.padding = 20
 
 
 coal = TreeStyle('coal')
@@ -301,14 +303,15 @@ coal.node_labels = True
 coal.node_size = 15
 coal.node_hover = False
 coal.tip_labels = False
-coal.axes_style.show = True
-coal.axes_style.padding = 20
-coal.axes_style.x_show = False
-coal.axes_style.x_ticks_show = False
-coal.axes_style.x_ticks_labels_angle = 0
-coal.axes_style.y_show = True
-coal.axes_style.y_ticks_show = True
-coal.axes_style.y_domain_min = 0
+coal.scalebar = True
+# coal.axes_style.show = True
+# coal.axes_style.padding = 20
+# coal.axes_style.x_show = False
+# coal.axes_style.x_ticks_show = False
+# coal.axes_style.x_ticks_labels_angle = 0
+# coal.axes_style.y_show = True
+# coal.axes_style.y_ticks_show = True
+# coal.axes_style.y_domain_min = 0
 
 
 dark = TreeStyle('dark')
@@ -317,11 +320,11 @@ dark.use_edge_lengths = True
 dark.tip_labels_align = True
 dark.tip_labels_color = COLORS[3]
 dark.edge_style.stroke = COLORS[0]
-dark.axes_style.show = False
-dark.axes_style.padding = 20
-dark.axes_style.x_show = True
-dark.axes_style.x_label_color = COLORS[7]
-dark.axes_style.y_label_color = COLORS[7]
+# dark.axes_style.padding = 20
+# dark.axes_style.show = False
+# dark.axes_style.x_show = True
+# dark.axes_style.x_label_color = COLORS[7]
+# dark.axes_style.y_label_color = COLORS[7]
 
 
 multi = TreeStyle('multi')
@@ -332,10 +335,9 @@ multi.tip_labels_align = False
 multi.node_labels = False
 multi.node_size = 0
 multi.tip_labels = True
-multi.axes_style.show = False
 multi.edge_style.opacity = 0.1
 multi.tip_labels_style.text_anchor_shift = "15px"
-
+# multi.axes_style.show = False
 
 
 
