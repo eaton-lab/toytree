@@ -1,0 +1,9 @@
+name: toytree
+channel: 
+  - eaton-lab
+requirements:
+  - numpy
+  - requests
+  - pip
+    - toyplot
+    - future
