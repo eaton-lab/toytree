@@ -25,9 +25,6 @@ class Coords:
         Rows are ordered postorder idx.
         Used for drawing edges on phylograms, not for nodes.
     lines: ndarray
-
-
-
     """
     def __init__(self, ttree):
         self.ttree = ttree
@@ -35,7 +32,6 @@ class Coords:
         self.verts = np.zeros((self.ttree.nnodes, 2), dtype=float)
         self.lines = []
         self.coords = []
-        
         # not automatically run in init bc we want to keep toytrees light
         # self.update()
 
@@ -82,7 +78,7 @@ class Coords:
         facing, reorient_coordinates() will handle re-translating this.        
         """
         # shortname 
-        uselen = bool(self.ttree._style["use_edge_lengths"])
+        uselen = bool(self.ttree._style.use_edge_lengths)
 
         # postorder: children then parents (nidxs from 0 up)
         # store edge array for connecting child nodes to parent nodes
@@ -111,7 +107,7 @@ class Coords:
                 
                 # set x-positions (order of samples)
                 if self.ttree._fixed_order:
-                    node.x = tidx - self.ttree._fixed_order.index(node.name)
+                    node.x = self.ttree._fixed_order.index(node.name)# - tidx
                 else:
                     node.x = tidx
                     tidx -= 1
@@ -210,7 +206,7 @@ class Coords:
         Returns a modified .verts array with new coordinates for nodes. 
         This does not need to modify .edges. The order of nodes, and therefore
         of verts rows is still the same because it is still based on the tree
-        branching order (ladderized usually). TODO; coords...
+        branching order (ladderized usually). 
         """
         # if tree is empty then bail out
         if len(self.ttree) < 2:
@@ -218,11 +214,11 @@ class Coords:
 
         # down is the default orientation
         # down-facing tips align at y=0, first ladderized tip at x=0
-        if self.ttree._style["orient"] in ('down', 0):
+        if self.ttree._style.orient in ('down', 0):
             pass
 
         # right-facing tips align at x=0, last ladderized tip at y=0
-        elif self.ttree._style["orient"] in ('right', 3):
+        elif self.ttree._style.orient in ('right', 3):
 
             # verts swap x and ys and make xs 0 to negative
             tmp = np.zeros(self.verts.shape)
@@ -236,8 +232,8 @@ class Coords:
             tmp[:, 0] = self.coords[:, 1] * -1
             self.coords = tmp
 
-        elif self.ttree._style["orient"] in ('left', 1):
-            raise NotImplemented("todo: left facing")
+        elif self.ttree._style.orient in ('left', 1):
+            raise NotImplementedError("todo: left facing")
 
-        else: 
-            raise NotImplemented("todo: up facing")
+        else:
+            raise NotImplementedError("todo: up facing")
