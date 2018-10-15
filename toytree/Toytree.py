@@ -8,30 +8,30 @@ from decimal import Decimal
 from copy import deepcopy
 
 from .ete3mini import TreeNode
-from .TreeStyle import TreeStyle
+from .TreeStyle import TreeStyle, normal, coal, dark, multi
 from .Coords import Coords
 from .Drawing import Drawing
 from .utils import ToytreeError, TreeMod
 
 
 class Toytree:
-    def __init__(self, newick=None, ladderize=True, tree_format=0, **kwargs):
+    def __init__(self, newick=None, tree_format=0, fixed_order=None):
 
         # get the tree as a TreeNode object
         self._parse_to_TreeNode(newick, tree_format)
 
         # set tips order if fixing for multi-tree plotting (default None)
         self._fixed_order = None
-        if kwargs.get("fixed_order"):
-            self._set_fixed_order(kwargs["fixed_order"])
+        if fixed_order:
+            self._set_fixed_order(fixed_order)
 
-        # ladderize the tree unless user rotated nodes and wants it not.
-        if ladderize and (not self._fixed_order):
+        # ladderize the tree unless user fixed order and wants it not.
+        if not self._fixed_order:
             self.tree.ladderize()
 
         # Object for storing default plot settings or saved styles.
         # Calls several update functions when self.draw() to fit canvas.
-        self._style = TreeStyle(tree_style='p')
+        self._style = TreeStyle(tree_style='n')
 
         # Object for plot coordinates. Calls .update() whenever tree modified.
         self._coords = Coords(self)
@@ -104,11 +104,22 @@ class Toytree:
             testnode = self.tree.children[0]
             extrafeat = {i for i in testnode.features if i not in features}
             features.update(extrafeat)
-            return self.tree.write(format=0)
+            return self.tree.write(format=fmt)
 
     # --------------------------------------------------------------------
     # functions to return values from the ete3 .tree object --------------
     # --------------------------------------------------------------------
+    def write(self, handle=None, fmt=0):
+        if not handle:
+            handle = "out.tre"
+        if self.tree.children:
+            features = {"name", "dist", "support", "height", "idx"}
+            testnode = self.tree.children[0]
+            extrafeat = {i for i in testnode.features if i not in features}
+            features.update(extrafeat)
+            self.tree.write(format=fmt, outfile=handle)
+
+
     def get_edge_lengths(self):
         """
         Returns edge length values from tree object in node plot order. To
@@ -121,12 +132,14 @@ class Toytree:
         return self.get_node_values('dist', True, True)
 
 
-    def get_node_coordinates(self, orient='right'):
-        if orient == 'right':
-            return self._coords.verts[::-1]
-        elif orient == 'down':
-            return self._coords.verts
-
+    def get_node_coordinates(self):
+        """
+        Returns coordinate locations of nodes in the tree as an array. Each
+        row is an (x, y) coordinate, ordered by the 'idx' feature of nodes.
+        The first ntips rows are the tip coordinates, which can also be 
+        returned using .get_tip_coordinates()
+        """
+        return self._coords.verts
 
 
     def get_node_values(
@@ -205,16 +218,28 @@ class Toytree:
                 }
                
 
+    def get_tip_coordinates(self, axis=None):
+        """
+        Returns coordinates of the tip positions for a tree. If no argument
+        for axis then a 2-d array is returned. The first column is the x 
+        coordinates the second column is the y-coordinates. If you enter an 
+        argument for axis then a 1-d array will be returned of just that axis.
+        """
+        # get coordinates array
+        coords = self.get_node_coordinates()
+        if axis == 'x':
+            return coords[:self.ntips, 0]
+        elif axis == 'y':
+            return coords[:self.ntips, 1]
+        return coords[:self.ntips]
+
+
     def get_tip_labels(self):
         """
-        returns tip labels in ladderized order from top to bottom on
-        right-facing tree. Take care because this seems a bit odd for trees 
-        that are facing down, i.e., here the the ladderized first node
-        is on the right so names are returned right to left. 
+        Returns tip labels in ladderized order starting from zero axis
+        (bottom to top in right-facing trees; left to right in down-facing).
         """
-        if self._fixed_order:
-            return self._fixed_order
-        return self.tree.get_leaf_names()
+        return self.tree.get_leaf_names()[::-1]
 
 
     def copy(self):
@@ -450,6 +475,7 @@ class Toytree:
         tip_labels_color=None,
         tip_labels_style=None,
         tip_labels_align=None,
+        tip_labels_space=None,
         node_labels=None,
         node_labels_style=None,
         node_size=None,
@@ -463,23 +489,32 @@ class Toytree:
         orient=None,  
         scalebar=None,
         padding=None,
-        # edge_width=None,
-        # tip_labels_angle=None,  
-        **kwargs,
-        ):
+        **kwargs):
         """
-        Plot a Toytree tree, returns a tuple of (Canvas, Axes).
+        Plot a Toytree tree, returns a tuple of Toyplot (Canvas, Axes) objects.
 
         Parameters:
         -----------
         tree_style: str
             One of several preset styles for tree plotting. The default is 'n'
-            (normal). Other options inlude 'c' (coalescent), 'd' (dark), ...
-            This will set a default set of styling on top of which can be 
-            combined with other plotting options that will override these 
-            defaults.
+            (normal). Other options inlude 'c' (coalescent), 'd' (dark), and
+            'm' (multitree). You also create your own TreeStyle objects.
+            The tree_style sets a default set of styling on top of which other
+            arguments passed to draw() will override when plotting.
 
-        use_edge_lengths: bool
+        height: int (optional; default=None)
+            If None the plot height is autosized. If 'axes' arg is used then 
+            tree is drawn on an existing Canvas, Axes and this arg is ignored.
+
+        width: int (optional; default=None)
+            Similar to height (above). 
+
+        axes: Toyplot.Cartesian (default=None)
+            A toyplot cartesian axes object. If provided tree is drawn on it.
+            If not provided then a new Canvas and Cartesian axes are created
+            and returned with the tree plot added to it.
+
+        use_edge_lengths: bool (default=False)
             Use edge lengths from .tree (.get_edge_lengths) else
             edges are set to length >=1 to make tree ultrametric.
 
@@ -530,25 +565,32 @@ class Toytree:
             will be shown in order. If a dict then labels can be provided
             as well.
         """
-        # ts is shorthand for treestyle
+        # allow ts as a shorthand for tree_style
         if kwargs.get("ts"):
             tree_style = kwargs.get("ts")
 
+        # start from a fixed tree_style
+        if tree_style in ('c', 'coal'):
+            self._style = deepcopy(coal)
+        elif tree_style in ('d', 'dark'):
+            self._style = deepcopy(dark)
+        elif tree_style in ('m', 'multi'):            
+            self._style = deepcopy(multi)
+        else:
+            self._style = deepcopy(normal)
+
         # store entered args
-        canvas_args = {
+        userargs = {
             "height": height,
             "width": width,
-        }
-        axes_args = {
             "padding": padding,
             "scalebar": scalebar,
-        }
-        mark_args = {
             "orient": orient,
             "tip_labels": tip_labels,
             "tip_labels_color": tip_labels_color,
             "tip_labels_style": tip_labels_style,
             "tip_labels_align": tip_labels_align,
+            "tip_labels_space": tip_labels_space,
             "node_labels": node_labels,
             "node_labels_style": node_labels_style,
             "node_size": node_size,
@@ -559,26 +601,19 @@ class Toytree:
             "edge_style": edge_style,
             "edge_align_style": edge_align_style,
             "use_edge_lengths": use_edge_lengths,
-            "tree_style": tree_style,
-            # "edge_width": edge_width,  ## todo
-            # "edge_color": edge_color,  ## todo
-            # "tip_labels_angle": tip_labels_angle,
         } 
 
-        # update tree style based on draw arguments
-        ts = (tree_style if tree_style else 'normal')
-        self._style = TreeStyle(tree_style=ts)
-        self._style.update_mark(mark_args)
-        self._style.update_axes(axes_args)
-        self._style.update_canvas(canvas_args)
+        # update tree_style to custom style with user entered args
+        self._style._update_from_dict(
+            {i: j for (i, j) in userargs.items() if j is not None})
 
-        # init Drawing. Coords should be uptodate.
+        # Init Drawing class object.
         draw = Drawing(self)
 
-        # and create drawing
+        # Debug returns the object to test with.
         if kwargs.get("debug"):
             return draw
 
-        # if user provided explicit axes then include them
+        # Make plot. If user provided explicit axes then include them.
         canvas, axes = draw.update(axes=axes)
         return canvas, axes
