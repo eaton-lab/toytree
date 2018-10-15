@@ -16,8 +16,10 @@ install:
   - conda config --set always_yes yes --set changeps1 no
   - conda update -q conda
   - conda info -a
-  - git clone https://github.com/eaton-lab/toytree.git
+  - git clone https://github.com/eaton-lab/toytree.git t2
+  - cd t2
   - pip install -e .
+  - cd ..
   #- pip install 
   #- conda install pip jupyter notebook nbconvert ipykernel -qy
   #- conda install future requests numpy reportlab -qy
