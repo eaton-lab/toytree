@@ -23,6 +23,7 @@ setup(
         "toyplot",
         "numpy>=1.8.0",
         "requests",
+        "future",
     ],
     entry_points={},
     license='GPL',
