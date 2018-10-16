@@ -3,13 +3,14 @@
 from __future__ import print_function, absolute_import
 
 import re
+import sys
 import requests
 import itertools
 from decimal import Decimal
 from copy import deepcopy
 
 from .ete3mini import TreeNode
-from .TreeStyle import TreeStyle, normal, coal, dark, multi
+from .TreeStyle import TreeStyle, normal, coal, dark, multi, simple
 from .Coords import Coords
 from .Drawing import Drawing
 from .utils import ToytreeError, TreeMod
@@ -114,14 +115,15 @@ class Toytree:
     # functions to return values from the ete3 .tree object --------------
     # --------------------------------------------------------------------
     def write(self, handle=None, fmt=0):
-        if not handle:
-            handle = "out.tre"
         if self.tree.children:
             features = {"name", "dist", "support", "height", "idx"}
             testnode = self.tree.children[0]
             extrafeat = {i for i in testnode.features if i not in features}
             features.update(extrafeat)
-            self.tree.write(format=fmt, outfile=handle)
+            if handle:
+                self.tree.write(format=fmt, file=handle)
+            else:
+                return self.tree.write(format=fmt)
 
 
     def get_edge_lengths(self):
@@ -608,13 +610,15 @@ class Toytree:
         if kwargs.get("ts"):
             tree_style = kwargs.get("ts")
 
-        # start from a fixed tree_style
+        # start from a fixed tree_style (change this to a function or dict)
         if tree_style in ('c', 'coal'):
             self._style = deepcopy(coal)
         elif tree_style in ('d', 'dark'):
             self._style = deepcopy(dark)
         elif tree_style in ('m', 'multi'):            
             self._style = deepcopy(multi)
+        elif tree_style in ('s', 'simple'):
+            self._style = deepcopy(simple)
         else:
             self._style = deepcopy(normal)
 

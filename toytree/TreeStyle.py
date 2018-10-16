@@ -139,7 +139,7 @@ class NodeStyle:
     def __init__(self):
         self.fill = COLORS[0]
         self.stroke = "none"
-        self.stroke_width = 10
+        self.stroke_width = 1
         self._t = {
             "fill": "fill",
             "stroke": "stroke",
@@ -292,6 +292,15 @@ normal.use_edge_lengths = True
 normal.tip_labels_align = False
 # normal.axes_style.show = False
 # normal.axes_style.padding = 20
+
+simple = TreeStyle("simple")
+simple.orient = "right"
+simple.use_edge_lengths = False
+simple.node_labels = True
+simple.node_color = "lightgrey"
+simple.node_size = 18
+simple.node_style.stroke = "#262626"
+simple.node_style.stroke_width = 1
 
 
 coal = TreeStyle('coal')
