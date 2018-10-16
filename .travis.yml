@@ -9,7 +9,7 @@ install:
   - wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O miniconda3.sh;
   - bash miniconda3.sh -b -p $HOME/miniconda3
 
-  ## CONDA PY3 BUILD
+  # CONDA PY3 BUILD
   - export PATH="$HOME/miniconda3/bin:$PATH"
   - which python
   - hash -r
@@ -17,11 +17,16 @@ install:
   - conda update -q conda
   - conda info -a
   - conda install pip notebook nbconvert -qy
-  - pip install --index-url https://test.pypi.org/legacy/ toytree==0.1.11
-  #- git clone https://github.com/eaton-lab/toytree.git t2
-  #- cd t2
-  #- pip install -e .
-  #- cd ..
+
+  # install toytree from master using pip
+  - git clone https://github.com/eaton-lab/toytree.git toytree-git
+  - cd toytree-git
+  - pip install -e .
+  - cd ..
+
+  # install notebook necessities
+  - conda install jupyter -qy
+
   #- pip install 
   #- conda install pip jupyter notebook nbconvert ipykernel -qy
   #- conda install future requests numpy reportlab -qy
@@ -32,7 +37,10 @@ install:
 # command to run tests
 script: 
  
-  ## do CONDA py3 tests
+  #test installation
   - export PATH="$HOME/miniconda3/bin:$PATH"
   - python -c "import toyplot; print(toyplot.__version__)"
   - python -c "import toytree; print(toytree.__version__)"
+
+  # test toytree code
+  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/tutorial.ipynb --output pytest --to html  
