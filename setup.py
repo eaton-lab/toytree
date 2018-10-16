@@ -20,10 +20,10 @@ setup(
     long_description=open('README.rst').read(),
     packages=find_packages(),
     install_requires=[
-        "toyplot",
+        "toyplot>=0.17.0",
         "numpy>=1.8.0",
-        "requests",
         "future",
+        "requests",
     ],
     entry_points={},
     license='GPL',
