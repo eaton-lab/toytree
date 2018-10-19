@@ -11,8 +11,8 @@ from copy import deepcopy
 from collections import defaultdict
 from .ete3mini import TreeNode
 from .Toytree import Toytree
-from .TreeStyle import multi, normal, dark, coal
-from .utils import bpp2newick, ToytreeError
+from .TreeStyle import TreeStyle
+from .utils import bpp2newick
 import toyplot
 import toyplot.config
 import requests
@@ -44,7 +44,7 @@ class MultiTree:
 
         # setting attributes
         self.newick = newick
-        self._style = multi
+        self.style = TreeStyle('m')
         self._fixed_order = fixed_order
         self._i = 0
 
@@ -224,7 +224,7 @@ class MultiTree:
 
             # and create drawing
             if kwargs.get("debug"):
-                draw.update(axes=axes, **kwargs)
+                #draw.update(axes=axes, **kwargs)
                 return draw
 
             # if user provided explicit axes then include them
@@ -418,7 +418,7 @@ class TreeGrid:
         self.cartesian = None
         self.trees = None
         self.mtree = MultiTree(mtree.treelist, fixed_order=fixed_order)
-        self.style = normal
+        self.style = TreeStyle('n')
 
         # to be filled
         self.x = None
@@ -471,7 +471,7 @@ class CloudTree:
 
     def __init__(self, mtree, fixed_order=None):
         # base style
-        self.style = mtree._style
+        self.style = mtree.style
 
         # inherit fixed order, take arg, or use True
         self.fixed_order = mtree._fixed_order
@@ -480,12 +480,11 @@ class CloudTree:
         if not self.fixed_order:
             self.fixed_order = True
 
-        # tip labels get updated
-        self.tip_labels = None
-
         # make new mtree using fixed order
         self.mtree = MultiTree(mtree.treelist, fixed_order=self.fixed_order)
 
+        # tip labels get updated
+        self.tip_labels = None
 
     def update(self, **kwargs):
 
@@ -499,18 +498,12 @@ class CloudTree:
             kwargs["tree_style"] = kwargs.get("ts")
 
         # update tree_style if entered as an argument
-        if kwargs.get('tree_style') in ('c', 'coal'):
-            self.style = deepcopy(coal)
-        elif kwargs.get('tree_style') in ('d', 'dark'):
-            self.style = deepcopy(dark)
-        elif kwargs.get('tree_style') in ('n', 'normal'):
-            self.style = deepcopy(normal)
-        else:
-            self.style = deepcopy(multi)
+        if kwargs.get('tree_style'):
+            self.style = TreeStyle(kwargs.get('tree_style'))
 
         # update tree_style to custom style with user entered args
-        self.style._update_from_dict(
-            {i: j for (i, j) in kwargs.items() if j is not None})
+        censored_dict = {i: j for (i, j) in kwargs.items() if j is not None}
+        self.style.update(censored_dict)           
 
         # set reasonable dims if not user entered
         self.set_dims_from_tree_size()
@@ -520,22 +513,29 @@ class CloudTree:
 
         # grab debug flag and pop it from dict
         debug = False
-        if self.style.__dict__.get("debug"):
-            self.style.__dict__.pop("debug")
+        if self.style.get("debug"):
+            self.style.pop("debug")
             debug = True
 
         # could put something here to apply styles based on some calculation
         # such as different colors for different topologies...
-
+        if isinstance(kwargs.get('edge_style'), list):
+            if not len(kwargs['edge_style']) == len(self.mtree):
+                raise IndexError('stylelist length must match treelist length')
+            for idx, tre in enumerate(self.mtree.treelist):
+                tre.style.edge_style = kwargs['edge_style'][idx]
 
         # pop tip labels and styles since they'll be blocked from subtrees
         tip_labels = deepcopy(self.style.tip_labels)
         tip_labels_style = deepcopy(self.style.tip_labels_style)
         self.style.tip_labels = False
 
+        # unpack lists of style if applied to trees differently. Here we
+        # can allow node_colors, node_sizes, edge_styles, 
+
         # plot trees on the same axes with shared style dict
         for tre in self.mtree.treelist:           
-            tre.draw(axes=self.axes, **self.style.__dict__)
+            tre.draw(axes=self.axes, **self.style)
 
         # add a single call to tip labels
         self.style.tip_labels = tip_labels
@@ -596,7 +596,7 @@ class CloudTree:
             ypos = np.arange(self.mtree.ntips)
 
         # pop fill from color dict if using color
-        tstyle = deepcopy(self.style.tip_labels_style.cssdict())
+        tstyle = deepcopy(self.style.tip_labels_style)
         if self.style.tip_labels_color:
             tstyle.pop("fill")
 
@@ -611,9 +611,9 @@ class CloudTree:
         )
         # get stroke-width for aligned tip-label lines (optional)
         # copy stroke-width from the edge_style unless user set it
-        if not self.style.edge_align_style.__dict__.get("stroke_width"):
-            self.style.edge_align_style.stroke_width = (
-                self.style.edge_style.stroke_width)
+        if not self.style.edge_align_style.get("stroke-width"):
+            self.style.edge_align_style['stroke-width'] = (
+                self.style.edge_style['stroke-width'])
 
 
     def fit_tip_labels(self):
@@ -649,7 +649,7 @@ class CloudTree:
         # LABELS
         # False == hide tip labels
         if self.style.tip_labels is False:
-            self.style.tip_labels_style.text_anchor_shift = "0px"
+            self.style.tip_labels_style["-toyplot-anchor-shift"] = "0px"
             self.tip_labels = [
                 "" for i in self.mtree.treelist[0].get_tip_labels()]
 
@@ -657,8 +657,8 @@ class CloudTree:
         # user entered something...
         else:
             # if user did not change label-offset then shift it here
-            if not self.style.tip_labels_style.text_anchor_shift:
-                self.style.tip_labels_style.text_anchor_shift = "15px"
+            if not self.style.tip_labels_style["-toyplot-anchor-shift"]:
+                self.style.tip_labels_style["-toyplot-anchor-shift"] = "15px"
 
             # if user entered list in get_tip_labels order reverse it for plot
             if isinstance(self.style.tip_labels, list):
