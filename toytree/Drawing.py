@@ -18,7 +18,7 @@ class Drawing:
         # input objects
         self.ttree = ttree
         self.coords = ttree._coords
-        self.style = ttree._style
+        self.style = ttree.style
         self.kwargs = kwargs
 
         # mutable plotting attributes pulled from styles and tree
@@ -31,6 +31,9 @@ class Drawing:
         # todo: allow itemized versions of these...
         self.tip_colors = None
         self.edge_colors = None
+
+        # store whether external axes were passed in 
+        self._external_axis = False
 
 
     def update(self, axes=None):
@@ -87,7 +90,7 @@ class Drawing:
                 xpos = np.zeros(self.ttree.ntips)
 
         # pop fill from color dict if using color
-        tstyle = deepcopy(self.style.tip_labels_style.cssdict())
+        tstyle = deepcopy(self.style.tip_labels_style)
         if self.style.tip_labels_color:
             tstyle.pop("fill")
 
@@ -102,9 +105,9 @@ class Drawing:
         )
         # get stroke-width for aligned tip-label lines (optional)
         # copy stroke-width from the edge_style unless user set it
-        if not self.style.edge_align_style.__dict__.get("stroke_width"):
-            self.style.edge_align_style.stroke_width = (
-                self.style.edge_style.stroke_width)
+        if not self.style.edge_align_style.get("stroke-width"):
+            self.style.edge_align_style["stroke-width"] = (
+                self.style.edge_style["stroke-width"])
 
 
     def add_tip_lines_to_axes(self):
@@ -116,7 +119,7 @@ class Drawing:
             self.axes.graph(
                 aedges,
                 vcoordinates=averts,
-                estyle=self.style.edge_align_style.cssdict(),
+                estyle=self.style.edge_align_style, 
                 vlshow=False,
                 vsize=0,
             )
@@ -156,8 +159,8 @@ class Drawing:
         # COLOR
         # tip color overrides tipstyle.fill
         if self.style.tip_labels_color:
-            if self.style.tip_labels_style.fill:
-                self.style.tip_labels_style.fill = None
+            #if self.style.tip_labels_style.fill:
+            #    self.style.tip_labels_style.fill = None
             if self.ttree._fixed_order:
                 if isinstance(self.style.tip_labels_color, (list, np.ndarray)):                                     
                     cols = np.array(self.style.tip_labels_color)
@@ -167,15 +170,15 @@ class Drawing:
         # LABELS
         # False == hide tip labels
         if self.style.tip_labels is False:
-            self.style.tip_labels_style.text_anchor_shift = "0px"
+            self.style.tip_labels_style["-toyplot-anchor-shift"] = "0px"
             self.tip_labels = ["" for i in self.ttree.get_tip_labels()]
 
         # LABELS
         # user entered something...
         else:
             # if user did not change label-offset then shift it here
-            if not self.style.tip_labels_style.text_anchor_shift:
-                self.style.tip_labels_style.text_anchor_shift = "15px"
+            if not self.style.tip_labels_style["-toyplot-anchor-shift"]:
+                self.style.tip_labels_style["-toyplot-anchor-shift"] = "15px"
 
             # if user entered list in get_tip_labels order reverse it for plot
             if isinstance(self.style.tip_labels, list):
@@ -198,8 +201,8 @@ class Drawing:
                 vcoordinates=self.coords.verts,
                 vlshow=False,
                 vsize=0,
-                estyle=self.style.edge_style.cssdict(),
-                # ecolor=self._style["edge_color"], ## ...
+                estyle=self.style.edge_style, 
+                # ecolor=...
             )
         else:
             self.axes.graph(
@@ -207,8 +210,8 @@ class Drawing:
                 vcoordinates=self.coords.coords,
                 vlshow=False,
                 vsize=0.,
-                estyle=self.style.edge_style.cssdict(),                
-                # ecolor=self._style["edge_color"], ## ...
+                estyle=self.style.edge_style, 
+                # ecolor=...
             )
   
     # -----------------------------------------------------------------
@@ -254,8 +257,8 @@ class Drawing:
                     shape="o",
                     label=str(nlabel),
                     size=nsize,
-                    mstyle=self.style.node_style.cssdict(),
-                    lstyle=self.style.node_labels_style.cssdict()
+                    mstyle=self.style.node_style, 
+                    lstyle=self.style.node_labels_style, 
                 )
             else:
                 mark = ""
@@ -308,7 +311,7 @@ class Drawing:
             self.node_labels = self.ttree.get_node_values('idx', 1, 1)
             # use default node size as a list if not provided
             if not self.style.node_size:
-                self.node_sizes = [20] * len(nvals)
+                self.node_sizes = [18] * len(nvals)
             else:
                 assert isinstance(self.style.node_size, (int, str))
                 self.node_sizes = (
@@ -341,7 +344,7 @@ class Drawing:
             elif isinstance(self.style.node_size, (str, int, float)):
                 self.node_sizes = [int(self.style.node_size)] * len(nvals)
             else:
-                self.node_sizes = [20] * len(nvals)
+                self.node_sizes = [18] * len(nvals)
 
             # override node sizes to hide based on node labels
             for nidx, node in enumerate(self.node_labels):
@@ -355,7 +358,11 @@ class Drawing:
 
         # style axes with padding and show axes
         self.axes.padding = self.style.padding
-        self.axes.show = self.style.scalebar
+
+        if not self._external_axis:
+            self.axes.show = True
+            if not self.style.scalebar:
+                self.axes.show = False
         
         # scalebar        
         if self.style.scalebar and self.style.orient == "right":
@@ -518,6 +525,7 @@ class Drawing:
         if axes: 
             self.canvas = None
             self.axes = axes
+            self._external_axis = True
         else:
             self.canvas = toyplot.Canvas(
                 height=self.style.height,

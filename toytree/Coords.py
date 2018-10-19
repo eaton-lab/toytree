@@ -78,7 +78,7 @@ class Coords:
         facing, reorient_coordinates() will handle re-translating this.        
         """
         # shortname 
-        uselen = bool(self.ttree._style.use_edge_lengths)
+        uselen = bool(self.ttree.style.use_edge_lengths)
 
         # postorder: children then parents (nidxs from 0 up)
         # store edge array for connecting child nodes to parent nodes
@@ -214,11 +214,11 @@ class Coords:
 
         # down is the default orientation
         # down-facing tips align at y=0, first ladderized tip at x=0
-        if self.ttree._style.orient in ('down', 0):
+        if self.ttree.style.orient in ('down', 0):
             pass
 
         # right-facing tips align at x=0, last ladderized tip at y=0
-        elif self.ttree._style.orient in ('right', 3):
+        elif self.ttree.style.orient in ('right', 3):
 
             # verts swap x and ys and make xs 0 to negative
             tmp = np.zeros(self.verts.shape)
@@ -232,7 +232,7 @@ class Coords:
             tmp[:, 0] = self.coords[:, 1] * -1
             self.coords = tmp
 
-        elif self.ttree._style.orient in ('left', 1):
+        elif self.ttree.style.orient in ('left', 1):
             raise NotImplementedError("todo: left facing")
 
         else:
