@@ -5,12 +5,16 @@ package:
 source:
   git_url: https://github.com/drj11/pypng.git
 
+build:
+  number: 0
+  script: python setup.py install
+
 requirements:
   build:
-    - python
+    - python {{ python }}
     - setuptools
   run:
-    - python
+    - python {{ python }}
 
 test:
   imports:

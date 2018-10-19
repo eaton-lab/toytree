@@ -2,39 +2,39 @@
 ## which then writes to meta.yaml during the conda build.
 package:
   name: toytree
-  version: "0.1.6"
+  version: {{ GIT_DESCRIBE_TAG }}
 
 source:
   git_url: https://github.com/eaton-lab/toytree.git
-  git_tag: 0.1.6
 
 build:
   number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
-  #str: '0.1.6'   ## the string before it: toytree-0.1.5-0
-  #number: 0      ## the version number given to the build
-
+  script: python setup.py install
+  noarch: generic
+  
 requirements:
   build:
-    - python
+    - python {{ python }}
     - setuptools
-    - numpy >=1.7
-    - toyplot >=0.16.1  ## eaton-lab forked version for now
-    - pypng
-    - reportlab
-    - jupyter
-    - nbconvert
+    - numpy >=1.10
+    - toyplot >=0.17.0
     - requests
+    - future
+    #- pypng
+    #- reportlab
+    #- notebook
+    #- nbconvert    
   run:
-    - python
+    - python {{ python }}
     - setuptools
-    - numpy >=1.7
-    - toyplot >=0.16.1  ## eaton-lab forked version for now
+    - numpy >=1.10
+    - toyplot >=0.17.0  ## eaton-lab forked version for now
     - pypng
     - reportlab
-    - jupyter
+    - notebook
     - nbconvert
     - requests
-
+    - future
 test:
   imports:
     - toytree
