@@ -3,9 +3,4 @@ channels:
   - eaton-lab
 dependencies:
   - python>=3
-  - numpy
-  - requests
-  - future
-  - pip:
-    - toyplot>=0.17.0
-    - toytree
+  - toytree

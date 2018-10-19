@@ -43,4 +43,4 @@ script:
   - python -c "import toytree; print(toytree.__version__)"
 
   # test toytree code
-  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/tutorial.ipynb --output pytest --to html  
+  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/4-tutorial.ipynb --to html  
