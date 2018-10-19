@@ -3,14 +3,13 @@
 from __future__ import print_function, absolute_import
 
 import re
-import sys
 import requests
 import itertools
 from decimal import Decimal
 from copy import deepcopy
 
 from .ete3mini import TreeNode
-from .TreeStyle import TreeStyle, normal, coal, dark, multi, simple
+from .TreeStyle import TreeStyle  # , normal, coal, dark, multi, simple
 from .Coords import Coords
 from .Drawing import Drawing
 from .utils import ToytreeError, TreeMod
@@ -34,7 +33,7 @@ class Toytree:
 
         # Object for storing default plot settings or saved styles.
         # Calls several update functions when self.draw() to fit canvas.
-        self._style = TreeStyle(tree_style='n')
+        self.style = TreeStyle(tree_style='n')
 
         # Object for plot coordinates. Calls .update() whenever tree modified.
         self._coords = Coords(self)
@@ -94,10 +93,12 @@ class Toytree:
 
     @property
     def nnodes(self):
+        "The total number of nodes in the tree including tips and root."        
         return sum(1 for i in self.tree.traverse())
 
     @property
     def ntips(self):
+        "The number of tip nodes in the tree."
         return sum(1 for i in self.tree.get_leaves())
 
     @property
@@ -517,7 +518,6 @@ class Toytree:
         tip_labels_color=None,
         tip_labels_style=None,
         tip_labels_align=None,
-        tip_labels_space=None,
         node_labels=None,
         node_labels_style=None,
         node_size=None,
@@ -610,17 +610,11 @@ class Toytree:
         if kwargs.get("ts"):
             tree_style = kwargs.get("ts")
 
-        # start from a fixed tree_style (change this to a function or dict)
-        if tree_style in ('c', 'coal'):
-            self._style = deepcopy(coal)
-        elif tree_style in ('d', 'dark'):
-            self._style = deepcopy(dark)
-        elif tree_style in ('m', 'multi'):            
-            self._style = deepcopy(multi)
-        elif tree_style in ('s', 'simple'):
-            self._style = deepcopy(simple)
-        else:
-            self._style = deepcopy(normal)
+        # start from a cleared tree_style and then update.
+        self.style = TreeStyle('n')
+        if tree_style:            
+            newstyle = TreeStyle(tree_style[0])
+            self.style.__dict__.update(newstyle.__dict__)
 
         # store entered args
         userargs = {
@@ -629,26 +623,34 @@ class Toytree:
             "orient": orient,
             "tip_labels": tip_labels,
             "tip_labels_color": tip_labels_color,
-            "tip_labels_style": tip_labels_style,
             "tip_labels_align": tip_labels_align,
-            "tip_labels_space": tip_labels_space,
             "node_labels": node_labels,
-            "node_labels_style": node_labels_style,
             "node_size": node_size,
             "node_color": node_color,
-            "node_style": node_style,
             "node_hover": node_hover,
             "edge_type": edge_type,  
-            "edge_style": edge_style,
-            "edge_align_style": edge_align_style,
             "use_edge_lengths": use_edge_lengths,
             "scalebar": scalebar, 
             "padding": padding,
         } 
+        dictargs = {
+            "edge_style": edge_style,
+            "edge_align_style": edge_align_style,
+            "tip_labels_style": tip_labels_style,            
+            "node_style": node_style,
+            "node_labels_style": node_labels_style,
+        }
 
         # update tree_style to custom style with user entered args
-        self._style._update_from_dict(
-            {i: j for (i, j) in userargs.items() if j is not None})
+        censored = {i: j for (i, j) in userargs.items() if j is not None}
+        self.style.__dict__.update(censored)
+
+        # update style dicts
+        censored = [i for i in dictargs if i is not None]
+        for styledict in censored:
+            sdict = dictargs[styledict]
+            if sdict:
+                self.style.__setattr__(styledict, sdict)
 
         # Init Drawing class object.
         draw = Drawing(self)
