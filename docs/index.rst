@@ -18,7 +18,7 @@ Documentation
    2-try-it.rst
    3-installation.rst
    4-tutorial.ipynb
-
+   Cookbook.ipynb
 
 
 .. 1-ethos.rst  
