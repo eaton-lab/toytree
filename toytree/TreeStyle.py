@@ -57,7 +57,7 @@ DEFAULT_EDGE_ALIGN_STYLE = {
 
 DEFAULT_TIP_LABEL_STYLE = {
     "fill": "#262626", 
-    "font-size": "12px", 
+    "font-size": "11px", 
     "text-anchor": "start", 
     "-toyplot-anchor-shift": None, 
 }
