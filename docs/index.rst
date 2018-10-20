@@ -21,32 +21,4 @@ Documentation
    Cookbook.ipynb
 
 
-.. 1-ethos.rst  
-
-
-   installation.rst
-   Tutorial.ipynb
-   ToyTrees.ipynb
-   MultiTrees.ipynb
-   Cookbook.ipynb
-
-
-.. #rsts/ethos.ipynb
-.. ##rsts/installation
-.. rsts/tutorial.rst
-.. rsts/cloud-trees.rst
-
-..    :maxdepth: 2
-..    rsts/tutorial
-..    rsts/cloud-trees
-
-
-.. Indices and tables
-.. ==================
-
-.. * :ref:`genindex`
-.. * :ref:`modindex`
-.. * :ref:`search`
-
-
 
