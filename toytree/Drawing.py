@@ -77,13 +77,14 @@ class Drawing:
         if self.style.orient in ("up", "down"):
             if self.ttree._fixed_order:
                 xpos = list(range(self.ttree.ntips))
+                ypos = ypos[self.ttree._fixed_idx]
             if self.style.tip_labels_align:
                 ypos = np.zeros(self.ttree.ntips)
 
         if self.style.orient in ("right", "left"):
             if self.ttree._fixed_order:
+                xpos = xpos[self.ttree._fixed_idx]
                 ypos = list(range(self.ttree.ntips))
-                # TODO: xpos needs to be adjusted too unless tip_labels_align
             if self.style.tip_labels_align:
                 xpos = np.zeros(self.ttree.ntips)
 
@@ -202,6 +203,17 @@ class Drawing:
                 estyle=self.style.edge_style, 
                 # ecolor=...
             )
+        # for unrooted graph tip coordinates are auto-fit, so we need to store
+        # the vertex locations.
+        elif self.style.edge_type == 'u':
+            self.axes.graph(
+                self.coords.edges,
+                #vcoordinates=self.coords.verts,
+                vlshow=False,
+                vsize=0,
+                estyle=self.style.edge_style, 
+                # ecolor=...
+            )            
         else:
             self.axes.graph(
                 self.coords.lines,
