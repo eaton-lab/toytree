@@ -2,7 +2,6 @@
 
 from __future__ import print_function, absolute_import
 
-import re
 import requests
 import itertools
 from decimal import Decimal
@@ -12,7 +11,7 @@ from .ete3mini import TreeNode
 from .TreeStyle import TreeStyle
 from .Coords import Coords
 from .Drawing import Drawing
-from .utils import ToytreeError, TreeMod
+from .utils import ToytreeError, TreeMod, fuzzy_match_tipnames
 
 
 class Toytree:
@@ -123,7 +122,7 @@ class Toytree:
             extrafeat = {i for i in testnode.features if i not in features}
             features.update(extrafeat)
             if handle:
-                self.treenode.write(format=fmt, file=handle)
+                self.treenode.write(format=fmt, outfile=handle)
             else:
                 return self.treenode.write(format=fmt)
 
@@ -225,7 +224,7 @@ class Toytree:
                     i.idx: i.name for i in self.treenode.traverse("preorder")
                     if i.is_leaf()
                 }
-               
+
 
     def get_tip_coordinates(self, axis=None):
         """
@@ -243,12 +242,30 @@ class Toytree:
         return coords[:self.ntips]
 
 
-    def get_tip_labels(self):
+    def get_tip_labels(self, idx=None):
         """
-        Returns tip labels in ladderized order starting from zero axis
-        (bottom to top in right-facing trees; left to right in down-facing).
+        Returns tip labels in the order they will be plotted on the tree, i.e.,
+        starting from zero axis and counting up by units of 1 (bottom to top 
+        in right-facing trees; left to right in down-facing). If 'idx' is 
+        indicated then a list of tip labels descended from that node will be 
+        returned, instead of all tip labels. This is useful in combination 
+        with other functions that select nodes/clades of the tree based on a 
+        list of tip labels. You can use the toytree draw() command with 
+        tip_labels='idx' or tip_labels=True to see idx labels plotted on nodes. 
+
+        Parameters:
+            idx (int): index label of a node.
+
+        Example:
+            # select a clade of the tree and use it for rooting.
+            tiplist = tre.get_descenants_from_idx(21)
+            tre.root(names=tiplist)
         """
-        return self.treenode.get_leaf_names()[::-1]
+        if not idx:
+            return self.treenode.get_leaf_names()[::-1]
+        else:
+            treenode = self.treenode.search_nodes(idx=idx)[0]
+            return treenode.get_leaf_names()[::-1]
 
 
     def copy(self):
@@ -282,71 +299,67 @@ class Toytree:
     # --------------------------------------------------------------------
     # functions to modify the ete3 tree - MUST CALL ._coords.update()
     # --------------------------------------------------------------------
-    def prune(self, node_idx):
-        """
-        Returns a subtree pruned from the full tree at the selected
-        node index. To find the appropriate index try using
-        tre.draw(node_labels=True) and use the interactive hover
-        feature, or tre.draw(node_labels='idx') to find the 'idx'
-        value of the node on which you wish to prune the tree. If you
-        simply want to drop tips from the tree rather than prune on an
-        internal node, see the .drop_tip() function instead.
+    # def prune_tips(self, node_idx):
+    #     """
+    #     Returns a subtree pruned from the full tree at the selected
+    #     node index. To find the appropriate index try using
+    #     tre.draw(node_labels=True) and use the interactive hover
+    #     feature, or tre.draw(node_labels='idx') to find the 'idx'
+    #     value of the node on which you wish to prune the tree. If you
+    #     simply want to drop tips from the tree rather than prune on an
+    #     internal node, see the .drop_tip() function instead.
 
-        ptre = tre.prune(15)
-        """
-        # make a deepcopy of the tree
-        nself = self.copy()
+    #     ptre = tre.prune(15)
+    #     """
+    #     # make a deepcopy of the tree
+    #     nself = self.copy()
 
-        # ensure node_idx is int
-        node = nself.treenode.search_nodes(idx=int(node_idx))[0]
-        nself.treenode.prune(node)
+    #     # ensure node_idx is int
+    #     node = nself.treenode.search_nodes(idx=int(node_idx))[0]
+    #     nself.treenode.prune(node, preserve_branch_length=True)
+    #     nself._coords.update()
+    #     return nself
+
+    def ladderize(self):
+        nself = deepcopy(self)
+        nself.treenode.ladderize()
+        nself._fixed_order = None
         nself._coords.update()
         return nself
 
 
-    def drop_tips(self, tips):
+    def drop_tips(self, names=None, wildcard=None, regex=None):
         """
-        Returns a copy of the tree with the selected tips pruned from
-        the tree. The entered value can be a name or list of names. To
-        prune on an internal node to create a subtree of the existing
-        tree see the .prune() function instead.
+        Returns a copy of the tree with the selected tips removed. The entered \
+        value can be a name or list of names. To prune on an internal node to 
+        create a subtree see the .prune() function instead.
 
+        Parameters:
+        tips: list of tip names.
+
+        # example:
         ptre = tre.drop_tips(['a', 'b'])
         """
         # make a deepcopy of the tree
         nself = self.copy()
 
-        # if tips is a string or Treenode
-        if isinstance(tips, str):
-            tips = [tips]
-        elif isinstance(tips, TreeNode):
-            tips = [tips.name]
+        # get matching names list with fuzzy match
+        tipnames = fuzzy_match_tipnames(nself, names, wildcard, regex, mono=0)
 
-        keeptips = [i for i in nself.get_tip_labels() if i not in tips]
-        nself.treenode.prune(keeptips)
+        if len(tipnames) == len(nself):
+            raise ToytreeError("You cannot drop all tips from the tree.")
+
+        if not tipnames:
+            raise ToytreeError("No tips selected.")
+
+        #keeptips = [i for i in nself.get_tip_labels() if i not in tips]
+        keeptips = [i for i in nself.get_tip_labels() if i not in tipnames]
+        nself.treenode.prune(keeptips, preserve_branch_length=True)
         nself._coords.update()
         return nself
 
 
-    def resolve_polytomy(
-        self,
-        default_dist=0.0,
-        default_support=0.0,
-        recursive=False):
-        """
-        Returns a copy of the tree with resolved polytomies.
-        Does not transform tree in-place.
-        """
-        nself = self.copy()
-        nself.treenode.resolve_polytomy(
-            default_dist=default_dist,
-            default_support=default_support,
-            recursive=recursive)
-        nself._coords.update()        
-        return nself
-
-
-    def rotate_node(self, idx):
+    def rotate_node(self, names=None, wildcard=None, regex=None):
         """
         Returns a ToyTree with the selected node rotated for plotting.
         tip colors do not align correct currently if nodes are rotated...
@@ -355,21 +368,26 @@ class Toytree:
         revd = {j: i for (i, j) in enumerate(self.get_tip_labels())}
         neworder = {}
         
-        # get node at idx
-        node = self.treenode.search_nodes(idx=int(idx))[0]
-        children = node.children
-        aa = [[j.name for j in i.get_leaves()] for i in children]
-        bb = [[revd[i] for i in j] for j in aa]
-        move = max((len(i) for i in bb))
+        # get node to rotate
+        treenode = fuzzy_match_tipnames(self, names, wildcard, regex, mono=1)
+        children = treenode.up.children
+        names = [[j.name for j in i.get_leaves()] for i in children]
+        nidxs = [[revd[i] for i in j] for j in names]
+
+        # get size of the big clade
+        move = max((len(i) for i in nidxs))
+        if len(nidxs[0]) > len(nidxs[1]):
+            move = min((len(i) for i in nidxs))            
 
         # newdict
-        tdict = {i: None for i in itertools.chain(*aa)}
-        cycle = itertools.cycle(itertools.chain(*bb))
+        cnames = list(itertools.chain(*names))
+        tdict = {i: None for i in cnames}
+        cycle = itertools.cycle(itertools.chain(*nidxs))
         for m in range(move):
             next(cycle)
-        for t in tdict:
+        for t in cnames:
             tdict[t] = next(cycle)
-            
+
         for key in revd:
             if key in tdict:
                 neworder[key] = tdict[key]
@@ -378,7 +396,29 @@ class Toytree:
         
         revd = {j: i for (i, j) in neworder.items()}
         neworder = [revd[i] for i in range(self.ntips)]
-        return Toytree(self.newick, fixed_order=neworder)
+
+        # returns a new tree (i.e., copy) modified w/ a fixed order
+        nself = Toytree(self.newick, fixed_order=neworder)
+        nself._coords.update()
+        return nself
+
+
+    def resolve_polytomy(
+        self,
+        dist=1.0,
+        support=100,
+        recursive=True):
+        """
+        Returns a copy of the tree with all polytomies randomly resolved.
+        Does not transform tree in-place.
+        """
+        nself = self.copy()
+        nself.treenode.resolve_polytomy(
+            default_dist=dist,
+            default_support=support,
+            recursive=recursive)
+        nself._coords.update()        
+        return nself
 
 
     def unroot(self):
@@ -392,16 +432,18 @@ class Toytree:
         return nself
 
 
-    def root(self, outgroup=None, wildcard=None, regex=None):
+    def root(self, names=None, wildcard=None, regex=None):
         """
-        Re-root a tree on a selected tip or group of tip names. Returns a 
-        copy of the tree, the original tree object is not modified. 
+        (Re-)root a tree by creating selecting a existing split in the tree, 
+        or creating a new node to split an edge in the tree. Rooting location
+        is selected by entering the tips descendant from one child of the root
+        split (e.g., names='a' or names=['a', 'b']). You can alternatively 
+        select a list of tip names using a fuzzy selector based on a unique 
+        shared string (wildcard="prz") or a regex matching pattern.
 
-        The new root can be selected by entering either a list of outgroup
-        names, by entering a wildcard selector that matches their names, or
-        using a regex command to match their names. For example, to root a tree
-        on a clade that includes the samples "1-A" and "1-B" you can do any of
-        the following:
+        Example:
+        To root on a clade that includes the samples "1-A" and "1-B" you can 
+        do any of the following:
 
         rtre = tre.root(outgroup=["1-A", "1-B"])
         rtre = tre.root(wildcard="1-")
@@ -410,47 +452,8 @@ class Toytree:
         # make a deepcopy of the tree
         nself = self.copy()
 
-        # get names of outgroup/s using list, wildcard or regex
-        og = outgroup
-        if og:
-            if isinstance(og, str):
-                og = [og]
-            notfound = [i for i in og if i not in nself.treenode.get_leaf_names()]
-            if any(notfound):
-                raise Exception(
-                    "Sample {} is not in the tree".format(notfound))
-            outs = [i for i in nself.treenode.get_leaf_names() if i in outgroup]
-
-        elif regex:
-            outs = [i.name for i in nself.treenode.get_leaves()
-                    if re.match(regex, i.name)]
-            if not any(outs):
-                raise Exception("No Samples matched the regular expression")
-
-        elif wildcard:
-            outs = [i.name for i in nself.treenode.get_leaves()
-                    if wildcard in i.name]
-            if not any(outs):
-                raise Exception("No Samples matched the wildcard")
-
-        else:
-            raise Exception(
-                "must enter an outgroup, wildcard selector, or regex pattern")
-
-        # get node to use for outgroup
-        if len(outs) > 1:
-            # check if they're monophyletic
-            mbool, mtype, mnames = nself.treenode.check_monophyly(
-                outs, "name", ignore_missing=True)
-            if not mbool:
-                if mtype == "paraphyletic":
-                    outs = [i.name for i in mnames]
-                else:
-                    raise Exception(
-                        "Tips entered to root() cannot be paraphyletic")
-            out = nself.treenode.get_common_ancestor(outs)
-        else:
-            out = outs[0]
+        # get treenode of the common ancestor of selected tips
+        out = fuzzy_match_tipnames(nself, names, wildcard, regex)
 
         # split root node if more than di- as this is the unrooted state
         if not nself.is_bifurcating():
@@ -479,7 +482,7 @@ class Toytree:
                     if hasattr(i, "idx")]
 
             # newnode is a tip
-            if len(outs) == 1:
+            if len(out.is_leaf()) == 1:
                 nnode.name = str("rerooted")
                 rnode.name = out
                 rnode.add_feature("idx", max(idxs) + 1)
@@ -664,3 +667,4 @@ class Toytree:
         # Make plot. If user provided explicit axes then include them.
         canvas, axes = draw.update(axes=axes)
         return canvas, axes
+
