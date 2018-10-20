@@ -18,6 +18,8 @@ Documentation
    2-try-it.rst
    3-installation.rst
    4-tutorial.ipynb
+   5-toytrees.ipynb
+   6-treenodes.ipynb
    Cookbook.ipynb
 
 

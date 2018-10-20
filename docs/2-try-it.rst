@@ -10,4 +10,3 @@ If you are not familiar with jupyter-notebooks, or just want to try out toytree 
 
 Launch binder: `toytree binder <http://mybinder.org:/repo/eaton-lab/toytree>`__
 
-
