@@ -5,7 +5,7 @@ The toytree ethos
 =================
 
 Welcome to **toytree**, a minimalist tree manipulation and plotting library. 
-Toytree combines a popular Tree data structure based on the [ete3] library with
+Toytree combines a popular Tree data structure based on the `ete3 <http://etetoolkit.org/docs/latest/tutorial/tutorial_trees.html>`__ library with
 modern plotting tools based on the `toyplot <http://toyplot.rtfd.io>`__ plotting 
 library. The goal of toytree is to provide a light-weight Python equivalent to  commonly used tree manipulation and plotting libraries in R, and in doing so, to promote further development of phylogenetic methods in Python. 
 
