@@ -303,3 +303,57 @@ def bpp2newick(bppnewick):
     new = regex2.sub(";", new)
     new = regex3.sub(":", new)
     return new
+
+
+
+## external functions
+def fuzzy_match_tipnames(ttree, outgroup, wildcard, regex, mono=True):
+    "used in .root and .prune to select multiple tips fuzzy"
+    # get names of outgroup/s using list, wildcard or regex
+    og = outgroup
+    if og:
+        if isinstance(og, str):
+            og = [og]
+        notfound = [i for i in og if i not in ttree.treenode.get_leaf_names()]
+        if any(notfound):
+            raise Exception(
+                "Sample {} is not in the tree".format(notfound))
+        outs = [i for i in ttree.treenode.get_leaf_names() if i in outgroup]
+
+    elif regex:
+        outs = [i.name for i in ttree.treenode.get_leaves()
+                if re.match(regex, i.name)]
+        if not any(outs):
+            raise Exception("No Samples matched the regular expression")
+
+    elif wildcard:
+        outs = [i.name for i in ttree.treenode.get_leaves()
+                if wildcard in i.name]
+        if not any(outs):
+            raise Exception("No Samples matched the wildcard")
+
+    else:
+        raise Exception(
+            "must enter an outgroup, wildcard selector, or regex pattern")
+
+    # if not requiring monophyly of names then return the fuzzy matched list
+    if not mono:
+        return outs
+
+    # if requiring monophyly then we return the TreeNode of the mrca
+    else:
+        # get node to use for outgroup
+        if len(outs) > 1:
+            # check if they're monophyletic
+            mbool, mtype, mnames = ttree.treenode.check_monophyly(
+                outs, "name", ignore_missing=True)
+            if not mbool:
+                if mtype == "paraphyletic":
+                    outs = [i.name for i in mnames]
+                else:
+                    raise Exception(
+                        "Tips entered to root() cannot be paraphyletic")
+            out = ttree.treenode.get_common_ancestor(outs)
+        else:
+            out = ttree.treenode.search_nodes(name=outs[0])[0]
+        return out
