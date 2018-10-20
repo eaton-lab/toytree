@@ -9,7 +9,7 @@ from decimal import Decimal
 from copy import deepcopy
 
 from .ete3mini import TreeNode
-from .TreeStyle import TreeStyle  # , normal, coal, dark, multi, simple
+from .TreeStyle import TreeStyle
 from .Coords import Coords
 from .Drawing import Drawing
 from .utils import ToytreeError, TreeMod
@@ -19,6 +19,7 @@ class Toytree:
     def __init__(self, newick=None, tree_format=0, fixed_order=None):
 
         # get the tree as a TreeNode object
+        self.treenode = None
         self._parse_to_TreeNode(newick, tree_format)
 
         # set tips order if fixing for multi-tree plotting (default None)
@@ -29,7 +30,7 @@ class Toytree:
 
         # ladderize the tree unless user fixed order and wants it not.
         if not self._fixed_order:
-            self.tree.ladderize()
+            self.treenode.ladderize()
 
         # Object for storing default plot settings or saved styles.
         # Calls several update functions when self.draw() to fit canvas.
@@ -48,11 +49,11 @@ class Toytree:
     # ... could add __repr__, __iter__, __next__, but .tree has most already
     def __str__(self):
         """ return ascii tree ... (not sure whether to keep this) """
-        return self.tree.__str__()
+        return self.treenode.__str__()
 
     def __len__(self):
         """ return len of Tree (ntips) """
-        return len(self.tree)
+        return len(self.treenode)
 
     # --------------------------------------------------------------------
     # Loading Newick or ...
@@ -60,7 +61,7 @@ class Toytree:
     def _parse_to_TreeNode(self, newick, tree_format):
         """
         Parse the newick string as either text, filepath or URL, and create an
-        ete.TreeNode object as .tree. If no newick init an empty TreeNode.
+        ete.TreeNode object as .treenode. If no newick init an empty TreeNode.
         """
         if newick:
             # is newick a URL or string, path?
@@ -68,16 +69,16 @@ class Toytree:
                 response = requests.get(newick)
                 response.raise_for_status()
                 newick = response.text.strip()
-            # create .tree attribute as TreeNode
-            self.tree = TreeNode(newick, format=tree_format)
+            # create .treenode attribute as TreeNode
+            self.treenode = TreeNode(newick, format=tree_format)
         # otherwise make an empty TreeNode object
         else:
-            self.tree = TreeNode()
+            self.treenode = TreeNode()
 
 
     def _set_fixed_order(self, fixed_order):
         if fixed_order:
-            if set(fixed_order) != set(self.tree.get_leaf_names()):
+            if set(fixed_order) != set(self.treenode.get_leaf_names()):
                 raise ToytreeError(
                     "fixed_order must include same tipnames as tree")
             self._fixed_order = fixed_order
@@ -89,52 +90,49 @@ class Toytree:
     # --------------------------------------------------------------------    
     @property
     def features(self):
-        return self.tree.features
+        return self.treenode.features
 
     @property
     def nnodes(self):
         "The total number of nodes in the tree including tips and root."        
-        return sum(1 for i in self.tree.traverse())
+        return sum(1 for i in self.treenode.traverse())
 
     @property
     def ntips(self):
         "The number of tip nodes in the tree."
-        return sum(1 for i in self.tree.get_leaves())
+        return sum(1 for i in self.treenode.get_leaves())
 
     @property
     def newick(self, fmt=0):
         "Returns newick fmt=0 represenation of the tree in its current state."
         # checks one of root's children for features and extra feats.
-        if self.tree.children:
+        if self.treenode.children:
             features = {"name", "dist", "support", "height", "idx"}
-            testnode = self.tree.children[0]
+            testnode = self.treenode.children[0]
             extrafeat = {i for i in testnode.features if i not in features}
             features.update(extrafeat)
-            return self.tree.write(format=fmt)
+            return self.treenode.write(format=fmt)
 
     # --------------------------------------------------------------------
-    # functions to return values from the ete3 .tree object --------------
+    # functions to return values from the ete3 .treenode object ----------
     # --------------------------------------------------------------------
     def write(self, handle=None, fmt=0):
-        if self.tree.children:
+        if self.treenode.children:
             features = {"name", "dist", "support", "height", "idx"}
-            testnode = self.tree.children[0]
+            testnode = self.treenode.children[0]
             extrafeat = {i for i in testnode.features if i not in features}
             features.update(extrafeat)
             if handle:
-                self.tree.write(format=fmt, file=handle)
+                self.treenode.write(format=fmt, file=handle)
             else:
-                return self.tree.write(format=fmt)
+                return self.treenode.write(format=fmt)
 
 
     def get_edge_lengths(self):
         """
         Returns edge length values from tree object in node plot order. To
-        modify edge length values you must modify nodes in the .tree object
+        modify edge length values you must modify nodes in the .treenode object
         directly. For example:
-
-        for node in tree.tree.traverse():
-            node.dist = 1.
         """
         return self.get_node_values('dist', True, True)
 
@@ -157,10 +155,10 @@ class Toytree:
         ):
         """
         Returns node values from tree object in node plot order. To modify
-        values you must modify the .tree object directly by setting new
+        values you must modify the .treenode object directly by setting new
         'features'. For example
 
-        for node in tree.tree.traverse():
+        for node in ttree.treenode.traverse():
             node.add_feature("PP", 100)
 
         By default node and tip values are hidden (set to "") so that they
@@ -209,18 +207,22 @@ class Toytree:
         """
         if return_internal:
             if return_nodes:
-                return {i.idx: i for i in self.tree.traverse("preorder")}
+                return {
+                    i.idx: i for i in self.treenode.traverse("preorder")
+                }
             else:
-                return {i.idx: i.name for i in self.tree.traverse("preorder")}
+                return {
+                    i.idx: i.name for i in self.treenode.traverse("preorder")
+                }
         else:
             if return_nodes:
                 return {
-                    i.idx: i for i in self.tree.traverse("preorder")
+                    i.idx: i for i in self.treenode.traverse("preorder")
                     if i.is_leaf()
                 }
             else:
                 return {
-                    i.idx: i.name for i in self.tree.traverse("preorder")
+                    i.idx: i.name for i in self.treenode.traverse("preorder")
                     if i.is_leaf()
                 }
                
@@ -246,7 +248,7 @@ class Toytree:
         Returns tip labels in ladderized order starting from zero axis
         (bottom to top in right-facing trees; left to right in down-facing).
         """
-        return self.tree.get_leaf_names()[::-1]
+        return self.treenode.get_leaf_names()[::-1]
 
 
     def copy(self):
@@ -258,7 +260,7 @@ class Toytree:
         """
         Returns False if the tree is unrooted.
         """
-        if len(self.tree.children) > 2:
+        if len(self.treenode.children) > 2:
             return False
         return True
 
@@ -272,10 +274,10 @@ class Toytree:
         ctn1 = -1 + (2 * len(self))
         ctn2 = -2 + (2 * len(self))
         if self.is_rooted():
-            return bool(ctn1 == sum(1 for i in self.tree.traverse()))
+            return bool(ctn1 == sum(1 for i in self.treenode.traverse()))
         if include_root:
-            return bool(ctn2 == -1 + sum(1 for i in self.tree.traverse()))
-        return bool(ctn2 == sum(1 for i in self.tree.traverse()))
+            return bool(ctn2 == -1 + sum(1 for i in self.treenode.traverse()))
+        return bool(ctn2 == sum(1 for i in self.treenode.traverse()))
 
     # --------------------------------------------------------------------
     # functions to modify the ete3 tree - MUST CALL ._coords.update()
@@ -296,8 +298,8 @@ class Toytree:
         nself = self.copy()
 
         # ensure node_idx is int
-        node = nself.tree.search_nodes(idx=int(node_idx))[0]
-        nself.tree.prune(node)
+        node = nself.treenode.search_nodes(idx=int(node_idx))[0]
+        nself.treenode.prune(node)
         nself._coords.update()
         return nself
 
@@ -321,7 +323,7 @@ class Toytree:
             tips = [tips.name]
 
         keeptips = [i for i in nself.get_tip_labels() if i not in tips]
-        nself.tree.prune(keeptips)
+        nself.treenode.prune(keeptips)
         nself._coords.update()
         return nself
 
@@ -336,7 +338,7 @@ class Toytree:
         Does not transform tree in-place.
         """
         nself = self.copy()
-        nself.tree.resolve_polytomy(
+        nself.treenode.resolve_polytomy(
             default_dist=default_dist,
             default_support=default_support,
             recursive=recursive)
@@ -354,7 +356,7 @@ class Toytree:
         neworder = {}
         
         # get node at idx
-        node = self.tree.search_nodes(idx=int(idx))[0]
+        node = self.treenode.search_nodes(idx=int(idx))[0]
         children = node.children
         aa = [[j.name for j in i.get_leaves()] for i in children]
         bb = [[revd[i] for i in j] for j in aa]
@@ -384,8 +386,8 @@ class Toytree:
         Returns a copy of the tree unrooted. Does not transform tree in-place.
         """
         nself = self.copy()
-        nself.tree.unroot()
-        nself.tree.ladderize()
+        nself.treenode.unroot()
+        nself.treenode.ladderize()
         nself._coords.update()
         return nself
 
@@ -413,20 +415,20 @@ class Toytree:
         if og:
             if isinstance(og, str):
                 og = [og]
-            notfound = [i for i in og if i not in nself.tree.get_leaf_names()]
+            notfound = [i for i in og if i not in nself.treenode.get_leaf_names()]
             if any(notfound):
                 raise Exception(
                     "Sample {} is not in the tree".format(notfound))
-            outs = [i for i in nself.tree.get_leaf_names() if i in outgroup]
+            outs = [i for i in nself.treenode.get_leaf_names() if i in outgroup]
 
         elif regex:
-            outs = [i.name for i in nself.tree.get_leaves()
+            outs = [i.name for i in nself.treenode.get_leaves()
                     if re.match(regex, i.name)]
             if not any(outs):
                 raise Exception("No Samples matched the regular expression")
 
         elif wildcard:
-            outs = [i.name for i in nself.tree.get_leaves()
+            outs = [i.name for i in nself.treenode.get_leaves()
                     if wildcard in i.name]
             if not any(outs):
                 raise Exception("No Samples matched the wildcard")
@@ -438,7 +440,7 @@ class Toytree:
         # get node to use for outgroup
         if len(outs) > 1:
             # check if they're monophyletic
-            mbool, mtype, mnames = nself.tree.check_monophyly(
+            mbool, mtype, mnames = nself.treenode.check_monophyly(
                 outs, "name", ignore_missing=True)
             if not mbool:
                 if mtype == "paraphyletic":
@@ -446,34 +448,34 @@ class Toytree:
                 else:
                     raise Exception(
                         "Tips entered to root() cannot be paraphyletic")
-            out = nself.tree.get_common_ancestor(outs)
+            out = nself.treenode.get_common_ancestor(outs)
         else:
             out = outs[0]
 
         # split root node if more than di- as this is the unrooted state
         if not nself.is_bifurcating():
-            nself.tree.resolve_polytomy()
+            nself.treenode.resolve_polytomy()
 
         # root the object with ete's translate
-        nself.tree.set_outgroup(out)
+        nself.treenode.set_outgroup(out)
         nself._coords.update()
 
         # get features
-        testnode = nself.tree.get_leaves()[0]
+        testnode = nself.treenode.get_leaves()[0]
         features = {"name", "dist", "support", "height"}
         extrafeat = {i for i in testnode.features if i not in features}
         features.update(extrafeat)
 
         # if there is a new node now, clean up its features
-        nnode = [i for i in nself.tree.traverse() if not hasattr(i, "idx")]
+        nnode = [i for i in nself.treenode.traverse() if not hasattr(i, "idx")]
         if nnode:
             # nnode is the node that was added
             # rnode is the location where it *should* have been added
             nnode = nnode[0]
-            rnode = [i for i in nself.tree.children if i != out][0]
+            rnode = [i for i in nself.treenode.children if i != out][0]
 
             # get idxs of existing nodes
-            idxs = [int(i.idx) for i in nself.tree.traverse()
+            idxs = [int(i.idx) for i in nself.treenode.traverse()
                     if hasattr(i, "idx")]
 
             # newnode is a tip
@@ -500,7 +502,7 @@ class Toytree:
 
         # store tree back into newick and reinit Toytree with new newick
         # if NHX format then preserve the NHX features.
-        nself.tree.ladderize()
+        nself.treenode.ladderize()
         nself._coords.update()
         return nself        
 
@@ -556,11 +558,11 @@ class Toytree:
             and returned with the tree plot added to it.
 
         use_edge_lengths: bool (default=False)
-            Use edge lengths from .tree (.get_edge_lengths) else
+            Use edge lengths from .treenode (.get_edge_lengths) else
             edges are set to length >=1 to make tree ultrametric.
 
         tip_labels: [True, False, list]
-            If True then the tip labels from .tree are added to the plot.
+            If True then the tip labels from .treenode are added to the plot.
             If False no tip labels are added. If a list of tip labels
             is provided it must be the same length as .get_tip_labels().
 

@@ -38,8 +38,8 @@ class TreeMod:
         """
         # make tree height = 1 * treeheight
         ctree = self._ttree.copy()
-        _height = ctree.tree.height
-        for node in ctree.tree.traverse():
+        _height = ctree.treenode.height
+        for node in ctree.treenode.traverse():
             node.dist = (node.dist / _height) * treeheight
         ctree._coords.update()
         return ctree
@@ -61,7 +61,7 @@ class TreeMod:
         random.seed(seed)
 
         ctree = self._ttree.copy()
-        for node in ctree.tree.traverse():
+        for node in ctree.treenode.traverse():
 
             ## slide internal nodes 
             if node.up and node.children:
@@ -90,7 +90,7 @@ class TreeMod:
         ctree = self._ttree.copy()
         low, high = sorted([multiplier, 1. / multiplier])
         mult = random.uniform(low, high)
-        for node in ctree.tree.traverse():
+        for node in ctree.treenode.traverse():
             node.dist = node.dist * mult
         ctree._coords.update()
         return ctree
@@ -209,34 +209,34 @@ class RandomTree:
         # build tree: generate N tips as separate Nodes then attach together 
         # at internal nodes drawn randomly from coalescent waiting times.
         tips = [
-            toytree.tree().tree.add_child(name=str(i)) for i in range(ntips)]
+            toytree.tree().treenode.add_child(name=str(i)) for i in range(ntips)]
         while len(tips) > 1:
             rtree = toytree.tree()
             tip1 = tips.pop(random.choice(range(len(tips))))
             tip2 = tips.pop(random.choice(range(len(tips))))
             kingman = (4. * ne) / float(ntips * (ntips - 1))
             dist = random.expovariate(1. / kingman)
-            rtree.tree.add_child(tip1, dist=tip2.height + dist)
-            rtree.tree.add_child(tip2, dist=tip1.height + dist)
-            tips.append(rtree.tree)
+            rtree.treenode.add_child(tip1, dist=tip2.height + dist)
+            rtree.treenode.add_child(tip2, dist=tip1.height + dist)
+            tips.append(rtree.treenode)
 
         # build new tree from the newick string
         self = toytree.tree(tips[0].write())    
-        self.tree.ladderize()
+        self.treenode.ladderize()
 
         # make tree edges in units of 2N (then N doesn't matter!)
         if coalunits:
-            for node in self.tree.traverse():
+            for node in self.treenode.traverse():
                 node.dist /= (2. * ne)
 
         # ensure tips are at zero (they sometime vary just slightly)
-        for node in self.tree.traverse():
+        for node in self.treenode.traverse():
             if node.is_leaf():
                 node.dist += node.height
 
         # set tipnames
         for tip in self.get_tip_labels():
-            node = self.tree.search_nodes(name=tip)[0]
+            node = self.treenode.search_nodes(name=tip)[0]
             node.name = "r{}".format(node.name)
 
         # decompose fills in internal node names and idx
@@ -271,18 +271,18 @@ class RandomTree:
         self = toytree.tree(newick=tmptree.write())
 
         # set tip names by labeling sequentially from 0
-        self.tree.ladderize()
-        self.tree.convert_to_ultrametric()
+        self.treenode.ladderize()
+        self.treenode.convert_to_ultrametric()
 
         # make tree height = 1 * treeheight
-        _height = self.tree.height
-        for node in self.tree.traverse():
+        _height = self.treenode.height
+        for node in self.treenode.traverse():
             node.dist = (node.dist / _height) * treeheight
 
         # set tipnames randomly (doesn't have to match idx)
         nidx = list(range(self.ntips))
         random.shuffle(nidx)
-        for tidx, node in enumerate(self.tree.get_leaves()):
+        for tidx, node in enumerate(self.treenode.get_leaves()):
             node.name = "r{}".format(nidx[tidx])
 
         # fill internal node names and idx

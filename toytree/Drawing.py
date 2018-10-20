@@ -24,8 +24,7 @@ class Drawing:
         # mutable plotting attributes pulled from styles and tree
         self.node_labels = [""] * self.ttree.nnodes
         self.node_sizes = [0] * self.ttree.nnodes
-
-        # color can be node_style={"fill":x}, or node_color=[...]
+        self.node_colors = ["none"] * self.ttree.nnodes
         self.tip_labels = None
 
         # todo: allow itemized versions of these...
@@ -48,8 +47,7 @@ class Drawing:
         # update attrs for style entries. Some of these can be set with style, 
         # or as a list, e.g., node_style={'fill':'red'} or node_color="red".
         self.assign_node_labels_and_sizes()
-        #self.assign_nodes_sizes()
-        #self.assign_node_colors()
+        self.assign_node_colors_and_style()
         self.assign_tip_labels_and_colors()
 
         # draw tree, nodes, tips, axes on canvas.
@@ -142,9 +140,9 @@ class Drawing:
         # or auto-fit (tree height)
         #else:
         if self.style.use_edge_lengths:
-            addon = self.ttree.tree.height 
+            addon = self.ttree.treenode.height 
         else:
-            addon = self.ttree.tree.get_farthest_leaf(True)[1]
+            addon = self.ttree.treenode.get_farthest_leaf(True)[1]
 
         # modify display for orientations
         if self.style.tip_labels:
@@ -220,7 +218,7 @@ class Drawing:
     def add_nodes_to_axes(self):
         """
         Creates a new marker for every node from idx indexes and lists of 
-        node_values, node_colors, node_sizes, node_style, node_label_style.
+        node_values, node_colors, node_sizes, node_style, node_labels_style.
         Pulls from node_color and adds to a copy of the style dict for each 
         node to create marker.
 
@@ -234,22 +232,16 @@ class Drawing:
         marks = []
         for nidx in self.ttree.get_node_values('idx', 1, 1):
 
-            # select node value
+            # select node value from deconstructed lists
             nlabel = self.node_labels[nidx]
             nsize = self.node_sizes[nidx]
 
-            # get node color
-            if self.style.node_color is not None:
-                # parsing color is tricky b/c there are many accepted formats
-                if isinstance(self.style.node_color, str):
-                    self.style.node_style.fill = self.style.node_color
-                elif isinstance(self.style.node_color, (np.ndarray, list, tuple)):
-                    color = self.style.node_color[nidx]
-                    if isinstance(color, (np.ndarray, np.void, list, tuple)):
-                        color = toyplot.color.to_css(color)
-                    self.style.node_style.fill = color
-                else:
-                    pass
+            # get styledict copies
+            nstyle = deepcopy(self.style.node_style)
+            nlstyle = deepcopy(self.style.node_labels_style)
+
+            # and mod style dict copies from deconstructed lists
+            nstyle["fill"] = self.node_colors[nidx]
 
             # create mark if text or node
             if (nlabel or nsize):
@@ -257,8 +249,8 @@ class Drawing:
                     shape="o",
                     label=str(nlabel),
                     size=nsize,
-                    mstyle=self.style.node_style, 
-                    lstyle=self.style.node_labels_style, 
+                    mstyle=nstyle,  # self.style.node_style, 
+                    lstyle=nlstyle,  # self.style.node_labels_style, 
                 )
             else:
                 mark = ""
@@ -285,7 +277,52 @@ class Drawing:
             marker=marks,
             title=title,
         )
-    
+
+
+    def assign_node_colors_and_style(self):
+        """
+        Resolve conflict of 'node_color' and 'node_style['fill'] args which are
+        redundant. Default is node_style.fill unless user entered node_color.
+        To enter multiple colors user must use node_color not style fill. 
+        Either way, we build a list of colors to pass to Drawing.node_colors 
+        which is then written to the marker as a fill CSS attribute.
+        """
+        # node_color overrides fill. Tricky to catch cuz it can be many types.
+        if self.style.node_color is None:
+            if not self.style.node_style["fill"]:
+                self.style.node_style["fill"] = ["none"] * self.ttree.nnodes
+            else:
+                if isinstance(self.style.node_style["fill"], (list, tuple)):
+                    raise ToytreeError(
+                        "Use node_color not node_style for multiple node colors")
+                # check the color
+                color = self.style.node_style["fill"]
+                if isinstance(color, (np.ndarray, np.void, list, tuple)):
+                    color = toyplot.color.to_css(color)
+                self.node_colors = [color] * self.ttree.nnodes
+
+        # otherwise parse node_color
+        else:
+            if isinstance(self.style.node_color, str):
+                # check the color
+                color = self.style.node_color
+                if isinstance(color, (np.ndarray, np.void, list, tuple)):
+                    color = toyplot.color.to_css(color)
+                self.node_colors = [color] * self.ttree.nnodes
+
+            elif isinstance(self.style.node_color, (list, tuple)):
+                if len(self.style.node_color) != len(self.node_colors):
+                    raise ToytreeError("node_colors arg is the wrong length")
+                for cidx in range(len(self.node_colors)):
+                    color = self.style.node_color[cidx]
+                    if isinstance(color, (np.ndarray, np.void, list, tuple)):
+                        color = toyplot.color.to_css(color)
+                    self.node_colors[cidx] = color
+
+        if not self.style.node_style["stroke"]:
+            self.style.node_style["stroke"] = "none"
+
+
 
     def assign_node_labels_and_sizes(self):
         "assign features of nodes to be plotted based on user kwargs"
@@ -372,7 +409,7 @@ class Drawing:
             self.axes.x.ticks.show = True
 
             # generate locations
-            locs = np.linspace(0, self.ttree.tree.height, nticks) * -1
+            locs = np.linspace(0, self.ttree.treenode.height, nticks) * -1
 
             # generate labels formatted depending on range of locs
             fmt = "{:.2f}"
@@ -391,7 +428,7 @@ class Drawing:
             self.axes.y.ticks.show = True            
 
             # generate locations
-            locs = np.linspace(0, self.ttree.tree.height, nticks)
+            locs = np.linspace(0, self.ttree.treenode.height, nticks)
 
             # generate labels formatted depending on range of locs
             fmt = "{:.2f}"
@@ -403,34 +440,6 @@ class Drawing:
                 locations=locs,
                 labels=[fmt.format(i) for i in np.abs(locs)],
                 )
-
-        # self.axes.x.show = self.style.axes_style.x_show
-        # self.axes.x.ticks.show = self.style.axes_style.x_ticks_show
-        # self.axes.x.ticks.labels.angle = self.style.axes_style.x_ticks_labels_angle
-        # self.axes.x.domain.min = self.style.axes_style.x_domain_min
-        # self.axes.x.domain.max = self.style.axes_style.x_domain_max
-
-        # # scalebar
-        # self.axes.y.show = self.style.axes_style.y_show
-        # self.axes.y.ticks.show = self.style.axes_style.y_ticks_show
-        # self.axes.y.ticks.labels.angle = self.style.axes_style.y_ticks_labels_angle
-        # self.axes.y.domain.min = self.style.axes_style.y_domain_min
-        # self.axes.y.domain.max = self.style.axes_style.y_domain_max
-
-        # # allow coloring axes
-        # if (self.style.axes_style.x_label_color or 
-        #     self.style.axes_style.y_label_color):
-        #     xcol = {"stroke": self.style.axes_style.x_label_color}
-        #     ycol = {"stroke": self.style.axes_style.y_label_color}
-        #     self.axes.x.spine.style.update(xcol)
-        #     self.axes.x.ticks.style.update(xcol)
-        #     self.axes.x.ticks.labels.style.update(xcol)
-        #     self.axes.y.spine.style.update(ycol)
-        #     self.axes.y.ticks.style.update(ycol)
-        #     self.axes.y.ticks.labels.style.update(ycol)
-
-        # beyond styledict -- 
-        #self.axes.x.domain.max *= 0.5
 
     # ------------------------------------------------------------------
     # Other helper functions
@@ -536,5 +545,5 @@ class Drawing:
             )
         
         # return nothing if tree is empty
-        if not self.ttree.tree.children:
+        if not self.ttree.treenode.children:
             raise ToytreeError("Tree is empty")

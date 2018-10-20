@@ -250,11 +250,10 @@ class ConsensusTree:
         self.treelist = mtree.treelist
         self.names = self.treelist[0].get_tip_labels()
         self.cutoff = float(cutoff)
-        self.tree = None
         self.namedict = None
         self.clade_counts = None
         self.fclade_counts = None
-        self.tree = None
+        self.ttree = None
         self.nodelist = None
 
         assert cutoff < 1, "cutoff should be a float proportion (e.g., 0.5)"
@@ -282,12 +281,12 @@ class ConsensusTree:
 
         # store counts
         clade_counts = {}
-        for tree in self.treelist:
+        for ttree in self.treelist:
             
             # testing on unrooted trees is easiest...
-            tree = tree.unroot()
-            for node in tree.tree.traverse('preorder'):
-                bits = np.zeros(len(tree), dtype=np.bool_)
+            ttree = ttree.unroot()
+            for node in ttree.treenode.traverse('preorder'):
+                bits = np.zeros(len(ttree), dtype=np.bool_)
                 for child in node.iter_leaf_names():
                     bits[ndict[child]] = True
 
@@ -404,8 +403,8 @@ class ConsensusTree:
         tre = nodelist[0]
         #tre.unroot()
         ## return the tree and other trees if present
-        self.tree = Toytree(tre.write(format=0))
-        self.tree._coords.update()
+        self.ttree = Toytree(tre.write(format=0))
+        self.ttree._coords.update()
         self.nodelist = nodelist
 
 
@@ -416,7 +415,6 @@ class TreeGrid:
         # plot objects are init on update()
         self.canvas = None
         self.cartesian = None
-        self.trees = None
         self.mtree = MultiTree(mtree.treelist, fixed_order=fixed_order)
         self.style = TreeStyle('n')
 
@@ -625,10 +623,10 @@ class CloudTree:
         then need to use unit length for treeheight.
         """
         if self.style.use_edge_lengths:
-            addon = (self.mtree.treelist[0].tree.height + \
-                (self.mtree.treelist[0].tree.height * 0.25))
+            addon = (self.mtree.treelist[0].treenode.height + \
+                (self.mtree.treelist[0].treenode.height * 0.25))
         else:
-            addon = self.mtree.treelist[0].tree.get_farthest_leaf(True)[1]
+            addon = self.mtree.treelist[0].treenode.get_farthest_leaf(True)[1]
 
         # modify display for orientations
         if self.style.tip_labels:

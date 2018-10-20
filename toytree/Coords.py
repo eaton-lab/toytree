@@ -56,7 +56,7 @@ class Coords:
         "set root idx highest, tip idxs lowest ordered as ladderized"
         # internal nodes: root is highest idx
         idx = self.ttree.nnodes - 1
-        for node in self.ttree.tree.traverse("levelorder"):
+        for node in self.ttree.treenode.traverse("levelorder"):
             if not node.is_leaf():
                 node.add_feature("idx", idx)
                 if not node.name:
@@ -64,7 +64,7 @@ class Coords:
                 idx -= 1
 
         # external nodes: lowest numbers are for tips (0-N)
-        for node in self.ttree.tree.get_leaves():  # [::-1]:
+        for node in self.ttree.treenode.get_leaves():  # [::-1]:
             node.add_feature("idx", idx)
             if not node.name:
                 node.name = "t" + str(idx)
@@ -83,19 +83,19 @@ class Coords:
         # postorder: children then parents (nidxs from 0 up)
         # store edge array for connecting child nodes to parent nodes
         nidx = 0
-        for node in self.ttree.tree.traverse("postorder"):            
+        for node in self.ttree.treenode.traverse("postorder"):            
             if not node.is_root():
                 self.edges[nidx, :] = [node.up.idx, node.idx]
                 nidx += 1
 
         # store verts array with x,y positions of nodes (lengths of branches)
         # we want tips to align at the right face (larger axis number)
-        _root = self.ttree.tree.get_tree_root()
+        _root = self.ttree.treenode.get_tree_root()
         _treeheight = _root.get_distance(_root.get_farthest_leaf()[0])
 
         # set node x, y
         tidx = len(self.ttree) - 1
-        for node in self.ttree.tree.traverse("postorder"):
+        for node in self.ttree.treenode.traverse("postorder"):
 
             # Just leaves: x positions are evenly spread and ordered on axis
             if node.is_leaf() and (not node.is_root()):
@@ -153,7 +153,7 @@ class Coords:
         vidx = 0
 
         # from tips to root
-        for node in self.ttree.tree.traverse("postorder"):
+        for node in self.ttree.treenode.traverse("postorder"):
             
             if node.is_leaf():
                 # enter a vertex
