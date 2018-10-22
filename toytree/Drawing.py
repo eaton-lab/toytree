@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-A class object for storing Toyplot objects for a Toyplot drawing.
+A class creating Drawings from Toytrees.
 """
 from copy import deepcopy
 import numpy as np
