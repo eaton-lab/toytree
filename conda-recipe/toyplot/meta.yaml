@@ -8,10 +8,8 @@ source:
 
 
 build:
-  ##string: dev   ## {{ environ.get('GIT_DESCRIBE_HASH', '') }}
   number: 0  # {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
   script: python setup.py install # --single-version-externally-managed --record=record.txt
-  noarch: generic
   
 requirements:
   build:
