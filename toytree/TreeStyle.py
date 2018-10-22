@@ -78,7 +78,7 @@ STYLES = {
         "node_labels": True, 
         "node_color": "lightgrey", 
         "node_size": 18, 
-        "_node_style": {
+        "node_style": {
             "stroke": "#262626", 
             "stroke-width": 1,
         }
@@ -101,7 +101,7 @@ STYLES = {
         'use_edge_lengths': True, 
         'tip_labels_align': True, 
         'tip_labels_color': COLORS[3],
-        '_edge_style': {
+        'edge_style': {
             'stroke': COLORS[0],
         },
     },
@@ -114,10 +114,10 @@ STYLES = {
         'node_labels': False, 
         'node_size': 0, 
         'tip_labels': True, 
-        '_edge_style': {
+        'edge_style': {
             'opacity': 0.1, 
         },
-        '_tip_labels_style': {
+        'tip_labels_style': {
             '-toyplot-anchor-shift': "15px",
         },
     },
@@ -138,6 +138,12 @@ class TreeStyle:
         self._node_labels_style = Style(DEFAULT_NODE_LABEL_STYLE)
         self._tip_labels_style = Style(DEFAULT_TIP_LABEL_STYLE)
 
+        # TODO: an idea for update...
+        # store original dict update method as a _
+        # and implement new one...
+        # def _update = update
+
+        # set default style
         self.__dict__.update(DEFAULT_TREE_STYLE)
         if tree_style:
             self.__dict__.update(STYLES[tree_style])
