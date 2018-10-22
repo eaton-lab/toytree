@@ -178,12 +178,10 @@ class MultiTree:
             ML tree are supported in 100 bootstrap trees. 
         """
         if best_tree:
-            raise NotImplemented("best_tree option not yet supported.")
+            raise NotImplementedError("best_tree option not yet supported.")
         cons = ConsensusTree(self, cutoff)
         cons.update()
-        return cons.tree
-        #constre, clade_counts = consensus_tree(self.treelist, cutoff=cutoff)
-        #return Toytree(constre.write())
+        return cons.ttree
 
     # -------------------------------------------------------------------
     # Tree List Plotting
@@ -203,9 +201,10 @@ class MultiTree:
         kwargs: plotting functions applied to Canvas, axes, or all marks.
         """
         # Toyplot creates a grid and margins and puts trees in them..
+        draw = TreeGrid(self, fixed_order)
         if kwargs.get("debug"):
-            return TreeGrid(self, fixed_order)
-        TreeGrid(self, fixed_order).update(x, y, start, shared_axis, **kwargs)
+            return draw
+        draw.update(x, y, start, shared_axis, **kwargs)
 
 
     def draw_cloud_tree(self, axes=None, html=False, fixed_order=False, **kwargs):
@@ -445,16 +444,16 @@ class TreeGrid:
                 # set ymax on cartesian so that trees are on same scale
                 axes = self.canvas.cartesian(
                     grid=(self.x, self.y, tidx),
-                    margin=35,
+                    margin=(20, 20, 35, 35),
                     padding=10,
                 )
                 tree.draw(axes=axes, **kwargs)
-                axes.x.show = False
+                axes.show = False
 
         else:
             axes = self.canvas.cartesian(
                     #bounds=()
-                    margin=35,
+                    #margin=35,
                     padding=10,
                     )
             # axes = self.axes.share(...)
@@ -462,12 +461,13 @@ class TreeGrid:
                 pass
                 # add +x to their verts?
                 # or use share-axis args for axes <- yes.
-
+        #return self.canvas, axes
 
 
 class CloudTree:
 
     def __init__(self, mtree, fixed_order=None):
+        
         # base style
         self.style = mtree.style
 
@@ -495,26 +495,62 @@ class CloudTree:
         if kwargs.get("ts"):
             kwargs["tree_style"] = kwargs.get("ts")
 
-        # update tree_style if entered as an argument
+        # update tree_style base if entered as an argument
         if kwargs.get('tree_style'):
-            self.style = TreeStyle(kwargs.get('tree_style'))
+            newstyle = TreeStyle(kwargs.get('tree_style')[0])
+            self.style.__dict__.update(newstyle.__dict__)
+
+        # store entered args
+        userkeys = [
+            "height",
+            "width",
+            "orient",       
+            "tip_labels",
+            "tip_labels_color",
+            "tip_labels_align",
+            "node_labels",
+            "node_size",
+            "node_color",
+            "node_hover",
+            "edge_type",
+            "use_edge_lengths",
+            "scalebar",
+            "padding",
+        ]       
+        userargs = {i: j for (i, j) in kwargs.items() if i in userkeys}
+        dictkeys = [
+            "edge_style",
+            "edge_align_style",
+            "tip_labels_style",
+            "node_style",
+            "node_labels_style",
+        ]
+        dictargs = {i: j for (i, j) in kwargs.items() if i in dictkeys}
 
         # update tree_style to custom style with user entered args
-        censored_dict = {i: j for (i, j) in kwargs.items() if j is not None}
-        self.style.update(censored_dict)           
+        censored = {i: j for (i, j) in userargs.items() if j is not None}
+        self.style.__dict__.update(censored)
+
+        # update style dicts
+        censored = [i for i in dictargs if i is not None]
+        for styledict in censored:
+            sdict = dictargs[styledict]
+            if sdict:
+                self.style.__setattr__(styledict, sdict)
 
         # set reasonable dims if not user entered
         self.set_dims_from_tree_size()
 
-        # if not canvas then create one else use the existing
+        # if not canvas then creates one else uses the existing
+        # sets self.canvas and self.axes
         self.get_canvas_and_axes(kwargs.get('axes'))
 
         # grab debug flag and pop it from dict
         debug = False
-        if self.style.get("debug"):
-            self.style.pop("debug")
+        if kwargs.get("debug"):
             debug = True
 
+        # Decompoase edge_style list into list of dicts
         # could put something here to apply styles based on some calculation
         # such as different colors for different topologies...
         if isinstance(kwargs.get('edge_style'), list):
@@ -533,7 +569,7 @@ class CloudTree:
 
         # plot trees on the same axes with shared style dict
         for tre in self.mtree.treelist:           
-            tre.draw(axes=self.axes, **self.style)
+            tre.draw(axes=self.axes, **self.style.__dict__)
 
         # add a single call to tip labels
         self.style.tip_labels = tip_labels
