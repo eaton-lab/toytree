@@ -39,9 +39,23 @@ Examples
     
     # import toyplot and load a newick file from a public URL
     import toytree
-    tre = toytree.tree("http://eaton-lab.org/data/Cyathophora.tre"
+    tre = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre"
 
     # root the tree using a wildcard string matching and draw a tree figure.
     rtre = tre.root(wildcard='prz')
     rtre.draw(width=400, tip_labels_align=True);
 
+    # or chain a few functions together
+    tre.root(wildcard='prz').drop_tips(wildcard="tham").ladderize().draw();
+
+    # extensive styling options are available
+    rtre.draw(
+        tip_labels_color='pink',
+        node_labels='support',
+        node_size=15,
+        node_color="cyan",
+        edge_style={
+            "stroke": "darkgrey", 
+            "stroke-width": 3,
+        },
+    )
