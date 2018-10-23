@@ -61,14 +61,14 @@ class Coords:
             if not node.is_leaf():
                 node.add_feature("idx", idx)
                 if not node.name:
-                    node.name = "i" + str(idx)
+                    node.name = str(idx)
                 idx -= 1
 
         # external nodes: lowest numbers are for tips (0-N)
         for node in self.ttree.treenode.get_leaves():  # [::-1]:
             node.add_feature("idx", idx)
             if not node.name:
-                node.name = "t" + str(idx)
+                node.name = str(idx)
             idx -= 1
         
 

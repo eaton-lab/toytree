@@ -14,17 +14,19 @@ BLACK = color.black
 
 DEFAULT_TREE_STYLE = {
     'edge_type': 'p',
+    'edge_colors': None,
+    'edge_widths': None,
     'height': None,
     'width': None,
     'orient': 'right',
     'node_labels': False,
-    'node_size': None,
-    'node_color': None,
+    'node_sizes': None,
+    'node_colors': None,
     'vmarker': 'o',
     'node_hover': True,
     'use_edge_lengths': True,
     'tip_labels': True,
-    'tip_labels_color': "#262626",
+    'tip_labels_colors': None,
     'tip_labels_align': False, 
     'scalebar': False, 
     'padding': 20,
@@ -76,8 +78,8 @@ STYLES = {
         "orient": "right", 
         "use_edge_lengths": False, 
         "node_labels": True, 
-        "node_color": "lightgrey", 
-        "node_size": 18, 
+        "node_colors": "lightgrey", 
+        "node_sizes": 18, 
         "node_style": {
             "stroke": "#262626", 
             "stroke-width": 1,
@@ -90,7 +92,7 @@ STYLES = {
         "use_edge_lengths": True, 
         "tip_labels_align": False, 
         "node_labels": True, 
-        "node_size": 15, 
+        "node_sizes": 15, 
         "node_hover": False, 
         "tip_labels": False, 
         "scalebar": True, 
@@ -100,7 +102,7 @@ STYLES = {
         'orient': 'right', 
         'use_edge_lengths': True, 
         'tip_labels_align': True, 
-        'tip_labels_color': COLORS[3],
+        'tip_labels_colors': COLORS[3],
         'edge_style': {
             'stroke': COLORS[0],
         },
@@ -112,7 +114,7 @@ STYLES = {
         'use_edge_lengths': True, 
         'tip_labels_align': False, 
         'node_labels': False, 
-        'node_size': 0, 
+        'node_sizes': 0, 
         'tip_labels': True, 
         'edge_style': {
             'opacity': 0.1, 
@@ -137,11 +139,6 @@ class TreeStyle:
         self._edge_align_style = Style(DEFAULT_EDGE_ALIGN_STYLE)
         self._node_labels_style = Style(DEFAULT_NODE_LABEL_STYLE)
         self._tip_labels_style = Style(DEFAULT_TIP_LABEL_STYLE)
-
-        # TODO: an idea for update...
-        # store original dict update method as a _
-        # and implement new one...
-        # def _update = update
 
         # set default style
         self.update(DEFAULT_TREE_STYLE)

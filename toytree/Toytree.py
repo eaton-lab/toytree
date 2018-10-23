@@ -127,13 +127,33 @@ class Toytree:
                 return self.treenode.write(format=fmt)
 
 
+    def get_edges(self):
+        """
+        Returns an array with paired edges (parent, child).
+        """
+        return self._coords.edges
+
+
+
     def get_edge_lengths(self):
         """
         Returns edge length values from tree object in node plot order. To
         modify edge length values you must modify nodes in the .treenode object
-        directly. For example:
+        directly. 
         """
         return self.get_node_values('dist', True, True)
+
+
+    def get_edge_values(self, feature='idx'):
+        """
+        Returns edge values in the order they are plotted (see .get_edges())
+        """
+        elist = []
+        for cidx in self._coords.edges[:, 1]:
+            node = self.treenode.search_nodes(idx=cidx)[0]
+            elist.append(node.__getattribute__(feature))
+        return elist
+
 
 
     def get_node_coordinates(self):
@@ -165,7 +185,6 @@ class Toytree:
         use the 'show_root'=True, or 'show_tips'=True arguments.
 
         tree.get_node_values("support", True, True)
-
         """
         # access nodes in the order they will be plotted
         ndict = self.get_node_dict(return_internal=True, return_nodes=True)
@@ -520,15 +539,17 @@ class Toytree:
         axes=None,        
         orient=None,
         tip_labels=None,
-        tip_labels_color=None,
+        tip_labels_colors=None,
         tip_labels_style=None,
         tip_labels_align=None,
         node_labels=None,
         node_labels_style=None,
-        node_size=None,
-        node_color=None,
+        node_sizes=None,
+        node_colors=None,
         node_style=None,
         node_hover=None,
+        edge_colors=None,
+        edge_widths=None,
         edge_type=None,
         edge_style=None,
         edge_align_style=None,
@@ -569,7 +590,7 @@ class Toytree:
             If False no tip labels are added. If a list of tip labels
             is provided it must be the same length as .get_tip_labels().
 
-        tip_labels_color:
+        tip_labels_colors:
             ...
 
         tip_labels_style:
@@ -586,13 +607,13 @@ class Toytree:
             function from a Toytree tree to draw info from the tree features.
             For example: node_labels=tree.get_node_labels("support").
 
-        node_size: [int, list, None]
+        node_sizes: [int, list, None]
             If None then nodes are not shown, otherwise, if node_labels
             then node_size can be modified. If a list of node sizes is
             provided it must be the same length and order as nodes in
             .get_node_dict().
 
-        node_color: [list]
+        node_colors: [list]
             Use this argument only if you wish to set different colors for
             different nodes, in which case you must enter a list of colors
             as string names or HEX values the length and order of nodes in
@@ -626,21 +647,23 @@ class Toytree:
             "width": width,
             "orient": orient,
             "tip_labels": tip_labels,
-            "tip_labels_color": tip_labels_color,
+            "tip_labels_colors": tip_labels_colors,
             "tip_labels_align": tip_labels_align,
+            "tip_labels_style": tip_labels_style,
             "node_labels": node_labels,
-            "node_size": node_size,
-            "node_color": node_color,
+            "node_labels_style": node_labels_style,
+            "node_sizes": node_sizes,
+            "node_colors": node_colors,
             "node_hover": node_hover,
-            "edge_type": edge_type,  
-            "use_edge_lengths": use_edge_lengths,
-            "scalebar": scalebar, 
-            "padding": padding,
+            "node_style": node_style,
+            "edge_type": edge_type,
+            "edge_colors": edge_colors,
+            "edge_widths": edge_widths,
             "edge_style": edge_style,
             "edge_align_style": edge_align_style,
-            "tip_labels_style": tip_labels_style,            
-            "node_style": node_style,
-            "node_labels_style": node_labels_style,
+            "use_edge_lengths": use_edge_lengths,
+            "scalebar": scalebar,
+            "padding": padding,
         }
         kwargs.update(userargs)
         censored = {i: j for (i, j) in kwargs.items() if j is not None}

@@ -20,6 +20,7 @@ class Drawing:
         self.coords = ttree._coords
         self.style = ttree.style
         self.kwargs = kwargs
+        self.nedges = self.ttree._coords.edges.shape[0]
 
         # mutable plotting attributes pulled from styles and tree
         self.node_labels = [""] * self.ttree.nnodes
@@ -29,7 +30,10 @@ class Drawing:
 
         # todo: allow itemized versions of these...
         self.tip_colors = None
-        self.edge_colors = None
+        self.edge_colors = [None] * self.nedges
+        self.edge_widths = [None] * self.nedges
+
+        #self.nedges = self.ttree._coords.lines.shape[0]        
 
         # store whether external axes were passed in 
         self._external_axis = False
@@ -49,11 +53,12 @@ class Drawing:
         self.assign_node_labels_and_sizes()
         self.assign_node_colors_and_style()
         self.assign_tip_labels_and_colors()
+        self.assign_edge_colors_and_widths()
 
         # draw tree, nodes, tips, axes on canvas.
-        self.add_tree_to_axes()
-        self.add_tip_labels_to_axes()
         self.add_tip_lines_to_axes()
+        self.add_tip_labels_to_axes()
+        self.add_tree_to_axes()
         self.add_nodes_to_axes()
         self.add_axes_style()
 
@@ -90,7 +95,7 @@ class Drawing:
 
         # pop fill from color dict if using color
         tstyle = deepcopy(self.style.tip_labels_style)
-        if self.style.tip_labels_color:
+        if self.style.tip_labels_colors:
             tstyle.pop("fill")
 
         # add tip names to coordinates calculated above
@@ -100,8 +105,9 @@ class Drawing:
             self.tip_labels,
             angle=(0 if self.style.orient in ("right", "left") else -90),
             style=tstyle,
-            color=self.style.tip_labels_color,
+            color=self.style.tip_labels_colors,
         )
+        
         # get stroke-width for aligned tip-label lines (optional)
         # copy stroke-width from the edge_style unless user set it
         if not self.style.edge_align_style.get("stroke-width"):
@@ -157,14 +163,14 @@ class Drawing:
         "assign tip labels based on user provided kwargs"
         # COLOR
         # tip color overrides tipstyle.fill
-        if self.style.tip_labels_color:
+        if self.style.tip_labels_colors:
             #if self.style.tip_labels_style.fill:
             #    self.style.tip_labels_style.fill = None
             if self.ttree._fixed_order:
-                if isinstance(self.style.tip_labels_color, (list, np.ndarray)):                                     
-                    cols = np.array(self.style.tip_labels_color)
+                if isinstance(self.style.tip_labels_colors, (list, np.ndarray)):                                     
+                    cols = np.array(self.style.tip_labels_colors)
                     orde = cols[self.ttree._fixed_idx]
-                    self.style.tip_labels_color = list(orde)
+                    self.style.tip_labels_colors = list(orde)
 
         # LABELS
         # False == hide tip labels
@@ -181,7 +187,7 @@ class Drawing:
 
             # if user entered list in get_tip_labels order reverse it for plot
             if isinstance(self.style.tip_labels, list):
-                self.tip_labels = self.style.tip_labels  # [::-1]
+                self.tip_labels = self.style.tip_labels
 
             # True assigns tip labels from tree
             else:
@@ -190,18 +196,94 @@ class Drawing:
                 else:
                     self.tip_labels = self.ttree.get_tip_labels()
     
+
+    def assign_edge_colors_and_widths(self):
+        """
+        Resolve conflict of 'node_color' and 'node_style['fill'] args which are
+        redundant. Default is node_style.fill unless user entered node_color.
+        To enter multiple colors user must use node_color not style fill. 
+        Either way, we build a list of colors to pass to Drawing.node_colors 
+        which is then written to the marker as a fill CSS attribute.
+        """
+        # node_color overrides fill. Tricky to catch cuz it can be many types.
+
+        # SET edge_widths and POP edge_style.stroke-width
+        if not self.style.edge_widths:  # is None:
+            if not self.style.edge_style["stroke-width"]:
+                self.style.edge_style.pop("stroke-width")
+                self.style.edge_style.pop("stroke")
+                self.edge_widths = [None] * self.nedges
+            else:
+                if isinstance(self.style.edge_style["stroke-width"], (list, tuple)):
+                    raise ToytreeError(
+                        "Use edge_widths not edge_style for multiple edge widths")
+                # check the color
+                width = self.style.edge_style["stroke-width"]
+                self.style.edge_style.pop("stroke-width")
+                self.edge_widths = [width] * self.nedges
+        else:
+            self.style.edge_style.pop("stroke-width")            
+            if isinstance(self.style.edge_widths, (str, int)):
+                self.edge_widths = [int(self.style.edge_widths)] * self.nedges
+
+            elif isinstance(self.style.edge_widths, (list, tuple)):
+                if len(self.style.edge_widths) != self.nedges:
+                    raise ToytreeError("edge_widths arg is the wrong length")
+                for cidx in range(self.nedges):
+                    self.edge_widths[cidx] = self.style.edge_widths[cidx]
+
+        # SET edge_colors and POP edge_style.stroke
+        if not self.style.edge_colors:  # is None:
+            if not self.style.edge_style["stroke"]:
+                self.style.edge_style.pop("stroke")
+                self.edge_colors = [None] * self.nedges
+            else:
+                if isinstance(self.style.edge_style["stroke"], (list, tuple)):
+                    raise ToytreeError(
+                        "Use edge_colors not edge_style for multiple edge colors")
+                # check the color
+                color = self.style.edge_style["stroke"]
+                if isinstance(color, (np.ndarray, np.void, list, tuple)):
+                    color = toyplot.color.to_css(color)
+                self.style.edge_style.pop("stroke")                    
+                self.edge_colors = [color] * self.nedges
+
+        # otherwise parse node_color
+        else:
+            self.style.edge_style.pop("stroke")                                
+            if isinstance(self.style.edge_colors, (str, int)):
+                # check the color
+                color = self.style.edge_colors
+                if isinstance(color, (np.ndarray, np.void, list, tuple)):
+                    color = toyplot.color.to_css(color)
+                self.edge_colors = [color] * self.nedges
+
+            elif isinstance(self.style.edge_colors, (list, tuple)):
+                if len(self.style.edge_colors) != self.nedges:
+                    raise ToytreeError("edge_colors arg is the wrong length")
+                for cidx in range(self.nedges):
+                    self.edge_colors[cidx] = self.style.edge_colors[cidx]
+
+        print(self.edge_widths)
+        print(self.edge_colors)        
+        print(self.style.edge_style)        
+
+
     # -----------------------------------------------------------------
     # Tree / Graph plotting
     # -----------------------------------------------------------------
     def add_tree_to_axes(self):
+
+        # if edge color or widths then override style stroke and stroke-width
         if self.style.edge_type == 'c':
             self.axes.graph(
                 self.coords.edges,
                 vcoordinates=self.coords.verts,
                 vlshow=False,
                 vsize=0,
-                estyle=self.style.edge_style, 
-                # ecolor=...
+                estyle=self.style.edge_style,
+                ewidth=self.edge_widths,
+                ecolor=self.edge_colors,
             )
         # for unrooted graph tip coordinates are auto-fit, so we need to store
         # the vertex locations.
@@ -261,8 +343,8 @@ class Drawing:
                     shape="o",
                     label=str(nlabel),
                     size=nsize,
-                    mstyle=nstyle,  # self.style.node_style, 
-                    lstyle=nlstyle,  # self.style.node_labels_style, 
+                    mstyle=nstyle,
+                    lstyle=nlstyle,
                 )
             else:
                 mark = ""
@@ -300,7 +382,7 @@ class Drawing:
         which is then written to the marker as a fill CSS attribute.
         """
         # node_color overrides fill. Tricky to catch cuz it can be many types.
-        if self.style.node_color is None:
+        if self.style.node_colors is None:
             if not self.style.node_style["fill"]:
                 self.style.node_style["fill"] = ["none"] * self.ttree.nnodes
             else:
@@ -315,25 +397,25 @@ class Drawing:
 
         # otherwise parse node_color
         else:
-            if isinstance(self.style.node_color, str):
+            if isinstance(self.style.node_colors, str):
                 # check the color
-                color = self.style.node_color
+                color = self.style.node_colors
                 if isinstance(color, (np.ndarray, np.void, list, tuple)):
                     color = toyplot.color.to_css(color)
                 self.node_colors = [color] * self.ttree.nnodes
 
-            elif isinstance(self.style.node_color, (list, tuple)):
-                if len(self.style.node_color) != len(self.node_colors):
+            elif isinstance(self.style.node_colors, (list, tuple)):
+                if len(self.style.node_colors) != len(self.node_colors):
                     raise ToytreeError("node_colors arg is the wrong length")
                 for cidx in range(len(self.node_colors)):
-                    color = self.style.node_color[cidx]
+                    color = self.style.node_colors[cidx]
                     if isinstance(color, (np.ndarray, np.void, list, tuple)):
                         color = toyplot.color.to_css(color)
                     self.node_colors[cidx] = color
 
+        # use CSS none for stroke=None
         if not self.style.node_style["stroke"]:
             self.style.node_style["stroke"] = "none"
-
 
 
     def assign_node_labels_and_sizes(self):
@@ -346,14 +428,14 @@ class Drawing:
         if self.style.node_labels is False:
             self.style.vlshow = False            
             self.node_labels = ["" for i in nvals]           
-            if self.style.node_size:
-                if isinstance(self.style.node_size, (list, tuple)):
-                    assert len(self.node_sizes) == len(self.style.node_size)
-                    self.node_sizes = self.style.node_size
+            if self.style.node_sizes:
+                if isinstance(self.style.node_sizes, (list, tuple)):
+                    assert len(self.node_sizes) == len(self.style.node_sizes)
+                    self.node_sizes = self.style.node_sizes
 
-                elif isinstance(self.style.node_size, (int, str)):
+                elif isinstance(self.style.node_sizes, (int, str)):
                     self.node_sizes = (
-                        [int(self.style.node_size)] * len(nvals)
+                        [int(self.style.node_sizes)] * len(nvals)
                     )
                 self.node_labels = [" " if i else "" for i in self.node_sizes]
                     
@@ -364,12 +446,12 @@ class Drawing:
             #self.style["node_hover"] = True
             self.node_labels = self.ttree.get_node_values('idx', 1, 1)
             # use default node size as a list if not provided
-            if not self.style.node_size:
+            if not self.style.node_sizes:
                 self.node_sizes = [18] * len(nvals)
             else:
-                assert isinstance(self.style.node_size, (int, str))
+                assert isinstance(self.style.node_sizes, (int, str))
                 self.node_sizes = (
-                    [int(self.style.node_size)] * len(nvals)
+                    [int(self.style.node_sizes)] * len(nvals)
                 )
 
         # User entered lists or other for node labels or sizes; check lengths.
@@ -392,11 +474,11 @@ class Drawing:
                 self.node_labels = self.ttree.get_node_values("idx", 1, 0)
 
             # make node sizes as a list; set to zero if node label is ""
-            if isinstance(self.style.node_size, list):
-                assert len(self.style.node_size) == len(nvals)
-                self.node_sizes = self.style.node_size
-            elif isinstance(self.style.node_size, (str, int, float)):
-                self.node_sizes = [int(self.style.node_size)] * len(nvals)
+            if isinstance(self.style.node_sizes, list):
+                assert len(self.style.node_sizes) == len(nvals)
+                self.node_sizes = self.style.node_sizes
+            elif isinstance(self.style.node_sizes, (str, int, float)):
+                self.node_sizes = [int(self.style.node_sizes)] * len(nvals)
             else:
                 self.node_sizes = [18] * len(nvals)
 
