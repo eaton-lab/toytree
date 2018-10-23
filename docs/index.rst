@@ -20,6 +20,7 @@ Documentation
    4-tutorial.ipynb
    5-toytrees.ipynb
    6-treenodes.ipynb
+   7-multitrees.ipynb
    Cookbook.ipynb
 
 
