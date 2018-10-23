@@ -21,9 +21,7 @@ DEFAULT_SUPPORT = 100.
 
 
 class TreeError(Exception):
-    """
-    A problem occurred during a TreeNode operation
-    """
+    "A problem occurred during a TreeNode operation"
     def __init__(self, value=''):
         self.value = value
 
