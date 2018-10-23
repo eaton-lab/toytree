@@ -65,7 +65,7 @@ class Coords:
                 idx -= 1
 
         # external nodes: lowest numbers are for tips (0-N)
-        for node in self.ttree.treenode.get_leaves():  # [::-1]:
+        for node in self.ttree.treenode.get_leaves():
             node.add_feature("idx", idx)
             if not node.name:
                 node.name = str(idx)
