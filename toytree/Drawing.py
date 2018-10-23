@@ -24,12 +24,13 @@ class Drawing:
 
         # mutable plotting attributes pulled from styles and tree
         self.node_labels = [""] * self.ttree.nnodes
+        self.node_colors = [None] * self.ttree.nnodes
         self.node_sizes = [0] * self.ttree.nnodes
-        self.node_colors = ["none"] * self.ttree.nnodes
+
+        self.tip_colors = None
         self.tip_labels = None
 
         # todo: allow itemized versions of these...
-        self.tip_colors = None
         self.edge_colors = [None] * self.nedges
         self.edge_widths = [None] * self.nedges
 
@@ -159,6 +160,121 @@ class Drawing:
                 self.axes.y.domain.min = -1 * addon
 
 
+    def assign_node_colors_and_style(self):
+        """
+        Resolve conflict of 'node_color' and 'node_style['fill'] args which are
+        redundant. Default is node_style.fill unless user entered node_color.
+        To enter multiple colors user must use node_color not style fill. 
+        Either way, we build a list of colors to pass to Drawing.node_colors 
+        which is then written to the marker as a fill CSS attribute.
+        """
+        # SET node_colors and POP node_style.fill
+        if self.style.node_colors is None:
+            if self.style.node_style["fill"] in (None, "none"):
+                self.style.node_style.pop("fill")
+            else:
+                if isinstance(self.style.node_style["fill"], (list, tuple)):
+                    raise ToytreeError(
+                        "Use node_color not node_style for multiple node colors")
+                # check the color
+                color = self.style.node_style["fill"]
+                if isinstance(color, (np.ndarray, np.void, list, tuple)):
+                    color = toyplot.color.to_css(color)
+                self.node_colors = [color] * self.ttree.nnodes
+
+        # otherwise parse node_color
+        else:
+            self.style.node_style.pop("fill")
+            if isinstance(self.style.node_colors, str):
+                # check the color
+                color = self.style.node_colors
+                if isinstance(color, (np.ndarray, np.void, list, tuple)):
+                    color = toyplot.color.to_css(color)
+                self.node_colors = [color] * self.ttree.nnodes
+
+            elif isinstance(self.style.node_colors, (list, tuple)):
+                if len(self.style.node_colors) != len(self.node_colors):
+                    raise ToytreeError("node_colors arg is the wrong length")
+                for cidx in range(len(self.node_colors)):
+                    color = self.style.node_colors[cidx]
+                    if isinstance(color, (np.ndarray, np.void, list, tuple)):
+                        color = toyplot.color.to_css(color)                   
+                    self.node_colors[cidx] = color
+
+        # use CSS none for stroke=None
+        if self.style.node_style["stroke"] in (None, "none"):
+            self.style.node_style.pop("stroke")  # = "none"
+
+
+    def assign_node_labels_and_sizes(self):
+        "assign features of nodes to be plotted based on user kwargs"
+
+        # shorthand
+        nvals = self.ttree.get_node_values()
+
+        # False == Hide nodes and labels unless user entered size 
+        if self.style.node_labels is False:
+            self.style.vlshow = False            
+            self.node_labels = ["" for i in nvals]           
+            if self.style.node_sizes:
+                if isinstance(self.style.node_sizes, (list, tuple)):
+                    assert len(self.node_sizes) == len(self.style.node_sizes)
+                    self.node_sizes = self.style.node_sizes
+
+                elif isinstance(self.style.node_sizes, (int, str)):
+                    self.node_sizes = (
+                        [int(self.style.node_sizes)] * len(nvals)
+                    )
+                self.node_labels = [" " if i else "" for i in self.node_sizes]
+                    
+                    
+        # True == Show nodes, label=idx, and show hover
+        elif self.style.node_labels is True:
+            self.style.vlshow = True
+            self.node_labels = self.ttree.get_node_values('idx', 1, 1)
+            # use default node size as a list if not provided
+            if not self.style.node_sizes:
+                self.node_sizes = [18] * len(nvals)
+            else:
+                assert isinstance(self.style.node_sizes, (int, str))
+                self.node_sizes = (
+                    [int(self.style.node_sizes)] * len(nvals)
+                )
+
+        # User entered lists or other for node labels or sizes; check lengths.
+        else:
+            # show labels
+            self.style.vlshow = True
+
+            # make node labels into a list of values 
+            if isinstance(self.style.node_labels, list):
+                assert len(self.style.node_labels) == len(nvals)
+                self.node_labels = self.style.node_labels
+            # check if user entered a feature else use entered val
+            elif isinstance(self.style.node_labels, str):
+                self.node_labels = [self.style.node_labels] * len(nvals)
+                if self.style.node_labels in self.ttree.features:
+                    self.node_labels = self.ttree.get_node_values(
+                        self.style.node_labels, 1, 0)                   
+            # default to idx at internals if nothing else
+            else:
+                self.node_labels = self.ttree.get_node_values("idx", 1, 0)
+
+            # make node sizes as a list; set to zero if node label is ""
+            if isinstance(self.style.node_sizes, list):
+                assert len(self.style.node_sizes) == len(nvals)
+                self.node_sizes = self.style.node_sizes
+            elif isinstance(self.style.node_sizes, (str, int, float)):
+                self.node_sizes = [int(self.style.node_sizes)] * len(nvals)
+            else:
+                self.node_sizes = [18] * len(nvals)
+
+            # override node sizes to hide based on node labels
+            for nidx, node in enumerate(self.node_labels):
+                if self.node_labels[nidx] == "":
+                    self.node_sizes[nidx] = 0
+
+
     def assign_tip_labels_and_colors(self):
         "assign tip labels based on user provided kwargs"
         # COLOR
@@ -208,7 +324,7 @@ class Drawing:
         # node_color overrides fill. Tricky to catch cuz it can be many types.
 
         # SET edge_widths and POP edge_style.stroke-width
-        if not self.style.edge_widths:  # is None:
+        if self.style.edge_widths is None:
             if not self.style.edge_style["stroke-width"]:
                 self.style.edge_style.pop("stroke-width")
                 self.style.edge_style.pop("stroke")
@@ -233,8 +349,8 @@ class Drawing:
                     self.edge_widths[cidx] = self.style.edge_widths[cidx]
 
         # SET edge_colors and POP edge_style.stroke
-        if not self.style.edge_colors:  # is None:
-            if not self.style.edge_style["stroke"]:
+        if self.style.edge_colors is None:
+            if self.style.edge_style["stroke"] is None:
                 self.style.edge_style.pop("stroke")
                 self.edge_colors = [None] * self.nedges
             else:
@@ -264,10 +380,12 @@ class Drawing:
                 for cidx in range(self.nedges):
                     self.edge_colors[cidx] = self.style.edge_colors[cidx]
 
-        print(self.edge_widths)
-        print(self.edge_colors)        
-        print(self.style.edge_style)        
-
+        # do not allow empty edge_colors or widths
+        self.edge_colors = [i if i else "#262626" for i in self.edge_colors]
+        self.edge_widths = [i if i else 2 for i in self.edge_widths]
+        #print(self.edge_widths)
+        #print(self.edge_colors)        
+        #print(self.style.edge_style)        
 
     # -----------------------------------------------------------------
     # Tree / Graph plotting
@@ -297,15 +415,23 @@ class Drawing:
                 # ecolor=...
             )            
         else:
+            self.expand_edges_to_lines()
             self.axes.graph(
                 self.coords.lines,
                 vcoordinates=self.coords.coords,
                 vlshow=False,
                 vsize=0.,
                 estyle=self.style.edge_style, 
-                # ecolor=...
+                ewidth=self.edge_widths,
+                ecolor=self.edge_colors,
             )
   
+
+    def expand_edges_to_lines(self):
+        arr = [None] * self.coords.lines.shape[0]
+        self.edge_colors = [self.edge_colors[0]] * self.coords.lines.shape[0]
+        self.edge_widths = [self.edge_widths[0]] * self.coords.lines.shape[0]
+
     # -----------------------------------------------------------------
     # Node and Node Labels 
     # -----------------------------------------------------------------   
@@ -371,121 +497,6 @@ class Drawing:
             marker=marks,
             title=title,
         )
-
-
-    def assign_node_colors_and_style(self):
-        """
-        Resolve conflict of 'node_color' and 'node_style['fill'] args which are
-        redundant. Default is node_style.fill unless user entered node_color.
-        To enter multiple colors user must use node_color not style fill. 
-        Either way, we build a list of colors to pass to Drawing.node_colors 
-        which is then written to the marker as a fill CSS attribute.
-        """
-        # node_color overrides fill. Tricky to catch cuz it can be many types.
-        if self.style.node_colors is None:
-            if not self.style.node_style["fill"]:
-                self.style.node_style["fill"] = ["none"] * self.ttree.nnodes
-            else:
-                if isinstance(self.style.node_style["fill"], (list, tuple)):
-                    raise ToytreeError(
-                        "Use node_color not node_style for multiple node colors")
-                # check the color
-                color = self.style.node_style["fill"]
-                if isinstance(color, (np.ndarray, np.void, list, tuple)):
-                    color = toyplot.color.to_css(color)
-                self.node_colors = [color] * self.ttree.nnodes
-
-        # otherwise parse node_color
-        else:
-            if isinstance(self.style.node_colors, str):
-                # check the color
-                color = self.style.node_colors
-                if isinstance(color, (np.ndarray, np.void, list, tuple)):
-                    color = toyplot.color.to_css(color)
-                self.node_colors = [color] * self.ttree.nnodes
-
-            elif isinstance(self.style.node_colors, (list, tuple)):
-                if len(self.style.node_colors) != len(self.node_colors):
-                    raise ToytreeError("node_colors arg is the wrong length")
-                for cidx in range(len(self.node_colors)):
-                    color = self.style.node_colors[cidx]
-                    if isinstance(color, (np.ndarray, np.void, list, tuple)):
-                        color = toyplot.color.to_css(color)
-                    self.node_colors[cidx] = color
-
-        # use CSS none for stroke=None
-        if not self.style.node_style["stroke"]:
-            self.style.node_style["stroke"] = "none"
-
-
-    def assign_node_labels_and_sizes(self):
-        "assign features of nodes to be plotted based on user kwargs"
-
-        # shorthand
-        nvals = self.ttree.get_node_values()
-
-        # False == Hide nodes and labels unless user entered size 
-        if self.style.node_labels is False:
-            self.style.vlshow = False            
-            self.node_labels = ["" for i in nvals]           
-            if self.style.node_sizes:
-                if isinstance(self.style.node_sizes, (list, tuple)):
-                    assert len(self.node_sizes) == len(self.style.node_sizes)
-                    self.node_sizes = self.style.node_sizes
-
-                elif isinstance(self.style.node_sizes, (int, str)):
-                    self.node_sizes = (
-                        [int(self.style.node_sizes)] * len(nvals)
-                    )
-                self.node_labels = [" " if i else "" for i in self.node_sizes]
-                    
-                    
-        # True == Show nodes, label=idx, and show hover
-        elif self.style.node_labels is True:
-            self.style.vlshow = True
-            #self.style["node_hover"] = True
-            self.node_labels = self.ttree.get_node_values('idx', 1, 1)
-            # use default node size as a list if not provided
-            if not self.style.node_sizes:
-                self.node_sizes = [18] * len(nvals)
-            else:
-                assert isinstance(self.style.node_sizes, (int, str))
-                self.node_sizes = (
-                    [int(self.style.node_sizes)] * len(nvals)
-                )
-
-        # User entered lists or other for node labels or sizes; check lengths.
-        else:
-            # show labels
-            self.style.vlshow = True
-
-            # make node labels into a list of values 
-            if isinstance(self.style.node_labels, list):
-                assert len(self.style.node_labels) == len(nvals)
-                self.node_labels = self.style.node_labels
-            # check if user entered a feature else use entered val
-            elif isinstance(self.style.node_labels, str):
-                self.node_labels = [self.style.node_labels] * len(nvals)
-                if self.style.node_labels in self.ttree.features:
-                    self.node_labels = self.ttree.get_node_values(
-                        self.style.node_labels, 1, 0)                   
-            # default to idx at internals if nothing else
-            else:
-                self.node_labels = self.ttree.get_node_values("idx", 1, 0)
-
-            # make node sizes as a list; set to zero if node label is ""
-            if isinstance(self.style.node_sizes, list):
-                assert len(self.style.node_sizes) == len(nvals)
-                self.node_sizes = self.style.node_sizes
-            elif isinstance(self.style.node_sizes, (str, int, float)):
-                self.node_sizes = [int(self.style.node_sizes)] * len(nvals)
-            else:
-                self.node_sizes = [18] * len(nvals)
-
-            # override node sizes to hide based on node labels
-            for nidx, node in enumerate(self.node_labels):
-                if self.node_labels[nidx] == "":
-                    self.node_sizes[nidx] = 0
 
     # -----------------------------------------------------------------
     # Axes styling / scale bar / padding
