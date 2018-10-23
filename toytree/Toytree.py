@@ -134,14 +134,13 @@ class Toytree:
         return self._coords.edges
 
 
-
-    def get_edge_lengths(self):
-        """
-        Returns edge length values from tree object in node plot order. To
-        modify edge length values you must modify nodes in the .treenode object
-        directly. 
-        """
-        return self.get_node_values('dist', True, True)
+    # def get_edge_lengths(self):
+    #     """
+    #     Returns edge length values from tree object in node plot order. To
+    #     modify edge length values you must modify nodes in the .treenode object
+    #     directly. 
+    #     """
+    #     return self.get_node_values('dist', True, True)
 
 
     def get_edge_values(self, feature='idx'):
@@ -151,8 +150,39 @@ class Toytree:
         elist = []
         for cidx in self._coords.edges[:, 1]:
             node = self.treenode.search_nodes(idx=cidx)[0]
-            elist.append(node.__getattribute__(feature))
+            elist.append(
+                (node.__getattribute__(feature) if hasattr(node, feature) else "")
+                )
         return elist
+
+
+    def map_edge_values_to_idx(self, node_value_dict):
+        """
+        Enter a dictionary mapping node idx to values that you want mapped 
+        to the stem and descendant edges of that node. Edge values are returned
+        in proper plot order to be entered to the edge_colors or edge_widths 
+        arguments to draw(). To see node idx values use node_labels=True in 
+        draw().
+
+        Example: 
+          tre = toytree.tree("((a,b),(c,d));")
+          tre.get_edge_colormap({5: "green", 6: "red"})       
+          ['green', 'green', 'green', 'red', 'red', 'red']
+        """
+        # map node idxs to 
+        idxs = {j: i for (i, j) in enumerate(self.get_edge_values())}
+        values = [None] * self._coords.edges.shape[0]
+        
+        for node in self.treenode.traverse("levelorder"):
+            if node.idx in node_value_dict:
+                # add value to stem edge
+                if not node.is_root():
+                    values[idxs[node.idx]] = node_value_dict[node.idx]
+            
+                # add value to descendants edges
+                for desc in node.get_descendants():
+                    values[idxs[desc.idx]] = node_value_dict[node.idx]
+        return values
 
 
 
@@ -318,27 +348,6 @@ class Toytree:
     # --------------------------------------------------------------------
     # functions to modify the ete3 tree - MUST CALL ._coords.update()
     # --------------------------------------------------------------------
-    # def prune_tips(self, node_idx):
-    #     """
-    #     Returns a subtree pruned from the full tree at the selected
-    #     node index. To find the appropriate index try using
-    #     tre.draw(node_labels=True) and use the interactive hover
-    #     feature, or tre.draw(node_labels='idx') to find the 'idx'
-    #     value of the node on which you wish to prune the tree. If you
-    #     simply want to drop tips from the tree rather than prune on an
-    #     internal node, see the .drop_tip() function instead.
-
-    #     ptre = tre.prune(15)
-    #     """
-    #     # make a deepcopy of the tree
-    #     nself = self.copy()
-
-    #     # ensure node_idx is int
-    #     node = nself.treenode.search_nodes(idx=int(node_idx))[0]
-    #     nself.treenode.prune(node, preserve_branch_length=True)
-    #     nself._coords.update()
-    #     return nself
-
     def ladderize(self):
         nself = deepcopy(self)
         nself.treenode.ladderize()
