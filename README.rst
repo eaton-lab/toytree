@@ -39,7 +39,7 @@ Examples
     
     # import toyplot and load a newick file from a public URL
     import toytree
-    tre = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre"
+    tre = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
 
     # root the tree using a wildcard string matching and draw a tree figure.
     rtre = tre.root(wildcard='prz')
