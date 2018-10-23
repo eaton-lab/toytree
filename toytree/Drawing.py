@@ -347,11 +347,16 @@ class Drawing:
             self.style.vlshow = False            
             self.node_labels = ["" for i in nvals]           
             if self.style.node_size:
-                assert isinstance(self.style.node_size, (int, str))
-                self.node_sizes = (
-                    [int(self.style.node_size)] * len(nvals)
-                )
+                if isinstance(self.style.node_size, (list, tuple)):
+                    assert len(self.node_sizes) == len(self.style.node_size)
+                    self.node_sizes = self.style.node_size
+
+                elif isinstance(self.style.node_size, (int, str)):
+                    self.node_sizes = (
+                        [int(self.style.node_size)] * len(nvals)
+                    )
                 self.node_labels = [" " if i else "" for i in self.node_sizes]
+                    
                     
         # True == Show nodes, label=idx, and show hover
         elif self.style.node_labels is True:
@@ -388,7 +393,7 @@ class Drawing:
 
             # make node sizes as a list; set to zero if node label is ""
             if isinstance(self.style.node_size, list):
-                assert len(self.style.node_size, list) == len(nvals)
+                assert len(self.style.node_size) == len(nvals)
                 self.node_sizes = self.style.node_size
             elif isinstance(self.style.node_size, (str, int, float)):
                 self.node_sizes = [int(self.style.node_size)] * len(nvals)
