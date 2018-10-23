@@ -46,7 +46,9 @@ class MultiTree:
         # setting attributes
         self.newick = newick
         self.style = TreeStyle('m')
-        self._fixed_order = fixed_order
+        self._fixed_order = fixed_order   # (<list>, True, False, or None)
+        self._user_order = None
+        self._cons_order = None
         self._i = 0
 
         # parse the newick object into a list of Toytrees
@@ -91,7 +93,7 @@ class MultiTree:
         Parse a multiline newick from str, file, or url, and store
         new attributes to self for .newick, .tree_list, and ._tformat
         """
-        # sample one line for testing --------------------------------
+        # if URL prefix then call requests
         if any(i in self.newick for i in ("http://", "https://")):
             try:
                 response = requests.get(self.newick)
@@ -129,21 +131,28 @@ class MultiTree:
         if (" #" in treelines[0]) and (": " in treelines[0]):
             treelines = [bpp2newick(i.strip()) for i in treelines]
 
-        # if True then use consensus tree tip order
-        if self._fixed_order is True:
-            treelist = [Toytree(i.strip()) for i in treelines]
-            constre = MultiTree(treelist).get_consensus_tree()
-            fixed_order = constre.get_tip_labels()
+        # get majrule consensus tree tip order
+        treelist = [Toytree(i.strip()) for i in treelines]
+        cons = ConsensusTree(treelist)
+        cons.update()
+        self._cons_order = cons.ttree.get_tip_labels()
+
         # if user-set fixed order for tip plotting
-        elif isinstance(self._fixed_order, list):
-            fixed_order = self._fixed_order
-        # don't order nodes for aligned-tip plotting
+        if isinstance(self._fixed_order, list):
+            self._user_order = self._fixed_order
+
+        # order to use for constraining ToyTrees: (user > cons > None)
+        order = None
+        if self._user_order:
+            order = self._user_order
+        elif self._fixed_order in (False, None):
+            order = None
         else:
-            fixed_order = None
+            order = self._cons_order
 
         # build tree list
         self.treelist = [
-            Toytree(i.strip(), fixed_order=fixed_order) for i in treelines]
+            Toytree(i.strip(), fixed_order=order) for i in treelines]
 
     # -------------------------------------------------------------------
     # Tree List Statistics or Calculations
@@ -151,14 +160,17 @@ class MultiTree:
     def get_tip_labels(self):
         """
         Returns the tip names in tree plot order starting from zero axis.
-        If fixed_order is a list or True then that is the plot order of tips, 
-        otherwise this returns the tip plot order for the first tree in the
-        treelist. 
+        If fixed_order is a user entered list then names are returned in that
+        order. If fixed_order was True then the consensus tree order is 
+        returned. If fixed_order was None or False then the order of the first
+        ToyTree in .treelist is returned. 
         """
-        if self._fixed_order in (None, False):
-            return self.treelist[0].get_tip_labels()
+        if self._user_order:
+            return self._user_order
+        elif self._cons_order:
+            return self._cons_order
         else:
-            return self._fixed_order
+            return self.treelist[0].get_tip_labels()
 
 
     def get_consensus_tree(self, cutoff=0.0, best_tree=None):
@@ -183,7 +195,7 @@ class MultiTree:
         """
         if best_tree:
             raise NotImplementedError("best_tree option not yet supported.")
-        cons = ConsensusTree(self, cutoff)
+        cons = ConsensusTree(self.treelist, cutoff)
         cons.update()
         return cons.ttree
 
@@ -204,46 +216,58 @@ class MultiTree:
         start: starting index of tree slice from .trees.
         kwargs: plotting functions applied to Canvas, axes, or all marks.
         """
-        # Toyplot creates a grid and margins and puts trees in them..
-        nself = MultiTree(self.treelist, fixed_order=fixed_order)
-        draw = TreeGrid(nself, fixed_order)
+        # return nothing if tree is empty
+        if not self.treelist:
+            print("Treelist is empty")
+            return None, None
+
+        # Toyplot creates a grid and margins and puts trees in them.
+        draw = TreeGrid(self.copy())
         if kwargs.get("debug"):
             return draw
         draw.update(x, y, start, shared_axis, **kwargs)
 
 
-    def draw_cloud_tree(self, axes=None, html=False, fixed_order=False, **kwargs):
+    def draw_cloud_tree(self, axes=None, html=False, edge_styles=None, **kwargs):
         """
         Draw a series of trees overlapping each other in coordinate space.
+        The order of tip_labels is fixed in cloud trees so that trees with 
+        discordant relationships can be seen in conflict. To change the tip
+        order use the 'fixed_order' argument in toytree.mtree() when creating
+        the MultiTree object.
+
+        Parameters:
+            axes (toyplot.Cartesian): toyplot Cartesian axes object.
+            html (bool): whether to return the drawing as html (default=PNG).
+            edge_styles: (list): option to enter a list of edge dictionaries.
+            **kwargs (dict): styling options should be input as a dictionary.
         """
+        # return nothing if tree is empty
+        if not self.treelist:
+            print("Treelist is empty")
+            return None, None
+
         # set autorender format to png so we don't bog down notebooks
         try:
             changed_autoformat = False
             if not html:
                 toyplot.config.autoformat = "png"
                 changed_autoformat = True
-            
-            # it no entered fix and not 
-            if not fixed_order:
-                if self._fixed_order:
-                    fixed_order = self._fixed_order
-                else:
-                    fixed_order = True
 
-            # make MultiTree copy but require fixed order. Defaults to 
-            # consensus order (True).
-            nself = MultiTree(self.treelist, fixed_order=fixed_order)
+            # no other pre-built tree styles allowed in clouds, only kwargs
+            self.style = TreeStyle('m')
+            censored = {i: j for (i, j) in kwargs.items() if j is not None}
+            self.style.update(censored)
 
-            # init Drawing. Tip names is fixed order
-            draw = CloudTree(nself, fixed_order=nself.get_tip_labels())
+            # Send a copy of MultiTree to init Drawing object.
+            draw = CloudTree(self.copy(), edge_styles)
 
             # and create drawing
             if kwargs.get("debug"):
-                #draw.update(axes=axes, **kwargs)
                 return draw
 
             # if user provided explicit axes then include them
-            canvas, axes = draw.update(axes=axes, **kwargs)
+            canvas, axes = draw.update(axes)
             return canvas, axes
 
         finally:
@@ -260,9 +284,9 @@ class ConsensusTree:
     cutoff=0.5 then it is a normal majority rule consensus, while if
     cutoff=0.0 then subsequent non-conflicting clades are added to the tree.
     """
-    def __init__(self, mtree, cutoff=0.0):
+    def __init__(self, treelist, cutoff=0.0):
 
-        self.treelist = mtree.treelist
+        self.treelist = treelist
         self.names = self.treelist[0].get_tip_labels()
         self.cutoff = float(cutoff)
         self.namedict = None

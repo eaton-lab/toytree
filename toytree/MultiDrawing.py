@@ -3,8 +3,6 @@
 """
 Classes for Drawings from MultiTrees.
 """
-#from __future__ import print_function, absolute_import
-
 from copy import deepcopy
 import numpy as np
 import toyplot
@@ -16,7 +14,7 @@ class TreeGrid:
     """
     Easily create Toyplot gridded canvases for plotting multiple trees.
     """
-    def __init__(self, mtree, fixed_order):
+    def __init__(self, mtree):
         
         # plot objects are init on update()
         self.canvas = None
@@ -76,127 +74,79 @@ class CloudTree:
     """
     Overlay many tree plots on the same Canvas and Axes.
     """
-    def __init__(self, mtree, fixed_order):  # , fixed_order=None):
+    def __init__(self, mtree, edge_styles=None):
         
         # base style
-        self.style = mtree.style
         self.mtree = mtree
-        self.fixed_order = fixed_order
-        #self.fixed_idx = list(range(self.ntips))
-        #self._fixed_idx = [names.index(i) for i in self._fixed_order]
-        # # inherit fixed order, take arg, or use True
-        # self.fixed_order = mtree._fixed_order
-        # if fixed_order:
-        #     self.fixed_order = fixed_order
-        # if not self.fixed_order:
-        #     self.fixed_order = True
-
-        # # make new mtree using fixed order
-        # self.mtree = MultiTree(mtree.treelist, fixed_order=self.fixed_order)
-
-        # tip labels get updated
-        self.tip_labels = None
+        self.style = deepcopy(self.mtree.style)
+        self.tip_labels = self.mtree.get_tip_labels()
+        self.edge_styles = edge_styles
 
 
-    def update(self, **kwargs):
+    def update(self, axes=None): 
 
-        # return nothing if tree is empty
-        if not self.mtree.treelist:
-            print("Tree is empty")
-            return
+        # apply mtree style to all subtrees
+        self.apply_style_to_subtrees()
 
-        # allow ts as a shorthand for tree_style
-        if kwargs.get("ts"):
-            kwargs["tree_style"] = kwargs.get("ts")
-
-        # update tree_style base if entered as an argument
-        if kwargs.get('tree_style'):
-            newstyle = TreeStyle(kwargs.get('tree_style')[0])
-            self.style.__dict__.update(newstyle.__dict__)
-
-        # store entered args
-        userkeys = [
-            "height",
-            "width",
-            "orient",       
-            "tip_labels",
-            "tip_labels_color",
-            "tip_labels_align",
-            "node_labels",
-            "node_size",
-            "node_color",
-            "node_hover",
-            "edge_type",
-            "use_edge_lengths",
-            "scalebar",
-            "padding",
-        ]       
-        userargs = {i: j for (i, j) in kwargs.items() if i in userkeys}
-        dictkeys = [
-            "edge_style",
-            "edge_align_style",
-            "tip_labels_style",
-            "node_style",
-            "node_labels_style",
-        ]
-        dictargs = {i: j for (i, j) in kwargs.items() if i in dictkeys}
-
-        # update tree_style to custom style with user entered args
-        censored = {i: j for (i, j) in userargs.items() if j is not None}
-        self.style.__dict__.update(censored)
-
-        # update style dicts
-        censored = [i for i in dictargs if i is not None]
-        for styledict in censored:
-            sdict = dictargs[styledict]
-            if sdict:
-                self.style.__setattr__(styledict, sdict)
+        # check style lists
+        self.apply_edge_styles_to_subtrees()
 
         # set reasonable dims if not user entered
         self.set_dims_from_tree_size()
 
         # if not canvas then creates one else uses the existing
         # sets self.canvas and self.axes
-        self.get_canvas_and_axes(kwargs.get('axes'))
-
-        # grab debug flag and pop it from dict
-        debug = False
-        if kwargs.get("debug"):
-            debug = True
-
-        # Decompoase edge_style list into list of dicts
-        # could put something here to apply styles based on some calculation
-        # such as different colors for different topologies...
-        if isinstance(kwargs.get('edge_style'), list):
-            if not len(kwargs['edge_style']) == len(self.mtree):
-                raise IndexError('stylelist length must match treelist length')
-            for idx, tre in enumerate(self.mtree.treelist):
-                self.style.edge_style = kwargs['edge_style'][idx]
-
-        # pop tip labels and styles since they'll be blocked from subtrees
-        tip_labels = deepcopy(self.style.tip_labels)
-        tip_labels_style = deepcopy(self.style.tip_labels_style)
-        self.style.tip_labels = False
-
-        # unpack lists of style if applied to trees differently. Here we
-        # can allow node_colors, node_sizes, edge_styles, 
+        self.get_canvas_and_axes(axes)
 
         # plot trees on the same axes with shared style dict
+        # this clobberes the 
         self.axes.show = False
-        for tre in self.mtree.treelist:           
-            tre.draw(axes=self.axes, **self.style.__dict__)
+        for tre in self.mtree.treelist:
+            tstyle = deepcopy(tre.style.__dict__)
+            tre.draw(axes=self.axes, **tstyle)
 
         # add a single call to tip labels
-        self.style.tip_labels = tip_labels
-        self.style.tip_labels_style = tip_labels_style
         self.assign_tip_labels_and_colors()
         self.add_tip_labels_to_axes()
         self.fit_tip_labels()
-
-        # debug returns CloudTree object
-        if debug:
-            return self
         return self.canvas, self.axes
+
+
+    def apply_style_to_subtrees(self):
+        "Apply mtree style to subtrees except tip_labels which are suppressed."
+        for idx, tre in enumerate(self.mtree.treelist):
+            self.mtree.treelist[idx].style.update(self.style)
+            self.mtree.treelist[idx].style.tip_labels = False
+
+
+    def apply_edge_styles_to_subtrees(self):
+        """
+        Users can enter _some_ kwargs as list values to apply different styles
+        to each tree in the treelist. Check and break them down here.
+        """
+        # Decompoase edge_style list into list of dicts
+        # could put something here to apply styles based on some calculation
+        # such as different colors for different topologies.
+        if self.edge_styles:
+            # check length of the list
+            if not len(self.edge_styles) == len(self.mtree):
+                raise IndexError(
+                    'edge_styles length must match treelist length')
+
+            # set style element
+            for idx, tre in enumerate(self.mtree.treelist):
+                self.mtree.treelist[idx].style.__setattr__(
+                    "edge_style", 
+                    self.edge_styles[idx]
+                    )
+                # if color then ensure it's CSS compatible.
+                if isinstance(
+                    self.mtree.treelist[idx].style.edge_style.stroke, 
+                        (np.void, np.ndarray, tuple)):
+                    self.mtree.treelist[idx].style.edge_style.stroke = (
+                        toyplot.color.to_css(
+                            self.mtree.treelist[idx].style.edge_style.stroke)
+                        )
 
 
     def get_canvas_and_axes(self, axes):
@@ -306,20 +256,19 @@ class CloudTree:
         if self.style.tip_labels is False:
             self.style.tip_labels_style["-toyplot-anchor-shift"] = "0px"
             self.tip_labels = [
-                "" for i in self.mtree.treelist[0].get_tip_labels()]
+                "" for i in self.mtree._cons_order]
+
+        # (True or None) == use user or cons order
+        if self.style.tip_labels is True:
+            if self.mtree._user_order:
+                self.tip_labels = self.mtree._user_order
+            else:
+                self.tip_labels = self.mtree._cons_order
 
         # LABELS
         # user entered something...
-        else:
+        elif isinstance(self.style.tip_labels, list):
             # if user did not change label-offset then shift it here
             if not self.style.tip_labels_style["-toyplot-anchor-shift"]:
                 self.style.tip_labels_style["-toyplot-anchor-shift"] = "15px"
-
-            # if user entered list in get_tip_labels order reverse it for plot
-            if isinstance(self.style.tip_labels, list):
-                self.tip_labels = self.style.tip_labels
-
-            # True assigns tip labels from tree
-            else:
-                self.tip_labels = self.fixed_order
-                #mtree.treelist[0].get_tip_labels()
+            self.tip_labels = self.style.tip_labels

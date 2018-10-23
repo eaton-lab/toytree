@@ -108,7 +108,7 @@ STYLES = {
     
     'm': {
         'edge_type': 'c', 
-        'orient': 'down', 
+        'orient': 'right', 
         'use_edge_lengths': True, 
         'tip_labels_align': False, 
         'node_labels': False, 
@@ -144,9 +144,26 @@ class TreeStyle:
         # def _update = update
 
         # set default style
-        self.__dict__.update(DEFAULT_TREE_STYLE)
+        self.update(DEFAULT_TREE_STYLE)
         if tree_style:
-            self.__dict__.update(STYLES[tree_style])
+            self.update(STYLES[tree_style])
+
+
+    def update(self, sdict):
+        # sdict can be a dict or a TreeStyle, if latter, turn into dict
+        if isinstance(sdict, TreeStyle):
+            sdict = sdict.__dict__
+
+        # update self attributes
+        nodicts = {i: j for (i, j) in sdict.items() if not isinstance(j, dict)}
+        isdicts = {i: j for (i, j) in sdict.items() if isinstance(j, dict)}        
+        self.__dict__.update(**nodicts)
+
+        # update subdict style attributes
+        for key, val in isdicts.items():
+            self.__setattr__(key, val)
+
+
 
     # these only allow updating styledict, not removing items
     @property

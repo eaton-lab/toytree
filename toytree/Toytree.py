@@ -617,11 +617,10 @@ class Toytree:
 
         # start from a cleared tree_style and then update.
         self.style = TreeStyle('n')
-        if tree_style:            
-            newstyle = TreeStyle(tree_style[0])
-            self.style.__dict__.update(newstyle.__dict__)
+        if tree_style:
+            self.style.update(TreeStyle(tree_style[0]))
 
-        # store entered args
+        # update kwargs to merge it with user-entered arguments:
         userargs = {
             "height": height,
             "width": width,
@@ -637,25 +636,15 @@ class Toytree:
             "use_edge_lengths": use_edge_lengths,
             "scalebar": scalebar, 
             "padding": padding,
-        } 
-        dictargs = {
             "edge_style": edge_style,
             "edge_align_style": edge_align_style,
             "tip_labels_style": tip_labels_style,            
             "node_style": node_style,
             "node_labels_style": node_labels_style,
         }
-
-        # update tree_style to custom style with user entered args
-        censored = {i: j for (i, j) in userargs.items() if j is not None}
-        self.style.__dict__.update(censored)
-
-        # update style dicts
-        censored = [i for i in dictargs if i is not None]
-        for styledict in censored:
-            sdict = dictargs[styledict]
-            if sdict:
-                self.style.__setattr__(styledict, sdict)
+        kwargs.update(userargs)
+        censored = {i: j for (i, j) in kwargs.items() if j is not None}
+        self.style.update(censored)
 
         # Init Drawing class object.
         draw = Drawing(self)
@@ -667,4 +656,3 @@ class Toytree:
         # Make plot. If user provided explicit axes then include them.
         canvas, axes = draw.update(axes=axes)
         return canvas, axes
-
