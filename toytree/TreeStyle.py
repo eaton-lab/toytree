@@ -22,7 +22,7 @@ DEFAULT_TREE_STYLE = {
     'node_labels': False,
     'node_sizes': None,
     'node_colors': None,
-    'vmarker': 'o',
+    'node_markers': None,
     'node_hover': True,
     'use_edge_lengths': True,
     'tip_labels': True,
@@ -160,6 +160,16 @@ class TreeStyle:
         for key, val in isdicts.items():
             self.__setattr__(key, val)
 
+
+    def to_dict(self):
+        "returns self as a dictionary with _underscore subdicts corrected."
+        ndict = {}
+        for key, val in self.__dict__.items():
+            if key[0] == "_":
+                ndict[key[1:]] = val
+            else:
+                ndict[key] = val
+        return ndict
 
 
     # these only allow updating styledict, not removing items
