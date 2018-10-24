@@ -21,6 +21,7 @@ Documentation
    5-toytrees.ipynb
    6-treenodes.ipynb
    7-multitrees.ipynb
+   8-styling.ipynb
    Cookbook.ipynb
 
 
