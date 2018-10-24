@@ -9,8 +9,8 @@ from builtins import str, range
 import os
 from copy import deepcopy
 from collections import defaultdict
-from .ete3mini import TreeNode
-from .Toytree import Toytree
+from .etemini import TreeNode
+from .Toytree import ToyTree
 from .TreeStyle import TreeStyle
 from .MultiDrawing import TreeGrid, CloudTree
 from .utils import bpp2newick
@@ -105,7 +105,7 @@ class MultiTree:
 
         # if a list then each element is either a toytree or a str
         elif isinstance(self.newick, list):
-            if isinstance(self.newick[0], Toytree):
+            if isinstance(self.newick[0], ToyTree):
                 treelines = [i.newick for i in self.newick]
                 self._treelines_to_treelist(treelines)
 
@@ -132,7 +132,7 @@ class MultiTree:
             treelines = [bpp2newick(i.strip()) for i in treelines]
 
         # get majrule consensus tree tip order
-        treelist = [Toytree(i.strip()) for i in treelines]
+        treelist = [ToyTree(i.strip()) for i in treelines]
         cons = ConsensusTree(treelist)
         cons.update()
         self._cons_order = cons.ttree.get_tip_labels()
@@ -152,7 +152,7 @@ class MultiTree:
 
         # build tree list
         self.treelist = [
-            Toytree(i.strip(), fixed_order=order) for i in treelines]
+            ToyTree(i.strip(), fixed_order=order) for i in treelines]
 
     # -------------------------------------------------------------------
     # Tree List Statistics or Calculations
@@ -442,6 +442,6 @@ class ConsensusTree:
         tre = nodelist[0]
         #tre.unroot()
         ## return the tree and other trees if present
-        self.ttree = Toytree(tre.write(format=0))
+        self.ttree = ToyTree(tre.write(format=0))
         self.ttree._coords.update()
         self.nodelist = nodelist
