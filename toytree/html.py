@@ -130,7 +130,7 @@ def _render(axes, mark, context):
         id=context.get_id(mark),
         attrib={"class": "toyplot-mark-Scatterplot"},
     )
-    print xml.tostring(mark_xml)
+    print(xml.tostring(mark_xml))
 
     ##
     mvectors = [
@@ -153,8 +153,8 @@ def _render(axes, mark, context):
                 "style": shared_styles,
             },
         )
-        print xml.tostring(series_xml)
-        print ""
+        print(xml.tostring(series_xml))
+        print("")
 
         # subselect markers for missing data
         vals = [
@@ -187,8 +187,8 @@ def _render(axes, mark, context):
                     text=marker.label,
                     style=unique_styles['text'][idx],
                 )
-            print xml.tostring(marker_xml)
-            print ""
+            print(xml.tostring(marker_xml))
+            print("")
             # create new simplified marker... working off Line 3177 in html.py
 
 
