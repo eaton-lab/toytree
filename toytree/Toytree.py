@@ -7,14 +7,14 @@ import itertools
 from decimal import Decimal
 from copy import deepcopy
 
-from .ete3mini import TreeNode
+from .etemini import TreeNode
 from .TreeStyle import TreeStyle
 from .Coords import Coords
 from .Drawing import Drawing
 from .utils import ToytreeError, TreeMod, fuzzy_match_tipnames
 
 
-class Toytree:
+class ToyTree:
     def __init__(self, newick=None, tree_format=0, fixed_order=None):
 
         # get the tree as a TreeNode object
@@ -156,33 +156,74 @@ class Toytree:
         return elist
 
 
-    def map_edge_values_to_idx(self, node_value_dict):
+    def get_edge_values_from_dict(self, node_value_dict=None, include_stem=True):
         """
-        Enter a dictionary mapping node idx to values that you want mapped 
-        to the stem and descendant edges of that node. Edge values are returned
-        in proper plot order to be entered to the edge_colors or edge_widths 
-        arguments to draw(). To see node idx values use node_labels=True in 
-        draw().
+        Enter a dictionary mapping node 'idx' or tuple of tipnames to values 
+        that you want mapped to the stem and descendant edges that node. 
+        Edge values are returned in proper plot order to be entered to the 
+        edge_colors or edge_widths arguments to draw(). To see node idx values 
+        use node_labels=True in draw(). If dictionary keys are integers it is
+        assumed they are node idxs. 
 
-        Example: 
+        Note: it is safer to use tip labels to identify clades than node idxs 
+        since tree tranformations (e.g., rooting) can change the mapping of 
+        idx values to nodes on the tree.
+
+        This function is most convenient for applying values to clades. To
+        instead map values to specific edges (e.g., a single internal edge) 
+        it will be easier to use tre.get_edge_values() and then to set the 
+        values of the internal edges manually.
+
+        Example 1: 
           tre = toytree.tree("((a,b),(c,d));")
-          tre.get_edge_colormap({5: "green", 6: "red"})       
-          ['green', 'green', 'green', 'red', 'red', 'red']
+          tre.get_edge_values_from_dict({5: 'green', 6: 'red'})
+          # ['green', 'green', 'green', 'red', 'red', 'red']
+
+        Example 2: 
+          tre = toytree.tree("((a,b),(c,d));")
+          tre.get_edge_values_from_dict({(a, b): 'green', (c, d): 'red'})          
+          # ['green', 'green', 'green', 'red', 'red', 'red']
         """
-        # map node idxs to 
+        # map node idxs to the order in which edges are plotted
         idxs = {j: i for (i, j) in enumerate(self.get_edge_values())}
         values = [None] * self._coords.edges.shape[0]
-        
+        if node_value_dict is None:
+            return values
+
+        # convert tipname lists to node idxs
+        rmap = {}
+        for (key, val) in node_value_dict.items():
+            if isinstance(key, (str, tuple)):
+                node = fuzzy_match_tipnames(self, key, None, None)
+                rmap[node.idx] = val
+            else:
+                rmap[key] = val
+        node_value_dict = rmap
+
+        # map over tree
         for node in self.treenode.traverse("levelorder"):
             if node.idx in node_value_dict:
+
                 # add value to stem edge
-                if not node.is_root():
-                    values[idxs[node.idx]] = node_value_dict[node.idx]
+                if include_stem:
+                    if not node.is_root():
+                        values[idxs[node.idx]] = node_value_dict[node.idx]
             
                 # add value to descendants edges
                 for desc in node.get_descendants():
                     values[idxs[desc.idx]] = node_value_dict[node.idx]
         return values
+
+
+    def get_mrca_idx_from_tip_labels(self, names=None, wildcard=None, regex=None):
+        """
+        Returns the node idx label of the most recent common ancestor node 
+        for the clade that includes the selected tips. Arguments can use fuzzy
+        name matching: a list of tip names, wildcard selector, or regex string.
+        """
+        if not any([names, wildcard, regex]):
+            raise ToytreeError("at least one argument required")
+        return fuzzy_match_tipnames(self, names, wildcard, regex, False).idx
 
 
 
@@ -426,7 +467,7 @@ class Toytree:
         neworder = [revd[i] for i in range(self.ntips)]
 
         # returns a new tree (i.e., copy) modified w/ a fixed order
-        nself = Toytree(self.newick, fixed_order=neworder)
+        nself = ToyTree(self.newick, fixed_order=neworder)
         nself._coords.update()
         return nself
 
@@ -540,8 +581,7 @@ class Toytree:
     # --------------------------------------------------------------------
     # Draw functions imported, but docstring here
     # --------------------------------------------------------------------
-    def draw(
-        self,
+    def draw(self,
         tree_style=None,
         height=None,
         width=None,
@@ -677,6 +717,12 @@ class Toytree:
         kwargs.update(userargs)
         censored = {i: j for (i, j) in kwargs.items() if j is not None}
         self.style.update(censored)
+
+        # warn user if they entered kwargs that weren't recognized:
+        unrecognized = [i for i in kwargs if i not in userargs]
+        if unrecognized:
+            print("unrecognized arguments skipped: {}".format(unrecognized))
+            print("check the docs, argument names may have changed.")
 
         # Init Drawing class object.
         draw = Drawing(self)
