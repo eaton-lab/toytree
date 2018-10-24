@@ -7,7 +7,6 @@ from copy import deepcopy
 import numpy as np
 import toyplot
 from .TreeStyle import TreeStyle
-#from .utils import ToytreeError
 
 
 class TreeGrid:
@@ -20,7 +19,9 @@ class TreeGrid:
         self.canvas = None
         self.cartesian = None
         self.mtree = mtree
-        self.style = TreeStyle('n')
+
+        # subtree styles are stripped when MultiTree init, but can be added.
+        #self.style = TreeStyle('n')
 
         # to be filled
         self.x = None
@@ -53,10 +54,12 @@ class TreeGrid:
                     margin=(20, 20, 35, 35),
                     padding=10,
                 )
+                # update tree style with any new arguments
                 tree.draw(axes=axes, **kwargs)
                 axes.show = False
 
         else:
+            raise NotImplementedError("coming soon")
             axes = self.canvas.cartesian(
                     #bounds=()
                     #margin=35,
@@ -196,7 +199,7 @@ class CloudTree:
 
         # pop fill from color dict if using color
         tstyle = deepcopy(self.style.tip_labels_style)
-        if self.style.tip_labels_color:
+        if self.style.tip_labels_colors:
             tstyle.pop("fill")
 
         # add tip names to coordinates calculated above
@@ -206,7 +209,7 @@ class CloudTree:
             self.tip_labels,  
             angle=(0 if self.style.orient in ("right", "left") else -90),
             style=tstyle,
-            color=self.style.tip_labels_color,
+            color=self.style.tip_labels_colors,
         )
         # get stroke-width for aligned tip-label lines (optional)
         # copy stroke-width from the edge_style unless user set it
