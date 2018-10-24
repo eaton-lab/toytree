@@ -168,7 +168,7 @@ class TreeNode(object):
 
     def __and__(self, value):
         """ Allows executing tree&'A' to obtain the node with name A"""
-        value=str(value)
+        value = str(value)
         try:
             first_match = next(self.iter_search_nodes(name=value))
             return first_match
