@@ -148,7 +148,7 @@ class Drawing:
         # or auto-fit (tree height)
         #else:
         if self.style.use_edge_lengths:
-            addon = self.ttree.treenode.height 
+            addon = self.ttree.treenode.height * .85
         else:
             addon = self.ttree.treenode.get_farthest_leaf(True)[1]
 
@@ -202,8 +202,8 @@ class Drawing:
                     self.node_colors[cidx] = color
 
         # use CSS none for stroke=None
-        if self.style.node_style["stroke"] in (None, "none"):
-            self.style.node_style.pop("stroke")  # = "none"
+        if self.style.node_style["stroke"] is None:
+            self.style.node_style.stroke = "none"
 
 
     def assign_node_labels_and_sizes(self):
@@ -274,6 +274,8 @@ class Drawing:
                 if self.node_labels[nidx] == "":
                     self.node_sizes[nidx] = 0
 
+        # ensure string type
+        self.node_labels = [str(i) for i in self.node_labels]
 
     def assign_tip_labels_and_colors(self):
         "assign tip labels based on user provided kwargs"
@@ -415,7 +417,8 @@ class Drawing:
                 # ecolor=...
             )            
         else:
-            self.expand_edges_to_lines()
+            self.expand_edges_to_lines("edge_colors")
+            self.expand_edges_to_lines("edge_widths")
             self.axes.graph(
                 self.coords.lines,
                 vcoordinates=self.coords.coords,
@@ -427,10 +430,42 @@ class Drawing:
             )
   
 
-    def expand_edges_to_lines(self):
-        arr = [None] * self.coords.lines.shape[0]
-        self.edge_colors = [self.edge_colors[0]] * self.coords.lines.shape[0]
-        self.edge_widths = [self.edge_widths[0]] * self.coords.lines.shape[0]
+    def expand_edges_to_lines(self, attr):
+
+        # set default values
+        if attr == "edge_colors":
+            arr = ["#262626"] * self.coords.lines.shape[0]
+        else:
+            arr = [2] * self.coords.lines.shape[0]
+
+        # build dict from edges
+        cdict = {
+            self.coords.edges[i, 1]: self.__getattribute__(attr)[i] 
+            for i in range(len(self.coords.edges))
+        }
+
+        # build new values from lines
+        for idx in range(len(arr)):
+            edge = self.coords.lines[idx]
+            
+            # this edge goes into x
+            into = edge[1]
+            
+            # colors going into x in edges is
+            val = cdict.get(into)
+            
+            if val:
+                # apply this val to every line into x
+                lidx = np.where(self.coords.lines[:, 1] == into)
+                arr[lidx[0][0]] = val
+                
+                # and into y
+                y = edge[0]
+                lidx = np.where(self.coords.lines[:, 1] == y)
+                arr[lidx[0][0]] = val
+        
+        # update the value list        
+        self.__setattr__(attr, arr)  # edge_colors = arr
 
     # -----------------------------------------------------------------
     # Node and Node Labels 
@@ -447,7 +482,7 @@ class Drawing:
         # bail out if not any visible nodes (e.g., none w/ size>0)
         if all([i == "" for i in self.node_labels]):
             return
-
+       
         # build markers for each node.
         marks = []
         for nidx in self.ttree.get_node_values('idx', 1, 1):
