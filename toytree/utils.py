@@ -2,7 +2,7 @@
 
 from __future__ import print_function, division, absolute_import
 
-from .ete3mini import TreeNode
+from .etemini import TreeNode
 import toytree
 import random  # b/c ete uses random seed.
 import re
@@ -307,53 +307,64 @@ def bpp2newick(bppnewick):
 
 
 ## external functions
-def fuzzy_match_tipnames(ttree, outgroup, wildcard, regex, mono=True):
+def fuzzy_match_tipnames(ttree, names, wildcard, regex, mono=True):
     "used in .root and .prune to select multiple tips fuzzy"
-    # get names of outgroup/s using list, wildcard or regex
-    og = outgroup
-    if og:
-        if isinstance(og, str):
-            og = [og]
-        notfound = [i for i in og if i not in ttree.treenode.get_leaf_names()]
-        if any(notfound):
-            raise Exception(
-                "Sample {} is not in the tree".format(notfound))
-        outs = [i for i in ttree.treenode.get_leaf_names() if i in outgroup]
-
-    elif regex:
-        outs = [i.name for i in ttree.treenode.get_leaves()
-                if re.match(regex, i.name)]
-        if not any(outs):
-            raise Exception("No Samples matched the regular expression")
-
-    elif wildcard:
-        outs = [i.name for i in ttree.treenode.get_leaves()
-                if wildcard in i.name]
-        if not any(outs):
-            raise Exception("No Samples matched the wildcard")
-
-    else:
-        raise Exception(
+    # require arguments
+    if not any([names, wildcard, regex]):
+        raise ToytreeError(
             "must enter an outgroup, wildcard selector, or regex pattern")
 
+    # get names of outgroup/s using list, wildcard or regex
+    if names:
+        if isinstance(names, str):
+            names = [names]
+        notfound = [
+            i for i in names if i not in ttree.treenode.get_leaf_names()
+        ]
+        if any(notfound):
+            raise ToytreeError(
+                "Sample {} is not in the tree".format(notfound))
+        tips = [i for i in ttree.treenode.get_leaf_names() if i in names]
+
+    # use regex to match tipnames
+    elif regex:
+        tips = [
+            i.name for i in ttree.treenode.get_leaves() 
+            if re.match(regex, i.name)
+        ]               
+        if not any(tips):
+            raise ToytreeError("No Samples matched the regular expression")
+
+    # use wildcard substring matching
+    elif wildcard:
+        tips = [
+            i.name for i in ttree.treenode.get_leaves() if wildcard in i.name
+        ]               
+        if not any(tips):
+            raise ToytreeError("No Samples matched the wildcard")
+
     # if not requiring monophyly of names then return the fuzzy matched list
-    if not mono:
-        return outs
+    #if not mono:
+    #    return tips
 
     # if requiring monophyly then we return the TreeNode of the mrca
+    #else:
+
+    # get node to use for outgroup
+    if len(tips) == 1:
+        node = ttree.treenode.search_nodes(name=tips[0])[0]
     else:
-        # get node to use for outgroup
-        if len(outs) > 1:
-            # check if they're monophyletic
-            mbool, mtype, mnames = ttree.treenode.check_monophyly(
-                outs, "name", ignore_missing=True)
+        # check if they're monophyletic
+        mbool, mtype, mnames = (
+            ttree.treenode.check_monophyly(tips, "name", ignore_missing=True)
+        )
+
+        # get mrca
+        node = ttree.treenode.get_common_ancestor(tips)
+
+        # if monophyletic 
+        if mono:
             if not mbool:
-                if mtype == "paraphyletic":
-                    outs = [i.name for i in mnames]
-                else:
-                    raise Exception(
-                        "Tips entered to root() cannot be paraphyletic")
-            out = ttree.treenode.get_common_ancestor(outs)
-        else:
-            out = ttree.treenode.search_nodes(name=outs[0])[0]
-        return out
+                raise ToytreeError(
+                    "Tips list cannot be paraphyletic")
+    return node
