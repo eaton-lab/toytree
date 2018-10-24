@@ -163,8 +163,8 @@ class TreeNode(object):
     def __bool__(self):
         return True
 
-    def __repr__(self):
-        return "Tree node '%s' (%s)" % (self.name, hex(self.__hash__()))
+    #def __repr__(self):
+    #    return "TreeNode '%s' (%s)" % (self.name, hex(self.__hash__()))
 
     def __and__(self, value):
         """ Allows executing tree&'A' to obtain the node with name A"""
