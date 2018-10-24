@@ -89,6 +89,7 @@ STYLES = {
     'c': {
         #"tree_style": "coal", 
         "orient": "down", 
+        "edge_type": "c",
         "use_edge_lengths": True, 
         "tip_labels_align": False, 
         "node_labels": True, 
