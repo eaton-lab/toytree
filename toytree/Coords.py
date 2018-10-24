@@ -151,71 +151,102 @@ class Coords:
         
 
     def assign_coordinates(self):
-        
-        # if tree is empty then bail out
+
         if len(self.ttree) < 2:
-            return
+            return 
 
-        # things to fill
         edges = []
-        nupdict = {}
+        coords = {i: tuple(j) for (i, j) in enumerate(self.verts)}
+        nidx = self.ttree.treenode.idx + 1
 
-        # The number of vertices needed to store these edges
-        # This depends on polytomies since we skip over some edges.
-        nnups = 2 * self.ttree.nnodes + self.ttree.ntips + 100
-        verts = np.zeros((nnups, 2))        
-
-        # set new node counter to start at ntips
-        nidx = len(self.ttree)
-        vidx = 0
-
-        # from tips to root
-        for node in self.ttree.treenode.traverse("postorder"):
-            
-            if node.is_leaf():
-                # enter a vertex
-                verts[vidx] = (node.x, node.y)
-                vidx += 1
-                
-                # store the nups new nodes vertices
-                node.nup = (node.x, node.up.y)
-                nupdict[node.nup] = nidx
-                verts[nidx] = node.nup
+        # add up nodes and edges
+        for node in self.ttree.treenode.traverse():
+            if not node.is_root():
+                coords[nidx] = (node.x, node.up.y)
+                edges.append((nidx, node.idx))
+                node.nup = nidx
                 nidx += 1
 
-                # connect node to its node-up
-                edges.append((nidx - 1, vidx - 1))
+        # add side edges
+        for node in self.ttree.treenode.traverse():
+            if not node.is_leaf():
+                for child in node.children:
+                    edges.append((node.idx, child.nup))
 
-            else:
-                # get nodes of left/right children 
-                minx = min(node.children, key=lambda x: x.x)
-                maxx = max(node.children, key=lambda x: x.x)
-                
-                # vert indices of newnodes above the children
-                nidxl = nupdict[minx.nup]
-                nidxr = nupdict[maxx.nup]
+        # store 
+        self.coords = np.array([coords[i] for i in range(len(coords))])
+        self.lines = np.array(edges)
 
-                # store left/right edge
-                edges.append((nidxl, nidxr))
 
-                if not node.is_root():
-                    # vertex for internal node and edge up to its nup
-                    # store internal node
-                    verts[nidx] = (node.x, node.y)
-                    nidx += 1
 
-                    # store nup new node 
-                    node.nup = (node.x, node.up.y)
-                    nupdict[node.nup] = nidx
-                    verts[nidx] = node.nup
-                    nidx += 1
-
-                    # store edge connected internal node to nup
-                    edges.append((nidx - 1, nidx - 2))
+    # def assign_coordinates(self):
         
-        # store to self
-        self.coords = verts[:nidx, :]
-        self.lines = np.array(list(edges))
+    #     # if tree is empty then bail out
+    #     if len(self.ttree) < 2:
+    #         return
+
+    #     # things to fill
+    #     edges = []
+    #     nupdict = {}
+
+    #     # The number of vertices needed to store these edges
+    #     # This depends on polytomies since we skip over some edges.
+    #     nnups = 2 * self.ttree.nnodes + self.ttree.ntips + 100
+    #     verts = np.zeros((nnups, 2))        
+
+    #     # set new node counter to start at ntips
+    #     nidx = len(self.ttree)
+    #     vidx = 0
+
+    #     # from tips to root
+    #     for node in self.ttree.treenode.traverse("postorder"):
+            
+    #         if node.is_leaf():
+    #             # enter a vertex
+    #             verts[vidx] = (node.x, node.y)
+    #             vidx += 1
+                
+    #             # store the nups new nodes vertices
+    #             node.nup = (node.x, node.up.y)
+    #             nupdict[node.nup] = nidx
+    #             verts[nidx] = node.nup
+    #             nidx += 1
+
+    #             # connect node to its node-up
+    #             edges.append((nidx - 1, vidx - 1))
+
+    #         else:
+    #             # get nodes of left/right children 
+    #             minx = min(node.children, key=lambda x: x.x)
+    #             maxx = max(node.children, key=lambda x: x.x)
+                
+    #             # vert indices of newnodes above the children
+    #             nidxl = nupdict[minx.nup]
+    #             nidxr = nupdict[maxx.nup]
+
+    #             # store left/right edge
+    #             #edges.append((nidxl, nidxr))
+    #             edges.append((nidxl, nidx-1))
+    #             edges.append((nidxr, nidx-1))
+
+    #             if not node.is_root():
+    #                 # vertex for internal node and edge up to its nup
+    #                 # store internal node
+    #                 verts[nidx] = (node.x, node.y)
+    #                 nidx += 1
+
+    #                 # store nup new node 
+    #                 node.nup = (node.x, node.up.y)
+    #                 nupdict[node.nup] = nidx
+    #                 verts[nidx] = node.nup
+    #                 nidx += 1
+
+    #                 # store edge connected internal node to nup
+    #                 edges.append((nidx - 1, nidx - 2))
+        
+    #     # store to self
+    #     self.coords = verts[:nidx, :]
+    #     self.lines = np.array(list(edges))
 
 
     def reorient_coordinates(self):
