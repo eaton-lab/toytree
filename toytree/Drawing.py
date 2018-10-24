@@ -231,8 +231,8 @@ class Drawing:
         # False == Hide nodes and labels unless user entered size 
         if self.style.node_labels is False:
             self.node_labels = ["" for i in nvals]           
-            if self.style.node_sizes:
-                if isinstance(self.style.node_sizes, (list, tuple)):
+            if self.style.node_sizes is not None:
+                if isinstance(self.style.node_sizes, (list, tuple, np.ndarray)):
                     assert len(self.node_sizes) == len(self.style.node_sizes)
                     self.node_sizes = self.style.node_sizes
 
@@ -396,9 +396,6 @@ class Drawing:
         # do not allow empty edge_colors or widths
         self.edge_colors = [i if i else "#262626" for i in self.edge_colors]
         self.edge_widths = [i if i else 2 for i in self.edge_widths]
-        #print(self.edge_widths)
-        #print(self.edge_colors)        
-        #print(self.style.edge_style)        
 
     # -----------------------------------------------------------------
     # Tree / Graph plotting
