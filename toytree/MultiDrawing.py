@@ -105,8 +105,8 @@ class CloudTree:
         # this clobberes the 
         self.axes.show = False
         for tre in self.mtree.treelist:
-            tstyle = deepcopy(tre.style.__dict__)
-            tre.draw(axes=self.axes, **tstyle)
+            tstyle = deepcopy(tre.style)  # .__dict__)
+            tre.draw(axes=self.axes, **tstyle.to_dict())
 
         # add a single call to tip labels
         self.assign_tip_labels_and_colors()
