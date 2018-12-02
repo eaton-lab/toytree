@@ -606,6 +606,8 @@ class ToyTree:
         use_edge_lengths=None,
         scalebar=None,
         padding=None,
+        xbaseline=0,
+        ybaseline=0,
         **kwargs):
         """
         Plot a Toytree tree, returns a tuple of Toyplot (Canvas, Axes) objects.
@@ -715,6 +717,8 @@ class ToyTree:
             "use_edge_lengths": use_edge_lengths,
             "scalebar": scalebar,
             "padding": padding,
+            "xbaseline": xbaseline, 
+            "ybaseline": ybaseline,
         }
         kwargs.update(userargs)
         censored = {i: j for (i, j) in kwargs.items() if j is not None}
