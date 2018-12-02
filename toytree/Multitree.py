@@ -225,7 +225,8 @@ class MultiTree:
         draw = TreeGrid(self.copy())
         if kwargs.get("debug"):
             return draw
-        draw.update(x, y, start, shared_axis, **kwargs)
+        canvas, axes = draw.update(x, y, start, shared_axis, **kwargs)
+        return canvas, axes
 
 
     def draw_cloud_tree(self, axes=None, html=False, edge_styles=None, **kwargs):
