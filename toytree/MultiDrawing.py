@@ -17,7 +17,6 @@ class TreeGrid:
         
         # plot objects are init on update()
         self.canvas = None
-        self.cartesian = None
         self.mtree = mtree
 
         # subtree styles are stripped when MultiTree init, but can be added.
@@ -58,19 +57,37 @@ class TreeGrid:
                 tree.draw(axes=axes, **kwargs)
                 axes.show = False
 
-        else:
-            raise NotImplementedError("coming soon")
-            axes = self.canvas.cartesian(
-                    #bounds=()
-                    #margin=35,
-                    padding=10,
-                    )
-            # axes = self.axes.share(...)
+        else:    
+            axes = self.canvas.cartesian(padding=10)
+            xbaseline = 0
+            maxheight = 0
             for tidx, tree in enumerate(self.treelist):
-                pass
-                # add +x to their verts?
-                # or use share-axis args for axes <- yes.
-        #return self.canvas, axes
+                tree.draw(axes=axes, xbaseline=xbaseline, **kwargs)
+                xbaseline += tree.ntips + 1
+                maxheight = max(maxheight, tree.treenode.height)
+
+            nticks = 5  # max((3, np.floor(self.style.height / 100).astype(int)))
+
+            if kwargs.get("orient") == "down":
+                axes.x.show = False
+                axes.y.show = True
+                axes.y.ticks.show = True            
+
+                # generate locations
+                locs = np.linspace(0, maxheight, nticks)
+
+                # generate labels formatted depending on range of locs
+                fmt = "{:.2f}"
+                if np.abs(locs).max() > 6:
+                    fmt = "{:.1f}"
+                elif np.abs(locs).max() > 10:
+                    fmt = "{:.0f}"
+                axes.y.ticks.locator = toyplot.locator.Explicit(
+                    locations=locs,
+                    labels=[fmt.format(i) for i in np.abs(locs)],
+                    )
+
+        return self.canvas, axes
 
 
 class CloudTree:
