@@ -464,7 +464,7 @@ class Drawing:
 
         # build dict from edges
         cdict = {
-            self.coords.edges[i, 1]: self.__getattribute__(attr)[i] 
+            self.coords.edges[i, 1]: getattr(self,attr)[i]
             for i in range(len(self.coords.edges))
         }
 
@@ -489,7 +489,7 @@ class Drawing:
                 arr[lidx[0][0]] = val
         
         # update the value list        
-        self.__setattr__(attr, arr)  # edge_colors = arr
+        setattr(self, attr, arr) # edge_colors = arr
 
     # -----------------------------------------------------------------
     # Node and Node Labels 
