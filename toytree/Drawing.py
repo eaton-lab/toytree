@@ -49,6 +49,7 @@ class Drawing:
         # set up base canvas and axes
         self.get_dims_from_tree_size()
         self.get_canvas_and_axes(axes)
+        self.set_baselines()
 
         # update attrs for style entries. Some of these can be set with style, 
         # or as a list, e.g., node_style={'fill':'red'} or node_color="red".
@@ -68,6 +69,21 @@ class Drawing:
         self.fit_tip_labels()
         return self.canvas, self.axes
         #return self.canvas, self.axes, tuple(self.axes._children)
+
+
+    def set_baselines(self):
+        """
+        Modify coords to shift tree position for x,y baseline arguments. This
+        is useful for arrangeing trees onto a Canvas with other plots, but 
+        still sharing a common cartesian axes coordinates. 
+        """
+        if self.style.xbaseline:
+            if self.style.orient in ("up", "down"):
+                self.coords.coords[:, 0] += self.style.xbaseline
+                self.coords.verts[:, 0] += self.style.xbaseline                
+            else:
+                self.coords.coords[:, 1] += self.style.xbaseline
+                self.coords.verts[:, 1] += self.style.xbaseline                
 
     # -----------------------------------------------------------------
     # Node and Node Labels 
@@ -590,7 +606,7 @@ class Drawing:
                 fmt = "{:.1f}"
             elif np.abs(locs).max() > 10:
                 fmt = "{:.0f}"
-            self.axes.x.ticks.locator = toyplot.locator.Explicit(
+            self.axes.y.ticks.locator = toyplot.locator.Explicit(
                 locations=locs,
                 labels=[fmt.format(i) for i in np.abs(locs)],
                 )
