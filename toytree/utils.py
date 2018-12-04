@@ -342,39 +342,33 @@ def fuzzy_match_tipnames(ttree, names, wildcard, regex, mono=True):
         if any(notfound):
             raise ToytreeError(
                 "Sample {} is not in the tree".format(notfound))
-        tips = [i for i in ttree.treenode.get_leaf_names() if i in names]
+        tips = [i for i in ttree.treenode.get_leaves() if i.name in names]
 
     # use regex to match tipnames
     elif regex:
         tips = [
-            i.name for i in ttree.treenode.get_leaves() 
-            if re.match(regex, i.name)
+            i for i in ttree.treenode.get_leaves() if re.match(regex, i.name)
         ]               
         if not any(tips):
             raise ToytreeError("No Samples matched the regular expression")
 
     # use wildcard substring matching
     elif wildcard:
-        tips = [
-            i.name for i in ttree.treenode.get_leaves() if wildcard in i.name
-        ]               
+        tips = [i for i in ttree.treenode.get_leaves() if wildcard in i.name]
         if not any(tips):
             raise ToytreeError("No Samples matched the wildcard")
 
-    # if not requiring monophyly of names then return the fuzzy matched list
-    #if not mono:
-    #    return tips
-
-    # if requiring monophyly then we return the TreeNode of the mrca
-    #else:
+    # get names 
+    tipnames = [i.name for i in tips]
 
     # get node to use for outgroup
     if len(tips) == 1:
-        node = ttree.treenode.search_nodes(name=tips[0])[0]
+        node = ttree.treenode.search_nodes(name=tipnames[0])[0]
     else:
         # check if they're monophyletic
         mbool, mtype, mnames = (
-            ttree.treenode.check_monophyly(tips, "name", ignore_missing=True)
+            ttree.treenode.check_monophyly(
+                tipnames, "name", ignore_missing=True)
         )
 
         # get mrca
@@ -384,5 +378,5 @@ def fuzzy_match_tipnames(ttree, names, wildcard, regex, mono=True):
         if mono:
             if not mbool:
                 raise ToytreeError(
-                    "Tips list cannot be paraphyletic")
+                    "Taxon list cannot be paraphyletic")
     return node
