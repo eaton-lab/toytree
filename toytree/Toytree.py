@@ -428,7 +428,7 @@ class ToyTree:
         return nself
 
 
-    def rotate_node(self, names=None, wildcard=None, regex=None):
+    def rotate_node(self, names=None, wildcard=None, regex=None, idx=None):
         """
         Returns a ToyTree with the selected node rotated for plotting.
         tip colors do not align correct currently if nodes are rotated...
@@ -438,7 +438,16 @@ class ToyTree:
         neworder = {}
         
         # get node to rotate
-        treenode = fuzzy_match_tipnames(self, names, wildcard, regex, mono=1)
+        if idx:
+            treenode = self.treenode.search_nodes(idx=idx)[0]
+            if not treenode:
+                print("No node labeled idx {}".format(idx))
+                return 
+        else:
+            treenode = fuzzy_match_tipnames(
+                self, names, wildcard, regex, mono=1)
+        
+        # todo: make work for rotating root node...
         children = treenode.up.children
         names = [[j.name for j in i.get_leaves()] for i in children]
         nidxs = [[revd[i] for i in j] for j in names]
@@ -522,7 +531,14 @@ class ToyTree:
         nself = self.copy()
 
         # get treenode of the common ancestor of selected tips
-        out = fuzzy_match_tipnames(nself, names, wildcard, regex)
+        try:
+            out = fuzzy_match_tipnames(nself, names, wildcard, regex)
+        except ToytreeError as inst:
+            # try reciprocal taxon list
+            out = fuzzy_match_tipnames(
+                nself, names, wildcard, regex, mono=False, retnode=False)               
+            recip = list(set(self.get_tip_labels()) - set(out))
+            out = fuzzy_match_tipnames(nself, recip, None, None)
 
         # split root node if more than di- as this is the unrooted state
         if not nself.is_bifurcating():
