@@ -323,10 +323,12 @@ def bpp2newick(bppnewick):
     return new
 
 
+# TODO: would be useful for (eg., root) to have option to return not mrca, 
+# and fuzzy match just tips, or nodes, etc...
 
 ## external functions
-def fuzzy_match_tipnames(ttree, names, wildcard, regex, mono=True):
-    "used in .root and .prune to select multiple tips fuzzy"
+def fuzzy_match_tipnames(ttree, names, wildcard, regex, mono=True, retnode=True):
+    "Returns a node; used in .root and .prune to select multiple tips fuzzy"
     # require arguments
     if not any([names, wildcard, regex]):
         raise ToytreeError(
@@ -334,7 +336,7 @@ def fuzzy_match_tipnames(ttree, names, wildcard, regex, mono=True):
 
     # get names of outgroup/s using list, wildcard or regex
     if names:
-        if isinstance(names, str):
+        if isinstance(names, (str, int)):
             names = [names]
         notfound = [
             i for i in names if i not in ttree.treenode.get_leaf_names()
@@ -360,6 +362,10 @@ def fuzzy_match_tipnames(ttree, names, wildcard, regex, mono=True):
 
     # get names 
     tipnames = [i.name for i in tips]
+
+    # option to return tipmatch
+    if not retnode:
+        return tipnames
 
     # get node to use for outgroup
     if len(tips) == 1:
