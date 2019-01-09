@@ -326,21 +326,30 @@ def bpp2newick(bppnewick):
 # TODO: would be useful for (eg., root) to have option to return not mrca, 
 # and fuzzy match just tips, or nodes, etc...
 
-## external functions
-def fuzzy_match_tipnames(ttree, names, wildcard, regex, mono=True, retnode=True):
-    "Returns a node; used in .root and .prune to select multiple tips fuzzy"
+# def fuzzy_match_tipnames(ttree, names, wildcard, regex, mono=True, retnode=True):
+def fuzzy_match_tipnames(ttree, names, wildcard, regex, mrca=True, mono=True):
+    """
+    Used in multiple internal functions (e.g., .root()) and .drop_tips())
+    to select an internal mrca node, or multiple tipnames, using fuzzy matching
+    so that every name does not need to be written out by hand.
+
+    name: verbose list
+    wildcard: matching unique string
+    regex: regex expression
+    mrca: return mrca node of selected tipnames. 
+    mono: raise error if selected tipnames are not monophyletic    
+    """
     # require arguments
     if not any([names, wildcard, regex]):
         raise ToytreeError(
             "must enter an outgroup, wildcard selector, or regex pattern")
 
-    # get names of outgroup/s using list, wildcard or regex
+    # get list of **nodes** from {list, wildcard, or regex}
+    tips = []
     if names:
         if isinstance(names, (str, int)):
             names = [names]
-        notfound = [
-            i for i in names if i not in ttree.treenode.get_leaf_names()
-        ]
+        notfound = [i for i in names if i not in ttree.get_tip_labels()]
         if any(notfound):
             raise ToytreeError(
                 "Sample {} is not in the tree".format(notfound))
@@ -360,16 +369,20 @@ def fuzzy_match_tipnames(ttree, names, wildcard, regex, mono=True, retnode=True)
         if not any(tips):
             raise ToytreeError("No Samples matched the wildcard")
 
-    # get names 
+    # build list of **tipnames** from matched nodes
+    if not tips:
+        raise ToytreeError("no matching tipnames")       
     tipnames = [i.name for i in tips]
 
-    # option to return tipmatch
-    if not retnode:
-        return tipnames
-
     # get node to use for outgroup
+    # if a single node matched
     if len(tips) == 1:
-        node = ttree.treenode.search_nodes(name=tipnames[0])[0]
+        if mrca:
+            return tips[0]
+        else:
+            return tipnames[0]
+
+    # if multiple nodes matched
     else:
         # check if they're monophyletic
         mbool, mtype, mnames = (
@@ -377,12 +390,17 @@ def fuzzy_match_tipnames(ttree, names, wildcard, regex, mono=True, retnode=True)
                 tipnames, "name", ignore_missing=True)
         )
 
-        # get mrca
+        # get mrca node
         node = ttree.treenode.get_common_ancestor(tips)
 
-        # if monophyletic 
+        # raise an error if required to be monophyletic but not
         if mono:
             if not mbool:
                 raise ToytreeError(
                     "Taxon list cannot be paraphyletic")
-    return node
+
+        # return tips or nodes
+        if not mrca:
+            return tipnames
+        else:
+            return node

@@ -194,7 +194,7 @@ class ToyTree:
         rmap = {}
         for (key, val) in node_value_dict.items():
             if isinstance(key, (str, tuple)):
-                node = fuzzy_match_tipnames(self, key, None, None)
+                node = fuzzy_match_tipnames(self, key, None, None, True, False)
                 rmap[node.idx] = val
             else:
                 rmap[key] = val
@@ -223,8 +223,9 @@ class ToyTree:
         """
         if not any([names, wildcard, regex]):
             raise ToytreeError("at least one argument required")
-        return fuzzy_match_tipnames(self, names, wildcard, regex, False).idx
-
+        node = fuzzy_match_tipnames(
+            self, names, wildcard, regex, True, False)
+        return node.idx
 
 
     def get_node_coordinates(self):
@@ -397,6 +398,20 @@ class ToyTree:
         return nself
 
 
+    def collapse_polytomies(self, min_dist=1e-6):
+        """
+        Returns a copy of the tree where internal nodes with dist <= min_dist
+        are deleted, resulting in a collapsed tree. 
+        """
+        nself = self.copy()
+        for node in nself.treenode.traverse():
+            if not node.is_leaf():
+                if node.dist <= min_dist:
+                    node.delete()
+        return nself
+
+
+
     def drop_tips(self, names=None, wildcard=None, regex=None):
         """
         Returns a copy of the tree with the selected tips removed. The entered \
@@ -413,7 +428,14 @@ class ToyTree:
         nself = self.copy()
 
         # get matching names list with fuzzy match
-        tipnames = fuzzy_match_tipnames(nself, names, wildcard, regex, mono=0)
+        tipnames = fuzzy_match_tipnames(
+            ttree=nself, 
+            names=names, 
+            wildcard=wildcard, 
+            regex=regex, 
+            mrca=False, 
+            mono=False,
+        )
 
         if len(tipnames) == len(nself):
             raise ToytreeError("You cannot drop all tips from the tree.")
@@ -437,17 +459,9 @@ class ToyTree:
         revd = {j: i for (i, j) in enumerate(self.get_tip_labels())}
         neworder = {}
         
-        # get node to rotate
-        if idx:
-            treenode = self.treenode.search_nodes(idx=idx)[0]
-            if not treenode:
-                print("No node labeled idx {}".format(idx))
-                return 
-        else:
-            treenode = fuzzy_match_tipnames(
-                self, names, wildcard, regex, mono=1)
-        
-        # todo: make work for rotating root node...
+        # get node to rotate       
+        treenode = fuzzy_match_tipnames(
+            self, names, wildcard, regex, True, True)
         children = treenode.up.children
         names = [[j.name for j in i.get_leaves()] for i in children]
         nidxs = [[revd[i] for i in j] for j in names]
@@ -536,7 +550,7 @@ class ToyTree:
         except ToytreeError as inst:
             # try reciprocal taxon list
             out = fuzzy_match_tipnames(
-                nself, names, wildcard, regex, mono=False, retnode=False)               
+                nself, names, wildcard, regex, mrca=False, mono=False)
             recip = list(set(self.get_tip_labels()) - set(out))
             out = fuzzy_match_tipnames(nself, recip, None, None)
 

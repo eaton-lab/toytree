@@ -25,12 +25,15 @@ import numpy as np
 ###############################################
 class MultiTree:
     """
-    Toytree MultiTree object for representing multiple trees.
+    Toytree MultiTree object for representing multiple trees. 
+
+    Several functions are designed for trees with the same set of tips, and 
+    may yield erratic behavior if trees have different sets of tips... TODO.
 
     Attributes:
     -----------
     treelist: list
-        A list of toytree objects from the parsed newick file
+        A list of toytree objects from the parsed newick file. 
 
     Functions():
     ------------
@@ -131,8 +134,20 @@ class MultiTree:
         if (" #" in treelines[0]) and (": " in treelines[0]):
             treelines = [bpp2newick(i.strip()) for i in treelines]
 
-        # get majrule consensus tree tip order
+        # convert all to toytrees
         treelist = [ToyTree(i.strip()) for i in treelines]
+
+        # if names are the same in all the trees...
+        # alltips = all([
+        #     set(treelist[0].get_tip_labels()) == set(i.get_tip_labels()) 
+        #     for i in treelist
+        # ])
+        # if alltips:
+
+        # Raise error if names do not match, advise to use list of toytrees.
+        # TODO:
+
+        # get majrule consensus tree tip order
         cons = ConsensusTree(treelist)
         cons.update()
         self._cons_order = cons.ttree.get_tip_labels()

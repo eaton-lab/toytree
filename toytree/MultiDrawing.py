@@ -57,7 +57,10 @@ class TreeGrid:
                 tree.draw(axes=axes, **kwargs)
                 axes.show = False
 
+        # shared axis
         else:    
+            # only one axis allowed?... x=1 or y=1
+            kwargs["orient"] = "down"
             axes = self.canvas.cartesian(padding=10)
             xbaseline = 0
             maxheight = 0
@@ -67,7 +70,6 @@ class TreeGrid:
                 maxheight = max(maxheight, tree.treenode.height)
 
             nticks = 5  # max((3, np.floor(self.style.height / 100).astype(int)))
-
             if kwargs.get("orient") == "down":
                 axes.x.show = False
                 axes.y.show = True
