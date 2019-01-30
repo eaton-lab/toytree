@@ -128,7 +128,7 @@ STYLES = {
 
 
 
-class TreeStyle:
+class TreeStyle(object):
     "TreeStyle Class for storing tree plotting styling options"
     def __init__(self, tree_style='n'):
         # object and dict methods
@@ -159,7 +159,8 @@ class TreeStyle:
 
         # update subdict style attributes
         for key, val in isdicts.items():
-            self.__setattr__(key, val)
+            setattr(self, key, val)
+            # self.__setattr__(key, val)
 
 
     def to_dict(self):
@@ -260,6 +261,7 @@ class Style(dict):
 
     def __setattr__(self, name, value):
         self[name] = value
+        
 
     def __delattr__(self, name):
         if name in self:
