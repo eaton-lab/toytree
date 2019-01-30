@@ -119,6 +119,13 @@ class TreeMod:
         return ctree
 
 
+
+# class TreeInference:
+# - get distance matrix from tree (or sequence data?)
+# - NJ tree infer
+# - UPGMA tree infer
+
+#class TreeMoves:
 #     def move_spr(self):
 #         """
 #         Sub-tree pruning and Regrafting. 

@@ -4,6 +4,7 @@
 A Tree Class object modified as a subset of the ete3.Tree Class
 """
 from __future__ import print_function
+
 from functools import cmp_to_key
 from collections import deque
 from hashlib import md5
@@ -88,7 +89,8 @@ class TreeNode(object):
         if support is not None:
             self.support = support
 
-        self.name = name if name is not None else ""
+        # default root name is empty
+        self.name = (name if name is not None else "")
 
         # Initialize tree
         if newick is not None:
