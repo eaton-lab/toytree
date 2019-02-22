@@ -23,7 +23,7 @@ DEFAULT_TREE_STYLE = {
     'node_sizes': None,
     'node_colors': None,
     'node_markers': None,
-    'node_hover': True,
+    'node_hover': False,
     'use_edge_lengths': True,
     'tip_labels': True,
     'tip_labels_colors': None,
