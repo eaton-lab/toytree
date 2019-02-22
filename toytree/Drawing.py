@@ -261,7 +261,12 @@ class Drawing:
                     
         # True == Show nodes, label=idx, and show hover
         elif self.style.node_labels is True:
+            # turn on node hover even if user did not set it explicit
+            self.style.node_hover = True
+
+            # get idx labels
             self.node_labels = self.ttree.get_node_values('idx', 1, 1)
+
             # use default node size as a list if not provided
             if not self.style.node_sizes:
                 self.node_sizes = [18] * len(nvals)
