@@ -20,7 +20,7 @@ setup(
     long_description=open('README.rst').read(),
     packages=find_packages(),
     install_requires=[
-        "toyplot>=0.17.0",
+        "toyplot>=0.18.0",
         "numpy>=1.8.0",
         "future",
         "requests",
