@@ -403,24 +403,28 @@ class ToyTree:
         return nself
 
 
-    def collapse_polytomies(self, min_dist=1e-6):
+    def collapse_nodes(self, min_dist=1e-6, min_support=0):
         """
         Returns a copy of the tree where internal nodes with dist <= min_dist
-        are deleted, resulting in a collapsed tree. 
+        are deleted, resulting in a collapsed tree. e.g.:
+
+        newtre = tre.collapse_nodes(min_dist=0.001)
+        newtre = tre.collapse_nodes(min_support=50)
         """
         nself = self.copy()
         for node in nself.treenode.traverse():
             if not node.is_leaf():
-                if node.dist <= min_dist:
+                if (node.dist <= min_dist) | (node.support < min_support):
                     node.delete()
+        nself._coords.update()
         return nself
 
 
 
     def drop_tips(self, names=None, wildcard=None, regex=None):
         """
-        Returns a copy of the tree with the selected tips removed. The entered \
-        value can be a name or list of names. To prune on an internal node to 
+        Returns a copy of the tree with the selected tips removed. The entered
+        value can be a name or list of names. To prune on an internal node to
         create a subtree see the .prune() function instead.
 
         Parameters:
@@ -438,11 +442,11 @@ class ToyTree:
 
         # get matching names list with fuzzy match
         tipnames = fuzzy_match_tipnames(
-            ttree=nself, 
-            names=names, 
-            wildcard=wildcard, 
-            regex=regex, 
-            mrca=False, 
+            ttree=nself,
+            names=names,
+            wildcard=wildcard,
+            regex=regex,
+            mrca=False,
             mono=False,
         )
 
@@ -452,14 +456,13 @@ class ToyTree:
         if not tipnames:
             raise ToytreeError("No tips selected.")
 
-        #keeptips = [i for i in nself.get_tip_labels() if i not in tips]
         keeptips = [i for i in nself.get_tip_labels() if i not in tipnames]
         nself.treenode.prune(keeptips, preserve_branch_length=True)
         nself._coords.update()
         return nself
 
 
-    def rotate_node(self, names=None, wildcard=None, regex=None, idx=None):
+    def rotate_node(self, names=None, wildcard=None, regex=None):  # idx=None):
         """
         Returns a ToyTree with the selected node rotated for plotting.
         tip colors do not align correct currently if nodes are rotated...
@@ -467,8 +470,8 @@ class ToyTree:
         # make a copy
         revd = {j: i for (i, j) in enumerate(self.get_tip_labels())}
         neworder = {}
-        
-        # get node to rotate       
+
+        # get node to rotate
         treenode = fuzzy_match_tipnames(
             self, names, wildcard, regex, True, True)
         children = treenode.up.children
@@ -478,7 +481,7 @@ class ToyTree:
         # get size of the big clade
         move = max((len(i) for i in nidxs))
         if len(nidxs[0]) > len(nidxs[1]):
-            move = min((len(i) for i in nidxs))            
+            move = min((len(i) for i in nidxs))
 
         # newdict
         cnames = list(itertools.chain(*names))
@@ -494,7 +497,7 @@ class ToyTree:
                 neworder[key] = tdict[key]
             else:
                 neworder[key] = revd[key]
-        
+
         revd = {j: i for (i, j) in neworder.items()}
         neworder = [revd[i] for i in range(self.ntips)]
 
@@ -518,7 +521,7 @@ class ToyTree:
             default_dist=dist,
             default_support=support,
             recursive=recursive)
-        nself._coords.update()        
+        nself._coords.update()
         return nself
 
 
@@ -535,15 +538,15 @@ class ToyTree:
 
     def root(self, names=None, wildcard=None, regex=None):
         """
-        (Re-)root a tree by creating selecting a existing split in the tree, 
+        (Re-)root a tree by creating selecting a existing split in the tree,
         or creating a new node to split an edge in the tree. Rooting location
         is selected by entering the tips descendant from one child of the root
-        split (e.g., names='a' or names=['a', 'b']). You can alternatively 
-        select a list of tip names using a fuzzy selector based on a unique 
+        split (e.g., names='a' or names=['a', 'b']). You can alternatively
+        select a list of tip names using a fuzzy selector based on a unique
         shared string (wildcard="prz") or a regex matching pattern.
 
         Example:
-        To root on a clade that includes the samples "1-A" and "1-B" you can 
+        To root on a clade that includes the samples "1-A" and "1-B" you can
         do any of the following:
 
         rtre = tre.root(outgroup=["1-A", "1-B"])
@@ -620,7 +623,8 @@ class ToyTree:
     # --------------------------------------------------------------------
     # Draw functions imported, but docstring here
     # --------------------------------------------------------------------
-    def draw(self,
+    def draw(
+        self,
         tree_style=None,
         height=None,
         width=None,
