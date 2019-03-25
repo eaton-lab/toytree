@@ -309,6 +309,7 @@ class Drawing:
         # ensure string type
         self.node_labels = [str(i) for i in self.node_labels]
 
+
     def assign_tip_labels_and_colors(self):
         "assign tip labels based on user provided kwargs"
         # COLOR
