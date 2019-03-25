@@ -121,9 +121,12 @@ class TreeMod:
 
 
 # class TreeInference:
-# - get distance matrix from tree (or sequence data?)
+# - get distance matrix (from an input data set... phy, nex)
+# - ----- create a class to store DNA matrix (pandas colored)
 # - NJ tree infer
+#   ------ uses distance matrix
 # - UPGMA tree infer
+#   ------ uses distance matrix
 
 #class TreeMoves:
 #     def move_spr(self):
@@ -193,6 +196,10 @@ class TreeMod:
 #         W = sum(k)
 
 
+#     def penalized_likelihood(...):
+#         pass
+#
+
 # def wfunc(ttree, p):
 #     ws = []
 #     for node in ttree.tree.traverse():
@@ -234,7 +241,9 @@ class RandomTree:
         # build tree: generate N tips as separate Nodes then attach together 
         # at internal nodes drawn randomly from coalescent waiting times.
         tips = [
-            toytree.tree().treenode.add_child(name=str(i)) for i in range(ntips)]
+            toytree.tree().treenode.add_child(name=str(i)) 
+            for i in range(ntips)
+        ]
         while len(tips) > 1:
             rtree = toytree.tree()
             tip1 = tips.pop(random.choice(range(len(tips))))
@@ -272,8 +281,8 @@ class RandomTree:
     @staticmethod
     def unittree(ntips, treeheight=1.0, seed=None):
         """
-        Function to return a random tree w/ N tips and a root height set to
-        1 or a user-entered treeheight value. descendant nodes are evenly 
+        Returns a random tree topology w/ N tips and a root height set to
+        1 or a user-entered treeheight value. Descendant nodes are evenly 
         spaced between the root and time 0.
 
         Parameters
@@ -296,13 +305,15 @@ class RandomTree:
         self = toytree.tree(newick=tmptree.write())
 
         # set tip names by labeling sequentially from 0
-        self.treenode.ladderize()
-        self.treenode.convert_to_ultrametric()
+        self = (
+            self
+            .ladderize()
+            .mod.make_ultrametric()
+            .mod.node_scale_root_height(treeheight)
+        )
 
-        # make tree height = 1 * treeheight
-        _height = self.treenode.height
-        for node in self.treenode.traverse():
-            node.dist = (node.dist / _height) * treeheight
+        # set treeeheight
+        self = self
 
         # set tipnames randomly (doesn't have to match idx)
         nidx = list(range(self.ntips))
@@ -313,6 +324,75 @@ class RandomTree:
         # fill internal node names and idx
         self._coords.update()
         return self
+
+
+    @staticmethod
+    def imbtree(ntips, treeheight=1.0):
+        """
+        Return an imbalanced (comb-like) tree topology.
+        """
+        rtree = toytree.tree()
+        rtree.treenode.add_child(name="0")
+        rtree.treenode.add_child(name="1")
+
+        for i in range(2, ntips):
+            # empty node
+            cherry = toytree.tree()
+            # add new child
+            cherry.treenode.add_child(name=str(i))
+            # add old tree
+            cherry.treenode.add_child(rtree.treenode)
+            # update rtree
+            rtree = cherry
+        
+        # get toytree from newick            
+        tre = toytree.tree(rtree.write(fmt=9))
+        tre = tre.mod.make_ultrametric()
+        self = tre.mod.node_scale_root_height(treeheight)
+        self._coords.update()
+        return self
+
+
+    @staticmethod
+    def baltree(ntips, treeheight=1.0):
+        """
+        Returns a balanced tree topology.
+        """
+        # require even number of tips
+        if ntips % 2:
+            raise ToytreeError("balanced trees must have even number of tips.")
+
+        # make first cherry
+        rtree = toytree.tree()
+        rtree.treenode.add_child(name="0")
+        rtree.treenode.add_child(name="1")
+
+        # add tips in a balanced way
+        for i in range(2, ntips):
+
+            # get node to split
+            node = return_small_clade(rtree.treenode)
+
+            # add two children
+            node.add_child(name=node.name)
+            node.add_child(name=str(i))
+
+            # rename ancestral node
+            node.name = None
+
+        # rename tips so names are in order
+        idx = 0
+        for node in rtree.treenode.traverse("postorder"):
+            if node.is_leaf():
+                node.name = str(idx)
+                idx += 1
+        
+        # get toytree from newick            
+        tre = toytree.tree(rtree.write(fmt=9))
+        tre = tre.mod.make_ultrametric()
+        self = tre.mod.node_scale_root_height(treeheight)
+        self._coords.update()
+        return self        
 
 
 
@@ -328,6 +408,19 @@ def bpp2newick(bppnewick):
     new = regex2.sub(";", new)
     new = regex3.sub(":", new)
     return new
+
+
+
+def return_small_clade(treenode):
+    "used to produce balanced trees, returns a tip node from the smaller clade"
+    node = treenode
+    while 1:
+        if node.children:
+            c1, c2 = node.children
+            node = sorted([c1, c2], key=lambda x: len(x.get_leaves()))[0]
+        else:
+            return node
+
 
 
 # TODO: would be useful for (eg., root) to have option to return not mrca, 
