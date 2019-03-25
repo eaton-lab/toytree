@@ -20,11 +20,8 @@ requirements:
     - toyplot >=0.17.0
     - requests
     - future
-    #- pypng
-    #- reportlab
-    #- notebook
-    #- nbconvert    
   run:
+    # these are used during travis CI 
     - python {{ python }}
     - setuptools
     - numpy >=1.10
