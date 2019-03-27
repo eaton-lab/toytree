@@ -7,15 +7,14 @@ from __future__ import print_function
 
 from functools import cmp_to_key
 from collections import deque
-from hashlib import md5
 import itertools
 import random
 import six      # <- can remove after dealing with six.iteritems calls...
+from hashlib import md5
 
 from builtins import range, str
-#from six.moves import (cPickle, map, range, zip)  # all removed
-#from six.moves import (map, range, zip)           # all removed
 from .newick import read_newick, write_newick
+
 
 DEFAULT_EDGE_LENGTH = 1.
 DEFAULT_SUPPORT = 100.
@@ -28,6 +27,7 @@ class TreeError(Exception):
 
     def __str__(self):
         return repr(self.value)
+
 
 
 class TreeNode(object):
@@ -117,6 +117,7 @@ class TreeNode(object):
         _treeheight = _root.get_distance(_root.get_farthest_leaf()[0])
         return _treeheight - _root.get_distance(self)
     # TODO: setting height should change the .dist values...
+
     @height.setter
     def height(self, value):
         try:
@@ -150,7 +151,7 @@ class TreeNode(object):
     @children.setter
     def children(self, value):
         if type(value) == list and \
-           len(set([type(n)==type(self) for n in value]))<2:
+           len(set([type(n) == type(self) for n in value])) < 2:
             self._children = value
         else:
             raise TreeError("Incorrect children type")
@@ -466,6 +467,7 @@ class TreeNode(object):
           #       \-J
 
         """
+
         def cmp_nodes(x, y):
             # if several nodes are in the same path of two kept nodes,
             # only one should be maintained. This prioritize internal
@@ -521,7 +523,7 @@ class TreeNode(object):
 
     def swap_children(self):
         """ Swaps current children order."""
-        if len(self.children)>1:
+        if len(self.children) > 1:
             self.children.reverse()
 
 
@@ -535,8 +537,8 @@ class TreeNode(object):
 
     def get_sisters(self):
         """ Returns an indepent list of sister nodes."""
-        if self.up!=None:
-            return [ch for ch in self.up.children if ch!=self]
+        if self.up != None:
+            return [ch for ch in self.up.children if ch != self]
         else:
             return []
 
@@ -577,8 +579,8 @@ class TreeNode(object):
 
     def get_descendants(self, strategy="levelorder", is_leaf_fn=None):
         """ Returns a list of all (leaves and internal) descendant nodes."""
-        return [n for n in self.iter_descendants(strategy=strategy, \
-                                                 is_leaf_fn=is_leaf_fn)]
+        return [n for n in self.iter_descendants(
+            strategy=strategy, is_leaf_fn=is_leaf_fn)]
 
 
     def traverse(self, strategy="levelorder", is_leaf_fn=None):
@@ -600,12 +602,11 @@ class TreeNode(object):
             traverse a tree by dynamically collapsing internal nodes matching
             ``is_leaf_fn``.
         """
-    
-        if strategy=="preorder":
+        if strategy == "preorder":
             return self._iter_descendants_preorder(is_leaf_fn=is_leaf_fn)
-        elif strategy=="levelorder":
+        elif strategy == "levelorder":
             return self._iter_descendants_levelorder(is_leaf_fn=is_leaf_fn)
-        elif strategy=="postorder":
+        elif strategy == "postorder":
             return self._iter_descendants_postorder(is_leaf_fn=is_leaf_fn)
 
 
@@ -663,7 +664,7 @@ class TreeNode(object):
     def _iter_descendants_levelorder(self, is_leaf_fn=None):
         """ Iterate over all desdecendant nodes."""
         tovisit = deque([self])
-        while len(tovisit)>0:
+        while len(tovisit) > 0:
             node = tovisit.popleft()
             yield node
             if not is_leaf_fn or not is_leaf_fn(node):
@@ -936,7 +937,8 @@ class TreeNode(object):
 
         """
         # Init fasthest node to current farthest leaf
-        farthest_node, farthest_dist = self.get_farthest_leaf(topology_only=topology_only)
+        farthest_node, farthest_dist = self.get_farthest_leaf(
+            topology_only=topology_only)
 
         prev = self
         cdist = 0.0 if topology_only else prev.dist
@@ -945,7 +947,8 @@ class TreeNode(object):
             for ch in current.children:
                 if ch != prev:
                     if not ch.is_leaf():
-                        fnode, fdist = ch.get_farthest_leaf(topology_only=topology_only)
+                        fnode, fdist = ch.get_farthest_leaf(
+                            topology_only=topology_only)
                     else:
                         fnode = ch
                         fdist = 0
@@ -1042,7 +1045,7 @@ class TreeNode(object):
         nB, A2B_dist = nA.get_farthest_node()
 
         outgroup = nA
-        middist  = A2B_dist / 2.0
+        middist = A2B_dist / 2.0
         cdist = 0
         current = nA
         while current is not None:
@@ -1059,8 +1062,8 @@ class TreeNode(object):
         names_library=None, 
         reuse_names=False,
         random_branches=False, 
-        branch_range=(0,1),
-        support_range=(0,1)):
+        branch_range=(0, 1),
+        support_range=(0, 1)):
         """
         Generates a random topology by populating current node.
 
@@ -1117,7 +1120,7 @@ class TreeNode(object):
                 c2.support = 1.0
 
         # next contains leaf nodes
-        charset =  "abcdefghijklmnopqrstuvwxyz"
+        charset = "abcdefghijklmnopqrstuvwxyz"
         if names_library:
             names_library = deque(names_library)
         else:
@@ -1144,7 +1147,6 @@ class TreeNode(object):
             a node instance within the same tree structure that will be 
             used as a basal node.
         """
-
         outgroup = _translate_nodes(self, outgroup)
 
         if self == outgroup:
@@ -1385,7 +1387,6 @@ class TreeNode(object):
     ################################################################
     ## BIG functions for tree comparison, w some external imports
     ################################################################
-    ## this is biiiiggg
     def robinson_foulds(self, 
         t2, 
         attr_t1="name", 
@@ -1449,14 +1450,22 @@ class TreeNode(object):
             raise TreeError('Duplicated items found in reference tree')
 
         if expand_polytomies:
-            ref_trees = [Tree(nw) for nw in
-                         ref_t.expand_polytomies(map_attr=attr_t1,
-                                                 polytomy_size_limit=polytomy_size_limit,
-                                                 skip_large_polytomies=skip_large_polytomies)]
-            target_trees = [Tree(nw) for nw in
-                            target_t.expand_polytomies(map_attr=attr_t2,
-                                                       polytomy_size_limit=polytomy_size_limit,
-                                                       skip_large_polytomies=skip_large_polytomies)]
+            ref_trees = [
+                TreeNode(nw) for nw in
+                ref_t.expand_polytomies(
+                    map_attr=attr_t1,
+                    polytomy_size_limit=polytomy_size_limit,
+                    skip_large_polytomies=skip_large_polytomies
+                    )
+                ]
+            target_trees = [
+                TreeNode(nw) for nw in
+                target_t.expand_polytomies(
+                    map_attr=attr_t2,
+                    polytomy_size_limit=polytomy_size_limit,
+                    skip_large_polytomies=skip_large_polytomies,
+                    )
+                ]
             attr_t1, attr_t2 = "name", "name"
         else:
             ref_trees = [ref_t]
@@ -1557,192 +1566,192 @@ class TreeNode(object):
         return min_comparison
 
 
-    def compare(self, 
-        ref_tree, 
-        use_collateral=False, 
-        min_support_source=0.0, 
-        min_support_ref=0.0,
-        has_duplications=False, 
-        expand_polytomies=False, 
-        unrooted=False,
-        max_treeko_splits_to_be_artifact=1000, 
-        ref_tree_attr='name', 
-        source_tree_attr='name'):
-        """
-        compare this tree with another using robinson foulds symmetric difference
-        and number of shared edges. Trees of different sizes and with duplicated
-        items allowed.
+    # def compare(self, 
+    #     ref_tree, 
+    #     use_collateral=False, 
+    #     min_support_source=0.0, 
+    #     min_support_ref=0.0,
+    #     has_duplications=False, 
+    #     expand_polytomies=False, 
+    #     unrooted=False,
+    #     max_treeko_splits_to_be_artifact=1000, 
+    #     ref_tree_attr='name', 
+    #     source_tree_attr='name'):
+    #     """
+    #     compare this tree with another using robinson foulds symmetric difference
+    #     and number of shared edges. Trees of different sizes and with duplicated
+    #     items allowed.
 
-        returns: a Python dictionary with results
-        """
-        source_tree = self
+    #     returns: a Python dictionary with results
+    #     """
+    #     source_tree = self
 
-        def _safe_div(a, b):
-            if a != 0:
-                return a / float(b)
-            else: return 0.0
+    #     def _safe_div(a, b):
+    #         if a != 0:
+    #             return a / float(b)
+    #         else: return 0.0
 
-        def _compare(src_tree, ref_tree):
-            # calculate partitions and rf distances
-            rf, maxrf, common, ref_p, src_p, ref_disc, src_disc  = ref_tree.robinson_foulds(src_tree,
-                                                                                            expand_polytomies=expand_polytomies,
-                                                                                            unrooted_trees=unrooted,
-                                                                                            attr_t1=ref_tree_attr,
-                                                                                            attr_t2=source_tree_attr,
-                                                                                            min_support_t2=min_support_source,
-                                                                                            min_support_t1=min_support_ref)
+    #     def _compare(src_tree, ref_tree):
+    #         # calculate partitions and rf distances
+    #         rf, maxrf, common, ref_p, src_p, ref_disc, src_disc  = ref_tree.robinson_foulds(src_tree,
+    #                                                                                         expand_polytomies=expand_polytomies,
+    #                                                                                         unrooted_trees=unrooted,
+    #                                                                                         attr_t1=ref_tree_attr,
+    #                                                                                         attr_t2=source_tree_attr,
+    #                                                                                         min_support_t2=min_support_source,
+    #                                                                                         min_support_t1=min_support_ref)
 
-            # if trees share leaves, count their distances
-            if len(common) > 0 and src_p and ref_p:
-                if unrooted:
-                    valid_ref_edges = set([p for p in (ref_p - ref_disc) if len(p[0])>1 and len(p[1])>0])
-                    valid_src_edges = set([p for p in (src_p - src_disc) if len(p[0])>1 and len(p[1])>0])
-                    common_edges = valid_ref_edges & valid_src_edges
-                else:
+    #         # if trees share leaves, count their distances
+    #         if len(common) > 0 and src_p and ref_p:
+    #             if unrooted:
+    #                 valid_ref_edges = set([p for p in (ref_p - ref_disc) if len(p[0])>1 and len(p[1])>0])
+    #                 valid_src_edges = set([p for p in (src_p - src_disc) if len(p[0])>1 and len(p[1])>0])
+    #                 common_edges = valid_ref_edges & valid_src_edges
+    #             else:
                     
-                    valid_ref_edges = set([p for p in (ref_p - ref_disc) if len(p)>1])
-                    valid_src_edges = set([p for p in (src_p - src_disc) if len(p)>1])
-                    common_edges = valid_ref_edges & valid_src_edges
+    #                 valid_ref_edges = set([p for p in (ref_p - ref_disc) if len(p)>1])
+    #                 valid_src_edges = set([p for p in (src_p - src_disc) if len(p)>1])
+    #                 common_edges = valid_ref_edges & valid_src_edges
                     
-            else:
-                valid_ref_edges = set()
-                valid_src_edges = set()
-                common_edges = set()
+    #         else:
+    #             valid_ref_edges = set()
+    #             valid_src_edges = set()
+    #             common_edges = set()
 
-                # # % of ref edges found in tree
-                # ref_found.append(float(len(p2 & p1)) / reftree_edges)
+    #             # # % of ref edges found in tree
+    #             # ref_found.append(float(len(p2 & p1)) / reftree_edges)
 
-                # # valid edges in target, discard also leaves
-                # p2bis = set([p for p in (p2-d2) if len(p[0])>1 and len(p[1])>1])
-                # if p2bis:
-                #     incompatible_target_branches = float(len((p2-d2) - p1))
-                #     target_found.append(1 - (incompatible_target_branches / (len(p2-d2))))
+    #             # # valid edges in target, discard also leaves
+    #             # p2bis = set([p for p in (p2-d2) if len(p[0])>1 and len(p[1])>1])
+    #             # if p2bis:
+    #             #     incompatible_target_branches = float(len((p2-d2) - p1))
+    #             #     target_found.append(1 - (incompatible_target_branches / (len(p2-d2))))
 
-            return rf, maxrf, len(common), valid_ref_edges, valid_src_edges, common_edges
+    #         return rf, maxrf, len(common), valid_ref_edges, valid_src_edges, common_edges
 
 
-        total_valid_ref_edges = len([n for n in ref_tree.traverse() if n.children and n.support > min_support_ref])
-        result = {}
-        if has_duplications:
-            orig_target_size = len(source_tree)
-            ntrees, ndups, sp_trees = source_tree.get_speciation_trees(
-                autodetect_duplications=True, newick_only=True,
-                target_attr=source_tree_attr, map_features=[source_tree_attr, "support"])
+    #     total_valid_ref_edges = len([n for n in ref_tree.traverse() if n.children and n.support > min_support_ref])
+    #     result = {}
+    #     if has_duplications:
+    #         orig_target_size = len(source_tree)
+    #         ntrees, ndups, sp_trees = source_tree.get_speciation_trees(
+    #             autodetect_duplications=True, newick_only=True,
+    #             target_attr=source_tree_attr, map_features=[source_tree_attr, "support"])
 
-            if ntrees < max_treeko_splits_to_be_artifact:
-                all_rf = []
-                ref_found = []
-                src_found = []
-                tree_sizes = []
-                all_max_rf = []
-                common_names = 0
+    #         if ntrees < max_treeko_splits_to_be_artifact:
+    #             all_rf = []
+    #             ref_found = []
+    #             src_found = []
+    #             tree_sizes = []
+    #             all_max_rf = []
+    #             common_names = 0
 
-                for subtree_nw in sp_trees:
+    #             for subtree_nw in sp_trees:
 
-                    #if seedid and not use_collateral and (seedid not in subtree_nw):
-                    #    continue
-                    subtree = source_tree.__class__(subtree_nw, sp_naming_function = source_tree._speciesFunction)
-                    if not subtree.children:
-                        continue
+    #                 #if seedid and not use_collateral and (seedid not in subtree_nw):
+    #                 #    continue
+    #                 subtree = source_tree.__class__(subtree_nw, sp_naming_function = source_tree._speciesFunction)
+    #                 if not subtree.children:
+    #                     continue
 
-                    # only necessary if rf function is going to filter by support
-                    # value.  It slows downs the analysis, obviously, as it has to
-                    # find the support for each node in the treeko tree from the
-                    # original one.
-                    if min_support_source > 0:
-                        subtree_content = subtree.get_cached_content(store_attr='name')
-                        for n in subtree.traverse():
-                            if n.children:
-                                n.support = source_tree.get_common_ancestor(subtree_content[n]).support
+    #                 # only necessary if rf function is going to filter by support
+    #                 # value.  It slows downs the analysis, obviously, as it has to
+    #                 # find the support for each node in the treeko tree from the
+    #                 # original one.
+    #                 if min_support_source > 0:
+    #                     subtree_content = subtree.get_cached_content(store_attr='name')
+    #                     for n in subtree.traverse():
+    #                         if n.children:
+    #                             n.support = source_tree.get_common_ancestor(subtree_content[n]).support
 
-                    total_rf, max_rf, ncommon, valid_ref_edges, valid_src_edges, common_edges = _compare(subtree, ref_tree)
+    #                 total_rf, max_rf, ncommon, valid_ref_edges, valid_src_edges, common_edges = _compare(subtree, ref_tree)
 
-                    all_rf.append(total_rf)
-                    all_max_rf.append(max_rf)
-                    tree_sizes.append(ncommon)
+    #                 all_rf.append(total_rf)
+    #                 all_max_rf.append(max_rf)
+    #                 tree_sizes.append(ncommon)
 
-                    if unrooted:
-                        ref_found_in_src = len(common_edges)/float(len(valid_ref_edges)) if valid_ref_edges else None
-                        src_found_in_ref = len(common_edges)/float(len(valid_src_edges)) if valid_src_edges else None
-                    else:
-                        # in rooted trees, we want to discount the root edge
-                        # from the percentage of congruence. Otherwise we will never see a 0%
-                        # congruence for totally different trees
-                        ref_found_in_src = (len(common_edges)-1)/float(len(valid_ref_edges)-1) if len(valid_ref_edges)>1 else None
-                        src_found_in_ref = (len(common_edges)-1)/float(len(valid_src_edges)-1) if len(valid_src_edges)>1 else None
+    #                 if unrooted:
+    #                     ref_found_in_src = len(common_edges)/float(len(valid_ref_edges)) if valid_ref_edges else None
+    #                     src_found_in_ref = len(common_edges)/float(len(valid_src_edges)) if valid_src_edges else None
+    #                 else:
+    #                     # in rooted trees, we want to discount the root edge
+    #                     # from the percentage of congruence. Otherwise we will never see a 0%
+    #                     # congruence for totally different trees
+    #                     ref_found_in_src = (len(common_edges)-1)/float(len(valid_ref_edges)-1) if len(valid_ref_edges)>1 else None
+    #                     src_found_in_ref = (len(common_edges)-1)/float(len(valid_src_edges)-1) if len(valid_src_edges)>1 else None
                         
-                    if ref_found_in_src is not None:
-                        ref_found.append(ref_found_in_src)
+    #                 if ref_found_in_src is not None:
+    #                     ref_found.append(ref_found_in_src)
                         
-                    if src_found_in_ref is not None:
-                        src_found.append(src_found_in_ref)
+    #                 if src_found_in_ref is not None:
+    #                     src_found.append(src_found_in_ref)
 
-                if all_rf:
-                    # Treeko speciation distance
-                    alld = [_safe_div(all_rf[i], float(all_max_rf[i])) for i in range(len(all_rf))]
-                    a = sum([alld[i] * tree_sizes[i] for i in range(len(all_rf))])
-                    b = float(sum(tree_sizes))
-                    treeko_d = a/b if a else 0.0
-                    result["treeko_dist"] = treeko_d
+    #             if all_rf:
+    #                 # Treeko speciation distance
+    #                 alld = [_safe_div(all_rf[i], float(all_max_rf[i])) for i in range(len(all_rf))]
+    #                 a = sum([alld[i] * tree_sizes[i] for i in range(len(all_rf))])
+    #                 b = float(sum(tree_sizes))
+    #                 treeko_d = a/b if a else 0.0
+    #                 result["treeko_dist"] = treeko_d
 
-                    result["rf"] = utils.mean(all_rf)
-                    result["max_rf"] = max(all_max_rf)
-                    result["effective_tree_size"] = utils.mean(tree_sizes)
-                    result["norm_rf"] = utils.mean([_safe_div(all_rf[i], float(all_max_rf[i])) for i in range(len(all_rf))])
+    #                 result["rf"] = utils.mean(all_rf)
+    #                 result["max_rf"] = max(all_max_rf)
+    #                 result["effective_tree_size"] = utils.mean(tree_sizes)
+    #                 result["norm_rf"] = utils.mean([_safe_div(all_rf[i], float(all_max_rf[i])) for i in range(len(all_rf))])
 
-                    result["ref_edges_in_source"] = utils.mean(ref_found)
-                    result["source_edges_in_ref"] = utils.mean(src_found)
+    #                 result["ref_edges_in_source"] = utils.mean(ref_found)
+    #                 result["source_edges_in_ref"] = utils.mean(src_found)
                     
-                    result["source_subtrees"] = len(all_rf)
-                    result["common_edges"] = set()
-                    result["source_edges"] = set()
-                    result["ref_edges"] = set()
-        else:
-            total_rf, max_rf, ncommon, valid_ref_edges, valid_src_edges, common_edges = _compare(source_tree, ref_tree)
+    #                 result["source_subtrees"] = len(all_rf)
+    #                 result["common_edges"] = set()
+    #                 result["source_edges"] = set()
+    #                 result["ref_edges"] = set()
+    #     else:
+    #         total_rf, max_rf, ncommon, valid_ref_edges, valid_src_edges, common_edges = _compare(source_tree, ref_tree)
 
-            result["rf"] = float(total_rf) if max_rf else "NA"
-            result["max_rf"] = float(max_rf)
-            if unrooted:
-                result["ref_edges_in_source"] = len(common_edges)/float(len(valid_ref_edges)) if valid_ref_edges else "NA"
-                result["source_edges_in_ref"] = len(common_edges)/float(len(valid_src_edges)) if valid_src_edges else "NA"
-            else:
-                # in rooted trees, we want to discount the root edge from the
-                # percentage of congruence. Otherwise we will never see a 0%
-                # congruence for totally different trees
-                result["ref_edges_in_source"] = (len(common_edges)-1)/float(len(valid_ref_edges)-1) if len(valid_ref_edges)>1 else "NA"
-                result["source_edges_in_ref"] = (len(common_edges)-1)/float(len(valid_src_edges)-1) if len(valid_src_edges)>1 else "NA"
+    #         result["rf"] = float(total_rf) if max_rf else "NA"
+    #         result["max_rf"] = float(max_rf)
+    #         if unrooted:
+    #             result["ref_edges_in_source"] = len(common_edges)/float(len(valid_ref_edges)) if valid_ref_edges else "NA"
+    #             result["source_edges_in_ref"] = len(common_edges)/float(len(valid_src_edges)) if valid_src_edges else "NA"
+    #         else:
+    #             # in rooted trees, we want to discount the root edge from the
+    #             # percentage of congruence. Otherwise we will never see a 0%
+    #             # congruence for totally different trees
+    #             result["ref_edges_in_source"] = (len(common_edges)-1)/float(len(valid_ref_edges)-1) if len(valid_ref_edges)>1 else "NA"
+    #             result["source_edges_in_ref"] = (len(common_edges)-1)/float(len(valid_src_edges)-1) if len(valid_src_edges)>1 else "NA"
 
-            result["effective_tree_size"] = ncommon
-            result["norm_rf"] = total_rf/float(max_rf) if max_rf else "NA"
-            result["treeko_dist"] = "NA"
-            result["source_subtrees"] = 1
-            result["common_edges"] = common_edges
-            result["source_edges"] = valid_src_edges
-            result["ref_edges"] = valid_ref_edges
-        return result
-
-
-    def _diff(self, t2, output='topology', attr_t1='name', attr_t2='name', color=True):
-        """
-        Show or return the difference between two tree topologies.
-        :param [raw|table|topology|diffs|diffs_tab] output: Output type
-        """
-        from ..tools import ete_diff
-        difftable = ete_diff.treediff(self, t2, attr1=attr_t1, attr2=attr_t2)
-        if output == "topology":
-            ete_diff.show_difftable_topo(difftable, attr_t1, attr_t2, usecolor=color)
-        elif output == "diffs":
-            ete_diff.show_difftable(difftable)
-        elif output == "diffs_tab":
-            ete_diff.show_difftable_tab(difftable)
-        elif output == 'table':
-            rf, rf_max, _, _, _, _, _ = self.robinson_foulds(t2, attr_t1=attr_t1, attr_t2=attr_t2)[:2]
-            ete_diff.show_difftable_summary(difftable, rf, rf_max)
-        else:
-            return difftable
+    #         result["effective_tree_size"] = ncommon
+    #         result["norm_rf"] = total_rf/float(max_rf) if max_rf else "NA"
+    #         result["treeko_dist"] = "NA"
+    #         result["source_subtrees"] = 1
+    #         result["common_edges"] = common_edges
+    #         result["source_edges"] = valid_src_edges
+    #         result["ref_edges"] = valid_ref_edges
+    #     return result
 
 
-    def iter_edges(self, cached_content = None):
+    # def _diff(self, t2, output='topology', attr_t1='name', attr_t2='name', color=True):
+    #     """
+    #     Show or return the difference between two tree topologies.
+    #     :param [raw|table|topology|diffs|diffs_tab] output: Output type
+    #     """
+    #     from ..tools import ete_diff
+    #     difftable = ete_diff.treediff(self, t2, attr1=attr_t1, attr2=attr_t2)
+    #     if output == "topology":
+    #         ete_diff.show_difftable_topo(difftable, attr_t1, attr_t2, usecolor=color)
+    #     elif output == "diffs":
+    #         ete_diff.show_difftable(difftable)
+    #     elif output == "diffs_tab":
+    #         ete_diff.show_difftable_tab(difftable)
+    #     elif output == 'table':
+    #         rf, rf_max, _, _, _, _, _ = self.robinson_foulds(t2, attr_t1=attr_t1, attr_t2=attr_t2)[:2]
+    #         ete_diff.show_difftable_summary(difftable, rf, rf_max)
+    #     else:
+    #         return difftable
+
+
+    def iter_edges(self, cached_content=None):
         """
         Iterate over the list of edges of a tree. Each egde is represented as a
         tuple of two elements, each containing the list of nodes separated by
@@ -1752,10 +1761,10 @@ class TreeNode(object):
             cached_content = self.get_cached_content()
         all_leaves = cached_content[self]
         for n, side1 in six.iteritems(cached_content):
-            yield (side1, all_leaves-side1)
+            yield (side1, all_leaves - side1)
 
 
-    def get_edges(self, cached_content = None):
+    def get_edges(self, cached_content=None):
         """
         Returns the list of edges of a tree. Each egde is represented as a
         tuple of two elements, each containing the list of nodes separated by
@@ -1764,30 +1773,30 @@ class TreeNode(object):
         return [edge for edge in self.iter_edges(cached_content)]
 
 
-    def standardize(self, delete_orphan=True, preserve_branch_length=True):
-        """
-        process current tree structure to produce a standardized topology: nodes
-        with only one child are removed and multifurcations are automatically resolved.
-        """
-        self.resolve_polytomy()
-        for n in self.get_descendants():
-            if len(n.children) == 1:
-                n.delete(prevent_nondicotomic=True,
-                         preserve_branch_length=preserve_branch_length)
+    # def standardize(self, delete_orphan=True, preserve_branch_length=True):
+    #     """
+    #     process current tree structure to produce a standardized topology: nodes
+    #     with only one child are removed and multifurcations are automatically resolved.
+    #     """
+    #     self.resolve_polytomy()
+    #     for n in self.get_descendants():
+    #         if len(n.children) == 1:
+    #             n.delete(prevent_nondicotomic=True,
+    #                      preserve_branch_length=preserve_branch_length)
 
 
     def get_topology_id(self, attr="name"):
         """
-        Returns the unique ID representing the topology of the current tree. Two
-        trees with the same topology will produce the same id. If trees are
+        Returns the unique ID representing the topology of the current tree. 
+        Two trees with the same topology will produce the same id. If trees are
         unrooted, make sure that the root node is not binary or use the
         tree.unroot() function before generating the topology id.
 
-        This is useful to detect the number of unique topologies over a bunch of
-        trees, without requiring full distance methods.
+        This is useful to detect the number of unique topologies over a bunch 
+        of trees, without requiring full distance methods.
 
-        The id is, by default, calculated based on the terminal node's names. Any
-        other node attribute could be used instead.
+        The id is, by default, calculated based on the terminal node's names. 
+        Any other node attribute could be used instead.
         """
         edge_keys = []
         for s1, s2 in self.get_edges():
@@ -1797,37 +1806,39 @@ class TreeNode(object):
         return md5(str(sorted(edge_keys)).encode('utf-8')).hexdigest()
 
 
-    ################# useful
-    def convert_to_ultrametric(self, tree_length=None, strategy='balanced'):
-        """
-        Converts a tree into ultrametric topology (all leaves must have
-        the same distance to root).
-        """
-        node2max_depth = {}
-        for node in self.traverse("postorder"):
-            if not node.is_leaf():
-                max_depth = max([node2max_depth[c] for c in node.children]) + 1
-                node2max_depth[node] = max_depth
-            else:
-                node2max_depth[node] = 1
-        node2dist = {self: 0.0}
-        if not tree_length:
-            most_distant_leaf, tree_length = self.get_farthest_leaf()
-        else:
-            tree_length = float(tree_length)
+    # ################# useful
+    # def convert_to_ultrametric(self, tree_length=None, strategy='balanced'):
+    #     """
+    #     Converts a tree into ultrametric topology (all leaves must have
+    #     the same distance to root).
+    #     """
+    #     node2max_depth = {}
+    #     for node in self.traverse("postorder"):
+    #         if not node.is_leaf():
+    #             max_depth = max([node2max_depth[c] for c in node.children]) + 1
+    #             node2max_depth[node] = max_depth
+    #         else:
+    #             node2max_depth[node] = 1
+    #     node2dist = {self: 0.0}
+    #     if not tree_length:
+    #         most_distant_leaf, tree_length = self.get_farthest_leaf()
+    #     else:
+    #         tree_length = float(tree_length)
 
-        step = tree_length / node2max_depth[self]
-        for node in self.iter_descendants("levelorder"):
-            if strategy == "balanced":
-                node.dist = (tree_length - node2dist[node.up]) / node2max_depth[node]
-                node2dist[node] =  node.dist + node2dist[node.up]
-            elif strategy == "fixed":
-                if not node.is_leaf():
-                    node.dist = step
-                else:
-                    node.dist = tree_length - ((node2dist[node.up]) * step)
-                node2dist[node] = node2dist[node.up] + 1
-            node.dist = node.dist
+    #     step = tree_length / node2max_depth[self]
+    #     for node in self.iter_descendants("levelorder"):
+    #         if strategy == "balanced":
+    #             node.dist = (tree_length - node2dist[node.up]) / node2max_depth[node]
+    #             node2dist[node] =  node.dist + node2dist[node.up]
+    #         elif strategy == "fixed":
+    #             if not node.is_leaf():
+    #                 node.dist = step
+    #             else:
+    #                 node.dist = tree_length - ((node2dist[node.up]) * step)
+    #             node2dist[node] = node2dist[node.up] + 1
+    #         node.dist = node.dist
+
+
 
     ########################################## more not so useful stuff
     def check_monophyly(self, 
@@ -1982,20 +1993,20 @@ class TreeNode(object):
             pass
 
         def add_leaf(tree, label):
-          yield (label, tree)
-          if not isinstance(tree, TipTuple) and isinstance(tree, tuple):
-            for left in add_leaf(tree[0], label):
-              yield (left, tree[1])
+            yield (label, tree)
+            if not isinstance(tree, TipTuple) and isinstance(tree, tuple):
+                for left in add_leaf(tree[0], label):
+                    yield (left, tree[1])
             for right in add_leaf(tree[1], label):
-              yield (tree[0], right)
+                yield (tree[0], right)
 
         def enum_unordered(labels):
-          if len(labels) == 1:
-            yield labels[0]
-          else:
-            for tree in enum_unordered(labels[1:]):
-              for new_tree in add_leaf(tree, labels[0]):
-                yield new_tree
+            if len(labels) == 1:
+                yield labels[0]
+            else:
+                for tree in enum_unordered(labels[1:]):
+                    for new_tree in add_leaf(tree, labels[0]):
+                        yield new_tree
 
         n2subtrees = {}
         for n in self.traverse("postorder"):
@@ -2042,7 +2053,7 @@ class TreeNode(object):
                 children = list(node.children)
                 node.children = []
                 next_node = root = node
-                for i in range(len(children)-2):
+                for i in range(len(children) - 2):
                     next_node = next_node.add_child()
                     next_node.dist = default_dist
                     next_node.support = default_support
@@ -2059,18 +2070,17 @@ class TreeNode(object):
             _resolve(n)
 
 
-## alias
-Tree = TreeNode        
-
 
 def _translate_nodes(root, *nodes):
-    """unknown function ..."""
+    """
+    Convert node names into node instances...
+    """
     #name2node = {[n, None] for n in nodes if type(n) is str}
     name2node = dict([[n, None] for n in nodes if type(n) is str])
     for n in root.traverse():
         if n.name in name2node:
             if name2node[n.name] is not None:
-                raise TreeError("Ambiguous node name: "+str(n.name))
+                raise TreeError("Ambiguous node name: {}".format(str(n.name)))
             else:
                 name2node[n.name] = n
 
@@ -2081,7 +2091,7 @@ def _translate_nodes(root, *nodes):
     valid_nodes = []
     for n in nodes:
         if type(n) is not str:
-            if type(n) is not root.__class__ :
+            if type(n) is not root.__class__:
                 raise TreeError("Invalid target node: "+str(n))
             else:
                 valid_nodes.append(n)
