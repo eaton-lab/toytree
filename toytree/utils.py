@@ -7,6 +7,7 @@ import toytree
 import random  # b/c ete uses random seed.
 import re
 
+
 #######################################################
 # Exception Classes
 #######################################################
@@ -21,12 +22,7 @@ class ToytreeError(Exception):
 class TreeMod:
     """
     Return a tree with edge lengths modified according to one of 
-    the jitter functions. 
-
-    node_slider: 
-
-    node_multiplier:
-
+    the mod functions. 
     """
     def __init__(self, ttree):
         self._ttree = ttree
@@ -127,6 +123,7 @@ class TreeMod:
 #   ------ uses distance matrix
 # - UPGMA tree infer
 #   ------ uses distance matrix
+
 
 #class TreeMoves:
 #     def move_spr(self):
@@ -311,9 +308,6 @@ class RandomTree:
             .mod.make_ultrametric()
             .mod.node_scale_root_height(treeheight)
         )
-
-        # set treeeheight
-        self = self
 
         # set tipnames randomly (doesn't have to match idx)
         nidx = list(range(self.ntips))
