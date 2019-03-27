@@ -292,7 +292,7 @@ class MultiTree:
 
 
 
-
+# TODO: use md5 hash to reduce tree counting...
 class ConsensusTree:
     """
     An extended majority rule consensus function.
