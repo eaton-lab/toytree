@@ -12,6 +12,7 @@ from .TreeStyle import TreeStyle
 from .Coords import Coords
 from .Drawing import Drawing
 from .utils import ToytreeError, TreeMod, fuzzy_match_tipnames
+# from .TreeParser import TreeParser
 
 
 class ToyTree:
@@ -19,6 +20,7 @@ class ToyTree:
 
         # get the tree as a TreeNode object
         self.treenode = None
+        # self.treenode = TreeParser(newick, tree_format=tree_format).treenodes[0]
         self._parse_to_TreeNode(newick, tree_format)
 
         # set tips order if fixing for multi-tree plotting (default None)
@@ -459,7 +461,15 @@ class ToyTree:
         return nself
 
 
-    def rotate_node(self, names=None, wildcard=None, regex=None, idx=None):
+    # TODO: could use ete swap_children func to mod tree...
+    def rotate_node(
+        self, 
+        names=None, 
+        wildcard=None, 
+        regex=None, 
+        idx=None, 
+        # modify_tree=False,
+        ):
         """
         Returns a ToyTree with the selected node rotated for plotting.
         tip colors do not align correct currently if nodes are rotated...
@@ -556,7 +566,7 @@ class ToyTree:
         # get treenode of the common ancestor of selected tips
         try:
             out = fuzzy_match_tipnames(nself, names, wildcard, regex)
-        except ToytreeError as inst:
+        except ToytreeError:
             # try reciprocal taxon list
             out = fuzzy_match_tipnames(
                 nself, names, wildcard, regex, mrca=False, mono=False)
