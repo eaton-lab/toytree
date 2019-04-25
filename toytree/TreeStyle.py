@@ -116,9 +116,8 @@ STYLES = {
         'tip_labels_align': False, 
         'node_labels': False, 
         'node_sizes': 0, 
-        'tip_labels': True, 
         'edge_style': {
-            'opacity': 0.1, 
+            'opacity': 0.05, 
         },
         'tip_labels_style': {
             '-toyplot-anchor-shift': "15px",
@@ -160,7 +159,6 @@ class TreeStyle(object):
         # update subdict style attributes
         for key, val in isdicts.items():
             setattr(self, key, val)
-            # self.__setattr__(key, val)
 
 
     def to_dict(self):
