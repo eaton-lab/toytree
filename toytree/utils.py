@@ -212,7 +212,7 @@ class TreeMod:
 #######################################################
 # Random Tree generation Class
 #######################################################
-class RandomTree:
+class RandomTree(object):
 
     @staticmethod
     def coaltree(ntips, ne=None, seed=None):
@@ -340,7 +340,7 @@ class RandomTree:
             rtree = cherry
         
         # get toytree from newick            
-        tre = toytree.tree(rtree.write(fmt=9))
+        tre = toytree.tree(rtree.write(tree_format=9))
         tre = tre.mod.make_ultrametric()
         self = tre.mod.node_scale_root_height(treeheight)
         self._coords.update()
@@ -382,7 +382,7 @@ class RandomTree:
                 idx += 1
         
         # get toytree from newick            
-        tre = toytree.tree(rtree.write(fmt=9))
+        tre = toytree.tree(rtree.write(tree_format=9))
         tre = tre.mod.make_ultrametric()
         self = tre.mod.node_scale_root_height(treeheight)
         self._coords.update()
@@ -468,33 +468,30 @@ def fuzzy_match_tipnames(ttree, names, wildcard, regex, mrca=True, mono=True):
         raise ToytreeError("no matching tipnames")       
     tipnames = [i.name for i in tips]
 
-    # get node to use for outgroup
-    # if a single node matched
+    # if a single tipname matched no need to check for monophyly
     if len(tips) == 1:
         if mrca:
             return tips[0]
         else:
-            return tipnames[0]
-
-    # if multiple nodes matched
-    else:
-        # check if they're monophyletic
-        mbool, mtype, mnames = (
-            ttree.treenode.check_monophyly(
-                tipnames, "name", ignore_missing=True)
-        )
-
-        # get mrca node
-        node = ttree.treenode.get_common_ancestor(tips)
-
-        # raise an error if required to be monophyletic but not
-        if mono:
-            if not mbool:
-                raise ToytreeError(
-                    "Taxon list cannot be paraphyletic")
-
-        # return tips or nodes
-        if not mrca:
             return tipnames
-        else:
-            return node
+
+    # if multiple nodes matched, check if they're monophyletic
+    mbool, mtype, mnames = (
+        ttree.treenode.check_monophyly(
+            tipnames, "name", ignore_missing=True)
+    )
+
+    # get mrca node
+    node = ttree.treenode.get_common_ancestor(tips)
+
+    # raise an error if required to be monophyletic but not
+    if mono:
+        if not mbool:
+            raise ToytreeError(
+                "Taxon list cannot be paraphyletic")
+
+    # return tips or nodes
+    if not mrca:
+        return tipnames
+    else:
+        return node
