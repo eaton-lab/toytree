@@ -4,6 +4,7 @@
 A Tree Class object modified as a subset of the ete3.Tree Class
 """
 from __future__ import print_function
+from builtins import range, str
 
 from functools import cmp_to_key
 from collections import deque
@@ -12,8 +13,8 @@ import random
 import six      # <- can remove after dealing with six.iteritems calls...
 from hashlib import md5
 
-from builtins import range, str
-from .newick import read_newick, write_newick
+from .newick import read_newick
+from .newick import write_newick
 
 
 DEFAULT_EDGE_LENGTH = 1.
