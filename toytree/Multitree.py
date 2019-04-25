@@ -3,32 +3,45 @@
 "MultiTree objects"
 
 from __future__ import print_function, absolute_import
-from builtins import str, range
+from builtins import range, str
 
-#from contextlib import contextmanager
-import os
 from copy import deepcopy
+from hashlib import md5
 from collections import defaultdict
-from .etemini import TreeNode
-from .Toytree import ToyTree
-from .TreeStyle import TreeStyle
-from .MultiDrawing import TreeGrid, CloudTree
-from .utils import bpp2newick
+
 import toyplot
 import toyplot.config
-import requests
 import numpy as np
+
+# used in Consensus
+from .etemini import TreeNode
+from .Toytree import ToyTree
+from .TreeParser import TreeParser
+from .TreeStyle import TreeStyle, STYLES
+from .MultiDrawing import TreeGrid, CloudTree
+from .utils import bpp2newick
+
+
 
 
 ###############################################
 # MultiTree Class object
 ###############################################
-class MultiTree:
+class MultiTree(object):
     """
     Toytree MultiTree object for representing multiple trees. 
 
     Several functions are designed for trees with the same set of tips, and 
     may yield erratic behavior if trees have different sets of tips... TODO.
+    
+    Parameters:
+    -----------
+    newick: (str)
+        string, filepath, or URL for a newick or nexus formatted list of trees
+    tree_format: (int)
+        ete format for newick tree structure. Default is 0. 
+    fixed_order: (bool, list, None)    
+        ...
 
     Attributes:
     -----------
@@ -44,19 +57,38 @@ class MultiTree:
     draw_grid_tree:
         Draws a plot with n x m trees in a grid.
     """
-    def __init__(self, newick, fixed_order=False):
+    def __init__(self, newick, tree_format=0):  # , fixed_order=False):
 
         # setting attributes
-        self.newick = newick
         self.style = TreeStyle('m')
-        self._fixed_order = fixed_order   # (<list>, True, False, or None)
-        self._user_order = None
-        self._cons_order = None
         self._i = 0
 
         # parse the newick object into a list of Toytrees
         self.treelist = []
-        self._parse_treelist()
+        if isinstance(newick, str):
+            self.treelist = [
+                ToyTree(i) for i in 
+                TreeParser(newick, tree_format, multitree=True).treenodes
+            ]
+        elif isinstance(newick, (list, tuple)):
+            if isinstance(newick[0], str):
+                self.treelist = [
+                    ToyTree(i) for i in 
+                    TreeParser(newick, tree_format, multitree=True).treenodes
+                ]
+            elif isinstance(newick[0], ToyTree):
+                self.treelist = newick
+
+            elif isinstance(newick[0], TreeNode):
+                self.treelist = [ToyTree(i) for i in newick]
+
+        # set tip plot order for treelist to the first tree order
+        # order trees in treelist to plot in shared order...
+        # self._fixed_order = fixed_order   # (<list>, True, False, or None)
+        # self._user_order = None
+        # self._cons_order = None
+        # self._set_tip_order()
+        # self._parse_treelist()
 
     # attributes of multitrees
     def __len__(self):  
@@ -79,6 +111,23 @@ class MultiTree:
         return self.treelist[0].ntips
 
 
+    @property
+    def ntrees(self):
+        return len(self.treelist)
+
+
+    @property
+    def all_tips_shared(self):
+        #if names are the same in all the trees...
+        alltips_shared = all([
+            set(self.treelist[0].get_tip_labels()) == set(i.get_tip_labels()) 
+            for i in self.treelist
+        ])
+        if alltips_shared:
+            return True
+        return False
+
+
     def copy(self):
         return deepcopy(self)
 
@@ -90,102 +139,34 @@ class MultiTree:
             for tre in self.treelist:
                 outtre.write(tre.newick + "\n")
 
-    # private functions --------------------------------------------
-    def _parse_treelist(self):
+
+    def reset_tree_styles(self):
         """
-        Parse a multiline newick from str, file, or url, and store
-        new attributes to self for .newick, .tree_list, and ._tformat
+        Sets the .style toytree drawing styles to default for all ToyTrees
+        in a MultiTree .treelist. 
         """
-        # if URL prefix then call requests
-        if any(i in self.newick for i in ("http://", "https://")):
-            try:
-                response = requests.get(self.newick)
-                response.raise_for_status()
-                treelines = response.text.strip().split("\n")
-                self._treelines_to_treelist(treelines)
-            except Exception as inst:
-                raise inst
+        for tre in self.treelist:
+            tre.style = TreeStyle('n')
 
-        # if a list then each element is either a toytree or a str
-        elif isinstance(self.newick, list):
-            if isinstance(self.newick[0], ToyTree):
-                treelines = [i.newick for i in self.newick]
-                self._treelines_to_treelist(treelines)
-
-            elif isinstance(self.newick[0], str):
-                treelines = self.newick
-                self._treelines_to_treelist(treelines)
-
-        # assume remaining type is a str -------
-        # check if newick is a file handle
-        elif os.path.isfile(self.newick):
-            self.newick = os.path.abspath(os.path.expanduser(self.newick))
-            with open(self.newick) as infile:
-                treelines = infile.read().strip().split("\n")
-                self._treelines_to_treelist(treelines)
-        else:
-            treelines = self.newick.strip().split("\n")
-            self._treelines_to_treelist(treelines)
-
-
-    def _treelines_to_treelist(self, treelines):
-        "Parses treelist and sets tip order with fixed_order."
-        # check if a bpp tree and convert to normal newick
-        if (" #" in treelines[0]) and (": " in treelines[0]):
-            treelines = [bpp2newick(i.strip()) for i in treelines]
-
-        # convert all to toytrees
-        treelist = [ToyTree(i.strip()) for i in treelines]
-
-        # if names are the same in all the trees...
-        # alltips = all([
-        #     set(treelist[0].get_tip_labels()) == set(i.get_tip_labels()) 
-        #     for i in treelist
-        # ])
-        # if alltips:
-
-        # Raise error if names do not match, advise to use list of toytrees.
-        # TODO:
-
-        # get majrule consensus tree tip order
-        cons = ConsensusTree(treelist)
-        cons.update()
-        self._cons_order = cons.ttree.get_tip_labels()
-
-        # if user-set fixed order for tip plotting
-        if isinstance(self._fixed_order, list):
-            self._user_order = self._fixed_order
-
-        # order to use for constraining ToyTrees: (user > cons > None)
-        order = None
-        if self._user_order:
-            order = self._user_order
-        elif self._fixed_order in (False, None):
-            order = None
-        else:
-            order = self._cons_order
-
-        # build tree list
-        self.treelist = [
-            ToyTree(i.strip(), fixed_order=order) for i in treelines]
 
     # -------------------------------------------------------------------
     # Tree List Statistics or Calculations
     # -------------------------------------------------------------------
-    def get_tip_labels(self):
-        """
-        Returns the tip names in tree plot order starting from zero axis.
-        If fixed_order is a user entered list then names are returned in that
-        order. If fixed_order was True then the consensus tree order is 
-        returned. If fixed_order was None or False then the order of the first
-        ToyTree in .treelist is returned. 
-        """
-        if self._user_order:
-            return self._user_order
-        elif self._cons_order:
-            return self._cons_order
-        else:
-            return self.treelist[0].get_tip_labels()
+    # def get_tip_labels(self):
+    #     """
+    #     Returns the tip names in tree plot order for the *list of tree*, 
+    #     starting from the zero axis. If all trees in the treelist do not 
+    #     share the same set of tips then this will return an error message. 
+
+    #     If fixed_order is a user entered list then names are returned in that
+    #     order. If fixed_order was True then the consensus tree order is 
+    #     returned. If fixed_order was None or False then the order of the first
+    #     ToyTree in .treelist is returned. 
+    #     """
+    #     if not self.all_tips_shared:
+    #         raise Exception(
+    #             "All trees in treelist do not share the same set of tips")
+    #     return self.treelist[0].get_tip_labels()
 
 
     def get_consensus_tree(self, cutoff=0.0, best_tree=None):
@@ -218,33 +199,92 @@ class MultiTree:
     # Tree List Plotting
     # -------------------------------------------------------------------
     def draw_tree_grid(self, 
-        x=1, 
-        y=5, 
+        nrows=None, 
+        ncols=None, 
         start=0, 
         fixed_order=False, 
         shared_axis=False, 
         **kwargs):
-        """
-        Draw a slice of trees into a x,y grid non-overlapping. 
-        x = number of grid cells in x dimension.
-        y = number of grid cells in y dimension.
-        start: starting index of tree slice from .trees.
-        kwargs: plotting functions applied to Canvas, axes, or all marks.
+        """        
+        Draw a slice of x*y trees into a x,y grid non-overlapping. 
+
+        Parameters:
+        -----------
+        x (int):
+            Number of grid cells in x dimension. Default=automatically set.
+        y (int):
+            Number of grid cells in y dimension. Default=automatically set.
+        start (int):
+            Starting index of tree slice from .treelist.
+        kwargs (dict):
+            Toytree .draw() arguments as a dictionary. 
         """
         # return nothing if tree is empty
         if not self.treelist:
             print("Treelist is empty")
             return None, None
 
-        # Toyplot creates a grid and margins and puts trees in them.
-        draw = TreeGrid(self.copy())
+        # make a copy of the treelist so we don't modify the original
+        if not fixed_order:
+            treelist = self.copy().treelist
+        else:
+            if fixed_order is True:
+                fixed_order = self.treelist[0].get_tip_labels()
+            treelist = [
+                ToyTree(i, fixed_order=fixed_order) 
+                for i in self.copy().treelist
+            ]
+
+        # apply kwargs styles to the individual tree styles
+        for tree in treelist:
+            tree.style.update(kwargs)
+
+        # get reasonable values for x,y given treelist length
+        if not (ncols or nrows):
+            ncols = 5
+            nrows = 1
+        elif not (ncols and nrows):
+            if ncols:
+                if ncols == 1:
+                    if self.ntrees <= 5:
+                        nrows = self.ntrees
+                    else:
+                        nrows = 2
+                else:
+                    if self.ntrees <= 10:
+                        nrows = 2
+                    else:
+                        nrows = 3
+
+            if nrows:
+                if nrows == 1:
+                    if self.ntrees <= 5:
+                        ncols = self.ntrees 
+                    else:
+                        ncols = 5
+                else:
+                    if self.ntrees <= 10:
+                        ncols = 5
+                    else:
+                        ncols = 3
+        else:
+            pass
+
+        # Return TereGrid object for debugging
+        draw = TreeGrid(treelist)
         if kwargs.get("debug"):
             return draw
-        canvas, axes = draw.update(x, y, start, shared_axis, **kwargs)
+
+        # Call update to draw plot. Kwargs still here for width, height, axes
+        canvas, axes = draw.update(nrows, ncols, start, shared_axis, **kwargs)
         return canvas, axes
 
 
-    def draw_cloud_tree(self, axes=None, html=False, edge_styles=None, **kwargs):
+    def draw_cloud_tree(self, 
+        axes=None, 
+        html=False,
+        fixed_order=True,
+        **kwargs):
         """
         Draw a series of trees overlapping each other in coordinate space.
         The order of tip_labels is fixed in cloud trees so that trees with 
@@ -263,6 +303,32 @@ class MultiTree:
             print("Treelist is empty")
             return None, None
 
+        # return nothing if tree is empty
+        if not self.all_tips_shared:
+            print("All trees in treelist do not share the same tips")
+            return None, None            
+
+        # make a copy of the treelist so we don't modify the original
+        if not fixed_order:
+            raise Exception(
+                "fixed_order must be either True or a list with the tip order")
+
+        # set fixed order on a copy of the tree list
+        if isinstance(fixed_order, (list, tuple)):
+            pass
+        elif fixed_order is True:
+            fixed_order = self.treelist[0].get_tip_labels()
+        else:
+            raise Exception(
+                "fixed_order argument must be True or a list with the tip order")
+        treelist = [
+            ToyTree(i, fixed_order=fixed_order) for i in self.copy().treelist
+        ]  
+
+        # give advice if user tries to enter tip_labels
+        if kwargs.get("tip_labels"):
+            print(TIP_LABELS_ADVICE)
+
         # set autorender format to png so we don't bog down notebooks
         try:
             changed_autoformat = False
@@ -270,19 +336,25 @@ class MultiTree:
                 toyplot.config.autoformat = "png"
                 changed_autoformat = True
 
-            # no other pre-built tree styles allowed in clouds, only kwargs
-            self.style = TreeStyle('m')
-            censored = {i: j for (i, j) in kwargs.items() if j is not None}
-            self.style.update(censored)
+            # dict of global cloud tree style 
+            mstyle = STYLES['m']
+
+            # if trees in treelist already have some then we don't quash...
+            mstyle.update(
+                {i: j for (i, j) in kwargs.items() if 
+                (j is not None) & (i != "tip_labels")}
+            )
+            for tree in treelist:
+                tree.style.update(mstyle)
 
             # Send a copy of MultiTree to init Drawing object.
-            draw = CloudTree(self.copy(), edge_styles)
+            draw = CloudTree(treelist, **kwargs)
 
             # and create drawing
             if kwargs.get("debug"):
                 return draw
 
-            # if user provided explicit axes then include them
+            # allow user axes, and kwargs for width, height
             canvas, axes = draw.update(axes)
             return canvas, axes
 
@@ -292,7 +364,6 @@ class MultiTree:
 
 
 
-# TODO: use md5 hash to reduce tree counting...
 class ConsensusTree:
     """
     An extended majority rule consensus function.
@@ -306,6 +377,7 @@ class ConsensusTree:
         self.names = self.treelist[0].get_tip_labels()
         self.cutoff = float(cutoff)
         self.namedict = None
+        self.treedict = {}
         self.clade_counts = None
         self.fclade_counts = None
         self.ttree = None
@@ -314,6 +386,10 @@ class ConsensusTree:
         assert cutoff < 1, "cutoff should be a float proportion (e.g., 0.5)"
 
     def update(self):
+
+        # hash a dict to remove duplicate trees
+        self.hash_trees()
+
         # Find which clades occured with freq > cutoff. 
         # Fills namedict, clade_counts
         self.find_clades()
@@ -328,6 +404,20 @@ class ConsensusTree:
         ## todo. make sure no singleton nodes were left behind ...
 
 
+    def hash_trees(self):
+        "hash ladderized tree topologies"       
+        observed = {}
+        for idx, tree in enumerate(self.treelist):
+            nwk = tree.write(tree_format=9)
+            hashed = md5(nwk.encode("utf-8")).hexdigest()
+            if hashed not in observed:
+                observed[hashed] = idx
+                self.treedict[idx] = 1
+            else:
+                idx = observed[hashed]
+                self.treedict[idx] += 1
+
+
     def find_clades(self):
         "Count clade occurrences."
         # index names from the first tree
@@ -336,27 +426,29 @@ class ConsensusTree:
 
         # store counts
         clade_counts = {}
-        for ttree in self.treelist:
+        for tidx, ncopies in self.treedict.items():
             
-            # testing on unrooted trees is easiest...
-            ttree = ttree.unroot()
+            # testing on unrooted trees is easiest but for some reason slow
+            ttree = self.treelist[tidx].unroot()
+
+            # traverse over tree
             for node in ttree.treenode.traverse('preorder'):
                 bits = np.zeros(len(ttree), dtype=np.bool_)
                 for child in node.iter_leaf_names():
                     bits[ndict[child]] = True
 
                 # get bit string and its reverse
-                bitstring = "".join((str(i) for i in bits.astype(int)))
-                revstring = "".join((str(i) for i in np.invert(bits).astype(int)))
+                bitstring = bits.tobytes()
+                revstring = np.invert(bits).tobytes()
 
                 # add to clades first time, then check for inverse next hits
                 if bitstring in clade_counts:
-                    clade_counts[bitstring] += 1
+                    clade_counts[bitstring] += ncopies
                 else:
                     if revstring not in clade_counts:
-                        clade_counts[bitstring] = 1
+                        clade_counts[bitstring] = ncopies
                     else:
-                        clade_counts[revstring] += 1
+                        clade_counts[revstring] += ncopies
 
         # convert to freq
         for key, val in clade_counts.items():
@@ -371,6 +463,7 @@ class ConsensusTree:
 
 
     def filter_clades(self):
+        "Remove conflicting clades and those < cutoff to get majority rule"
         passed = []
         carrs = np.array([list(i[0]) for i in self.clade_counts], dtype=int)
         freqs = np.array([i[1] for i in self.clade_counts])
@@ -456,8 +549,30 @@ class ConsensusTree:
             queue = new_queue
         nodelist = list(nodes.values())
         tre = nodelist[0]
+
         #tre.unroot()
         ## return the tree and other trees if present
         self.ttree = ToyTree(tre.write(format=0))
         self.ttree._coords.update()
         self.nodelist = nodelist
+
+
+# GLOBALS
+TIP_LABELS_ADVICE = """
+Warning: tip_labels arg cannot be used in draw_cloud_tree(). Instead, 
+you must set the tip labels style on the first tree in your treelist. 
+If you wish to change the order of tips then use the fixed_order arg. 
+Example: 
+
+# a set of 10 trees with 5 numbers for tip names
+trees = toytree.mtree([toytree.rtree.imbtree(5) for i in range(10)])
+
+# set style of tip labels in the FIRST tree in treelist
+trees.treelist[0].style.tip_labels = [
+    "tip-number-{}".format(i) for i in trees.treelist[0].get_tip_labels()
+]
+
+# draw a cloud tree using a set tip order for all trees
+trees.draw_cloud_tree(fixed_order=['0', '1', '2', '3', '4'])
+
+"""
