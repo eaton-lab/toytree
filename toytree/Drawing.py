@@ -36,7 +36,6 @@ class Drawing:
         self.edge_widths = [None] * self.nedges
 
         #self.nedges = self.ttree._coords.lines.shape[0]        
-
         # store whether external axes were passed in 
         self._external_axis = False
 
@@ -282,12 +281,14 @@ class Drawing:
             if isinstance(self.style.node_labels, list):
                 assert len(self.style.node_labels) == len(nvals)
                 self.node_labels = self.style.node_labels
+
             # check if user entered a feature else use entered val
             elif isinstance(self.style.node_labels, str):
                 self.node_labels = [self.style.node_labels] * len(nvals)
                 if self.style.node_labels in self.ttree.features:
                     self.node_labels = self.ttree.get_node_values(
-                        self.style.node_labels, 1, 0)                   
+                        self.style.node_labels, 1, 0)
+
             # default to idx at internals if nothing else
             else:
                 self.node_labels = self.ttree.get_node_values("idx", 1, 0)
@@ -690,20 +691,20 @@ class Drawing:
 
 
     def get_dims_from_tree_size(self):
-        "Calculate reasonable height and width for tree given N tips" 
+        "Calculate reasonable canvas height and width for tree given N tips" 
         ntips = len(self.ttree)
         if self.style.orient in ("right", "left"):
-            # long tip-wise dimension
+            # height is long tip-wise dimension
             if not self.style.height:
                 self.style.height = max(275, min(1000, 18 * ntips))
             if not self.style.width:
                 self.style.width = max(350, min(500, 18 * ntips))
         else:
-            # long tip-wise dimension
-            if not self.style.width:
-                self.style.width = max(350, min(1000, 18 * ntips))
+            # width is long tip-wise dimension
             if not self.style.height:
                 self.style.height = max(275, min(500, 18 * ntips))
+            if not self.style.width:
+                self.style.width = max(350, min(1000, 18 * ntips))
 
 
     def get_canvas_and_axes(self, axes):
