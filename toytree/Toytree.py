@@ -2,26 +2,45 @@
 
 from __future__ import print_function, absolute_import
 
-import requests
+# import requests
 import itertools
 from decimal import Decimal
 from copy import deepcopy
 
+# from .etemini import TreeNode
 from .etemini import TreeNode
 from .TreeStyle import TreeStyle
 from .Coords import Coords
 from .Drawing import Drawing
 from .utils import ToytreeError, TreeMod, fuzzy_match_tipnames
-# from .TreeParser import TreeParser
+from .TreeParser import TreeParser
 
 
-class ToyTree:
+class ToyTree(object):
     def __init__(self, newick=None, tree_format=0, fixed_order=None):
+
+        # if loadeing from a Toytree then inherit that trees draw style
+        inherit_style = False
 
         # get the tree as a TreeNode object
         self.treenode = None
-        # self.treenode = TreeParser(newick, tree_format=tree_format).treenodes[0]
-        self._parse_to_TreeNode(newick, tree_format)
+        
+        # load from a TreeNode
+        if isinstance(newick, TreeNode):
+            self.treenode = newick
+
+        # load TreeNode from a ToyTree
+        elif isinstance(newick, ToyTree):
+            self.treenode = newick.treenode
+            inherit_style = True
+
+        # prase a str, URL, or file
+        elif isinstance(newick, (str, bytes)):
+            self.treenode = TreeParser(newick, tree_format).treenodes[0]
+
+        # make an empty tree
+        else:
+            self.treenode = TreeNode()
 
         # set tips order if fixing for multi-tree plotting (default None)
         self._fixed_order = None
@@ -35,7 +54,10 @@ class ToyTree:
 
         # Object for storing default plot settings or saved styles.
         # Calls several update functions when self.draw() to fit canvas.
-        self.style = TreeStyle(tree_style='n')
+        if inherit_style:
+            self.style = newick.style
+        else:
+            self.style = TreeStyle(tree_style='n')
 
         # Object for plot coordinates. Calls .update() whenever tree modified.
         self._coords = Coords(self)
@@ -56,25 +78,25 @@ class ToyTree:
         """ return len of Tree (ntips) """
         return len(self.treenode)
 
-    # --------------------------------------------------------------------
-    # Loading Newick or ...
-    # --------------------------------------------------------------------    
-    def _parse_to_TreeNode(self, newick, tree_format):
-        """
-        Parse the newick string as either text, filepath or URL, and create an
-        ete.TreeNode object as .treenode. If no newick init an empty TreeNode.
-        """
-        if newick:
-            # is newick a URL or string, path?
-            if any((i in newick for i in ("http://", "https://"))):
-                response = requests.get(newick)
-                response.raise_for_status()
-                newick = response.text.strip()
-            # create .treenode attribute as TreeNode
-            self.treenode = TreeNode(newick, format=tree_format)
-        # otherwise make an empty TreeNode object
-        else:
-            self.treenode = TreeNode()
+    # # --------------------------------------------------------------------
+    # # Loading Newick or ...
+    # # --------------------------------------------------------------------    
+    # def _parse_to_TreeNode(self, newick, tree_format):
+    #     """
+    #     Parse the newick string as either text, filepath or URL, and create an
+    #     ete.TreeNode object as .treenode. If no newick init an empty TreeNode.
+    #     """
+    #     if newick:
+    #         # is newick a URL or string, path?
+    #         if any((i in newick for i in ("http://", "https://"))):
+    #             response = requests.get(newick)
+    #             response.raise_for_status()
+    #             newick = response.text.strip()
+    #         # create .treenode attribute as TreeNode
+    #         self.treenode = TreeNode(newick, format=tree_format)
+    #     # otherwise make an empty TreeNode object
+    #     else:
+    #         self.treenode = TreeNode()
 
 
     def _set_fixed_order(self, fixed_order):
@@ -91,7 +113,10 @@ class ToyTree:
     # --------------------------------------------------------------------    
     @property
     def features(self):
-        return self.treenode.features
+        feats = set()
+        for node in self.treenode.traverse():
+            feats.update(node.features)    
+        return feats
 
     @property
     def nnodes(self):
@@ -104,29 +129,29 @@ class ToyTree:
         return sum(1 for i in self.treenode.get_leaves())
 
     @property
-    def newick(self, fmt=0):
-        "Returns newick fmt=0 represenation of the tree in its current state."
+    def newick(self, tree_format=0):
+        "Returns newick represenation of the tree in its current state."
         # checks one of root's children for features and extra feats.
         if self.treenode.children:
             features = {"name", "dist", "support", "height", "idx"}
             testnode = self.treenode.children[0]
             extrafeat = {i for i in testnode.features if i not in features}
             features.update(extrafeat)
-            return self.treenode.write(format=fmt)
+            return self.treenode.write(format=tree_format)
 
     # --------------------------------------------------------------------
     # functions to return values from the ete3 .treenode object ----------
     # --------------------------------------------------------------------
-    def write(self, handle=None, fmt=0):
+    def write(self, handle=None, tree_format=0, features=[]):
         if self.treenode.children:
-            features = {"name", "dist", "support", "height", "idx"}
-            testnode = self.treenode.children[0]
-            extrafeat = {i for i in testnode.features if i not in features}
-            features.update(extrafeat)
+            # features = {"name", "dist", "support", "height", "idx"}
+            # testnode = self.treenode.children[0]
+            # extrafeat = {i for i in testnode.features if i not in features}
+            # features.update(extrafeat)
             if handle:
-                self.treenode.write(format=fmt, outfile=handle)
+                self.treenode.write(format=tree_format, outfile=handle)
             else:
-                return self.treenode.write(format=fmt)
+                return self.treenode.write(format=tree_format)
 
 
     def get_edges(self):
@@ -568,20 +593,23 @@ class ToyTree:
 
         # get treenode of the common ancestor of selected tips
         try:
-            out = fuzzy_match_tipnames(nself, names, wildcard, regex)
-        except ToytreeError:
+            node = fuzzy_match_tipnames(
+                nself, names, wildcard, regex, True, True)       
+
+        except ToytreeError:           
             # try reciprocal taxon list
-            out = fuzzy_match_tipnames(
-                nself, names, wildcard, regex, mrca=False, mono=False)
-            recip = list(set(self.get_tip_labels()) - set(out))
-            out = fuzzy_match_tipnames(nself, recip, None, None)
+            tipnames = fuzzy_match_tipnames(
+                nself, names, wildcard, regex, False, False)
+            tipnames = list(set(self.get_tip_labels()) - set(node))
+            node = fuzzy_match_tipnames(
+                nself, tipnames, None, None, True, True)
 
         # split root node if more than di- as this is the unrooted state
         if not nself.is_bifurcating():
             nself.treenode.resolve_polytomy()
 
         # root the object with ete's translate
-        nself.treenode.set_outgroup(out)
+        nself.treenode.set_outgroup(node)
         nself._coords.update()
 
         # get features
@@ -596,16 +624,16 @@ class ToyTree:
             # nnode is the node that was added
             # rnode is the location where it *should* have been added
             nnode = nnode[0]
-            rnode = [i for i in nself.treenode.children if i != out][0]
+            rnode = [i for i in nself.treenode.children if i != node][0]
 
             # get idxs of existing nodes
             idxs = [int(i.idx) for i in nself.treenode.traverse()
                     if hasattr(i, "idx")]
 
             # newnode is a tip
-            if len(out.is_leaf()) == 1:
+            if len(node.is_leaf()) == 1:
                 nnode.name = str("rerooted")
-                rnode.name = out
+                rnode.name = node
                 rnode.add_feature("idx", max(idxs) + 1)
                 rnode.dist *= 2
                 sister = rnode.get_sisters()[0]
@@ -741,10 +769,10 @@ class ToyTree:
         if kwargs.get("ts"):
             tree_style = kwargs.get("ts")
 
-        # start from a cleared tree_style and then update.
-        self.style = TreeStyle('n')
+        # pass a copy of this tree so that any mods to .style are not saved
+        nself = deepcopy(self)
         if tree_style:
-            self.style.update(TreeStyle(tree_style[0]))
+            nself.style.update(TreeStyle(tree_style[0]))
 
         # update kwargs to merge it with user-entered arguments:
         userargs = {
@@ -775,7 +803,7 @@ class ToyTree:
         }
         kwargs.update(userargs)
         censored = {i: j for (i, j) in kwargs.items() if j is not None}
-        self.style.update(censored)
+        nself.style.update(censored)
 
         # warn user if they entered kwargs that weren't recognized:
         unrecognized = [i for i in kwargs if i not in userargs]
@@ -784,7 +812,7 @@ class ToyTree:
             print("check the docs, argument names may have changed.")
 
         # Init Drawing class object.
-        draw = Drawing(self)
+        draw = Drawing(nself)
 
         # Debug returns the object to test with.
         if kwargs.get("debug"):
