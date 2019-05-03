@@ -295,7 +295,6 @@ class MultiTree(object):
         Parameters:
             axes (toyplot.Cartesian): toyplot Cartesian axes object.
             html (bool): whether to return the drawing as html (default=PNG).
-            edge_styles: (list): option to enter a list of edge dictionaries.
             **kwargs (dict): styling options should be input as a dictionary.
         """
         # return nothing if tree is empty
