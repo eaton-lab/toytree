@@ -22,7 +22,7 @@ FREQS = {
 }
 
 SEQMODEL = {
-    # "JC": {"transition": 1.0},                                  # JC69
+    "JC": {},                                                     # JC69
     "K8": {"tstv": 0.5},                                          # K80, K2P
     "F8": {"freqs": FREQS},                                       # F81
     "HK": {"tstv": 0.5, "freqs": FREQS},                          # HKY85
