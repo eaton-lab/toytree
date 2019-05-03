@@ -74,10 +74,12 @@ class SeqGen(object):
             print("The following params will be ignored in model {}: {}"
                 .format(self.model, ignored))
 
-        # equilibrium base frequencies
+        # equilibrium base frequencies, if not freqs param then set to 0.25
         self.freqs = FREQS
         if "freqs" in self.model_kwargs:
             self.freqs.update(self.model_kwargs["freqs"])
+
+        # order freqs alphabetically and ensure they sum to 1
         self.pi = np.array([self.freqs[i] for i in "ACGT"], dtype=np.float64)
         assert np.isclose(1.0, sum(self.pi)), "freqs must sum to 1."
 
@@ -90,20 +92,24 @@ class SeqGen(object):
             np.random.choice((0, 1, 2, 3), size=nsites, p=self.pi)
         }
 
-        # the rate matrix
+        # set alpha=beta if not tstv
         alpha = 1.0
         beta = (
             self.model_kwargs["tstv"] if self.model_kwargs.get("tstv") else 1.0
         )
+
+        # get transition matrix
         self.w = np.array([
             [0., beta, alpha, beta],
             [beta, 0., beta, alpha],
             [alpha, beta, 0., beta],
             [beta, alpha, beta, 0.],
-        ])            
+        ])
+
+        # fill diagonal of transition matrix to sum to 1
         np.fill_diagonal(self.w, -self.w.sum(axis=0))
 
-        # instantaneous rate matrix (transition matrix X equil freqs)        
+        # multiply transition matrix by starting frequencies.
         self.qmatrix = self.w * self.pi
 
         # traverse tree starting with allele at the root
