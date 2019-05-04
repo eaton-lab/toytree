@@ -237,12 +237,18 @@ class MultiTree(object):
 
         # apply kwargs styles to the individual tree styles
         for tree in treelist:
+            if kwargs.get("tree_style"):
+                tree.style = TreeStyle(kwargs.get("tree_style"))
             tree.style.update(kwargs)
 
         # get reasonable values for x,y given treelist length
         if not (ncols or nrows):
-            ncols = 5
             nrows = 1
+            if self.ntrees < 6:
+                ncols = self.ntrees
+            else:
+                ncols = 5           
+
         elif not (ncols and nrows):
             if ncols:
                 if ncols == 1:
