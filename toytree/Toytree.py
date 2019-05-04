@@ -17,13 +17,30 @@ from .TreeParser import TreeParser
 
 
 class ToyTree(object):
+    """
+    Toytree class object. 
+
+    Parameters:
+    -----------
+    newick: (str, file, URL, or ToyTree)
+        A newick or nexus formatted string, or file handle or URL of file 
+        containing correctly formatted string. A toytree can also be reloaded
+        from another toytree object.
+    
+    tree_format: int
+        Format of the newick tree structure to be parsed. 
+
+    Attributes:
+    -----------
+
+
+    Functions:
+    ----------
+    """
     def __init__(self, newick=None, tree_format=0, fixed_order=None):
 
         # if loadeing from a Toytree then inherit that trees draw style
         inherit_style = False
-
-        # get the tree as a TreeNode object
-        self.treenode = None
         
         # load from a TreeNode
         if isinstance(newick, TreeNode):
@@ -46,6 +63,8 @@ class ToyTree(object):
         self._fixed_order = None
         self._fixed_idx = list(range(self.ntips))
         if fixed_order:
+            if not isinstance(fixed_order, (list, tuple)):
+                raise ToytreeError("fixed_order arg should be a list")
             self._set_fixed_order(fixed_order)
 
         # ladderize the tree unless user fixed order and wants it not.
