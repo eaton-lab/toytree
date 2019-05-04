@@ -262,11 +262,11 @@ class Coords:
 
         # down is the default orientation
         # down-facing tips align at y=0, first ladderized tip at x=0
-        if self.ttree.style.orient in ('down', 0):
+        if self.ttree.style.orient == 'down':
             pass
 
         # right-facing tips align at x=0, last ladderized tip at y=0
-        elif self.ttree.style.orient in ('right', 3):
+        elif self.ttree.style.orient == 'right':
 
             # verts swap x and ys and make xs 0 to negative
             tmp = np.zeros(self.verts.shape)
@@ -280,8 +280,8 @@ class Coords:
             tmp[:, 0] = self.coords[:, 1] * -1
             self.coords = tmp
 
-        elif self.ttree.style.orient in ('left', 1):
+        elif self.ttree.style.orient == 'left':
             raise NotImplementedError("todo: left facing")
 
         else:
-            raise NotImplementedError("todo: up facing")
+            raise NotImplementedError("TODO: orient directions up, left...")
