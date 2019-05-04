@@ -5,7 +5,6 @@ from __future__ import print_function, division, absolute_import
 from .etemini import TreeNode
 import toytree
 import random         # b/c ete uses random seed.
-import numpy as np
 import re
 
 
@@ -30,8 +29,8 @@ class TreeMod:
 
     def node_scale_root_height(self, treeheight=1):
         """
-        Returns a toytree copy with all nodes scaled so that the root 
-        height equals the value entered for treeheight.
+        Returns a toytree copy with all nodes multiplied by a constant so that
+        the root height equals the value entered for treeheight.
         """
         # make tree height = 1 * treeheight
         ctree = self._ttree.copy()
@@ -273,7 +272,7 @@ class RandomTree(object):
         # set tipnames
         for tip in self.get_tip_labels():
             node = self.treenode.search_nodes(name=tip)[0]
-            node.name = "r{}".format(node.name)
+            node.name = "r{}".format(node.idx)
 
         # decompose fills in internal node names and idx
         self._coords.update()

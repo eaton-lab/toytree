@@ -4,6 +4,7 @@
 A class creating Drawings from Toytrees.
 """
 from copy import deepcopy
+from decimal import Decimal
 import numpy as np
 import toyplot
 from .utils import ToytreeError
@@ -45,7 +46,8 @@ class Drawing:
         # always update coords in case style params affect the node placement
         self.coords.update()
 
-        # set up base canvas and axes
+        # set up base canvas and axes, but we need tip labels first
+        self.assign_tip_labels_and_colors()
         self.get_dims_from_tree_size()
         self.get_canvas_and_axes(axes)
         self.set_baselines()
@@ -54,7 +56,6 @@ class Drawing:
         # or as a list, e.g., node_style={'fill':'red'} or node_color="red".
         self.assign_node_labels_and_sizes()
         self.assign_node_colors_and_style()
-        self.assign_tip_labels_and_colors()
         self.assign_edge_colors_and_widths()
 
         # draw tree, nodes, tips, axes on canvas.
@@ -98,7 +99,7 @@ class Drawing:
 
         if self.style.orient in ("up", "down"):
             if self.ttree._fixed_order:
-                xpos = list(range(self.ttree.ntips))
+                xpos = np.arange(self.ttree.ntips) + self.style.xbaseline
                 ypos = ypos[self.ttree._fixed_idx]
             if self.style.tip_labels_align:
                 ypos = np.zeros(self.ttree.ntips)
@@ -106,7 +107,7 @@ class Drawing:
         if self.style.orient in ("right", "left"):
             if self.ttree._fixed_order:
                 xpos = xpos[self.ttree._fixed_idx]
-                ypos = list(range(self.ttree.ntips))
+                ypos = np.arange(self.ttree.ntips) + self.style.ybaseline
             if self.style.tip_labels_align:
                 xpos = np.zeros(self.ttree.ntips)
 
@@ -155,18 +156,18 @@ class Drawing:
         user to be able to modify this if needed. If not using edge lengths
         then need to use unit length for treeheight.
         """
-        # user entered values
-        #if self.style.axes.x_domain_max or self.style.axes.y_domain_min:
-        #    self.axes.x.domain.max = self.style.axes.x_domain_max
-        #    self.axes.y.domain.min = self.style.axes.y_domain_min            
+        # longest name
+        lname = max([len(i) for i in self.tip_labels])
 
-        # IF USE WANTS TO CHANGE IT THEN DO IT AFTER USING AXES
-        # or auto-fit (tree height)
-        #else:
+        # get ratio of names to tree in plot
+        ratio = max(lname / 10, 0.15)
+
+        # have tree figure make up 85% of plot
         if self.style.use_edge_lengths:
-            addon = self.ttree.treenode.height * .85
+            addon = self.ttree.treenode.height
         else:
-            addon = self.ttree.treenode.get_farthest_leaf(True)[1]
+            addon = self.ttree.treenode.get_farthest_leaf(True)[1] + 1
+        addon *= ratio
 
         # modify display for orientations
         if self.style.tip_labels:
@@ -586,18 +587,20 @@ class Drawing:
             self.axes.x.ticks.show = True
 
             # generate locations
-            locs = np.linspace(0, self.ttree.treenode.height, nticks) * -1
+            if self.style.use_edge_lengths:
+                locs = np.linspace(0, self.ttree.treenode.height, nticks) * -1
+            else:
+                top = self.ttree.treenode.get_farthest_leaf(True)[1] + 1
+                locs = np.linspace(0, top, nticks) * -1
 
-            # generate labels formatted depending on range of locs
-            fmt = "{:.2f}"
-            if np.abs(locs).max() > 6:
-                fmt = "{:.1f}"
-            elif np.abs(locs).max() > 10:
-                fmt = "{:.0f}"
+            # auto-formatter for axes ticks labels
+            zer = abs(min(0, Decimal(locs[1]).adjusted()))
+            fmt = "{:." + str(zer) + "f}"
             self.axes.x.ticks.locator = toyplot.locator.Explicit(
                 locations=locs,
                 labels=[fmt.format(i) for i in np.abs(locs)],
                 )
+
         elif self.style.scalebar and self.style.orient == "down":
             nticks = max((3, np.floor(self.style.height / 100).astype(int)))
             self.axes.x.show = False
@@ -607,12 +610,9 @@ class Drawing:
             # generate locations
             locs = np.linspace(0, self.ttree.treenode.height, nticks)
 
-            # generate labels formatted depending on range of locs
-            fmt = "{:.2f}"
-            if np.abs(locs).max() > 6:
-                fmt = "{:.1f}"
-            elif np.abs(locs).max() > 10:
-                fmt = "{:.0f}"
+            # auto-formatter for axes ticks labels
+            zer = abs(min(0, Decimal(locs[1]).adjusted()))
+            fmt = "{:." + str(zer) + "f}"
             self.axes.y.ticks.locator = toyplot.locator.Explicit(
                 locations=locs,
                 labels=[fmt.format(i) for i in np.abs(locs)],
@@ -638,7 +638,7 @@ class Drawing:
         align_verts = None
 
         # handle orientations
-        if self.style.orient in (0, 'down'):
+        if self.style.orient == 'down':
             # align tips at zero
             if self.style.tip_labels_align:
                 tip_yend = np.zeros(ns)
@@ -692,19 +692,23 @@ class Drawing:
 
     def get_dims_from_tree_size(self):
         "Calculate reasonable canvas height and width for tree given N tips" 
-        ntips = len(self.ttree)
+        
+        lname = max([len(i) for i in self.tip_labels])
+
         if self.style.orient in ("right", "left"):
-            # height is long tip-wise dimension
+            # height fit by tree size
             if not self.style.height:
-                self.style.height = max(275, min(1000, 18 * ntips))
+                self.style.height = max(275, min(1000, 18 * self.ttree.ntips))
+            # width fit by name size
             if not self.style.width:
-                self.style.width = max(350, min(500, 18 * ntips))
+                self.style.width = max(250, min(500, 250 + 5 * lname))
         else:
-            # width is long tip-wise dimension
+            # height fit by name size
             if not self.style.height:
-                self.style.height = max(275, min(500, 18 * ntips))
+                self.style.height = max(250, min(500, 250 + 5 * lname))
+            # width fit by tree size
             if not self.style.width:
-                self.style.width = max(350, min(1000, 18 * ntips))
+                self.style.width = max(350, min(1000, 18 * self.ttree.ntips))
 
 
     def get_canvas_and_axes(self, axes):
