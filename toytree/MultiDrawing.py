@@ -3,6 +3,7 @@
 """
 Classes for Drawings from MultiTrees.
 """
+from decimal import Decimal
 import numpy as np
 import toyplot
 from .TreeStyle import TreeStyle
@@ -19,24 +20,21 @@ class TreeGrid:
         self.treelist = treelist
         self.treeslice = []
 
-        # subtree styles are stripped when MultiTree init, but can be added.
-        #self.style = TreeStyle('n')
-
         # to be filled
-        self.x = None
-        self.y = None
+        self.nrows = None
+        self.ncols = None
 
 
-    def update(self, x, y, start, shared_axis, **kwargs):
+    def update(self, nrows, ncols, start, shared_axis, **kwargs):
 
         # store plot dims and assert that they fit well enough
-        self.x = x
-        self.y = y
-        self.treeslice = self.treelist[start:start + self.x * self.y]
+        self.nrows = nrows
+        self.ncols = ncols
+        self.treeslice = self.treelist[start:start + self.nrows * self.ncols]
 
         # TODO: mess with padding and margins...
-        wdef = min(1000, self.y * 300)
-        hdef = min(1000, self.x * 300)
+        wdef = min(800, self.ncols * 175)
+        hdef = min(800, self.nrows * 250)
         self.canvas = toyplot.Canvas(
             width=(kwargs.get('width') if kwargs.get('width') else wdef), 
             height=(kwargs.get('height') if kwargs.get('height') else hdef),
@@ -48,45 +46,41 @@ class TreeGrid:
             for tidx, tree in enumerate(self.treeslice):
                 # set ymax on cartesian so that trees are on same scale
                 axes = self.canvas.cartesian(
-                    grid=(self.x, self.y, tidx),
-                    margin=(20, 20, 35, 35),
-                    padding=10,
+                    grid=(self.nrows, self.ncols, tidx),
+                    margin=(25, 25, 35, 35),
+                    padding=25,
                 )
                 # update tree style with any new arguments
                 tree.draw(axes=axes)
                 axes.show = False
 
-        # TODO: shared axis
+        # shared X axis
         else:    
             # only one axis allowed?... x=1 or y=1
-            kwargs["orient"] = "down"
-            axes = self.canvas.cartesian(padding=15)
+            axes = self.canvas.cartesian(padding=25)
             xbaseline = 0
             maxheight = 0
+            
             for tidx, tree in enumerate(self.treeslice):
-                tree.draw(axes=axes, xbaseline=xbaseline, **kwargs)
+                tree.draw(axes=axes, xbaseline=xbaseline)
                 xbaseline += tree.ntips + 1
                 maxheight = max(maxheight, tree.treenode.height)
 
-            nticks = 5  # max((3, np.floor(self.style.height / 100).astype(int)))
-            if kwargs.get("orient") == "down":
-                axes.x.show = False
-                axes.y.show = True
-                axes.y.ticks.show = True            
+            nticks = max((3, np.floor(hdef / 100).astype(int)))
+            axes.x.show = False
+            axes.y.show = True
+            axes.y.ticks.show = True            
 
-                # generate locations
-                locs = np.linspace(0, maxheight, nticks)
+            # generate locations
+            locs = np.linspace(0, maxheight, nticks)
 
-                # generate labels formatted depending on range of locs
-                fmt = "{:.2f}"
-                if np.abs(locs).max() > 6:
-                    fmt = "{:.1f}"
-                elif np.abs(locs).max() > 10:
-                    fmt = "{:.0f}"
-                axes.y.ticks.locator = toyplot.locator.Explicit(
-                    locations=locs,
-                    labels=[fmt.format(i) for i in np.abs(locs)],
-                    )
+            # auto-formatter for axes ticks labels
+            zer = abs(min(0, Decimal(locs[1]).adjusted()))
+            fmt = "{:." + str(zer) + "f}"
+            axes.y.ticks.locator = toyplot.locator.Explicit(
+                locations=locs,
+                labels=[fmt.format(i) for i in np.abs(locs)],
+                )
 
         return self.canvas, axes
 
