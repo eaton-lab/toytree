@@ -320,7 +320,7 @@ class MultiTree(object):
 
         # set fixed order on a copy of the tree list
         if isinstance(fixed_order, (list, tuple)):
-            pass
+            fixed_order = fixed_order
         elif fixed_order is True:
             fixed_order = self.treelist[0].get_tip_labels()
         else:
