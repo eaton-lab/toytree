@@ -30,9 +30,6 @@ from .utils import bpp2newick
 class MultiTree(object):
     """
     Toytree MultiTree object for representing multiple trees. 
-
-    Several functions are designed for trees with the same set of tips, and 
-    may yield erratic behavior if trees have different sets of tips... TODO.
     
     Parameters:
     -----------
@@ -332,7 +329,9 @@ class MultiTree(object):
 
         # give advice if user tries to enter tip_labels
         if kwargs.get("tip_labels"):
-            print(TIP_LABELS_ADVICE)
+            if not isinstance(kwargs.get("tip_labels"), dict):
+                print(TIP_LABELS_ADVICE)
+                kwargs.pop("tip_labels")
 
         # set autorender format to png so we don't bog down notebooks
         try:
@@ -564,20 +563,18 @@ class ConsensusTree:
 
 # GLOBALS
 TIP_LABELS_ADVICE = """
-Warning: tip_labels arg cannot be used in draw_cloud_tree(). Instead, 
-you must set the tip labels style on the first tree in your treelist. 
-If you wish to change the order of tips then use the fixed_order arg. 
-Example: 
+Warning: ignoring 'tip_labels' argument. 
 
-# a set of 10 trees with 5 numbers for tip names
+The 'tip_labels' arg to draw_cloud_tree() should be a dictionary
+mapping tip names from the contained ToyTrees to a new string value.
+Example: {"a": "tip-A", "b": "tip-B", "c": tip-C"}
+
+# get a MultiTree containing 10 trees with numbered tip names
 trees = toytree.mtree([toytree.rtree.imbtree(5) for i in range(10)])
 
-# set style of tip labels in the FIRST tree in treelist
-trees.treelist[0].style.tip_labels = [
-    "tip-number-{}".format(i) for i in trees.treelist[0].get_tip_labels()
-]
-
-# draw a cloud tree using a set tip order for all trees
-trees.draw_cloud_tree(fixed_order=['0', '1', '2', '3', '4'])
-
+# draw a cloud tree using a set tip order and styled tip names
+trees.draw_cloud_tree(
+    fixed_order=['0', '1', '2', '3', '4'],
+    tip_labels={i: "tip-{}".format(i) for i in trees.treelist[0].get_tip_labels()},
+    )
 """
