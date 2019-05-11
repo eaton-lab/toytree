@@ -87,24 +87,24 @@ class TreeGrid:
 
 class CloudTree:
     """
-    Overlay many tree plots on the same Canvas and Axes.
+    Overlay many tree plots on the same Canvas and Axes. All ToyTrees in the 
+    treelist have already been fixed_order reordered. 
     """
     def __init__(self, treelist, **kwargs):
         
-        # base style
+        # store list of ordered trees
         self.treelist = treelist
 
-        # set tip names
-        if self.treelist[0].style.tip_labels is True:
+        # set tip names 
+        if not kwargs.get("tip_labels"):
             self.tip_labels = self.treelist[0].get_tip_labels()
-
-        elif isinstance(self.treelist[0].style.tip_labels, (list, tuple)):
-            self.tip_labels = self.treelist[0].style.tip_labels
-
         else:
-            self.tip_labels = self.treelist[0].get_tip_labels()
+            self.tip_labels = [
+                kwargs.get("tip_labels")[name] 
+                for name in self.treelist[0].get_tip_labels()
+            ]
 
-        # 
+        # base style
         self.ntips = len(self.treelist[0])
         self.style = TreeStyle('m')
         self.style.update(kwargs)
@@ -166,7 +166,7 @@ class CloudTree:
         Add text offset from tips of tree with correction for orientation, 
         and fixed_order which is usually used in multitree plotting.
         """
-        # get tip-coords and replace if using fixed_order
+        # get tip-coords
         if self.style.orient in ("up", "down"):
             ypos = np.zeros(self.ntips)
             xpos = np.arange(self.ntips)
