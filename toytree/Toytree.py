@@ -97,34 +97,18 @@ class ToyTree(object):
         """ return len of Tree (ntips) """
         return len(self.treenode)
 
-    # # --------------------------------------------------------------------
-    # # Loading Newick or ...
-    # # --------------------------------------------------------------------    
-    # def _parse_to_TreeNode(self, newick, tree_format):
-    #     """
-    #     Parse the newick string as either text, filepath or URL, and create an
-    #     ete.TreeNode object as .treenode. If no newick init an empty TreeNode.
-    #     """
-    #     if newick:
-    #         # is newick a URL or string, path?
-    #         if any((i in newick for i in ("http://", "https://"))):
-    #             response = requests.get(newick)
-    #             response.raise_for_status()
-    #             newick = response.text.strip()
-    #         # create .treenode attribute as TreeNode
-    #         self.treenode = TreeNode(newick, format=tree_format)
-    #     # otherwise make an empty TreeNode object
-    #     else:
-    #         self.treenode = TreeNode()
-
 
     def _set_fixed_order(self, fixed_order):
+        """
+        Setting fixed_idx is important for when nodes are rotated, and edges
+        are different lengths, b/c it allows updating coords to match up.
+        """
         if fixed_order:
             if set(fixed_order) != set(self.treenode.get_leaf_names()):
                 raise ToytreeError(
                     "fixed_order must include same tipnames as tree")
             self._fixed_order = fixed_order
-            names = self.get_tip_labels()
+            names = self.treenode.get_leaf_names()[::-1]
             self._fixed_idx = [names.index(i) for i in self._fixed_order]
 
     # --------------------------------------------------------------------
@@ -392,17 +376,19 @@ class ToyTree(object):
 
         Parameters:
             idx (int): index label of a node.
-
-        Example:
-            # select a clade of the tree and use it for rooting.
-            tiplist = tre.get_descenants_from_idx(21)
-            tre.root(names=tiplist)
         """
-        if not idx:
-            return self.treenode.get_leaf_names()[::-1]
-        else:
+        if idx:
             treenode = self.treenode.search_nodes(idx=idx)[0]
-            return treenode.get_leaf_names()[::-1]
+            if self._fixed_order:
+                return [i for i in self._fixed_order if i in 
+                    treenode.get_leaf_names()]
+            else:
+                return treenode.get_leaf_names()[::-1]                
+        else:
+            if self._fixed_order:
+                return self._fixed_order
+            else:
+                return self.treenode.get_leaf_names()[::-1]
 
 
     def copy(self):
