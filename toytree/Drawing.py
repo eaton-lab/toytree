@@ -172,9 +172,9 @@ class Drawing:
         # modify display for orientations
         if self.style.tip_labels:
             if self.style.orient == "right":
-                self.axes.x.domain.max = addon
+                self.axes.x.domain.max = addon / 2.
             elif self.style.orient == "down":
-                self.axes.y.domain.min = -1 * addon
+                self.axes.y.domain.min = (-1 * addon) / 2
 
 
 
