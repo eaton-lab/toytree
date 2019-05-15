@@ -14,7 +14,7 @@ import toyplot.config
 import numpy as np
 
 # used in Consensus
-from .etemini import TreeNode
+from .TreeNode import TreeNode
 from .Toytree import ToyTree
 from .TreeParser import TreeParser
 from .TreeStyle import TreeStyle, STYLES
@@ -196,6 +196,7 @@ class MultiTree(object):
     # Tree List Plotting
     # -------------------------------------------------------------------
     def draw_tree_grid(self, 
+        axes=None,
         nrows=None, 
         ncols=None, 
         start=0, 
@@ -279,7 +280,8 @@ class MultiTree(object):
             return draw
 
         # Call update to draw plot. Kwargs still here for width, height, axes
-        canvas, axes = draw.update(nrows, ncols, start, shared_axis, **kwargs)
+        canvas, axes = draw.update(
+            axes, nrows, ncols, start, shared_axis, **kwargs)
         return canvas, axes
 
 
@@ -341,7 +343,7 @@ class MultiTree(object):
                 changed_autoformat = True
 
             # dict of global cloud tree style 
-            mstyle = STYLES['m']
+            mstyle = deepcopy(STYLES['m'])
 
             # if trees in treelist already have some then we don't quash...
             mstyle.update(
