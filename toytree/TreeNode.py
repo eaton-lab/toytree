@@ -6,28 +6,21 @@ A Tree Class object modified as a subset of the ete3.Tree Class
 from __future__ import print_function
 from builtins import range, str
 
-from functools import cmp_to_key
-from collections import deque
-import itertools
+import six
 import random
-import six      # <- can remove after dealing with six.iteritems calls...
+import itertools
+
 from hashlib import md5
+from collections import deque
+from functools import cmp_to_key
 
-from .newick import read_newick
-from .newick import write_newick
-
+# from .newick import write_newick  # , read_newick
+from .TreeWriter import NewickWriter
+from .RobinsonFoulds import RobinsonFoulds
+from .utils import TreeError
 
 DEFAULT_EDGE_LENGTH = 1.
 DEFAULT_SUPPORT = 100.
-
-
-class TreeError(Exception):
-    "A problem occurred during a TreeNode operation"
-    def __init__(self, value=''):
-        self.value = value
-
-    def __str__(self):
-        return repr(self.value)
 
 
 
@@ -96,7 +89,7 @@ class TreeNode(object):
         # Initialize tree
         if newick is not None:
             self._dist = 0.0
-            read_newick(newick, root_node=self, format=format)
+            # read_newick(newick, root_node=self, format=format)
 
 
     ############################################################
@@ -245,7 +238,6 @@ class TreeNode(object):
         
         Parameters
         ----------
-
         child: 
             the node instance to be added as a child.
         name: 
@@ -259,7 +251,6 @@ class TreeNode(object):
         --------
             The child node instance
         """
-
         if child is None:
             child = self.__class__()
         if name is not None:
@@ -320,7 +311,7 @@ class TreeNode(object):
 
 
     def delete(self, prevent_nondicotomic=True, preserve_branch_length=False):
-        """
+        r"""
         Deletes node from the tree structure. Notice that this method
         makes 'disappear' the node from the tree structure. This means
         that children from the deleted node are transferred to the
@@ -368,8 +359,7 @@ class TreeNode(object):
             parent.remove_child(self)
 
         # Avoids parents with only one child
-        if prevent_nondicotomic and parent and\
-              len(parent.children) < 2:
+        if prevent_nondicotomic and parent and len(parent.children) < 2:
             parent.delete(prevent_nondicotomic=False,
                           preserve_branch_length=preserve_branch_length)
 
@@ -390,7 +380,7 @@ class TreeNode(object):
 
 
     def prune(self, nodes, preserve_branch_length=False):
-        """
+        r"""
         Prunes the topology of a node to conserve only a selected list of leaf
         internal nodes. The minimum number of nodes that conserve the
         topological relationships among the requested nodes will be
@@ -714,7 +704,6 @@ class TreeNode(object):
         dist_formatter=None, 
         support_formatter=None,
         name_formatter=None):
-
         """
         Returns the newick representation of current node. Several
         arguments control the way in which extra data is shown for
@@ -740,23 +729,24 @@ class TreeNode(object):
 
         is_leaf_fn: 
             See :func:`TreeNode.traverse` for documentation.
-
-        **Example:**
-             t.get_newick(features=["species","name"], format=1)
         """
-        nw = write_newick(self, features=features,
-                          format=format,
-                          is_leaf_fn=is_leaf_fn,
-                          format_root_node=format_root_node,
-                          dist_formatter=dist_formatter,
-                          support_formatter=support_formatter,
-                          name_formatter=name_formatter)
+        writer = NewickWriter(
+            self, 
+            tree_format=format, 
+            features=features,
+            format_root_node=False, 
+            # is_leaf_fn=is_leaf_fn,
+            dist_formatter=dist_formatter,
+            support_formatter=support_formatter,
+            name_formatter=name_formatter,
+            )
+        newick = writer.write_newick()
 
         if outfile is not None:
             with open(outfile, "w") as OUT:
-                OUT.write(nw)
+                OUT.write(newick)
         else:
-            return nw
+            return newick
 
 
     def get_tree_root(self):
@@ -1385,9 +1375,6 @@ class TreeNode(object):
         return _store
 
 
-    ################################################################
-    ## BIG functions for tree comparison, w some external imports
-    ################################################################
     def robinson_foulds(self, 
         t2, 
         attr_t1="name", 
@@ -1410,7 +1397,7 @@ class TreeNode(object):
         attr_t1: 
             Compare trees using a custom node attribute as a node name.
         attr_t2: 
-            Compare trees using a custom node attribute as a node name in target tree.
+            Compare trees using a custom node attribute as a node name in t2.
         attr_t2: 
             If True, consider trees as unrooted.
         False expand_polytomies: 
@@ -1425,146 +1412,19 @@ class TreeNode(object):
         (rf, rf_max, common_attrs, names, edges_t1, edges_t2, 
          discarded_edges_t1, discarded_edges_t2)
         """
-        ref_t = self
-        target_t = t2
-        if not unrooted_trees and (len(ref_t.children) > 2 or len(target_t.children) > 2):
-            raise TreeError("Unrooted tree found! You may want to activate the unrooted_trees flag.")
 
-        if expand_polytomies and correct_by_polytomy_size:
-            raise TreeError("expand_polytomies and correct_by_polytomy_size are mutually exclusive.")
-
-        if expand_polytomies and unrooted_trees:
-            raise TreeError("expand_polytomies and unrooted_trees arguments cannot be enabled at the same time")
-
-        attrs_t1 = set([getattr(n, attr_t1) for n in ref_t.iter_leaves() if hasattr(n, attr_t1)])
-        attrs_t2 = set([getattr(n, attr_t2) for n in target_t.iter_leaves() if hasattr(n, attr_t2)])
-        common_attrs = attrs_t1 & attrs_t2
-        # release mem
-        attrs_t1, attrs_t2 = None, None
-
-        # Check for duplicated items (is it necessary? can we optimize? what's the impact in performance?')
-        size1 = len([True for n in ref_t.iter_leaves() if getattr(n, attr_t1, None) in common_attrs])
-        size2 = len([True for n in target_t.iter_leaves() if getattr(n, attr_t2, None) in common_attrs])
-        if size1 > len(common_attrs):
-            raise TreeError('Duplicated items found in source tree')
-        if size2 > len(common_attrs):
-            raise TreeError('Duplicated items found in reference tree')
-
-        if expand_polytomies:
-            ref_trees = [
-                TreeNode(nw) for nw in
-                ref_t.expand_polytomies(
-                    map_attr=attr_t1,
-                    polytomy_size_limit=polytomy_size_limit,
-                    skip_large_polytomies=skip_large_polytomies
-                    )
-                ]
-            target_trees = [
-                TreeNode(nw) for nw in
-                target_t.expand_polytomies(
-                    map_attr=attr_t2,
-                    polytomy_size_limit=polytomy_size_limit,
-                    skip_large_polytomies=skip_large_polytomies,
-                    )
-                ]
-            attr_t1, attr_t2 = "name", "name"
-        else:
-            ref_trees = [ref_t]
-            target_trees = [target_t]
-
-        polytomy_correction = 0
-        if correct_by_polytomy_size:
-            corr1 = sum([0]+[len(n.children) - 2 for n in ref_t.traverse() if len(n.children) > 2])
-            corr2 = sum([0]+[len(n.children) - 2 for n in target_t.traverse() if len(n.children) > 2])
-            if corr1 and corr2:
-                raise TreeError("Both trees contain polytomies! Try expand_polytomies=True instead")
-            else:
-                polytomy_correction = max([corr1, corr2])
-
-        min_comparison = None
-        for t1 in ref_trees:
-            t1_content = t1.get_cached_content()
-            t1_leaves = t1_content[t1]
-            if unrooted_trees:
-                edges1 = set([
-                        tuple(sorted([tuple(sorted([getattr(n, attr_t1) for n in content if hasattr(n, attr_t1) and getattr(n, attr_t1) in common_attrs])),
-                                      tuple(sorted([getattr(n, attr_t1) for n in t1_leaves-content if hasattr(n, attr_t1) and getattr(n, attr_t1) in common_attrs]))]))
-                        for content in six.itervalues(t1_content)])
-                edges1.discard(((),()))
-            else:
-                edges1 = set([
-                        tuple(sorted([getattr(n, attr_t1) for n in content if hasattr(n, attr_t1) and getattr(n, attr_t1) in common_attrs]))
-                        for content in six.itervalues(t1_content)])
-                edges1.discard(())
-
-            if min_support_t1:
-                support_t1 = dict([
-                        (tuple(sorted([getattr(n, attr_t1) for n in content if hasattr(n, attr_t1) and getattr(n, attr_t1) in common_attrs])), branch.support)
-                        for branch, content in six.iteritems(t1_content)])
-
-            for t2 in target_trees:
-                t2_content = t2.get_cached_content()
-                t2_leaves = t2_content[t2]
-                if unrooted_trees:
-                    edges2 = set([
-                            tuple(sorted([
-                                        tuple(sorted([getattr(n, attr_t2) for n in content if hasattr(n, attr_t2) and getattr(n, attr_t2) in common_attrs])),
-                                        tuple(sorted([getattr(n, attr_t2) for n in t2_leaves-content if hasattr(n, attr_t2) and getattr(n, attr_t2) in common_attrs]))]))
-                            for content in six.itervalues(t2_content)])
-                    edges2.discard(((),()))
-                else:
-                    edges2 = set([
-                            tuple(sorted([getattr(n, attr_t2) for n in content if hasattr(n, attr_t2) and getattr(n, attr_t2) in common_attrs]))
-                            for content in six.itervalues(t2_content)])
-                    edges2.discard(())
-
-                if min_support_t2:
-                    support_t2 = dict([
-                        (tuple(sorted(([getattr(n, attr_t2) for n in content if hasattr(n, attr_t2) and getattr(n, attr_t2) in common_attrs]))), branch.support)
-                        for branch, content in six.iteritems(t2_content)])
-
-
-                # if a support value is passed as a constraint, discard lowly supported branches from the analysis
-                discard_t1, discard_t2 = set(), set()
-                if min_support_t1 and unrooted_trees:
-                    discard_t1 = set([p for p in edges1 if support_t1.get(p[0], support_t1.get(p[1], 999999999)) < min_support_t1])
-                elif min_support_t1:
-                    discard_t1 = set([p for p in edges1 if support_t1[p] < min_support_t1])
-
-                if min_support_t2 and unrooted_trees:
-                    discard_t2 = set([p for p in edges2 if support_t2.get(p[0], support_t2.get(p[1], 999999999)) < min_support_t2])
-                elif min_support_t2:
-                    discard_t2 = set([p for p in edges2 if support_t2[p] < min_support_t2])
-
-
-                #rf = len(edges1 ^ edges2) - (len(discard_t1) + len(discard_t2)) - polytomy_correction # poly_corr is 0 if the flag is not enabled
-                #rf = len((edges1-discard_t1) ^ (edges2-discard_t2)) - polytomy_correction
-
-                # the two root edges are never counted here, as they are always
-                # present in both trees because of the common attr filters
-                rf = len(((edges1 ^ edges2) - discard_t2) - discard_t1) - polytomy_correction
-
-                if unrooted_trees:
-                    # thought this may work, but it does not, still I don't see why
-                    #max_parts = (len(common_attrs)*2) - 6 - len(discard_t1) - len(discard_t2)
-                    max_parts = (len([p for p in edges1 - discard_t1 if len(p[0])>1 and len(p[1])>1]) +
-                                 len([p for p in edges2 - discard_t2 if len(p[0])>1 and len(p[1])>1]))
-                else:
-                    # thought this may work, but it does not, still I don't see why
-                    #max_parts = (len(common_attrs)*2) - 4 - len(discard_t1) - len(discard_t2)
-
-                    # Otherwise we need to count the actual number of valid
-                    # partitions in each tree -2 is to avoid counting the root
-                    # partition of the two trees (only needed in rooted trees)
-                    max_parts = (len([p for p in edges1 - discard_t1 if len(p)>1]) +
-                                 len([p for p in edges2 - discard_t2 if len(p)>1])) - 2
-
-                    # print max_parts
-
-                if not min_comparison or min_comparison[0] > rf:
-                    min_comparison = [rf, max_parts, common_attrs, edges1, edges2, discard_t1, discard_t2]
-
-        return min_comparison
+        rf = RobinsonFoulds(
+            self, t2, 
+            attr_t1, attr_t2, 
+            unrooted_trees,
+            expand_polytomies,
+            polytomy_size_limit,
+            skip_large_polytomies,
+            correct_by_polytomy_size,
+            min_support_t1,
+            min_support_t2,
+            )
+        return rf.compare_trees()
 
 
     # def compare(self, 
@@ -1989,18 +1849,19 @@ class TreeNode(object):
 
         http://ajmonline.org/2010/darwin.php
         """
-
         class TipTuple(tuple):
             pass
 
+        # recursive function to add leaves
         def add_leaf(tree, label):
             yield (label, tree)
             if not isinstance(tree, TipTuple) and isinstance(tree, tuple):
                 for left in add_leaf(tree[0], label):
                     yield (left, tree[1])
-            for right in add_leaf(tree[1], label):
-                yield (tree[0], right)
+                for right in add_leaf(tree[1], label):
+                    yield (tree[0], right)
 
+        # recursive function to take subtrees and return as...
         def enum_unordered(labels):
             if len(labels) == 1:
                 yield labels[0]
@@ -2009,24 +1870,49 @@ class TreeNode(object):
                     for new_tree in add_leaf(tree, labels[0]):
                         yield new_tree
 
+        # traverse tree from tips to root
         n2subtrees = {}
         for n in self.traverse("postorder"):
+
+            # store leaf name for tips
             if n.is_leaf():
                 subtrees = [getattr(n, map_attr)]
+
+            # get node descendants
             else:
                 subtrees = []
-                if len(n.children) > polytomy_size_limit:
-                    if skip_large_polytomies:
-                        for childtrees in itertools.product(*[n2subtrees[ch] for ch in n.children]):
-                            subtrees.append(TipTuple(childtrees))
-                    else:
-                        raise TreeError("Found polytomy larger than current limit: %s" %n)
-                else:
-                    for childtrees in itertools.product(*[n2subtrees[ch] for ch in n.children]):
-                        subtrees.extend([TipTuple(subtree) for subtree in enum_unordered(childtrees)])
 
+                # get ways of sampling the children 
+                ich = itertools.product(*[n2subtrees[ch] for ch in n.children])
+
+                # if not above poly size limit
+                if len(n.children) <= polytomy_size_limit:
+
+                    # store subtrees for all enum_ordered children
+                    for childtrees in ich:
+
+                        # get all resolutions of this subclade
+                        resolutions = [
+                            TipTuple(subtree) for subtree in 
+                            enum_unordered(childtrees)
+                        ]
+                        subtrees.extend(resolutions)
+
+                # check if too big of polytomy
+                else:
+                    if not skip_large_polytomies:
+                        raise TreeError(
+                            "Found polytomy larger than current limit: {}"
+                            .format(len(n.children)))
+                    else:
+                        for childtrees in ich:
+                            subtrees.append(TipTuple(childtrees))
+
+            # store nodename: [desc]
             n2subtrees[n] = subtrees
-        return ["%s;"%str(nw) for nw in n2subtrees[self]] # tuples are in newick format ^_^
+
+        # tuples ARE newick format ^_^ (clever!); convert to str tho
+        return ["{};".format(nw).replace("'", "") for nw in n2subtrees[self]]
 
 
     def resolve_polytomy(self, 
