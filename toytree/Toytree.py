@@ -2,18 +2,18 @@
 
 from __future__ import print_function, absolute_import
 
-# import requests
 import itertools
 from decimal import Decimal
 from copy import deepcopy
 
 # from .etemini import TreeNode
-from .etemini import TreeNode
+from .TreeNode import TreeNode
 from .TreeStyle import TreeStyle
 from .Coords import Coords
 from .Drawing import Drawing
 from .utils import ToytreeError, TreeMod, fuzzy_match_tipnames
 from .TreeParser import TreeParser
+from .TreeWriter import NewickWriter
 
 
 class ToyTree(object):
@@ -145,16 +145,43 @@ class ToyTree(object):
     # --------------------------------------------------------------------
     # functions to return values from the ete3 .treenode object ----------
     # --------------------------------------------------------------------
-    def write(self, handle=None, tree_format=0, features=[]):
+    def write(self, handle=None, tree_format=0, features=None):
+        """
+        Write newick string representation of the tree. 
+
+        Parameters:
+        -----------
+        handle (str):
+            A string file name to write output to. If None then newick is 
+            returned as a string. 
+        tree_format (int):
+            Format of the newick string. See ete3 tree formats. Default=0.
+        features (list, set, or tuple):
+            Features of treenodes that should be written to the newick string
+            in NHX format. Examples include "height", "idx", or other features
+            you may have saved to treenodes. 
+
+        """
         if self.treenode.children:
             # features = {"name", "dist", "support", "height", "idx"}
             # testnode = self.treenode.children[0]
             # extrafeat = {i for i in testnode.features if i not in features}
             # features.update(extrafeat)
+
+            # get newick string
+            writer = NewickWriter(
+                treenode=self.treenode,
+                tree_format=tree_format,
+                features=features,
+            )
+            newick = writer.write_newick()
+
+            # write to file or return as string
             if handle:
-                self.treenode.write(format=tree_format, outfile=handle)
+                with open(handle, 'w') as out:
+                    out.write(newick)
             else:
-                return self.treenode.write(format=tree_format)
+                return newick
 
 
     def get_edges(self):
@@ -288,13 +315,19 @@ class ToyTree(object):
 
         tree.get_node_values("support", True, True)
         """
+        # return input if feature does not exist
+        # if feature is None:
+        #     feature = ""
+        # else:
+        #     feature = str(feature)
+
         # access nodes in the order they will be plotted
         ndict = self.get_node_dict(return_internal=True, return_nodes=True)
         nodes = [ndict[i] for i in range(self.nnodes)[::-1]]
 
         # get features
         if feature:
-            vals = [i.__getattribute__(feature) if hasattr(i, feature)
+            vals = [getattr(i, feature) if hasattr(i, feature)
                     else "" for i in nodes]
         else:
             vals = [" " for i in nodes]
@@ -500,9 +533,8 @@ class ToyTree(object):
         names=None, 
         wildcard=None, 
         regex=None, 
-        idx=None, 
+        idx=None):
         # modify_tree=False,
-        ):
         """
         Returns a ToyTree with the selected node rotated for plotting.
         tip colors do not align correct currently if nodes are rotated...
