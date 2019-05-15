@@ -7,6 +7,7 @@ from copy import deepcopy
 from decimal import Decimal
 import numpy as np
 import toyplot
+
 from .utils import ToytreeError
 
 # should we store node_labels, node_sizes, etc here or in Style?
@@ -78,12 +79,12 @@ class Drawing:
         still sharing a common cartesian axes coordinates. 
         """
         if self.style.xbaseline:
-            if self.style.orient in ("up", "down"):
-                self.coords.coords[:, 0] += self.style.xbaseline
-                self.coords.verts[:, 0] += self.style.xbaseline                
-            else:
-                self.coords.coords[:, 1] += self.style.xbaseline
-                self.coords.verts[:, 1] += self.style.xbaseline                
+            self.coords.coords[:, 0] += self.style.xbaseline
+            self.coords.verts[:, 0] += self.style.xbaseline                
+
+        if self.style.ybaseline:
+            self.coords.coords[:, 1] += self.style.ybaseline
+            self.coords.verts[:, 1] += self.style.ybaseline
 
     # -----------------------------------------------------------------
     # Node and Node Labels 
@@ -93,6 +94,8 @@ class Drawing:
         Add text offset from tips of tree with correction for orientation, 
         and fixed_order which is usually used in multitree plotting.
         """
+        # TODO: alternate placement for unrooted trees...
+
         # get tip-coords and replace if using fixed_order
         xpos = self.ttree.get_tip_coordinates('x')
         ypos = self.ttree.get_tip_coordinates('y')
@@ -173,9 +176,12 @@ class Drawing:
         if self.style.tip_labels:
             if self.style.orient == "right":
                 self.axes.x.domain.max = addon / 2.
+                if self.style.xbaseline:
+                    self.axes.x.domain.max += self.style.xbaseline
             elif self.style.orient == "down":
                 self.axes.y.domain.min = (-1 * addon) / 2
-
+                if self.style.ybaseline:
+                    self.axes.y.domain.min += self.style.ybaseline
 
 
     def assign_node_colors_and_style(self):
@@ -315,6 +321,8 @@ class Drawing:
     def assign_tip_labels_and_colors(self):
         "assign tip labels based on user provided kwargs"
         # COLOR
+        if isinstance(self.style.tip_labels_colors, np.ndarray):
+            self.style.tip_labels_colors = list(self.style.tip_labels_colors)
         # tip color overrides tipstyle.fill
         if self.style.tip_labels_colors:
             #if self.style.tip_labels_style.fill:
@@ -437,6 +445,7 @@ class Drawing:
                 ewidth=self.edge_widths,
                 ecolor=self.edge_colors,
             )
+        
         # for unrooted graph tip coordinates are auto-fit, so we need to store
         # the vertex locations.
         elif self.style.edge_type == 'u':
@@ -447,7 +456,9 @@ class Drawing:
                 vsize=0,
                 estyle=self.style.edge_style, 
                 # ecolor=...
-            )            
+            )
+
+        # default edge type is 'p' splitting
         else:
             self.expand_edges_to_lines("edge_colors")
             self.expand_edges_to_lines("edge_widths")
@@ -693,7 +704,7 @@ class Drawing:
     def get_dims_from_tree_size(self):
         "Calculate reasonable canvas height and width for tree given N tips" 
         
-        lname = max([len(i) for i in self.tip_labels])
+        lname = max([len(i) for i in self.tip_labels])     
 
         if self.style.orient in ("right", "left"):
             # height fit by tree size
