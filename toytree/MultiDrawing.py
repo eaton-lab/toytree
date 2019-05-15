@@ -9,7 +9,7 @@ import toyplot
 from .TreeStyle import TreeStyle
 
 
-class TreeGrid:
+class TreeGrid(object):
     """
     Easily create Toyplot gridded canvases for plotting multiple trees.
     """
@@ -25,62 +25,91 @@ class TreeGrid:
         self.ncols = None
 
 
-    def update(self, nrows, ncols, start, shared_axis, **kwargs):
+    def update(self, axes, nrows, ncols, start, shared_axis, **kwargs):
 
         # store plot dims and assert that they fit well enough
+        self.axes = axes
         self.nrows = nrows
         self.ncols = ncols
         self.treeslice = self.treelist[start:start + self.nrows * self.ncols]
 
         # TODO: mess with padding and margins...
-        wdef = min(800, self.ncols * 175)
-        hdef = min(800, self.nrows * 250)
-        self.canvas = toyplot.Canvas(
-            width=(kwargs.get('width') if kwargs.get('width') else wdef), 
-            height=(kwargs.get('height') if kwargs.get('height') else hdef),
+        if not self.axes:
+            wdef = min(800, self.ncols * 175)
+            hdef = min(800, self.nrows * 250)
+            self.canvas = toyplot.Canvas(
+                width=(kwargs.get('width') if kwargs.get('width') else wdef), 
+                height=(kwargs.get('height') if kwargs.get('height') else hdef),
+            ) 
 
-        ) 
-
-        if not shared_axis:
+        if (not shared_axis) and (not self.axes):
             # get max treeheight
             for tidx, tree in enumerate(self.treeslice):
-                # set ymax on cartesian so that trees are on same scale
+        
+                # create grid with a reasonable margin between trees
+                #if not axes:
                 axes = self.canvas.cartesian(
                     grid=(self.nrows, self.ncols, tidx),
-                    margin=(25, 25, 35, 35),
-                    padding=25,
+                    margin=(30, 30, 30, 30),
+                    padding=35,
                 )
+                axes.show = False
+
                 # update tree style with any new arguments
                 tree.draw(axes=axes)
-                axes.show = False
+                
 
         # shared X axis
         else:    
             # only one axis allowed?... x=1 or y=1
-            axes = self.canvas.cartesian(padding=25)
+            if not self.axes:
+                axes = self.canvas.cartesian(padding=25)
             xbaseline = 0
             maxheight = 0
-            
-            for tidx, tree in enumerate(self.treeslice):
-                tree.draw(axes=axes, xbaseline=xbaseline)
-                xbaseline += tree.ntips + 1
-                maxheight = max(maxheight, tree.treenode.height)
+            orient = ("down" if not kwargs.get("orient") else kwargs.get("orient"))
 
-            nticks = max((3, np.floor(hdef / 100).astype(int)))
-            axes.x.show = False
-            axes.y.show = True
-            axes.y.ticks.show = True            
+            # COALESCENT TIME COMPARISON TYPE PLOT
+            if orient == "down":
+                for tidx, tree in enumerate(self.treeslice):
+                    tree.draw(axes=axes, xbaseline=xbaseline, orient='down')
+                    xbaseline += tree.ntips + 1
+                    maxheight = max(maxheight, tree.treenode.height)
 
-            # generate locations
-            locs = np.linspace(0, maxheight, nticks)
+                if not self.axes:
+                    nticks = max((3, np.floor(hdef / 100).astype(int)))
+                    axes.x.show = False
+                    axes.y.show = True
+                    axes.y.ticks.show = True            
 
-            # auto-formatter for axes ticks labels
-            zer = abs(min(0, Decimal(locs[1]).adjusted()))
-            fmt = "{:." + str(zer) + "f}"
-            axes.y.ticks.locator = toyplot.locator.Explicit(
-                locations=locs,
-                labels=[fmt.format(i) for i in np.abs(locs)],
-                )
+                    # generate locations
+                    locs = np.linspace(0, maxheight, nticks)
+
+                    # auto-formatter for axes ticks labels
+                    zer = abs(min(0, Decimal(locs[1]).adjusted()))
+                    fmt = "{:." + str(zer) + "f}"
+                    axes.y.ticks.locator = toyplot.locator.Explicit(
+                        locations=locs,
+                        labels=[fmt.format(i) for i in np.abs(locs)],
+                        )
+
+            # USUALLY TOPOLOGY COMPARISON PLOT
+            else:
+                for tidx, tree in enumerate(self.treeslice):
+                    tree = tree.mod.node_scale_root_height(1.0)
+                    tree.draw(axes=axes, xbaseline=xbaseline, orient='right')
+
+                    if kwargs.get('xbaseline'):
+                        xbaseline += kwargs.get('xbaseline')
+                    else:
+                        if tree.style.use_edge_lengths is False:
+                            shift = tree.treenode.get_farthest_leaf(
+                                topology_only=True)[1] + 1
+                        else:
+                            shift = 1.0
+                        xbaseline += shift + shift / 2.
+
+                    maxheight = max(maxheight, tree.ntips)                
+                axes.show = False
 
         return self.canvas, axes
 
@@ -208,28 +237,46 @@ class CloudTree:
         user to be able to modify this if needed. If not using edge lengths
         then need to use unit length for treeheight.
         """
-
         if not self.tip_labels:
             return 
 
-        # longest name (this will include html hacks)
-        longest_name = max([len(i) for i in self.tip_labels])
-        if longest_name > 10:
-            multiplier = 0.85
-        else:
-            multiplier = 0.25
+        lname = max([len(i) for i in self.tip_labels])
 
-        if self.style.use_edge_lengths:
-            addon = (self.treelist[0].treenode.height + (
-                self.treelist[0].treenode.height * multiplier))
+        # get ratio of names to tree in plot
+        ratio = max(lname / 10, 0.15)
+
+        # have tree figure make up 85% of plot
+        if self.treelist[0].style.use_edge_lengths:
+            addon = self.treelist[0].treenode.height
         else:
-            addon = self.treelist[0].treenode.get_farthest_leaf(True)[1]
+            addon = self.treelist[0].treenode.get_farthest_leaf(True)[1] + 1
+        addon *= ratio
 
         # modify display for orientations
-        if self.style.orient == "right":
-            self.axes.x.domain.max = addon
-        elif self.style.orient == "down":
-            self.axes.y.domain.min = -1 * addon
+        if self.style.tip_labels:
+            if self.style.orient == "right":
+                self.axes.x.domain.max = addon / 2.
+            elif self.style.orient == "down":
+                self.axes.y.domain.min = (-1 * addon) / 2
+
+        # # longest name (this will include html hacks)
+        # longest_name = max([len(i) for i in self.tip_labels])
+        # if longest_name > 10:
+        #     multiplier = 0.85
+        # else:
+        #     multiplier = 0.25
+
+        # if self.style.use_edge_lengths:
+        #     addon = (self.treelist[0].treenode.height + (
+        #         self.treelist[0].treenode.height * multiplier))
+        # else:
+        #     addon = self.treelist[0].treenode.get_farthest_leaf(True)[1]
+
+        # # modify display for orientations
+        # if self.style.orient == "right":
+        #     self.axes.x.domain.max = addon
+        # elif self.style.orient == "down":
+        #     self.axes.y.domain.min = -1 * addon
 
 
     # def assign_tip_labels_and_colors(self):
