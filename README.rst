@@ -15,7 +15,11 @@ Toytree
 
 Tree plotting with **Toytree**
 ------------------------------
-Welcome to toytree, a minimalist tree manipulation and plotting library for use inside jupyter notebooks. Toytree combines a popular tree data structure based on the `ete3 <http://etetoolkit.org/docs/latest/tutorial/tutorial_trees.html>`__) library with modern plotting tools based on the `toyplot <http://toyplot.rtfd.io/>`__) plotting library. The goal of toytree is to provide a light-weight Python equivalent to commonly used tree manipulation and plotting libraries in R, and in doing so, to promote further development of phylogenetic methods in Python. Toytree generates rich interactive figures (SVG+HTML+JS) that can be embedded in jupyter-notebooks or webpages, or rendered in SVG, PDF, or PNG for publications. 
+Welcome to toytree, a minimalist tree manipulation and plotting library for use inside jupyter notebooks. Toytree combines a popular tree data structure based on the `ete3 <http://etetoolkit.org/docs/latest/tutorial/tutorial_trees.html>`__ library with modern plotting tools based on the `toyplot <http://toyplot.rtfd.io/>`__ plotting library. The goal of toytree is to provide a light-weight Python equivalent to commonly used tree manipulation and plotting libraries in R, and in doing so, to promote further development of phylogenetic methods in Python. Toytree generates rich interactive figures (SVG+HTML+JS) that can be embedded in jupyter-notebooks or webpages, or rendered in SVG, PDF, or PNG for publications. 
+
+Examples Gallery
+-----------------
+`See the Cookbook section in the documentation <https://toytree.readthedocs.io/en/latest/Cookbook.html>`_
 
 
 Installation
@@ -28,12 +32,12 @@ You can install ``toytree`` and its dependencies (``toyplot`` and ``numpy``) wit
 
 
 Documentation
---------
+-------------
 See the `full documentation <http://toytree.readthedocs.io>`_ to see all of the options that toytree provides. Try it out instantly in the cloud using the `toytree binder <http://mybinder.org/repo/eaton-lab/toytree>`__.
 
 
 Examples
-------- 
+--------
 
 .. code:: python
     
@@ -52,8 +56,8 @@ Examples
     rtre.draw(
         tip_labels_color='pink',
         node_labels='support',
-        node_size=15,
-        node_color="cyan",
+        node_sizes=15,
+        node_colors="cyan",
         edge_style={
             "stroke": "darkgrey", 
             "stroke-width": 3,

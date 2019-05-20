@@ -18,6 +18,7 @@ setup(
     author_email="de2356@columbia.edu",
     description="minimalist tree plotting using toyplot",
     long_description=open('README.rst').read(),
+    long_description_content_type='text/x-rst',
     packages=find_packages(),
     install_requires=[
         "toyplot>=0.18.0",
