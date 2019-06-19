@@ -637,7 +637,7 @@ class ToyTree(object):
             # try reciprocal taxon list
             tipnames = fuzzy_match_tipnames(
                 nself, names, wildcard, regex, False, False)
-            tipnames = list(set(self.get_tip_labels()) - set(node))
+            tipnames = list(set(self.get_tip_labels()) - set(tipnames))
             node = fuzzy_match_tipnames(
                 nself, tipnames, None, None, True, True)
 
