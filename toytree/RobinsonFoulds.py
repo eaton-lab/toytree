@@ -5,9 +5,8 @@ Robinson-Foulds Distance Calculations modified from ete3 TreeNode subfunction.
 """
 
 from __future__ import print_function
-
-import toytree
 from .utils import TreeError
+# from .TreeParser import TreeParser
 
 
 class RobinsonFoulds(object):
@@ -100,11 +99,16 @@ class RobinsonFoulds(object):
 
 
     def get_trees(self):
+        """
+        TODO: rewrite this so it doesn't have to re-parse newicks.
+        """
+        raise NotImplementedError(
+            "RF dist of unresolved trees not implemented currently. Contact developers.")
+
         # expand polytomies to get all resolutions possible, but fail if > max
         if self.expand_polytomies:
             self.t1s = (
-                # TreeParser(nw).treenodes[0] for nw in 
-                toytree.tree(nw).treenode for nw in 
+                TreeParser(nw).treenodes[0] for nw in
                 self.t1.expand_polytomies(
                     map_attr=self.attr_t1,
                     polytomy_size_limit=self.polytomy_size_limit,
@@ -112,8 +116,8 @@ class RobinsonFoulds(object):
                     )
                 )
             self.t2s = (
-                # TreeParser(nw).treenodes[0] for nw in 
-                toytree.tree(nw).treenode for nw in                                 
+                # toytree.tree(nw).treenode for nw in                                 
+                TreeParser(nw).treenodes[0] for nw in 
                 self.t2.expand_polytomies(
                     map_attr=self.attr_t2,
                     polytomy_size_limit=self.polytomy_size_limit,
