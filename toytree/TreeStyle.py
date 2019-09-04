@@ -30,6 +30,9 @@ DEFAULT_TREE_STYLE = {
     'tip_labels_align': False, 
     'scalebar': False, 
     'padding': 20,
+    'xbaseline': 0,  ## added...
+    'ybaseline': 0,
+    'layout': 'n',
 }
 
 DEFAULT_EDGE_STYLE = {
@@ -123,6 +126,12 @@ STYLES = {
             '-toyplot-anchor-shift': "15px",
         },
     },
+
+    'f': {
+        'edge_type': 'c',
+        'layout': 'c',
+        'use_edge_lengths': False,
+    }
 }
 
 
