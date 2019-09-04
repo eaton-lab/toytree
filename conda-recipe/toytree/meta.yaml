@@ -1,37 +1,29 @@
-## tag and version are updated by the versioner.py script in the toytree repo
-## which then writes to meta.yaml during the conda build.
 package:
   name: toytree
-  version: {{ GIT_DESCRIBE_TAG }}
+  version: '0.2.1'
 
 source:
-  git_url: https://github.com/eaton-lab/toytree.git
+  url: https://github.com/eaton-lab/toytree/archive/0.2.1.tar.gz
+  sha256: 199963f41537b539f8efa017d7682e9f9dc153e7d619e6ba7e7133f643bbab76
 
 build:
-  number: {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
-  script: python setup.py install
-  #noarch: generic
+  number: 0
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv"
+  noarch: python
   
 requirements:
-  build:
-    - python {{ python }}
-    - setuptools
-    - numpy >=1.10
-    - toyplot >=0.17.0
-    - requests
-    - future
+  host:
+    - pip
+    - python
   run:
-    # these are used during travis CI 
-    - python {{ python }}
-    - setuptools
+    - python
     - numpy >=1.10
     - toyplot >=0.17.0 
-    - pypng
-    - reportlab
-    - notebook
-    - nbconvert
     - requests
     - future
+    # - notebook
+    # - nbconvert
+
 test:
   imports:
     - toytree

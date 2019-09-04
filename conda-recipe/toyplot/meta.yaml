@@ -1,54 +1,35 @@
 package:
   name: toyplot
-  version: "0.17.0" ## need to set this explicit b/c the git version is v0.15.0
+  version: "0.18.0"
 
 source:
-  git_url: https://github.com/sandialabs/toyplot.git
-  git_rev: v0.17.0
-
+  url: https://github.com/sandialabs/toyplot/archive/v0.18.0.tar.gz
+  sha256: e4c2b64a72d9d7059db844633f46b489b07f84e9f0f24df77bbcc82c04711f1c
 
 build:
-  number: 0  # {{ environ.get('GIT_DESCRIBE_NUMBER', 0) }}
-  script: python setup.py install # --single-version-externally-managed --record=record.txt
-  
+  number: 1
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv"
+  noarch: python
+
 requirements:
-  build:
-    - python {{ python }}
-    - setuptools
-    - numpy >=1.8.2
-    - multipledispatch  ## render
-    - pandas >=0.14.1
-    - pypng >=0.0.18    ## png
-    - pillow            ## pdf 
-    - reportlab         ## pdf
-    - graphviz          ## graphs
-    - networkx          ## graphs
-    - six               ## not really being used
-    - mock              ## docs
-    - custom_inherit    ## not really being used
-    - ghostscript       ## PNGs    
-    - arrow             ## used for date-times 
+  host:
+    - python
+    - pip
   run:
-    - python {{ python }}
-    - setuptools
+    - python
     - numpy >=1.8.2
-    - pypng >=0.0.18
-    - pandas >=0.14.1    
-    - pillow
-    - reportlab
-    - graphviz
-    - networkx
-    - multipledispatch
-    - six
-    - custom_inherit
-    - ghostscript       ## PNGs    
-    - arrow
+    - custom_inherit     # eaton-lab
+    - multipledispatch   # conda
+    - pypng <=0.0.20     # eaton-lab
+    - reportlab          # conda
+    - six                # 
+    - pillow             # pdf; optional
+    - ghostscript        # eaton-lab or conda-forge / optional
 
 test:
   imports:
     - toyplot
-
-    
+   
 about:
   home: http://github.com/sandialabs/toyplot
   license: BSD

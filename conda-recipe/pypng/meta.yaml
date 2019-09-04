@@ -1,20 +1,21 @@
 package:
   name: pypng
-  version: '0.0.18'
+  version: '0.0.20'
 
 source:
-  git_url: https://github.com/drj11/pypng.git
+  url: https://github.com/drj11/pypng/archive/pypng-0.0.20.tar.gz
+  sha256: d008a1f1f79633937ed2aa1742c7c077359edce53764b8b247891056ddca913c
 
 build:
   number: 0
   script: python setup.py install
+  noarch: python
 
 requirements:
   build:
-    - python {{ python }}
-    - setuptools
+    - python
   run:
-    - python {{ python }}
+    - python
 
 test:
   imports:
