@@ -1,10 +1,10 @@
 package:
   name: toytree
-  version: '0.2.1'
+  version: '0.2.2'
 
 source:
-  url: https://github.com/eaton-lab/toytree/archive/0.2.1.tar.gz
-  sha256: 199963f41537b539f8efa017d7682e9f9dc153e7d619e6ba7e7133f643bbab76
+  url: https://github.com/eaton-lab/toytree/archive/0.2.2.tar.gz
+  sha256: e0f084b512f355c66f7895b15294929405b91136891e2075aea04ddf4534e581
 
 build:
   number: 0
