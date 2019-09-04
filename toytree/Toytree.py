@@ -6,12 +6,11 @@ import itertools
 from decimal import Decimal
 from copy import deepcopy
 
-# from .etemini import TreeNode
 from .TreeNode import TreeNode
 from .TreeStyle import TreeStyle
 from .Coords import Coords
 from .Drawing import Drawing
-from .utils import ToytreeError, TreeMod, fuzzy_match_tipnames
+from .utils import ToytreeError, TreeMod, fuzzy_match_tipnames, NodeAssist
 from .TreeParser import TreeParser
 from .TreeWriter import NewickWriter
 
@@ -506,14 +505,16 @@ class ToyTree(object):
             return nself
 
         # get matching names list with fuzzy match
-        tipnames = fuzzy_match_tipnames(
-            ttree=nself,
-            names=names,
-            wildcard=wildcard,
-            regex=regex,
-            mrca=False,
-            mono=False,
-        )
+        nas = NodeAssist(ttree, names, wildcard, regex)
+        tipnames = nas.get_tipnames()
+        # tipnames = fuzzy_match_tipnames(
+        #     ttree=nself,
+        #     names=names,
+        #     wildcard=wildcard,
+        #     regex=regex,
+        #     mrca=False,
+        #     mono=False,
+        # )
 
         if len(tipnames) == len(nself):
             raise ToytreeError("You cannot drop all tips from the tree.")
@@ -602,20 +603,57 @@ class ToyTree(object):
         Returns a copy of the tree unrooted. Does not transform tree in-place.
         """
         nself = self.copy()
-        nself.treenode.unroot()
+        # updated unroot function to preserve support values to root node
+        nself.treenode.unroot()       
         nself.treenode.ladderize()
         nself._coords.update()
         return nself
 
 
-    def root(self, names=None, wildcard=None, regex=None):
+
+    def root(
+        self, 
+        names=None, 
+        wildcard=None, 
+        regex=None, 
+        resolve_root_dist=True,
+        edge_features=["support"],
+        ):
         """
-        (Re-)root a tree by creating selecting a existing split in the tree,
-        or creating a new node to split an edge in the tree. Rooting location
-        is selected by entering the tips descendant from one child of the root
-        split (e.g., names='a' or names=['a', 'b']). You can alternatively
-        select a list of tip names using a fuzzy selector based on a unique
-        shared string (wildcard="prz") or a regex matching pattern.
+        (Re-)root a tree by moving the tree anchor (real or phantom root node)
+        to a new split in the tree. 
+
+        Rooting location can be selected by entering 
+        a list of tipnames descendant from a node, or using wildcard or regex 
+        to get a list of tipnames. 
+
+        names: (list) (default=None)
+            A list of tip names. Root is placed along edge to mrca node. 
+
+        wildcard: (str) (default=None)
+            A string matching multiple tip names. Root is placed along edge to
+            the mrca node of selected taxa.
+
+        regex: (str) (default=None)
+            A regex string matching multiple tip names. Root is placed along 
+            edge to the mrca node of selected taxa.
+
+        resolve_root_dist: (float or bool) (default=True)
+            Length along the edge at which to place the new root, or a boolean
+            indicating auto methods. Default is True, which means to use mid-
+            point rooting along the edge. False will root at the ancestral node
+            creating a zero length edge. A float value will place the new node
+            at a point along the edge starting from the ancestral node. A float
+            value greater than the edge length will raise an error.
+
+        edge_features: (list) (default=["support"])
+            Node labels in this list are treated as edge labels (e.g., support
+            values represent support for a split/edge in the tree). This effects
+            how labels are moved when the tree is re-rooted. By default support
+            values are treated as edge features and moved to preserve clade
+            supports when the tree is re-rooted. Other node labels, such as 
+            names do not make sense to shift in this way. New splits that are
+            created by rooting are set to 100 by default.
 
         Example:
         To root on a clade that includes the samples "1-A" and "1-B" you can
@@ -625,75 +663,274 @@ class ToyTree(object):
         rtre = tre.root(wildcard="1-")
         rtre = tre.root(regex="1-[A,B]")
         """
+        # insure edge_features is an iterable
+        if not edge_features:
+            edge_features = []
+        if isinstance(edge_features, (str, int, float)):
+            edge_features = [edge_features]
+
         # make a deepcopy of the tree
         nself = self.copy()
+        maxsup = max([int(i.support) for i in nself.treenode.traverse()])
+        maxsup = (1.0 if maxsup <= 1.0 else 100)
 
-        # get treenode of the common ancestor of selected tips
-        try:
-            node = fuzzy_match_tipnames(
-                nself, names, wildcard, regex, True, True)       
-
-        except ToytreeError:           
-            # try reciprocal taxon list
-            tipnames = fuzzy_match_tipnames(
-                nself, names, wildcard, regex, False, False)
-            tipnames = list(set(self.get_tip_labels()) - set(tipnames))
-            node = fuzzy_match_tipnames(
-                nself, tipnames, None, None, True, True)
-
-        # split root node if more than di- as this is the unrooted state
-        if not nself.is_bifurcating():
-            nself.treenode.resolve_polytomy()
-
-        # root the object with ete's translate
-        nself.treenode.set_outgroup(node)
-        nself._coords.update()
-
-        # get features
+        # define which features to use/keep and which are "edge" features
         testnode = nself.treenode.get_leaves()[0]
-        features = {"name", "dist", "support", "height"}
+        features = {"name", "dist", "support"}
         extrafeat = {i for i in testnode.features if i not in features}
-        features.update(extrafeat)
+        features.update(extrafeat)        
 
-        # if there is a new node now, clean up its features
-        nnode = [i for i in nself.treenode.traverse() if not hasattr(i, "idx")]
-        if nnode:
-            # nnode is the node that was added
-            # rnode is the location where it *should* have been added
-            nnode = nnode[0]
-            rnode = [i for i in nself.treenode.children if i != node][0]
+        # find the node whose parent edge will be pinched to root
+        nas = NodeAssist(nself, names, wildcard, regex)
+        nas.match_query()
+        if (not nas.is_query_monophyletic()) or (nas.get_mrca().is_root()):
+            clade1 = nas.tipnames
+            nas.match_reciprocal()
+            if not nas.is_query_monophyletic():
+                clade2 = nas.tipnames
+                raise ToytreeError(
+                    "Matched query is paraphyletic: {}"
+                    .format(sorted([clade1, clade2], key=len)[0]))
 
-            # get idxs of existing nodes
-            idxs = [int(i.idx) for i in nself.treenode.traverse()
-                    if hasattr(i, "idx")]
+        # get the mrca node (or tip node) of the monopyletic matched query.
+        node1 = nas.get_mrca()
 
-            # newnode is a tip
-            if len(node.is_leaf()) == 1:
-                nnode.name = str("rerooted")
-                rnode.name = node
-                rnode.add_feature("idx", max(idxs) + 1)
-                rnode.dist *= 2
-                sister = rnode.get_sisters()[0]
-                sister.dist *= 2
-                rnode.support = 100
-                for feature in extrafeat:
-                    nnode.add_feature(feature, getattr(rnode, feature))
-                    rnode.del_feature(feature)
+        # the node on the other side of the edge to be split.
+        node2 = node1.up
 
-            # newnode is internal
+        # if rooting where root already exists then bail out.
+        if (node1.is_root() or (node2.is_root() and nself.is_rooted())):
+            print("No effect, tree is already rooted by {}.".format(nas.tipnames))            
+            return self
+
+        # the new root node to be placed on the split
+        nnode = nself.treenode.__class__()
+        nnode.name = "root"
+        nnode.add_feature("idx", nself.treenode.idx)
+        nnode.support = maxsup
+
+        # remove node1 lineage leaving just node2 branch to be made into child
+        node2.children.remove(node1)
+
+        # create dictionary for relabeling nodes {node: [parent, child, feat]}
+        tdict = {}
+
+        # new node has no parent and 1/2 as children and default features
+        tdict[nnode] = [None, [node1, node2], {}]
+
+        # node1 has new root parent, same children, and dist preserved (or split?)
+        tdict[node1] = [nnode, node1.children, {"dist": node1.dist}]  # node1.dist / 2.
+
+        # node2 has new root parent, same children + mods, and dist/supp mods
+        tdict[node2] = [nnode, node2.children, {"dist": 0.0}]
+
+        # if not already at root polytomy, then connect node2 to parent
+        if node2.up:
+            if not node2.up.is_root():
+                tdict[node2][1] += [node2.up]
+
+        # if False create zero length root node
+        if resolve_root_dist is False:
+            resolve_root_dist = 0.0
+        
+        # if True then use midpoint rooting
+        if resolve_root_dist is True:
+            tdict[node1][2]["dist"] = node1.dist / 2.
+            tdict[node2][2]["dist"] = node1.dist / 2.
+        
+        # split the edge on 0 or a float
+        if isinstance(resolve_root_dist, float):
+            tdict[node1][2]["dist"] = node1.dist - resolve_root_dist            
+            tdict[node2][2]["dist"] = resolve_root_dist
+            if resolve_root_dist > node1.dist:
+                raise ToytreeError("\n"
+                "To preserve existing edge lengths the 'resolve_root_dist' arg\n"
+                "must be smaller than the edge being split (it is selecting a \n"
+                "a point along the edge.) The edge above node idx {} is {}."
+                .format(node1.idx, node1.dist)
+                )
+
+        # mark new split with zero...
+        for feature in set(edge_features) - set(["support"]):
+            tdict[node2][2][feature] = 0.0
+
+        # unless support value, then mark with full.
+        if "support" in edge_features:
+            tdict[node2][2]['support'] = maxsup
+        else:
+            tdict[node2][2]['support'] = node2.support
+
+        # label all remaining nodes
+        tnode = node2.up
+        while 1:
+
+            # early break
+            if not tnode:
+                break
+
+            # get parent node and children to be mod'd
+            parent = [i for i in tnode.children if i in tdict][0]
+            children = [i for i in tnode.children if i not in tdict]
+
+            # break after the root
+            if tnode.is_root():
+
+                # need a root add feature here if unrooted...
+                if len(children) > 1:
+
+                    # update dist from new parent
+                    tdict[tnode] = [parent, children, {"dist": parent.dist}]
+                    
+                    # update edge features from new parent
+                    for feature in edge_features:
+                        tdict[tnode][2][feature] = getattr(parent, feature)
+
+                    # set tnode as parent's new child
+                    tdict[parent][1].append(tnode)
+
+                    # set children as descendant from tnode
+                    for child in children:
+                        tdict[child] = [tnode, child.children, {}]
+
+                # get children that are not in tdict yet
+                else:
+                    for child in children:
+
+                        # record whose children they are now (node2 already did this)
+                        if parent is node2:
+                            tdict[node2][1].append(child)
+                        else:
+                            tdict[parent][1].append(child)
+
+                        # record whose parents they have now and find distance
+                        dist = {"dist": sum([i.dist for i in tnode.children])}
+                        tdict[child] = [parent, child.children, dist]
+
+                # finished
+                break
+
+            # normal nodes
             else:
-                nnode.add_feature("idx", max(idxs) + 1)
-                nnode.name = str("rerooted")
-                nnode.dist *= 2
-                sister = nnode.get_sisters()[0]
-                sister.dist *= 2
-                nnode.support = 100
+                # update tnode.features
+                features = {i: getattr(tnode, i) for i in ('dist', 'support')}
+                
+                # keep connecting swap parent-child up to root
+                if not tnode.up.is_root():
+                    children += [tnode.up]
 
-        # store tree back into newick and reinit Toytree with new newick
-        # if NHX format then preserve the NHX features.
+                # pass support values down (up in new tree struct)
+                for feature in edge_features:
+                    child = [i for i in tnode.children if i in tdict][0]
+                    features[feature] = getattr(child, feature)
+
+                # store node update vals
+                tdict[tnode] = [parent, children, features]
+
+            # move towards root
+            tnode = tnode.up
+
+        # update tree structure and node labels
+        for node in tdict:
+            node.up = tdict[node][0]
+            node.children = tdict[node][1]
+            for key, val in tdict[node][2].items():
+                setattr(node, key, val)
+
+        # update coordinates which updates idx and adds it to any new nodes.
+        nself.treenode = nnode
         nself.treenode.ladderize()
         nself._coords.update()
-        return nself        
+        return nself              
+
+
+    # old root function that used 'set_outgroup', now deprecated.
+    # def root(self, names=None, wildcard=None, regex=None):
+    #     """
+    #     (Re-)root a tree by creating selecting a existing split in the tree,
+    #     or creating a new node to split an edge in the tree. Rooting location
+    #     is selected by entering the tips descendant from one child of the root
+    #     split (e.g., names='a' or names=['a', 'b']). You can alternatively
+    #     select a list of tip names using a fuzzy selector based on a unique
+    #     shared string (wildcard="prz") or a regex matching pattern.
+
+    #     Example:
+    #     To root on a clade that includes the samples "1-A" and "1-B" you can
+    #     do any of the following:
+
+    #     rtre = tre.root(outgroup=["1-A", "1-B"])
+    #     rtre = tre.root(wildcard="1-")
+    #     rtre = tre.root(regex="1-[A,B]")
+    #     """
+    #     # make a deepcopy of the tree
+    #     nself = self.copy()
+
+    #     # get treenode of the common ancestor of selected tips
+    #     try:
+    #         node = fuzzy_match_tipnames(
+    #             nself, names, wildcard, regex, True, True)       
+
+    #     except ToytreeError:           
+    #         # try reciprocal taxon list
+    #         tipnames = fuzzy_match_tipnames(
+    #             nself, names, wildcard, regex, False, False)
+    #         tipnames = list(set(self.get_tip_labels()) - set(tipnames))
+    #         node = fuzzy_match_tipnames(
+    #             nself, tipnames, None, None, True, True)
+
+    #     # split root node if more than di- as this is the unrooted state
+    #     if not nself.is_bifurcating():
+    #         nself.treenode.resolve_polytomy()
+
+    #     # root the object with ete's translate
+    #     nself.treenode.set_outgroup(node)
+    #     nself._coords.update()
+
+    #     # get features
+    #     testnode = nself.treenode.get_leaves()[0]
+    #     features = {"name", "dist", "support", "height"}
+    #     extrafeat = {i for i in testnode.features if i not in features}
+    #     features.update(extrafeat)
+
+    #     # if there is a new node now, clean up its features
+    #     nnode = [i for i in nself.treenode.traverse() if not hasattr(i, "idx")]
+    #     if nnode:
+    #         # nnode is the node that was added
+    #         # rnode is the location where it *should* have been added
+    #         nnode = nnode[0]
+    #         rnode = [i for i in nself.treenode.children if i != node][0]
+
+    #         # get idxs of existing nodes
+    #         maxidx = max(
+    #             [int(i.idx) for i in nself.treenode.traverse()
+    #             if hasattr(i, "idx")])                   
+
+    #         # newnode is a tip
+    #         if node.is_leaf():
+    #             nnode.name = str("rerooted")
+    #             rnode.name = node
+    #             rnode.add_feature("idx", maxidx + 1)
+    #             rnode.dist *= 2
+    #             sister = rnode.get_sisters()[0]
+    #             sister.dist *= 2
+    #             rnode.support = 100
+    #             for feature in extrafeat:
+    #                 nnode.add_feature(feature, getattr(rnode, feature))
+    #                 rnode.del_feature(feature)
+
+    #         # newnode is internal
+    #         else:
+    #             nnode.add_feature("idx", maxidxs + 1)
+    #             nnode.name = str("rerooted")
+    #             nnode.dist *= 2
+    #             sister = nnode.get_sisters()[0]
+    #             sister.dist *= 2
+    #             nnode.support = 100
+
+    #     # store tree back into newick and reinit Toytree with new newick
+    #     # if NHX format then preserve the NHX features.
+    #     nself.treenode.ladderize()
+    #     nself._coords.update()
+    #     return nself        
 
     # --------------------------------------------------------------------
     # Draw functions imported, but docstring here
@@ -724,8 +961,9 @@ class ToyTree(object):
         use_edge_lengths=None,
         scalebar=None,
         padding=None,
-        xbaseline=0,
-        ybaseline=0,
+        xbaseline=None,
+        ybaseline=None,
+        layout=None,
         **kwargs):
         """
         Plot a Toytree tree, returns a tuple of Toyplot (Canvas, Axes) objects.
@@ -837,7 +1075,10 @@ class ToyTree(object):
             "padding": padding,
             "xbaseline": xbaseline, 
             "ybaseline": ybaseline,
+            "layout": layout,
         }
+
+        # update kwargs with userargs, update style w/ kwargs except empty ones
         kwargs.update(userargs)
         censored = {i: j for (i, j) in kwargs.items() if j is not None}
         nself.style.update(censored)
