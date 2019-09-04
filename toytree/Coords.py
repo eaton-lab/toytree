@@ -37,7 +37,7 @@ class Coords:
 
     # it may be useful to separate these so we can sometimes keep idxs static
     # while only changing the plotting coordinates...
-    def update(self):
+    def update(self, fan=False):
         "Updates cartesian coordinates for drawing tree graph"              
         # get new shape and clear for attrs
         self.edges = np.zeros((self.ttree.nnodes - 1, 2), dtype=int)
@@ -48,9 +48,14 @@ class Coords:
         # fill with updates
         self.update_idxs()             # get dimensions of tree
         self.update_fixed_order()      # in case ntips changed
-        self.assign_vertices()         # get node locations
-        self.assign_coordinates()      # get edge locations
-        self.reorient_coordinates()    # orientation can reorder dimensions
+        if not fan:
+            self.assign_vertices()         # get node locations
+            self.assign_coordinates()      # get edge locations
+            self.reorient_coordinates()    # orientation can reorder dimensions
+        else:           
+            self.assign_fan_vertices()     # get node locations
+            self.assign_coordinates()      # get edge locations
+            self.reorient_coordinates()    # orientation can reorder dimensions
 
 
     def update_idxs(self):
@@ -86,6 +91,74 @@ class Coords:
             self.ttree._set_fixed_order(fixed_order)
         else:
             self.ttree._fixed_idx = list(range(self.ttree.ntips))
+
+
+    def assign_fan_vertices(self):
+        """
+        Assign .edges and .verts for node positions in a fan tree.
+        The farthest tip aligns at the circumference.
+        """
+        # cirlce object for pulling coordinates
+        self.circ = Circle(self.ttree)
+
+        # shortname 
+        uselen = bool(self.ttree.style.use_edge_lengths)
+
+        # store edge array for connecting child nodes to parent nodes
+        nidx = 0
+        for node in self.ttree.treenode.traverse("postorder"):            
+            if not node.is_root():
+                self.edges[nidx, :] = [node.up.idx, node.idx]
+                nidx += 1
+
+        # height is distance towards the radius from the root.
+        _root = self.ttree.treenode.get_tree_root()
+        _treeheight = _root.get_distance(_root.get_farthest_leaf()[0])
+
+        # store verts 
+        tidx = len(self.ttree) - 1
+        for node in self.ttree.treenode.traverse("postorder"):
+
+            # leaves: x positions are evenly spaced around circumference
+            if node.is_leaf() and (not node.is_root()):
+                
+                # get positions of tips using radians and radius
+                node.radians = self.circ.tip_radians[node.idx]
+                if uselen:
+                    node.radius = _root.get_distance(node)
+                    node.x, node.y = self.circ.get_node_coords(node)
+                else:
+                    node.radius = self.circ.radius
+                    node.x, node.y = self.circ.get_node_coords(node)
+                    
+                # TODO: allow fixed order in fan
+                # if self.ttree._fixed_order:
+                    # node.x = self.ttree._fixed_order.index(node.name)
+                # else:
+                    # node.x = tidx
+                    # tidx -= 1
+                # node.x = circ.circ[node.x][0]
+                self.verts[node.idx] = [node.x, node.y]
+
+            # internal nodes comes after tips. Inherit position from children.
+            else:
+
+                # height is either distance or nodes from root
+                if uselen:
+                    node.radius = _root.get_distance(node)
+                else:
+                    node.radius = max([i.radius for i in node.children]) - 1
+
+                # x position is halfway between children x-pos
+                node.radians = np.mean([i.radians for i in node.children])
+                node.x, node.y = self.circ.get_node_coords(node)
+                # if node.children:
+                    # node.x = circ.get_circumference_midpoint(*node.children)
+                # else:
+                    # node.x = circ.circ[tidx]
+
+                # store the x,y vertex positions
+                self.verts[node.idx] = [node.x, node.y]
 
 
     def assign_vertices(self):
@@ -151,6 +224,9 @@ class Coords:
         
 
     def assign_coordinates(self):
+        """
+        coords and lines allow 'p' type edges (not all straight lines)
+        """
 
         if len(self.ttree) < 2:
             return 
@@ -176,77 +252,6 @@ class Coords:
         # store 
         self.coords = np.array([coords[i] for i in range(len(coords))])
         self.lines = np.array(edges)
-
-
-
-    # def assign_coordinates(self):
-        
-    #     # if tree is empty then bail out
-    #     if len(self.ttree) < 2:
-    #         return
-
-    #     # things to fill
-    #     edges = []
-    #     nupdict = {}
-
-    #     # The number of vertices needed to store these edges
-    #     # This depends on polytomies since we skip over some edges.
-    #     nnups = 2 * self.ttree.nnodes + self.ttree.ntips + 100
-    #     verts = np.zeros((nnups, 2))        
-
-    #     # set new node counter to start at ntips
-    #     nidx = len(self.ttree)
-    #     vidx = 0
-
-    #     # from tips to root
-    #     for node in self.ttree.treenode.traverse("postorder"):
-            
-    #         if node.is_leaf():
-    #             # enter a vertex
-    #             verts[vidx] = (node.x, node.y)
-    #             vidx += 1
-                
-    #             # store the nups new nodes vertices
-    #             node.nup = (node.x, node.up.y)
-    #             nupdict[node.nup] = nidx
-    #             verts[nidx] = node.nup
-    #             nidx += 1
-
-    #             # connect node to its node-up
-    #             edges.append((nidx - 1, vidx - 1))
-
-    #         else:
-    #             # get nodes of left/right children 
-    #             minx = min(node.children, key=lambda x: x.x)
-    #             maxx = max(node.children, key=lambda x: x.x)
-                
-    #             # vert indices of newnodes above the children
-    #             nidxl = nupdict[minx.nup]
-    #             nidxr = nupdict[maxx.nup]
-
-    #             # store left/right edge
-    #             #edges.append((nidxl, nidxr))
-    #             edges.append((nidxl, nidx-1))
-    #             edges.append((nidxr, nidx-1))
-
-    #             if not node.is_root():
-    #                 # vertex for internal node and edge up to its nup
-    #                 # store internal node
-    #                 verts[nidx] = (node.x, node.y)
-    #                 nidx += 1
-
-    #                 # store nup new node 
-    #                 node.nup = (node.x, node.up.y)
-    #                 nupdict[node.nup] = nidx
-    #                 verts[nidx] = node.nup
-    #                 nidx += 1
-
-    #                 # store edge connected internal node to nup
-    #                 edges.append((nidx - 1, nidx - 2))
-        
-    #     # store to self
-    #     self.coords = verts[:nidx, :]
-    #     self.lines = np.array(list(edges))
 
 
     def reorient_coordinates(self):
@@ -285,3 +290,74 @@ class Coords:
 
         else:
             raise NotImplementedError("TODO: orient directions up, left...")
+
+
+
+class Circle:
+    def __init__(self, tre):
+        
+        # 
+        self.tre = tre
+        self.radius = self.tre.treenode.get_distance(self.tre.treenode.get_farthest_leaf()[0])
+        self.depth = self.tre.treenode.get_farthest_leaf(topology_only=True)[1]
+        self.step = self.radius / self.depth
+        self.v = []
+        self.o = (0, 0)
+                
+        # 
+        self.tip_radians = np.linspace(0, np.pi * 2, self.tre.ntips + 1)[:-1]
+        # self.tip_coords = self.get_tip_end_coords()
+        
+        # to fill
+        self.edges = np.zeros((self.tre.nnodes - 1, 2), dtype=int)
+        self.verts = np.zeros((self.tre.nnodes, 2), dtype=float)
+        self.lines = []
+        self.coords = []
+        
+
+    def get_parent_coords(self, node):
+        """
+        get x,y coordinates of parent based on radians of children
+        """
+        # calculate x, y coords
+        x = self.o[0] + node.radius * np.cos(midradian)
+        y = self.o[1] + node.radius * np.sin(midradian)
+        return x, y
+
+
+    def get_node_coords(self, node):
+        x = self.o[0] + node.radius * np.cos(node.radians)
+        y = self.o[1] + node.radius * np.sin(node.radians)
+        return x, y
+
+
+    def get_tip_end_angles(self):
+        """
+        node radians for printing tip labels should be from the root (0,0)
+        """
+        return np.array([np.rad2deg(i) -90 for i in self.tip_radians])
+
+
+    def get_tip_end_coords(self, node, offset=None):
+        """
+        node tip coords must calculate new radian angle relative to parent 
+        node and then add offset amount to radius when calculating (x, y).
+        """
+        if offset is None:
+            offset = 0.0
+
+        # store new coords
+        points = []
+
+        parent = node.up
+        if not parent:
+            return node.x, node.y
+
+        else:
+            # get angle in radians from parent coords
+            radians = np.arcsin(node.y - parent.y)
+
+            # get new coords from radian and radius from parent coords
+            x = parent.x + node.dist + offset * np.cos(radians)
+            y = parent.y + node.dist + offset * np.sin(radians)
+            return x, y    
