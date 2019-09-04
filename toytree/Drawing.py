@@ -7,8 +7,8 @@ from copy import deepcopy
 from decimal import Decimal
 import numpy as np
 import toyplot
-
 from .utils import ToytreeError
+
 
 # should we store node_labels, node_sizes, etc here or in Style?
 # It could be that style is just the rules for filling the drawing attrs...
@@ -37,6 +37,10 @@ class Drawing:
         self.edge_colors = [None] * self.nedges
         self.edge_widths = [None] * self.nedges
 
+        # unrooted layout, allow push layout and store from graph func
+        self._unrooted_coords = None
+        self._seed = (1234 if "seed" not in self.kwargs else self.kwargs.get("seed"))
+
         #self.nedges = self.ttree._coords.lines.shape[0]        
         # store whether external axes were passed in 
         self._external_axis = False
@@ -44,8 +48,10 @@ class Drawing:
 
     def update(self, axes=None):
 
-        # always update coords in case style params affect the node placement
-        self.coords.update()
+        # always update coords in case style params affect the node placement.
+        # this will place nodes for 'n' or 'f' trees, but 'u' trees are auto.
+        fan = self.style.layout in ("circular")
+        self.coords.update(fan=fan)
 
         # set up base canvas and axes, but we need tip labels first
         self.assign_tip_labels_and_colors()
@@ -61,8 +67,8 @@ class Drawing:
 
         # draw tree, nodes, tips, axes on canvas.
         self.add_tip_lines_to_axes()
-        self.add_tip_labels_to_axes()
         self.add_tree_to_axes()
+        self.add_tip_labels_to_axes()
         self.add_nodes_to_axes()
         self.add_axes_style()
 
@@ -94,41 +100,89 @@ class Drawing:
         Add text offset from tips of tree with correction for orientation, 
         and fixed_order which is usually used in multitree plotting.
         """
-        # TODO: alternate placement for unrooted trees...
-
         # get tip-coords and replace if using fixed_order
         xpos = self.ttree.get_tip_coordinates('x')
         ypos = self.ttree.get_tip_coordinates('y')
-
-        if self.style.orient in ("up", "down"):
-            if self.ttree._fixed_order:
-                xpos = np.arange(self.ttree.ntips) + self.style.xbaseline
-                ypos = ypos[self.ttree._fixed_idx]
-            if self.style.tip_labels_align:
-                ypos = np.zeros(self.ttree.ntips)
-
-        if self.style.orient in ("right", "left"):
-            if self.ttree._fixed_order:
-                xpos = xpos[self.ttree._fixed_idx]
-                ypos = np.arange(self.ttree.ntips) + self.style.ybaseline
-            if self.style.tip_labels_align:
-                xpos = np.zeros(self.ttree.ntips)
 
         # pop fill from color dict if using color
         tstyle = deepcopy(self.style.tip_labels_style)
         if self.style.tip_labels_colors:
             tstyle.pop("fill")
 
-        # add tip names to coordinates calculated above
-        self.axes.text(
-            xpos, 
-            ypos,
-            self.tip_labels,
-            angle=(0 if self.style.orient in ("right", "left") else -90),
-            style=tstyle,
-            color=self.style.tip_labels_colors,
-        )
-        
+        # circular layout
+        if self.style.layout in "circular":
+
+            tipnodes = [
+                self.ttree.treenode.get_leaves_by_name(i)[0]
+                for i in self.ttree.get_tip_labels()
+            ]
+            angles = self.coords.circ.get_tip_end_angles()
+            tipcoords = np.array(
+                [self.coords.circ.get_tip_end_coords(i) for i in tipnodes])
+
+            # print(self.coords.circ.tip_radians)
+            # print(tipcoords)
+            # print(angles)
+
+            self.axes.text(
+                tipcoords[:, 0],
+                tipcoords[:, 1],                
+                self.tip_labels,
+                angle=angles,
+                #style=tstyle,
+                color=self.style.tip_labels_colors,
+            )
+
+            self.axes.text(
+                self.coords.verts[:self.ttree.ntips, 0],
+                self.coords.verts[:self.ttree.ntips, 1],                
+                self.tip_labels,
+                angle=angles,
+                style={"text-anchor": "end"},#tstyle,
+                color='red',
+            )
+
+        # # unrooted orientations
+        # if self.style.edge_type == "u":
+        #     angles = [
+        #         self.get_angle(self.ttree.treenode.get_leaves_by_name(i)[0])
+        #         for i in self.ttree.get_tip_labels()
+        #     ]
+        #     self.axes.text(
+        #         self._unrooted_coords[:self.ttree.ntips, 0],
+        #         self._unrooted_coords[:self.ttree.ntips, 1],                
+        #         self.tip_labels,
+        #         angle=angles,
+        #         style=tstyle,
+        #         color=self.style.tip_labels_colors,
+        #     )
+
+        # re-orient for rooted orientations
+        else:
+            if self.style.orient in ("up", "down"):
+                if self.ttree._fixed_order:
+                    xpos = np.arange(self.ttree.ntips) + self.style.xbaseline
+                    ypos = ypos[self.ttree._fixed_idx]
+                if self.style.tip_labels_align:
+                    ypos = np.zeros(self.ttree.ntips)
+
+            if self.style.orient in ("right", "left"):
+                if self.ttree._fixed_order:
+                    xpos = xpos[self.ttree._fixed_idx]
+                    ypos = np.arange(self.ttree.ntips) + self.style.ybaseline
+                if self.style.tip_labels_align:
+                    xpos = np.zeros(self.ttree.ntips)
+
+            # add tip names to coordinates calculated above
+            self.axes.text(
+                xpos, 
+                ypos,
+                self.tip_labels,
+                angle=(0 if self.style.orient in ("right", "left") else -90),
+                style=tstyle,
+                color=self.style.tip_labels_colors,
+            )
+            
         # get stroke-width for aligned tip-label lines (optional)
         # copy stroke-width from the edge_style unless user set it
         if not self.style.edge_align_style.get("stroke-width"):
@@ -159,6 +213,10 @@ class Drawing:
         user to be able to modify this if needed. If not using edge lengths
         then need to use unit length for treeheight.
         """
+        # bail on unrooted
+        if self.style.layout in "circular":
+            return
+
         # longest name
         lname = max([len(i) for i in self.tip_labels])
 
@@ -446,17 +504,22 @@ class Drawing:
                 ecolor=self.edge_colors,
             )
         
+        # TODO: IN DEVELOPMENT: 
         # for unrooted graph tip coordinates are auto-fit, so we need to store
         # the vertex locations.
         elif self.style.edge_type == 'u':
-            self.axes.graph(
+            m = self.axes.graph(
                 self.coords.edges,
-                #vcoordinates=self.coords.verts,
+                layout=toyplot.layout.FruchtermanReingold(
+                    seed=self._seed, area=100, M=self.ttree.ntips*20, temperature=10,
+                    ),
                 vlshow=False,
                 vsize=0,
                 estyle=self.style.edge_style, 
-                # ecolor=...
+                ewidth=self.edge_widths, #[:-1],
+                ecolor=self.edge_colors, #[:-1],
             )
+            self._unrooted_coords = np.array(m.vcoordinates)
 
         # default edge type is 'p' splitting
         else:
@@ -465,6 +528,7 @@ class Drawing:
             self.axes.graph(
                 self.coords.lines,
                 vcoordinates=self.coords.coords,
+                layout=toyplot.layout.IgnoreVertices(),
                 vlshow=False,
                 vsize=0.,
                 estyle=self.style.edge_style, 
@@ -569,10 +633,18 @@ class Drawing:
         else:
             title = None
 
+        # layout changes for unrooted trees
+        if self.style.edge_type == 'u':
+            xcoords = self._unrooted_coords[:, 0]
+            ycoords = self._unrooted_coords[:, 1]
+        else:
+            xcoords = self.coords.verts[:, 0]
+            ycoords = self.coords.verts[:, 1]
+
         # add nodes
         self.axes.scatterplot(
-            self.coords.verts[:, 0],
-            self.coords.verts[:, 1],
+            xcoords, 
+            ycoords, 
             marker=marks,
             title=title,
         )
@@ -673,6 +745,7 @@ class Drawing:
                     list(zip(tip_xend, tip_ypos))
                 )
                 tip_xpos = tip_xend
+
         return tip_xpos, tip_ypos, align_edges, align_verts
         
 
@@ -704,8 +777,14 @@ class Drawing:
     def get_dims_from_tree_size(self):
         "Calculate reasonable canvas height and width for tree given N tips" 
         
-        lname = max([len(i) for i in self.tip_labels])     
+        if self.style.layout in "circular":
+            if not self.style.height:
+                self.style.height = 300
+            if not self.style.width:
+                self.style.width = 300
+            return 
 
+        lname = max([len(i) for i in self.tip_labels])     
         if self.style.orient in ("right", "left"):
             # height fit by tree size
             if not self.style.height:
@@ -739,3 +818,46 @@ class Drawing:
         # return nothing if tree is empty
         if not self.ttree.treenode.children:
             raise ToytreeError("Tree is empty")
+
+
+    # not being used, not right
+    def get_angle2(self, node):
+        n1 = node.idx
+        n2 = node.up.idx
+        c1 = self._unrooted_coords[n1]
+        c2 = self._unrooted_coords[n2]
+        dy = c1[1] - c2[1]
+        radians = np.arccos(dy / node.dist)
+        if radians > 0:
+            degrees = np.rad2deg(radians)
+        else:
+            degrees = 360 + np.rad2deg(radians)
+        return degrees
+
+
+    def get_angle(self, node):       
+        # get coordinates
+        n1 = node.idx
+        n2 = node.up.idx
+        c1 = self._unrooted_coords[n1]
+        c2 = self._unrooted_coords[n2]
+        dx = c1[0] - c2[0]
+        dy = c1[1] - c2[1]
+        
+        # opposite over adjancent
+        radprop = np.arctan(dy / dx)
+        degprop = radprop / (np.pi / 2.)
+        deg = 90 * degprop
+
+        # get angle 
+        if dx < 0:
+            if dy < 0:
+                deg += 180
+            else:
+                deg += 180
+        else:
+            if dy < 0:
+                deg += 360
+            else:
+                deg += 0
+        return deg        
