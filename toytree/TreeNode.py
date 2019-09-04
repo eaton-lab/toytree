@@ -345,7 +345,11 @@ class TreeNode(object):
                 \ A
 
         """
+
+        # get parent node
         parent = self.up
+
+        # if there is one
         if parent:
             if preserve_branch_length:
                 if len(self.children) == 1:
@@ -1127,6 +1131,7 @@ class TreeNode(object):
             n.name = tname
 
 
+    # this is left here for now, but not used by toytree.root()
     def set_outgroup(self, outgroup):
         """
         Sets a descendant node as the outgroup of a tree.  This function
@@ -1216,20 +1221,35 @@ class TreeNode(object):
         outgroup2.support = outgroup.support
 
 
+    # updated from ete to include preservation of support values.
     def unroot(self):
         """
         Unroots current node. This function is expected to be used on
         the absolute tree root node, but it can be also be applied to
         any other internal node. It will convert a split into a
-        multifurcation.
+        multifurcation. 
+
+        toytree: Unlike the ete function, this one inherits node 
+        values from the collapsed node into the root to preserve them. 
         """
+        # must be bifurcating to start
         if len(self.children)==2:
+
+            # find a child with children 
             if not self.children[0].is_leaf():
-                self.children[0].delete()
+                child = self.children[0]
             elif not self.children[1].is_leaf():
-                self.children[1].delete()
+                child = self.children[1]
             else:
                 raise TreeError("Cannot unroot a tree with only two leaves")
+
+            # update tree for new connection (new)
+            for gchild in child.children:
+                gchild.up = self
+                self.children.append(gchild)
+            self.support = child.support
+            self.dist = sum([i.dist for i in self.children])
+            self.children.remove(child)
 
 
     def _asciiArt(self, char1='-', show_internal=True, compact=False, attributes=None):
@@ -1412,7 +1432,6 @@ class TreeNode(object):
         (rf, rf_max, common_attrs, names, edges_t1, edges_t2, 
          discarded_edges_t1, discarded_edges_t2)
         """
-
         rf = RobinsonFoulds(
             self, t2, 
             attr_t1, attr_t2, 
@@ -1962,6 +1981,7 @@ def _translate_nodes(root, *nodes):
     """
     Convert node names into node instances...
     """
+
     #name2node = {[n, None] for n in nodes if type(n) is str}
     name2node = dict([[n, None] for n in nodes if type(n) is str])
     for n in root.traverse():
