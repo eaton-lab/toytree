@@ -48,10 +48,12 @@ class Drawing:
 
     def update(self, axes=None):
 
+        # check layout args
+        self.check_layout()
+
         # always update coords in case style params affect the node placement.
         # this will place nodes for 'n' or 'f' trees, but 'u' trees are auto.
-        fan = self.style.layout in ("circular")
-        self.coords.update(fan=fan)
+        self.coords.update()
 
         # set up base canvas and axes, but we need tip labels first
         self.assign_tip_labels_and_colors()
@@ -78,6 +80,21 @@ class Drawing:
         #return self.canvas, self.axes, tuple(self.axes._children)
 
 
+    def check_layout(self):
+        if self.style.layout in ('c', 'circ', 'circular'):
+            self.style.layout = 'c'
+        if self.style.layout in ('x', 'unrooted'):
+            self.style.layout = 'x'
+        if self.style.layout in ('r', 'right'):
+            self.style.layout = 'r'
+        if self.style.layout in ('d', 'down'):
+            self.style.layout = 'd'
+        if self.style.layout in ('l', 'left'):
+            self.style.layout = 'l'
+        if self.style.layout in ('u', 'up'):
+            self.style.layout = 'u'
+
+
     def set_baselines(self):
         """
         Modify coords to shift tree position for x,y baseline arguments. This
@@ -100,50 +117,79 @@ class Drawing:
         Add text offset from tips of tree with correction for orientation, 
         and fixed_order which is usually used in multitree plotting.
         """
-        # get tip-coords and replace if using fixed_order
-        xpos = self.ttree.get_tip_coordinates('x')
-        ypos = self.ttree.get_tip_coordinates('y')
 
         # pop fill from color dict if using color
         tstyle = deepcopy(self.style.tip_labels_style)
-        if self.style.tip_labels_colors:
+        if isinstance(self.style.tip_labels_colors, np.ndarray):
             tstyle.pop("fill")
 
-        # circular layout
-        if self.style.layout in "circular":
+        # circular layout ()
+        if self.style.layout == 'c':
 
-            tipnodes = [
-                self.ttree.treenode.get_leaves_by_name(i)[0]
-                for i in self.ttree.get_tip_labels()
-            ]
-            angles = self.coords.circ.get_tip_end_angles()
-            tipcoords = np.array(
-                [self.coords.circ.get_tip_end_coords(i) for i in tipnodes])
+            # expand colors to an array so it can be masked if needed
+            if isinstance(self.style.tip_labels, (np.ndarray, list, tuple)):
+                colors = np.array(self.style.tip_labels_colors)
+            else:
+                colors = np.array([self.style.tip_labels] * self.ttree.ntips)
 
-            # print(self.coords.circ.tip_radians)
-            # print(tipcoords)
-            # print(angles)
+            # get tip coords at radius edge or at tips
+            if self.style.tip_labels_align:
+                tipcoords = self.coords.circ.get_tip_end_coords()
+            else:
+                tipcoords = self.coords.verts[:self.ttree.ntips]
 
-            self.axes.text(
-                tipcoords[:, 0],
-                tipcoords[:, 1],                
-                self.tip_labels,
-                angle=angles,
-                #style=tstyle,
-                color=self.style.tip_labels_colors,
+            # adjust for baseline (origin) shift
+            tipcoords[:, 0] += self.style.xbaseline
+            tipcoords[:, 1] += self.style.ybaseline
+
+            # get tip angles using radians from origin
+            angles = self.coords.circ.get_tip_end_angles() - 0.05
+
+            # whether to flip tip labels
+            mask = (
+                (abs(self.coords.circ.tip_radians) > np.pi / 2.) & 
+                (abs(self.coords.circ.tip_radians) < 3 * np.pi / 2.)
             )
 
+            # print in tips in two-parts for orientations
+            tstyle["text-anchor"] = "end"
+            if "-" in tstyle["-toyplot-anchor-shift"]:
+                tstyle["-toyplot-anchor-shift"] = tstyle["-toyplot-anchor-shift"][1:]
+            else:
+                tstyle["-toyplot-anchor-shift"] = "-" + tstyle["-toyplot-anchor-shift"]
             self.axes.text(
-                self.coords.verts[:self.ttree.ntips, 0],
-                self.coords.verts[:self.ttree.ntips, 1],                
-                self.tip_labels,
-                angle=angles,
-                style={"text-anchor": "end"},#tstyle,
-                color='red',
+                tipcoords[:, 0][mask],
+                tipcoords[:, 1][mask],                
+                np.array(self.tip_labels)[mask],
+                angle=angles[mask] + 180,
+                style=tstyle, 
+                color=(
+                    None if not isinstance(self.style.tip_labels_colors, np.ndarray)
+                    else self.style.tip_labels_colors[mask]
+                    ),
             )
 
-        # # unrooted orientations
-        # if self.style.edge_type == "u":
+            mask = np.invert(mask)
+            tstyle["text-anchor"] = "start"
+            if "-" in tstyle["-toyplot-anchor-shift"]:
+                tstyle["-toyplot-anchor-shift"] = tstyle["-toyplot-anchor-shift"][1:]
+            else:
+                tstyle["-toyplot-anchor-shift"] = "-" + tstyle["-toyplot-anchor-shift"]
+            self.axes.text(
+                tipcoords[:, 0][mask],
+                tipcoords[:, 1][mask],                
+                np.array(self.tip_labels)[mask],
+                angle=angles[mask],
+                style=tstyle,
+                color=(
+                    None if not isinstance(self.style.tip_labels_colors, np.ndarray)
+                    else self.style.tip_labels_colors[mask]
+                    ),
+            )            
+
+        # unrooted orientations
+        elif self.style.edge_type == "u":
+            raise NotImplementedError("unrooted layout coming soon.")
         #     angles = [
         #         self.get_angle(self.ttree.treenode.get_leaves_by_name(i)[0])
         #         for i in self.ttree.get_tip_labels()
@@ -159,14 +205,20 @@ class Drawing:
 
         # re-orient for rooted orientations
         else:
-            if self.style.orient in ("up", "down"):
+
+            # get tip-coords and replace if using fixed_order
+            xpos = self.ttree.get_tip_coordinates('x')
+            ypos = self.ttree.get_tip_coordinates('y')
+
+            # order tips for direction            
+            if self.style.layout in ("u", "d"):
                 if self.ttree._fixed_order:
                     xpos = np.arange(self.ttree.ntips) + self.style.xbaseline
                     ypos = ypos[self.ttree._fixed_idx]
                 if self.style.tip_labels_align:
                     ypos = np.zeros(self.ttree.ntips)
 
-            if self.style.orient in ("right", "left"):
+            if self.style.layout in ("r", "l"):
                 if self.ttree._fixed_order:
                     xpos = xpos[self.ttree._fixed_idx]
                     ypos = np.arange(self.ttree.ntips) + self.style.ybaseline
@@ -178,7 +230,7 @@ class Drawing:
                 xpos, 
                 ypos,
                 self.tip_labels,
-                angle=(0 if self.style.orient in ("right", "left") else -90),
+                angle=(0 if self.style.layout in ("r", "l") else -90),
                 style=tstyle,
                 color=self.style.tip_labels_colors,
             )
@@ -213,8 +265,8 @@ class Drawing:
         user to be able to modify this if needed. If not using edge lengths
         then need to use unit length for treeheight.
         """
-        # bail on unrooted
-        if self.style.layout in "circular":
+        # bail on unrooted for now; TODO
+        if self.style.layout == "c":
             return
 
         # longest name
@@ -230,13 +282,13 @@ class Drawing:
             addon = self.ttree.treenode.get_farthest_leaf(True)[1] + 1
         addon *= ratio
 
-        # modify display for orientations
+        # modify display for layout
         if self.style.tip_labels:
-            if self.style.orient == "right":
+            if self.style.layout == "r":
                 self.axes.x.domain.max = addon / 2.
                 if self.style.xbaseline:
                     self.axes.x.domain.max += self.style.xbaseline
-            elif self.style.orient == "down":
+            elif self.style.layout == "d":
                 self.axes.y.domain.min = (-1 * addon) / 2
                 if self.style.ybaseline:
                     self.axes.y.domain.min += self.style.ybaseline
@@ -299,7 +351,6 @@ class Drawing:
             elif isinstance(markers, (list, tuple)):
                 for cidx in range(len(self.node_markers)):
                     self.node_markers[cidx] = markers[cidx]
-
 
 
     def assign_node_labels_and_sizes(self):
@@ -378,18 +429,19 @@ class Drawing:
 
     def assign_tip_labels_and_colors(self):
         "assign tip labels based on user provided kwargs"
-        # COLOR
-        if isinstance(self.style.tip_labels_colors, np.ndarray):
-            self.style.tip_labels_colors = list(self.style.tip_labels_colors)
-        # tip color overrides tipstyle.fill
-        if self.style.tip_labels_colors:
-            #if self.style.tip_labels_style.fill:
-            #    self.style.tip_labels_style.fill = None
+
+        # COLOR (make a list from a single value)
+        if isinstance(self.style.tip_labels_colors, str):
+            self.style.tip_labels_colors = np.array(
+                [self.style.tip_labels_colors] * self.ttree.ntips)
+
+        # reorder array for fixed if needed
+        elif isinstance(self.style.tip_labels_colors, (list, np.ndarray)):
             if self.ttree._fixed_order:
-                if isinstance(self.style.tip_labels_colors, (list, np.ndarray)):                                     
-                    cols = np.array(self.style.tip_labels_colors)
-                    orde = cols[self.ttree._fixed_idx]
-                    self.style.tip_labels_colors = list(orde)
+                cols = np.array(self.style.tip_labels_colors)
+                orde = cols[self.ttree._fixed_idx]
+                self.style.tip_labels_colors = list(orde)
+            self.style.tip_labels_colors = np.array(self.style.tip_labels_colors)
 
         # LABELS
         # False == hide tip labels
@@ -491,12 +543,16 @@ class Drawing:
     # Tree / Graph plotting
     # -----------------------------------------------------------------
     def add_tree_to_axes(self):
+        """
+        Edge types affect whether nodes look like V or U 
+        """
 
         # if edge color or widths then override style stroke and stroke-width
-        if self.style.edge_type == 'c':
+        if self.style.edge_type in ('c'):
             self.axes.graph(
                 self.coords.edges,
                 vcoordinates=self.coords.verts,
+                layout=toyplot.layout.IgnoreVertices(),
                 vlshow=False,
                 vsize=0,
                 estyle=self.style.edge_style,
@@ -504,27 +560,12 @@ class Drawing:
                 ecolor=self.edge_colors,
             )
         
-        # TODO: IN DEVELOPMENT: 
-        # for unrooted graph tip coordinates are auto-fit, so we need to store
-        # the vertex locations.
-        elif self.style.edge_type == 'u':
-            m = self.axes.graph(
-                self.coords.edges,
-                layout=toyplot.layout.FruchtermanReingold(
-                    seed=self._seed, area=100, M=self.ttree.ntips*20, temperature=10,
-                    ),
-                vlshow=False,
-                vsize=0,
-                estyle=self.style.edge_style, 
-                ewidth=self.edge_widths, #[:-1],
-                ecolor=self.edge_colors, #[:-1],
-            )
-            self._unrooted_coords = np.array(m.vcoordinates)
-
         # default edge type is 'p' splitting
         else:
             self.expand_edges_to_lines("edge_colors")
             self.expand_edges_to_lines("edge_widths")
+            # print(self.coords.lines.round(2))
+            # print(self.coords.coords.round(2))
             self.axes.graph(
                 self.coords.lines,
                 vcoordinates=self.coords.coords,
@@ -538,7 +579,9 @@ class Drawing:
   
 
     def expand_edges_to_lines(self, attr):
-
+        """
+        used for 'p' edge_type to expand edge styles to connecting edges.
+        """
         # set default values
         if attr == "edge_colors":
             arr = ["#262626"] * self.coords.lines.shape[0]
@@ -663,7 +706,7 @@ class Drawing:
                 self.axes.show = False
         
         # scalebar        
-        if self.style.scalebar and self.style.orient == "right":
+        if self.style.scalebar and self.style.layout == "r":
             nticks = max((3, np.floor(self.style.width / 100).astype(int)))
             self.axes.y.show = False
             self.axes.x.show = True
@@ -684,7 +727,7 @@ class Drawing:
                 labels=[fmt.format(i) for i in np.abs(locs)],
                 )
 
-        elif self.style.scalebar and self.style.orient == "down":
+        elif self.style.scalebar and self.style.layout == "d":
             nticks = max((3, np.floor(self.style.height / 100).astype(int)))
             self.axes.x.show = False
             self.axes.y.show = True
@@ -720,8 +763,27 @@ class Drawing:
         align_edges = None
         align_verts = None
 
-        # handle orientations
-        if self.style.orient == 'down':
+        if self.style.layout == "c":
+            if self.style.tip_labels_align:
+
+                # get tip coordinates as x,y
+                endcoords = self.coords.circ.get_tip_end_coords()
+                tipcoords = self.coords.verts[:self.ttree.ntips]
+                endcoords[:, 0] += self.ttree.style.xbaseline
+                endcoords[:, 1] += self.ttree.style.ybaseline                
+
+                # the array of which tips go to which tip terminal
+                align_edges = np.array(
+                    [(i, i + len(endcoords)) for i in range(len(endcoords))]
+                )
+
+                # the vertex locations of tips and tip terminals.
+                align_verts = np.concatenate([tipcoords, endcoords])
+                return None, None, align_edges, align_verts
+
+
+        # handle layout orientations
+        if self.style.layout == 'd':
             # align tips at zero
             if self.style.tip_labels_align:
                 tip_yend = np.zeros(ns)
@@ -777,7 +839,7 @@ class Drawing:
     def get_dims_from_tree_size(self):
         "Calculate reasonable canvas height and width for tree given N tips" 
         
-        if self.style.layout in "circular":
+        if self.style.layout == "c":
             if not self.style.height:
                 self.style.height = 300
             if not self.style.width:
@@ -785,7 +847,7 @@ class Drawing:
             return 
 
         lname = max([len(i) for i in self.tip_labels])     
-        if self.style.orient in ("right", "left"):
+        if self.style.layout in ("r", "l"):
             # height fit by tree size
             if not self.style.height:
                 self.style.height = max(275, min(1000, 18 * self.ttree.ntips))
@@ -860,4 +922,4 @@ class Drawing:
                 deg += 360
             else:
                 deg += 0
-        return deg        
+        return deg

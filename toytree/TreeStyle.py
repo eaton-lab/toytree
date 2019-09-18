@@ -18,7 +18,7 @@ DEFAULT_TREE_STYLE = {
     'edge_widths': None,
     'height': None,
     'width': None,
-    'orient': 'right',
+    # 'orient': 'right',
     'node_labels': False,
     'node_sizes': None,
     'node_colors': None,
@@ -32,7 +32,7 @@ DEFAULT_TREE_STYLE = {
     'padding': 20,
     'xbaseline': 0,  ## added...
     'ybaseline': 0,
-    'layout': 'n',
+    'layout': 'n',   ## 'right', 'down', 'left', 'up', 'unrooted', 'circular/radial'
 }
 
 DEFAULT_EDGE_STYLE = {
@@ -71,14 +71,14 @@ DEFAULT_TIP_LABEL_STYLE = {
 STYLES = {
     'n': {
         #"tree_style": "normal",
-        "orient": "right", 
+        "layout": "r",
         "use_edge_lengths": True, 
         "tip_labels_align": False, 
     },
 
     's': {
         #"tree_style": "simple",
-        "orient": "right", 
+        "layout": "r", 
         "use_edge_lengths": False, 
         "node_labels": True, 
         "node_colors": "lightgrey", 
@@ -91,7 +91,7 @@ STYLES = {
 
     'c': {
         #"tree_style": "coal", 
-        "orient": "down", 
+        "layout": "d", 
         "edge_type": "c",
         "use_edge_lengths": True, 
         "tip_labels_align": False, 
@@ -103,7 +103,7 @@ STYLES = {
     },
 
     'd': {
-        'orient': 'right', 
+        'layout': 'r', 
         'use_edge_lengths': True, 
         'tip_labels_align': True, 
         'tip_labels_colors': COLORS[3],
@@ -114,7 +114,7 @@ STYLES = {
     
     'm': {
         'edge_type': 'c', 
-        'orient': 'right', 
+        'layout': 'r', 
         'use_edge_lengths': True, 
         'tip_labels_align': False, 
         'node_labels': False, 
@@ -267,6 +267,8 @@ class Style(dict):
             raise AttributeError("No such attribute: " + name)
 
     def __setattr__(self, name, value):
+
+        # allow limited layout args
         self[name] = value
         
 
