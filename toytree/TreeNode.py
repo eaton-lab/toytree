@@ -1326,14 +1326,28 @@ class TreeNode(object):
         according to the size of each partition.
         """
         if not self.is_leaf():
+
+            # record nodes and their sizes
             n2s = {}
+
+            # apply dynamic func to children until we get to the tips
             for n in self.get_children():
                 s = n.ladderize(direction=direction)
                 n2s[n] = s
 
+            # option to also sort tipnames alphanumerically
+            # if all([i.is_leaf() for i in self.children]):
+            # self.children.sort(key=lambda x: x.name)
+            # else:
+
+            # sort nodes by size
             self.children.sort(key=lambda x: n2s[x])
+
+            # flip order for direction arg
             if direction == 1:
                 self.children.reverse()
+
+            # get new size
             size = sum(n2s.values())
         else:
             size = 1
