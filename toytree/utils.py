@@ -428,6 +428,7 @@ class RandomTree(object):
         for node in self.treenode.traverse():
             node.support = 100            
         # fill internal node names and idx
+        self.treenode.ladderize()
         self._coords.update()
         return self
 
