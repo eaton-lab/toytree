@@ -102,11 +102,11 @@ class RobinsonFoulds(object):
         """
         TODO: rewrite this so it doesn't have to re-parse newicks.
         """
-        raise NotImplementedError(
-            "RF dist of unresolved trees not implemented currently. Contact developers.")
-
         # expand polytomies to get all resolutions possible, but fail if > max
         if self.expand_polytomies:
+            raise NotImplementedError(
+                "RF dist of unresolved trees not implemented currently. TODO: contact developers.")
+
             self.t1s = (
                 TreeParser(nw).treenodes[0] for nw in
                 self.t1.expand_polytomies(
