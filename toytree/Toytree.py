@@ -505,7 +505,7 @@ class ToyTree(object):
             return nself
 
         # get matching names list with fuzzy match
-        nas = NodeAssist(ttree, names, wildcard, regex)
+        nas = NodeAssist(nself, names, wildcard, regex)
         tipnames = nas.get_tipnames()
         # tipnames = fuzzy_match_tipnames(
         #     ttree=nself,
@@ -528,7 +528,7 @@ class ToyTree(object):
         return nself
 
 
-    # TODO: could use ete swap_children func to mod tree...
+    # TODO: could swap or reverse .children node attr to swap_children & update
     def rotate_node(
         self, 
         names=None, 
@@ -941,7 +941,7 @@ class ToyTree(object):
         height=None,
         width=None,
         axes=None,        
-        orient=None,
+        layout=None,
         tip_labels=None,
         tip_labels_colors=None,
         tip_labels_style=None,
@@ -963,7 +963,6 @@ class ToyTree(object):
         padding=None,
         xbaseline=None,
         ybaseline=None,
-        layout=None,
         **kwargs):
         """
         Plot a Toytree tree, returns a tuple of Toyplot (Canvas, Axes) objects.
@@ -1053,7 +1052,7 @@ class ToyTree(object):
         userargs = {
             "height": height,
             "width": width,
-            "orient": orient,
+            "layout": layout,
             "tip_labels": tip_labels,
             "tip_labels_colors": tip_labels_colors,
             "tip_labels_align": tip_labels_align,
@@ -1075,7 +1074,7 @@ class ToyTree(object):
             "padding": padding,
             "xbaseline": xbaseline, 
             "ybaseline": ybaseline,
-            "layout": layout,
+            # "orient": orient,
         }
 
         # update kwargs with userargs, update style w/ kwargs except empty ones
@@ -1084,7 +1083,8 @@ class ToyTree(object):
         nself.style.update(censored)
 
         # warn user if they entered kwargs that weren't recognized:
-        unrecognized = [i for i in kwargs if i not in userargs]
+        allkeys = list(userargs.keys()) + ["debug", "ts"]
+        unrecognized = [i for i in kwargs if i not in allkeys]
         if unrecognized:
             print("unrecognized arguments skipped: {}".format(unrecognized))
             print("check the docs, argument names may have changed.")
