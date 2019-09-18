@@ -63,3 +63,6 @@ Examples
             "stroke-width": 3,
         },
     )
+
+<br>
+<img src="./docs/Figure-1.svg" style="width:75%">
