@@ -66,12 +66,12 @@ class TreeGrid(object):
                 axes = self.canvas.cartesian(padding=25)
             xbaseline = 0
             maxheight = 0
-            orient = ("down" if not kwargs.get("orient") else kwargs.get("orient"))
+            layout = ("d" if not kwargs.get("layout") else kwargs.get("layout"))
 
             # COALESCENT TIME COMPARISON TYPE PLOT
-            if orient == "down":
+            if layout == "d":
                 for tidx, tree in enumerate(self.treeslice):
-                    tree.draw(axes=axes, xbaseline=xbaseline, orient='down')
+                    tree.draw(axes=axes, xbaseline=xbaseline, layout='d')
                     xbaseline += tree.ntips + 1
                     maxheight = max(maxheight, tree.treenode.height)
 
@@ -96,7 +96,7 @@ class TreeGrid(object):
             else:
                 for tidx, tree in enumerate(self.treeslice):
                     tree = tree.mod.node_scale_root_height(1.0)
-                    tree.draw(axes=axes, xbaseline=xbaseline, orient='right')
+                    tree.draw(axes=axes, xbaseline=xbaseline, layout='r')
 
                     if kwargs.get('xbaseline'):
                         xbaseline += kwargs.get('xbaseline')
@@ -176,7 +176,7 @@ class CloudTree:
     def set_dims_from_tree_size(self):
         "Calculate reasonable height and width for tree given N tips"
         tlen = len(self.treelist[0])
-        if self.style.orient in ("right", "left"):
+        if self.style.layout in ("r", "l"):
             # long tip-wise dimension
             if not self.style.height:
                 self.style.height = max(275, min(1000, 18 * (tlen)))
@@ -196,13 +196,18 @@ class CloudTree:
         and fixed_order which is usually used in multitree plotting.
         """
         # get tip-coords
-        if self.style.orient in ("up", "down"):
+        if self.style.layout in ("u", "d"):
             ypos = np.zeros(self.ntips)
             xpos = np.arange(self.ntips)
 
-        if self.style.orient in ("right", "left"):
+        elif self.style.layout in ("r", "l"):
             xpos = np.zeros(self.ntips)
             ypos = np.arange(self.ntips)
+
+        else:
+            raise NotImplementedError(
+                "multitree layout {} not yet supported"
+                .format(self.style.layout))
 
         # pop fill from color dict if using color
         if self.style.tip_labels_colors:
@@ -218,7 +223,7 @@ class CloudTree:
             xpos, 
             ypos,
             self.tip_labels,
-            angle=(0 if self.style.orient in ("right", "left") else -90),
+            angle=(0 if self.style.layout in ("r", "l") else -90),
             style=self.style.tip_labels_style,
             color=self.style.tip_labels_colors,
         )
@@ -254,9 +259,9 @@ class CloudTree:
 
         # modify display for orientations
         if self.style.tip_labels:
-            if self.style.orient == "right":
+            if self.style.layout == "r":
                 self.axes.x.domain.max = addon / 2.
-            elif self.style.orient == "down":
+            elif self.style.layout == "d":
                 self.axes.y.domain.min = (-1 * addon) / 2
 
         # # longest name (this will include html hacks)
