@@ -64,5 +64,5 @@ Examples
         },
     )
 
-<br>
-<img src="./docs/Figure-1.svg" style="width:75%">
+
+.. image:: ./manuscript/ToyTree-figure.svg
