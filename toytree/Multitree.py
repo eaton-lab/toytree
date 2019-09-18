@@ -181,14 +181,15 @@ class MultiTree(object):
         cutoff (float; default=0.0): 
             Cutoff below which clades are collapsed in the majority rule 
             consensus tree. This is a proportion (e.g., 0.5 means 50%). 
-        best_tree (Toytree; optional):
+        best_tree (Toytree or newick string; optional):
             A tree that support values should be calculated for and added to. 
             For example, you want to calculate how often clades in your best 
             ML tree are supported in 100 bootstrap trees. 
         """
-        if best_tree:
-            raise NotImplementedError("best_tree option not yet supported.")
-        cons = ConsensusTree(self.treelist, cutoff)
+        if best_tree is not None:
+            if not isinstance(best_tree, ToyTree):
+                best_tree = ToyTree(best_tree)
+        cons = ConsensusTree(self.treelist, best_tree=best_tree, cutoff=cutoff)
         cons.update()
         return cons.ttree
 
@@ -377,15 +378,25 @@ class ConsensusTree:
     cutoff=0.5 then it is a normal majority rule consensus, while if
     cutoff=0.0 then subsequent non-conflicting clades are added to the tree.
     """
-    def __init__(self, treelist, cutoff=0.0):
+    def __init__(self, treelist, best_tree=None, cutoff=0.0):
 
+        # parse args
         self.treelist = treelist
-        self.names = self.treelist[0].get_tip_labels()
+        self.best_tree = best_tree
+        if self.best_tree is not None:
+            self.best_tree = best_tree.copy().unroot()
+            self.names = self.best_tree.get_tip_labels()
+        else:
+            self.names = self.treelist[0].get_tip_labels()
         self.cutoff = float(cutoff)
+
+        # attrs to fill
         self.namedict = None
         self.treedict = {}
         self.clade_counts = None
         self.fclade_counts = None
+
+        # results 
         self.ttree = None
         self.nodelist = None
 
@@ -396,18 +407,23 @@ class ConsensusTree:
         # hash a dict to remove duplicate trees
         self.hash_trees()
 
-        # Find which clades occured with freq > cutoff. 
-        # Fills namedict, clade_counts
-        self.find_clades()
+        # map onto best_tree of infer majrule consensus
+        if self.best_tree is not None:
+            self.map_onto_best_tree()
 
-        # Filter out the < cutoff clades
-        # Fills fclade_counts
-        self.filter_clades()
+        else:
+            # Find which clades occured with freq > cutoff. 
+            # Fills namedict, clade_counts
+            self.find_clades()
 
-        # Build consensus tree.
-        # Fills .tree
-        self.build_trees()  # fclade_counts, namedict)
-        ## todo. make sure no singleton nodes were left behind ...
+            # Filter out the < cutoff clades
+            # Fills fclade_counts
+            self.filter_clades()
+
+            # Build consensus tree.
+            # Fills .tree
+            self.build_trees()  # fclade_counts, namedict)
+            ## todo. make sure no singleton nodes were left behind ...
 
 
     def hash_trees(self):
@@ -422,6 +438,54 @@ class ConsensusTree:
             else:
                 idx = observed[hashed]
                 self.treedict[idx] += 1
+
+
+    def map_onto_best_tree(self):
+        "map clades from tree onto best_tree"
+
+        # index names from the first tree
+        ndict = {j: i for i, j in enumerate(self.names)}
+
+        # dictionary of bits describing all clades in the best tree
+        idict = {}
+        bitdict = {}
+        for node in self.best_tree.treenode.traverse("preorder"):
+
+            # get byte string representing split
+            bits = np.zeros(self.best_tree.ntips, dtype=np.bool_)
+            for child in node.iter_leaf_names():
+                bits[ndict[child]] = True
+            bitstring = bits.tobytes()
+
+            # record split (mirror image not relevant)
+            bitdict[bitstring] = 0
+            idict[bitstring] = node
+        # print(bitdict)
+
+        # count occurrence of clades in best_tree among other trees
+        for tidx, ncopies in self.treedict.items():
+            tre = self.treelist[tidx].unroot()
+            # print(tidx)
+            for node in tre.treenode.traverse("preorder"):
+                bits = np.zeros(tre.ntips, dtype=np.bool_)
+                for child in node.iter_leaf_names():
+                    bits[ndict[child]] = True
+                bitstring = bits.tobytes()
+                # print(bits.astype(int))
+                if bitstring in bitdict:
+                    bitdict[bitstring] += ncopies
+                else:
+                    revstring = np.invert(bits).tobytes()
+                    if revstring in bitdict:
+                        bitdict[revstring] += ncopies
+            # print("")
+
+        # convert to frequencies
+        for key, val in bitdict.items():
+            # print(key, val, idict[key].name)
+            idict[key].support = int(100 * val / float(len(self.treelist)))
+        self.ttree = self.best_tree
+        self.ttree._coords.update()
 
 
     def find_clades(self):
@@ -556,11 +620,11 @@ class ConsensusTree:
         nodelist = list(nodes.values())
         tre = nodelist[0]
 
-        #tre.unroot()
         ## return the tree and other trees if present
         self.ttree = ToyTree(tre.write(format=0))
         self.ttree._coords.update()
         self.nodelist = nodelist
+
 
 
 # GLOBALS
