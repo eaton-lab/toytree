@@ -166,19 +166,19 @@ class TreeMod:
         ctree = self._ttree.copy()
         for node in ctree.treenode.traverse():
 
-            ## slide internal nodes 
+            # slide internal nodes 
             if node.up and node.children:
 
-                ## get min and max slides
+                # get min and max slides
                 minjit = max([i.dist for i in node.children]) * prop
                 maxjit = (node.up.height * prop) - node.height
                 newheight = random.uniform(-minjit, maxjit)
 
-                ## slide children
+                # slide children
                 for child in node.children:
                     child.dist += newheight
 
-                ## slide self to match
+                # slide self to match
                 node.dist -= newheight
         ctree._coords.update()
         return ctree
