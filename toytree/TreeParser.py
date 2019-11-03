@@ -18,12 +18,14 @@ from .utils import NW_FORMAT
 FLOAT_RE = r"\s*[+-]?\d+\.?\d*(?:[eE][-+]\d+)?\s*"
 NAME_RE = r"[^():,;]+?"
 NHX_RE = r"\[&&NHX:[^\]]*\]"
+MB_BRLEN_RE = r"\[&B (\w+) [0-9.e-]+\]"
 
 
 class NewickError(Exception):
     """Exception class designed for NewickIO errors."""
     def __init__(self, value):
         Exception.__init__(self, value)
+
 
 class NexusError(Exception):
     """Exception class designed for NewickIO errors."""
@@ -107,7 +109,7 @@ class TreeParser(object):
 
         # load string: filename or data stream
         if isinstance(self.intree, (str, bytes)):
-            
+
             # strip it
             self.intree = self.intree.strip()
 
@@ -145,7 +147,7 @@ class TreeParser(object):
         if not self.multitree:
             # get TreeNodes from Newick
             extractor = Newick2TreeNode(self.data[0].strip(), fmt=self.fmt)
-        
+
             # extract one tree
             self.treenodes.append(extractor.newick_from_string())
 
@@ -153,10 +155,10 @@ class TreeParser(object):
             for tre in self.data:
                 # get TreeNodes from Newick
                 extractor = Newick2TreeNode(tre.strip(), fmt=self.fmt)
-        
+
                 # extract one tree
                 self.treenodes.append(extractor.newick_from_string())
-    
+
 
     def apply_name_translation(self):
         if self.tdict:
@@ -191,7 +193,7 @@ class Newick2TreeNode:
 
             # convert bracket markers to NHX format
             self.data = self.data.replace("[&", "[&&NHX:")
-    
+
             # replace commas inside feature strings with dashes
             ns = ""
             for chunk in self.data.split("{"):
@@ -253,7 +255,7 @@ class Newick2TreeNode:
                         self.apply_node_data(closing_internal, "internal")
                         self.current_parent = self.current_parent.up
         return self.root
-                   
+
 
     def apply_node_data(self, subnw, node_type):
 
@@ -261,7 +263,7 @@ class Newick2TreeNode:
             self.current_node = self.current_parent.add_child()
         else:
             self.current_node = self.current_parent
-        
+
         # if no feature data
         subnw = subnw.strip()
         if not subnw:
@@ -314,46 +316,60 @@ class NexusParser:
     Parse nexus file/str formatted data to extract tree data and features.
     Expects '#NEXUS', 'begin trees', 'tree', and 'end;'.
     """
-    def __init__(self, data):
+    def __init__(self, data, debug=False):
 
         self.data = data
         self.newicks = []
         self.tdict = {}
-        self.extract_tree_block()
+        self.matcher = re.compile(MB_BRLEN_RE)
+        if not debug:
+            self.extract_tree_block()
 
 
     def extract_tree_block(self):
         "iterate through data file to extract trees"        
 
+        # data SHOULD be a list of strings at this point
         lines = iter(self.data)
         while 1:
             try:
                 line = next(lines).strip()
             except StopIteration:
                 break
-    
+
+            # oh mrbayes, you seriously allow spaces within newick format!?
+            # find "[&B TK02Brlens 8.123e-3]" and change to [&Brlen=8.123e-3]
+            # this is a tmp hack fix, to be replaced with a regex
+            line = line.replace(" TK02Brlens ", "=")
+
             # enter trees block
             if line.lower() == "begin trees;":
                 while 1:
                     # iter through trees block
-                    sub = next(lines).strip().split()
-                    
+                    nextline = next(lines).strip()
+
+                    # remove horrible brlen string with spaces from mb
+                    nextline = self.matcher.sub("", nextline)
+
+                    # split into parts on spaces
+                    sub = nextline.split()
+
                     # skip if a blank line
                     if not sub:
                         continue
 
                     # look for translation
-                    if sub[0].lower() == "translate":
-                        while sub[0] != ";":
+                    elif sub[0].lower() == "translate":
+                        while not sub[-1].endswith(";"):
                             sub = next(lines).strip().split()
-                            self.tdict[sub[0]] = sub[-1].strip(",")
+                            self.tdict[sub[0]] = sub[-1].strip(",").strip(";")
 
                     # parse tree blocks
-                    if sub[0].lower().startswith("tree"):
+                    elif sub[0].lower().startswith("tree"):
                         self.newicks.append(sub[-1])
-        
+
                     # end of trees block
-                    if sub[0].lower() == "end;":
+                    elif sub[0].lower() == "end;":
                         break
 
 
@@ -444,7 +460,7 @@ def parse_nhx(NHX_string):
     if "[&&NHX:" in NHX_string:
         NHX_string = NHX_string.replace("[&&NHX:", "")
         NHX_string = NHX_string.replace("]", "")
-        
+
         for field in NHX_string.split(":"):
             try:
                 pname, pvalue = field.split("=")
