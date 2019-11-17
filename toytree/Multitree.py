@@ -12,7 +12,6 @@ from collections import defaultdict
 import toyplot
 import toyplot.config
 import numpy as np
-import pandas as pd
 
 # used in Consensus
 from .TreeNode import TreeNode
@@ -64,7 +63,13 @@ class MultiTree(object):
                 ToyTree(i) for i in 
                 TreeParser(newick, tree_format, multitree=True).treenodes
             ]
-        elif isinstance(newick, (list, tuple, np.ndarray, pd.Series)):
+
+        # other: make to list, trying to catch pandas series here
+        elif not isinstance(newick, (list, tuple, np.ndarray)):
+            newick = list(newick)
+
+        # iterables
+        elif isinstance(newick, (list, tuple, np.ndarray)):
             # convert it to a list and parse
             newick = list(newick)
             if isinstance(newick[0], str):
