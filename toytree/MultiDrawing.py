@@ -14,7 +14,7 @@ class TreeGrid(object):
     Easily create Toyplot gridded canvases for plotting multiple trees.
     """
     def __init__(self, treelist):
-        
+
         # plot objects are init on update()
         self.canvas = None
         self.treelist = treelist
@@ -45,7 +45,7 @@ class TreeGrid(object):
         if (not shared_axis) and (not self.axes):
             # get max treeheight
             for tidx, tree in enumerate(self.treeslice):
-        
+
                 # create grid with a reasonable margin between trees
                 #if not axes:
                 axes = self.canvas.cartesian(
@@ -57,7 +57,7 @@ class TreeGrid(object):
 
                 # update tree style with any new arguments
                 tree.draw(axes=axes)
-                
+
 
         # shared X axis
         else:    
