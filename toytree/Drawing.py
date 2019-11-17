@@ -10,6 +10,9 @@ import toyplot
 from .utils import ToytreeError
 
 
+# for setting values from iterables
+ITERABLE = (list, tuple, np.ndarray)
+
 # should we store node_labels, node_sizes, etc here or in Style?
 # It could be that style is just the rules for filling the drawing attrs...
 # and the actual drawing features are storing in ._drawing. 
@@ -309,7 +312,7 @@ class Drawing:
             if style["fill"] in (None, "none"):
                 style.pop("fill")
             else:
-                if isinstance(style["fill"], (list, tuple)):
+                if isinstance(style["fill"], ITERABLE):
                     raise ToytreeError(
                         "Use node_color not node_style for multiple node colors")
                 # check the color
@@ -328,7 +331,7 @@ class Drawing:
                     color = toyplot.color.to_css(color)
                 self.node_colors = [color] * self.ttree.nnodes
 
-            elif isinstance(colors, (list, tuple)):
+            elif isinstance(colors, ITERABLE):
                 if len(colors) != len(self.node_colors):
                     raise ToytreeError("node_colors arg is the wrong length")
                 for cidx in range(len(self.node_colors)):
@@ -348,7 +351,7 @@ class Drawing:
         else:
             if isinstance(markers, str):
                 self.node_markers = [markers] * self.ttree.nnodes
-            elif isinstance(markers, (list, tuple)):
+            elif isinstance(markers, ITERABLE):
                 for cidx in range(len(self.node_markers)):
                     self.node_markers[cidx] = markers[cidx]
 
@@ -363,7 +366,7 @@ class Drawing:
         if self.style.node_labels is False:
             self.node_labels = ["" for i in nvals]           
             if self.style.node_sizes is not None:
-                if isinstance(self.style.node_sizes, (list, tuple, np.ndarray)):
+                if isinstance(self.style.node_sizes, ITERABLE):
                     assert len(self.node_sizes) == len(self.style.node_sizes)
                     self.node_sizes = self.style.node_sizes
 
@@ -372,8 +375,8 @@ class Drawing:
                         [int(self.style.node_sizes)] * len(nvals)
                     )
                 self.node_labels = [" " if i else "" for i in self.node_sizes]
-                    
-                    
+
+
         # True == Show nodes, label=idx, and show hover
         elif self.style.node_labels is True:
             # turn on node hover even if user did not set it explicit
@@ -394,7 +397,7 @@ class Drawing:
         # User entered lists or other for node labels or sizes; check lengths.
         else:
             # make node labels into a list of values 
-            if isinstance(self.style.node_labels, list):
+            if isinstance(self.style.node_labels, ITERABLE):
                 assert len(self.style.node_labels) == len(nvals)
                 self.node_labels = self.style.node_labels
 
@@ -410,7 +413,7 @@ class Drawing:
                 self.node_labels = self.ttree.get_node_values("idx", 1, 0)
 
             # make node sizes as a list; set to zero if node label is ""
-            if isinstance(self.style.node_sizes, list):
+            if isinstance(self.style.node_sizes, ITERABLE):
                 assert len(self.style.node_sizes) == len(nvals)
                 self.node_sizes = self.style.node_sizes
             elif isinstance(self.style.node_sizes, (str, int, float)):
@@ -436,7 +439,7 @@ class Drawing:
                 [self.style.tip_labels_colors] * self.ttree.ntips)
 
         # reorder array for fixed if needed
-        elif isinstance(self.style.tip_labels_colors, (list, np.ndarray)):
+        elif isinstance(self.style.tip_labels_colors, ITERABLE):
             if self.ttree._fixed_order:
                 cols = np.array(self.style.tip_labels_colors)
                 orde = cols[self.ttree._fixed_idx]
@@ -457,7 +460,7 @@ class Drawing:
                 self.style.tip_labels_style["-toyplot-anchor-shift"] = "15px"
 
             # if user entered list in get_tip_labels order reverse it for plot
-            if isinstance(self.style.tip_labels, list):
+            if isinstance(self.style.tip_labels, ITERABLE):
                 self.tip_labels = self.style.tip_labels
 
             # True assigns tip labels from tree
@@ -466,7 +469,7 @@ class Drawing:
                     self.tip_labels = self.ttree._fixed_order
                 else:
                     self.tip_labels = self.ttree.get_tip_labels()
-    
+
 
     def assign_edge_colors_and_widths(self):
         """
@@ -485,7 +488,7 @@ class Drawing:
                 self.style.edge_style.pop("stroke")
                 self.edge_widths = [None] * self.nedges
             else:
-                if isinstance(self.style.edge_style["stroke-width"], (list, tuple)):
+                if isinstance(self.style.edge_style["stroke-width"], ITERABLE):
                     raise ToytreeError(
                         "Use edge_widths not edge_style for multiple edge widths")
                 # check the color
@@ -497,7 +500,7 @@ class Drawing:
             if isinstance(self.style.edge_widths, (str, int)):
                 self.edge_widths = [int(self.style.edge_widths)] * self.nedges
 
-            elif isinstance(self.style.edge_widths, (list, tuple)):
+            elif isinstance(self.style.edge_widths, ITERABLE):
                 if len(self.style.edge_widths) != self.nedges:
                     raise ToytreeError("edge_widths arg is the wrong length")
                 for cidx in range(self.nedges):
@@ -509,7 +512,7 @@ class Drawing:
                 self.style.edge_style.pop("stroke")
                 self.edge_colors = [None] * self.nedges
             else:
-                if isinstance(self.style.edge_style["stroke"], (list, tuple)):
+                if isinstance(self.style.edge_style["stroke"], ITERABLE):
                     raise ToytreeError(
                         "Use edge_colors not edge_style for multiple edge colors")
                 # check the color
@@ -529,7 +532,7 @@ class Drawing:
                     color = toyplot.color.to_css(color)
                 self.edge_colors = [color] * self.nedges
 
-            elif isinstance(self.style.edge_colors, (list, tuple)):
+            elif isinstance(self.style.edge_colors, ITERABLE):
                 if len(self.style.edge_colors) != self.nedges:
                     raise ToytreeError("edge_colors arg is the wrong length")
                 for cidx in range(self.nedges):
@@ -576,7 +579,7 @@ class Drawing:
                 ewidth=self.edge_widths,
                 ecolor=self.edge_colors,
             )
-  
+
 
     def expand_edges_to_lines(self, attr):
         """
@@ -809,7 +812,7 @@ class Drawing:
                 tip_xpos = tip_xend
 
         return tip_xpos, tip_ypos, align_edges, align_verts
-        
+
 
     def get_hover(self, ordered_features=["idx", "name", "dist", "support"]):
         # build full features titles
@@ -838,7 +841,7 @@ class Drawing:
 
     def get_dims_from_tree_size(self):
         "Calculate reasonable canvas height and width for tree given N tips" 
-        
+
         if self.style.layout == "c":
             if not self.style.height:
                 self.style.height = 300
@@ -876,7 +879,7 @@ class Drawing:
             self.axes = self.canvas.cartesian(
                 padding=self.style.padding
             )
-        
+
         # return nothing if tree is empty
         if not self.ttree.treenode.children:
             raise ToytreeError("Tree is empty")
@@ -905,7 +908,7 @@ class Drawing:
         c2 = self._unrooted_coords[n2]
         dx = c1[0] - c2[0]
         dy = c1[1] - c2[1]
-        
+
         # opposite over adjancent
         radprop = np.arctan(dy / dx)
         degprop = radprop / (np.pi / 2.)
