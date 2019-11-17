@@ -5,6 +5,7 @@ from __future__ import print_function, absolute_import
 import itertools
 from decimal import Decimal
 from copy import deepcopy
+import numpy as np
 
 from .TreeNode import TreeNode
 from .TreeStyle import TreeStyle
@@ -25,7 +26,7 @@ class ToyTree(object):
         A newick or nexus formatted string, or file handle or URL of file 
         containing correctly formatted string. A toytree can also be reloaded
         from another toytree object.
-    
+
     tree_format: int
         Format of the newick tree structure to be parsed. 
 
@@ -40,7 +41,7 @@ class ToyTree(object):
 
         # if loadeing from a Toytree then inherit that trees draw style
         inherit_style = False
-        
+
         # load from a TreeNode
         if isinstance(newick, TreeNode):
             self.treenode = newick
@@ -207,9 +208,10 @@ class ToyTree(object):
         for cidx in self._coords.edges[:, 1]:
             node = self.treenode.search_nodes(idx=cidx)[0]
             elist.append(
-                (node.__getattribute__(feature) if hasattr(node, feature) else "")
+                # (node.__getattribute__(feature) if hasattr(node, feature) else "")
+                (getattr(node, feature) if hasattr(node, feature) else "")
                 )
-        return elist
+        return np.array(elist)
 
 
     def get_edge_values_from_dict(self, node_value_dict=None, include_stem=True):
@@ -264,7 +266,7 @@ class ToyTree(object):
                 if include_stem:
                     if not node.is_root():
                         values[idxs[node.idx]] = node_value_dict[node.idx]
-            
+
                 # add value to descendants edges
                 for desc in node.get_descendants():
                     values[idxs[desc.idx]] = node_value_dict[node.idx]
@@ -344,8 +346,7 @@ class ToyTree(object):
                 vals = [int(i) if isinstance(i, float) else i for i in vals]
         except Exception:
             pass
-
-        return vals
+        return np.array(vals)
 
 
     def get_node_dict(self, return_internal=False, return_nodes=False):
@@ -421,6 +422,84 @@ class ToyTree(object):
                 return self._fixed_order
             else:
                 return self.treenode.get_leaf_names()[::-1]
+
+
+    def set_node_values(self, attr, values):
+        """
+        Set values for a node attribute and RETURNS A COPY of the tree with 
+        node values modified. If the attribute does not yet exist
+        and you set vaues for only some nodes then a null values ("") will 
+        be set to all other nodes. You cannot set "idx" (this is used 
+        internally by toytree to draw trees). You can use this to set names, 
+        change node distances ("dist") or heights ("height"; which will modify
+        dist values to do so). If values is a single value it will be set for 
+        all nodes, otherwise it should be a dictionary of idx numbers as keys
+        and values as values. 
+
+        Example:
+        -------- 
+        tre.set_node_values(attr="Ne", values=5000)
+        tre.set_node_values(attr="Ne", values={0:1e5, 1:1e6, 2:1e3})
+        tre.set_node_values(attr="Ne", values={0:1e5, 1:1e6, "*": 1e7}
+
+        Parameters:
+        -----------
+        attr (str):
+            The name of the node attribute to modify (cannot be 'idx').
+        values (int, str, float, dict):
+            A value or dictionary of values. If singular the value is set to 
+            all nodes. If a dictionary then values are set to their keys by 
+            idx. Use .draw(node_labels='idx') to see idx labels on tree.
+            You can use the wildcard selector "*" as a key name to set a 
+            default value to all other nodes (see example above).
+
+        Returns:
+        ----------
+        A ToyTree object is returned with the node values modified.
+        """
+        # make a copy
+        nself = deepcopy(self)
+        ndict = nself.get_node_dict(True, True)
+
+        # find special cases
+        if attr == "idx":
+            raise ToytreeError("cannot modify idx values.")
+        if attr == "height":
+            raise ToytreeError("modifying heights not yet supported, coming..")
+
+        # set a single value to all nodes
+        if isinstance(values, (str, int, float)):
+            for nidx, node in ndict.items():
+                setattr(node, attr, values)
+
+        # set values to node idxs using dict
+        elif isinstance(values, dict):
+            # check that all keys are valid
+            for nidx in values:
+                if nidx != "*":                
+                    if nidx not in nself.get_node_values("idx", 1, 1):
+                        raise ToytreeError(
+                            "node idx {} not in tree".format(nidx))
+
+            # set everyone to a default value
+            if "*" in values:
+                default = values["*"]
+                for key in ndict:
+                    setattr(ndict[key], attr, default)
+
+            # or, set everyone to a null value
+            else:           
+                for key in ndict:
+                    if not hasattr(ndict[key], attr):
+                        setattr(ndict[key], attr, "")
+
+            # then set selected nodes to new values
+            for key, val in values.items():
+                if key != "*":
+                    setattr(ndict[key], attr, val)
+
+        return nself
+
 
 
     def copy(self):
@@ -963,6 +1042,7 @@ class ToyTree(object):
         padding=None,
         xbaseline=None,
         ybaseline=None,
+        admixture_edges=None,
         **kwargs):
         """
         Plot a Toytree tree, returns a tuple of Toyplot (Canvas, Axes) objects.
@@ -1038,6 +1118,12 @@ class ToyTree(object):
             is provided (which should be in node order) then the values
             will be shown in order. If a dict then labels can be provided
             as well.
+
+        admixture_edges: [tuple, list]
+            Admixture edges will add colored edges to the plot in the style 
+            of the 'edge_align_style'. These will be drawn from (source, dest, 
+            heightsource, heightdest). 
+
         """
         # allow ts as a shorthand for tree_style
         if kwargs.get("ts"):
@@ -1074,6 +1160,7 @@ class ToyTree(object):
             "padding": padding,
             "xbaseline": xbaseline, 
             "ybaseline": ybaseline,
+            "admixture_edges": admixture_edges,
             # "orient": orient,
         }
 
