@@ -12,6 +12,7 @@ from collections import defaultdict
 import toyplot
 import toyplot.config
 import numpy as np
+import pandas as pd
 
 # used in Consensus
 from .TreeNode import TreeNode
@@ -23,14 +24,10 @@ from .utils import bpp2newick
 
 
 
-
-###############################################
-# MultiTree Class object
-###############################################
 class MultiTree(object):
     """
     Toytree MultiTree object for representing multiple trees. 
-    
+
     Parameters:
     -----------
     newick: (str)
@@ -67,7 +64,9 @@ class MultiTree(object):
                 ToyTree(i) for i in 
                 TreeParser(newick, tree_format, multitree=True).treenodes
             ]
-        elif isinstance(newick, (list, tuple)):
+        elif isinstance(newick, (list, tuple, np.ndarray, pd.Series)):
+            # convert it to a list and parse
+            newick = list(newick)
             if isinstance(newick[0], str):
                 self.treelist = [
                     ToyTree(i) for i in 
