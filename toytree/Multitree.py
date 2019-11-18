@@ -64,14 +64,12 @@ class MultiTree(object):
                 TreeParser(newick, tree_format, multitree=True).treenodes
             ]
 
-        # other: make to list, trying to catch pandas series here
-        elif not isinstance(newick, (list, tuple, np.ndarray)):
-            newick = list(newick)
-
-        # iterables
-        elif isinstance(newick, (list, tuple, np.ndarray)):
-            # convert it to a list and parse
-            newick = list(newick)
+        # iterables (list, tuple, ndarray, Series)
+        else:
+            # convert to list
+            if newick is not None:
+                newick = list(newick)
+            # load list whether it is newicks, toytrees or treenodes
             if isinstance(newick[0], str):
                 self.treelist = [
                     ToyTree(i) for i in 
@@ -79,7 +77,6 @@ class MultiTree(object):
                 ]
             elif isinstance(newick[0], ToyTree):
                 self.treelist = newick
-
             elif isinstance(newick[0], TreeNode):
                 self.treelist = [ToyTree(i) for i in newick]
 
@@ -200,7 +197,8 @@ class MultiTree(object):
     # -------------------------------------------------------------------
     # Tree List Plotting
     # -------------------------------------------------------------------
-    def draw_tree_grid(self, 
+    def draw_tree_grid(
+        self, 
         axes=None,
         nrows=None, 
         ncols=None, 
@@ -252,6 +250,7 @@ class MultiTree(object):
             else:
                 ncols = 5           
 
+        # one or the other
         elif not (ncols and nrows):
             if ncols:
                 if ncols == 1:
@@ -290,7 +289,8 @@ class MultiTree(object):
         return canvas, axes
 
 
-    def draw_cloud_tree(self, 
+    def draw_cloud_tree(
+        self, 
         axes=None, 
         html=False,
         fixed_order=True,
