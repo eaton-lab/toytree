@@ -100,6 +100,10 @@ STYLES = {
         "node_hover": False, 
         "tip_labels": False, 
         "scalebar": True, 
+        "node_style": {
+            "stroke": "#262626",
+            "stroke-width": 1,            
+        },
     },
 
     'd': {
@@ -111,7 +115,7 @@ STYLES = {
             'stroke': COLORS[0],
         },
     },
-    
+
     'm': {
         'edge_type': 'c', 
         'layout': 'r', 
