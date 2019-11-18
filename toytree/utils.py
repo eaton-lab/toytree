@@ -336,7 +336,6 @@ class RandomTree(object):
         If no Ne argument is entered then edge lengths are returned in units
         of 2*Ne, i.e., coalescent time units. 
         """
-
         # seed generator
         random.seed(seed)
 
@@ -425,6 +424,7 @@ class RandomTree(object):
         random.shuffle(nidx)
         for tidx, node in enumerate(self.treenode.get_leaves()):
             node.name = "r{}".format(nidx[tidx])
+
         for node in self.treenode.traverse():
             node.support = 100            
         # fill internal node names and idx
@@ -439,19 +439,19 @@ class RandomTree(object):
         Return an imbalanced (comb-like) tree topology.
         """
         rtree = toytree.tree()
-        rtree.treenode.add_child(name="0")
-        rtree.treenode.add_child(name="1")
+        rtree.treenode.add_child(name="r0")
+        rtree.treenode.add_child(name="r1")
 
         for i in range(2, ntips):
             # empty node
             cherry = toytree.tree()
             # add new child
-            cherry.treenode.add_child(name=str(i))
+            cherry.treenode.add_child(name="r" + str(i))
             # add old tree
             cherry.treenode.add_child(rtree.treenode)
             # update rtree
             rtree = cherry
-        
+
         # get toytree from newick            
         tre = toytree.tree(rtree.write(tree_format=9))
         tre = tre.mod.make_ultrametric()
@@ -471,8 +471,8 @@ class RandomTree(object):
 
         # make first cherry
         rtree = toytree.tree()
-        rtree.treenode.add_child(name="0")
-        rtree.treenode.add_child(name="1")
+        rtree.treenode.add_child(name="r0")
+        rtree.treenode.add_child(name="r1")
 
         # add tips in a balanced way
         for i in range(2, ntips):
@@ -482,18 +482,18 @@ class RandomTree(object):
 
             # add two children
             node.add_child(name=node.name)
-            node.add_child(name=str(i))
+            node.add_child(name="r" + str(i))
 
             # rename ancestral node
             node.name = None
 
         # rename tips so names are in order
-        idx = 0
+        idx = len(rtree) - 1
         for node in rtree.treenode.traverse("postorder"):
             if node.is_leaf():
-                node.name = str(idx)
-                idx += 1
-        
+                node.name = "r" + str(idx)
+                idx -= 1
+
         # get toytree from newick            
         tre = toytree.tree(rtree.write(tree_format=9))
         tre = tre.mod.make_ultrametric()
