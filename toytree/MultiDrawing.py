@@ -120,7 +120,7 @@ class CloudTree:
     treelist have already been fixed_order reordered. 
     """
     def __init__(self, treelist, **kwargs):
-        
+
         # store list of ordered trees
         self.treelist = treelist
 
