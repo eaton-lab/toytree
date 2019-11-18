@@ -424,7 +424,7 @@ class ToyTree(object):
                 return self.treenode.get_leaf_names()[::-1]
 
 
-    def set_node_values(self, attr, values):
+    def set_node_values(self, attr, values=None, default=None):
         """
         Set values for a node attribute and RETURNS A COPY of the tree with 
         node values modified. If the attribute does not yet exist
@@ -438,20 +438,20 @@ class ToyTree(object):
 
         Example:
         -------- 
-        tre.set_node_values(attr="Ne", values=5000)
+        tre.set_node_values(attr="Ne", default=5000)
         tre.set_node_values(attr="Ne", values={0:1e5, 1:1e6, 2:1e3})
-        tre.set_node_values(attr="Ne", values={0:1e5, 1:1e6, "*": 1e7}
+        tre.set_node_values(attr="Ne", values={0:1e5, 1:1e6}, default=5000)
 
         Parameters:
         -----------
         attr (str):
             The name of the node attribute to modify (cannot be 'idx').
-        values (int, str, float, dict):
-            A value or dictionary of values. If singular the value is set to 
-            all nodes. If a dictionary then values are set to their keys by 
+        values (dict):
+            A dictionary of {idx: value}. Values are set to their keys by 
             idx. Use .draw(node_labels='idx') to see idx labels on tree.
-            You can use the wildcard selector "*" as a key name to set a 
-            default value to all other nodes (see example above).
+        default (int, str, float):
+            You can use a default value to be filled for all other nodes not 
+            listed in the values dictionary.
 
         Returns:
         ----------
@@ -467,37 +467,34 @@ class ToyTree(object):
         if attr == "height":
             raise ToytreeError("modifying heights not yet supported, coming..")
 
-        # set a single value to all nodes
-        if isinstance(values, (str, int, float)):
-            for nidx, node in ndict.items():
-                setattr(node, attr, values)
+        # set everyone to a default value
+        if default is not None:
+            for key in ndict:
+                setattr(ndict[key], attr, default)
 
-        # set values to node idxs using dict
-        elif isinstance(values, dict):
-            # check that all keys are valid
-            for nidx in values:
-                if nidx != "*":                
+        # set specific values
+        if values:
+
+            if not isinstance(values, dict):
+                print(
+                    "Values should be a dictionary. Use default to set"
+                    " a single value.")
+            else:
+                # check that all keys are valid
+                for nidx in values:
                     if nidx not in nself.get_node_values("idx", 1, 1):
                         raise ToytreeError(
                             "node idx {} not in tree".format(nidx))
 
-            # set everyone to a default value
-            if "*" in values:
-                default = values["*"]
-                for key in ndict:
-                    setattr(ndict[key], attr, default)
+                # or, set everyone to a null value
+                else:           
+                    for key in ndict:
+                        if not hasattr(ndict[key], attr):
+                            setattr(ndict[key], attr, "")
 
-            # or, set everyone to a null value
-            else:           
-                for key in ndict:
-                    if not hasattr(ndict[key], attr):
-                        setattr(ndict[key], attr, "")
-
-            # then set selected nodes to new values
-            for key, val in values.items():
-                if key != "*":
+                # then set selected nodes to new values
+                for key, val in values.items():
                     setattr(ndict[key], attr, val)
-
         return nself
 
 
