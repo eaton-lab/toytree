@@ -148,7 +148,7 @@ class TreeMod:
         return ctree
 
 
-    def node_slider(self, seed=None):
+    def node_slider(self, prop=0.999, seed=None):
         """
         Returns a toytree copy with node heights modified while retaining 
         the same topology but not necessarily node branching order. 
@@ -157,12 +157,13 @@ class TreeMod:
         The total tree height is retained at 1.0, only relative edge
         lengths change.
         """
-        # I don't think user's should need to access prop
-        prop = 0.999
+        # I don't think users should need to access prop
+        prop = prop
         assert isinstance(prop, float), "prop must be a float"
         assert prop < 1, "prop must be a proportion >0 and < 1."
         random.seed(seed)
 
+        # make copy and iter nodes from root to tips
         ctree = self._ttree.copy()
         for node in ctree.treenode.traverse():
 
@@ -170,16 +171,33 @@ class TreeMod:
             if node.up and node.children:
 
                 # get min and max slides
-                minjit = max([i.dist for i in node.children]) * prop
-                maxjit = (node.up.height * prop) - node.height
-                newheight = random.uniform(-minjit, maxjit)
+                # minjit = max([i.dist for i in node.children]) * prop
+                # maxjit = (node.up.height * prop) - node.height
 
-                # slide children
+                # the closest child to me
+                minchild = min([i.dist for i in node.children])
+
+                # prop distance down toward child
+                minjit = minchild * prop
+
+                # prop towards parent
+                maxjit = node.dist * prop
+
+                # node.height
+                newheight = random.uniform(
+                    node.height - minjit, node.height + maxjit)
+
+                # how much lower am i?
+                delta = newheight - node.height
+
+                # edges from children to reach me
                 for child in node.children:
-                    child.dist += newheight
+                    child.dist += delta
 
                 # slide self to match
-                node.dist -= newheight
+                node.dist -= delta
+
+        # update new coords
         ctree._coords.update()
         return ctree
 
