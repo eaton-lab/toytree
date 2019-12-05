@@ -117,7 +117,7 @@ class Coords:
             if not node.name:
                 node.name = str(idx)
             idx -= 1
-        
+
 
     def update_fixed_order(self):
         "after pruning fixed order needs update to match new nnodes/ntips."

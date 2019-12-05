@@ -1183,3 +1183,34 @@ class ToyTree(object):
         # Make plot. If user provided explicit axes then include them.
         canvas, axes = draw.update(axes=axes)
         return canvas, axes
+
+
+
+
+class RawTree():
+    """
+    Barebones tree object that only parses newick and assigns idx
+    """
+    def __init__(self, newick):
+        self.treenode = TreeParser(newick, 0).treenodes[0]
+        self.ntips = len(self.treenode)
+        self.nnodes = (len(self.treenode) * 2) + 1
+        self.update_idxs()
+
+
+    def update_idxs(self):
+        "set root idx highest, tip idxs lowest ordered as ladderized"
+
+        # n internal nodes - 1 
+        idx = self.nnodes - 1
+
+        # from root to tips label idx
+        for node in self.treenode.traverse("levelorder"):
+            if not node.is_leaf():
+                node.add_feature("idx", idx)
+                idx -= 1
+
+        # external nodes: lowest numbers are for tips (0-N)
+        for node in self.treenode.iter_leaves():
+            node.add_feature("idx", idx)
+            idx -= 1

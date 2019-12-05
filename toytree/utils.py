@@ -245,6 +245,11 @@ class TreeMod:
         return ctree
 
 
+
+
+
+
+
 # class TreeInference:
 # - get distance matrix (from an input data set... phy, nex)
 # - ----- create a class to store DNA matrix (pandas colored)
