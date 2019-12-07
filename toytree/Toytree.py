@@ -1194,7 +1194,7 @@ class RawTree():
     def __init__(self, newick):
         self.treenode = TreeParser(newick, 0).treenodes[0]
         self.ntips = len(self.treenode)
-        self.nnodes = (len(self.treenode) * 2) + 1
+        self.nnodes = (len(self.treenode) * 2) - 1
         self.update_idxs()
 
 
