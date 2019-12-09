@@ -11,9 +11,11 @@ from .TreeNode import TreeNode
 from .TreeStyle import TreeStyle
 from .Coords import Coords
 from .Drawing import Drawing
-from .utils import ToytreeError, TreeMod, fuzzy_match_tipnames, NodeAssist
 from .TreeParser import TreeParser
 from .TreeWriter import NewickWriter
+from .Treemod import TreeMod
+from .utils import ToytreeError, fuzzy_match_tipnames, NodeAssist, normalize_values
+
 
 
 class ToyTree(object):
@@ -200,9 +202,18 @@ class ToyTree(object):
     #     return self.get_node_values('dist', True, True)
 
 
-    def get_edge_values(self, feature='idx'):
+    def get_edge_values(self, feature='idx', normalize=False):
         """
         Returns edge values in the order they are plotted (see .get_edges())
+
+        Parameters:
+        -----------
+        feature (str):
+            The node feature to return for each edge, e.g., idx, dist, Ne.
+        normalize (bool):
+            This will normalize the values to be binned within a range that
+            makes it easier to visualize when plotted as node sizes or edge
+            widths. In the range(2, 12) typically.
         """
         elist = []
         for cidx in self._coords.edges[:, 1]:
@@ -211,7 +222,10 @@ class ToyTree(object):
                 # (node.__getattribute__(feature) if hasattr(node, feature) else "")
                 (getattr(node, feature) if hasattr(node, feature) else "")
                 )
-        return np.array(elist)
+        elist = np.array(elist)
+        if normalize:
+            elist = normalize_values(elist)
+        return elist
 
 
     def get_edge_values_from_dict(self, node_value_dict=None, include_stem=True):
@@ -414,7 +428,7 @@ class ToyTree(object):
             treenode = self.treenode.search_nodes(idx=idx)[0]
             if self._fixed_order:
                 return [i for i in self._fixed_order if i in 
-                    treenode.get_leaf_names()]
+                        treenode.get_leaf_names()]
             else:
                 return treenode.get_leaf_names()[::-1]                
         else:
@@ -470,7 +484,9 @@ class ToyTree(object):
         # set everyone to a default value
         if default is not None:
             for key in ndict:
-                setattr(ndict[key], attr, default)
+                node = ndict[key]
+                node.add_feature(attr, default)
+                # setattr(ndict[key], attr, default)
 
         # set specific values
         if values:
@@ -490,11 +506,16 @@ class ToyTree(object):
                 else:           
                     for key in ndict:
                         if not hasattr(ndict[key], attr):
-                            setattr(ndict[key], attr, "")
+                            node = ndict[key]
+                            node.add_feature(attr, "")
+                            # setattr(ndict[key], attr, "")
 
                 # then set selected nodes to new values
                 for key, val in values.items():
-                    setattr(ndict[key], attr, val)
+                    node = ndict[key]
+                    node.add_feature(attr, val)
+                    # setattr(ndict[key], attr, val)
+
         return nself
 
 
@@ -1119,7 +1140,7 @@ class ToyTree(object):
         admixture_edges: [tuple, list]
             Admixture edges will add colored edges to the plot in the style 
             of the 'edge_align_style'. These will be drawn from (source, dest, 
-            heightsource, heightdest). 
+            height, width, color). Example: [(4, 3, 50000, 3, 'red')]
 
         """
         # allow ts as a shorthand for tree_style
@@ -1189,13 +1210,24 @@ class ToyTree(object):
 
 class RawTree():
     """
-    Barebones tree object that only parses newick and assigns idx
+    Barebones tree object that parses newick strings faster, assigns idx 
+    to labels, and ...
     """
     def __init__(self, newick):
         self.treenode = TreeParser(newick, 0).treenodes[0]
         self.ntips = len(self.treenode)
         self.nnodes = (len(self.treenode) * 2) - 1
         self.update_idxs()
+
+
+    def write(self, tree_format=5):
+        # get newick string
+        writer = NewickWriter(
+            treenode=self.treenode,
+            tree_format=tree_format,
+        )
+        newick = writer.write_newick()
+        return newick
 
 
     def update_idxs(self):
