@@ -34,6 +34,18 @@ class NexusError(Exception):
 
 
 
+# class FastTreeParser():
+#     """
+#     A less flexible but faster newick parser for performance sensitive apps.
+#     Only supports newick string input in format 0.
+#     """
+#     def __init__(self, newick):
+#         self.data = newick
+#         extractor = Newick2TreeNode(self.data, fmt=0)
+#         self.treenodes = [extractor.newick_from_string()]
+
+
+
 class TreeParser(object):
     def __init__(self, intree, tree_format=0, multitree=False, debug=False):
         """
