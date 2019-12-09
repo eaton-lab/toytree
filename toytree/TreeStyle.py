@@ -8,7 +8,8 @@ from toyplot import color
 
 
 # GLOBALS
-COLORS = [color.to_css(i) for i in color.Palette()]
+COLORS1 = [color.to_css(i) for i in color.brewer.palette("Set2")]
+COLORS2 = [color.to_css(i) for i in color.brewer.palette("Dark2")]
 BLACK = color.black
 
 
@@ -33,6 +34,7 @@ DEFAULT_TREE_STYLE = {
     'xbaseline': 0,  ## added...
     'ybaseline': 0,
     'layout': 'n',   ## 'right', 'down', 'left', 'up', 'unrooted', 'circular/radial'
+    'admixture_edges': None,
 }
 
 DEFAULT_EDGE_STYLE = {
@@ -43,7 +45,7 @@ DEFAULT_EDGE_STYLE = {
 }
 
 DEFAULT_NODE_STYLE = {
-    "fill": COLORS[0],
+    "fill": COLORS1[0],
     "stroke": None,
     "stroke-width": 1, 
 }
@@ -86,11 +88,12 @@ STYLES = {
         "node_style": {
             "stroke": "#262626", 
             "stroke-width": 1,
-        }
+        },
+        "tip_labels": True,
     },
 
-    'c': {
-        #"tree_style": "coal", 
+    'p': {
+        #"tree_style": "population-tree", 
         "layout": "d", 
         "edge_type": "c",
         "use_edge_lengths": True, 
@@ -98,25 +101,44 @@ STYLES = {
         "node_labels": True, 
         "node_sizes": 15, 
         "node_hover": False, 
-        "tip_labels": False, 
+        "tip_labels": True, 
         "scalebar": True, 
+        "edge_widths": "Ne",
         "node_style": {
             "stroke": "#262626",
             "stroke-width": 1,            
         },
     },
 
+    'c': {
+        # "tree_style": "coalescent",
+        "layout": "d",
+        "edge_type": "c",
+        "use_edge_lengths": True,
+        "node_labels": False,
+        "node_sizes": 8,
+        "node_hover": False,
+        "tip_labels": False,
+        "scalebar": True,
+        "node_style": {
+            "stroke": "#262626",
+            "stroke-width": 1,
+        },
+    },
+
     'd': {
+        # tree_style: "dark"
         'layout': 'r', 
         'use_edge_lengths': True, 
         'tip_labels_align': True, 
-        'tip_labels_colors': COLORS[3],
+        'tip_labels_colors': COLORS1[3],
         'edge_style': {
-            'stroke': COLORS[0],
+            'stroke': COLORS1[0],
         },
     },
 
     'm': {
+        # tree_style: "multi"    
         'edge_type': 'c', 
         'layout': 'r', 
         'use_edge_lengths': True, 
@@ -241,7 +263,7 @@ class TreeStyle(object):
         except ValueError:
             raise TypeError("Style entries must be a dictionary")
 
-        
+
     def __repr__(self):
         lines = []
         nkeys = [i for i in self.__dict__ if not i[0] == "_"]
@@ -254,11 +276,11 @@ class TreeStyle(object):
                 lines.append("    {}: {}".format(val, self.__dict__[i][val]))
             lines.append("}")
         return "\n".join(lines)
-       
+
 
     def __str__(self):
         return self.__repr__()
-        
+
 
 
 class Style(dict):
@@ -274,7 +296,7 @@ class Style(dict):
 
         # allow limited layout args
         self[name] = value
-        
+
 
     def __delattr__(self, name):
         if name in self:
