@@ -7,6 +7,8 @@ from copy import deepcopy
 from decimal import Decimal
 import numpy as np
 import toyplot
+
+from .Admixture import AdmixEdges
 from .utils import ToytreeError
 
 
@@ -21,6 +23,7 @@ ITERABLE = (list, tuple, np.ndarray)
 class Drawing:
     def __init__(self, ttree, **kwargs):
         # input objects
+        self._tree = ttree.copy()
         self.ttree = ttree
         self.coords = ttree._coords
         self.style = ttree.style
@@ -73,9 +76,15 @@ class Drawing:
         # draw tree, nodes, tips, axes on canvas.
         self.add_tip_lines_to_axes()
         self.add_tree_to_axes()
+
+        # draw admixture edges 
+        self.add_admixture_edges()
+
+        # nodes and tips
         self.add_tip_labels_to_axes()
         self.add_nodes_to_axes()
         self.add_axes_style()
+
 
         # add extra display space for tips on the end of tree
         self.fit_tip_labels()
@@ -237,7 +246,7 @@ class Drawing:
                 style=tstyle,
                 color=self.style.tip_labels_colors,
             )
-            
+
         # get stroke-width for aligned tip-label lines (optional)
         # copy stroke-width from the edge_style unless user set it
         if not self.style.edge_align_style.get("stroke-width"):
@@ -498,7 +507,19 @@ class Drawing:
         else:
             self.style.edge_style.pop("stroke-width")            
             if isinstance(self.style.edge_widths, (str, int)):
-                self.edge_widths = [int(self.style.edge_widths)] * self.nedges
+
+                # Special case of setting Ne for plotting
+                if self.style.edge_widths == "Ne":
+                    if not all([i for i in self.ttree.get_edge_values("Ne")]):
+                        self.edge_widths = np.repeat(2, self.nedges)
+                    else:
+                        self.edge_widths = (self.ttree.get_edge_values(
+                            feature="Ne", normalize=True))
+
+                # normal value entry
+                else:
+                    self.edge_widths = (
+                        [int(self.style.edge_widths)] * self.nedges)
 
             elif isinstance(self.style.edge_widths, ITERABLE):
                 if len(self.style.edge_widths) != self.nedges:
@@ -562,7 +583,7 @@ class Drawing:
                 ewidth=self.edge_widths,
                 ecolor=self.edge_colors,
             )
-        
+
         # default edge type is 'p' splitting
         else:
             self.expand_edges_to_lines("edge_colors")
@@ -600,23 +621,23 @@ class Drawing:
         # build new values from lines
         for idx in range(len(arr)):
             edge = self.coords.lines[idx]
-            
+
             # this edge goes into x
             into = edge[1]
-            
+
             # colors going into x in edges is
             val = cdict.get(into)
-            
+
             if val:
                 # apply this val to every line into x
                 lidx = np.where(self.coords.lines[:, 1] == into)
                 arr[lidx[0][0]] = val
-                
+
                 # and into y
                 y = edge[0]
                 lidx = np.where(self.coords.lines[:, 1] == y)
                 arr[lidx[0][0]] = val
-        
+
         # update the value list        
         setattr(self, attr, arr)  # edge_colors = arr
 
@@ -635,7 +656,7 @@ class Drawing:
         # bail out if not any visible nodes (e.g., none w/ size>0)
         if all([i == "" for i in self.node_labels]):
             return
-       
+
         # build markers for each node.
         marks = []
         for nidx in self.ttree.get_node_values('idx', 1, 1):
@@ -707,7 +728,7 @@ class Drawing:
             self.axes.show = True
             if not self.style.scalebar:
                 self.axes.show = False
-        
+
         # scalebar        
         if self.style.scalebar and self.style.layout == "r":
             nticks = max((3, np.floor(self.style.width / 100).astype(int)))
@@ -883,6 +904,17 @@ class Drawing:
         # return nothing if tree is empty
         if not self.ttree.treenode.children:
             raise ToytreeError("Tree is empty")
+
+
+    def add_admixture_edges(self):
+        if self.style.admixture_edges is not None:
+            AdmixEdges(
+                self._tree, 
+                self.axes, 
+                self.style.admixture_edges,
+                layout=self.style.layout,
+                edge_type=self.style.edge_type,
+            )
 
 
     # not being used, not right
