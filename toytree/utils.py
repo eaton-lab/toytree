@@ -2,9 +2,10 @@
 
 from __future__ import print_function, division, absolute_import
 
-import random 
+
 import re
-import toytree
+from copy import deepcopy
+import numpy as np
 
 
 #######################################################
@@ -123,130 +124,6 @@ NW_FORMAT = {
 
 
 
-#######################################################
-# Branch modification Class
-#######################################################
-class TreeMod:
-    """
-    Return a tree with edge lengths modified according to one of 
-    the mod functions. 
-    """
-    def __init__(self, ttree):
-        self._ttree = ttree
-
-    def node_scale_root_height(self, treeheight=1):
-        """
-        Returns a toytree copy with all nodes multiplied by a constant so that
-        the root height equals the value entered for treeheight.
-        """
-        # make tree height = 1 * treeheight
-        ctree = self._ttree.copy()
-        _height = ctree.treenode.height
-        for node in ctree.treenode.traverse():
-            node.dist = (node.dist / _height) * treeheight
-        ctree._coords.update()
-        return ctree
-
-
-    def node_slider(self, prop=0.999, seed=None):
-        """
-        Returns a toytree copy with node heights modified while retaining 
-        the same topology but not necessarily node branching order. 
-        Node heights are moved up or down uniformly between their parent 
-        and highest child node heights in 'levelorder' from root to tips.
-        The total tree height is retained at 1.0, only relative edge
-        lengths change.
-        """
-        # I don't think users should need to access prop
-        prop = prop
-        assert isinstance(prop, float), "prop must be a float"
-        assert prop < 1, "prop must be a proportion >0 and < 1."
-        random.seed(seed)
-
-        # make copy and iter nodes from root to tips
-        ctree = self._ttree.copy()
-        for node in ctree.treenode.traverse():
-
-            # slide internal nodes 
-            if node.up and node.children:
-
-                # get min and max slides
-                # minjit = max([i.dist for i in node.children]) * prop
-                # maxjit = (node.up.height * prop) - node.height
-
-                # the closest child to me
-                minchild = min([i.dist for i in node.children])
-
-                # prop distance down toward child
-                minjit = minchild * prop
-
-                # prop towards parent
-                maxjit = node.dist * prop
-
-                # node.height
-                newheight = random.uniform(
-                    node.height - minjit, node.height + maxjit)
-
-                # how much lower am i?
-                delta = newheight - node.height
-
-                # edges from children to reach me
-                for child in node.children:
-                    child.dist += delta
-
-                # slide self to match
-                node.dist -= delta
-
-        # update new coords
-        ctree._coords.update()
-        return ctree
-
-
-    def node_multiplier(self, multiplier=0.5, seed=None):
-        """
-        Returns a toytree copy with all nodes multiplied by a constant 
-        sampled uniformly between (multiplier, 1/multiplier).
-        """
-        random.seed(seed)
-        ctree = self._ttree.copy()
-        low, high = sorted([multiplier, 1. / multiplier])
-        mult = random.uniform(low, high)
-        for node in ctree.treenode.traverse():
-            node.dist = node.dist * mult
-        ctree._coords.update()
-        return ctree
-
-
-    def make_ultrametric(self, strategy=1):
-        """
-        Returns a tree with branch lengths transformed so that the tree is 
-        ultrametric. Strategies include:
-        (1) tip-align: 
-            extend tips to the length of the fartest tip from the root; 
-        (2) NPRS: 
-            non-parametric rate-smoothing: minimize ancestor-descendant local 
-            rates on branches to align tips (not yet supported); and 
-        (3) penalized-likelihood: 
-            not yet supported.
-        """
-        ctree = self._ttree.copy()
-
-        if strategy == 1:
-            for node in ctree.treenode.traverse():
-                if node.is_leaf():
-                    node.dist += node.height
-                    # node.dist = node.height + 1
-
-        else:
-            raise NotImplementedError(
-                "Strategy {} not yet implemented. Seeking developers."
-                .format(strategy))
-
-        return ctree
-
-
-
-
 
 
 
@@ -343,188 +220,6 @@ class TreeMod:
 
 
 
-#######################################################
-# Random Tree generation Class
-#######################################################
-class RandomTree(object):
-
-    @staticmethod
-    def coaltree(ntips, ne=None, seed=None):
-        """
-        Returns a coalescent tree with ntips samples and waiting times 
-        between coalescent events drawn from the kingman coalescent:
-        (4N)/(k*(k-1)), where N is population size and k is sample size.
-        Edge lengths on the tree are in generations.
-
-        If no Ne argument is entered then edge lengths are returned in units
-        of 2*Ne, i.e., coalescent time units. 
-        """
-        # seed generator
-        random.seed(seed)
-
-        # convert units
-        coalunits = False
-        if not ne:
-            coalunits = True
-            ne = 10000
-
-        # build tree: generate N tips as separate Nodes then attach together 
-        # at internal nodes drawn randomly from coalescent waiting times.
-        tips = [
-            toytree.tree().treenode.add_child(name=str(i)) 
-            for i in range(ntips)
-        ]
-        while len(tips) > 1:
-            rtree = toytree.tree()
-            tip1 = tips.pop(random.choice(range(len(tips))))
-            tip2 = tips.pop(random.choice(range(len(tips))))
-            kingman = (4. * ne) / float(ntips * (ntips - 1))
-            dist = random.expovariate(1. / kingman)
-            rtree.treenode.add_child(tip1, dist=tip2.height + dist)
-            rtree.treenode.add_child(tip2, dist=tip1.height + dist)
-            tips.append(rtree.treenode)
-
-        # build new tree from the newick string
-        self = toytree.tree(tips[0].write())    
-        self.treenode.ladderize()
-
-        # make tree edges in units of 2N (then N doesn't matter!)
-        if coalunits:
-            for node in self.treenode.traverse():
-                node.dist /= (2. * ne)
-
-        # ensure tips are at zero (they sometime vary just slightly)
-        for node in self.treenode.traverse():
-            if node.is_leaf():
-                node.dist += node.height
-
-        # set tipnames
-        for tip in self.get_tip_labels():
-            node = self.treenode.search_nodes(name=tip)[0]
-            node.name = "r{}".format(node.idx)
-
-        # decompose fills in internal node names and idx
-        self._coords.update()
-        return self
-
-
-    @staticmethod
-    def unittree(ntips, treeheight=1.0, seed=None):
-        """
-        Returns a random tree topology w/ N tips and a root height set to
-        1 or a user-entered treeheight value. Descendant nodes are evenly 
-        spaced between the root and time 0.
-
-        Parameters
-        -----------
-        ntips (int):
-            The number of tips in the randomly generated tree
-
-        treeheight(float):
-            Scale tree height (all edges) so that root is at this height.
-
-        seed (int):
-            Random number generator seed.
-        """
-        # seed generator
-        random.seed(seed)
-
-        # generate tree with N tips.
-        tmptree = toytree.tree().treenode  # TreeNode()
-        tmptree.populate(ntips)
-        self = toytree.tree(newick=tmptree.write())
-
-        # set tip names by labeling sequentially from 0
-        self = (
-            self
-            .ladderize()
-            .mod.make_ultrametric()
-            .mod.node_scale_root_height(treeheight)
-        )
-
-        # set tipnames randomly (doesn't have to match idx)
-        nidx = list(range(self.ntips))
-        random.shuffle(nidx)
-        for tidx, node in enumerate(self.treenode.get_leaves()):
-            node.name = "r{}".format(nidx[tidx])
-
-        for node in self.treenode.traverse():
-            node.support = 100            
-        # fill internal node names and idx
-        self.treenode.ladderize()
-        self._coords.update()
-        return self
-
-
-    @staticmethod
-    def imbtree(ntips, treeheight=1.0):
-        """
-        Return an imbalanced (comb-like) tree topology.
-        """
-        rtree = toytree.tree()
-        rtree.treenode.add_child(name="r0")
-        rtree.treenode.add_child(name="r1")
-
-        for i in range(2, ntips):
-            # empty node
-            cherry = toytree.tree()
-            # add new child
-            cherry.treenode.add_child(name="r" + str(i))
-            # add old tree
-            cherry.treenode.add_child(rtree.treenode)
-            # update rtree
-            rtree = cherry
-
-        # get toytree from newick            
-        tre = toytree.tree(rtree.write(tree_format=9))
-        tre = tre.mod.make_ultrametric()
-        self = tre.mod.node_scale_root_height(treeheight)
-        self._coords.update()
-        return self
-
-
-    @staticmethod
-    def baltree(ntips, treeheight=1.0):
-        """
-        Returns a balanced tree topology.
-        """
-        # require even number of tips
-        if ntips % 2:
-            raise ToytreeError("balanced trees must have even number of tips.")
-
-        # make first cherry
-        rtree = toytree.tree()
-        rtree.treenode.add_child(name="r0")
-        rtree.treenode.add_child(name="r1")
-
-        # add tips in a balanced way
-        for i in range(2, ntips):
-
-            # get node to split
-            node = return_small_clade(rtree.treenode)
-
-            # add two children
-            node.add_child(name=node.name)
-            node.add_child(name="r" + str(i))
-
-            # rename ancestral node
-            node.name = None
-
-        # rename tips so names are in order
-        idx = len(rtree) - 1
-        for node in rtree.treenode.traverse("postorder"):
-            if node.is_leaf():
-                node.name = "r" + str(idx)
-                idx -= 1
-
-        # get toytree from newick            
-        tre = toytree.tree(rtree.write(tree_format=9))
-        tre = tre.mod.make_ultrametric()
-        self = tre.mod.node_scale_root_height(treeheight)
-        self._coords.update()
-        return self        
-
-
 
 #######################################################
 # Other
@@ -538,18 +233,6 @@ def bpp2newick(bppnewick):
     new = regex2.sub(";", new)
     new = regex3.sub(":", new)
     return new
-
-
-
-def return_small_clade(treenode):
-    "used to produce balanced trees, returns a tip node from the smaller clade"
-    node = treenode
-    while 1:
-        if node.children:
-            c1, c2 = node.children
-            node = sorted([c1, c2], key=lambda x: len(x.get_leaves()))[0]
-        else:
-            return node
 
 
 
@@ -578,7 +261,8 @@ class NodeAssist:
 
         if len([i for i in [names, wildcard, regex] if i]) != 1:
             raise ToytreeError(
-                "Only one method allowed at a time for: name list, wildcard selector, or regex pattern")
+                "Only one method allowed at a time for: name list, "
+                "wildcard selector, or regex pattern")
 
         # matched values
         self.nodes = []
@@ -600,13 +284,13 @@ class NodeAssist:
             # allow tips to be entered instead of a list
             if isinstance(self.names, (str, int)):
                 self.names = [self.names]
-            
+
             # report any names entered that seem like typos
             bad = [i for i in self.names if i not in self.ttree.get_tip_labels()]
             if any(bad):
                 raise ToytreeError(
                     "Sample {} is not in the tree".format(bad))
-            
+
             # select *nodes* that match these names
             tips = [
                 i for i in self.ttree.treenode.get_leaves() 
@@ -615,7 +299,7 @@ class NodeAssist:
 
         # use regex to match tipnames
         elif self.regex:
-            
+
             # select *nodes* that regex match. Raise error if None.
             tips = [
                 i for i in self.ttree.treenode.get_leaves() 
@@ -626,7 +310,7 @@ class NodeAssist:
 
         # use wildcard substring matching
         elif self.wildcard:
-            
+
             # select *nodes* that match the wildcard search
             tips = [
                 i for i in self.ttree.treenode.get_leaves()
@@ -681,6 +365,37 @@ class NodeAssist:
                 self.tipnames, "name", ignore_missing=True)
         )
         return mbool
+
+
+
+def normalize_values(vals, nbins=10, minsize=2, maxsize=12):
+    """
+    Distributes values into bins spaced at reasonable sizes for plotting.
+    Example, this can be used automatically scale Ne values to plot as 
+    edge widths.
+    """
+
+    # make copy of original
+    ovals = deepcopy(vals)
+
+    # if 6X min value is higher than max then add this 
+    # as a fake value to scale more nicely
+    if min(vals) * 6 > max(vals):
+        vals.append(min(vals) * 6)
+
+    # sorted vals list
+    svals = sorted(vals)
+
+    # put vals into bins
+    bins = np.histogram(vals, bins=10)[0]
+
+    # convert binned vals to widths in 2-12
+    newvals = {}
+    sizes = np.linspace(2, 12, 10)
+    for idx, inbin in enumerate(bins):
+        for num in range(inbin):
+            newvals[svals.pop(0)] = sizes[idx]
+    return np.array([newvals[i] for i in ovals])
 
 
 
