@@ -34,15 +34,15 @@ class NexusError(Exception):
 
 
 
-# class FastTreeParser():
-#     """
-#     A less flexible but faster newick parser for performance sensitive apps.
-#     Only supports newick string input in format 0.
-#     """
-#     def __init__(self, newick):
-#         self.data = newick
-#         extractor = Newick2TreeNode(self.data, fmt=0)
-#         self.treenodes = [extractor.newick_from_string()]
+class FastTreeParser():
+    """
+    A less flexible but faster newick parser for performance sensitive apps.
+    Only supports newick string input in format 0.
+    """
+    def __init__(self, newick, tree_format):
+        self.data = newick
+        extractor = FastNewick2TreeNode(self.data, tree_format)
+        self.treenode = extractor.newick_from_string()
 
 
 
@@ -486,3 +486,86 @@ def parse_nhx(NHX_string):
 MATCHER = {}
 for formatcode in range(11):
     MATCHER[formatcode] = Matchers(formatcode)
+
+
+
+class FastNewick2TreeNode:
+    "Parse newick str to a TreeNode object"    
+    def __init__(self, data, tree_format):
+        self.data = data
+        self.root = TreeNode()
+        self.current_node = self.root
+        self.current_parent = None
+        self.fmt = tree_format
+        self.data = re.sub(r"[\n\r\t ]+", "", self.data)
+
+
+
+    def newick_from_string(self):
+        "Reads a newick string in the New Hampshire format."
+
+        # split on parentheses to traverse hierarchical tree structure
+        for chunk in self.data.split("(")[1:]:
+            # add child to make this node a parent.
+            self.current_parent = (
+                self.root if self.current_parent is None else
+                self.current_parent.add_child()
+            )
+
+            # get all parenth endings from this parenth start
+            subchunks = [ch.strip() for ch in chunk.split(",")]
+            if subchunks[-1] != '' and not subchunks[-1].endswith(';'):
+                raise NewickError(
+                    'Broken newick structure at: {}'.format(chunk))
+
+            # Every closing parenthesis will close a node and go up one level.
+            for idx, leaf in enumerate(subchunks):
+                if leaf.strip() == '' and idx == len(subchunks) - 1:
+                    continue
+                closing_nodes = leaf.split(")")
+
+                # parse features and apply to the node object
+                self.apply_node_data(closing_nodes[0], "leaf")
+
+                # next contain closing nodes and data about the internal nodes.
+                if len(closing_nodes) > 1:
+                    for closing_internal in closing_nodes[1:]:
+                        closing_internal = closing_internal.rstrip(";")
+                        # read internal node data and go up one level
+                        self.apply_node_data(closing_internal, "internal")
+                        self.current_parent = self.current_parent.up
+        return self.root
+
+
+
+    def apply_node_data(self, subnw, node_type):
+
+        if node_type in ("leaf", "single"):
+            self.current_node = self.current_parent.add_child()
+        else:
+            self.current_node = self.current_parent
+
+        # if no feature data
+        subnw = subnw.strip()
+        if not subnw:
+            return 
+
+        # load matcher junk
+        c1, c2, cv1, cv2, match = MATCHER[self.fmt].type[node_type]
+
+        # look for node features
+        data = re.match(match, subnw)
+
+        # if there are node features then add them to this node
+        if data:
+            data = data.groups()
+
+            # node has a name
+            if (data[0] is not None) and (data[0] != ''):
+                self.current_node.add_feature(c1, cv1(data[0]))
+
+            if (data[1] is not None) and (data[1] != ''):
+                self.current_node.add_feature(c2, cv2(data[1][1:]))
+
+        else:
+            raise NewickError("Unexpected newick format {}".format(subnw))
