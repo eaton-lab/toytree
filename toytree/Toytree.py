@@ -11,9 +11,10 @@ from .TreeNode import TreeNode
 from .TreeStyle import TreeStyle
 from .Coords import Coords
 from .Drawing import Drawing
-from .TreeParser import TreeParser
+from .TreeParser import TreeParser, FastTreeParser
 from .TreeWriter import NewickWriter
 from .Treemod import TreeMod
+from .Rooter import Rooter
 from .utils import ToytreeError, fuzzy_match_tipnames, NodeAssist, normalize_values
 
 
@@ -498,24 +499,22 @@ class ToyTree(object):
             else:
                 # check that all keys are valid
                 for nidx in values:
-                    if nidx not in nself.get_node_values("idx", 1, 1):
+                    if nidx not in ndict:
                         raise ToytreeError(
                             "node idx {} not in tree".format(nidx))
 
                 # or, set everyone to a null value
-                else:           
-                    for key in ndict:
-                        if not hasattr(ndict[key], attr):
-                            node = ndict[key]
-                            node.add_feature(attr, "")
-                            # setattr(ndict[key], attr, "")
+                for key in ndict:
+                    if not hasattr(ndict[key], attr):
+                        node = ndict[key]
+                        node.add_feature(attr, "")
+                        # setattr(ndict[key], attr, "")
 
                 # then set selected nodes to new values
                 for key, val in values.items():
                     node = ndict[key]
                     node.add_feature(attr, val)
                     # setattr(ndict[key], attr, val)
-
         return nself
 
 
@@ -759,185 +758,193 @@ class ToyTree(object):
         rtre = tre.root(outgroup=["1-A", "1-B"])
         rtre = tre.root(wildcard="1-")
         rtre = tre.root(regex="1-[A,B]")
-        """
+        """       
         # insure edge_features is an iterable
         if not edge_features:
             edge_features = []
         if isinstance(edge_features, (str, int, float)):
             edge_features = [edge_features]
 
-        # make a deepcopy of the tree
+        # make a deepcopy of the tree and pass to Rooter class
         nself = self.copy()
-        maxsup = max([int(i.support) for i in nself.treenode.traverse()])
-        maxsup = (1.0 if maxsup <= 1.0 else 100)
+        rooter = Rooter(
+            nself, 
+            (names, wildcard, regex), 
+            resolve_root_dist, 
+            edge_features, 
+        )
+        return rooter.tree
 
-        # define which features to use/keep and which are "edge" features
-        testnode = nself.treenode.get_leaves()[0]
-        features = {"name", "dist", "support"}
-        extrafeat = {i for i in testnode.features if i not in features}
-        features.update(extrafeat)        
+        # maxsup = max([int(i.support) for i in nself.treenode.traverse()])
+        # maxsup = (1.0 if maxsup <= 1.0 else 100)
 
-        # find the node whose parent edge will be pinched to root
-        nas = NodeAssist(nself, names, wildcard, regex)
-        nas.match_query()
-        if (not nas.is_query_monophyletic()) or (nas.get_mrca().is_root()):
-            clade1 = nas.tipnames
-            nas.match_reciprocal()
-            if not nas.is_query_monophyletic():
-                clade2 = nas.tipnames
-                raise ToytreeError(
-                    "Matched query is paraphyletic: {}"
-                    .format(sorted([clade1, clade2], key=len)[0]))
+        # # define which features to use/keep and which are "edge" features
+        # testnode = nself.treenode.get_leaves()[0]
+        # features = {"name", "dist", "support"}
+        # extrafeat = {i for i in testnode.features if i not in features}
+        # features.update(extrafeat)        
 
-        # get the mrca node (or tip node) of the monopyletic matched query.
-        node1 = nas.get_mrca()
+        # # find the node whose parent edge will be pinched to root
+        # nas = NodeAssist(nself, names, wildcard, regex)
+        # nas.match_query()
+        # if (not nas.is_query_monophyletic()) or (nas.get_mrca().is_root()):
+        #     clade1 = nas.tipnames
+        #     nas.match_reciprocal()
+        #     if not nas.is_query_monophyletic():
+        #         clade2 = nas.tipnames
+        #         raise ToytreeError(
+        #             "Matched query is paraphyletic: {}"
+        #             .format(sorted([clade1, clade2], key=len)[0]))
 
-        # the node on the other side of the edge to be split.
-        node2 = node1.up
+        # # get the mrca node (or tip node) of the monopyletic matched query.
+        # node1 = nas.get_mrca()
 
-        # if rooting where root already exists then bail out.
-        if (node1.is_root() or (node2.is_root() and nself.is_rooted())):
-            print("No effect, tree is already rooted by {}.".format(nas.tipnames))            
-            return self
+        # # the node on the other side of the edge to be split.
+        # node2 = node1.up
 
-        # the new root node to be placed on the split
-        nnode = nself.treenode.__class__()
-        nnode.name = "root"
-        nnode.add_feature("idx", nself.treenode.idx)
-        nnode.support = maxsup
+        # # if rooting where root already exists then bail out.
+        # if (node1.is_root() or (node2.is_root() and nself.is_rooted())):
+        #     print("No effect, tree is already rooted by {}.".format(nas.tipnames))            
+        #     return self
 
-        # remove node1 lineage leaving just node2 branch to be made into child
-        node2.children.remove(node1)
+        # # the new root node to be placed on the split
+        # nnode = nself.treenode.__class__()
+        # nnode.name = "root"
+        # nnode.add_feature("idx", nself.treenode.idx)
+        # nnode.support = maxsup
 
-        # create dictionary for relabeling nodes {node: [parent, child, feat]}
-        tdict = {}
+        # # remove node1 lineage leaving just node2 branch to be made into child
+        # node2.children.remove(node1)
 
-        # new node has no parent and 1/2 as children and default features
-        tdict[nnode] = [None, [node1, node2], {}]
+        # # create dictionary for relabeling nodes {node: [parent, child, feat]}
+        # tdict = {}
 
-        # node1 has new root parent, same children, and dist preserved (or split?)
-        tdict[node1] = [nnode, node1.children, {"dist": node1.dist}]  # node1.dist / 2.
+        # # new node has no parent and 1/2 as children and default features
+        # tdict[nnode] = [None, [node1, node2], {}]
 
-        # node2 has new root parent, same children + mods, and dist/supp mods
-        tdict[node2] = [nnode, node2.children, {"dist": 0.0}]
+        # # node1 has new root parent, same children, and dist preserved (or split?)
+        # tdict[node1] = [nnode, node1.children, {"dist": node1.dist}]  # node1.dist / 2.
 
-        # if not already at root polytomy, then connect node2 to parent
-        if node2.up:
-            if not node2.up.is_root():
-                tdict[node2][1] += [node2.up]
+        # # node2 has new root parent, same children + mods, and dist/supp mods
+        # tdict[node2] = [nnode, node2.children, {"dist": 0.0}]
 
-        # if False create zero length root node
-        if resolve_root_dist is False:
-            resolve_root_dist = 0.0
+        # # if not already at root polytomy, then connect node2 to parent
+        # if node2.up:
+        #     if not node2.up.is_root():
+        #         tdict[node2][1] += [node2.up]
+
+        # # if False create zero length root node
+        # if resolve_root_dist is False:
+        #     resolve_root_dist = 0.0
         
-        # if True then use midpoint rooting
-        if resolve_root_dist is True:
-            tdict[node1][2]["dist"] = node1.dist / 2.
-            tdict[node2][2]["dist"] = node1.dist / 2.
+        # # if True then use midpoint rooting
+        # if resolve_root_dist is True:
+        #     tdict[node1][2]["dist"] = node1.dist / 2.
+        #     tdict[node2][2]["dist"] = node1.dist / 2.
         
-        # split the edge on 0 or a float
-        if isinstance(resolve_root_dist, float):
-            tdict[node1][2]["dist"] = node1.dist - resolve_root_dist            
-            tdict[node2][2]["dist"] = resolve_root_dist
-            if resolve_root_dist > node1.dist:
-                raise ToytreeError("\n"
-                "To preserve existing edge lengths the 'resolve_root_dist' arg\n"
-                "must be smaller than the edge being split (it is selecting a \n"
-                "a point along the edge.) The edge above node idx {} is {}."
-                .format(node1.idx, node1.dist)
-                )
+        # # split the edge on 0 or a float
+        # if isinstance(resolve_root_dist, float):
+        #     tdict[node1][2]["dist"] = node1.dist - resolve_root_dist            
+        #     tdict[node2][2]["dist"] = resolve_root_dist
+        #     if resolve_root_dist > node1.dist:
+        #         raise ToytreeError("\n"
+        #         "To preserve existing edge lengths the 'resolve_root_dist' arg\n"
+        #         "must be smaller than the edge being split (it is selecting a \n"
+        #         "a point along the edge.) The edge above node idx {} is {}."
+        #         .format(node1.idx, node1.dist)
+        #         )
 
-        # mark new split with zero...
-        for feature in set(edge_features) - set(["support"]):
-            tdict[node2][2][feature] = 0.0
+        # # mark new split with zero...
+        # for feature in set(edge_features) - set(["support"]):
+        #     tdict[node2][2][feature] = 0.0
 
-        # unless support value, then mark with full.
-        if "support" in edge_features:
-            tdict[node2][2]['support'] = maxsup
-        else:
-            tdict[node2][2]['support'] = node2.support
+        # # unless support value, then mark with full.
+        # if "support" in edge_features:
+        #     tdict[node2][2]['support'] = maxsup
+        # else:
+        #     tdict[node2][2]['support'] = node2.support
 
-        # label all remaining nodes
-        tnode = node2.up
-        while 1:
+        # # label all remaining nodes
+        # tnode = node2.up
+        # while 1:
 
-            # early break
-            if not tnode:
-                break
+        #     # early break
+        #     if not tnode:
+        #         break
 
-            # get parent node and children to be mod'd
-            parent = [i for i in tnode.children if i in tdict][0]
-            children = [i for i in tnode.children if i not in tdict]
+        #     # get parent node and children to be mod'd
+        #     parent = [i for i in tnode.children if i in tdict][0]
+        #     children = [i for i in tnode.children if i not in tdict]
 
-            # break after the root
-            if tnode.is_root():
+        #     # break after the root
+        #     if tnode.is_root():
 
-                # need a root add feature here if unrooted...
-                if len(children) > 1:
+        #         # need a root add feature here if unrooted...
+        #         if len(children) > 1:
 
-                    # update dist from new parent
-                    tdict[tnode] = [parent, children, {"dist": parent.dist}]
+        #             # update dist from new parent
+        #             tdict[tnode] = [parent, children, {"dist": parent.dist}]
                     
-                    # update edge features from new parent
-                    for feature in edge_features:
-                        tdict[tnode][2][feature] = getattr(parent, feature)
+        #             # update edge features from new parent
+        #             for feature in edge_features:
+        #                 tdict[tnode][2][feature] = getattr(parent, feature)
 
-                    # set tnode as parent's new child
-                    tdict[parent][1].append(tnode)
+        #             # set tnode as parent's new child
+        #             tdict[parent][1].append(tnode)
 
-                    # set children as descendant from tnode
-                    for child in children:
-                        tdict[child] = [tnode, child.children, {}]
+        #             # set children as descendant from tnode
+        #             for child in children:
+        #                 tdict[child] = [tnode, child.children, {}]
 
-                # get children that are not in tdict yet
-                else:
-                    for child in children:
+        #         # get children that are not in tdict yet
+        #         else:
+        #             for child in children:
 
-                        # record whose children they are now (node2 already did this)
-                        if parent is node2:
-                            tdict[node2][1].append(child)
-                        else:
-                            tdict[parent][1].append(child)
+        #                 # record whose children they are now (node2 already did this)
+        #                 if parent is node2:
+        #                     tdict[node2][1].append(child)
+        #                 else:
+        #                     tdict[parent][1].append(child)
 
-                        # record whose parents they have now and find distance
-                        dist = {"dist": sum([i.dist for i in tnode.children])}
-                        tdict[child] = [parent, child.children, dist]
+        #                 # record whose parents they have now and find distance
+        #                 dist = {"dist": sum([i.dist for i in tnode.children])}
+        #                 tdict[child] = [parent, child.children, dist]
 
-                # finished
-                break
+        #         # finished
+        #         break
 
-            # normal nodes
-            else:
-                # update tnode.features
-                features = {i: getattr(tnode, i) for i in ('dist', 'support')}
-                
-                # keep connecting swap parent-child up to root
-                if not tnode.up.is_root():
-                    children += [tnode.up]
+        #     # normal nodes
+        #     else:
+        #         # update tnode.features
+        #         features = {i: getattr(tnode, i) for i in ('dist', 'support')}
 
-                # pass support values down (up in new tree struct)
-                for feature in edge_features:
-                    child = [i for i in tnode.children if i in tdict][0]
-                    features[feature] = getattr(child, feature)
+        #         # keep connecting swap parent-child up to root
+        #         if not tnode.up.is_root():
+        #             children += [tnode.up]
 
-                # store node update vals
-                tdict[tnode] = [parent, children, features]
+        #         # pass support values down (up in new tree struct)
+        #         for feature in edge_features:
+        #             child = [i for i in tnode.children if i in tdict][0]
+        #             features[feature] = getattr(child, feature)
 
-            # move towards root
-            tnode = tnode.up
+        #         # store node update vals
+        #         tdict[tnode] = [parent, children, features]
 
-        # update tree structure and node labels
-        for node in tdict:
-            node.up = tdict[node][0]
-            node.children = tdict[node][1]
-            for key, val in tdict[node][2].items():
-                setattr(node, key, val)
+        #     # move towards root
+        #     tnode = tnode.up
 
-        # update coordinates which updates idx and adds it to any new nodes.
-        nself.treenode = nnode
-        nself.treenode.ladderize()
-        nself._coords.update()
-        return nself              
+        # # update tree structure and node labels
+        # for node in tdict:
+        #     node.up = tdict[node][0]
+        #     node.children = tdict[node][1]
+        #     for key, val in tdict[node][2].items():
+        #         setattr(node, key, val)
+
+        # # update coordinates which updates idx and adds it to any new nodes.
+        # nself.treenode = nnode
+        # nself.treenode.ladderize()
+        # nself._coords.update()
+        # return nself              
 
 
     # old root function that used 'set_outgroup', now deprecated.
@@ -1213,8 +1220,8 @@ class RawTree():
     Barebones tree object that parses newick strings faster, assigns idx 
     to labels, and ...
     """
-    def __init__(self, newick):
-        self.treenode = TreeParser(newick, 0).treenodes[0]
+    def __init__(self, newick, tree_format=0):
+        self.treenode = FastTreeParser(newick, tree_format).treenode
         self.ntips = len(self.treenode)
         self.nnodes = (len(self.treenode) * 2) - 1
         self.update_idxs()
@@ -1240,9 +1247,13 @@ class RawTree():
         for node in self.treenode.traverse("levelorder"):
             if not node.is_leaf():
                 node.add_feature("idx", idx)
+                if not node.name:
+                    node.name = str(idx)
                 idx -= 1
 
         # external nodes: lowest numbers are for tips (0-N)
         for node in self.treenode.iter_leaves():
             node.add_feature("idx", idx)
+            if not node.name:
+                node.name = str(idx)
             idx -= 1
