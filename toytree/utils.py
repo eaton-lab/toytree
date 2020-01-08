@@ -24,6 +24,7 @@ class TreeError(Exception):
     def __str__(self):
         return repr(self.value)
 
+
 # TREE FORMATS
 NW_FORMAT = {
     # flexible with support
@@ -380,6 +381,7 @@ def normalize_values(vals, nbins=10, minsize=2, maxsize=12):
 
     # if 6X min value is higher than max then add this 
     # as a fake value to scale more nicely
+    vals = list(vals)
     if min(vals) * 6 > max(vals):
         vals.append(min(vals) * 6)
 
