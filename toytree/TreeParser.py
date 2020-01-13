@@ -284,16 +284,23 @@ class Newick2TreeNode:
         # load matcher junk
         c1, c2, cv1, cv2, match = MATCHER[self.fmt].type[node_type]
 
-        # if mrbayes then combine brackets
+        # if beast or mb then combine brackets
         if self.fmt == 10:
             if "]:" not in subnw:
                 node, edge = subnw.split("]", 1)
                 subnw = node + "]:0.0" + edge                       
             node, edge = subnw.split("]:")
             npre, npost = node.split("[")
-            epre, epost = edge.split("[")
-            subnw = "{}:{}[&&NHX:{}".format(
-                npre, epre, ":".join([npost[6:], epost[6:]]))
+
+            # mrbayes mode: (a[&a:1,b:2]:0.1[&c:10])
+            try:
+                epre, epost = edge.split("[")
+                subnw = "{}:{}[&&NHX:{}".format(
+                    npre, epre, ":".join([npost[6:], epost[6:]]))
+
+            # BEAST mode: (a[&a:1,b:2,c:10]:0.1)
+            except ValueError:
+                subnw = "{}:{}[&&NHX:{}]".format(npre, edge, npost[6:])
 
         # look for node features
         data = re.match(match, subnw)
