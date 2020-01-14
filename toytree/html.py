@@ -6,28 +6,21 @@
 
 from __future__ import division, absolute_import
 
-import base64
-import collections
-import copy
-import functools
-import io
-import itertools
-import json
-import string
-import uuid
 import xml.etree.ElementTree as xml
-
-from multipledispatch import dispatch
+import functools
+import itertools
 import numpy
 
+from multipledispatch import dispatch
+from .Toytree import ToyTree
 import toyplot.coordinates
 import toyplot.canvas
 import toyplot.color
-import toyplot.compatibility
 import toyplot.mark
 import toyplot.marker
-
 from toyplot.html import RenderContext, _color_fixup
+from toyplot.html import _render_table
+
 
 
 _namespace = dict()
@@ -67,22 +60,27 @@ dispatch = functools.partial(dispatch, namespace=_namespace)
 # axes = a
 
 
+
 # toytree Marker object which has a custom render function below.
 # The init function for creating a Toytree Mark is similar to what
 # used to be in the draw() function.
 class Toytree(toyplot.mark.Mark):
     def __init__(self, newick):
-        super(Toytree, self).__init__()
+        #super(Toytree, self).__init__()
+        toyplot.mark.Mark.__init__(self)
 
-        self.toytree = toytree.tree(newick)
+        self.toytree = ToyTree(newick)
         self.markers = []
         edge_marker = get_edge_mark(self.toytree)
-        text_marker = get_text_mark(self.toytree)
-        node_marker = get_node_mark(self.toytree)
-        etip_marker = get_etip_mark(self.toytree)
-        for marker in [edge_marker, text_marker, node_marker, etip_marker]:
+        #text_marker = get_text_mark(self.toytree)
+        #node_marker = get_node_mark(self.toytree)
+        #etip_marker = get_etip_mark(self.toytree)
+        for marker in [edge_marker, ]:  # text_marker, node_marker, etip_marker]:
             if marker:
                 self.markers.append(marker)
+
+
+        self._coordinates = toyplot.require.string_vector(coordinate_axes)
 
     # domain is the tree/edge domain
     def domain(self, axis):
@@ -103,100 +101,11 @@ class Toytree(toyplot.mark.Mark):
 
 
 
-# this is a hybrid of Toyplot's Graph, Text, and Scatterplot _render
-# functions with just the elements I want selected out. It also
-# makes minifying calls to simplify style dictionaries for shared styles
-@dispatch(toyplot.coordinates.Cartesian, Toytree, RenderContext)
-def _render(axes, mark, context):
-
-    dimension1 = numpy.ma.column_stack(
-        [mark._table[key] for key in mark._coordinates[0::2]])
-    dimension2 = numpy.ma.column_stack(
-        [mark._table[key] for key in mark._coordinates[1::2]])
-    if mark._coordinate_axes[0] == "x":
-        X = axes.project("x", dimension1)
-        Y = axes.project("y", dimension2)
-    elif mark._coordinate_axes[0] == "y":
-        X = axes.project("x", dimension2)
-        Y = axes.project("y", dimension1)
-
-    # group styles with common values
-    shared_styles, unique_styles = split_styles(mark)
-
-    # create root Scatterplot element
-    mark_xml = xml.SubElement(
-        root_xml,
-        "g",
-        id=context.get_id(mark),
-        attrib={"class": "toyplot-mark-Scatterplot"},
-    )
-    print(xml.tostring(mark_xml))
-
-    ##
-    mvectors = [
-        X.T,
-        Y.T,
-        [mark._table[key] for key in mark._marker],
-        [mark._table[key] for key in mark._mtitle],
-    ]
-
-    for x, y, marker, mtitle in zip(*mvectors):
-        not_null = numpy.invert(numpy.logical_or(
-            numpy.ma.getmaskarray(x), numpy.ma.getmaskarray(y)))
-
-        # create a Series element to hold all data points
-        series_xml = xml.SubElement(
-            mark_xml,
-            "g",
-            attrib={
-                "class": "toyplot-Series",
-                "style": shared_styles,
-            },
-        )
-        print(xml.tostring(series_xml))
-        print("")
-
-        # subselect markers for missing data
-        vals = [
-            itertools.count(step=1),
-            x[not_null],
-            y[not_null],
-            marker[not_null],
-            mtitle[not_null],
-        ]
-        for idx, dx, dy, dmarker, dtitle in zip(*vals):
-            marker = toyplot.marker.create(
-                size=dmarker.size,
-                shape=dmarker.shape,
-                mstyle=unique_styles["node"][idx],
-                lstyle={},
-                label=dmarker.label)
-            marker_xml = _draw_marker(
-                root=series_xml,
-                marker=marker,
-                cx=dx,
-                cy=dy,
-                extra_class="toyplot-Datum",
-                title=dtitle,
-            )
-            # print xml.tostring(marker_xml)
-            # print ""
-            if marker.label:
-                _draw_text(
-                    root=marker_xml,
-                    text=marker.label,
-                    style=unique_styles['text'][idx],
-                )
-            print(xml.tostring(marker_xml))
-            print("")
-            # create new simplified marker... working off Line 3177 in html.py
-
-
 ## tip names text
 def get_text_mark(ttree):
     """ makes a simple Text Mark object"""
     
-    if ttree._orient in ["right"]:
+    if ttree._layout in ["right"]:
         angle = 0.
         ypos = ttree.verts[-1*len(ttree.tree):, 1]
         if ttree._kwargs["tip_labels_align"]:
@@ -208,7 +117,7 @@ def get_text_mark(ttree):
         else:
             xpos = ttree.verts[-1*len(ttree.tree):, 0]
             
-    elif ttree._orient in ['down']:
+    elif ttree._layout in ['down']:
         angle = -90.
         xpos = ttree.verts[-1*len(ttree.tree):, 0]
         if ttree._kwargs["tip_labels_align"]:
@@ -256,24 +165,25 @@ def get_text_mark(ttree):
 ## toytree uses edges, no need for vertices
 def get_edge_mark(ttree):
     """ makes a simple Graph Mark object"""
-    
-    ## tree style
-    if ttree._kwargs["tree_style"] in ["c", "cladogram"]:
-        a=ttree.edges
-        vcoordinates=ttree.verts
+
+    # tree style
+    if ttree.style.edge_type == "c":
+        a = ttree._coords.edges
+        vcoordinates = ttree._coords.verts
     else:
-        a=ttree._lines               
-        vcoordinates=ttree._coords    
+        a = ttree._coords.lines               
+        vcoordinates = ttree._coords.coords 
    
-    ## fixed args
-    along='x'
-    vmarker='o'
+    # fixed args
+    along = 'x'
+    vmarker = 'o'
     vcolor=None
     vlshow=False            
     vsize=0.         
     estyle=ttree._kwargs["edge_style"]
 
-    ## get axes
+
+    # get axes
     layout = toyplot.layout.graph(a, vcoordinates=vcoordinates)
     along = toyplot.require.value_in(along, ["x", "y"])
     if along == "x":
@@ -368,6 +278,104 @@ def get_node_mark(ttree):
     return
 
 
+
+
+# this is a hybrid of Toyplot's Graph, Text, and Scatterplot _render
+# functions with just the elements I want selected out. It also
+# makes minifying calls to simplify style dictionaries for shared styles
+@dispatch(toyplot.coordinates.Cartesian, Toytree, RenderContext)
+def _render(axes, mark, context):
+
+    # get dimensions from the Table elements of the Mark
+    dimension1 = numpy.ma.column_stack([
+        mark._table[key] for key in mark._coordinates[0::2]
+    ])
+    dimension2 = numpy.ma.column_stack([
+        mark._table[key] for key in mark._coordinates[1::2]
+    ])
+    X = axes.project("x", dimension1)
+    Y = axes.project("y", dimension2)
+    if mark._coordinate_axes[0] == "y":
+        X = axes.project("x", dimension2)
+        Y = axes.project("y", dimension1)
+
+    # group styles with common values
+    shared_styles, unique_styles = split_styles(mark)
+
+    # create root Mark element
+    mark_xml = xml.SubElement(
+        context.root,  # root_xml,
+        "g",
+        id=context.get_id(mark),
+        attrib={"class": "toyplot-mark-Toytree"},
+    )
+    print(xml.tostring(mark_xml))
+
+    # make list of tuples for each point: (x, y, marker, title)
+    mvectors = [
+        X.T,
+        Y.T,
+        [mark._table[key] for key in mark._marker],
+        [mark._table[key] for key in mark._mtitle],
+    ]
+
+    # for each marker, if not null, make a <g> element 
+    for x, y, marker, mtitle in zip(*mvectors):
+        not_null = numpy.invert(numpy.logical_or(
+            numpy.ma.getmaskarray(x), numpy.ma.getmaskarray(y)))
+
+        # create a Series element to hold all data points
+        series_xml = xml.SubElement(
+            mark_xml,
+            "g",
+            attrib={
+                "class": "toyplot-Series",
+                "style": shared_styles,
+            },
+        )
+        print(xml.tostring(series_xml))
+        print("")
+
+        # subselect markers for missing data
+        vals = [
+            itertools.count(step=1),
+            x[not_null],
+            y[not_null],
+            marker[not_null],
+            mtitle[not_null],
+        ]
+        for idx, dx, dy, dmarker, dtitle in zip(*vals):
+            marker = toyplot.marker.create(
+                size=dmarker.size,
+                shape=dmarker.shape,
+                mstyle=unique_styles["node"][idx],
+                lstyle={},
+                label=dmarker.label)
+            marker_xml = _draw_marker(
+                root=series_xml,
+                marker=marker,
+                cx=dx,
+                cy=dy,
+                extra_class="toyplot-Datum",
+                title=dtitle,
+            )
+            # print xml.tostring(marker_xml)
+            # print ""
+            if marker.label:
+                _draw_text(
+                    root=marker_xml,
+                    text=marker.label,
+                    style=unique_styles['text'][idx],
+                )
+            print(xml.tostring(marker_xml))
+            print("")
+            # create new simplified marker... working off Line 3177 in html.py
+
+
+
+
+
+
 ## Currently this clobbers some text styling (e.g., alignment-baseline)
 ## during the 'toyplot.text.layout' restyling. Not sure why.
 def split_styles(mark):
@@ -389,12 +397,12 @@ def split_styles(mark):
     lstyles = []
     for m in markers:
         lsty = toyplot.style.combine({
-        "font-family": "Helvetica",
-        "-toyplot-vertical-align": "middle",
-        "fill": toyplot.color.black,
-        "font-size": "%rpx" % (m.size * 0.75),
-        "stroke": "none",
-        "text-anchor": "middle",
+            "font-family": "Helvetica",
+            "-toyplot-vertical-align": "middle",
+            "fill": toyplot.color.black,
+            "font-size": "%rpx" % (m.size * 0.75),
+            "stroke": "none",
+            "text-anchor": "middle",
         }, m.lstyle)
         ## update fonts
         fonts = toyplot.font.ReportlabLibrary()
@@ -438,10 +446,12 @@ def split_styles(mark):
     ## check node values
     natt = ["%s:%s" % (key, nstyles[0][key]) for key in sorted(nsharedkeys)]
     latt = ["%s:%s" % (key, lstyles[0][key]) for key in sorted(lsharedkeys)]
-    shared_styles = ";".join(natt+latt)
+    shared_styles = ";".join(natt + latt)
     unique_styles = {
-        "node": [{k:v for k,v in nstyles[idx].items() if k in nuniquekeys} for idx in range(len(markers))],
-        "text": [{k:v for k,v in lstyles[idx].items() if k in luniquekeys} for idx in range(len(markers))]
+        "node": [{k: v for k, v in nstyles[idx].items() if k in nuniquekeys}
+            for idx in range(len(markers))],
+        "text": [{k: v for k, v in lstyles[idx].items() if k in luniquekeys} 
+            for idx in range(len(markers))]
     }
     
     return shared_styles, unique_styles
@@ -787,6 +797,8 @@ def _render_graph(axes, mark, context):
             d=" ".join(path),
             style=_css_style(estyle),
             )
+
+
 
     # Render edge head markers.
     # marker_xml = xml.SubElement(edge_xml, "g", attrib={"class": "toyplot-HeadMarkers"})
