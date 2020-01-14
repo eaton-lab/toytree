@@ -23,14 +23,10 @@ from .utils import bpp2newick
 
 
 
-
-###############################################
-# MultiTree Class object
-###############################################
 class MultiTree(object):
     """
     Toytree MultiTree object for representing multiple trees. 
-    
+
     Parameters:
     -----------
     newick: (str)
@@ -67,7 +63,13 @@ class MultiTree(object):
                 ToyTree(i) for i in 
                 TreeParser(newick, tree_format, multitree=True).treenodes
             ]
-        elif isinstance(newick, (list, tuple)):
+
+        # iterables (list, tuple, ndarray, Series)
+        else:
+            # convert to list
+            if newick is not None:
+                newick = list(newick)
+            # load list whether it is newicks, toytrees or treenodes
             if isinstance(newick[0], str):
                 self.treelist = [
                     ToyTree(i) for i in 
@@ -75,7 +77,6 @@ class MultiTree(object):
                 ]
             elif isinstance(newick[0], ToyTree):
                 self.treelist = newick
-
             elif isinstance(newick[0], TreeNode):
                 self.treelist = [ToyTree(i) for i in newick]
 
@@ -196,7 +197,8 @@ class MultiTree(object):
     # -------------------------------------------------------------------
     # Tree List Plotting
     # -------------------------------------------------------------------
-    def draw_tree_grid(self, 
+    def draw_tree_grid(
+        self, 
         axes=None,
         nrows=None, 
         ncols=None, 
@@ -236,6 +238,8 @@ class MultiTree(object):
 
         # apply kwargs styles to the individual tree styles
         for tree in treelist:
+            if kwargs.get("ts"):
+                tree.style = TreeStyle(kwargs.get("ts"))
             if kwargs.get("tree_style"):
                 tree.style = TreeStyle(kwargs.get("tree_style"))
             tree.style.update(kwargs)
@@ -248,6 +252,7 @@ class MultiTree(object):
             else:
                 ncols = 5           
 
+        # one or the other
         elif not (ncols and nrows):
             if ncols:
                 if ncols == 1:
@@ -286,7 +291,8 @@ class MultiTree(object):
         return canvas, axes
 
 
-    def draw_cloud_tree(self, 
+    def draw_cloud_tree(
+        self, 
         axes=None, 
         html=False,
         fixed_order=True,
@@ -497,7 +503,7 @@ class ConsensusTree:
         # store counts
         clade_counts = {}
         for tidx, ncopies in self.treedict.items():
-            
+
             # testing on unrooted trees is easiest but for some reason slow
             ttree = self.treelist[tidx].unroot()
 
@@ -542,10 +548,10 @@ class ConsensusTree:
             conflict = False
             if freqs[idx] < self.cutoff:
                 continue
-            
+
             for pidx in passed:
                 intersect = np.max(carrs[idx] + carrs[pidx]) > 1
-                
+
                 # is either one a subset of the other?
                 subset_test0 = np.all(carrs[idx] - carrs[pidx] >= 0)
                 subset_test1 = np.all(carrs[pidx] - carrs[idx] >= 0)
@@ -570,7 +576,7 @@ class ConsensusTree:
         idxarr = np.arange(len(self.fclade_counts[0][0]))
         queue = []
 
-        ## create dict of clade counts and set keys
+        # create dict of clade counts and set keys
         countdict = defaultdict(int)
         for clade, count in self.fclade_counts:
             mask = np.int_(list(clade)).astype(np.bool)
@@ -627,7 +633,6 @@ class ConsensusTree:
 
 
 
-# GLOBALS
 TIP_LABELS_ADVICE = """
 Warning: ignoring 'tip_labels' argument. 
 

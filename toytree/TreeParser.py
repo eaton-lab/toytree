@@ -18,6 +18,7 @@ from .utils import NW_FORMAT
 FLOAT_RE = r"\s*[+-]?\d+\.?\d*(?:[eE][-+]\d+)?\s*"
 NAME_RE = r"[^():,;]+?"
 NHX_RE = r"\[&&NHX:[^\]]*\]"
+MB_BRLEN_RE = r"\[&B (\w+) [0-9.e-]+\]"
 
 
 class NewickError(Exception):
@@ -25,10 +26,23 @@ class NewickError(Exception):
     def __init__(self, value):
         Exception.__init__(self, value)
 
+
 class NexusError(Exception):
     """Exception class designed for NewickIO errors."""
     def __init__(self, value):
         Exception.__init__(self, value)
+
+
+
+class FastTreeParser():
+    """
+    A less flexible but faster newick parser for performance sensitive apps.
+    Only supports newick string input in format 0.
+    """
+    def __init__(self, newick, tree_format):
+        self.data = newick
+        extractor = FastNewick2TreeNode(self.data, tree_format)
+        self.treenode = extractor.newick_from_string()
 
 
 
@@ -107,7 +121,7 @@ class TreeParser(object):
 
         # load string: filename or data stream
         if isinstance(self.intree, (str, bytes)):
-            
+
             # strip it
             self.intree = self.intree.strip()
 
@@ -145,7 +159,7 @@ class TreeParser(object):
         if not self.multitree:
             # get TreeNodes from Newick
             extractor = Newick2TreeNode(self.data[0].strip(), fmt=self.fmt)
-        
+
             # extract one tree
             self.treenodes.append(extractor.newick_from_string())
 
@@ -153,10 +167,10 @@ class TreeParser(object):
             for tre in self.data:
                 # get TreeNodes from Newick
                 extractor = Newick2TreeNode(tre.strip(), fmt=self.fmt)
-        
+
                 # extract one tree
                 self.treenodes.append(extractor.newick_from_string())
-    
+
 
     def apply_name_translation(self):
         if self.tdict:
@@ -191,7 +205,7 @@ class Newick2TreeNode:
 
             # convert bracket markers to NHX format
             self.data = self.data.replace("[&", "[&&NHX:")
-    
+
             # replace commas inside feature strings with dashes
             ns = ""
             for chunk in self.data.split("{"):
@@ -253,7 +267,7 @@ class Newick2TreeNode:
                         self.apply_node_data(closing_internal, "internal")
                         self.current_parent = self.current_parent.up
         return self.root
-                   
+
 
     def apply_node_data(self, subnw, node_type):
 
@@ -261,7 +275,7 @@ class Newick2TreeNode:
             self.current_node = self.current_parent.add_child()
         else:
             self.current_node = self.current_parent
-        
+
         # if no feature data
         subnw = subnw.strip()
         if not subnw:
@@ -270,16 +284,23 @@ class Newick2TreeNode:
         # load matcher junk
         c1, c2, cv1, cv2, match = MATCHER[self.fmt].type[node_type]
 
-        # if mrbayes then combine brackets
+        # if beast or mb then combine brackets
         if self.fmt == 10:
             if "]:" not in subnw:
                 node, edge = subnw.split("]", 1)
                 subnw = node + "]:0.0" + edge                       
             node, edge = subnw.split("]:")
             npre, npost = node.split("[")
-            epre, epost = edge.split("[")
-            subnw = "{}:{}[&&NHX:{}".format(
-                npre, epre, ":".join([npost[6:], epost[6:]]))
+
+            # mrbayes mode: (a[&a:1,b:2]:0.1[&c:10])
+            try:
+                epre, epost = edge.split("[")
+                subnw = "{}:{}[&&NHX:{}".format(
+                    npre, epre, ":".join([npost[6:], epost[6:]]))
+
+            # BEAST mode: (a[&a:1,b:2,c:10]:0.1)
+            except ValueError:
+                subnw = "{}:{}[&&NHX:{}]".format(npre, edge, npost[6:])
 
         # look for node features
         data = re.match(match, subnw)
@@ -314,46 +335,60 @@ class NexusParser:
     Parse nexus file/str formatted data to extract tree data and features.
     Expects '#NEXUS', 'begin trees', 'tree', and 'end;'.
     """
-    def __init__(self, data):
+    def __init__(self, data, debug=False):
 
         self.data = data
         self.newicks = []
         self.tdict = {}
-        self.extract_tree_block()
+        self.matcher = re.compile(MB_BRLEN_RE)
+        if not debug:
+            self.extract_tree_block()
 
 
     def extract_tree_block(self):
         "iterate through data file to extract trees"        
 
+        # data SHOULD be a list of strings at this point
         lines = iter(self.data)
         while 1:
             try:
                 line = next(lines).strip()
             except StopIteration:
                 break
-    
+
+            # oh mrbayes, you seriously allow spaces within newick format!?
+            # find "[&B TK02Brlens 8.123e-3]" and change to [&Brlen=8.123e-3]
+            # this is a tmp hack fix, to be replaced with a regex
+            line = line.replace(" TK02Brlens ", "=")
+
             # enter trees block
             if line.lower() == "begin trees;":
                 while 1:
                     # iter through trees block
-                    sub = next(lines).strip().split()
-                    
+                    nextline = next(lines).strip()
+
+                    # remove horrible brlen string with spaces from mb
+                    nextline = self.matcher.sub("", nextline)
+
+                    # split into parts on spaces
+                    sub = nextline.split()
+
                     # skip if a blank line
                     if not sub:
                         continue
 
                     # look for translation
-                    if sub[0].lower() == "translate":
-                        while sub[0] != ";":
+                    elif sub[0].lower() == "translate":
+                        while not sub[-1].endswith(";"):
                             sub = next(lines).strip().split()
-                            self.tdict[sub[0]] = sub[-1].strip(",")
+                            self.tdict[sub[0]] = sub[-1].strip(",").strip(";")
 
                     # parse tree blocks
-                    if sub[0].lower().startswith("tree"):
+                    elif sub[0].lower().startswith("tree"):
                         self.newicks.append(sub[-1])
-        
+
                     # end of trees block
-                    if sub[0].lower() == "end;":
+                    elif sub[0].lower() == "end;":
                         break
 
 
@@ -444,7 +479,7 @@ def parse_nhx(NHX_string):
     if "[&&NHX:" in NHX_string:
         NHX_string = NHX_string.replace("[&&NHX:", "")
         NHX_string = NHX_string.replace("]", "")
-        
+
         for field in NHX_string.split(":"):
             try:
                 pname, pvalue = field.split("=")
@@ -458,3 +493,86 @@ def parse_nhx(NHX_string):
 MATCHER = {}
 for formatcode in range(11):
     MATCHER[formatcode] = Matchers(formatcode)
+
+
+
+class FastNewick2TreeNode:
+    "Parse newick str to a TreeNode object"    
+    def __init__(self, data, tree_format):
+        self.data = data
+        self.root = TreeNode()
+        self.current_node = self.root
+        self.current_parent = None
+        self.fmt = tree_format
+        self.data = re.sub(r"[\n\r\t ]+", "", self.data)
+
+
+
+    def newick_from_string(self):
+        "Reads a newick string in the New Hampshire format."
+
+        # split on parentheses to traverse hierarchical tree structure
+        for chunk in self.data.split("(")[1:]:
+            # add child to make this node a parent.
+            self.current_parent = (
+                self.root if self.current_parent is None else
+                self.current_parent.add_child()
+            )
+
+            # get all parenth endings from this parenth start
+            subchunks = [ch.strip() for ch in chunk.split(",")]
+            if subchunks[-1] != '' and not subchunks[-1].endswith(';'):
+                raise NewickError(
+                    'Broken newick structure at: {}'.format(chunk))
+
+            # Every closing parenthesis will close a node and go up one level.
+            for idx, leaf in enumerate(subchunks):
+                if leaf.strip() == '' and idx == len(subchunks) - 1:
+                    continue
+                closing_nodes = leaf.split(")")
+
+                # parse features and apply to the node object
+                self.apply_node_data(closing_nodes[0], "leaf")
+
+                # next contain closing nodes and data about the internal nodes.
+                if len(closing_nodes) > 1:
+                    for closing_internal in closing_nodes[1:]:
+                        closing_internal = closing_internal.rstrip(";")
+                        # read internal node data and go up one level
+                        self.apply_node_data(closing_internal, "internal")
+                        self.current_parent = self.current_parent.up
+        return self.root
+
+
+
+    def apply_node_data(self, subnw, node_type):
+
+        if node_type in ("leaf", "single"):
+            self.current_node = self.current_parent.add_child()
+        else:
+            self.current_node = self.current_parent
+
+        # if no feature data
+        subnw = subnw.strip()
+        if not subnw:
+            return 
+
+        # load matcher junk
+        c1, c2, cv1, cv2, match = MATCHER[self.fmt].type[node_type]
+
+        # look for node features
+        data = re.match(match, subnw)
+
+        # if there are node features then add them to this node
+        if data:
+            data = data.groups()
+
+            # node has a name
+            if (data[0] is not None) and (data[0] != ''):
+                self.current_node.add_feature(c1, cv1(data[0]))
+
+            if (data[1] is not None) and (data[1] != ''):
+                self.current_node.add_feature(c2, cv2(data[1][1:]))
+
+        else:
+            raise NewickError("Unexpected newick format {}".format(subnw))

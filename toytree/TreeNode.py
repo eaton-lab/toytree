@@ -61,7 +61,8 @@ class TreeNode(object):
     a tree node object which represents the base of the tree.
     """
 
-    def __init__(self, 
+    def __init__(
+        self, 
         newick=None, 
         format=0, 
         dist=None, 
@@ -93,7 +94,7 @@ class TreeNode(object):
 
 
     ############################################################
-    ## properties
+    # properties
     ############################################################
     @property
     def dist(self): 
@@ -1948,7 +1949,8 @@ class TreeNode(object):
         return ["{};".format(nw).replace("'", "") for nw in n2subtrees[self]]
 
 
-    def resolve_polytomy(self, 
+    def resolve_polytomy(
+        self, 
         default_dist=0.0, 
         default_support=0.0,
         recursive=True):
