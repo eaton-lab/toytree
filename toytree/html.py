@@ -1,23 +1,5 @@
 #!/usr/bin/env python
 
-"""Functions to render HTML markup."""
-
-"""
-See sandbox/ArcEdges
-
-        # plan for storing tuple coords as in toyplot
-         M (x, y)  A (r, s), (x, y)
-
-        # formatting a string with dict seems easiest
-         M x y A r  r  - - s  x   y   
-
-# the arc format
-<path d="M 0 0 A 50 50 0 0 1 100 100"/>
-
-"""
-
-
-
 from __future__ import division, absolute_import
 
 import base64
@@ -43,6 +25,21 @@ import toyplot.marker
 
 from toyplot.html import RenderContext, _color_fixup
 
+"""Functions to render HTML markup."""
+
+"""
+See sandbox/ArcEdges
+
+        # plan for storing tuple coords as in toyplot
+         M (x, y)  A (r, s), (x, y)
+
+        # formatting a string with dict seems easiest
+         M x y A r  r  - - s  x   y   
+
+# the arc format
+<path d="M 0 0 A 50 50 0 0 1 100 100"/>
+
+"""
 
 _namespace = dict()
 
