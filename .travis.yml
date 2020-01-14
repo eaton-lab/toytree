@@ -44,3 +44,5 @@ script:
 
   # test toytree code
   - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/4-tutorial.ipynb --to html  
+  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/5-toytrees.ipynb --to html    
+  - jupyter-nbconvert --ExecutePreprocessor.kernel_name="python3" --execute docs/6-treenodes.ipynb --to html      
