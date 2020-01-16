@@ -364,35 +364,74 @@ class ToyTree(object):
         return np.array(vals)
 
 
-    def get_node_dict(self, return_internal=False, return_nodes=False):
+    def get_feature_dict(self, key_attr=None, values_attr=None):
+        """
+        Returns a dictionary in which features from nodes can be selected 
+        as the keys or values. By default it returns {node: node}, but if you
+        select key_attr="name" then it returns {node.name: node} and if you
+        enter key_attr="name" values_attr="idx" it returns a dict with
+        {node.name: node.idx}. 
+        """
+        ndict = {}
+        for node in self.treenode.traverse():
+            if key_attr:
+                key = getattr(node, key_attr)
+            else:
+                key = node
+            if values_attr:
+                value = getattr(node, values_attr)
+            else:
+                value = node
+            # add to dict
+            ndict[key] = value
+        return ndict
+
+
+    # TODO: internal_nodes=False, key_attr=None/False, value_attr=None/False
+    # the default is tips-only: {node: node}
+    # key_attr="name": {name: node}
+    # key_attr="idx": {idx: node}
+    # value_attr="name", key_attr="idx": {idx: name}
+    def get_node_dict(self, return_internal=False, return_nodes=False, keys_as_names=False):
         """
         Return node labels as a dictionary mapping {idx: name} where idx is 
         the order of nodes in 'preorder' traversal. Used internally by the
         func .get_node_values() to return values in proper order. 
 
-        return_internal: if True all nodes are returned, if False only tips.
-        return_nodes: if True returns TreeNodes, if False return node names.
+        Parameters:
+        -----------
+        return_internal (bool): 
+            If True all nodes are returned, if False only tips.
+        return_nodes: (bool)
+            If True returns TreeNodes, if False return node names.
+        keys_as_names: (bool)
+            If True keys are names, if False keys are node idx labels.
         """
         if return_internal:
+            nodes = [i for i in self.treenode.traverse("preorder")]
+
+            # names must be unique
+            if keys_as_names:                  
+                names = [i.name for i in nodes]
+                if len(names) != len(set(names)):
+                    raise ToytreeError(
+                        "cannot return node dict with names as keys "
+                        "because node names are not all unique "
+                        "(some may not be set)"
+                    )
             if return_nodes:
-                return {
-                    i.idx: i for i in self.treenode.traverse("preorder")
-                }
+                if keys_as_names:
+                    return {i.name: i for i in nodes}
+                else:
+                    return {i.idx: i for i in nodes}
             else:
-                return {
-                    i.idx: i.name for i in self.treenode.traverse("preorder")
-                }
+                return {i.idx: i.name for i in nodes}
         else:
+            nodes = [i for i in self.treenode.traverse("preorder") if i.is_leaf()]
             if return_nodes:
-                return {
-                    i.idx: i for i in self.treenode.traverse("preorder")
-                    if i.is_leaf()
-                }
+                return {i.idx: i for i in nodes}
             else:
-                return {
-                    i.idx: i.name for i in self.treenode.traverse("preorder")
-                    if i.is_leaf()
-                }
+                return {i.idx: i.name for i in nodes}
 
 
     def get_tip_coordinates(self, axis=None):
@@ -456,14 +495,17 @@ class ToyTree(object):
         tre.set_node_values(attr="Ne", default=5000)
         tre.set_node_values(attr="Ne", values={0:1e5, 1:1e6, 2:1e3})
         tre.set_node_values(attr="Ne", values={0:1e5, 1:1e6}, default=5000)
+        tre.set_node_values(attr="Ne", values={'r0':1e5, 'r1':1e6})
 
         Parameters:
         -----------
         attr (str):
             The name of the node attribute to modify (cannot be 'idx').
         values (dict):
-            A dictionary of {idx: value}. Values are set to their keys by 
-            idx. Use .draw(node_labels='idx') to see idx labels on tree.
+            A dictionary of {node: value}. To select nodes you can use either
+            integer values corresponding to the node 'idx' labels, or strings
+            corresponding to the node 'name' labels. 
+            Note: use tree.draw(node_labels='idx') to see idx labels on tree.
         default (int, str, float):
             You can use a default value to be filled for all other nodes not 
             listed in the values dictionary.
@@ -474,7 +516,15 @@ class ToyTree(object):
         """
         # make a copy
         nself = deepcopy(self)
-        ndict = nself.get_node_dict(True, True)
+
+        # if numeric keys in values then use idx, else use names.
+        if values:
+            if isinstance(list(values.keys())[0], (int, float)):
+                ndict = nself.get_feature_dict("idx", None)
+            elif isinstance(list(values.keys())[0], (str, bytes)):
+                ndict = nself.get_feature_dict("name", None)
+            else:
+                raise ToytreeError("dictionary keys should be int or str")
 
         # find special cases
         if attr == "idx":
@@ -487,11 +537,9 @@ class ToyTree(object):
             for key in ndict:
                 node = ndict[key]
                 node.add_feature(attr, default)
-                # setattr(ndict[key], attr, default)
 
         # set specific values
         if values:
-
             if not isinstance(values, dict):
                 print(
                     "Values should be a dictionary. Use default to set"
@@ -501,20 +549,18 @@ class ToyTree(object):
                 for nidx in values:
                     if nidx not in ndict:
                         raise ToytreeError(
-                            "node idx {} not in tree".format(nidx))
+                            "node idx or name {} not in tree".format(nidx))
 
                 # or, set everyone to a null value
                 for key in ndict:
                     if not hasattr(ndict[key], attr):
                         node = ndict[key]
                         node.add_feature(attr, "")
-                        # setattr(ndict[key], attr, "")
 
                 # then set selected nodes to new values
                 for key, val in values.items():
                     node = ndict[key]
                     node.add_feature(attr, val)
-                    # setattr(ndict[key], attr, val)
         return nself
 
 
