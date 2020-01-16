@@ -389,11 +389,11 @@ def normalize_values(vals, nbins=10, minsize=2, maxsize=12):
     svals = sorted(vals)
 
     # put vals into bins
-    bins = np.histogram(vals, bins=10)[0]
+    bins = np.histogram(vals, bins=nbins)[0]
 
     # convert binned vals to widths in 2-12
     newvals = {}
-    sizes = np.linspace(2, 12, 10)
+    sizes = np.linspace(minsize, maxsize, nbins)
     for idx, inbin in enumerate(bins):
         for num in range(inbin):
             newvals[svals.pop(0)] = sizes[idx]
