@@ -103,6 +103,7 @@ class TreeMod:
         """
         Returns a tree with branch lengths transformed so that the tree is 
         ultrametric. Strategies include:
+
         (1) tip-align: 
             extend tips to the length of the fartest tip from the root; 
         (2) NPRS: 
