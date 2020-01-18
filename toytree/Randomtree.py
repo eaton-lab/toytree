@@ -74,9 +74,9 @@ class RandomTree(object):
     @staticmethod
     def unittree(ntips, treeheight=1.0, seed=None):
         """
-        Returns a random tree topology w/ N tips and a root height set to
-        1 or a user-entered treeheight value. Descendant nodes are evenly 
-        spaced between the root and time 0.
+        Returns a random tree ultrametric topology w/ N tips and a root 
+        height set to 1 or a user-entered treeheight value. Descendant 
+        nodes are evenly spaced between the root and time 0.
 
         Parameters
         -----------
@@ -188,7 +188,23 @@ class RandomTree(object):
         return self        
 
 
+    @staticmethod
+    def rtree(ntips, treeheight=1.0, seed=None):
+        """
+        Randomly assigns edge lengths between U(0-1) to edges 
+        and then scales total treeheight to 1.0 or entered value.
+        """
+        # get a unit tree
+        self = toytree.rtree.unittree(ntips, treeheight, seed)      
 
+        # randomly assign node dists
+        self = self.set_node_values(
+            "dist", {i: random.random() for i in range(self.nnodes)}
+        )
+
+        # rescale total height to .
+        self = self.mod.node_scale_root_height(treeheight)
+        return self        
 
 
 def return_small_clade(treenode):
