@@ -42,22 +42,21 @@ class Rooter:
         # if rooting where root already exists then return current tree
         x0 = (self.node1.is_root())
         x1 = (self.node2.is_root() and self.tree.is_rooted())
-        if x0 or x1:
-            return self
+        if not (x0 or x1):           
 
-        # create new root node on an existing edge to split it.
-        self.insert_new_node()
+            # create new root node on an existing edge to split it.
+            self.insert_new_node()
 
-        # update edge lengths given new node insertion
-        self.config_root_dist()
+            # update edge lengths given new node insertion
+            self.config_root_dist()
 
-        # redirect support values and possibly others
-        self.redirect_edge_features()
-        self.restructure_tree()
+            # redirect support values and possibly others
+            self.redirect_edge_features()
+            self.restructure_tree()
 
-        # update coodrds on tree
-        self.update_tree_from_tdict()
-        self.update()
+            # update coodrds on tree
+            self.update_tree_from_tdict()
+            self.update()
 
 
 
