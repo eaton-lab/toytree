@@ -291,6 +291,7 @@ class MultiTree(object):
         return canvas, axes
 
 
+
     def draw_cloud_tree(
         self, 
         axes=None, 
@@ -375,6 +376,15 @@ class MultiTree(object):
             if changed_autoformat:
                 toyplot.config.autoformat = "html"
 
+
+    # # allow ts as a shorthand for tree_style
+    # if kwargs.get("ts"):
+    #     tree_style = kwargs.get("ts")
+
+    # # pass a copy of this tree so that any mods to .style are not saved
+    # nself = deepcopy(self)
+    # if tree_style:
+    #     nself.style.update(TreeStyle(tree_style[0]))
 
 
 class ConsensusTree:
