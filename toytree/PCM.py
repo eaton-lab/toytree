@@ -12,19 +12,44 @@ class PCM:
     Phylogenetic comparative methods implemented on toytrees.
     """
     def __init__(self, tree):
-        self.tree = tree.copy()
+        self.tree = tree
 
-        def independent_contrasts(self, feature):
-            self.__doc__ = PIC.__doc__
-            return PIC(return_contrasts=True)
 
-        def ancestral_state_reconstruction(self, feature):
-            self.__doc__ = PIC.__doc__
-            return PIC(return_constrasts=False)
+    def independent_contrasts(self, feature):
+        ntree = self.tree.copy()
+        resdict = PIC(ntree, feature)
+        ntree = ntree.set_node_values(
+            feature="{}-contrast",
+            values={i.name: j[2] for (i, j) in resdict.items()}
+        )
+        ntree = ntree.set_node_values(
+            feature="{}-contrast-var",
+            values={i.name: j[3] for (i, j) in resdict.items()}
+        )        
+        return ntree
 
-        def tree_to_VCV(self):
-            self.tree_to_VCV.__doc__ = VCV.__doc__
-            return VCV(self)
+
+    def ancestral_state_reconstruction(self, feature):
+        """
+        Infer ancestral states on ancestral nodes for continuous traits
+        under a brownian motion model of evolution.
+
+        Modified from IVY interactive (https://github.com/rhr/ivy/)
+
+        Returns a toytree with feature applied to each node.
+        """
+        ntree = self.tree.copy()
+        resdict = PIC(ntree, feature)
+        ntree = ntree.set_node_values(
+            feature, 
+            values={i.name: j[0] for (i, j) in resdict.items()}
+        )
+        return ntree
+
+
+    def tree_to_VCV(self):
+        return VCV(self)
+
 
 
 def VCV(tree):
@@ -53,32 +78,15 @@ def PIC(tree, feature):
         A modified copy of the input tree is returned with the mean ancestral
         value for the selected feature inferred for all nodes of the tree. 
     """
-    # make a copy to avoid modifying tree
-    ntre = tree.copy()
-
     # get current node features at the tips
-    fdict = ntre.get_feature_dict(key_attr="name", values_attr=feature)
-    data = {i: j for (i, j) in fdict.items() if i in ntre.get_tip_labels()}
+    fdict = tree.get_feature_dict(key_attr="name", values_attr=feature)
+    data = {i: j for (i, j) in fdict.items() if i in tree.get_tip_labels()}
 
     # apply dynamic function from ivy to return dict results
-    results = dynamicPIC(ntre.treenode, data, results={})
+    results = dynamicPIC(tree.treenode, data, results={})
 
-    # set mean, variance, contrast, contrast-var as new node attrs
-    restype = ["mean", "var", "contrast", "contrast-var"]
-
-    # add ancestral values
-    for idx, res in enumerate(restype):        
-        ntre = ntre.set_node_values(
-            "{}-{}".format(feature, res), 
-            values={i.name: j[idx] for i, j in results.items()},
-            default=0,
-        )
-
-    # add tip values back in for mean
-    ntre = ntre.set_node_values("{}-mean".format(feature), data)           
-
-    # return modified tree
-    return ntre
+    # return dictionary mapping nodes to (mean, var, contrast, cvar)
+    return results
 
 
 def dynamicPIC(node, data, results):
