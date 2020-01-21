@@ -4,7 +4,8 @@
 Rooting class
 """
 
-from .utils import NodeAssist, ToytreeError
+from .NodeAssist import NodeAssist
+from .utils import ToytreeError
 
 
 class Rooter:
