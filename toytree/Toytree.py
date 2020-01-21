@@ -14,8 +14,11 @@ from .Drawing import Drawing
 from .TreeParser import TreeParser, FastTreeParser
 from .TreeWriter import NewickWriter
 from .Treemod import TreeMod
+from .PCM import PCM
 from .Rooter import Rooter
-from .utils import ToytreeError, fuzzy_match_tipnames, NodeAssist, normalize_values
+from .NodeAssist import NodeAssist
+from .utils import ToytreeError, fuzzy_match_tipnames, normalize_values
+
 
 
 
@@ -87,6 +90,7 @@ class ToyTree(object):
 
         # Object for modifying trees beyond root, prune, drop
         self.mod = TreeMod(self)
+        self.pcm = PCM(self)
 
     # --------------------------------------------------------------------
     # Class definitions 
@@ -301,6 +305,15 @@ class ToyTree(object):
         return node.idx
 
 
+    def get_node_descendant_idxs(self, idx=None):
+        """
+        Returns a list of idx labels descendant from a selected node. 
+        """
+        ndict = self.get_feature_dict("idx", None)
+        node = ndict[idx]
+        return [idx] + [i.idx for i in node.get_descendants()]
+
+
     def get_node_coordinates(self):
         """
         Returns coordinate locations of nodes in the tree as an array. Each
@@ -478,7 +491,7 @@ class ToyTree(object):
                 return self.treenode.get_leaf_names()[::-1]
 
 
-    def set_node_values(self, attr, values=None, default=None):
+    def set_node_values(self, feature, values=None, default=None):
         """
         Set values for a node attribute and RETURNS A COPY of the tree with 
         node values modified. If the attribute does not yet exist
@@ -492,14 +505,14 @@ class ToyTree(object):
 
         Example:
         -------- 
-        tre.set_node_values(attr="Ne", default=5000)
-        tre.set_node_values(attr="Ne", values={0:1e5, 1:1e6, 2:1e3})
-        tre.set_node_values(attr="Ne", values={0:1e5, 1:1e6}, default=5000)
-        tre.set_node_values(attr="Ne", values={'r0':1e5, 'r1':1e6})
+        tre.set_node_values(feature="Ne", default=5000)
+        tre.set_node_values(feature="Ne", values={0:1e5, 1:1e6, 2:1e3})
+        tre.set_node_values(feature="Ne", values={0:1e5, 1:1e6}, default=5000)
+        tre.set_node_values(feature="Ne", values={'r0':1e5, 'r1':1e6})
 
         Parameters:
         -----------
-        attr (str):
+        feature (str):
             The name of the node attribute to modify (cannot be 'idx').
         values (dict):
             A dictionary of {node: value}. To select nodes you can use either
@@ -515,7 +528,7 @@ class ToyTree(object):
         A ToyTree object is returned with the node values modified.
         """
         # make a copy
-        nself = deepcopy(self)
+        nself = self.copy()
 
         # if numeric keys in values then use idx, else use names.
         if values:
@@ -527,16 +540,16 @@ class ToyTree(object):
                 raise ToytreeError("dictionary keys should be int or str")
 
         # find special cases
-        if attr == "idx":
+        if feature == "idx":
             raise ToytreeError("cannot modify idx values.")
-        if attr == "height":
+        if feature == "height":
             raise ToytreeError("modifying heights not yet supported, coming..")
 
         # set everyone to a default value
         if default is not None:
             for key in ndict:
                 node = ndict[key]
-                node.add_feature(attr, default)
+                node.add_feature(feature, default)
 
         # set specific values
         if values:
@@ -553,14 +566,14 @@ class ToyTree(object):
 
                 # or, set everyone to a null value
                 for key in ndict:
-                    if not hasattr(ndict[key], attr):
+                    if not hasattr(ndict[key], feature):
                         node = ndict[key]
-                        node.add_feature(attr, "")
+                        node.add_feature(feature, "")
 
                 # then set selected nodes to new values
                 for key, val in values.items():
                     node = ndict[key]
-                    node.add_feature(attr, val)
+                    node.add_feature(feature, val)
         return nself
 
 
@@ -602,7 +615,7 @@ class ToyTree(object):
         descendants than the bottom child in a left to right tree plot. 
         To reverse this pattern use direction=1.
         """
-        nself = deepcopy(self)
+        nself = self.copy()
         nself.treenode.ladderize(direction=direction)
         nself._fixed_order = None
         nself._coords.update()
