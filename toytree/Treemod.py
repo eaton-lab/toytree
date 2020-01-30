@@ -7,22 +7,25 @@ Tree modification functions
 import random
 
 
-
 class TreeMod:
     """
     Return a tree with edge lengths modified according to one of 
     the mod functions. 
     """
-    def __init__(self, ttree):
-        self._ttree = ttree
+    def __init__(self, toytree):
+        self._toytree = toytree
 
-    def node_scale_root_height(self, treeheight=1):
+
+    def node_scale_root_height(self, treeheight=1, nocopy=False):
         """
         Returns a toytree copy with all nodes multiplied by a constant so that
         the root height equals the value entered for treeheight.
         """
         # make tree height = 1 * treeheight
-        ctree = self._ttree.copy()
+        if nocopy:
+            ctree = self._toytree
+        else:
+            ctree = self._toytree.copy()
         _height = ctree.treenode.height
         for node in ctree.treenode.traverse():
             node.dist = (node.dist / _height) * treeheight
@@ -46,7 +49,7 @@ class TreeMod:
         random.seed(seed)
 
         # make copy and iter nodes from root to tips
-        ctree = self._ttree.copy()
+        ctree = self._toytree.copy()
         for node in ctree.treenode.traverse():
 
             # slide internal nodes 
@@ -90,7 +93,7 @@ class TreeMod:
         sampled uniformly between (multiplier, 1/multiplier).
         """
         random.seed(seed)
-        ctree = self._ttree.copy()
+        ctree = self._toytree.copy()
         low, high = sorted([multiplier, 1. / multiplier])
         mult = random.uniform(low, high)
         for node in ctree.treenode.traverse():
@@ -99,7 +102,7 @@ class TreeMod:
         return ctree
 
 
-    def make_ultrametric(self, strategy=1):
+    def make_ultrametric(self, strategy=1, nocopy=False):
         """
         Returns a tree with branch lengths transformed so that the tree is 
         ultrametric. Strategies include:
@@ -112,7 +115,10 @@ class TreeMod:
         (3) penalized-likelihood: 
             not yet supported.
         """
-        ctree = self._ttree.copy()
+        if nocopy:
+            ctree = self._toytree
+        else:
+            ctree = self._toytree.copy()
 
         if strategy == 1:
             for node in ctree.treenode.traverse():
