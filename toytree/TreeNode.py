@@ -20,7 +20,8 @@ from .RobinsonFoulds import RobinsonFoulds
 from .utils import TreeError
 
 DEFAULT_EDGE_LENGTH = 1.
-DEFAULT_SUPPORT = 100.
+DEFAULT_SUPPORT = 0.
+
 
 
 
@@ -581,7 +582,7 @@ class TreeNode(object):
 
     def traverse(self, strategy="levelorder", is_leaf_fn=None):
         """ Returns an iterator to traverse tree under this node.
-        
+
         Parameters:
         -----------
         strategy: 
@@ -700,7 +701,8 @@ class TreeNode(object):
         return [n for n in self.iter_ancestors()]
 
 
-    def write(self, 
+    def write(
+        self, 
         features=None, 
         outfile=None, 
         format=0, 
@@ -867,16 +869,15 @@ class TreeNode(object):
         else:
             return False
 
-
     #########################################################
-    ## Distance related functions
+    # Distance related functions
     #########################################################
     def get_distance(self, target, target2=None, topology_only=False):
         """
         Returns the distance between two nodes. If only one target is
         specified, it returns the distance bewtween the target and the
         current node.
-    
+
         Parameters:
         -----------
         target: 
@@ -910,7 +911,7 @@ class TreeNode(object):
             current = n
             while current != ancestor:
                 if topology_only:
-                    if  current!=target:
+                    if current != target:
                         dist += 1
                 else:
                     dist += current.dist
@@ -1053,7 +1054,8 @@ class TreeNode(object):
         return current
 
 
-    def populate(self, 
+    def populate(
+        self, 
         size, 
         names_library=None, 
         reuse_names=False,
@@ -1087,15 +1089,15 @@ class TreeNode(object):
             connector = NewNode()
             for ch in self.get_children():
                 ch.detach()
-                connector.add_child(child = ch)
+                connector.add_child(child=ch)
             root = NewNode()
-            self.add_child(child = connector)
-            self.add_child(child = root)
+            self.add_child(child=connector)
+            self.add_child(child=root)
         else:
             root = self
 
         next_deq = deque([root])
-        for i in range(size-1):
+        for i in range(size - 1):
             if random.randint(0, 1):
                 p = next_deq.pop()
             else:
@@ -1260,7 +1262,7 @@ class TreeNode(object):
         """
         if not attributes:
             attributes = ["name"]
-        
+
         # toytree edit:
         # removed six dependency for map with comprehension
         # node_name = ', '.join(map(str, [getattr(self, v) for v in attributes if hasattr(self, v)]))
@@ -1305,7 +1307,7 @@ class TreeNode(object):
     def get_ascii(self, show_internal=True, compact=False, attributes=None):
         """
         Returns a string containing an ascii drawing of the tree.
-        
+
         Parameters:
         -----------
         show_internal: 
@@ -1378,7 +1380,7 @@ class TreeNode(object):
         internal node under this tree. Such a dictionary is intended
         to work as a cache for operations that require many traversal
         operations.
-        
+
         Parameters:
         -----------
         store_attr: 
@@ -1410,7 +1412,8 @@ class TreeNode(object):
         return _store
 
 
-    def robinson_foulds(self, 
+    def robinson_foulds(
+        self, 
         t2, 
         attr_t1="name", 
         attr_t2="name",
