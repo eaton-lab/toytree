@@ -50,7 +50,8 @@ class ToyTree(object):
 
         # load from a TreeNode
         if isinstance(newick, TreeNode):
-            self.treenode = newick
+            # detach this node from any parents so it becomes root
+            self.treenode = newick.detach()
 
         # load TreeNode from a ToyTree
         elif isinstance(newick, ToyTree):
