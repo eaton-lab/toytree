@@ -531,10 +531,14 @@ class ToyTree(object):
         # make a copy
         nself = self.copy()
 
+        # make default ndict using idxs, regardless of values
+        ndict = nself.get_feature_dict("idx", None)
+
         # if numeric keys in values then use idx, else use names.
         if values:
             if isinstance(list(values.keys())[0], (int, float)):
-                ndict = nself.get_feature_dict("idx", None)
+                # ndict = nself.get_feature_dict("idx", None)
+                pass
             elif isinstance(list(values.keys())[0], (str, bytes)):
                 ndict = nself.get_feature_dict("name", None)
             else:
