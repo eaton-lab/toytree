@@ -16,17 +16,27 @@ class TreeMod:
         self._toytree = toytree
 
 
-    def node_scale_root_height(self, treeheight=1, nocopy=False):
+    def node_scale_root_height(self, treeheight=1, include_stem=False, nocopy=False):
         """
         Returns a toytree copy with all nodes multiplied by a constant so that
-        the root height equals the value entered for treeheight.
+        the root node height equals the value entered for treeheight. The 
+        argument include_stem=True can be used to scale the tree so that the
+        root + root.dist is equal to treeheight. This effectively sets the 
+        stem height.
         """
         # make tree height = 1 * treeheight
         if nocopy:
             ctree = self._toytree
         else:
             ctree = self._toytree.copy()
-        _height = ctree.treenode.height
+
+        # get total tree height
+        if include_stem:
+            _height = ctree.treenode.height + ctree.treenode.dist
+        else:
+            _height = ctree.treenode.height
+
+        # scale internal nodes 
         for node in ctree.treenode.traverse():
             node.dist = (node.dist / _height) * treeheight
         ctree._coords.update()
