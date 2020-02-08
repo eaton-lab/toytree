@@ -4,7 +4,7 @@
 PCM: phylogenetic comparative methods tools
 """
 
-# import numpy as np
+import numpy as np
 
 
 class PCM:
@@ -48,7 +48,7 @@ class PCM:
 
 
     def tree_to_VCV(self):
-        return VCV(self)
+        return VCV(self.tree)
 
 
 
@@ -56,7 +56,15 @@ def VCV(tree):
     """
     Return the variance co-variance metrix representing the tree topology.
     """
-    return 
+    vcv_ = np.zeros((tree.ntips,tree.ntips))
+    labs = tree.get_tip_labels()
+    for lab1 in range(tree.ntips):
+        for lab2 in range(tree.ntips):
+            mrca_idx = tree.get_mrca_idx_from_tip_labels([labs[lab1],labs[lab2]])
+            mrca_height = tree.treenode.search_nodes(idx=mrca_idx)[0].height
+            vcv_[lab1, lab2] = tree.treenode.height - mrca_height
+    return(vcv_)
+
 
 
 def PIC(tree, feature):
