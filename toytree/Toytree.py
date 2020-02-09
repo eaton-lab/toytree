@@ -315,13 +315,14 @@ class ToyTree(object):
         return [idx] + [i.idx for i in node.get_descendants()]
 
 
-    def get_node_coordinates(self):
+    def get_node_coordinates(self, layout=None):
         """
         Returns coordinate locations of nodes in the tree as an array. Each
         row is an (x, y) coordinate, ordered by the 'idx' feature of nodes.
         The first ntips rows are the tip coordinates, which can also be 
-        returned using .get_tip_coordinates()
+        returned using .get_tip_coordinates().
         """
+        # if layout argument then set style and update coords.
         return self._coords.verts
 
 
@@ -401,11 +402,6 @@ class ToyTree(object):
         return ndict
 
 
-    # TODO: internal_nodes=False, key_attr=None/False, value_attr=None/False
-    # the default is tips-only: {node: node}
-    # key_attr="name": {name: node}
-    # key_attr="idx": {idx: node}
-    # value_attr="name", key_attr="idx": {idx: name}
     def get_node_dict(self, return_internal=False, return_nodes=False, keys_as_names=False):
         """
         Return node labels as a dictionary mapping {idx: name} where idx is 
@@ -448,13 +444,15 @@ class ToyTree(object):
                 return {i.idx: i.name for i in nodes}
 
 
-    def get_tip_coordinates(self, axis=None):
+    def get_tip_coordinates(self, axis=None, layout=None):
         """
         Returns coordinates of the tip positions for a tree. If no argument
         for axis then a 2-d array is returned. The first column is the x 
         coordinates the second column is the y-coordinates. If you enter an 
         argument for axis then a 1-d array will be returned of just that axis.
         """
+        # TODO: if layout then update coords for new layout (e.g., 'c')
+
         # get coordinates array
         coords = self.get_node_coordinates()
         if axis == 'x':
@@ -580,7 +578,6 @@ class ToyTree(object):
                     node = ndict[key]
                     node.add_feature(feature, val)
         return nself
-
 
 
     def copy(self):
@@ -768,7 +765,6 @@ class ToyTree(object):
         nself.treenode.ladderize()
         nself._coords.update()
         return nself
-
 
 
     def root(

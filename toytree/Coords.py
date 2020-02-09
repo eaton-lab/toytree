@@ -5,7 +5,7 @@ A class object for generating and storing Toytree plotting coordinates.
 """
 
 import numpy as np
-
+# from .utils import ToyTreeError
 
 
 class Coords:
@@ -39,7 +39,8 @@ class Coords:
         self.lines = []
         self.coords = []
 
-        # the class object for transforming to radial coords ('r')
+        # the class object for transforming to radial coords ('r').
+        # init'ing this is pretty lightweight, so might as well default it.
         self.circ = Circle(self.ttree)
 
         # the class object for transforming to force-directed layout ('u') 
@@ -151,14 +152,14 @@ class Coords:
                 nidx += 1
 
         # used for fixed-order setting
-        tidx = len(self.ttree) - 1
+        # tidx = len(self.ttree) - 1
 
         # store verts 
         for node in self.ttree.treenode.traverse("postorder"):
 
             # leaves: x positions are evenly spaced around circumference
             if node.is_leaf() and (not node.is_root()):
-                
+
                 # get positions of tips using radians and radius
                 node.radians = self.circ.tip_radians[node.idx]
                 if uselen:
@@ -167,7 +168,7 @@ class Coords:
                 else:
                     node.radius = self.circ.radius
                     node.x, node.y = self.circ.get_node_coords(node)
-                    
+
                 # TODO: allow fixed order in fan
                 # if self.ttree._fixed_order:
                     # node.x = self.ttree._fixed_order.index(node.name)
@@ -226,19 +227,19 @@ class Coords:
 
             # Just leaves: x positions are evenly spread and ordered on axis
             if node.is_leaf() and (not node.is_root()):
-                
+
                 # set y-positions (heights). Distance from root or zero
                 node.y = _treeheight - _root.get_distance(node)
                 if not uselen:
                     node.y = 0.0
-                
+
                 # set x-positions (order of samples)
                 if self.ttree._fixed_order:
                     node.x = self.ttree._fixed_order.index(node.name)# - tidx
                 else:
                     node.x = tidx
                     tidx -= 1
-                
+
                 # store the x,y vertex positions
                 self.verts[node.idx] = [node.x, node.y]
 
@@ -258,7 +259,7 @@ class Coords:
 
                 # store the x,y vertex positions                    
                 self.verts[node.idx] = [node.x, node.y]
-        
+
 
     # IN DEVELOPMENT: 
     # this will recude lines and allow curved eges on circular trees.
@@ -320,7 +321,6 @@ class Coords:
         # store coords and lines back into ndarrays
         self.coords = np.array([coords[i] for i in range(len(coords))])
         self.lines = np.array(edges)
-
 
 
     def assign_coordinates(self):
@@ -393,10 +393,31 @@ class Coords:
             self.coords = tmp
 
         elif self.ttree.style.layout in ('l', 'left'):
-            raise NotImplementedError("todo: left facing layout")
+
+            # verts swap x and ys and make xs 0 to negative
+            tmp = np.zeros(self.verts.shape)
+            tmp[:, 1] = self.verts[:, 0]
+            tmp[:, 0] = self.verts[:, 1] 
+            self.verts = tmp
+
+            # coords...
+            tmp = np.zeros(self.coords.shape)
+            tmp[:, 1] = self.coords[:, 0]
+            tmp[:, 0] = self.coords[:, 1]
+            self.coords = tmp
 
         elif self.ttree.style.layout in ('u', 'up'):
-            raise NotImplementedError("todo: up facing layout")
+            # verts swap x and ys and make xs 0 to negative
+            tmp = np.zeros(self.verts.shape)
+            tmp[:, 1] = self.verts[:, 1] * -1
+            tmp[:, 0] = self.verts[:, 0] * -1
+            self.verts = tmp
+
+            # coords...
+            tmp = np.zeros(self.coords.shape)
+            tmp[:, 1] = self.coords[:, 1] * -1
+            tmp[:, 0] = self.coords[:, 0] * -1
+            self.coords = tmp
 
         else:
             raise ToyTreeError("layout not recognized")
@@ -413,16 +434,16 @@ class Circle:
     and origin is at 0.0.
     """
     def __init__(self, tre):
-        
+
         # set radius
         self.tre = tre
         self.radius = self.tre.treenode.height 
-        #get_distance(self.tre.treenode.get_farthest_leaf()[0])
+        # get_distance(self.tre.treenode.get_farthest_leaf()[0])
 
         # origin
         self.o = (0, 0)
-        #self.tre.style.xbaseline, self.tre.style.ybaseline)  # -self.radius, 0)
-                
+        # self.tre.style.xbaseline, self.tre.style.ybaseline)  # -self.radius, 0)
+
         # tips (bottom to top) are evenly spread from 0 to -2pi (counter clock)
         self.tip_radians = np.linspace(0, -np.pi * 2, self.tre.ntips + 1)[:-1]
 

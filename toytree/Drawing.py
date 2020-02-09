@@ -200,7 +200,7 @@ class Drawing:
             )            
 
         # unrooted orientations
-        elif self.style.edge_type == "u":
+        elif self.style.layout == "x":
             raise NotImplementedError("unrooted layout coming soon.")
         #     angles = [
         #         self.get_angle(self.ttree.treenode.get_leaves_by_name(i)[0])
@@ -217,7 +217,6 @@ class Drawing:
 
         # re-orient for rooted orientations
         else:
-
             # get tip-coords and replace if using fixed_order
             xpos = self.ttree.get_tip_coordinates('x')
             ypos = self.ttree.get_tip_coordinates('y')
@@ -230,12 +229,26 @@ class Drawing:
                 if self.style.tip_labels_align:
                     ypos = np.zeros(self.ttree.ntips)
 
+                # up-facing style overrides
+                if self.style.layout == 'u':
+                    tstyle["text-anchor"] = "end"
+                    if tstyle["-toyplot-anchor-shift"][0] != "-":
+                        tstyle["-toyplot-anchor-shift"] = (
+                            "-" + tstyle["-toyplot-anchor-shift"])
+
             if self.style.layout in ("r", "l"):
                 if self.ttree._fixed_order:
                     xpos = xpos[self.ttree._fixed_idx]
                     ypos = np.arange(self.ttree.ntips) + self.style.ybaseline
                 if self.style.tip_labels_align:
                     xpos = np.zeros(self.ttree.ntips)
+
+                # left-facing style overrides 
+                if self.style.layout == "l":
+                    tstyle["text-anchor"] = "end"
+                    if tstyle["-toyplot-anchor-shift"][0] != "-":
+                        tstyle["-toyplot-anchor-shift"] = (
+                            "-" + tstyle["-toyplot-anchor-shift"])
 
             # add tip names to coordinates calculated above
             self.axes.text(
@@ -300,10 +313,18 @@ class Drawing:
                 self.axes.x.domain.max = addon / 2.
                 if self.style.xbaseline:
                     self.axes.x.domain.max += self.style.xbaseline
+            elif self.style.layout == "l":
+                self.axes.x.domain.min = (-1 * addon) / 2.
+                if self.style.xbaseline:
+                    self.axes.x.domain.min -= self.style.xbaseline
             elif self.style.layout == "d":
                 self.axes.y.domain.min = (-1 * addon) / 2
                 if self.style.ybaseline:
                     self.axes.y.domain.min += self.style.ybaseline
+            elif self.style.layout == "u":
+                self.axes.y.domain.max = (addon) / 2
+                if self.style.ybaseline:
+                    self.axes.y.domain.max += self.style.ybaseline
 
 
     def assign_node_colors_and_style(self):
@@ -787,6 +808,7 @@ class Drawing:
         align_edges = None
         align_verts = None
 
+        # cirulcar name layout
         if self.style.layout == "c":
             if self.style.tip_labels_align:
 
@@ -807,7 +829,7 @@ class Drawing:
 
 
         # handle layout orientations
-        if self.style.layout == 'd':
+        if self.style.layout in ('u', 'd'):
             # align tips at zero
             if self.style.tip_labels_align:
                 tip_yend = np.zeros(ns)
@@ -819,6 +841,9 @@ class Drawing:
                     list(zip(tip_xpos, tip_yend))
                 )
                 tip_ypos = tip_yend
+
+
+        # other layouts: ('r', 'l')
         else:
             # tip labels align finds the zero axis for orientation...
             if self.style.tip_labels_align:
