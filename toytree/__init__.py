@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-__version__ = "1.0.7"
+__version__ = "1.1.2"
 __author__ = "Deren Eaton"
 
 from .Toytree import ToyTree as tree
 from .Toytree import RawTree as _rawtree
 from .Randomtree import RandomTree as rtree
 from .Multitree import MultiTree as mtree
-
+from .PCM import PCM as pcm
 
 # make a color palette easily accessible and an iter cycling version
 from .TreeStyle import COLORS1 as colors

@@ -11,10 +11,14 @@ from .TreeNode import TreeNode
 from .TreeStyle import TreeStyle
 from .Coords import Coords
 from .Drawing import Drawing
-from .TreeParser import TreeParser
+from .TreeParser import TreeParser, FastTreeParser
 from .TreeWriter import NewickWriter
 from .Treemod import TreeMod
-from .utils import ToytreeError, fuzzy_match_tipnames, NodeAssist, normalize_values
+from .PCM import PCM
+from .Rooter import Rooter
+from .NodeAssist import NodeAssist
+from .utils import ToytreeError, fuzzy_match_tipnames, normalize_values
+
 
 
 
@@ -47,6 +51,7 @@ class ToyTree(object):
 
         # load from a TreeNode
         if isinstance(newick, TreeNode):
+            # detach this node from any parents so it becomes root
             self.treenode = deepcopy(newick).detach()
 
         # load TreeNode from a ToyTree
@@ -87,6 +92,7 @@ class ToyTree(object):
 
         # Object for modifying trees beyond root, prune, drop
         self.mod = TreeMod(self)
+        self.pcm = PCM(self)
 
     # --------------------------------------------------------------------
     # Class definitions 
@@ -301,13 +307,23 @@ class ToyTree(object):
         return node.idx
 
 
-    def get_node_coordinates(self):
+    def get_node_descendant_idxs(self, idx=None):
+        """
+        Returns a list of idx labels descendant from a selected node. 
+        """
+        ndict = self.get_feature_dict("idx", None)
+        node = ndict[idx]
+        return [idx] + [i.idx for i in node.get_descendants()]
+
+
+    def get_node_coordinates(self, layout=None):
         """
         Returns coordinate locations of nodes in the tree as an array. Each
         row is an (x, y) coordinate, ordered by the 'idx' feature of nodes.
         The first ntips rows are the tip coordinates, which can also be 
-        returned using .get_tip_coordinates()
+        returned using .get_tip_coordinates().
         """
+        # if layout argument then set style and update coords.
         return self._coords.verts
 
 
@@ -364,44 +380,80 @@ class ToyTree(object):
         return np.array(vals)
 
 
-    def get_node_dict(self, return_internal=False, return_nodes=False):
+    def get_feature_dict(self, key_attr=None, values_attr=None):
+        """
+        Returns a dictionary in which features from nodes can be selected 
+        as the keys or values. By default it returns {node: node}, but if you
+        select key_attr="name" then it returns {node.name: node} and if you
+        enter key_attr="name" values_attr="idx" it returns a dict with
+        {node.name: node.idx}. 
+        """
+        ndict = {}
+        for node in self.treenode.traverse():
+            if key_attr:
+                key = getattr(node, key_attr)
+            else:
+                key = node
+            if values_attr:
+                value = getattr(node, values_attr)
+            else:
+                value = node
+            # add to dict
+            ndict[key] = value
+        return ndict
+
+
+    def get_node_dict(self, return_internal=False, return_nodes=False, keys_as_names=False):
         """
         Return node labels as a dictionary mapping {idx: name} where idx is 
         the order of nodes in 'preorder' traversal. Used internally by the
         func .get_node_values() to return values in proper order. 
 
-        return_internal: if True all nodes are returned, if False only tips.
-        return_nodes: if True returns TreeNodes, if False return node names.
+        Parameters:
+        -----------
+        return_internal (bool): 
+            If True all nodes are returned, if False only tips.
+        return_nodes: (bool)
+            If True returns TreeNodes, if False return node names.
+        keys_as_names: (bool)
+            If True keys are names, if False keys are node idx labels.
         """
         if return_internal:
+            nodes = [i for i in self.treenode.traverse("preorder")]
+
+            # names must be unique
+            if keys_as_names:                  
+                names = [i.name for i in nodes]
+                if len(names) != len(set(names)):
+                    raise ToytreeError(
+                        "cannot return node dict with names as keys "
+                        "because node names are not all unique "
+                        "(some may not be set)"
+                    )
             if return_nodes:
-                return {
-                    i.idx: i for i in self.treenode.traverse("preorder")
-                }
+                if keys_as_names:
+                    return {i.name: i for i in nodes}
+                else:
+                    return {i.idx: i for i in nodes}
             else:
-                return {
-                    i.idx: i.name for i in self.treenode.traverse("preorder")
-                }
+                return {i.idx: i.name for i in nodes}
         else:
+            nodes = [i for i in self.treenode.traverse("preorder") if i.is_leaf()]
             if return_nodes:
-                return {
-                    i.idx: i for i in self.treenode.traverse("preorder")
-                    if i.is_leaf()
-                }
+                return {i.idx: i for i in nodes}
             else:
-                return {
-                    i.idx: i.name for i in self.treenode.traverse("preorder")
-                    if i.is_leaf()
-                }
+                return {i.idx: i.name for i in nodes}
 
 
-    def get_tip_coordinates(self, axis=None):
+    def get_tip_coordinates(self, axis=None, layout=None):
         """
         Returns coordinates of the tip positions for a tree. If no argument
         for axis then a 2-d array is returned. The first column is the x 
         coordinates the second column is the y-coordinates. If you enter an 
         argument for axis then a 1-d array will be returned of just that axis.
         """
+        # TODO: if layout then update coords for new layout (e.g., 'c')
+
         # get coordinates array
         coords = self.get_node_coordinates()
         if axis == 'x':
@@ -439,7 +491,7 @@ class ToyTree(object):
                 return self.treenode.get_leaf_names()[::-1]
 
 
-    def set_node_values(self, attr, values=None, default=None):
+    def set_node_values(self, feature, values=None, default=None):
         """
         Set values for a node attribute and RETURNS A COPY of the tree with 
         node values modified. If the attribute does not yet exist
@@ -453,17 +505,20 @@ class ToyTree(object):
 
         Example:
         -------- 
-        tre.set_node_values(attr="Ne", default=5000)
-        tre.set_node_values(attr="Ne", values={0:1e5, 1:1e6, 2:1e3})
-        tre.set_node_values(attr="Ne", values={0:1e5, 1:1e6}, default=5000)
+        tre.set_node_values(feature="Ne", default=5000)
+        tre.set_node_values(feature="Ne", values={0:1e5, 1:1e6, 2:1e3})
+        tre.set_node_values(feature="Ne", values={0:1e5, 1:1e6}, default=5000)
+        tre.set_node_values(feature="Ne", values={'r0':1e5, 'r1':1e6})
 
         Parameters:
         -----------
-        attr (str):
+        feature (str):
             The name of the node attribute to modify (cannot be 'idx').
         values (dict):
-            A dictionary of {idx: value}. Values are set to their keys by 
-            idx. Use .draw(node_labels='idx') to see idx labels on tree.
+            A dictionary of {node: value}. To select nodes you can use either
+            integer values corresponding to the node 'idx' labels, or strings
+            corresponding to the node 'name' labels. 
+            Note: use tree.draw(node_labels='idx') to see idx labels on tree.
         default (int, str, float):
             You can use a default value to be filled for all other nodes not 
             listed in the values dictionary.
@@ -473,25 +528,35 @@ class ToyTree(object):
         A ToyTree object is returned with the node values modified.
         """
         # make a copy
-        nself = deepcopy(self)
-        ndict = nself.get_node_dict(True, True)
+        nself = self.copy()
+
+        # make default ndict using idxs, regardless of values
+        ndict = nself.get_feature_dict("idx", None)
+
+        # if numeric keys in values then use idx, else use names.
+        if values:
+            if isinstance(list(values.keys())[0], (int, float)):
+                # ndict = nself.get_feature_dict("idx", None)
+                pass
+            elif isinstance(list(values.keys())[0], (str, bytes)):
+                ndict = nself.get_feature_dict("name", None)
+            else:
+                raise ToytreeError("dictionary keys should be int or str")
 
         # find special cases
-        if attr == "idx":
+        if feature == "idx":
             raise ToytreeError("cannot modify idx values.")
-        if attr == "height":
+        if feature == "height":
             raise ToytreeError("modifying heights not yet supported, coming..")
 
         # set everyone to a default value
         if default is not None:
             for key in ndict:
                 node = ndict[key]
-                node.add_feature(attr, default)
-                # setattr(ndict[key], attr, default)
+                node.add_feature(feature, default)
 
         # set specific values
         if values:
-
             if not isinstance(values, dict):
                 print(
                     "Values should be a dictionary. Use default to set"
@@ -499,26 +564,21 @@ class ToyTree(object):
             else:
                 # check that all keys are valid
                 for nidx in values:
-                    if nidx not in nself.get_node_values("idx", 1, 1):
+                    if nidx not in ndict:
                         raise ToytreeError(
-                            "node idx {} not in tree".format(nidx))
+                            "node idx or name {} not in tree".format(nidx))
 
                 # or, set everyone to a null value
-                else:           
-                    for key in ndict:
-                        if not hasattr(ndict[key], attr):
-                            node = ndict[key]
-                            node.add_feature(attr, "")
-                            # setattr(ndict[key], attr, "")
+                for key in ndict:
+                    if not hasattr(ndict[key], feature):
+                        node = ndict[key]
+                        node.add_feature(feature, "")
 
                 # then set selected nodes to new values
                 for key, val in values.items():
                     node = ndict[key]
-                    node.add_feature(attr, val)
-                    # setattr(ndict[key], attr, val)
-
+                    node.add_feature(feature, val)
         return nself
-
 
 
     def copy(self):
@@ -558,7 +618,7 @@ class ToyTree(object):
         descendants than the bottom child in a left to right tree plot. 
         To reverse this pattern use direction=1.
         """
-        nself = deepcopy(self)
+        nself = self.copy()
         nself.treenode.ladderize(direction=direction)
         nself._fixed_order = None
         nself._coords.update()
@@ -708,7 +768,6 @@ class ToyTree(object):
         return nself
 
 
-
     def root(
         self, 
         names=None, 
@@ -760,275 +819,23 @@ class ToyTree(object):
         rtre = tre.root(outgroup=["1-A", "1-B"])
         rtre = tre.root(wildcard="1-")
         rtre = tre.root(regex="1-[A,B]")
-        """
+        """       
         # insure edge_features is an iterable
         if not edge_features:
             edge_features = []
         if isinstance(edge_features, (str, int, float)):
             edge_features = [edge_features]
 
-        # make a deepcopy of the tree
+        # make a deepcopy of the tree and pass to Rooter class
         nself = self.copy()
-        maxsup = max([int(i.support) for i in nself.treenode.traverse()])
-        maxsup = (1.0 if maxsup <= 1.0 else 100)
+        rooter = Rooter(
+            nself, 
+            (names, wildcard, regex), 
+            resolve_root_dist, 
+            edge_features, 
+        )
+        return rooter.tree    
 
-        # define which features to use/keep and which are "edge" features
-        testnode = nself.treenode.get_leaves()[0]
-        features = {"name", "dist", "support"}
-        extrafeat = {i for i in testnode.features if i not in features}
-        features.update(extrafeat)        
-
-        # find the node whose parent edge will be pinched to root
-        nas = NodeAssist(nself, names, wildcard, regex)
-        nas.match_query()
-        if (not nas.is_query_monophyletic()) or (nas.get_mrca().is_root()):
-            clade1 = nas.tipnames
-            nas.match_reciprocal()
-            if not nas.is_query_monophyletic():
-                clade2 = nas.tipnames
-                raise ToytreeError(
-                    "Matched query is paraphyletic: {}"
-                    .format(sorted([clade1, clade2], key=len)[0]))
-
-        # get the mrca node (or tip node) of the monopyletic matched query.
-        node1 = nas.get_mrca()
-
-        # the node on the other side of the edge to be split.
-        node2 = node1.up
-
-        # if rooting where root already exists then bail out.
-        if (node1.is_root() or (node2.is_root() and nself.is_rooted())):
-            print("No effect, tree is already rooted by {}.".format(nas.tipnames))            
-            return self
-
-        # the new root node to be placed on the split
-        nnode = nself.treenode.__class__()
-        nnode.name = "root"
-        nnode.add_feature("idx", nself.treenode.idx)
-        nnode.support = maxsup
-
-        # remove node1 lineage leaving just node2 branch to be made into child
-        node2.children.remove(node1)
-
-        # create dictionary for relabeling nodes {node: [parent, child, feat]}
-        tdict = {}
-
-        # new node has no parent and 1/2 as children and default features
-        tdict[nnode] = [None, [node1, node2], {}]
-
-        # node1 has new root parent, same children, and dist preserved (or split?)
-        tdict[node1] = [nnode, node1.children, {"dist": node1.dist}]  # node1.dist / 2.
-
-        # node2 has new root parent, same children + mods, and dist/supp mods
-        tdict[node2] = [nnode, node2.children, {"dist": 0.0}]
-
-        # if not already at root polytomy, then connect node2 to parent
-        if node2.up:
-            if not node2.up.is_root():
-                tdict[node2][1] += [node2.up]
-
-        # if False create zero length root node
-        if resolve_root_dist is False:
-            resolve_root_dist = 0.0
-        
-        # if True then use midpoint rooting
-        if resolve_root_dist is True:
-            tdict[node1][2]["dist"] = node1.dist / 2.
-            tdict[node2][2]["dist"] = node1.dist / 2.
-        
-        # split the edge on 0 or a float
-        if isinstance(resolve_root_dist, float):
-            tdict[node1][2]["dist"] = node1.dist - resolve_root_dist            
-            tdict[node2][2]["dist"] = resolve_root_dist
-            if resolve_root_dist > node1.dist:
-                raise ToytreeError("\n"
-                "To preserve existing edge lengths the 'resolve_root_dist' arg\n"
-                "must be smaller than the edge being split (it is selecting a \n"
-                "a point along the edge.) The edge above node idx {} is {}."
-                .format(node1.idx, node1.dist)
-                )
-
-        # mark new split with zero...
-        for feature in set(edge_features) - set(["support"]):
-            tdict[node2][2][feature] = 0.0
-
-        # unless support value, then mark with full.
-        if "support" in edge_features:
-            tdict[node2][2]['support'] = maxsup
-        else:
-            tdict[node2][2]['support'] = node2.support
-
-        # label all remaining nodes
-        tnode = node2.up
-        while 1:
-
-            # early break
-            if not tnode:
-                break
-
-            # get parent node and children to be mod'd
-            parent = [i for i in tnode.children if i in tdict][0]
-            children = [i for i in tnode.children if i not in tdict]
-
-            # break after the root
-            if tnode.is_root():
-
-                # need a root add feature here if unrooted...
-                if len(children) > 1:
-
-                    # update dist from new parent
-                    tdict[tnode] = [parent, children, {"dist": parent.dist}]
-                    
-                    # update edge features from new parent
-                    for feature in edge_features:
-                        tdict[tnode][2][feature] = getattr(parent, feature)
-
-                    # set tnode as parent's new child
-                    tdict[parent][1].append(tnode)
-
-                    # set children as descendant from tnode
-                    for child in children:
-                        tdict[child] = [tnode, child.children, {}]
-
-                # get children that are not in tdict yet
-                else:
-                    for child in children:
-
-                        # record whose children they are now (node2 already did this)
-                        if parent is node2:
-                            tdict[node2][1].append(child)
-                        else:
-                            tdict[parent][1].append(child)
-
-                        # record whose parents they have now and find distance
-                        dist = {"dist": sum([i.dist for i in tnode.children])}
-                        tdict[child] = [parent, child.children, dist]
-
-                # finished
-                break
-
-            # normal nodes
-            else:
-                # update tnode.features
-                features = {i: getattr(tnode, i) for i in ('dist', 'support')}
-                
-                # keep connecting swap parent-child up to root
-                if not tnode.up.is_root():
-                    children += [tnode.up]
-
-                # pass support values down (up in new tree struct)
-                for feature in edge_features:
-                    child = [i for i in tnode.children if i in tdict][0]
-                    features[feature] = getattr(child, feature)
-
-                # store node update vals
-                tdict[tnode] = [parent, children, features]
-
-            # move towards root
-            tnode = tnode.up
-
-        # update tree structure and node labels
-        for node in tdict:
-            node.up = tdict[node][0]
-            node.children = tdict[node][1]
-            for key, val in tdict[node][2].items():
-                setattr(node, key, val)
-
-        # update coordinates which updates idx and adds it to any new nodes.
-        nself.treenode = nnode
-        nself.treenode.ladderize()
-        nself._coords.update()
-        return nself              
-
-
-    # old root function that used 'set_outgroup', now deprecated.
-    # def root(self, names=None, wildcard=None, regex=None):
-    #     """
-    #     (Re-)root a tree by creating selecting a existing split in the tree,
-    #     or creating a new node to split an edge in the tree. Rooting location
-    #     is selected by entering the tips descendant from one child of the root
-    #     split (e.g., names='a' or names=['a', 'b']). You can alternatively
-    #     select a list of tip names using a fuzzy selector based on a unique
-    #     shared string (wildcard="prz") or a regex matching pattern.
-
-    #     Example:
-    #     To root on a clade that includes the samples "1-A" and "1-B" you can
-    #     do any of the following:
-
-    #     rtre = tre.root(outgroup=["1-A", "1-B"])
-    #     rtre = tre.root(wildcard="1-")
-    #     rtre = tre.root(regex="1-[A,B]")
-    #     """
-    #     # make a deepcopy of the tree
-    #     nself = self.copy()
-
-    #     # get treenode of the common ancestor of selected tips
-    #     try:
-    #         node = fuzzy_match_tipnames(
-    #             nself, names, wildcard, regex, True, True)       
-
-    #     except ToytreeError:           
-    #         # try reciprocal taxon list
-    #         tipnames = fuzzy_match_tipnames(
-    #             nself, names, wildcard, regex, False, False)
-    #         tipnames = list(set(self.get_tip_labels()) - set(tipnames))
-    #         node = fuzzy_match_tipnames(
-    #             nself, tipnames, None, None, True, True)
-
-    #     # split root node if more than di- as this is the unrooted state
-    #     if not nself.is_bifurcating():
-    #         nself.treenode.resolve_polytomy()
-
-    #     # root the object with ete's translate
-    #     nself.treenode.set_outgroup(node)
-    #     nself._coords.update()
-
-    #     # get features
-    #     testnode = nself.treenode.get_leaves()[0]
-    #     features = {"name", "dist", "support", "height"}
-    #     extrafeat = {i for i in testnode.features if i not in features}
-    #     features.update(extrafeat)
-
-    #     # if there is a new node now, clean up its features
-    #     nnode = [i for i in nself.treenode.traverse() if not hasattr(i, "idx")]
-    #     if nnode:
-    #         # nnode is the node that was added
-    #         # rnode is the location where it *should* have been added
-    #         nnode = nnode[0]
-    #         rnode = [i for i in nself.treenode.children if i != node][0]
-
-    #         # get idxs of existing nodes
-    #         maxidx = max(
-    #             [int(i.idx) for i in nself.treenode.traverse()
-    #             if hasattr(i, "idx")])                   
-
-    #         # newnode is a tip
-    #         if node.is_leaf():
-    #             nnode.name = str("rerooted")
-    #             rnode.name = node
-    #             rnode.add_feature("idx", maxidx + 1)
-    #             rnode.dist *= 2
-    #             sister = rnode.get_sisters()[0]
-    #             sister.dist *= 2
-    #             rnode.support = 100
-    #             for feature in extrafeat:
-    #                 nnode.add_feature(feature, getattr(rnode, feature))
-    #                 rnode.del_feature(feature)
-
-    #         # newnode is internal
-    #         else:
-    #             nnode.add_feature("idx", maxidxs + 1)
-    #             nnode.name = str("rerooted")
-    #             nnode.dist *= 2
-    #             sister = nnode.get_sisters()[0]
-    #             sister.dist *= 2
-    #             nnode.support = 100
-
-    #     # store tree back into newick and reinit Toytree with new newick
-    #     # if NHX format then preserve the NHX features.
-    #     nself.treenode.ladderize()
-    #     nself._coords.update()
-    #     return nself        
 
     # --------------------------------------------------------------------
     # Draw functions imported, but docstring here
@@ -1214,8 +1021,8 @@ class RawTree():
     Barebones tree object that parses newick strings faster, assigns idx 
     to labels, and ...
     """
-    def __init__(self, newick):
-        self.treenode = TreeParser(newick, 0).treenodes[0]
+    def __init__(self, newick, tree_format=0):
+        self.treenode = FastTreeParser(newick, tree_format).treenode
         self.ntips = len(self.treenode)
         self.nnodes = (len(self.treenode) * 2) - 1
         self.update_idxs()
@@ -1241,9 +1048,13 @@ class RawTree():
         for node in self.treenode.traverse("levelorder"):
             if not node.is_leaf():
                 node.add_feature("idx", idx)
+                if not node.name:
+                    node.name = str(idx)
                 idx -= 1
 
         # external nodes: lowest numbers are for tips (0-N)
         for node in self.treenode.iter_leaves():
             node.add_feature("idx", idx)
+            if not node.name:
+                node.name = str(idx)
             idx -= 1
