@@ -34,10 +34,11 @@ class ToyTree(object):
 
     Attributes:
     -----------
-
+    ...
 
     Functions:
     ----------
+    ...
     """
     def __init__(self, newick=None, tree_format=0, fixed_order=None):
 
@@ -46,7 +47,7 @@ class ToyTree(object):
 
         # load from a TreeNode
         if isinstance(newick, TreeNode):
-            self.treenode = newick
+            self.treenode = deepcopy(newick).detach()
 
         # load TreeNode from a ToyTree
         elif isinstance(newick, ToyTree):
