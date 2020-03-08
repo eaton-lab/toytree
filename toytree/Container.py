@@ -47,7 +47,7 @@ class Container(object):
             i: j for (i, j) in zip(
                 self.nes.keys(), 
                 toytree.utils.normalize_values(
-                    list(self.nes.values()),
+                    np.sqrt(list(self.nes.values())),
                     10, 2, 8,
                 ),
             )
@@ -108,8 +108,9 @@ class Container(object):
             opacity=0.25,
             along='y',
             title=(
-                "name={}\nNe={}\nt_g={}\nt_c={}"
+                "idx={}\nname={}\nNe={}\nt_g={}\nt_c={}"
                 .format(
+                    node.idx,
                     '{} (root)'.format(node.name),
                     self.ndict[node.idx].Ne,
                     int(node.dist),
@@ -172,9 +173,10 @@ class Container(object):
 
         # scale ticks
         tee = len(str(int(self.maxheight)))
-        tze = (1 * 10 ** (tee - 1))
+        tze = (1 * 10 ** (tee - 2))
         tma = self.maxheight
         trd = round(tma / tze) * tze
+        # print(tee, tze, tma, trd)
         self.axes.y.ticks.locator = toyplot.locator.Explicit(
             np.linspace(0, trd, 6).astype(int)[:-1],
             ["{:.0f}".format(i) for i in np.linspace(0, trd, 6).astype(int)][:-1],
@@ -355,8 +357,9 @@ class Container(object):
             opacity=0.25,
             along='y',
             title=(
-                "name={}\nNe={}\nt_g={}\nt_c={}"
+                "idx={}\nname={}\nNe={}\nt_g={}\nt_c={}"
                 .format(
+                    pair.node0.idx,
                     pair.node0.name,
                     self.ndict[pair.node0.idx].Ne,
                     int(pair.block0.y1 - pair.block0.y0),
@@ -375,8 +378,9 @@ class Container(object):
             opacity=0.25,            
             along='y',
             title=(
-                "name={}\nNe={}\nt_g={}\nt_c={}"
+                "idx={}\nname={}\nNe={}\nt_g={}\nt_c={}"
                 .format(
+                    pair.node1.idx,
                     pair.node1.name,
                     self.ndict[pair.node1.idx].Ne,
                     int(pair.block1.y1 - pair.block1.y0),
@@ -483,7 +487,7 @@ class Pair:
         # the range of parent block if centered at midpoint
         midanchor = (self.block0.xt1 - ne / 2, self.block0.xt1 + ne / 2)
         ranchor = (self.block1.xt1 - ne, self.block1.xt1)
-        lanchor = (self.block0.xt1, self.block0.xt1 + ne)
+        lanchor = (self.block0.xt0, self.block0.xt0 + ne)
 
         # if parent is wider than both children combined?
         if ne < childnesum:
@@ -586,5 +590,5 @@ class Wiggle:
                 # raise error on too many tries
                 if ntries > 100:
                     print("maxtries")
-                    raise ToyEvolError("cannot connect wiggle")
+                    raise ToytreeError("cannot connect wiggle")
             self.xs[i] = jitter
