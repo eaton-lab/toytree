@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-__version__ = "1.1.2"
+__version__ = "1.1.3"
 __author__ = "Deren Eaton"
 
 from .Toytree import ToyTree as tree
