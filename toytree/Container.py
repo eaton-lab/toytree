@@ -9,7 +9,7 @@ from .utils import ToytreeError
 
 
 class Container(object):
-    def __init__(self, model=None, idx=0, width=None, height=None, spacer=0.25, axes=None):
+    def __init__(self, model=None, idx=0, width=400, height=400, spacer=0.25, axes=None):
         """
         Returns a Canvas and Axes with a fill container drawn representing
         widths of lineages (Ne) and divergence times. 
@@ -27,7 +27,6 @@ class Container(object):
         # draw only the container tree.
         if isinstance(model, toytree.Toytree.ToyTree):
             self.tree = model.copy()
-            self._draw_tree()
 
         # draw the genealogies within the container tree.
         else:
@@ -67,8 +66,12 @@ class Container(object):
         # draw container tree
         self._draw_tree()
 
+        # draw genealogies
         if hasattr(self, "model"):
             self._draw_gene_blocks()
+
+        # style the axes
+        self._style_axes()
 
 
     def _set_tip_xranges(self):
@@ -96,8 +99,11 @@ class Container(object):
         # add root
         node = self.tree.treenode
         height = node.height + node.dist
-        gheight = self.gtree.treenode.height
-        self.maxheight = max(height, gheight) + 5
+        try:
+            gheight = self.gtree.treenode.height
+            self.maxheight = max(height, gheight) + 5
+        except AttributeError:
+            self.maxheight = height
 
         mp = self.blocks[self.children[node.idx][0]].xt1
         self.axes.fill(
@@ -167,6 +173,8 @@ class Container(object):
         for nb in self.tree.treenode.traverse("postorder"):
             self._draw_gene_block(nb.idx)
 
+
+    def _style_axes(self):
         # styling
         self.axes.x.show = False
         self.axes.y.ticks.show = True
