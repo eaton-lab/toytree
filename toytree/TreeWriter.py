@@ -32,7 +32,8 @@ class NewickWriter(object):
     features: (None or list,set,tuple)
         Features to be written in NHX format in newick string.
     """
-    def __init__(self, 
+    def __init__(
+        self, 
         treenode,
         tree_format=0, 
         format_root_node=False, 
@@ -104,7 +105,7 @@ class NewickWriter(object):
                         format_node(node, "leaf", self.tf, DF, DF, NF)
                     )
                     self.newick.append(get_features(node, self.features))
-                
+
                 # start new internal node
                 else:
                     self.newick.append("(")
@@ -150,7 +151,7 @@ def format_node(
     # Format node names
     FIRST_PART = ""
     if converterFn1 is not None:
-        
+
         # convert node attribute to a string
         if converterFn1 == str:
             try:
@@ -163,7 +164,7 @@ def format_node(
                     FIRST_PART = "NoName"
             except (AttributeError, TypeError):
                 FIRST_PART = "?"
-            
+
             # format as ...
             FIRST_PART = name_formatter % FIRST_PART
 
