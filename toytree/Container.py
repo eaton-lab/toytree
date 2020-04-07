@@ -33,6 +33,7 @@ class Container(object):
             self.model = model
             self.tree = self.model.tree.copy()
             self.gtree = toytree.tree(self.model.df.genealogy[idx])
+            self.gtree = self.gtree.mod.make_ultrametric()
 
         # get idx to Ne map from tree, or from model if not on tree.
         try:
@@ -104,6 +105,7 @@ class Container(object):
             self.maxheight = max(height, gheight) + 5
         except AttributeError:
             self.maxheight = height
+        # self.maxheight = height            
 
         mp = self.blocks[self.children[node.idx][0]].xt1
         self.axes.fill(
@@ -121,8 +123,7 @@ class Container(object):
                     self.ndict[node.idx].Ne,
                     int(node.dist),
                     "{:.3f}".format(
-                        (node.dist) / \
-                        (2 * node.Ne)
+                        (node.dist) / (2 * node.Ne)
                     ),
                 ),
             )
@@ -148,6 +149,7 @@ class Container(object):
             color="#262626", 
             style={"baseline-shift": "-18px"}
         )
+
 
     def _draw_gene_blocks(self):
 
@@ -189,7 +191,7 @@ class Container(object):
             np.linspace(0, trd, 6).astype(int)[:-1],
             ["{:.0f}".format(i) for i in np.linspace(0, trd, 6).astype(int)][:-1],
         )
-        self.axes.y.domain.max = self.maxheight + self.maxheight * 0.01
+        self.axes.y.domain.max = self.maxheight + (self.maxheight * 0.01)
         self.axes.y.domain.min = -self.maxheight * 0.05
 
 
@@ -230,6 +232,7 @@ class Container(object):
                     self.block.xb0, 
                     self.block.xb1, 
                     len(self.gnodes) + 2)[1:-1]
+
                 # tiporder = [
                 #     i for i in self.gtree.get_tip_labels() if 
                 #     i.split("-")[0] == "r{}".format(self.sidx)
@@ -305,7 +308,7 @@ class Container(object):
 
                 # COAL EVENT
                 if gnode.up.height < self.block.y1:
-                    
+
                     # mark as finished
                     gnode.inside = -1
 
@@ -327,7 +330,7 @@ class Container(object):
                     gnode.ystart = self.block.y1
                     gnode.xloc = wiggle.xs[-1]
                     gnode.inside = self.pnode.idx
-          
+
 
         # add lines connecting points
 
