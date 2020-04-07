@@ -154,7 +154,7 @@ class ToyTree(object):
     # --------------------------------------------------------------------
     # functions to return values from the ete3 .treenode object ----------
     # --------------------------------------------------------------------
-    def write(self, handle=None, tree_format=0, features=None):
+    def write(self, handle=None, tree_format=0, features=None, dist_formatter=None):
         """
         Write newick string representation of the tree. 
 
@@ -182,6 +182,7 @@ class ToyTree(object):
                 treenode=self.treenode,
                 tree_format=tree_format,
                 features=features,
+                dist_formatter=dist_formatter,
             )
             newick = writer.write_newick()
 
@@ -1028,11 +1029,12 @@ class RawTree():
         self.update_idxs()
 
 
-    def write(self, tree_format=5):
+    def write(self, tree_format=5, dist_formatter=None):
         # get newick string
         writer = NewickWriter(
             treenode=self.treenode,
             tree_format=tree_format,
+            dist_formatter=dist_formatter,
         )
         newick = writer.write_newick()
         return newick
