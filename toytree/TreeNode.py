@@ -6,7 +6,6 @@ A Tree Class object modified as a subset of the ete3.Tree Class
 from __future__ import print_function
 from builtins import range, str
 
-import six
 import random
 import itertools
 
@@ -218,7 +217,7 @@ class TreeNode(object):
 
     def add_features(self, **features):
         """ Add or update several features. """
-        for fname, fvalue in six.iteritems(features):
+        for fname, fvalue in features.items():
             setattr(self, fname, fvalue)
             self.features.add(fname)
 
@@ -485,7 +484,7 @@ class TreeNode(object):
         # their path to the common ancestor.
         n2count = {}
         n2depth = {}
-        for seed, path in six.iteritems(node2path):
+        for seed, path in node2path.items():
             for visited_node in path:
                 if visited_node not in n2depth:
                     depth = visited_node.get_distance(start, topology_only=True)
@@ -496,13 +495,13 @@ class TreeNode(object):
         # if several internal nodes are in the path of exactly the same kept
         # nodes, only one (the deepest) should be maintain.
         visitors2nodes = {}
-        for node, visitors in six.iteritems(n2count):
+        for node, visitors in n2count.items():
             # keep nodes connection at least two other nodes
             if len(visitors)>1:
                 visitor_key = frozenset(visitors)
                 visitors2nodes.setdefault(visitor_key, set()).add(node)
 
-        for visitors, nodes in six.iteritems(visitors2nodes):
+        for visitors, nodes in visitors2nodes.items():
             if not (to_keep & nodes):
                 sorted_nodes = sorted(nodes, key=cmp_to_key(cmp_nodes))
                 to_keep.add(sorted_nodes[0])
@@ -805,7 +804,7 @@ class TreeNode(object):
         common = None
         for n in reference:
             broken = False
-            for node, path in six.iteritems(n2path):
+            for node, path in n2path.items():
                 if node is not ref_node and n not in path:
                     broken = True
                     break
@@ -831,7 +830,7 @@ class TreeNode(object):
         """
         for n in self.traverse():
             conditions_passed = 0
-            for key, value in six.iteritems(conditions):
+            for key, value in conditions.items():
                 if hasattr(n, key) and getattr(n, key) == value:
                     conditions_passed +=1
             if conditions_passed == len(conditions):
@@ -1658,7 +1657,7 @@ class TreeNode(object):
         if not cached_content:
             cached_content = self.get_cached_content()
         all_leaves = cached_content[self]
-        for n, side1 in six.iteritems(cached_content):
+        for n, side1 in cached_content.items():
             yield (side1, all_leaves - side1)
 
 
@@ -2011,7 +2010,7 @@ def _translate_nodes(root, *nodes):
                 name2node[n.name] = n
 
     if None in list(name2node.values()):
-        notfound = [key for key, value in six.iteritems(name2node) if value is None]
+        notfound = [key for key, value in name2node.items() if value is None]
         raise ValueError("Node names not found: "+str(notfound))
 
     valid_nodes = []

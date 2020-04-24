@@ -25,7 +25,6 @@ setup(
         "numpy",
         "requests",
         "future",
-        "six",
     ],
     entry_points={},
     license='GPL',
