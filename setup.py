@@ -21,10 +21,10 @@ setup(
     long_description_content_type='text/x-rst',
     packages=find_packages(),
     install_requires=[
-        "toyplot>=0.18.0",
-        "numpy>=1.8.0",
-        "future",
+        "toyplot",
+        "numpy",
         "requests",
+        "future",
         "six",
     ],
     entry_points={},
