@@ -5,7 +5,7 @@ A class object for generating and storing Toytree plotting coordinates.
 """
 
 import numpy as np
-# from .utils import ToyTreeError
+from .utils import ToytreeError
 
 
 class Coords:
@@ -420,7 +420,7 @@ class Coords:
             self.coords = tmp
 
         else:
-            raise ToyTreeError("layout not recognized")
+            raise ToytreeError("layout not recognized")
 
 
 
