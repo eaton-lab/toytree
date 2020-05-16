@@ -236,7 +236,7 @@ class TreeNode(object):
         """
         Adds a new child to this node. If child node is not suplied
         as an argument, a new node instance will be created.
-        
+
         Parameters
         ----------
         child: 
@@ -286,7 +286,7 @@ class TreeNode(object):
         as an argument, a new TreeNode instance will be created and
         returned.
         """
-        if self.up == None:
+        if self.up is None:
             raise TreeError("A parent node is required to add a sister")
         else:
             return self.up.add_child(child=sister, name=name, dist=dist)
