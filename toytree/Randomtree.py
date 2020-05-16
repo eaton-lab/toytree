@@ -4,6 +4,7 @@
 Random Tree generation Class
 """
 
+import numpy as np
 import random
 import toytree
 from .utils import ToytreeError
@@ -205,6 +206,114 @@ class RandomTree(object):
         # rescale total height to .
         self = self.mod.node_scale_root_height(treeheight, nocopy=True)
         return self        
+
+
+    @staticmethod
+    def bdtree(b=1, d=0, stop="taxa", n=10, t=4, seed=None, verbose=False):
+        """
+        Generate a classic birth/death tree.
+
+        Parameters
+        -----------
+        b (float):
+            Birth rate per time unit
+
+        d (float):
+            Death rate per time unit (d=0 produces Yule trees)
+
+        stop (str):
+            Stopping critereon. Valid values are only 'taxa' or 'time'.
+
+        n (int):
+            Number of tips to generate for 'taxa' stopping criterion.
+
+        t (float):
+            Amount of time to simulate for 'time' stopping criterion.
+
+        seed (int):
+            Random number generator seed.
+
+        verbose (bool):
+            Print some useful information
+        """
+        if stop not in ["taxa", "time"]:
+            raise ToytreeError("stop must be either 'taxa' or 'time'")
+
+        if seed:
+            np.random.seed(seed)
+
+        tre = toytree.tree()
+
+        taxa_stop = n
+        time_stop = t
+
+        # Counters for extinctions, total events, and time
+        ext = 0
+        evnts = 0
+        t = 0
+
+        while(1):
+            tips = tre.treenode.get_leaves()
+            # Sample time interval
+            dt = np.random.exponential(1/(len(tips) * (b + d)))
+            t = t + dt
+            evnts += 1
+
+            r = np.random.sample()
+            sp = np.random.choice(tips)
+            if (r <= b/(b + d)):
+                # birth event
+                c1 = sp.add_child(name=str(t)+"-1", dist=0)
+                c1.add_feature("tdiv", t)
+                c2 = sp.add_child(name=str(t)+"-2", dist=0)
+                c2.add_feature("tdiv", t)
+            else:
+                # extinction event
+                sp.delete(preserve_branch_length=True,\
+                            prevent_nondicotomic=False)
+                tre = _prune(tre)
+                ext += 1
+
+            # Update branch lengths
+            tips = tre.treenode.get_leaves()
+            for x in tips:
+                x.dist += dt
+
+            # Check stopping criterion
+            tips = tre.treenode.get_leaves()
+            done = False
+            if stop == "taxa":
+                if len(tips) >= taxa_stop:
+                    done = True
+            elif stop == "time":
+                if t >= time_stop:
+                    done = True
+            elif len(tips) == 0:
+                print("All lineages extinct")
+                done = True
+            if done:
+                if verbose:
+                    print("Birth events {}".format(evnts))
+                    print("Extinctions {} (per birth {})".format(ext, ext/evnts))
+                for i, t in enumerate(tips[::-1]):
+                    t.name = "r{}".format(i)
+                tre._coords.update()
+                return tre
+
+
+def _prune(tre, verbose=False):
+    "Helper function for recursively pruning extinct branches in bd trees"
+    ttree = tre.copy()
+    tips = ttree.treenode.get_leaves()
+    
+    if np.any(np.array([x.height for x in tips]) > 0):
+        for t in tips:
+            if not np.isclose(t.height, 0):
+                if verbose: print("Removing node/height {}/{}".format(t.name,\
+                                                                      t.height))
+                t.delete(prevent_nondicotomic=False)
+                ttree = _prune(ttree)
+    return ttree
 
 
 def return_small_clade(treenode):
