@@ -4,7 +4,7 @@ from __future__ import print_function, absolute_import
 
 import itertools
 from decimal import Decimal
-from copy import deepcopy
+from copy import deepcopy, copy
 import numpy as np
 
 from .TreeNode import TreeNode
@@ -757,6 +757,53 @@ class ToyTree(object):
         return nself
 
 
+
+    def speciate(self, idx, name=None, dist_prop=0.5):
+        """
+        Split an edge to create a new tip in the tree as in a speciation event.
+        """
+        # make a copy of the toytree
+        nself = self.copy()
+
+        # get Treenodes of selected node and parent 
+        ndict = nself.get_feature_dict('idx')
+        node = ndict[idx]
+        parent = node.up
+
+        # get new node species name
+        if not name:
+            if node.is_leaf():
+                name = node.name + ".sis"
+            else:
+                names = nself.get_tip_labels(idx=idx)
+                name = "{}.sis".format("_".join(names))
+
+        # create new speciation node between them at dist_prop dist.
+        newnode = parent.add_child(
+            name=parent.name + ".spp",
+            dist=node.dist * dist_prop
+        )
+
+        # connect original node to speciation node.
+        node.up = newnode
+        node.dist = node.dist - newnode.dist
+        newnode.add_child(node)
+
+        # drop original node from original parent child list
+        parent.children.remove(node)
+
+        # add new tip node (new sister) and set same dist as onode
+        newnode.add_child(
+            name=name,
+            dist=node.up.height,
+        )
+
+        # update toytree coordinates
+        nself._coords.update()
+        return nself        
+
+
+
     def unroot(self):
         """
         Returns a copy of the tree unrooted. Does not transform tree in-place.
@@ -1060,3 +1107,7 @@ class RawTree():
             if not node.name:
                 node.name = str(idx)
             idx -= 1
+
+
+    def copy(self):
+        return copy(self)
