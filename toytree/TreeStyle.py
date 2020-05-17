@@ -53,6 +53,7 @@ DEFAULT_NODE_STYLE = {
 DEFAULT_NODE_LABEL_STYLE = {
     "fill": "#262626", 
     "font-size": "9px", 
+    # "baseline-shift": "central"
 }
 
 DEFAULT_EDGE_ALIGN_STYLE = {
@@ -84,10 +85,10 @@ STYLES = {
         "use_edge_lengths": False, 
         "node_labels": True, 
         "node_colors": "lightgrey", 
-        "node_sizes": 18, 
+        "node_sizes": 15, 
         "node_style": {
             "stroke": "#262626", 
-            "stroke-width": 1,
+            "stroke-width": 1.5,
         },
         "tip_labels": True,
     },
@@ -122,7 +123,7 @@ STYLES = {
         "scalebar": True,
         "node_style": {
             "stroke": "#262626",
-            "stroke-width": 1,
+            "stroke-width": 1.5,
         },
     },
 
@@ -157,7 +158,26 @@ STYLES = {
         'edge_type': 'c',
         'layout': 'c',
         'use_edge_lengths': False,
+    },
+
+    'o': {
+        # tree style: "umlaut"
+        'edge_type': 'c',
+        'layout': 'r',
+        'node_sizes': 8,
+        'tip_labels': True,
+        'tip_labels_align': True,
+        'edge_style': {
+            "stroke": "#262626",
+            "stroke-width": 2,
+        },
+        "node_style": {
+            "stroke-width": 1.5,
+            "stroke": "white",
+            "fill": COLORS2[0],
+        }
     }
+
 }
 
 
