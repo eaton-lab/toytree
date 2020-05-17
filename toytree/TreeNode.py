@@ -106,12 +106,18 @@ class TreeNode(object):
         except ValueError:
             raise TreeError('node dist must be a float number')
 
+
+    # TODO: setting height should change the .dist values...
     @property
-    def height(self): 
+    def height(self):
+        # return sum([
+            # self.dist, 
+            # sum(i.dist for i in self.iter_ancestors() if not i.is_root()),
+        # ])
         _root = self.get_tree_root()
         _treeheight = _root.get_distance(_root.get_farthest_leaf()[0])
         return _treeheight - _root.get_distance(self)
-    # TODO: setting height should change the .dist values...
+
 
     @height.setter
     def height(self, value):
@@ -1387,13 +1393,18 @@ class TreeNode(object):
             distance, etc.). When none, the whole node instance is cached.
         _store: (internal use)
         """
+        # create an empty dict or use supplied one
         if _store is None:
             _store = {}
 
+        # add each node info to the dict
         for ch in self.children:
-            ch.get_cached_content(store_attr=store_attr,
-                                  container_type=container_type,
-                                  _store=_store)
+            ch.get_cached_content(
+                store_attr=store_attr,
+                container_type=container_type,
+                _store=_store,
+            )
+
         if self.children:
             val = container_type()
             for ch in self.children:
@@ -1408,6 +1419,7 @@ class TreeNode(object):
             else:
                 val = getattr(self, store_attr)
             _store[self] = container_type([val])
+
         return _store
 
 
