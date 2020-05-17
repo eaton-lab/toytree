@@ -20,6 +20,13 @@ from .NodeAssist import NodeAssist
 from .utils import ToytreeError, fuzzy_match_tipnames, normalize_values
 
 
+"""
+Test for speed improvements: 
+- reduce deepcopies
+- reduce traversals.
+
+"""
+
 
 
 class ToyTree(object):
@@ -46,7 +53,7 @@ class ToyTree(object):
     """
     def __init__(self, newick=None, tree_format=0, fixed_order=None):
 
-        # if loadeing from a Toytree then inherit that trees draw style
+        # if loading from a Toytree then inherit that trees draw style
         inherit_style = False
 
         # load from a TreeNode
@@ -66,6 +73,11 @@ class ToyTree(object):
         # make an empty tree
         else:
             self.treenode = TreeNode()
+
+        # init dimensions and cache to be filled during coords update
+        self.nnodes = 0
+        self.ntips = 0
+        self.idx_dict = {}
 
         # set tips order if fixing for multi-tree plotting (default None)
         self._fixed_order = None
@@ -130,15 +142,17 @@ class ToyTree(object):
             feats.update(node.features)    
         return feats
 
-    @property
-    def nnodes(self):
-        "The total number of nodes in the tree including tips and root."        
-        return sum(1 for i in self.treenode.traverse())
+    # @property
+    # def nnodes(self):
+    #     "The total number of nodes in the tree including tips and root."
+    #     return self._nnodes
+    #     # return sum(1 for i in self.treenode.traverse())
 
-    @property
-    def ntips(self):
-        "The number of tip nodes in the tree."
-        return sum(1 for i in self.treenode.get_leaves())
+    # @property
+    # def ntips(self):
+    #     "The number of tip nodes in the tree."
+    #     return self._ntips
+    #     # return sum(1 for i in self.treenode.get_leaves())
 
     @property
     def newick(self, tree_format=0):
