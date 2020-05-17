@@ -3,7 +3,7 @@
 """
 A class creating Drawings from Toytrees.
 """
-from copy import deepcopy
+from copy import deepcopy, copy
 from decimal import Decimal
 import numpy as np
 import toyplot
@@ -18,6 +18,14 @@ ITERABLE = (list, tuple, np.ndarray)
 # should we store node_labels, node_sizes, etc here or in Style?
 # It could be that style is just the rules for filling the drawing attrs...
 # and the actual drawing features are storing in ._drawing. 
+
+"""
+TODO list:
+
+- gentle slanting by shifting ._coords.coords down by a percentage.
+- time setup versus drawing steps, and speedup setup steps...
+- simplify setup steps with classes (e.g., AssignEdges)
+"""
 
 
 class Drawing:
@@ -131,7 +139,7 @@ class Drawing:
         """
 
         # pop fill from color dict if using color
-        tstyle = deepcopy(self.style.tip_labels_style)
+        tstyle = copy(self.style.tip_labels_style)
         if isinstance(self.style.tip_labels_colors, np.ndarray):
             tstyle.pop("fill")
 
@@ -525,6 +533,7 @@ class Drawing:
                 width = self.style.edge_style["stroke-width"]
                 self.style.edge_style.pop("stroke-width")
                 self.edge_widths = [width] * self.nedges
+
         else:
             self.style.edge_style.pop("stroke-width")            
             if isinstance(self.style.edge_widths, (str, int)):
@@ -554,13 +563,16 @@ class Drawing:
                 self.style.edge_style.pop("stroke")
                 self.edge_colors = [None] * self.nedges
             else:
-                if isinstance(self.style.edge_style["stroke"], ITERABLE):
+                # check the color
+                try:
+                    color = self.style.edge_style["stroke"]
+                    color = toyplot.color.to_css(color)
+                except TypeError:
+                    pass
+                # 
+                if isinstance(color, ITERABLE):
                     raise ToytreeError(
                         "Use edge_colors not edge_style for multiple edge colors")
-                # check the color
-                color = self.style.edge_style["stroke"]
-                if isinstance(color, (np.ndarray, np.void, list, tuple)):
-                    color = toyplot.color.to_css(color)
                 self.style.edge_style.pop("stroke")                    
                 self.edge_colors = [color] * self.nedges
 
@@ -607,10 +619,9 @@ class Drawing:
 
         # default edge type is 'p' splitting
         else:
-            self.expand_edges_to_lines("edge_colors")
-            self.expand_edges_to_lines("edge_widths")
-            # print(self.coords.lines.round(2))
-            # print(self.coords.coords.round(2))
+            self.expand_edges_to_lines()
+            # self.expand_edges_to_lines("edge_colors")
+            # self.expand_edges_to_lines("edge_widths")
             self.axes.graph(
                 self.coords.lines,
                 vcoordinates=self.coords.coords,
@@ -623,44 +634,20 @@ class Drawing:
             )
 
 
-    def expand_edges_to_lines(self, attr):
-        """
-        used for 'p' edge_type to expand edge styles to connecting edges.
-        """
-        # set default values
-        if attr == "edge_colors":
-            arr = ["#262626"] * self.coords.lines.shape[0]
-        else:
-            arr = [2] * self.coords.lines.shape[0]
 
-        # build dict from edges
-        cdict = {
-            self.coords.edges[i, 1]: getattr(self, attr)[i]
-            for i in range(len(self.coords.edges))
-        }
+    def expand_edges_to_lines(self):
 
-        # build new values from lines
-        for idx in range(len(arr)):
-            edge = self.coords.lines[idx]
+        # extend edge vars to 'p' length
+        addon = self.coords.lines.shape[0] - self.coords.edges.shape[0]
+        self.edge_widths.extend([2] * addon)
+        self.edge_colors.extend(["262626"] * addon)
 
-            # this edge goes into x
-            into = edge[1]
+        # fill the remaining in the expected order
+        for idx in range(self.nedges, self.coords.lines.shape[0]):
+            childnidx = int(self.coords.lines[idx, 1])
+            self.edge_colors[idx] = self.edge_colors[childnidx]
+            self.edge_widths[idx] = self.edge_widths[childnidx]
 
-            # colors going into x in edges is
-            val = cdict.get(into)
-
-            if val:
-                # apply this val to every line into x
-                lidx = np.where(self.coords.lines[:, 1] == into)
-                arr[lidx[0][0]] = val
-
-                # and into y
-                y = edge[0]
-                lidx = np.where(self.coords.lines[:, 1] == y)
-                arr[lidx[0][0]] = val
-
-        # update the value list        
-        setattr(self, attr, arr)  # edge_colors = arr
 
     # -----------------------------------------------------------------
     # Node and Node Labels 
@@ -688,8 +675,8 @@ class Drawing:
             nmarker = self.node_markers[nidx]
 
             # get styledict copies
-            nstyle = deepcopy(self.style.node_style)
-            nlstyle = deepcopy(self.style.node_labels_style)
+            nstyle = copy(self.style.node_style)
+            nlstyle = copy(self.style.node_labels_style)
 
             # and mod style dict copies from deconstructed lists
             nstyle["fill"] = self.node_colors[nidx]
