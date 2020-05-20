@@ -3,7 +3,7 @@
 """
 A class creating Drawings from Toytrees.
 """
-from copy import deepcopy, copy
+# from copy import deepcopy, copy
 from decimal import Decimal
 import numpy as np
 import toyplot
@@ -21,7 +21,6 @@ ITERABLE = (list, tuple, np.ndarray)
 
 """
 TODO list:
-
 - gentle slanting by shifting ._coords.coords down by a percentage.
 - time setup versus drawing steps, and speedup setup steps...
 - simplify setup steps with classes (e.g., AssignEdges)
@@ -29,13 +28,11 @@ TODO list:
 
 
 class Drawing:
-    def __init__(self, ttree, **kwargs):
+    def __init__(self, ttree):
         # input objects
-        self._tree = ttree.copy()
         self.ttree = ttree
         self.coords = ttree._coords
         self.style = ttree.style
-        self.kwargs = kwargs
         self.nedges = self.ttree._coords.edges.shape[0]
 
         # mutable plotting attributes pulled from styles and tree
@@ -43,34 +40,31 @@ class Drawing:
         self.node_colors = [None] * self.ttree.nnodes
         self.node_sizes = [0] * self.ttree.nnodes
         self.node_markers = ["o"] * self.ttree.nnodes
+        self.nstyle = self.style.node_style
+        self.nlstyle = self.style.node_labels_style
 
         self.tip_colors = None
         self.tip_labels = None
+        self.tstyle = self.style.tip_labels_style
 
         # todo: allow itemized versions of these...
         self.edge_colors = [None] * self.nedges
         self.edge_widths = [None] * self.nedges
+        self.estyle = self.style.edge_style
 
-        # unrooted layout, allow push layout and store from graph func
-        self._unrooted_coords = None
-        self._seed = (1234 if "seed" not in self.kwargs else self.kwargs.get("seed"))
-
-        #self.nedges = self.ttree._coords.lines.shape[0]        
         # store whether external axes were passed in 
         self._external_axis = False
 
 
     def update(self, axes=None):
 
-        # check layout args
-        self.check_layout()
-
         # always update coords in case style params affect the node placement.
         # this will place nodes for 'n' or 'f' trees, but 'u' trees are auto.
         self.coords.update()
 
         # set up base canvas and axes, but we need tip labels first
-        self.assign_tip_labels_and_colors()
+        self.assign_tip_labels()
+        self.assign_tip_colors()        
         self.get_dims_from_tree_size()
         self.get_canvas_and_axes(axes)
         self.set_baselines()
@@ -79,7 +73,8 @@ class Drawing:
         # or as a list, e.g., node_style={'fill':'red'} or node_color="red".
         self.assign_node_labels_and_sizes()
         self.assign_node_colors_and_style()
-        self.assign_edge_colors_and_widths()
+        self.assign_edge_colors()
+        self.assign_edge_widths()
 
         # draw tree, nodes, tips, axes on canvas.
         self.add_tip_lines_to_axes()
@@ -93,26 +88,9 @@ class Drawing:
         self.add_nodes_to_axes()
         self.add_axes_style()
 
-
         # add extra display space for tips on the end of tree
         self.fit_tip_labels()
         return self.canvas, self.axes
-        #return self.canvas, self.axes, tuple(self.axes._children)
-
-
-    def check_layout(self):
-        if self.style.layout in ('c', 'circ', 'circular'):
-            self.style.layout = 'c'
-        if self.style.layout in ('x', 'unrooted'):
-            self.style.layout = 'x'
-        if self.style.layout in ('r', 'right'):
-            self.style.layout = 'r'
-        if self.style.layout in ('d', 'down'):
-            self.style.layout = 'd'
-        if self.style.layout in ('l', 'left'):
-            self.style.layout = 'l'
-        if self.style.layout in ('u', 'up'):
-            self.style.layout = 'u'
 
 
     def set_baselines(self):
@@ -137,13 +115,7 @@ class Drawing:
         Add text offset from tips of tree with correction for orientation, 
         and fixed_order which is usually used in multitree plotting.
         """
-
-        # pop fill from color dict if using color
-        tstyle = copy(self.style.tip_labels_style)
-        if isinstance(self.style.tip_labels_colors, np.ndarray):
-            tstyle.pop("fill")
-
-        # circular layout ()
+        # circular layout () prints tips facing in two directions.
         if self.style.layout == 'c':
 
             # expand colors to an array so it can be masked if needed
@@ -207,22 +179,6 @@ class Drawing:
                     ),
             )            
 
-        # unrooted orientations
-        elif self.style.layout == "x":
-            raise NotImplementedError("unrooted layout coming soon.")
-        #     angles = [
-        #         self.get_angle(self.ttree.treenode.get_leaves_by_name(i)[0])
-        #         for i in self.ttree.get_tip_labels()
-        #     ]
-        #     self.axes.text(
-        #         self._unrooted_coords[:self.ttree.ntips, 0],
-        #         self._unrooted_coords[:self.ttree.ntips, 1],                
-        #         self.tip_labels,
-        #         angle=angles,
-        #         style=tstyle,
-        #         color=self.style.tip_labels_colors,
-        #     )
-
         # re-orient for rooted orientations
         else:
             # get tip-coords and replace if using fixed_order
@@ -239,11 +195,12 @@ class Drawing:
 
                 # up-facing style overrides
                 if self.style.layout == 'u':
-                    tstyle["text-anchor"] = "end"
-                    if tstyle["-toyplot-anchor-shift"][0] != "-":
-                        tstyle["-toyplot-anchor-shift"] = (
-                            "-" + tstyle["-toyplot-anchor-shift"])
+                    self.tstyle["text-anchor"] = "end"
+                    if self.tstyle["-toyplot-anchor-shift"][0] != "-":
+                        self.tstyle["-toyplot-anchor-shift"] = (
+                            "-" + self.tstyle["-toyplot-anchor-shift"])
 
+            # left and right layouts
             if self.style.layout in ("r", "l"):
                 if self.ttree._fixed_order:
                     xpos = xpos[self.ttree._fixed_idx]
@@ -253,10 +210,10 @@ class Drawing:
 
                 # left-facing style overrides 
                 if self.style.layout == "l":
-                    tstyle["text-anchor"] = "end"
-                    if tstyle["-toyplot-anchor-shift"][0] != "-":
-                        tstyle["-toyplot-anchor-shift"] = (
-                            "-" + tstyle["-toyplot-anchor-shift"])
+                    self.tstyle["text-anchor"] = "end"
+                    if self.tstyle["-toyplot-anchor-shift"][0] != "-":
+                        self.tstyle["-toyplot-anchor-shift"] = (
+                            "-" + self.tstyle["-toyplot-anchor-shift"])
 
             # add tip names to coordinates calculated above
             self.axes.text(
@@ -264,7 +221,7 @@ class Drawing:
                 ypos,
                 self.tip_labels,
                 angle=(0 if self.style.layout in ("r", "l") else -90),
-                style=tstyle,
+                style=self.tstyle,
                 color=self.style.tip_labels_colors,
             )
 
@@ -468,34 +425,37 @@ class Drawing:
         self.node_labels = [str(i) for i in self.node_labels]
 
 
-    def assign_tip_labels_and_colors(self):
-        "assign tip labels based on user provided kwargs"
+    def assign_tip_colors(self):
+        "assign tip labels to .tip_colors as ndarray"
 
         # COLOR (make a list from a single value)
-        if isinstance(self.style.tip_labels_colors, str):
-            self.style.tip_labels_colors = np.array(
-                [self.style.tip_labels_colors] * self.ttree.ntips)
+        csty = self.style.tip_labels_colors
+        if isinstance(csty, str):
+            self.tip_colors = np.array([csty] * self.ttree.ntips)
+        elif isinstance(csty, ITERABLE):
+            self.tip_colors = np.array(csty)
 
-        # reorder array for fixed if needed
-        elif isinstance(self.style.tip_labels_colors, ITERABLE):
+            # reorder array for fixed if needed
             if self.ttree._fixed_order:
-                cols = np.array(self.style.tip_labels_colors)
-                orde = cols[self.ttree._fixed_idx]
-                self.style.tip_labels_colors = list(orde)
-            self.style.tip_labels_colors = np.array(self.style.tip_labels_colors)
+                self.tip_colors = self.tip_colors[self.ttree._fixed_idx]
 
-        # LABELS
-        # False == hide tip labels
-        if self.style.tip_labels is False:
-            self.style.tip_labels_style["-toyplot-anchor-shift"] = "0px"
-            self.tip_labels = ["" for i in self.ttree.get_tip_labels()]
+        # pop fill from color dict if using color
+        if isinstance(self.tip_colors, np.ndarray):
+            self.tstyle.pop("fill")
 
-        # LABELS
-        # user entered something...
+
+    def assign_tip_labels(self):
+        """
+        LABELS (strings, empty or longer with anchor shift adjusted
+        """
+        lsty = self.style.tip_labels
+        if lsty is False:
+            self.tstyle["-toyplot-anchor-shift"] = "0px"
+            self.tip_labels = ["" for i in range(self.ttree.ntips)]
         else:
             # if user did not change label-offset then shift it here
-            if not self.style.tip_labels_style["-toyplot-anchor-shift"]:
-                self.style.tip_labels_style["-toyplot-anchor-shift"] = "15px"
+            if not self.tstyle["-toyplot-anchor-shift"]:
+                self.tstyle["-toyplot-anchor-shift"] = "15px"
 
             # if user entered list in get_tip_labels order reverse it for plot
             if isinstance(self.style.tip_labels, ITERABLE):
@@ -509,7 +469,7 @@ class Drawing:
                     self.tip_labels = self.ttree.get_tip_labels()
 
 
-    def assign_edge_colors_and_widths(self):
+    def assign_edge_widths(self):
         """
         Resolve conflict of 'node_color' and 'node_style['fill'] args which are
         redundant. Default is node_style.fill unless user entered node_color.
@@ -517,84 +477,90 @@ class Drawing:
         Either way, we build a list of colors to pass to Drawing.node_colors 
         which is then written to the marker as a fill CSS attribute.
         """
-        # node_color overrides fill. Tricky to catch cuz it can be many types.
 
-        # SET edge_widths and POP edge_style.stroke-width
-        if self.style.edge_widths is None:
-            if not self.style.edge_style["stroke-width"]:
-                self.style.edge_style.pop("stroke-width")
-                self.style.edge_style.pop("stroke")
-                self.edge_widths = [None] * self.nedges
+        # shortname for stored value
+        ewid = self.style.edge_widths
+
+        # set using stroke-width (or no edges at all)
+        if not ewid:
+
+            # edges are hidden
+            if self.estyle["stroke-width"] in (None, "none", 0):
+                self.estyle["stroke-width"] = 0
+
+            # edges are set only by stroke-width
             else:
-                if isinstance(self.style.edge_style["stroke-width"], ITERABLE):
+                # raise warning if multiple stroke widths
+                if isinstance(self.estyle["stroke-width"], ITERABLE):
                     raise ToytreeError(
-                        "Use edge_widths not edge_style for multiple edge widths")
-                # check the color
-                width = self.style.edge_style["stroke-width"]
-                self.style.edge_style.pop("stroke-width")
-                self.edge_widths = [width] * self.nedges
+                        "Use edge_widths not edge_style['stroke-width'] "
+                        "to set multiple variable edge widths")
 
+        # all others will use edge_widths instead of stroke-width
         else:
-            self.style.edge_style.pop("stroke-width")            
-            if isinstance(self.style.edge_widths, (str, int)):
+            self.estyle.pop("stroke-width")
 
-                # Special case of setting Ne for plotting
-                if self.style.edge_widths == "Ne":
+            # special case of setting Ne for plotting
+            if isinstance(ewid, (str, bytes)):
+                if ewid == "Ne":
                     if not all([i for i in self.ttree.get_edge_values("Ne")]):
                         self.edge_widths = np.repeat(2, self.nedges)
                     else:
                         self.edge_widths = (self.ttree.get_edge_values(
                             feature="Ne", normalize=True))
 
-                # normal value entry
-                else:
-                    self.edge_widths = (
-                        [int(self.style.edge_widths)] * self.nedges)
+            # user entered numeric
+            elif isinstance(ewid, (float, int)):
+                self.edge_widths = ([ewid] * self.nedges)
 
-            elif isinstance(self.style.edge_widths, ITERABLE):
-                if len(self.style.edge_widths) != self.nedges:
+            # multiple edge-widths set by edge_widths
+            elif isinstance(ewid, ITERABLE):           
+                if len(ewid) != self.nedges:
                     raise ToytreeError("edge_widths arg is the wrong length")
                 for cidx in range(self.nedges):
-                    self.edge_widths[cidx] = self.style.edge_widths[cidx]
+                    self.edge_widths[cidx] = ewid[cidx]
 
-        # SET edge_colors and POP edge_style.stroke
-        if self.style.edge_colors is None:
-            if self.style.edge_style["stroke"] is None:
-                self.style.edge_style.pop("stroke")
-                self.edge_colors = [None] * self.nedges
+
+    def assign_edge_colors(self):
+        """
+        """
+        # shortname for stored values.
+        ecol = self.style.edge_colors
+
+        # set using stroke 
+        if ecol is None:
+            self.edge_colors = None
+
+            # color is none
+            if self.estyle["stroke"] in (None, "none", 0):
+                self.estyle['stroke'] = "#262626"
+
+            # color set by style stroke
             else:
-                # check the color
-                try:
-                    color = self.style.edge_style["stroke"]
-                    color = toyplot.color.to_css(color)
-                except TypeError:
-                    pass
-                # 
+                # try to convert the color type
+                color = color_check(self.estyle['stroke'])
+                self.estyle['stroke'] = color
+
+                # raise warning if user tried to enter multiple in stroke
                 if isinstance(color, ITERABLE):
                     raise ToytreeError(
-                        "Use edge_colors not edge_style for multiple edge colors")
-                self.style.edge_style.pop("stroke")                    
-                self.edge_colors = [color] * self.nedges
+                        "Use edge_colors not edge_style['stroke'] "
+                        "to set multiple different edge colors")
 
-        # otherwise parse node_color
+        # set edge_colors list
         else:
-            self.style.edge_style.pop("stroke")                                
-            if isinstance(self.style.edge_colors, (str, int)):
-                # check the color
-                color = self.style.edge_colors
-                if isinstance(color, (np.ndarray, np.void, list, tuple)):
-                    color = toyplot.color.to_css(color)
+            self.estyle.pop("stroke")
+
+            if isinstance(ecol, (str, int)):
+                color = color_check(ecol)
                 self.edge_colors = [color] * self.nedges
 
-            elif isinstance(self.style.edge_colors, ITERABLE):
-                if len(self.style.edge_colors) != self.nedges:
+            elif isinstance(ecol, ITERABLE):
+                if len(ecol) != self.nedges:
                     raise ToytreeError("edge_colors arg is the wrong length")
                 for cidx in range(self.nedges):
-                    self.edge_colors[cidx] = self.style.edge_colors[cidx]
+                    self.edge_colors[cidx] = color_check(ecol[cidx])
 
-        # do not allow empty edge_colors or widths
-        self.edge_colors = [i if i else "#262626" for i in self.edge_colors]
-        self.edge_widths = [i if i else 2 for i in self.edge_widths]
 
     # -----------------------------------------------------------------
     # Tree / Graph plotting
@@ -612,41 +578,52 @@ class Drawing:
                 layout=toyplot.layout.IgnoreVertices(),
                 vlshow=False,
                 vsize=0,
-                estyle=self.style.edge_style,
+                estyle=self.estyle,
                 ewidth=self.edge_widths,
                 ecolor=self.edge_colors,
             )
 
         # default edge type is 'p' splitting
         else:
-            self.expand_edges_to_lines()
-            # self.expand_edges_to_lines("edge_colors")
-            # self.expand_edges_to_lines("edge_widths")
+            self.expand_widths_to_lines()
+            self.expand_colors_to_lines()            
             self.axes.graph(
                 self.coords.lines,
                 vcoordinates=self.coords.coords,
                 layout=toyplot.layout.IgnoreVertices(),
                 vlshow=False,
                 vsize=0.,
-                estyle=self.style.edge_style, 
+                estyle=self.estyle,
                 ewidth=self.edge_widths,
                 ecolor=self.edge_colors,
             )
 
 
 
-    def expand_edges_to_lines(self):
+    def expand_colors_to_lines(self):
+        " extend edge vars to 'p' length"
+        # using edge_style
+        if self.edge_colors is not None:
+            addon = self.coords.lines.shape[0] - self.coords.edges.shape[0]
+            self.edge_colors.extend(["262626"] * addon)
 
-        # extend edge vars to 'p' length
-        addon = self.coords.lines.shape[0] - self.coords.edges.shape[0]
-        self.edge_widths.extend([2] * addon)
-        self.edge_colors.extend(["262626"] * addon)
+            # fill the remaining in the expected order
+            for idx in range(self.nedges, self.coords.lines.shape[0]):
+                childnidx = int(self.coords.lines[idx, 1])
+                self.edge_colors[idx] = self.edge_colors[childnidx]
 
-        # fill the remaining in the expected order
-        for idx in range(self.nedges, self.coords.lines.shape[0]):
-            childnidx = int(self.coords.lines[idx, 1])
-            self.edge_colors[idx] = self.edge_colors[childnidx]
-            self.edge_widths[idx] = self.edge_widths[childnidx]
+
+    def expand_widths_to_lines(self):
+        " extend edge vars to 'p' length"
+        # using edge_style
+        if self.edge_widths is not None:
+            addon = self.coords.lines.shape[0] - self.coords.edges.shape[0]
+            self.edge_widths.extend([2] * addon)
+
+            # fill the remaining in the expected order
+            for idx in range(self.nedges, self.coords.lines.shape[0]):
+                childnidx = int(self.coords.lines[idx, 1])
+                self.edge_widths[idx] = self.edge_widths[childnidx]
 
 
     # -----------------------------------------------------------------
@@ -673,22 +650,20 @@ class Drawing:
             nlabel = self.node_labels[nidx]
             nsize = self.node_sizes[nidx]
             nmarker = self.node_markers[nidx]
-
-            # get styledict copies
-            nstyle = copy(self.style.node_style)
-            nlstyle = copy(self.style.node_labels_style)
-
-            # and mod style dict copies from deconstructed lists
-            nstyle["fill"] = self.node_colors[nidx]
+            ncolor = self.node_colors[nidx]
 
             # create mark if text or node
             if (nlabel or nsize):
                 mark = toyplot.marker.create(
                     shape=nmarker, 
-                    label=str(nlabel),
+                    label=None,  # str(nlabel),
                     size=nsize,
-                    mstyle=nstyle,
-                    lstyle=nlstyle,
+                    mstyle={
+                        "fill": (ncolor if ncolor else self.nstyle['fill']),
+                        "stroke": self.nstyle['stroke'],
+                        "stroke-width": 1,
+                    },
+                    lstyle=self.nlstyle,
                 )
             else:
                 mark = ""
@@ -921,7 +896,8 @@ class Drawing:
     def add_admixture_edges(self):
         if self.style.admixture_edges is not None:
             AdmixEdges(
-                self._tree, 
+                # self._tree, 
+                self.ttree,
                 self.axes, 
                 self.style.admixture_edges,
                 layout=self.style.layout,
@@ -970,3 +946,13 @@ class Drawing:
             else:
                 deg += 0
         return deg
+
+
+
+def color_check(color):
+    # try to convert the color type
+    try:
+        color = toyplot.color.to_css(color)
+    except TypeError:
+        pass
+    return color
