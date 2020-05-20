@@ -208,10 +208,10 @@ class TreeStyle(object):
 
         # update self attributes
         nodicts = {i: j for (i, j) in sdict.items() if not isinstance(j, dict)}
-        isdicts = {i: j for (i, j) in sdict.items() if isinstance(j, dict)}        
         self.__dict__.update(**nodicts)
 
         # update subdict style attributes
+        isdicts = {i: j for (i, j) in sdict.items() if isinstance(j, dict)}        
         for key, val in isdicts.items():
             setattr(self, key, val)
 
@@ -300,6 +300,14 @@ class TreeStyle(object):
 
     def __str__(self):
         return self.__repr__()
+
+
+    # def __deepcopy__(self, memodict={}):
+    #     newcopy = TreeStyle()
+    #     newcopy.update(self)
+    #     return newcopy
+
+
 
 
 
