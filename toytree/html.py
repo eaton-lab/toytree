@@ -386,16 +386,19 @@ def _render(axes, mark, context):
 
 
 
-
-## Currently this clobbers some text styling (e.g., alignment-baseline)
-## during the 'toyplot.text.layout' restyling. Not sure why.
 def split_styles(mark):
-    """ get shared styles """
-    
+    """ 
+    Get shared styles between parent-child in DOM to reduce redundancy in CSS.
+
+    Currently this clobbers some text styling (e.g., alignment-baseline)
+    during the 'toyplot.text.layout' restyling. Not sure why.
+    """
+
     markers = [mark._table[key] for key in mark._marker][0]
     nstyles = []
     for m in markers:
-        ## fill and stroke are already rgb() since already in markers
+
+        # fill and stroke are already rgb() since already in markers
         msty = toyplot.style.combine({
             "fill": m.mstyle['fill'],
             "stroke": m.mstyle['stroke'],
@@ -403,8 +406,8 @@ def split_styles(mark):
         }, m.mstyle)
         msty = _color_fixup(msty)
         nstyles.append(msty)
-    
-    ## uses 'marker.size' so we need to loop over it
+
+    # uses 'marker.size' so we need to loop over it
     lstyles = []
     for m in markers:
         lsty = toyplot.style.combine({
@@ -415,12 +418,13 @@ def split_styles(mark):
             "stroke": "none",
             "text-anchor": "middle",
         }, m.lstyle)
-        ## update fonts
+
+        # update fonts
         fonts = toyplot.font.ReportlabLibrary()
         layout = toyplot.text.layout(m.label, lsty, fonts)
         lsty = _color_fixup(layout.style)
         lstyles.append(lsty)
-    
+
     nallkeys = set(itertools.chain(*[i.keys() for i in nstyles]))
     lallkeys = set(itertools.chain(*[i.keys() for i in lstyles]))
     nuniquekeys = []
