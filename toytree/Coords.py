@@ -42,22 +42,10 @@ class Coords:
         self.ttree = ttree
 
         # the vertices and edge tuples for normal layouts ('n')
-        self.edges = None  # np.zeros((self.nnodes - 1, 2), dtype=int)
-        self.verts = None  # np.zeros((self.nnodes, 2), dtype=float)
+        self.edges = None
+        self.verts = None
         self.lines = None
         self.coords = None
-
-        # the class object for transforming to radial coords ('r').
-        # init'ing this is pretty lightweight, so might as well default it.
-        # update: not so lightweight, makes coords 10X slower...
-        # self.circ = Circle(self.ttree)
-
-        # the class object for transforming to force-directed layout ('u') 
-        # ...
-
-        # not automatically run in init bc we want to keep toytrees light
-        # self.update()
-
 
 
     def update(self):
