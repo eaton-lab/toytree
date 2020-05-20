@@ -212,6 +212,41 @@ class TreeNode(object):
         return self.iter_leaves()
 
 
+    def _clone(self):
+        """
+        Returns a new TreeNode object that is equivalent to a deepcopy() 
+        of the original. This is much faster than using deepcopy, and makes
+        it much faster to copy toytrees.
+        """
+        # copies the TreeNode object
+        ndict = {}
+
+        # traverse root to tips
+        for node in self.traverse("levelorder"):
+
+            # create root node and copy attrs
+            if node.is_root():
+                cnode = TreeNode()
+                cnode.__dict__.update(node.__dict__)
+                cnode._children = []
+                ndict[node.idx] = cnode
+
+            # every other node is someones' child
+            else:
+                cnode = ndict[node.idx]
+
+            # attach children and copy attrs
+            for child in node.children:
+                tmp = TreeNode()
+                tmp.__dict__.update(child.__dict__)
+                tmp.up = cnode
+                tmp._children = []
+                cnode.add_child(tmp)
+                ndict[child.idx] = tmp
+        return ndict[self.idx]
+
+
+
     #################################################################
     ## functions
     #################################################################
