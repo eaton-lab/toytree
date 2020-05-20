@@ -51,22 +51,21 @@ class ToyTree(object):
     ----------
     ...
     """
-    def __init__(self, newick=None, tree_format=0, fixed_order=None):
+    def __init__(self, newick=None, tree_format=0, fixed_order=None, **kwargs):
 
         # if loading from a Toytree then inherit that trees draw style
         inherit_style = False
 
-        # load from a TreeNode
+        # load from a TreeNode and detach. Must have .idx attributes on nodes.
         if isinstance(newick, TreeNode):
-            # detach this node from any parents so it becomes root
-            self.treenode = deepcopy(newick).detach()
+            self.treenode = newick.detach()
 
-        # load TreeNode from a ToyTree
+        # load TreeNode from a ToyTree (user should just use .copy())
         elif isinstance(newick, ToyTree):
             self.treenode = newick.treenode
             inherit_style = True
 
-        # prase a str, URL, or file
+        # parse a str, URL, or file
         elif isinstance(newick, (str, bytes)):
             self.treenode = TreeParser(newick, tree_format).treenodes[0]
 
@@ -100,7 +99,8 @@ class ToyTree(object):
 
         # Object for plot coordinates. Calls .update() whenever tree modified.
         self._coords = Coords(self)
-        self._coords.update()
+        if not kwargs.get("copy"):
+            self._coords.update()
 
         # Object for modifying trees beyond root, prune, drop
         self.mod = TreeMod(self)
@@ -596,9 +596,30 @@ class ToyTree(object):
         return nself
 
 
+
     def copy(self):
-        """ returns a deepcopy of the tree object"""
-        return deepcopy(self)
+        """ Returns a new ToyTree equivalent to a deepcopy (but faster) """
+
+        # update topology and node attrs
+        nself = ToyTree(
+            self.treenode._clone(), 
+            fixed_order=self._fixed_order,
+            copy=True,
+        )
+
+        # update style dicts
+        nself.style = deepcopy(self.style)
+
+        # update coords by copying instead of coords.update
+        nself._coords.edges = self._coords.edges
+        nself._coords.verts = self._coords.verts
+        nself._coords.lines = self._coords.lines
+        nself._coords.coords = self._coords.coords       
+        return nself
+
+    # def copy(self):
+    #     """ returns a deepcopy of the tree object"""
+    #     return deepcopy(self)
 
 
     def is_rooted(self):
@@ -1013,15 +1034,6 @@ class ToyTree(object):
             height, width, color). Example: [(4, 3, 50000, 3, 'red')]
 
         """
-        # allow ts as a shorthand for tree_style
-        if kwargs.get("ts"):
-            tree_style = kwargs.get("ts")
-
-        # pass a copy of this tree so that any mods to .style are not saved
-        nself = deepcopy(self)
-        if tree_style:
-            nself.style.update(TreeStyle(tree_style[0]))
-
         # update kwargs to merge it with user-entered arguments:
         userargs = {
             "height": height,
@@ -1049,8 +1061,17 @@ class ToyTree(object):
             "xbaseline": xbaseline, 
             "ybaseline": ybaseline,
             "admixture_edges": admixture_edges,
-            # "orient": orient,
         }
+
+        # tree can be modified (e.g., coords) without affecting orig.
+        nself = self.copy()
+
+        # apply tree style (and allow ts as a shorthand for tree_style)
+        # this overrides any existing .style settings as default.
+        if kwargs.get("ts"):
+            tree_style = kwargs.get("ts")
+        if tree_style:
+            nself.style.update(TreeStyle(tree_style[0]))
 
         # update kwargs with userargs, update style w/ kwargs except empty ones
         kwargs.update(userargs)
@@ -1064,10 +1085,10 @@ class ToyTree(object):
             print("unrecognized arguments skipped: {}".format(unrecognized))
             print("check the docs, argument names may have changed.")
 
-        # Init Drawing class object.
+        # Init Drawing class object 
         draw = Drawing(nself)
 
-        # Debug returns the object to test with.
+        # Debug returns the object to test with (oldstyle is overridden!)
         if kwargs.get("debug"):
             return draw
 
