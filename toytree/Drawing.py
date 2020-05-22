@@ -144,6 +144,7 @@ class Drawing:
             )
 
             # print in tips in two-parts for orientations
+            tstyle= self.style.tip_labels_style
             tstyle["text-anchor"] = "end"
             if "-" in tstyle["-toyplot-anchor-shift"]:
                 tstyle["-toyplot-anchor-shift"] = tstyle["-toyplot-anchor-shift"][1:]
