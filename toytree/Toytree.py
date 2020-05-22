@@ -1085,6 +1085,10 @@ class ToyTree(object):
             print("unrecognized arguments skipped: {}".format(unrecognized))
             print("check the docs, argument names may have changed.")
 
+        # return kwargs
+        if kwargs.get("test"):
+            return kwargs, censored, nself.style
+
         # Init Drawing class object 
         draw = Drawing(nself)
 
