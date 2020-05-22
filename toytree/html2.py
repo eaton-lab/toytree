@@ -19,9 +19,6 @@ dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 """
 TODO: 
 - tip labels align: just another set of node coords and edges, all M.. L.. 
-- extents when tip labels is empty/false
-- extents on all layouts with long names
-
 
 - do not draw node if no size...
 - NodeLabels style has #262626
@@ -31,10 +28,11 @@ TODO:
 
 
 PATH_FORMAT = {
-    'c': "M {xs:.3f} {ys:.3f} L {xe:.3f} {ye:.3f}",
-    'p': "M {xs:.3f} {ys:.3f} L {xs:.3f} {ye:.3f} L {xe:.3f} {ye:.3f}",
-    'b': "M {xs:.3f} {ys:.3f} C {xs:.3f} {ye:.3f}, {xs:.3f} {ye:.3f}, {xe:.3f} {ye:.3f}",
-    'f': "M {xs:.3f} {ys:.3f} A {} {}, 0, 0, {}, {xe:.3f} {ye:.3f}",
+    'c': "M {px:.1f} {py:.1f} L {cx:.1f} {cy:.1f}",
+    'b': "M {px:.1f} {py:.1f} C {px:.1f} {cy:.1f}, {px:.1f} {cy:.1f}, {cx:.1f} {cy:.3f}",
+    'p1': "M {px:.1f} {py:.1f} L {px:.1f} {cy:.1f} L {cx:.1f} {cy:.1f}",
+    'p2': "M {px:.1f} {py:.1f} L {cx:.1f} {py:.1f} L {cx:.1f} {cy:.1f}",
+    'pc': "M {cx:.1f} {cy:.1f} L {dx:.1f} {dy:.1f} A {rr:.1f} {rr:.1f} 0 0 {flag} {px:.1f} {py:.1f}",
 }
 
 
@@ -55,15 +53,17 @@ class Toytree(Mark):
         edge_widths,
         edge_type,
         edge_style,
+        edge_align_style,
         tip_labels,
         tip_labels_angles,
         tip_labels_colors,
         tip_labels_style,
         node_labels,
         node_labels_style,
-        edge_align_style,
+        tip_labels_align,
         layout,
         tree_height,
+        radii,
         ):
         # ecolor, ecoords, eopacity, eshape, estyle, etable, etarget):
 
@@ -74,6 +74,7 @@ class Toytree(Mark):
         self._coordinate_axes = ['x', 'y']  
         self.layout = layout
         self.tree_height = tree_height
+        self.radii = radii
 
         # store anything here that you want available as tool-tip hovers
         self.ntable = toyplot.require.instance(ntable, toyplot.data.Table)
@@ -90,12 +91,14 @@ class Toytree(Mark):
         self.edge_widths = edge_widths
         self.edge_style = edge_style
         self.edge_type = edge_type
+        self.edge_align_style = edge_align_style
 
         # tip labels
         self.tip_labels = tip_labels
         self.tip_labels_angles = tip_labels_angles
         self.tip_labels_colors = tip_labels_colors
         self.tip_labels_style = tip_labels_style
+        self.tip_labels_align = tip_labels_align
 
         # node labels
         self.node_labels = node_labels
@@ -134,17 +137,29 @@ class Toytree(Mark):
                 self.tree_height * np.array([0, 1, 0, -1]),
             )
 
-            # get the maxwidth of any tips ignoring positioning
+            # no tip labels for extends
             if np.all(self.tip_labels == None):
-                empty = np.array([])                
-                extents = tuple([empty] * 2), tuple([empty] * 4)
 
+                # no extents necessary
+                if np.all(self.node_sizes == None):
+                    coords = tuple([np.array([])] * 2)
+                    extents = tuple([np.array([])] * 4)
+
+                # extend by node size                    
+                else:
+                    extents = (
+                        np.repeat(max(self.node_sizes) * -1, 4),
+                        np.repeat(max(self.node_sizes), 4),
+                        np.repeat(max(self.node_sizes), 4),
+                        np.repeat(max(self.node_sizes) * -1, 4),                                                                        
+                    )
+
+            # get the maxwidth of any tips ignoring positioning
             else:
                 tips = self.tip_labels
                 exts = toyplot.text.extents(
                     tips, 0, {"font-size": self.tip_labels_style["font-size"]}
                 )
-                print(exts)
                 maxw = max([exts[1][i] - exts[0][i] for i in range(len(tips))])
                 ashift = toyplot.units.convert(
                     self.tip_labels_style["-toyplot-anchor-shift"], "px")
@@ -187,6 +202,7 @@ def toytree_mark(
     tip_labels=None,
     tip_labels_colors=None,
     tip_labels_angles=None,
+    tip_labels_align=None,
     tip_labels_style=None,
     node_labels=None,
     node_labels_style=None,
@@ -196,6 +212,8 @@ def toytree_mark(
     A convenience function for generating Marks with minimum args and 
     checking input types, lens, and allowed styles.
     """
+
+    # 
     ttree.style.layout = layout
     ttree._coords.update()
     verts = ttree._coords.verts
@@ -203,6 +221,10 @@ def toytree_mark(
     nedges = ttree._coords.edges.shape[0]
     ntips = ttree.ntips
     tree_height = ttree.treenode.height
+    if layout == 'c':
+        radii = np.array([ttree.idx_dict[i].radius for i in range(nnodes)])
+    else:
+        radii = np.repeat(0, ntips)
 
     # node style setup
     ntable = toyplot.data.Table()
@@ -224,6 +246,7 @@ def toytree_mark(
     edge_colors = toyplot.broadcast.scalar(edge_colors, nedges)
     edge_type = (edge_type if edge_type else "p")
     edge_style = toyplot.style.require(edge_style, toyplot.style.allowed.line)
+    edge_align_style = toyplot.style.require(edge_align_style, toyplot.style.allowed.line)
 
     # tip labels
     # ttable = toyplot.data.Table()
@@ -257,6 +280,7 @@ def toytree_mark(
         coordinate_axes=['x', 'y'],
         layout=layout,
         tree_height=tree_height,
+        radii=radii,
 
         ntable=ntable,
         node_colors=node_colors,
@@ -269,17 +293,17 @@ def toytree_mark(
         edge_colors=edge_colors,
         edge_type=edge_type,
         edge_style=edge_style,
+        edge_align_style=edge_align_style,
 
         # ttable=ttable,
         tip_labels=tip_labels,
         tip_labels_colors=tip_labels_colors,
         tip_labels_angles=tip_labels_angles,
         tip_labels_style=tip_labels_style,
+        tip_labels_align=tip_labels_align,
 
         node_labels=node_labels,
         node_labels_style=node_labels_style,
-
-        edge_align_style=edge_align_style,
     )
 
 
@@ -391,34 +415,6 @@ def get_shared_edge_styles(mark):
 
 
 
-def get_paths(mark, nodes_x, nodes_y):
-    """
-    # get edge table shape based on edge and layout types
-    # 'p': M x y L x y                  # phylogram
-    # 'c': M x y L x y L x y            # cladogram
-    # 'b': M x y C x y, x y, x y        # bezier phylogram
-    # 'f': M x y A r r, x, a, f, x y    # arcs/circle tree
-    """
-    path_format = PATH_FORMAT[mark.edge_type]
-    paths = []
-    # countdown from root node idx to tips
-    for eidx in range(mark.etable.shape[0] - 1, -1, -1):
-
-        # get parent and child
-        pidx = mark.etable['parent', eidx]
-        xs, ys = (nodes_x[pidx], nodes_y[pidx])
-        cidx = mark.etable['child', eidx]
-        xe, ye = (nodes_x[cidx], nodes_y[cidx])
-
-        # build path string
-        path = path_format.format(**{
-            'xs': xs, 'ys': ys, 'xe': xe, 'ye': ye,
-        })
-        paths.append(path)
-    return paths
-
-
-
 class RenderToytree:
     """
     Organized class to call within _render
@@ -448,7 +444,7 @@ class RenderToytree:
         self.mark_nodes()
         self.mark_node_labels()
         self.mark_tip_labels()
-
+        self.mark_align_edges()
 
 
     def project_coordinates(self):
@@ -457,6 +453,119 @@ class RenderToytree:
         """
         self.nodes_x = self.axes.project('x', self.mark.ntable['x'])
         self.nodes_y = self.axes.project('y', self.mark.ntable['y'])
+
+        if self.mark.tip_labels_align:
+
+            ntips = self.mark.tip_labels.size
+            if self.mark.layout in ('r', 'l'):
+                self.tips_x = np.repeat(self.axes.project('x', 0), ntips)
+                self.tips_y = self.nodes_y[:ntips]
+
+            elif self.mark.layout in ('u', 'd'):
+                self.tips_x = self.nodes_x[:ntips]
+                self.tips_y = np.repeat(self.axes.project('y', 0), ntips)
+
+            elif self.mark.layout in ('c'):
+                self.tips_x = np.zeros(ntips)
+                self.tips_y = np.zeros(ntips)
+                for idx, angle in enumerate(self.mark.tip_labels_angles):
+                    radian = np.deg2rad(-angle)
+                    cx = 0 + self.mark.tree_height * np.cos(radian)
+                    cy = 0 - self.mark.tree_height * np.sin(radian)
+                    self.tips_x[idx] = self.axes.project('x', cx)
+                    self.tips_y[idx] = self.axes.project('y', cy)
+
+        # project radius onto 'x' is fine since x==y for circular
+        if self.mark.layout == 'c':
+            self.radii = self.axes.project('x', self.mark.radii)
+
+
+
+
+    def get_paths(self):
+        """
+        # get edge table shape based on edge and layout types
+        # 'c': M x y L x y                  # phylogram
+        # 'p': M x y L x y L x y            # cladogram
+        # 'b': M x y C x y, x y, x y        # bezier phylogram
+        # 'f': M x y A r r, x, a, f, x y    # arcs/circle tree
+
+        The arc/circle method applies to edge_type 'p' when layout='c'       
+        """
+        # modify order of x or y shift of edges for p,b types.
+        if self.mark.edge_type in ('p', 'b'):
+            if self.mark.layout == 'c':
+                path_format = PATH_FORMAT["pc"]
+
+            elif self.mark.layout in ('u', 'd'):
+                path_format = PATH_FORMAT["{}2".format(self.mark.edge_type)]
+
+            else:
+                path_format = PATH_FORMAT["{}1".format(self.mark.edge_type)]
+        else:
+            path_format = PATH_FORMAT[self.mark.edge_type]
+
+        # store paths here
+        paths = []      
+
+        # countdown from root node idx to tips
+        for eidx in range(self.mark.etable.shape[0] - 1, -1, -1):
+
+            # get parent and child
+            cidx = self.mark.etable['child', eidx]
+            pidx = self.mark.etable['parent', eidx]
+            cx, cy = self.nodes_x[cidx], self.nodes_y[cidx]
+            px, py = self.nodes_x[pidx], self.nodes_y[pidx]
+
+            # get parent and child node angles from origin
+            if self.mark.layout == 'c':
+                ox = self.nodes_x[-1]
+                oy = self.nodes_y[-1]
+                pr = self.radii[pidx] - ox
+
+                # avoid divide by zero when drawing straight line.
+                if (cx - ox) == 0.:
+                    theta = np.pi / 2  # np.arctan(oy - cy)
+                else:
+                    theta = np.arctan((oy - cy) / (cx - ox))               
+
+                # trig to get hypotenuse from theta and parent radius
+                if cx > ox:
+                    dx = ox + np.cos(theta) * pr
+                    dy = oy - np.sin(theta) * pr
+                else:
+                    dx = ox - np.cos(theta) * pr
+                    dy = oy + np.sin(theta) * pr
+
+                # sweep-flag of the arc marker
+                if dx > px:
+                    if dy > oy:
+                        flag = 1
+                    else:
+                        flag = 0
+                else:
+                    if dy >= oy:
+                        flag = 0
+                    else:
+                        flag = 1    
+
+                # build paths.
+                p = path_format.format(**{
+                    'cx': cx, 'cy': cy, 'px': px, 'py': py,
+                    'dx': dx, 'dy': dy, 'rr': pr, 'flag': flag, 
+                })
+                paths.append(p)
+
+            # build path string for simple types
+            else:           
+                path = path_format.format(**{
+                    'px': px, 'py': py, 'cx': cx, 'cy': cy,
+                })
+                paths.append(path)
+        return paths
+
+
+
 
 
     def mark_toytree(self):
@@ -475,7 +584,7 @@ class RenderToytree:
         Creates SVG paths for each tree edge under class toytree-Edges
         """
         # get paths based on edge type and layout
-        paths = get_paths(self.mark, self.nodes_x, self.nodes_y)
+        paths = self.get_paths()  # self.mark, self.nodes_x, self.nodes_y, self.radii)
 
         # get shared versus unique styles
         shared_styles, unique_styles = get_shared_edge_styles(self.mark)
@@ -589,7 +698,7 @@ class RenderToytree:
         which is trick by combining style for -toyplot-anchor-shift and angles
         when setting transform.       
         """
-        if self.mark.tip_labels[0] is not None:
+        if not np.all(self.mark.tip_labels == None):
 
             # end anchor style updated for user text style
             top_style = {
@@ -664,6 +773,11 @@ class RenderToytree:
                 style_pos = self.mark.tip_labels_style
                 style_text = tdict
                 title = None
+
+                # align tip at end for tip_labels_align=True
+                if self.mark.tip_labels_align:
+                    cx = self.tips_x[tidx]
+                    cy = self.tips_y[tidx]
 
                 # get baseline given font-size, etc.,
                 layout = toyplot.text.layout(
@@ -750,22 +864,38 @@ class RenderToytree:
                 xml.SubElement(group, "text").text = tip
 
 
-
-
-
-
-    def mark_tip_labels_align(self):
+    def mark_align_edges(self):
         """
-        ...
+        Creates SVG paths for from each tip to 0 or radius.
         """
+        # get paths based on edge type and layout
+        if self.mark.tip_labels_align:
+            apaths = []
+            for tidx in range(len(self.mark.tip_labels)):
 
-        # make the group with text style but not position styles
-        align_edges_xml = xml.SubElement(
-            self.mark_xml, "g", 
-            attrib={"class": "toytree-AlignEdges"}, 
-            style=toyplot.style.to_css(style_group),
-        )
+                adict = {
+                    'cx': self.nodes_x[tidx],
+                    'cy': self.nodes_y[tidx],
+                    'px': self.tips_x[tidx], 
+                    'py': self.tips_y[tidx],
+                }
+                path = PATH_FORMAT['c'].format(**adict)
+                apaths.append(path)
 
+            # render the edge group
+            self.align_xml = xml.SubElement(
+                self.mark_xml, "g", 
+                attrib={"class": "toytree-AlignEdges"}, 
+                style=style_to_string(self.mark.edge_align_style),
+            )
+
+            # render the edge paths
+            for idx, path in enumerate(apaths):
+                xml.SubElement(
+                    self.align_xml, "path",
+                    d=path,
+                    # style=None,
+                )
 
 
 
