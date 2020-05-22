@@ -71,7 +71,7 @@ class Coords:
         self.update_fixed_order()      # in case ntips changed
 
         # get edges and verts (node locations)
-        if self.ttree.style.layout in ("c", "circ", "circular", "x", "unrooted"):
+        if self.ttree.style.layout in ("c", "circ", "circular"):
             self.circ = Circle(self.ttree)
             self.assign_radial_vertices()
 
@@ -84,28 +84,10 @@ class Coords:
 
         # get lines and coords (node neighbor locations for 'p' edges)
         # self.new_assign_coordinates()      # get edge locations
-        self.assign_coordinates()            # get edge locations        
+        # self.assign_coordinates()            # get edge locations        
         # self.assign_coordinates()            # get edge locations        
         self.reorient_coordinates()    # orientation can reorder dimensions
 
-
-    # # NOT YET IMPLEMENTED
-    # def force_directed_verts(self):
-    #     # pin 25% of 
-    #     c, a, m = toyplot.graph(
-    #         self.coords.edges,
-    #         layout=toyplot.layout.FruchtermanReingold(
-    #             seed=self._seed, 
-    #             area=100, 
-    #             M=self.ttree.ntips*20, 
-    #             temperature=10,
-    #             ),
-    #     )
-    #     # store the coordinates after the push
-    #     # self._unrooted_coords = np.array(m.vcoordinates)
-    #     # get circular lines and coords
-    #     self.assign_coordinates()      # get edge locations
-    #     self.reorient_coordinates()    # orientation can reorder dimensions
 
 
     def update_idxs(self):
@@ -262,9 +244,6 @@ class Coords:
                     # internal node at midpoint of children
                     node.x = sum(i.x for i in nch) / float(len(nch))
 
-                    # staggered midpoints for overlaps
-                    # node.x = np.mean([i.x for i in node.iter_leaves()])
-
             # store the vertex
             self.verts[idx] = [node.x, node.y]
 
@@ -275,29 +254,29 @@ class Coords:
 
 
 
-    def assign_coordinates(self):
-        """
-        coords and lines allow 'p' type edges (not all straight lines)
-        """
-        for idx in range(self.ttree.nnodes):
-            node = self.ttree.idx_dict[idx]
+    # def assign_coordinates(self):
+    #     """
+    #     coords and lines allow 'p' type edges (not all straight lines)
+    #     """
+    #     for idx in range(self.ttree.nnodes):
+    #         node = self.ttree.idx_dict[idx]
 
-            # store coord of this vertex
-            self.coords[idx] = (node.x, node.y)
-            if not node.is_root():
+    #         # store coord of this vertex
+    #         self.coords[idx] = (node.x, node.y)
+    #         if not node.is_root():
 
-                # store coord of hidden vertex
-                nidx = idx + self.ttree.nnodes
-                if self.ttree.style.layout == 'c':
-                    self.coords[nidx] = self.circ.get_node_lines(node)
-                else:
-                    self.coords[nidx] = (node.x, node.up.y)
+    #             # store coord of hidden vertex
+    #             nidx = idx + self.ttree.nnodes
+    #             if self.ttree.style.layout == 'c':
+    #                 self.coords[nidx] = self.circ.get_node_lines(node)
+    #             else:
+    #                 self.coords[nidx] = (node.x, node.up.y)
 
-                # store line connecting node to hidden vertex
-                self.lines[idx] = (idx, nidx)
+    #             # store line connecting node to hidden vertex
+    #             self.lines[idx] = (idx, nidx)
 
-                # store line connecting hidden vertex to node parent
-                self.lines[nidx - 1] = (nidx, node.up.idx)
+    #             # store line connecting hidden vertex to node parent
+    #             self.lines[nidx - 1] = (nidx, node.up.idx)
 
 
 
@@ -312,7 +291,7 @@ class Coords:
         if len(self.ttree) < 2:
             return
 
-        # TODO: orientation for non linear trees
+        # TODO: rotate? arc?
         if self.ttree.style.layout in ('c', 'circular', 'x', 'unrooted'):
             return 
 
@@ -400,10 +379,10 @@ class Circle:
         return x, y
 
 
-    def get_node_lines(self, node):
-        x = self.o[0] + node.up.radius * np.cos(node.radians)
-        y = self.o[1] - node.up.radius * np.sin(node.radians)
-        return x, y      
+    # def get_node_lines(self, node):
+    #     x = self.o[0] + node.up.radius * np.cos(node.radians)
+    #     y = self.o[1] - node.up.radius * np.sin(node.radians)
+    #     return x, y      
 
 
     def get_tip_end_angles(self):
