@@ -8,7 +8,7 @@ from copy import deepcopy, copy
 import numpy as np
 
 from .TreeNode import TreeNode
-from .TreeStyle import TreeStyle
+from .TreeStyle import TreeStyle, StyleChecker, COLORS2
 from .Coords import Coords
 from .Drawing import Drawing
 from .TreeParser import TreeParser, FastTreeParser
@@ -18,13 +18,13 @@ from .PCM import PCM
 from .Rooter import Rooter
 from .NodeAssist import NodeAssist
 from .utils import ToytreeError, fuzzy_match_tipnames, normalize_values
-
+from .html2 import ToytreeMark
+from .Test import CanvasSetup
 
 """
 Test for speed improvements: 
 - reduce deepcopies
 - reduce traversals.
-
 """
 
 
@@ -238,19 +238,19 @@ class ToyTree(object):
             widths. In the range(2, 12) typically.
         """
         elist = []
-        for cidx in self._coords.edges[:, 1]:
-            node = self.treenode.search_nodes(idx=cidx)[0]
+        for eidx in self._coords.edges[:, 1]:
+            node = self.idx_dict[eidx]
             elist.append(
-                # (node.__getattribute__(feature) if hasattr(node, feature) else "")
                 (getattr(node, feature) if hasattr(node, feature) else "")
-                )
+            )
         elist = np.array(elist)
         if normalize:
             elist = normalize_values(elist)
         return elist
 
 
-    def get_edge_values_from_dict(self, node_value_dict=None, include_stem=True):
+
+    def get_edge_values_mapped(self, node_mapping=None, include_stem=True):
         """
         Enter a dictionary mapping node 'idx' or tuple of tipnames to values 
         that you want mapped to the stem and descendant edges that node. 
@@ -270,43 +270,65 @@ class ToyTree(object):
 
         Example 1: 
           tre = toytree.tree("((a,b),(c,d));")
-          tre.get_edge_values_from_dict({5: 'green', 6: 'red'})
+          tre.get_edge_values_mapped({5: 'green', 6: 'red'})
           # ['green', 'green', 'green', 'red', 'red', 'red']
 
         Example 2: 
           tre = toytree.tree("((a,b),(c,d));")
-          tre.get_edge_values_from_dict({(a, b): 'green', (c, d): 'red'})          
+          tre.get_edge_values_mapped({(a, b): 'green', (c, d): 'red'})          
           # ['green', 'green', 'green', 'red', 'red', 'red']
+
+        Example 3:
+          tre = toytree.tree("((a,b),(c,d));")
+          tre.get_edge_values_mapped({10, 13})
+          # ['green', 'green', 'green', 'red', 'red', 'red']
+
         """
-        # map node idxs to the order in which edges are plotted
-        idxs = {j: i for (i, j) in enumerate(self.get_edge_values())}
         values = [None] * self._coords.edges.shape[0]
-        if node_value_dict is None:
+        if node_mapping is None:
             return values
 
-        # convert tipname lists to node idxs
-        rmap = {}
-        for (key, val) in node_value_dict.items():
-            if isinstance(key, (str, tuple)):
-                node = fuzzy_match_tipnames(self, key, None, None, True, False)
-                rmap[node.idx] = val
-            else:
-                rmap[key] = val
-        node_value_dict = rmap
+        if isinstance(node_mapping, set):
+            cols = iter(COLORS2)
+            node_mapping = {i: next(cols) for i in node_mapping}
 
-        # map over tree
-        for node in self.treenode.traverse("levelorder"):
-            if node.idx in node_value_dict:
+        # build ...
+        print(node_mapping)
+        rmap = {}
+        for key in node_mapping:
+
+            # if it is a node idx
+            if isinstance(key, int):
+                rmap[key] = node_mapping[key]
+            else:
+                ns = NodeAssist(self, node_mapping[key], None, None)
+                rmap[key] = ns.get_mrca().idx
+
+        # ....
+        for idx in self.idx_dict:
+            node = self.idx_dict[idx]
+            if idx in rmap:
 
                 # add value to stem edge
                 if include_stem:
                     if not node.is_root():
-                        values[idxs[node.idx]] = node_value_dict[node.idx]
+                        values[idx] = rmap[idx]
 
                 # add value to descendants edges
                 for desc in node.get_descendants():
-                    values[idxs[desc.idx]] = node_value_dict[node.idx]
+                    values[desc.idx] = rmap[idx]
         return values
+
+
+
+    def get_edge_values_from_dict(self, node_value_dict=None, include_stem=True):
+        """
+        No longer supported. See get_edge_values_mapped()
+        """
+        print("Warning: get_edge_values_from_dict no longer supported."
+              " See get_edge_values_mapped() as a replacement.")
+        return self.get_edge_values_mapped(node_value_dict, include_stem)
+
 
 
     def get_mrca_idx_from_tip_labels(self, names=None, wildcard=None, regex=None):
@@ -608,13 +630,12 @@ class ToyTree(object):
         )
 
         # update style dicts
-        nself.style = deepcopy(self.style)
+        nself.style = self.style.copy()
+        # nself.style = deepcopy(self.style)
 
         # update coords by copying instead of coords.update
-        nself._coords.edges = self._coords.edges
-        nself._coords.verts = self._coords.verts
-        nself._coords.lines = self._coords.lines
-        nself._coords.coords = self._coords.coords       
+        nself._coords.edges = self._coords.edges.copy()
+        nself._coords.verts = self._coords.verts.copy()
         return nself
 
     # def copy(self):
@@ -928,7 +949,7 @@ class ToyTree(object):
         tree_style=None,
         height=None,
         width=None,
-        axes=None,        
+        axes=None,    
         layout=None,
         tip_labels=None,
         tip_labels_colors=None,
@@ -958,7 +979,7 @@ class ToyTree(object):
 
         Parameters:
         -----------
-        tree_style: str
+        tree_style (or ts): str
             One of several preset styles for tree plotting. The default is 'n'
             (normal). Other options inlude 'c' (coalescent), 'd' (dark), and
             'm' (multitree). You also create your own TreeStyle objects.
@@ -1063,42 +1084,81 @@ class ToyTree(object):
             "admixture_edges": admixture_edges,
         }
 
-        # tree can be modified (e.g., coords) without affecting orig.
-        nself = self.copy()
-
-        # apply tree style (and allow ts as a shorthand for tree_style)
-        # this overrides any existing .style settings as default.
+        # shortcut name for tree style
         if kwargs.get("ts"):
             tree_style = kwargs.get("ts")
+
+        # use a base style preset over which other options override
         if tree_style:
-            nself.style.update(TreeStyle(tree_style[0]))
+            curstyle = TreeStyle(tree_style[0])
 
-        # update kwargs with userargs, update style w/ kwargs except empty ones
+        # or use current tree settings (DEFAULT unless changed by user)
+        else:           
+            curstyle = self.style.copy()
+
+        # optionally override current style with style args entered to draw()
         kwargs.update(userargs)
-        censored = {i: j for (i, j) in kwargs.items() if j is not None}
-        nself.style.update(censored)
+        user = dict([
+            ("_" + i, j) if isinstance(j, dict) else (i, j)
+            for (i, j) in kwargs.items() if j is not None
+        ])
+        curstyle.update(user)
 
-        # warn user if they entered kwargs that weren't recognized:
+        # warn user if they entered kwargs that arent't supported:
         allkeys = list(userargs.keys()) + ["debug", "ts"]
         unrecognized = [i for i in kwargs if i not in allkeys]
         if unrecognized:
-            print("unrecognized arguments skipped: {}".format(unrecognized))
-            print("check the docs, argument names may have changed.")
+            print("unrecognized arguments skipped: {}"
+                  "\ncheck the docs, argument names may have changed."
+                  .format(unrecognized))
 
-        # return kwargs
-        if kwargs.get("test"):
-            return kwargs, censored, nself.style
+        # update coords based on layout
+        verts, edges = self._coords.get_linear_coords(
+            curstyle.layout, 
+            curstyle.use_edge_lengths
+        )
 
-        # Init Drawing class object 
-        draw = Drawing(nself)
+        # check all styles
+        fstyle = StyleChecker(self, curstyle).style
 
-        # Debug returns the object to test with (oldstyle is overridden!)
-        if kwargs.get("debug"):
-            return draw
+        # debugging returns the mark and prints the modified kwargs
+        if kwargs.get('debug'):
+            print(user)
+            return fstyle
 
-        # Make plot. If user provided explicit axes then include them.
-        canvas, axes = draw.update(axes=axes)
-        return canvas, axes
+        # get canvas and axes
+        cs = CanvasSetup(self, axes, fstyle)
+        canvas = cs.canvas
+        axes = cs.axes
+
+        # generate toyplot Mark
+        mark = ToytreeMark(
+            ntable=verts, 
+            etable=edges, 
+            tree_height=self.treenode.height,
+            **fstyle.to_dict())
+
+        # add mark to axes
+        axes.add_mark(mark)
+
+        return canvas, axes, mark
+
+        # return the full stack
+        # return self.canvas, self.axes, self.mark
+
+
+        # return mark
+
+        # # Init Drawing class object 
+        # # draw = Drawing(nself)
+
+        # # Debug returns the object to test with (oldstyle is overridden!)
+        # if kwargs.get("debug"):
+        #     return draw
+
+        # # Make plot. If user provided explicit axes then include them.
+        # canvas, axes = draw.update(axes=axes)
+        # return canvas, axes
 
 
 
