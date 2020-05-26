@@ -56,19 +56,18 @@ class Coords:
         # updates idxs and fixed_idx for any tree manipulations
         self.update_idxs()
         self.update_fixed_order()      # in case ntips changed
+        self.circ = Circle(self.ttree)
 
         # get new shape and clear for attrs
-        self.edges = None  # np.zeros((self.ttree.nnodes - 1, 2), dtype=int)
-        self.verts = None  # np.zeros((self.ttree.nnodes, 2), dtype=float)
+        self.edges = self.get_edges()
 
         # get edges and verts (node locations)
         layout = self.ttree.style.layout
         if layout == 'c':
-            self.circ = Circle(self.ttree)
-            self.verts, self.edges = self.get_radial_coords()
+            self.verts = self.get_radial_coords()
         else:
             # returns with verts oriented by layout
-            self.verts, self.edges = self.get_linear_coords(layout=layout)
+            self.verts = self.get_linear_coords(layout=layout)
 
         # orientation can reorder dimensions
         # self.verts = self.reorient_coords(self.verts)
@@ -117,11 +116,28 @@ class Coords:
 
 
 
+    def get_edges(self):
+        """
+        This could change if a tree dropped nodes.
+        """
+        # use cache to fill edges array 
+        edges = np.zeros((self.ttree.nnodes - 1, 2), dtype=int)
+        for idx in range(self.ttree.nnodes - 1):
+            parent = self.ttree.idx_dict[idx].up
+            if parent:
+                edges[idx, :] = (parent.idx, idx)
+        return edges
+
+
+
     def get_radial_coords(self, use_edge_lengths=True):
         """
         Assign .edges and .verts for node positions in a fan tree.
         The farthest tip aligns at the circumference.
         """
+
+        verts = np.zeros((self.ttree.nnodes, 2), dtype=float)
+
         # shortname 
         if not use_edge_lengths:
             nbits = self.ttree.treenode.get_farthest_leaf(True)[1]
@@ -129,8 +145,6 @@ class Coords:
         # use cache to fill edges array 
         for idx in range(self.ttree.nnodes):
             node = self.ttree.idx_dict[idx]
-            if node.up:
-                self.edges[idx, :] = (node.up.idx, idx)
 
             # leaves: x positions are evenly spaced around circumference
             if node.is_leaf() and (not node.is_root()):
@@ -161,7 +175,8 @@ class Coords:
                 node.x, node.y = self.circ.get_node_coords(node)
 
             # store the x,y vertex positions
-            self.verts[node.idx] = [node.x, node.y]
+            verts[node.idx] = [node.x, node.y]
+        return verts
 
         # scale so that node idx 0 (or fixed_order x) is at (0, 0)
         # adjust = self.ttree._coords.verts[:, 1].min()
@@ -175,14 +190,7 @@ class Coords:
         X and Y positions here refer to base assumption that tree is right
         facing, reorient_coordinates() will handle re-translating this.        
         """
-        edges = np.zeros((self.ttree.nnodes - 1, 2), dtype=int)
         verts = np.zeros((self.ttree.nnodes, 2), dtype=float)
-
-        # use cache to fill edges array 
-        for idx in range(self.ttree.nnodes - 1):
-            parent = self.ttree.idx_dict[idx].up
-            if parent:
-                edges[idx, :] = (parent.idx, idx)
 
         # store verts array with x,y positions of nodes (lengths of branches)
         # we want tips to align at the right face (larger axis number)
@@ -236,34 +244,8 @@ class Coords:
             adjust = verts[:, 1].min()
             verts[:, 1] -= adjust
 
-        # orient for layout
-        verts = self.reorient_coords(verts, layout)
-        return verts, edges
-
-
-
-    def reorient_coords(self, verts, layout=None):
-        """
-        Returns a modified .verts array with new coordinates for nodes. 
-        This does not need to modify .edges. The order of nodes, and therefore
-        of verts rows is still the same because it is still based on the tree
-        branching order (ladderized usually). 
-        """
-
-        # select layout
-        if layout is None:
-            layout = self.ttree.style.layout
-
-        # if tree is empty then bail out
-        if len(self.ttree) < 2:
-            return verts
-
-        # this is done later in drawing.
-        if layout == 'c':
-            return verts
-
         # default: Down-facing tips align at y=0, first ladderized tip at x=0
-        elif layout == 'd':
+        if layout == 'd':
             return verts
 
         # right-facing tips align at x=0, last ladderized tip at y=0
