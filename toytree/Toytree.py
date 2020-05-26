@@ -9,7 +9,7 @@ import numpy as np
 
 from .TreeNode import TreeNode
 from .TreeStyle import TreeStyle, StyleChecker, COLORS2
-from .Coords import Coords
+from .Coords import Coords, Circle
 from .Drawing import Drawing
 from .TreeParser import TreeParser, FastTreeParser
 from .TreeWriter import NewickWriter
@@ -1113,10 +1113,12 @@ class ToyTree(object):
                   .format(unrecognized))
 
         # update coords based on layout
-        verts, edges = self._coords.get_linear_coords(
-            curstyle.layout, 
-            curstyle.use_edge_lengths
-        )
+        edges = self._coords.get_edges()
+        if layout == 'c':
+            verts = self._coords.get_radial_coords(curstyle.use_edge_lengths)
+        else:
+            verts = self._coords.get_linear_coords(
+                curstyle.layout, curstyle.use_edge_lengths)
 
         # check all styles
         fstyle = StyleChecker(self, curstyle).style
