@@ -110,6 +110,11 @@ class TreeNode(object):
     # TODO: setting height should change the .dist values...
     @property
     def height(self):
+        # i = 0
+        # while self.up:
+            # i += self.dist
+            # self = self.up
+        # return i
         # return sum([
             # self.dist, 
             # sum(i.dist for i in self.iter_ancestors() if not i.is_root()),
