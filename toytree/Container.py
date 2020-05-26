@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+"""
+Container trees for plotting coalescent histories with demographic params
+"""
 
 import numpy as np
 import toytree
