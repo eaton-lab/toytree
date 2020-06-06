@@ -359,7 +359,7 @@ class RandomTree(object):
 
             # ntips stopping criterion.
             else:
-                if len(tips) > ntips:
+                if len(tips) >= ntips:
                     break
 
         # report status
@@ -368,6 +368,7 @@ class RandomTree(object):
             print("b:\t{}\nd:\t{}\nb/d:\t{:.2f}\nreset:\t{}".format(*fill))
 
         # update coords and return
+        tre.treenode.ladderize()
         tre._coords.update()
 
         # rename tips so names are in order else random
