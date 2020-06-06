@@ -669,7 +669,8 @@ class StyleChecker:
                     else:
                         feats.append("{}: {}".format(feature, val))
                 self.style.node_hover[idx] = "\n".join(feats)
-            self.style.node_hover = self.style.node_hover[::-1]
+            # already in levelorder from idx_dict iter
+            self.style.node_hover = self.style.node_hover
 
         # project to size
         self.style.node_hover = toyplot.broadcast.pyobject(
