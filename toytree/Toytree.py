@@ -4,13 +4,12 @@ from __future__ import print_function, absolute_import
 
 import itertools
 from decimal import Decimal
-from copy import deepcopy, copy
+from copy import copy
 import numpy as np
 
 from .TreeNode import TreeNode
 from .TreeStyle import TreeStyle, StyleChecker, COLORS2
-from .Coords import Coords, Circle
-from .Drawing import Drawing
+from .Coords import Coords
 from .TreeParser import TreeParser, FastTreeParser
 from .TreeWriter import NewickWriter
 from .Treemod import TreeMod
@@ -99,8 +98,8 @@ class ToyTree(object):
 
         # Object for plot coordinates. Calls .update() whenever tree modified.
         self._coords = Coords(self)
-        if not kwargs.get("copy"):
-            self._coords.update()
+        self._coords.update()
+        # if not kwargs.get("copy"):
 
         # Object for modifying trees beyond root, prune, drop
         self.mod = TreeMod(self)
@@ -293,7 +292,6 @@ class ToyTree(object):
             node_mapping = {i: next(cols) for i in node_mapping}
 
         # build ...
-        print(node_mapping)
         rmap = {}
         for key in node_mapping:
 
@@ -622,7 +620,7 @@ class ToyTree(object):
     def copy(self):
         """ Returns a new ToyTree equivalent to a deepcopy (but faster) """
 
-        # update topology and node attrs
+        # copy treenodes w/ topology, node attrs, nnodes, ntips, and idx_dict
         nself = ToyTree(
             self.treenode._clone(), 
             fixed_order=self._fixed_order,
@@ -631,12 +629,12 @@ class ToyTree(object):
 
         # update style dicts
         nself.style = self.style.copy()
-        # nself.style = deepcopy(self.style)
 
         # update coords by copying instead of coords.update
-        nself._coords.edges = self._coords.edges.copy()
-        nself._coords.verts = self._coords.verts.copy()
+        # nself._coords.edges = nself._coords.get_edges()
+        # nself._coords.verts = self._coords.verts.copy()
         return nself
+
 
     # def copy(self):
     #     """ returns a deepcopy of the tree object"""
