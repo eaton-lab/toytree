@@ -58,7 +58,7 @@ class Coords:
         self.update_fixed_order()      # in case ntips changed
         self.circ = Circle(self.ttree)
 
-        # get new shape and clear for attrs
+        # get new edges shape and fill idx_dict
         self.edges = self.get_edges()
 
         # get edges and verts (node locations)
@@ -69,13 +69,14 @@ class Coords:
             # returns with verts oriented by layout
             self.verts = self.get_linear_coords(layout=layout)
 
-        # orientation can reorder dimensions
-        # self.verts = self.reorient_coords(self.verts)
-
 
 
     def update_idxs(self):
-        "set root idx highest, tip idxs lowest ordered as ladderized"
+        """
+        set root idx highest, then all internal nodes are numbered down 
+        in levelorder traversal, but tips are ordered numerically from
+        bottom to top in right facing ladderized tree plot order.
+        """
 
         # internal nodes: root is highest idx
         idx = self.ttree.nnodes - 1
@@ -281,7 +282,6 @@ class Coords:
         """
         radius of every node relative to 0,0 origin.
         """
-
         # custom request layout
         if layout is None:
             layout = self.ttree.layout
