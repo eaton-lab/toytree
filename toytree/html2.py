@@ -113,7 +113,6 @@ class ToytreeMark(Mark):
         self.node_labels_style = node_labels_style
 
 
-
     @property
     def nnodes(self):
         return self.ntable.shape[0]
@@ -130,18 +129,99 @@ class ToytreeMark(Mark):
 
     def extents(self, axes):
         """
-        Extends borders to fit tip names without extending the domain.
+        Extends domain to fit tip names or mars based on their size, but 
+        does not extend the data domain. 
         The main component to worry about here is tip labels text, especially
         for weird layouts that make it angled. For circular we project text
-        at angle and inverted angle to get projection from anchor start and end
+        at angle and inverted angle to get projection from anchor start,end.
+        But node markers also contribute to this since extents=0 would cut a
+        circular 15px node marker in half at the root. So we would need at 
+        least 15px left extent.
 
         extents is [l, r, b, t] for each textbox
         """
 
+        if self.layout != "c":
+            # coordinates of all nodes on the tree.
+            coords = (
+                self.ntable[:, 0],
+                self.ntable[:, 1],
+            )
+
+            # extents of all node markers
+            ntips = len(self.tip_labels)
+            nnodes = len(coords[0])
+
+            # get tip label text extents
+            if np.any(self.tip_labels):
+                text_extents = toyplot.text.extents(
+                    self.tip_labels,
+                    self.tip_labels_angles,
+                    style={
+                        'font-size': toyplot.units.convert(
+                            self.tip_labels_style['font-size'], "px") + 5,                           
+                        '-toyplot-anchor-shift': (
+                            self.tip_labels_style['-toyplot-anchor-shift'])
+                    }
+                )
+            else:
+                text_extents = [[0, 0, 0, 0]] * ntips
+
+            # check node extents
+            xnode_sizes = self.node_sizes.copy()
+            xnode_sizes[self.node_sizes == None] = 0
+
+            # check edge widths
+            xedge_widths = self.node_sizes.copy()
+            xedge_widths[:-1] = self.edge_widths.copy()
+            xedge_widths[xedge_widths == None] = self.edge_style['stroke-width']
+
+            # empty extents for filling
+            extents = (
+                np.zeros(nnodes), np.zeros(nnodes),
+                np.zeros(nnodes), np.zeros(nnodes),
+            )
+
+            # fill each node 
+            for nidx in range(nnodes):
+
+                # check tips extents 
+                if nidx < ntips:
+                    node_extent = np.array([xnode_sizes[nidx]] * 4)
+                    node_extent *= [-1, 1, -1, 1]
+                    edge_extent = np.array([xedge_widths[nidx]] * 4)
+                    edge_extent *= [-1, 1, -1, 1]
+
+                    if not np.any(self.tip_labels):
+                        text_extent = np.array([0, 0, 0, 0])
+                    else:
+                        text_extent = [
+                            text_extents[0][nidx],
+                            text_extents[1][nidx],
+                            text_extents[2][nidx],
+                            text_extents[3][nidx],
+                        ]
+
+                # check tips extents 
+                else:
+                    node_extent = np.array([xnode_sizes[nidx]] * 4)
+                    node_extent *= [-1, 1, -1, 1]
+                    edge_extent = np.array([xedge_widths[nidx]] * 4)
+                    edge_extent *= [-1, 1, -1, 1]
+                    text_extent = np.array([0, 0, 0, 0])
+
+                # store extent nidx
+                extents[0][nidx] = min([node_extent[0], edge_extent[0], text_extent[0]])
+                extents[1][nidx] = max([node_extent[1], edge_extent[1], text_extent[1]])
+                extents[2][nidx] = min([node_extent[2], edge_extent[2], text_extent[2]])
+                extents[3][nidx] = max([node_extent[3], edge_extent[3], text_extent[3]])
+
+
+
         # for radial trees we want extents to fit similar in all directions
         # regardless of branch and tip name lengths. So find the radius of 
         # the circle + anchor shift + longest name and pass in all directions.
-        if self.layout == "c":
+        else:
             coords = (
                 self.tree_height * np.array([-1, 0, 1, 0]),
                 self.tree_height * np.array([0, 1, 0, -1]),
@@ -180,24 +260,24 @@ class ToytreeMark(Mark):
                     np.repeat(0 + ashift + maxw * 1.5, 4),  # top
                 )
 
-        # all other layouts 
-        else:
-            coords = (
-                self.ntable[:len(self.tip_labels), 0],
-                self.ntable[:len(self.tip_labels), 1],
-            )
-            style = {
-                'font-size': toyplot.units.convert(self.tip_labels_style['font-size'], "px") + 5,
-                '-toyplot-anchor-shift': self.tip_labels_style['-toyplot-anchor-shift']
-            }
-            extents = toyplot.text.extents(
-                self.tip_labels,
-                self.tip_labels_angles,
-                style,
-                #(self.tip_labels_style if self.tip_labels[0] else {}),
-            )
-        return coords, extents
+        # # all other layouts 
+        # else:
+        #     coords = (
+        #         self.ntable[:len(self.tip_labels), 0],
+        #         self.ntable[:len(self.tip_labels), 1],
+        #     )
+        #     style = {
+        #         'font-size': toyplot.units.convert(self.tip_labels_style['font-size'], "px") + 5,
+        #         '-toyplot-anchor-shift': self.tip_labels_style['-toyplot-anchor-shift']
+        #     }
+        #     extents = toyplot.text.extents(
+        #         self.tip_labels,
+        #         self.tip_labels_angles,
+        #         style,
+        #         #(self.tip_labels_style if self.tip_labels[0] else {}),
+        #     )
 
+        return coords, extents
 
 
 
@@ -850,7 +930,9 @@ def get_unique_edge_styles(mark):
     unique_styles = [{} for i in range(mark.etable.shape[0])]
 
     # if edge widths and edge colors are both empty then just return
-    if all([i is None for i in mark.edge_colors]):
+    check0 = all([i is None for i in mark.edge_colors])
+    check1 = all([i is None for i in mark.edge_widths])
+    if check0 & check1:
         return unique_styles
 
     # iterate through styled node marks to get shared styles and expand axes
