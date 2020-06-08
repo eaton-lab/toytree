@@ -767,12 +767,10 @@ class StyleChecker:
         else:
             if str(arg) == "Ne":
                 try:
-                    # get Ne values on all internal edges
                     arg = self.ttree.get_edge_values("Ne", normalize=True)[::-1]
-                except Exception:
-                    arg = np.repeat(None, self.nedges)
-            else:                
-                self.style.edge_widths = toyplot.broadcast.pyobject(arg, self.nedges)[::-1]
+                except Exception as err:
+                    arg = np.repeat(2, self.nedges)
+            self.style.edge_widths = toyplot.broadcast.pyobject(arg, self.nedges)[::-1]
 
             # if all the same then reset to None
             if len(set([str(i) for i in self.style.edge_widths])) == 1:
