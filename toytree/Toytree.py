@@ -351,7 +351,7 @@ class ToyTree(object):
         return [idx] + [i.idx for i in node.get_descendants()]
 
 
-    def get_node_coordinates(self, layout=None):
+    def get_node_coordinates(self, layout=None, use_edge_lengths=True):
         """
         Returns coordinate locations of nodes in the tree as an array. Each
         row is an (x, y) coordinate, ordered by the 'idx' feature of nodes.
@@ -359,7 +359,12 @@ class ToyTree(object):
         returned using .get_tip_coordinates().
         """
         # if layout argument then set style and update coords.
-        return self._coords.verts
+        if layout is None:
+            layout = self.style.layout
+        if layout == 'c':
+            return self._coords.get_radial_coords(use_edge_lengths)
+        else:
+            return self._coords.get_linear_coords(layout, use_edge_lengths)
 
 
     def get_node_values(
@@ -480,21 +485,24 @@ class ToyTree(object):
                 return {i.idx: i.name for i in nodes}
 
 
-    def get_tip_coordinates(self, axis=None, layout=None):
+    def get_tip_coordinates(self, layout=None, use_edge_lengths=True):
         """
         Returns coordinates of the tip positions for a tree. If no argument
         for axis then a 2-d array is returned. The first column is the x 
         coordinates the second column is the y-coordinates. If you enter an 
         argument for axis then a 1-d array will be returned of just that axis.
         """
-        # TODO: if layout then update coords for new layout (e.g., 'c')
+
+        # one could imagine a very simple method like this, but to accomodate
+        # circ and unrooted layout we'll want a better option.
+        # return np.arange(self.ntips) + self.style.xbaseline + ybase...
+
+        # if no layout provided then use current style
+        if layout is None:
+            layout = self.style.layout
 
         # get coordinates array
-        coords = self.get_node_coordinates()
-        if axis == 'x':
-            return coords[:self.ntips, 0]
-        elif axis == 'y':
-            return coords[:self.ntips, 1]
+        coords = self.get_node_coordinates(layout, use_edge_lengths)
         return coords[:self.ntips]
 
 
@@ -512,8 +520,8 @@ class ToyTree(object):
         Parameters:
             idx (int): index label of a node.
         """
-        if idx:
-            treenode = self.treenode.search_nodes(idx=idx)[0]
+        if idx is not None:
+            treenode = self.idx_dict[idx]
             if self._fixed_order:
                 return [i for i in self._fixed_order if i in 
                         treenode.get_leaf_names()]
@@ -566,15 +574,15 @@ class ToyTree(object):
         nself = self.copy()
 
         # make default ndict using idxs, regardless of values
-        ndict = nself.get_feature_dict("idx", None)
+        ndict = nself.idx_dict
 
-        # if numeric keys in values then use idx, else use names.
+        # if first value is a string then use name_dict instead of idx_dict
         if values:
-            if isinstance(list(values.keys())[0], (int, float)):
-                # ndict = nself.get_feature_dict("idx", None)
+            val0 = list(values.keys())[0]
+            if isinstance(val0, (str, bytes)):
+                ndict = {i.name: ndict[i] for i in ndict}
+            elif isinstance(val0, int):
                 pass
-            elif isinstance(list(values.keys())[0], (str, bytes)):
-                ndict = nself.get_feature_dict("name", None)
             else:
                 raise ToytreeError("dictionary keys should be int or str")
 
@@ -582,9 +590,9 @@ class ToyTree(object):
         if feature == "idx":
             raise ToytreeError("cannot modify idx values.")
         if feature == "height":
-            raise ToytreeError("modifying heights not yet supported, coming..")
+            raise ToytreeError("modifying heights not supported, use dist.")
 
-        # set everyone to a default value
+        # set everyone to a default value for this attribute
         if default is not None:
             for key in ndict:
                 node = ndict[key]
@@ -812,49 +820,49 @@ class ToyTree(object):
 
 
 
-    def speciate(self, idx, name=None, dist_prop=0.5):
-        """
-        Split an edge to create a new tip in the tree as in a speciation event.
-        """
-        # make a copy of the toytree
-        nself = self.copy()
+    # def speciate(self, idx, name=None, dist_prop=0.5):
+    #     """
+    #     Split an edge to create a new tip in the tree as in a speciation event.
+    #     """
+    #     # make a copy of the toytree
+    #     nself = self.copy()
 
-        # get Treenodes of selected node and parent 
-        ndict = nself.get_feature_dict('idx')
-        node = ndict[idx]
-        parent = node.up
+    #     # get Treenodes of selected node and parent 
+    #     ndict = nself.get_feature_dict('idx')
+    #     node = ndict[idx]
+    #     parent = node.up
 
-        # get new node species name
-        if not name:
-            if node.is_leaf():
-                name = node.name + ".sis"
-            else:
-                names = nself.get_tip_labels(idx=idx)
-                name = "{}.sis".format("_".join(names))
+    #     # get new node species name
+    #     if not name:
+    #         if node.is_leaf():
+    #             name = node.name + ".sis"
+    #         else:
+    #             names = nself.get_tip_labels(idx=idx)
+    #             name = "{}.sis".format("_".join(names))
 
-        # create new speciation node between them at dist_prop dist.
-        newnode = parent.add_child(
-            name=parent.name + ".spp",
-            dist=node.dist * dist_prop
-        )
+    #     # create new speciation node between them at dist_prop dist.
+    #     newnode = parent.add_child(
+    #         name=parent.name + ".spp",
+    #         dist=node.dist * dist_prop
+    #     )
 
-        # connect original node to speciation node.
-        node.up = newnode
-        node.dist = node.dist - newnode.dist
-        newnode.add_child(node)
+    #     # connect original node to speciation node.
+    #     node.up = newnode
+    #     node.dist = node.dist - newnode.dist
+    #     newnode.add_child(node)
 
-        # drop original node from original parent child list
-        parent.children.remove(node)
+    #     # drop original node from original parent child list
+    #     parent.children.remove(node)
 
-        # add new tip node (new sister) and set same dist as onode
-        newnode.add_child(
-            name=name,
-            dist=node.up.height,
-        )
+    #     # add new tip node (new sister) and set same dist as onode
+    #     newnode.add_child(
+    #         name=name,
+    #         dist=node.up.height,
+    #     )
 
-        # update toytree coordinates
-        nself._coords.update()
-        return nself        
+    #     # update toytree coordinates
+    #     nself._coords.update()
+    #     return nself        
 
 
 
