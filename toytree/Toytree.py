@@ -17,7 +17,7 @@ from .PCM import PCM
 from .Rooter import Rooter
 from .NodeAssist import NodeAssist
 from .utils import ToytreeError, fuzzy_match_tipnames, normalize_values
-from .html2 import ToytreeMark
+from .render import ToytreeMark
 from .Test import CanvasSetup
 
 """

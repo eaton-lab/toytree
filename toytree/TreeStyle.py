@@ -5,7 +5,7 @@ tree style dictionaries.
 """
 import numpy as np
 import toyplot
-from .html2 import split_rgba_style
+from .render import split_rgba_style
 from .utils import ToytreeError
 
 
