@@ -580,7 +580,7 @@ class ToyTree(object):
         if values:
             val0 = list(values.keys())[0]
             if isinstance(val0, (str, bytes)):
-                ndict = {i.name: ndict[i] for i in ndict}
+                ndict = {ndict[i].name: ndict[i] for i in ndict}
             elif isinstance(val0, int):
                 pass
             else:
