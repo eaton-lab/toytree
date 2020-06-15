@@ -8,7 +8,8 @@ from copy import copy
 import numpy as np
 
 from .TreeNode import TreeNode
-from .TreeStyle import TreeStyle, StyleChecker, COLORS2
+from .TreeStyle import TreeStyle, COLORS2
+from .StyleChecker import StyleChecker
 from .Coords import Coords
 from .TreeParser import TreeParser, FastTreeParser
 from .TreeWriter import NewickWriter
