@@ -112,8 +112,6 @@ class StyleChecker:
         self._assign_edge_colors()
         self._assign_edge_widths()
 
-        self._assign_radii()
-
 
 
 
@@ -438,18 +436,3 @@ class StyleChecker:
 
                 # set edge_style stroke and stroke-opacity 
                 self.style.edge_style['stroke-width'] = width
-
-
-    def _assign_radii(self):
-        """
-        Get radius of each node relative to (0, 0) 
-        """
-        # get circular layout
-        if self.style.layout == 'c':
-            th = self.ttree.idx_dict[self.ttree.treenode.idx].height
-            self.style.__dict__['radii'] = np.array([
-                th - self.ttree.idx_dict[i].height for i in range(self.nnodes)
-            ])
-            # [self.ttree.idx_dict[i].radius for i in range(self.nnodes)])
-        else:
-            self.style.__dict__['radii'] = np.repeat(0, self.ntips)
