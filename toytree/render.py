@@ -74,8 +74,6 @@ class ToytreeMark(Mark):
         # check arg types
         self._coordinate_axes = ['x', 'y']  
         self.layout = layout
-        self.radii = radii
-        self.tree_height = max(self.radii)  # only needed for layout 'c'
 
         # store anything here that you want available as tool-tip hovers
         self.ntable = ntable
@@ -86,6 +84,11 @@ class ToytreeMark(Mark):
         self.ybaseline = ybaseline
         self.ntable[:, 0] += xbaseline
         self.ntable[:, 1] += ybaseline
+
+        # radial positioning
+        self.radii = np.sqrt(
+            self.ntable[:, 0] ** 2 + self.ntable[:, 1] ** 2 
+        )
 
         # node plotting args
         self.node_colors = node_colors
@@ -223,8 +226,8 @@ class ToytreeMark(Mark):
         # the circle + anchor shift + longest name and pass in all directions.
         else:
             coords = (
-                self.tree_height * np.array([-1, 0, 1, 0]),
-                self.tree_height * np.array([0, 1, 0, -1]),
+                max(self.radii) * np.array([-1, 0, 1, 0]),
+                max(self.radii) * np.array([0, 1, 0, -1]),
             )
 
             # no tip labels for extends
@@ -405,19 +408,26 @@ class RenderToytree:
                     dx = ox - np.cos(theta) * pr
                     dy = oy + np.sin(theta) * pr
 
-                # sweep-flag of the arc marker.
-                if dx >= px:
-                    # changed this from py to dy seems right...
-                    if py >= oy:
-                        flag = 1
+                # sweep flag to arc clockwise or not
+                if py <= oy:
+                    # this is working to arc within hemispheres
+                    if dy <= oy:                          
+                        if px >= dx:
+                            flag = 1
+                        else:
+                            flag = 0
+                    # if arc crosses the origin y
                     else:
-                        flag = 0
+                        flag = 1
                 else:
-                    # should this be py > oy?
-                    if py >= oy:
-                        flag = 0
+                    # dy on same hemisphere?
+                    if dy >= oy:
+                        if px >= dx:
+                            flag = 0
+                        else:
+                            flag = 1
                     else:
-                        flag = 1
+                        flag = 0
 
                 # build paths.
                 keys.append("{},{}".format(pidx, cidx))
