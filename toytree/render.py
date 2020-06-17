@@ -17,13 +17,9 @@ from multipledispatch import dispatch
 dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 
 """
-- randomtree argument to makes names random or not.
-- layout='r' seems to be making extents on top too big... (or not)
-- fixed-order fix.
 - fixed-order extension to tip positions for missing labels..?
-- ipcoal .newick fix.
 - rawtree consensus checking...
-- container tree check.
+- container tree to Mark
 """
 
 
