@@ -8,6 +8,8 @@ import xml.etree.ElementTree as xml
 import toyplot
 from toyplot.mark import Mark
 from toyplot.html import _draw_bar, _draw_triangle, _draw_circle, _draw_rect
+from .TreeStyle import COLORS1
+# from toytree.utils import ToytreeError
 
 # Register multipledispatch to share with toyplot.html
 import functools
@@ -20,10 +22,8 @@ dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 - fixed-order fix.
 - fixed-order extension to tip positions for missing labels..?
 - ipcoal .newick fix.
-- 'p' style with ipcoal check.
 - rawtree consensus checking...
 - container tree check.
-- do classes/ids clash when multiple trees on same canvas?
 """
 
 
@@ -63,9 +63,9 @@ class ToytreeMark(Mark):
         node_labels_style,
         tip_labels_align,
         layout,
-        radii,
         xbaseline,
         ybaseline,
+        admixture_edges,
         **kwargs):
 
         # inherit type
@@ -114,6 +114,9 @@ class ToytreeMark(Mark):
         # node labels
         self.node_labels = node_labels
         self.node_labels_style = node_labels_style
+
+        # admix edges
+        self.admixture_edges = admixture_edges
 
 
     @property
@@ -311,9 +314,11 @@ class RenderToytree:
         self.mark_toytree()
         self.mark_edges()
         self.mark_align_edges()
+        self.mark_admixture_edges()
         self.mark_nodes()
         self.mark_node_labels()
         self.mark_tip_labels()
+
 
 
 
@@ -350,8 +355,8 @@ class RenderToytree:
                 self.tips_y = np.zeros(ntips)
                 for idx, angle in enumerate(self.mark.tip_labels_angles):
                     radian = np.deg2rad(-angle)
-                    cx = 0 + self.mark.tree_height * np.cos(radian)
-                    cy = 0 - self.mark.tree_height * np.sin(radian)
+                    cx = 0 + max(self.mark.radii) * np.cos(radian)
+                    cy = 0 - max(self.mark.radii) * np.sin(radian)
                     self.tips_x[idx] = self.axes.project('x', cx)
                     self.tips_y[idx] = self.axes.project('y', cy)             
 
@@ -919,6 +924,255 @@ class RenderToytree:
 
 
 
+    def mark_admixture_edges(self):
+        """
+        Creates an SVG path for an admixture edge. The edge takes the same
+        style as the edge_type of the tree.
+        """
+        if self.mark.admixture_edges is None:
+            return 
+
+        # iterate over colors for subsequent edges unless provided
+        colors = iter(COLORS1)
+        next(colors)
+        DEFAULT_ADMIXTURE_EDGES_STYLE = {
+            "stroke": COLORS1[3], 
+            "stroke-width": 5, 
+            "stroke-opacity": 0.6,
+            "stroke-linecap": "round", 
+            "fill": "none",
+        }
+
+        # create edge group element
+        self.admix_xml = xml.SubElement(
+            self.mark_xml, 'g',
+            attrib={'class': 'toytree-AdmixEdges'},
+            style=style_to_string(DEFAULT_ADMIXTURE_EDGES_STYLE)
+        )
+
+        # get position of 15% tipward from source point
+        PATH = [
+            "M {sdx:.1f} {sdy:.1f}",
+            "L {sux:.1f} {suy:.1f}",
+            "L {ddx:.1f} {ddy:.1f}",
+            "L {dux:.1f} {duy:.1f}",
+        ]            
+
+        # ensure admixture_edges is a list of tuples
+        # if isinstance
+
+        # drwa each edge
+        for aedge in self.mark.admixture_edges:
+
+            # check if nodes have an overlapping interval
+            src, dest = aedge[0], aedge[1]
+
+            # get timing as a proportion of the shared edge
+            if len(aedge) > 2:
+                aprop = aedge[2]
+            else:
+                aprop = 0.5
+
+            # edge style
+            estyle = {
+                'stroke': next(colors),
+                'stroke-opacity': '0.7',
+            }
+
+            # get custom style dict
+            if len(aedge) > 3:
+                estyle.update(aedge[3])
+
+            # colorfix to edge styles
+            colorfix = split_rgba_style(estyle.copy())
+            estyle['stroke'] = colorfix['stroke']
+
+            # # try to load timing floats for admixture edges
+            # try:
+            #     src_yprop = float(aedge[2])
+            # except Exception:
+            #     src_yprop = 0.5
+            # try:
+            #     dest_yprop = float(aedge[3])
+            # except Exception:
+            #     dest_yprop = 0.5
+            # # check props
+            # check0 = (src_yprop <= 1.0) & (src_yprop >= 0)
+            # check1 = (dest_yprop <= 1.0) & (dest_yprop >= 0)
+            # if not (check0 & check1):
+            #     raise ToytreeError("admix timing must be between 0-1.")
+
+            # get their parents coord positions
+            ps = self.mark.etable[self.mark.etable[:, 1] == src, 0][0]
+            pd = self.mark.etable[self.mark.etable[:, 1] == dest, 0][0]
+
+            # get selected nodes' coordinate positions 
+            if self.mark.layout in ("r", "l"):
+                sx, sy = self.nodes_y[src], self.nodes_x[src]
+                dx, dy = self.nodes_y[dest], self.nodes_x[dest]
+                psx, psy = self.nodes_y[ps], self.nodes_x[ps]
+                pdx, pdy = self.nodes_y[pd], self.nodes_x[pd]
+
+            else:
+                sx, sy = self.nodes_x[src], self.nodes_y[src]
+                dx, dy = self.nodes_x[dest], self.nodes_y[dest]
+                psx, psy = self.nodes_x[ps], self.nodes_y[ps]
+                pdx, pdy = self.nodes_x[pd], self.nodes_y[pd]
+
+            # get height of the admix line at midshared.
+            # admix_src_y = (min([sy, dy]) + max([psy, pdy])) * src_yprop
+            # admix_dest_y = (min([sy, dy]) + max([psy, pdy])) * dest_yprop
+            admix_ymid = (min([sy, dy]) + max([psy, pdy])) / 2.
+
+            # sample in the 20-80 % of edge range.
+            amin = min([sy, dy])
+            amax = max([psy, pdy])
+            admix_ymid = np.random.uniform(
+                amin + (amax - amin) * aprop,
+                amax - (amax - amin) * (1 - aprop),
+            )
+
+            # how far down does SRC direction line go
+            src_down_extend = (sy - admix_ymid) / 2.
+            src_tip_y = max([sy, admix_ymid + src_down_extend])
+
+            # how far up does DEST direction line go
+            dest_up_extend = (pdy - admix_ymid) / 2.
+            dest_tip_y = min([pdy, admix_ymid - dest_up_extend])
+
+            # project angle of up/down lines towards parent nodes.
+            if self.mark.edge_type == "c":            
+
+                # angle from src to src parent
+                theta = np.arctan((psy - sy) / (psx - sx))
+
+                # x-shift from src to src_up_y
+                x_shift_src_tip = (src_tip_y - sy) / np.tan(theta)
+
+                # x-shift from src to admix_ymid
+                x_shift_src_mid = (admix_ymid - sy) / np.tan(theta)
+
+                # angle from dest to dest parent
+                theta = np.arctan((pdy - dy) / (pdx - dx))
+
+                # x-shift from dest to dest_tip_y
+                x_shift_dest_mid = (admix_ymid - dy) / np.tan(theta)
+
+                # x-shift from dest to dest_tip_y
+                x_shift_dest_tip = (dest_tip_y - dy) / np.tan(theta)
+
+            else:
+                x_shift_dest_mid = x_shift_dest_tip = 0
+                x_shift_src_mid = x_shift_src_tip = 0
+
+            # nudge admix line to left or right of tree edges
+            if self.mark.edge_widths[src] is None:
+                snudge = (2 + (self.mark.edge_style["stroke-width"] / 2.))
+            else:
+                snudge = self.mark.edge_widths[src]
+
+            # get offset of admix edge based on stroke of DEST tree edge
+            if self.mark.edge_widths[dest] is None:
+                dnudge = (2 + (self.mark.edge_style["stroke-width"] / 2.))
+            else:
+                dnudge = self.mark.edge_widths[dest]
+
+            snudge = (-1 * snudge if sx > psx else snudge)
+            dnudge = (-1 * dnudge if dx > pdx else dnudge)
+            snudge = dnudge = 0
+
+            # build the SVG path
+            if self.mark.layout in ("r", "l"):
+                edge_dict = {
+                    'sdy': sx + x_shift_src_tip + snudge,
+                    'sdx': src_tip_y, 
+                    'suy': sx + x_shift_src_mid + snudge,
+                    'sux': admix_ymid,
+                    'ddy': dx + x_shift_dest_mid + dnudge,
+                    'ddx': admix_ymid,
+                    'duy': dx + x_shift_dest_tip + dnudge,
+                    'dux': dest_tip_y,
+                }
+                tri_dict = {
+                    'x0': admix_ymid - 6,
+                    'x1': admix_ymid + 6,
+                    'x2': admix_ymid,
+                    'y0': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
+                    'y1': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
+                    'y2': np.mean([edge_dict['suy'], edge_dict['ddy']]) + 8,
+                }
+
+            else:            
+                edge_dict = {
+                    'sdx': sx + x_shift_src_tip + snudge,
+                    'sdy': src_tip_y, 
+                    'sux': sx + x_shift_src_mid + snudge,
+                    'suy': admix_ymid,
+                    'ddx': dx + x_shift_dest_mid + dnudge,
+                    'ddy': admix_ymid,
+                    'dux': dx + x_shift_dest_tip + dnudge,
+                    'duy': dest_tip_y,
+                }
+
+                # TODO: not finished aligning triangle/arrow
+                tri_dict = {
+                    'y0': admix_ymid - 6,
+                    'y1': admix_ymid + 6,
+                    'y2': admix_ymid,
+                    'x0': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
+                    'x1': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
+                    'x2': np.mean([edge_dict['suy'], edge_dict['ddy']]) + 8,
+                }
+
+            # EDGE path                
+            path = " ".join(PATH).format(**edge_dict)
+
+            # RENDER edge paths
+            xml.SubElement(
+                self.admix_xml, "path",
+                d=path,
+                style=style_to_string(estyle),
+            )
+
+            # RENDER TRIANGLE
+            # xml.SubElement(
+            #     self.admix_xml, "polygon",
+            #     points=(
+            #         "{:.0f},{:.0f} {:.0f},{:.0f} {:.0f},{:.0f}"
+            #         .format(
+            #             tri_dict['x0'], tri_dict['y0'],
+            #             tri_dict['x1'], tri_dict['y1'],
+            #             tri_dict['x2'], tri_dict['y2'],
+            #         )
+            #     ),
+            #     attrib={
+            #         "fill": self.mark.admixture_edges_style["stroke"],
+            #         "stroke-dasharray": "0,0",
+            #     },
+            # )
+            # markup.set("transform", "rotate({})".format(-angle))
+
+
+        # _draw_triangle(marker_xml, marker.size, angle=90)
+        # def _draw_triangle(parent_xml, size, angle=0):
+        # markup = xml.SubElement(
+        #     parent_xml,
+        #     "polygon",
+        #     points=" ".join(["%r,%r" % (xp, yp) for xp, yp in [
+        #        (-size / 2, size / 2),
+        #        (0, -size / 2),
+        #        (size / 2, size / 2),
+        #        ]]),
+        #     )
+        # if angle:
+        #     markup.set("transform", "rotate(%r)" % (-angle,))
+
+
+
+
+
+
+
 @dispatch(toyplot.coordinates.Cartesian, ToytreeMark, toyplot.html.RenderContext)
 def _render(axes, mark, context):
     RenderToytree(axes, mark, context)
@@ -1026,6 +1280,49 @@ def style_to_string(style):
     return ";".join(strs)
 
 
+
+
+
+# def check_admix_tuple_args(args):
+#     """
+#     Split list into bits.
+#     """
+#     # check that the argument is a list
+#     assert isinstance(args, list), (
+#         "admixture edges should be a list of tuples")
+
+#     # iterate over the tuples
+#     admixture_edges = []
+#     for tup in args:
+
+#         # parse required args
+#         source = tup[0]
+#         dest = tup[1]
+
+#         # parse optional args
+#         try:
+#             height = tup[2]
+#         except IndexError:
+#             height = None
+
+#         try:
+#             width = (tup[3] if tup[3] else 3)
+#         except IndexError:
+#             width = 3
+
+#         try:
+#             color = (tup[4] if tup[4] else next(self.colors))
+#         except IndexError:
+#             color = next(self.colors)
+
+#         try:
+#             offset = (tup[5] if tup[5] else 0.05)
+#         except IndexError:
+#             offset = 0.05
+
+#         # put it back into list as full tuples
+#         admixture_edges.append(
+#             (source, dest, height, style)
 
 
 

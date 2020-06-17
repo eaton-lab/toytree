@@ -1152,23 +1152,6 @@ class ToyTree(object):
 
         return canvas, axes, mark
 
-        # return the full stack
-        # return self.canvas, self.axes, self.mark
-
-
-        # return mark
-
-        # # Init Drawing class object 
-        # # draw = Drawing(nself)
-
-        # # Debug returns the object to test with (oldstyle is overridden!)
-        # if kwargs.get("debug"):
-        #     return draw
-
-        # # Make plot. If user provided explicit axes then include them.
-        # canvas, axes = draw.update(axes=axes)
-        # return canvas, axes
-
 
 
 

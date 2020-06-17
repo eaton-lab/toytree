@@ -114,7 +114,6 @@ class StyleChecker:
 
 
 
-
     def _assign_tip_colors(self):
         """
         Sets .tip_colors as an array of length ntips. Only fills vals if there

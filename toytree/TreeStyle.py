@@ -58,11 +58,19 @@ DEFAULT_NODE_LABEL_STYLE = {
 }
 
 DEFAULT_EDGE_ALIGN_STYLE = {
-    "stroke": "darkgrey", 
+    "stroke": "darkgrey",
     "stroke-width": 2, 
     "stroke-linecap": "round", 
     "stroke-dasharray": "2, 4", 
 }
+
+# DEFAULT_ADMIXTURE_EDGES_STYLE = {
+#     "stroke": COLORS1[3], 
+#     "stroke-width": 4, 
+#     "stroke-linecap": "round", 
+#     # "stroke-dasharray": "2, 4", 
+# }
+
 
 DEFAULT_TIP_LABEL_STYLE = {
     "fill": "#262626",
@@ -198,6 +206,7 @@ class TreeStyle(dict):
         self._edge_align_style = Style(DEFAULT_EDGE_ALIGN_STYLE.copy())
         self._node_labels_style = Style(DEFAULT_NODE_LABEL_STYLE.copy())
         self._tip_labels_style = Style(DEFAULT_TIP_LABEL_STYLE.copy())
+        # self._admixture_edges_style = Style(DEFAULT_ADMIXTURE_EDGES_STYLE.copy())
 
         # update dict and subdicts from default to a preset style.
         if tree_style:
@@ -280,6 +289,19 @@ class TreeStyle(dict):
             self._edge_align_style = Style(self._edge_align_style)
         except ValueError:
             raise TypeError("Style entries must be a dictionary")
+
+
+    # @property
+    # def admixture_edges_style(self):
+    #     return self._admixture_edges_style
+    # @admixture_edges_style.setter
+    # def admixture_edges_style(self, sdict):
+    #     try:
+    #         self._admixture_edges_style.update(sdict)
+    #         self._admixture_edges_style = Style(self._admixture_edges_style)
+    #     except ValueError:
+    #         raise TypeError("Style entries must be a dictionary")
+
 
     @property
     def node_labels_style(self):
