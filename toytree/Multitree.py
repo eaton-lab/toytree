@@ -22,6 +22,19 @@ from .MultiDrawing import TreeGrid, CloudTree
 from .utils import bpp2newick
 
 
+"""
+TODO: 
+    - re-do support for BPP weird format trees.
+    - set-like function that drops tips from each tree not shared by all trees.
+    - root function that drops tree that cannot be rooted or not set-like
+    - consensus function drop tips that are not in set.
+    - treegrid simplify args (3, 3) e.g., will make a 600x600 canvas...
+    - Annotate class for surrounding markers...
+    - A distinct multitree mark for combining styles on topologies 
+    - New mark: leave proper space for tips to mtree fits same as tree.
+"""
+
+
 
 class MultiTree(object):
     """
