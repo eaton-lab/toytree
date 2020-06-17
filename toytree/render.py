@@ -955,7 +955,8 @@ class RenderToytree:
         ]            
 
         # ensure admixture_edges is a list of tuples
-        # if isinstance
+        if not isinstance(self.mark.admixture_edges, list):
+            self.mark.admixture_edges = [self.mark.admixture_edges]
 
         # drwa each edge
         for aedge in self.mark.admixture_edges:
