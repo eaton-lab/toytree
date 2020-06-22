@@ -37,13 +37,15 @@ DEFAULT_TREE_STYLE = {
     'ybaseline': 0,
     'layout': 'r',
     'admixture_edges': None,
+    'shrink': 0,
+    'fixed_order': None,
 }
 
 DEFAULT_EDGE_STYLE = {
     "stroke": "#262626", 
     "stroke-width": 2, 
     "stroke-linecap": "round", 
-    "opacity": 1,
+    "stroke-opacity": 1,
 }
 
 DEFAULT_NODE_STYLE = {
@@ -159,7 +161,8 @@ STYLES = {
         'node_labels': False, 
         'node_sizes': 0, 
         '_edge_style': {
-            'opacity': 0.05, 
+            'stroke-opacity': 0.05, 
+            'stroke-width': 2,
         },
         '_tip_labels_style': {
             '-toyplot-anchor-shift': "15px",
