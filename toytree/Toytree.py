@@ -18,8 +18,8 @@ from .PCM import PCM
 from .Rooter import Rooter
 from .NodeAssist import NodeAssist
 from .utils import ToytreeError, fuzzy_match_tipnames, normalize_values
-from .render import ToytreeMark
-from .Test import CanvasSetup
+from .Render import ToytreeMark
+from .CanvasSetup import CanvasSetup
 
 """
 Test for speed improvements: 
@@ -51,7 +51,7 @@ class ToyTree(object):
     ----------
     ...
     """
-    def __init__(self, newick=None, tree_format=0, fixed_order=None, **kwargs):
+    def __init__(self, newick=None, tree_format=0, **kwargs):
 
         # if loading from a Toytree then inherit that trees draw style
         inherit_style = False
@@ -79,16 +79,16 @@ class ToyTree(object):
         self.idx_dict = {}
 
         # set tips order if fixing for multi-tree plotting (default None)
-        self._fixed_order = None
-        self._fixed_idx = list(range(self.ntips))
-        if fixed_order:
-            if not isinstance(fixed_order, (list, tuple)):
-                raise ToytreeError("fixed_order arg should be a list")
-            self._set_fixed_order(fixed_order)
+        # self._fixed_order = None
+        # self._fixed_idx = list(range(self.ntips))
+        # if fixed_order:
+            # if not isinstance(fixed_order, (list, tuple)):
+                # raise ToytreeError("fixed_order arg should be a list")
+            # self._set_fixed_order(fixed_order)
 
         # ladderize the tree unless user fixed order and wants it not.
-        if not self._fixed_order:
-            self.treenode.ladderize()
+        # if not self._fixed_order:
+        self.treenode.ladderize()
 
         # Object for storing default plot settings or saved styles.
         # Calls several update functions when self.draw() to fit canvas.
@@ -119,18 +119,18 @@ class ToyTree(object):
         return len(self.treenode)
 
 
-    def _set_fixed_order(self, fixed_order):
-        """
-        Setting fixed_idx is important for when nodes are rotated, and edges
-        are different lengths, b/c it allows updating coords to match up.
-        """
-        if fixed_order:
-            if set(fixed_order) != set(self.treenode.get_leaf_names()):
-                raise ToytreeError(
-                    "fixed_order must include same tipnames as tree")
-            self._fixed_order = fixed_order
-            names = self.treenode.get_leaf_names()[::-1]
-            self._fixed_idx = [names.index(i) for i in self._fixed_order]
+    # def _set_fixed_order(self, fixed_order):
+    #     """
+    #     Setting fixed_idx is important for when nodes are rotated, and edges
+    #     are different lengths, b/c it allows updating coords to match up.
+    #     """
+    #     if fixed_order:
+    #         if set(fixed_order) != set(self.treenode.get_leaf_names()):
+    #             raise ToytreeError(
+    #                 "fixed_order must include same tipnames as tree")
+    #         self._fixed_order = fixed_order
+    #         names = self.treenode.get_leaf_names()[::-1]
+    #         self._fixed_idx = [names.index(i) for i in self._fixed_order]
 
     # --------------------------------------------------------------------
     # properties are not changeable by the user
@@ -300,8 +300,9 @@ class ToyTree(object):
             if isinstance(key, int):
                 rmap[key] = node_mapping[key]
             else:
-                ns = NodeAssist(self, node_mapping[key], None, None)
-                rmap[key] = ns.get_mrca().idx
+                ns = NodeAssist(self, key, None, None)
+                kidx = ns.get_mrca().idx
+                rmap[kidx] = node_mapping[key]
 
         # ....
         for idx in self.idx_dict:
@@ -523,16 +524,17 @@ class ToyTree(object):
         """
         if idx is not None:
             treenode = self.idx_dict[idx]
-            if self._fixed_order:
-                return [i for i in self._fixed_order if i in 
-                        treenode.get_leaf_names()]
-            else:
-                return treenode.get_leaf_names()[::-1]                
+            # if self._fixed_order:
+                # return [str(i) for i in self._fixed_order if i in 
+                        # treenode.get_leaf_names()]
+            # else:
+            return [str(i) for i in treenode.get_leaf_names()[::-1]]
+
         else:
-            if self._fixed_order:
-                return self._fixed_order
-            else:
-                return self.treenode.get_leaf_names()[::-1]
+            # if self._fixed_order:
+                # return [str(i) for i in self._fixed_order]
+            # else:
+            return [str(i) for i in self.treenode.get_leaf_names()[::-1]]
 
 
     def set_node_values(self, feature, values=None, default=None):
@@ -632,7 +634,7 @@ class ToyTree(object):
         # copy treenodes w/ topology, node attrs, nnodes, ntips, and idx_dict
         nself = ToyTree(
             self.treenode._clone(), 
-            fixed_order=self._fixed_order,
+            # fixed_order=self._fixed_order,
             copy=True,
         )
 
@@ -684,7 +686,7 @@ class ToyTree(object):
         """
         nself = self.copy()
         nself.treenode.ladderize(direction=direction)
-        nself._fixed_order = None
+        # nself._fixed_order = None
         nself._coords.update()
         return nself
 
@@ -797,7 +799,7 @@ class ToyTree(object):
         neworder = [revd[i] for i in range(self.ntips)]
 
         # returns a new tree (i.e., copy) modified w/ a fixed order
-        nself = ToyTree(self.newick, fixed_order=neworder)
+        nself = ToyTree(self.newick)  #, fixed_order=neworder)
         nself._coords.update()
         return nself
 
@@ -980,6 +982,9 @@ class ToyTree(object):
         xbaseline=None,
         ybaseline=None,
         admixture_edges=None,
+        shrink=None,
+        fixed_order=None,
+        fixed_position=None,
         **kwargs):
         """
         Plot a Toytree tree, returns a tuple of Toyplot (Canvas, Axes) objects.
@@ -1089,6 +1094,9 @@ class ToyTree(object):
             "xbaseline": xbaseline, 
             "ybaseline": ybaseline,
             "admixture_edges": admixture_edges,
+            "shrink": shrink,
+            "fixed_order": fixed_order,
+            "fixed_position": fixed_position
         }
 
         # shortcut name for tree style
@@ -1125,7 +1133,11 @@ class ToyTree(object):
             verts = self._coords.get_radial_coords(curstyle.use_edge_lengths)
         else:
             verts = self._coords.get_linear_coords(
-                curstyle.layout, curstyle.use_edge_lengths)
+                curstyle.layout, 
+                curstyle.use_edge_lengths,
+                fixed_order,
+                fixed_position,
+                )
 
         # check all styles
         fstyle = StyleChecker(self, curstyle).style
@@ -1141,15 +1153,10 @@ class ToyTree(object):
         axes = cs.axes
 
         # generate toyplot Mark
-        mark = ToytreeMark(
-            ntable=verts, 
-            etable=edges, 
-            tree_height=self.treenode.height,
-            **fstyle.to_dict())
+        mark = ToytreeMark(ntable=verts, etable=edges, **fstyle.to_dict())
 
         # add mark to axes
         axes.add_mark(mark)
-
         return canvas, axes, mark
 
 
