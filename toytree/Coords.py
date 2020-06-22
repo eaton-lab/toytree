@@ -55,7 +55,6 @@ class Coords:
 
         # updates idxs and fixed_idx for any tree manipulations
         self.update_idxs()
-        self.update_fixed_order()      # in case ntips changed
         self.circ = Circle(self.ttree)
 
         # get new edges shape and fill idx_dict
@@ -66,7 +65,6 @@ class Coords:
         if layout == 'c':
             self.verts = self.get_radial_coords()
         else:
-            # returns with verts oriented by layout
             self.verts = self.get_linear_coords(layout=layout)
 
 
@@ -99,21 +97,21 @@ class Coords:
 
 
 
-    def update_fixed_order(self):
-        "after pruning fixed order needs update to match new nnodes/ntips."
-        # set tips order if fixing for multi-tree plotting (default None)
-        fixed_order = self.ttree._fixed_order
-        self.ttree_fixed_order = None
-        self.ttree_fixed_idx = list(range(self.ttree.ntips))
+    # def update_fixed_order(self):
+    #     "after pruning fixed order needs update to match new nnodes/ntips."
+    #     # set tips order if fixing for multi-tree plotting (default None)
+    #     fixed_order = self.ttree._fixed_order
+    #     self.ttree_fixed_order = None
+    #     self.ttree_fixed_idx = list(range(self.ttree.ntips))
 
-        # check if fixed_order changed:
-        if fixed_order:
-            fixed_order = [
-                i for i in fixed_order if i in self.ttree.get_tip_labels()
-            ]
-            self.ttree._set_fixed_order(fixed_order)
-        # else:
-            # self.ttree._fixed_idx = list(range(self.ttree.ntips))
+    #     # check if fixed_order changed:
+    #     if fixed_order:
+    #         fixed_order = [
+    #             i for i in fixed_order if i in self.ttree.get_tip_labels()
+    #         ]
+    #         self.ttree._set_fixed_order(fixed_order)
+    #     # else:
+    #         # self.ttree._fixed_idx = list(range(self.ttree.ntips))
 
 
 
@@ -185,7 +183,13 @@ class Coords:
 
 
 
-    def get_linear_coords(self, layout=None, use_edge_lengths=True):
+    def get_linear_coords(
+        self, 
+        layout=None, 
+        use_edge_lengths=True, 
+        fixed_order=None, 
+        fixed_position=None,
+        ):
         """
         Sets .edges, .verts for node positions. 
         X and Y positions here refer to base assumption that tree is right
@@ -207,6 +211,7 @@ class Coords:
         for idx in range(self.ttree.nnodes):
             node = self.ttree.idx_dict[idx]
 
+            # position the x-labels
             if node.is_leaf() and (not node.is_root()):
                 if use_edge_lengths:
                     toroot = sum(
@@ -216,10 +221,26 @@ class Coords:
                     node.y = hgt - (node.dist + toroot)
                 else:
                     node.y = 0.
-                if self.ttree._fixed_order:
-                    node.x = self.ttree._fixed_order.index(node.name)
+
+                # order of xlabels
+                if fixed_order is not None:
+
+                    # the position is exxplicit
+                    if fixed_position is not None:
+                        node.x = fixed_position[fixed_order.index(node.name)]
+
+                    # simply use the index as position
+                    else:
+                        node.x = fixed_order.index(node.name)
                 else:
-                    node.x = node.idx
+
+                    # the position is exxplicit
+                    if fixed_position is not None:
+                        node.x = fixed_position[node.idx]
+
+                    # simply use the index as position
+                    else:
+                        node.x = node.idx
 
             else:
                 nch = node.children
