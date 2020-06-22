@@ -2,7 +2,7 @@
 
 import toyplot
 import numpy as np
-from .render import split_rgba_style
+from .Render import split_rgba_style
 from .utils import ToytreeError
 
 ITERABLE = (list, tuple, np.ndarray)
@@ -146,7 +146,7 @@ class StyleChecker:
 
             else:
                 # reorder array for fixed if needed
-                if self.ttree._fixed_order:
+                if self.style.fixed_order:
                     self.style.tip_labels_colors = self.style.tip_labels_colors[self.ttree._fixed_idx]
 
 
@@ -167,10 +167,7 @@ class StyleChecker:
         elif isinstance(arg, ITERABLE):
             pass
         else:  # arg in [None, True]:
-            if self.ttree._fixed_order:
-                self.style.tip_labels = self.ttree._fixed_order
-            else:
-                self.style.tip_labels = self.ttree.get_tip_labels()
+            self.style.tip_labels = self.ttree.get_tip_labels()
 
         # check length
         self.style.tip_labels = toyplot.broadcast.pyobject(
@@ -187,14 +184,17 @@ class StyleChecker:
 
             # define range of tip radians
             tip_radians = np.linspace(0, -np.pi * 2, self.ntips + 1)[:-1]
-            angles = np.array([np.rad2deg(abs(i)) for i in tip_radians])
+            angles = np.array([np.rad2deg(abs(i)) for i in tip_radians]) * -1
 
         elif self.style.layout == "u":
-            angles = 90
+            angles = -90
+
         elif self.style.layout == "d":
             angles = -90
+
         elif self.style.layout == "l":
-            angles = 180
+            angles = 0
+
         else:
             angles = 0
 
@@ -396,7 +396,11 @@ class StyleChecker:
                 # set edge_style stroke and stroke-opacity 
                 sub = split_rgba_style({'stroke': color})
                 self.style.edge_style['stroke'] = sub["stroke"]
-                self.style.edge_style['stroke-opacity'] = sub["stroke-opacity"]
+
+                # only set sub opacity if it is not already at 1, otherwise
+                # keep the edgestyledict opacity b/c user probably set it.
+                if self.style.edge_style["stroke-opacity"] == 1:
+                    self.style.edge_style['stroke-opacity'] = sub["stroke-opacity"]
 
 
     def _assign_edge_widths(self):
