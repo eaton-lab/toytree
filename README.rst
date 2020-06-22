@@ -28,7 +28,7 @@ You can install ``toytree`` and its dependencies (``toyplot`` and ``numpy``) wit
 
 .. code:: bash
 
-    conda install toytree -c eaton-lab
+    conda install toytree -c conda-forge
 
 
 Documentation
