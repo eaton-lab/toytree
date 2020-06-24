@@ -257,7 +257,7 @@ class RandomTree(object):
             Random number generator seed.
 
         retain_extinct (bool):
-            Whether to retain internal nodes leading to extinct tips.
+            (Unimplemented) Whether to retain internal nodes leading to extinct tips.
 
         random_names (bool):
             Whether to randomize tip names or name them in order.
@@ -267,6 +267,9 @@ class RandomTree(object):
         """
         if stop not in ["taxa", "time"]:
             raise ToytreeError("stop must be either 'taxa' or 'time'")
+
+        taxa_stop = ntips
+        time_stop = time
 
         # set random seed
         if seed:
@@ -373,11 +376,6 @@ class RandomTree(object):
                     break
             else:
                 if t >= time_stop:
-                    break
-
-            # ntips stopping criterion.
-            else:
-                if len(tips) >= ntips:
                     break
 
         # report status
