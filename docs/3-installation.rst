@@ -9,12 +9,12 @@ Installation
 Toytree can be installed using pip or conda. I recommend the conda version. 
 Either should pull in all dependencies including `toyplot`. 
 
-Conda install
+Conda install (recommended)
 -------------------
 
 .. code:: bash
 
-	conda install toytree -c eaton-lab
+	conda install toytree -c conda-forge
 
 
 Pip install
@@ -32,20 +32,4 @@ Toytree dependencies:
 	- toyplot
 	- numpy
 	- future
-	- requests
-	- notebook
-
-Additional toyplot dependencies:  
-
-	- multipledispatch
-	- pandas >=0.14.1
-	- pypng >=0.0.18  
-	- pillow           
-	- reportlab       
-	- graphviz        
-	- networkx        
-	- six             
-	- mock        
-	- custom_inherit    
-	- ghostscript       
-	- arrow             
+	- requests      
