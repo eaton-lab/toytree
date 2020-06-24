@@ -265,6 +265,8 @@ class RandomTree(object):
         verbose (bool):
             Print some useful information
         """
+        if stop not in ["taxa", "time"]:
+            raise ToytreeError("stop must be either 'taxa' or 'time'")
 
         # set random seed
         if seed:
@@ -365,9 +367,12 @@ class RandomTree(object):
             for x in tips:
                 x.dist += dt
 
-            # time stopping criterion... not quite working right.
-            if maxtime:
-                if t >= maxtime:
+            # check stopping criterion
+            if stop == "taxa":
+                if len(tips) >= taxa_stop:
+                    break
+            else:
+                if t >= time_stop:
                     break
 
             # ntips stopping criterion.
