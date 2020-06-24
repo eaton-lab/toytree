@@ -285,8 +285,9 @@ class StyleChecker:
             self.style.node_sizes, self.nnodes)
 
         # special: hide nodes with labels that are (TODO: nan) for now ("")
-        # node_labels is already in levelorder.
-        self.style.node_sizes[self.style.node_labels == ""] = 0
+        # but only if arg was None or INT, not if explicity list type.
+        if isinstance(arg, (int, float)):
+            self.style.node_sizes[self.style.node_labels == ""] = 0
 
 
     def _assign_node_hover(self):
