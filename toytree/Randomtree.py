@@ -265,8 +265,6 @@ class RandomTree(object):
         verbose (bool):
             Print some useful information
         """
-        assert b <= 1, "birth rate should be between 0-1"
-        assert d <= 1, "death rate should be between 0-1"
 
         # set random seed
         if seed:
