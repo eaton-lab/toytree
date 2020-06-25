@@ -44,29 +44,28 @@ Mock Example
 ------------
 
 ```python
-    
-    # import toyplot and load a newick file from a public URL
-    import toytree
-    tre = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
+# import toyplot and load a newick file from a public URL
+import toytree
+tre = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
 
-    # root the tree using a wildcard string matching and draw a tree figure.
-    rtre = tre.root(wildcard='prz')
-    rtre.draw(width=400, tip_labels_align=True);
+# root the tree using a wildcard string matching and draw a tree figure.
+rtre = tre.root(wildcard='prz')
+rtre.draw(width=400, tip_labels_align=True);
 
-    # or chain a few functions together
-    tre.root(wildcard='prz').drop_tips(wildcard="tham").ladderize().draw();
+# or chain a few functions together
+tre.root(wildcard='prz').drop_tips(wildcard="tham").ladderize().draw();
 
-    # extensive styling options are available
-    rtre.draw(
-        tip_labels_color='pink',
-        node_labels='support',
-        node_sizes=15,
-        node_colors="cyan",
-        edge_style={
-            "stroke": "darkgrey", 
-            "stroke-width": 3,
-        },
-    )
+# extensive styling options are available
+rtre.draw(
+    tip_labels_color='pink',
+    node_labels='support',
+    node_sizes=15,
+    node_colors="cyan",
+    edge_style={
+        "stroke": "darkgrey", 
+        "stroke-width": 3,
+    },
+)
 ```
 
 ![./manuscript/ToyTree-figure.svg](./manuscript/ToyTree-figure.svg)
