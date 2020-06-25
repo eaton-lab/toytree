@@ -1136,6 +1136,8 @@ class RenderToytree:
             src, dest = aedge[0], aedge[1]
 
             # get timing as a proportion of the shared edge
+            # TODO: support for two values in a tuple.
+            # TODO: support for absolute time in addition to proportions.
             if len(aedge) > 2:
                 aprop = aedge[2]
             else:
@@ -1174,123 +1176,134 @@ class RenderToytree:
             ps = self.mark.etable[self.mark.etable[:, 1] == src, 0][0]
             pd = self.mark.etable[self.mark.etable[:, 1] == dest, 0][0]
 
-            # get selected nodes' coordinate positions 
-            if self.mark.layout in ("r", "l"):
+            # separate for each layout b/c its haaaard.
+            if self.mark.layout == "r":
                 sx, sy = self.nodes_y[src], self.nodes_x[src]
                 dx, dy = self.nodes_y[dest], self.nodes_x[dest]
                 psx, psy = self.nodes_y[ps], self.nodes_x[ps]
                 pdx, pdy = self.nodes_y[pd], self.nodes_x[pd]
 
-            else:
+                if (psy >= dy) or (sy <= pdy):
+                    src_mid_y = sy - (abs(sy - psy) * aprop)
+                    dest_mid_y = dy - (abs(dy - pdy) * aprop)
+                else:
+                    # get height of the admix line at midshared.
+                    amin = min([sy, dy])
+                    amax = max([psy, pdy])
+                    admix_ymid = amin + (amax - amin) * aprop
+                    dest_mid_y = src_mid_y = admix_ymid
+
+            elif self.mark.layout == "l":
+                sx, sy = self.nodes_y[src], self.nodes_x[src]
+                dx, dy = self.nodes_y[dest], self.nodes_x[dest]
+                psx, psy = self.nodes_y[ps], self.nodes_x[ps]
+                pdx, pdy = self.nodes_y[pd], self.nodes_x[pd]
+
+                if (psy <= dy) or (sy >= pdy):
+                    src_mid_y = sy + (abs(sy - psy) * aprop)
+                    dest_mid_y = dy + (abs(dy - pdy) * aprop)
+                else:
+                    # get height of the admix line at midshared.
+                    amin = max([sy, dy])
+                    amax = min([psy, pdy])
+                    admix_ymid = amin + abs(amax - amin) * aprop
+                    dest_mid_y = src_mid_y = admix_ymid
+
+            elif self.mark.layout == "d":
                 sx, sy = self.nodes_x[src], self.nodes_y[src]
                 dx, dy = self.nodes_x[dest], self.nodes_y[dest]
                 psx, psy = self.nodes_x[ps], self.nodes_y[ps]
                 pdx, pdy = self.nodes_x[pd], self.nodes_y[pd]
 
-            # get height of the admix line at midshared.
-            # admix_src_y = (min([sy, dy]) + max([psy, pdy])) * src_yprop
-            # admix_dest_y = (min([sy, dy]) + max([psy, pdy])) * dest_yprop
-            admix_ymid = (min([sy, dy]) + max([psy, pdy])) / 2.
+                if (psy >= dy) or (sy <= pdy):
+                    src_mid_y = sy - (abs(sy - psy) * aprop)
+                    dest_mid_y = dy - (abs(dy - pdy) * aprop)
+                else:
+                    # get height of the admix line at midshared.
+                    amin = min([sy, dy])
+                    amax = max([psy, pdy])
+                    admix_ymid = amin + (amax - amin) * aprop
+                    dest_mid_y = src_mid_y = admix_ymid
 
-            # sample in the 20-80 % of edge range.
-            amin = min([sy, dy])
-            amax = max([psy, pdy])
-            admix_ymid = np.random.uniform(
-                amin + (amax - amin) * aprop,
-                amax - (amax - amin) * (1 - aprop),
-            )
+            elif self.mark.layout == "u":
+                sx, sy = self.nodes_x[src], self.nodes_y[src]
+                dx, dy = self.nodes_x[dest], self.nodes_y[dest]
+                psx, psy = self.nodes_x[ps], self.nodes_y[ps]
+                pdx, pdy = self.nodes_x[pd], self.nodes_y[pd]
 
-            # how far down does SRC direction line go
-            src_down_extend = (sy - admix_ymid) / 2.
-            src_tip_y = max([sy, admix_ymid + src_down_extend])
+                if (psy <= dy) or (sy >= pdy):
+                    src_mid_y = sy + (abs(sy - psy) * aprop)
+                    dest_mid_y = dy + (abs(dy - pdy) * aprop)
+                else:
+                    # get height of the admix line at midshared.
+                    amin = max([sy, dy])
+                    amax = min([psy, pdy])
+                    admix_ymid = amin + (abs(amax - amin) * aprop)
+                    dest_mid_y = src_mid_y = admix_ymid
 
-            # how far up does DEST direction line go
-            dest_up_extend = (pdy - admix_ymid) / 2.
-            dest_tip_y = min([pdy, admix_ymid - dest_up_extend])
 
             # project angle of up/down lines towards parent nodes.
             if self.mark.edge_type == "c":            
 
                 # angle from src to src parent
                 theta = np.arctan((psy - sy) / (psx - sx))
-
-                # x-shift from src to src_up_y
-                x_shift_src_tip = (src_tip_y - sy) / np.tan(theta)
-
-                # x-shift from src to admix_ymid
-                x_shift_src_mid = (admix_ymid - sy) / np.tan(theta)
+                x_shift_src_mid = (src_mid_y - sy) / np.tan(theta)                
 
                 # angle from dest to dest parent
                 theta = np.arctan((pdy - dy) / (pdx - dx))
-
-                # x-shift from dest to dest_tip_y
-                x_shift_dest_mid = (admix_ymid - dy) / np.tan(theta)
-
-                # x-shift from dest to dest_tip_y
-                x_shift_dest_tip = (dest_tip_y - dy) / np.tan(theta)
+                x_shift_dest_mid = (dest_mid_y - dy) / np.tan(theta)                
+                xend = pdx
 
             else:
-                x_shift_dest_mid = x_shift_dest_tip = 0
-                x_shift_src_mid = x_shift_src_tip = 0
-
-            # nudge admix line to left or right of tree edges
-            if self.mark.edge_widths[src] is None:
-                snudge = (2 + (self.mark.edge_style["stroke-width"] / 2.))
-            else:
-                snudge = self.mark.edge_widths[src]
-
-            # get offset of admix edge based on stroke of DEST tree edge
-            if self.mark.edge_widths[dest] is None:
-                dnudge = (2 + (self.mark.edge_style["stroke-width"] / 2.))
-            else:
-                dnudge = self.mark.edge_widths[dest]
-
-            snudge = (-1 * snudge if sx > psx else snudge)
-            dnudge = (-1 * dnudge if dx > pdx else dnudge)
-            snudge = dnudge = 0
+                x_shift_dest_mid = 0
+                x_shift_src_mid = 0
+                xend = dx
 
             # build the SVG path
             if self.mark.layout in ("r", "l"):
                 edge_dict = {
-                    'sdy': sx + x_shift_src_tip + snudge,
-                    'sdx': src_tip_y, 
-                    'suy': sx + x_shift_src_mid + snudge,
-                    'sux': admix_ymid,
-                    'ddy': dx + x_shift_dest_mid + dnudge,
-                    'ddx': admix_ymid,
-                    'duy': dx + x_shift_dest_tip + dnudge,
-                    'dux': dest_tip_y,
+                    'sdy': sx,  # + x_shift_src_tip + snudge,
+                    'sdx': sy,  # src_tip_y, 
+                    'suy': sx + x_shift_src_mid,
+                    'sux': src_mid_y,  # admix_ymid,
+                    'ddy': dx + x_shift_dest_mid,
+                    'ddx': dest_mid_y,  # admix_ymid,
+                    'duy': xend,
+                    'dux': pdy,  # dest_tip_y,
                 }
-                tri_dict = {
-                    'x0': admix_ymid - 6,
-                    'x1': admix_ymid + 6,
-                    'x2': admix_ymid,
-                    'y0': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
-                    'y1': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
-                    'y2': np.mean([edge_dict['suy'], edge_dict['ddy']]) + 8,
-                }
+                # tri_dict = {
+                #     'x0': admix_ymid - 6,
+                #     'x1': admix_ymid + 6,
+                #     'x2': admix_ymid,
+                #     'y0': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
+                #     'y1': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
+                #     'y2': np.mean([edge_dict['suy'], edge_dict['ddy']]) + 8,
+                # }
 
             else:            
                 edge_dict = {
-                    'sdx': sx + x_shift_src_tip + snudge,
-                    'sdy': src_tip_y, 
-                    'sux': sx + x_shift_src_mid + snudge,
-                    'suy': admix_ymid,
-                    'ddx': dx + x_shift_dest_mid + dnudge,
-                    'ddy': admix_ymid,
-                    'dux': dx + x_shift_dest_tip + dnudge,
-                    'duy': dest_tip_y,
+                    'sdx': sx,             # + x_shift_src_tip + snudge,
+                    'sdy': sy,  # src_tip_y, 
+
+                    'sux': sx + x_shift_src_mid,
+                    'suy': src_mid_y,  # admix_ymid,
+
+                    'ddx': dx + x_shift_dest_mid,
+                    'ddy': dest_mid_y,  # admix_ymid,
+
+                    'dux': xend,
+                    'duy': pdy,  # dest_tip_y,
                 }
 
                 # TODO: not finished aligning triangle/arrow
-                tri_dict = {
-                    'y0': admix_ymid - 6,
-                    'y1': admix_ymid + 6,
-                    'y2': admix_ymid,
-                    'x0': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
-                    'x1': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
-                    'x2': np.mean([edge_dict['suy'], edge_dict['ddy']]) + 8,
-                }
+                # tri_dict = {
+                #     'y0': admix_ymid - 6,
+                #     'y1': admix_ymid + 6,
+                #     'y2': admix_ymid,
+                #     'x0': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
+                #     'x1': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
+                #     'x2': np.mean([edge_dict['suy'], edge_dict['ddy']]) + 8,
+                # }
 
             # EDGE path                
             path = " ".join(PATH).format(**edge_dict)
