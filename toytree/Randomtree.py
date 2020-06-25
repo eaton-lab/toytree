@@ -224,7 +224,15 @@ class RandomTree(object):
 
 
     @staticmethod
-    def bdtree(ntips, b=1, d=0, maxtime=None, random_names=False, seed=None, verbose=False):
+    def bdtree(ntips=10,
+                time=4,
+                b=1,
+                d=0,
+                stop="taxa",
+                seed=None,
+                retain_extinct=False,
+                random_names=False,
+                verbose=False):
         """
         Generate a classic birth/death tree.
 
@@ -233,25 +241,35 @@ class RandomTree(object):
         ntips (int):
             Number of tips to generate for 'taxa' stopping criterion.
 
+        time (float):
+            Amount of time to simulate for 'time' stopping criterion.
+
         b (float):
             Birth rate per time unit
 
         d (float):
             Death rate per time unit (d=0 produces Yule trees)
 
-        maxtime (None or int):
-            if maxtime is int then stopping criterion is time and the ntips
-            argument is ignored. Simulations are conditional on tips existing
-            at maxtime, and will reset until a tree reaches maxtime.
+        stop (str):
+            Stopping critereon. Valid values are only 'taxa' or 'time'.
 
         seed (int):
             Random number generator seed.
 
+        retain_extinct (bool):
+            (Unimplemented) Whether to retain internal nodes leading to extinct tips.
+
+        random_names (bool):
+            Whether to randomize tip names or name them in order.
+
         verbose (bool):
             Print some useful information
         """
-        assert b <= 1, "birth rate should be between 0-1"
-        assert d <= 1, "death rate should be between 0-1"
+        if stop not in ["taxa", "time"]:
+            raise ToytreeError("stop must be either 'taxa' or 'time'")
+
+        taxa_stop = ntips
+        time_stop = time
 
         # set random seed
         if seed:
@@ -352,14 +370,12 @@ class RandomTree(object):
             for x in tips:
                 x.dist += dt
 
-            # time stopping criterion... not quite working right.
-            if maxtime:
-                if t >= maxtime:
+            # check stopping criterion
+            if stop == "taxa":
+                if len(tips) >= taxa_stop:
                     break
-
-            # ntips stopping criterion.
             else:
-                if len(tips) >= ntips:
+                if t >= time_stop:
                     break
 
         # report status
