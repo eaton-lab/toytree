@@ -45,6 +45,9 @@ class Coords:
         """
         Updates cartesian coordinates for drawing tree graph
         """
+        # new idx_dict (can't just overwrite existing b/c nnodes may changed)
+        self.ttree.idx_dict = {}
+
         # store tree dimensions on update
         self.ttree.nnodes = 0
         self.ttree.ntips = 0
