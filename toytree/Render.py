@@ -1100,8 +1100,6 @@ class RenderToytree:
             return 
 
         # iterate over colors for subsequent edges unless provided
-        colors = iter(COLORS1)
-        next(colors)
         DEFAULT_ADMIXTURE_EDGES_STYLE = {
             "stroke": COLORS1[3], 
             "stroke-width": 5, 
@@ -1133,29 +1131,29 @@ class RenderToytree:
         for aedge in self.mark.admixture_edges:
 
             # check if nodes have an overlapping interval
-            src, dest = aedge[0], aedge[1]
+            src, dest, aprop, estyle = aedge  # aedge[0], aedge[1]
 
-            # get timing as a proportion of the shared edge
-            # TODO: support for two values in a tuple.
-            # TODO: support for absolute time in addition to proportions.
-            if len(aedge) > 2:
-                aprop = aedge[2]
-            else:
-                aprop = 0.5
+            # # get timing as a proportion of the shared edge
+            # # TODO: support for two values in a tuple.
+            # # TODO: support for absolute time in addition to proportions.
+            # if len(aedge) > 2:
+            #     aprop = aedge[2]
+            # else:
+            #     aprop = 0.5
 
-            # edge style
-            estyle = {
-                'stroke': next(colors),
-                'stroke-opacity': '0.7',
-            }
+            # # edge style
+            # estyle = {
+            #     'stroke': next(colors),
+            #     'stroke-opacity': '0.7',
+            # }
 
-            # get custom style dict
-            if len(aedge) > 3:
-                estyle.update(aedge[3])
+            # # get custom style dict
+            # if len(aedge) > 3:
+            #     estyle.update(aedge[3])
 
-            # colorfix to edge styles
-            colorfix = split_rgba_style(estyle.copy())
-            estyle['stroke'] = colorfix['stroke']
+            # # colorfix to edge styles
+            # colorfix = split_rgba_style(estyle.copy())
+            # estyle['stroke'] = colorfix['stroke']
 
             # # try to load timing floats for admixture edges
             # try:

@@ -3,6 +3,8 @@
 import toyplot
 import numpy as np
 from .Render import split_rgba_style
+from .NodeAssist import NodeAssist
+from .TreeStyle import COLORS1
 from .utils import ToytreeError
 
 ITERABLE = (list, tuple, np.ndarray)
@@ -111,6 +113,8 @@ class StyleChecker:
 
         self._assign_edge_colors()
         self._assign_edge_widths()
+
+        self._assign_admixture_idxs()
 
 
 
@@ -440,3 +444,70 @@ class StyleChecker:
 
                 # set edge_style stroke and stroke-opacity 
                 self.style.edge_style['stroke-width'] = width
+
+
+
+    def _assign_admixture_idxs(self):
+        """
+        Check the input admixture arg list and expand/check so 
+        that final format is: 
+
+        admixture_edges = [
+            (src_idx, dest_idx, (src_time, dest_time), styledict, label)
+        ]
+        """
+        arg = self.style.admixture_edges
+
+        # bail if empty
+        if arg is None:
+            return 
+
+        # if tuple then expand into a list
+        if isinstance(arg, tuple):
+            arg = [arg]
+
+        colors = iter(COLORS1)
+        next(colors)
+        admix_tuples = []
+        for atup in arg:
+
+            # required src, dest
+            if isinstance(atup[0], (str, list, tuple)):
+                ns = NodeAssist(self.ttree, atup[0], None, None)
+                src = ns.get_mrca().idx
+            else:
+                src = int(atup[0])
+
+            if isinstance(atup[1], (str, list, tuple)):
+                ns = NodeAssist(self.ttree, atup[1], None, None)
+                dest = ns.get_mrca().idx
+            else:
+                dest = int(atup[1])
+
+            # optional additional args
+            if len(atup) > 2:
+                prop = float(atup[2])
+            else:
+                prop = 0.5
+
+            # optional additional args
+            if len(atup) > 3:
+                style = dict(atup[3])
+            else:
+                style = {}
+
+            if "stroke" not in style:
+                style['stroke'] = next(colors)
+
+            if "stroke-opacity" not in style:
+                style['stroke-opacity'] = '0.7'
+
+            # colorfix to edge styles
+            colorfix = split_rgba_style(style.copy())
+            style['stroke'] = colorfix['stroke']
+
+            # check styledict colors, etc
+            admix_tuples.append((src, dest, prop, style))
+
+
+        self.style.admixture_edges = admix_tuples
