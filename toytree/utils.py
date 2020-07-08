@@ -6,6 +6,7 @@ from __future__ import print_function, division, absolute_import
 import re
 from copy import deepcopy
 import numpy as np
+import toytree
 
 
 #######################################################
@@ -123,6 +124,97 @@ NW_FORMAT = {
     ]
 }
 
+
+
+def parse_network(net, disconnect=True):
+    """
+    Parse network to extract the major topology. 
+    This leaves the hybrid nodes in the tree and labels each with 
+    .name="H{int}" and .gamma={float}.
+    """
+    # trim of loglik
+    if ";" in net:
+        net = net.split(";")[0] + ';'
+
+    # sub :xxx:: to be :::
+    net = re.sub(r":\d.\w*::", ":::", net)
+
+    # change H nodes to proper format
+    while ",#" in net:
+        pre, post = net.split(",#", 1)
+        npre, npost = post.split(")", 1)
+        newpre = npre.split(":")[0] + "-" + npre.split(":")[-1]
+        net = pre + ")" + newpre + npost
+    net = net.replace("#", "").replace(":::", "-")
+
+    # parse cleaned newick and set empty gamma on all nodes
+    net = toytree.tree(net, tree_format=1)
+    # net = net.set_node_values("gamma", default=0)
+    # net = net.set_node_values("hybrid", default=0)
+
+    # store admix data (NOT USED CURRENTLY)
+    admix = {}
+
+    # traverse tree to find hybrid nodes
+    for node in net.treenode.traverse():
+
+        # find internal nodes
+        if len(node.children) == 1:
+
+            # assign name and gamma to hybrid nodes
+            aname, aprop = node.name.split("-")
+            node.name = aname
+
+            # assign hybrid to closest nodes up and down from edge
+            # node.children[0].hybrid = int(aname[1:])
+            # node.gamma = round(float(aprop), 3)
+            # node.up.hybrid = int(aname[1:])
+
+            # disconnect node by connecting children to parent
+            if disconnect:
+                node.up.children.remove(node)
+                for child in node.children:
+                    child.up = node.up
+                    node.up.children.append(child)
+
+            # store admix data by descendants (NOT USED CURR)
+            # if node.up.is_root():
+            desc = node.get_leaf_names()
+            if aname not in admix:
+                admix[aname] = (desc, aprop)
+            else:
+                # this is the minor edge
+                if aprop < admix[aname][1]:
+                    admix[aname] = (
+                        admix[aname][0], 
+                        desc, 
+                        0.5, 
+                        {}, 
+                        str(round(float(aprop), 3)),
+                    )
+                else:
+                    admix[aname] = (
+                        desc, 
+                        admix[aname][0], 
+                        0.5, 
+                        {}, 
+                        str(round(float(admix[aname][1]), 3)),
+                    )
+
+            # # store admix data by descendants (NOT USED CURR)
+            # aedge = (node.up.name, node.children[0].name)
+            # if aname not in admix:
+            #     admix[aname] = (aedge, aprop)
+            # else:
+            #     # this is the minor edge
+            #     if aprop < admix[aname][1]:
+            #         admix[aname] = (aedge, admix[aname][0], aprop)
+            #     else:
+            #         admix[aname] = (admix[aname][0], aedge, admix[aname][1])                    
+
+    # update coords needed if node disconnection is turned back on.
+    net._coords.update()
+    return net, admix
 
 
 
