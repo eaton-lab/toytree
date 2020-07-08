@@ -22,7 +22,8 @@ Documentation
    6-treenodes.ipynb
    7-multitrees.ipynb
    8-styling.ipynb
+   9-networks.ipynb
    Cookbook.ipynb
-
+   Change-log.rst
 
 
