@@ -268,6 +268,10 @@ class Rooter:
 
 
     def get_match(self, names, wildcard, regex):
+        """
+        tries to get monophyletic clade from selection, then tests
+        the reciprocal set, then reports error.
+        """
         # find the selected node
         self.nas = NodeAssist(self.tree, names, wildcard, regex)
         # self.nas.match_query()
@@ -279,8 +283,13 @@ class Rooter:
         if x0 or x1:
             clade1 = self.nas.tipnames
             self.nas.match_reciprocal()
+
+            # check reciprocal match
             if not self.nas.is_query_monophyletic():
-                clade2 = self.nas.tipnames
+                # clade2 = self.nas.tipnames
+
+                # reports the smaller sized clade
                 raise ToytreeError(
-                    "Matched query is paraphyletic: {}"
-                    .format(sorted([clade1, clade2], key=len)[0]))
+                    "Matched query is paraphyletic: {}".format(clade1)
+                )
+                # .format(sorted([clade1, clade2], key=len)[0]))
