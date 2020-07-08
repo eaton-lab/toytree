@@ -40,6 +40,12 @@ class Rooter:
         # the node on the other side of the edge to be split.
         self.node2 = self.node1.up
 
+        # experimental: hybrid nodes from networks up to next node.
+        if self.node2.up:
+            if len(self.node2.children) == 1:
+                self.node2 = self.node2.up
+                self.node1 = self.node1.up
+
         # if rooting where root already exists then return current tree
         x0 = (self.node1.is_root())
         x1 = (self.node2.is_root() and self.tree.is_rooted())
@@ -264,7 +270,7 @@ class Rooter:
     def get_match(self, names, wildcard, regex):
         # find the selected node
         self.nas = NodeAssist(self.tree, names, wildcard, regex)
-        self.nas.match_query()
+        # self.nas.match_query()
         self.tipnames = self.nas.get_tipnames()
 
         # check for reciprocal match
