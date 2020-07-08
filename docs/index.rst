@@ -23,6 +23,7 @@ Documentation
    7-multitrees.ipynb
    8-styling.ipynb
    9-networks.ipynb
+   10-treestyles.ipynb
    Cookbook.ipynb
    Change-log.rst
 
