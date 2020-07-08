@@ -360,6 +360,7 @@ class RenderToytree:
         self.mark_nodes()
         self.mark_node_labels()
 
+
         # for multitrees tips are sometimes not drawn.
         self.mark_tip_labels()
 
@@ -1106,6 +1107,7 @@ class RenderToytree:
             "stroke-opacity": 0.6,
             "stroke-linecap": "round", 
             "fill": "none",
+            "font-size": "14px"
         }
 
         # create edge group element
@@ -1131,48 +1133,18 @@ class RenderToytree:
         for aedge in self.mark.admixture_edges:
 
             # check if nodes have an overlapping interval
-            src, dest, aprop, estyle = aedge  # aedge[0], aedge[1]
-
-            # # get timing as a proportion of the shared edge
-            # # TODO: support for two values in a tuple.
-            # # TODO: support for absolute time in addition to proportions.
-            # if len(aedge) > 2:
-            #     aprop = aedge[2]
-            # else:
-            #     aprop = 0.5
-
-            # # edge style
-            # estyle = {
-            #     'stroke': next(colors),
-            #     'stroke-opacity': '0.7',
-            # }
-
-            # # get custom style dict
-            # if len(aedge) > 3:
-            #     estyle.update(aedge[3])
-
-            # # colorfix to edge styles
-            # colorfix = split_rgba_style(estyle.copy())
-            # estyle['stroke'] = colorfix['stroke']
-
-            # # try to load timing floats for admixture edges
-            # try:
-            #     src_yprop = float(aedge[2])
-            # except Exception:
-            #     src_yprop = 0.5
-            # try:
-            #     dest_yprop = float(aedge[3])
-            # except Exception:
-            #     dest_yprop = 0.5
-            # # check props
-            # check0 = (src_yprop <= 1.0) & (src_yprop >= 0)
-            # check1 = (dest_yprop <= 1.0) & (dest_yprop >= 0)
-            # if not (check0 & check1):
-            #     raise ToytreeError("admix timing must be between 0-1.")
+            src, dest, aprop, estyle, label = aedge
 
             # get their parents coord positions
             ps = self.mark.etable[self.mark.etable[:, 1] == src, 0][0]
             pd = self.mark.etable[self.mark.etable[:, 1] == dest, 0][0]
+
+            # shared midpoint or separate midpoint (if edges do not overlap)
+            # then only separate is possible).
+            shared = False
+            if isinstance(aprop, (int, float)):
+                shared = True
+                aprop = (aprop, aprop)
 
             # separate for each layout b/c its haaaard.
             if self.mark.layout == "r":
@@ -1181,14 +1153,15 @@ class RenderToytree:
                 psx, psy = self.nodes_y[ps], self.nodes_x[ps]
                 pdx, pdy = self.nodes_y[pd], self.nodes_x[pd]
 
-                if (psy >= dy) or (sy <= pdy):
-                    src_mid_y = sy - (abs(sy - psy) * aprop)
-                    dest_mid_y = dy - (abs(dy - pdy) * aprop)
+                disjoint = (psy >= dy) or (sy <= pdy)
+                if (disjoint) or (not shared):
+                    src_mid_y = sy - (abs(sy - psy) * aprop[0])
+                    dest_mid_y = dy - (abs(dy - pdy) * aprop[1])
                 else:
                     # get height of the admix line at midshared.
                     amin = min([sy, dy])
                     amax = max([psy, pdy])
-                    admix_ymid = amin + (amax - amin) * aprop
+                    admix_ymid = amin + (amax - amin) * aprop[0]
                     dest_mid_y = src_mid_y = admix_ymid
 
             elif self.mark.layout == "l":
@@ -1197,14 +1170,15 @@ class RenderToytree:
                 psx, psy = self.nodes_y[ps], self.nodes_x[ps]
                 pdx, pdy = self.nodes_y[pd], self.nodes_x[pd]
 
-                if (psy <= dy) or (sy >= pdy):
-                    src_mid_y = sy + (abs(sy - psy) * aprop)
-                    dest_mid_y = dy + (abs(dy - pdy) * aprop)
+                disjoint = (psy <= dy) or (sy >= pdy)
+                if disjoint or (not shared):
+                    src_mid_y = sy + (abs(sy - psy) * aprop[0])
+                    dest_mid_y = dy + (abs(dy - pdy) * aprop[1])
                 else:
                     # get height of the admix line at midshared.
                     amin = max([sy, dy])
                     amax = min([psy, pdy])
-                    admix_ymid = amin + abs(amax - amin) * aprop
+                    admix_ymid = amin + abs(amax - amin) * aprop[0]
                     dest_mid_y = src_mid_y = admix_ymid
 
             elif self.mark.layout == "d":
@@ -1213,15 +1187,22 @@ class RenderToytree:
                 psx, psy = self.nodes_x[ps], self.nodes_y[ps]
                 pdx, pdy = self.nodes_x[pd], self.nodes_y[pd]
 
-                if (psy >= dy) or (sy <= pdy):
-                    src_mid_y = sy - (abs(sy - psy) * aprop)
-                    dest_mid_y = dy - (abs(dy - pdy) * aprop)
+                disjoint = (psy >= dy) or (sy <= pdy)
+                if disjoint or (not shared):
+                    src_mid_y = sy - (abs(sy - psy) * aprop[0])
+                    dest_mid_y = dy - (abs(dy - pdy) * aprop[1])
                 else:
                     # get height of the admix line at midshared.
                     amin = min([sy, dy])
                     amax = max([psy, pdy])
-                    admix_ymid = amin + (amax - amin) * aprop
-                    dest_mid_y = src_mid_y = admix_ymid
+                    admix_ymid = amin - abs(amax - amin) * aprop[0]
+                    dest_mid_y = src_mid_y = admix_ymid                   
+                    # if aprop[0] == aprop[1]:
+                    #     admix_ymid = amin + (amax - amin) * aprop[0]
+                    #     dest_mid_y = src_mid_y = admix_ymid
+                    # else:
+                    #     src_mid_y = sy - (abs(sy - psy) * aprop[0])
+                    #     dest_mid_y = dy - (abs(dy - pdy) * aprop[1])
 
             elif self.mark.layout == "u":
                 sx, sy = self.nodes_x[src], self.nodes_y[src]
@@ -1229,14 +1210,15 @@ class RenderToytree:
                 psx, psy = self.nodes_x[ps], self.nodes_y[ps]
                 pdx, pdy = self.nodes_x[pd], self.nodes_y[pd]
 
-                if (psy <= dy) or (sy >= pdy):
-                    src_mid_y = sy + (abs(sy - psy) * aprop)
-                    dest_mid_y = dy + (abs(dy - pdy) * aprop)
+                disjoint = (psy <= dy) or (sy >= pdy)
+                if disjoint or (not shared):
+                    src_mid_y = sy + (abs(sy - psy) * aprop[0])
+                    dest_mid_y = dy + (abs(dy - pdy) * aprop[1])
                 else:
                     # get height of the admix line at midshared.
                     amin = max([sy, dy])
                     amax = min([psy, pdy])
-                    admix_ymid = amin + (abs(amax - amin) * aprop)
+                    admix_ymid = amin + (abs(amax - amin) * aprop[0])
                     dest_mid_y = src_mid_y = admix_ymid
 
 
@@ -1244,12 +1226,18 @@ class RenderToytree:
             if self.mark.edge_type == "c":            
 
                 # angle from src to src parent
-                theta = np.arctan((psy - sy) / (psx - sx))
-                x_shift_src_mid = (src_mid_y - sy) / np.tan(theta)                
+                if (psx - sx) == 0:
+                    x_shift_src_mid = 0
+                else:
+                    theta = np.arctan((psy - sy) / (psx - sx))
+                    x_shift_src_mid = (src_mid_y - sy) / np.tan(theta)                
 
                 # angle from dest to dest parent
-                theta = np.arctan((pdy - dy) / (pdx - dx))
-                x_shift_dest_mid = (dest_mid_y - dy) / np.tan(theta)                
+                if (pdx - dx) == 0:
+                    x_shift_dest_mid = 0
+                else:
+                    theta = np.arctan((pdy - dy) / (pdx - dx))
+                    x_shift_dest_mid = (dest_mid_y - dy) / np.tan(theta)                
                 xend = pdx
 
             else:
@@ -1305,13 +1293,90 @@ class RenderToytree:
 
             # EDGE path                
             path = " ".join(PATH).format(**edge_dict)
-
-            # RENDER edge paths
             xml.SubElement(
                 self.admix_xml, "path",
                 d=path,
                 style=style_to_string(estyle),
             )
+
+            # LABEL
+            if label is not None:
+
+                # RENDER edge label
+                estyle['fill'] = '#262626'
+                estyle['fill-opacity'] = '1.0'
+                estyle['stroke'] = "none"
+                estyle['text-anchor'] = 'middle'
+
+                # position
+                if self.mark.layout in ("r", "l"):
+                    xtext = np.mean([sx + x_shift_src_mid, dx + x_shift_dest_mid])
+                    ytext = np.mean([src_mid_y, dest_mid_y])
+                    xtext += 12
+                else:
+                    ytext = np.mean([sx + x_shift_src_mid, dx + x_shift_dest_mid])
+                    xtext = np.mean([src_mid_y, dest_mid_y])
+
+                xml.SubElement(
+                    self.admix_xml,
+                    "text",
+                    x="{:.2f}".format(ytext),
+                    y="{:.2f}".format(xtext),
+                    style=style_to_string(estyle),
+                ).text = str(label)
+
+
+                # # allowed styling that can be updated by user style
+                # top_style = {
+                #     'font-family': 'helvetica',
+                #     'font-weight': 'normal',
+                #     'white-space': 'pre',
+                #     'fill': estyle['stroke'],
+                #     'fill-opacity': '1.0',
+                #     'stroke': 'none',
+                #     'font-size': '9px',
+                #     'baseline-shift': '0px',                
+                # }
+
+                # # apply font styling but NOT POSITIONAL styling to group.
+                # lab_xml = xml.SubElement(
+                #     self.admix_xml, "g", 
+                #     attrib={"class": "toytree-AdmixEdge-Label"}, 
+                #     style=style_to_string(top_style),
+                # )
+
+                # # add tip markers from 0 to ntips
+                # for tidx, tip in enumerate(self.mark.tip_labels):
+
+                #     # angle of text
+                #     transform = "translate({:.2f},{:.2f})".format(xtext, ytext)
+
+                #     # the position of the tip TextBox
+                #     t_xml = xml.SubElement(lab_xml, "g")
+                #     t_xml.set("transform", transform)
+
+                #     # get baseline given font-size, etc.,
+                #     layout = toyplot.text.layout(
+                #         tip,
+                #         top_style,
+                #         toyplot.font.ReportlabLibrary(),
+                #     )
+
+                #     for line in layout.children:
+                #         for box in line.children:
+                #             xml.SubElement(
+                #                 t_xml,
+                #                 "text", 
+                #                 x="{:.2f}".format(box.left), 
+                #                 y="{:.2f}".format(box.baseline),
+                #                 style={"fill": "green"},
+                #                 # style=style_to_string(colordict),
+                #                 ).text = tip
+
+
+
+
+
 
             # RENDER TRIANGLE
             # xml.SubElement(
