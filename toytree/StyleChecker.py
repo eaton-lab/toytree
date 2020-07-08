@@ -1,5 +1,6 @@
 #!/usr/bin/env python
 
+import itertools
 import toyplot
 import numpy as np
 from .Render import split_rgba_style
@@ -466,36 +467,56 @@ class StyleChecker:
         if isinstance(arg, tuple):
             arg = [arg]
 
-        colors = iter(COLORS1)
+        colors = itertools.cycle(COLORS1)
         next(colors)
         admix_tuples = []
         for atup in arg:
 
             # required src, dest
             if isinstance(atup[0], (str, list, tuple)):
-                ns = NodeAssist(self.ttree, atup[0], None, None)
-                src = ns.get_mrca().idx
+                nas = NodeAssist(self.ttree, atup[0], None, None)
+                node = nas.get_mrca()
+                if not node.is_root():
+                    src = node.idx
+                else:
+                    nas.match_reciprocal()
+                    src = nas.get_mrca().idx
             else:
                 src = int(atup[0])
 
             if isinstance(atup[1], (str, list, tuple)):
-                ns = NodeAssist(self.ttree, atup[1], None, None)
-                dest = ns.get_mrca().idx
+                nas = NodeAssist(self.ttree, atup[1], None, None)
+                node = nas.get_mrca()
+                if not node.is_root():
+                    dest = node.idx
+                else:
+                    nas.match_reciprocal()
+                    dest = nas.get_mrca().idx
             else:
                 dest = int(atup[1])
 
-            # optional additional args
+            # optional: proportion on edges
             if len(atup) > 2:
-                prop = float(atup[2])
+                if isinstance(atup[2], (int, float)):
+                    prop = float(atup[2])
+                else:
+                    prop = (float(atup[2][0]), float(atup[2][1]))
             else:
                 prop = 0.5
 
-            # optional additional args
+            # optional: style dictionary
             if len(atup) > 3:
                 style = dict(atup[3])
             else:
                 style = {}
 
+            # optional label on midpoint
+            if len(atup) > 4:
+                label = str(atup[4])
+            else:
+                label = None
+
+            # color setting and correction
             if "stroke" not in style:
                 style['stroke'] = next(colors)
 
@@ -507,7 +528,7 @@ class StyleChecker:
             style['stroke'] = colorfix['stroke']
 
             # check styledict colors, etc
-            admix_tuples.append((src, dest, prop, style))
+            admix_tuples.append((src, dest, prop, style, label))
 
 
         self.style.admixture_edges = admix_tuples
