@@ -1299,14 +1299,15 @@ class RenderToytree:
                 style=style_to_string(estyle),
             )
 
+            lstyle = estyle.copy()
             # LABEL
             if label is not None:
 
                 # RENDER edge label
-                estyle['fill'] = '#262626'
-                estyle['fill-opacity'] = '1.0'
-                estyle['stroke'] = "none"
-                estyle['text-anchor'] = 'middle'
+                lstyle['fill'] = '#262626'
+                lstyle['fill-opacity'] = '1.0'
+                lstyle['stroke'] = "none"
+                lstyle['text-anchor'] = 'middle'
 
                 # position
                 if self.mark.layout in ("r", "l"):
@@ -1322,7 +1323,7 @@ class RenderToytree:
                     "text",
                     x="{:.2f}".format(ytext),
                     y="{:.2f}".format(xtext),
-                    style=style_to_string(estyle),
+                    style=style_to_string(lstyle),
                 ).text = str(label)
 
 
