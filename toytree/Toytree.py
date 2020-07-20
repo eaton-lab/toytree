@@ -868,7 +868,7 @@ class ToyTree(object):
     #     return nself        
 
 
-    def generate_axes(self, firstname=None, lastname=None, axes=None, color="green", opacity=.25):
+    def generate_rectangle(self, firstname=None, lastname=None, axes=None, color="green", opacity=.25):
         """
         Returns an updated axes with a generated rectangle based on input labels provided
         """
