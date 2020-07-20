@@ -868,6 +868,23 @@ class ToyTree(object):
     #     return nself        
 
 
+    def generate_axes(self, firstname=None, lastname=None, axes=None, color="green", opacity=.25):
+        """
+        Returns an updated axes with a generated rectangle based on input labels provided
+        """
+        index_of_first = self.get_mrca_idx_from_tip_labels(names=firstname)
+        index_of_last =  self.get_mrca_idx_from_tip_labels(names=lastname)
+        x_vals = (x[0] for x in self.get_node_coordinates())
+
+        axes.rectangle(
+            min(self.get_tip_coordinates()[index_of_first][0],  self.get_tip_coordinates()[index_of_last][0]),
+            max(x_vals),
+            self.get_tip_coordinates()[index_of_first][1],
+            self.get_tip_coordinates()[index_of_last][1],
+            opacity=opacity,
+            color=color,
+        )
+        return axes
 
     def unroot(self):
         """
