@@ -132,11 +132,11 @@ def parse_network(net, disconnect=True):
     This leaves the hybrid nodes in the tree and labels each with 
     .name="H{int}" and .gamma={float}.
     """
-    # trim of loglik
+    # trim off loglik and anything after it (TODO: keep loglik)
     if ";" in net:
         net = net.split(";")[0] + ';'
 
-    # sub :xxx:: to be :::
+    # sub :xxx:: to be ::: b/c I don't care about admix edge bls
     net = re.sub(r":\d.\w*::", ":::", net)
 
     # change H nodes to proper format
@@ -144,7 +144,7 @@ def parse_network(net, disconnect=True):
         pre, post = net.split(",#", 1)
         npre, npost = post.split(")", 1)
         newpre = npre.split(":")[0] + "-" + npre.split(":")[-1]
-        net = pre + ")" + newpre + npost
+        net = pre + ")#" + newpre + npost
     net = net.replace(":::", "-")
 
     # parse cleaned newick and set empty gamma on all nodes
@@ -155,7 +155,7 @@ def parse_network(net, disconnect=True):
 
     # Traverse tree to find hybrid nodes. If a hybrid node is labeled as a 
     # distinct branch in the tree then it is dropped from the tree and 
-    for node in net.treenode.traverse():
+    for node in net.treenode.traverse("postorder"):
 
         # find hybrid nodes as internal nchild=1, or external with H in name
         if (len(node.children) == 1) or node.name.startswith("#H"):
@@ -169,6 +169,17 @@ def parse_network(net, disconnect=True):
             # node.children[0].hybrid = int(aname[1:])
             # node.gamma = round(float(aprop), 3)
             # node.up.hybrid = int(aname[1:])
+
+            # if root is a hybrid edge (ugh)
+            if node.up is None:
+                small, big = sorted(node.children, key=lambda x: len(x))
+                root = toytree.TreeNode.TreeNode(name='root')
+                node.children = [small]
+                small.up = node
+                node.up = root
+                big.up = root
+                root.children = [node, big]
+                net.treenode = root
 
             # disconnect node by connecting children to parent
             if disconnect:
