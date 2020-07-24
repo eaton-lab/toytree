@@ -154,9 +154,10 @@ def parse_network(net, disconnect=True):
     admix = {}
 
     # if not rooted choose any non-H root
-    net = net.root(
-        [i for i in net.get_tip_labels() if not i.startswith("#H")][0]
-    )
+    if not net.is_rooted():
+        net = net.root(
+            [i for i in net.get_tip_labels() if not i.startswith("#H")][0]
+        )
 
     # Traverse tree to find hybrid nodes. If a hybrid node is labeled as a 
     # distinct branch in the tree then it is dropped from the tree and 
