@@ -4,6 +4,7 @@ from __future__ import print_function, division, absolute_import
 
 
 import re
+import os
 from copy import deepcopy
 import numpy as np
 import toytree
