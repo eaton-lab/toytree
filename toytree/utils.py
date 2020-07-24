@@ -132,6 +132,11 @@ def parse_network(net, disconnect=True):
     This leaves the hybrid nodes in the tree and labels each with 
     .name="H{int}" and .gamma={float}.
     """
+    # if net is a file then read the first line
+    if os.path.exists(net):
+        with open(net, 'r') as infile:
+            net = infile.readline()
+
     # trim off loglik and anything after it (TODO: keep loglik)
     if ";" in net:
         net = net.split(";")[0] + ';'
