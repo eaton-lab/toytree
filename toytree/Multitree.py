@@ -139,17 +139,21 @@ class MultiTree(object):
 
 
     # TODO: this could be sped up by using toytree copy command.
-    # ALSO check that copy() or deepcopy here preserves fixed_order.
     def copy(self):
         return deepcopy(self)
 
 
     def write(self, handle=None, format=0):
+        """
+        Writes a list of newick strings to stdout or to a file handle.
+        """
         if not handle:
-            handle = "out.tre"
+            return "\n".join([i.write() for i in self.treelist])
+
         with open(handle, 'w') as outtre:
-            for tre in self.treelist:
-                outtre.write(tre.newick + "\n")
+            outtre.write("\n".join([i.write() for i in self.treelist]))
+            # for tre in self.treelist:
+            # outtre.write(tre.newick + "\n")
 
 
     def reset_tree_styles(self):
