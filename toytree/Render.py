@@ -1136,8 +1136,14 @@ class RenderToytree:
             src, dest, aprop, estyle, label = aedge
 
             # get their parents coord positions
-            ps = self.mark.etable[self.mark.etable[:, 1] == src, 0][0]
-            pd = self.mark.etable[self.mark.etable[:, 1] == dest, 0][0]
+            try:
+                ps = self.mark.etable[self.mark.etable[:, 1] == src, 0][0]
+                pd = self.mark.etable[self.mark.etable[:, 1] == dest, 0][0]
+
+            # except if root edge
+            except IndexError:
+                raise NotImplementedError(
+                    "whoops, admixture edge with root node. TODO.")
 
             # shared midpoint or separate midpoint (if edges do not overlap)
             # then only separate is possible).
