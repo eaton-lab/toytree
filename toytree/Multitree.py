@@ -275,8 +275,17 @@ class MultiTree(object):
                 nrows = 1
                 ncols = len(treelist)
 
+        # get layout first from direct arg then from treestyle
+        if "ts" in kwargs:
+            layout = TreeStyle(kwargs.get("ts")).layout
+        elif "treestyle" in kwargs:
+            layout = TreeStyle(kwargs.get("ts")).layout
+        elif "layout" in kwargs:
+            layout = kwargs.get("layout")
+        else:
+            layout = "r"
+
         # get the canvas and axes that can fit the requested trees.
-        layout = (kwargs.get("layout") if kwargs.get("layout") else "r")
         grid = GridSetup(nrows, ncols, width, height, layout)
         canvas = grid.canvas
         axes = grid.axes
