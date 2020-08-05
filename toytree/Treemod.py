@@ -37,8 +37,11 @@ class TreeMod:
             _height = ctree.treenode.height
 
         # scale internal nodes 
-        for node in ctree.treenode.traverse():
-            node.dist = (node.dist / _height) * treeheight
+        if len(ctree) == 1:
+            ctree.treenode.dist = treeheight
+        else:
+            for node in ctree.treenode.traverse():
+                node.dist = (node.dist / _height) * treeheight
         ctree._coords.update()
         return ctree
 
