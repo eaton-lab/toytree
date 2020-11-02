@@ -369,7 +369,7 @@ class MultiTree(object):
     #     )
 
 
-    def draw_cloud_tree(self, axes=None, fixed_order=None, **kwargs):
+    def draw_cloud_tree(self, axes=None, fixed_order=None, jitter=0.0, **kwargs):
         """
         Draw a series of trees overlapping each other in coordinate space.
         The order of tip_labels is fixed in cloud trees so that trees with 
@@ -453,6 +453,13 @@ class MultiTree(object):
 
             # check all styles
             fstyle = StyleChecker(tree, curstyle).style
+
+            # add jitter to tips
+            if jitter:
+                if fstyle.layout in ['r', 'l']:
+                    fstyle.ybaseline = np.random.uniform(-jitter, jitter)
+                else:
+                    fstyle.xbaseline = np.random.uniform(-jitter, jitter)
 
             # generate toyplot Mark
             mark = ToytreeMark(ntable=verts, etable=edges, **fstyle.to_dict())
