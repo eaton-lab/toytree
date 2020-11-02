@@ -1286,8 +1286,10 @@ class TreeNode(object):
             # find a child with children 
             if not self.children[0].is_leaf():
                 child = self.children[0]
+                ochild = self.children[1]
             elif not self.children[1].is_leaf():
                 child = self.children[1]
+                ochild = self.children[0]
             else:
                 raise TreeError("Cannot unroot a tree with only two leaves")
 
@@ -1296,7 +1298,8 @@ class TreeNode(object):
                 gchild.up = self
                 self.children.append(gchild)
             self.support = child.support
-            self.dist = sum([i.dist for i in self.children])
+            # self.dist = sum([i.dist for i in self.children])
+            ochild.dist += child.dist
             self.children.remove(child)
 
 
