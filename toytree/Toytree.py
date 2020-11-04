@@ -337,11 +337,13 @@ class ToyTree(object):
         for the clade that includes the selected tips. Arguments can use fuzzy
         name matching: a list of tip names, wildcard selector, or regex string.
         """
-        if not any([names, wildcard, regex]):
-            raise ToytreeError("at least one argument required")
-        node = fuzzy_match_tipnames(
-            self, names, wildcard, regex, True, False)
-        return node.idx
+        ns = NodeAssist(self, names, wildcard, regex)
+        return ns.get_mrca().idx
+        # if not any([names, wildcard, regex]):
+        #     raise ToytreeError("at least one argument required")
+        # node = fuzzy_match_tipnames(
+        #     self, names, wildcard, regex, True, False)
+        # return node.idx
 
 
     def get_node_descendant_idxs(self, idx=None):

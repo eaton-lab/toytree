@@ -326,7 +326,7 @@ class TreeNode(object):
             return child
 
 
-    def add_sister(self, sister=None, name=None, dist=None):
+    def add_sister(self, sister=None, name=None, dist=None, split=False):
         """
         Adds a sister to this node. If sister node is not supplied
         as an argument, a new TreeNode instance will be created and
@@ -335,7 +335,46 @@ class TreeNode(object):
         if self.up is None:
             raise TreeError("A parent node is required to add a sister")
         else:
-            return self.up.add_child(child=sister, name=name, dist=dist)
+            # traditional 'add one tip' method
+            if sister is None:
+                return self.up.add_child(child=sister, name=name, dist=dist)
+
+            # add a tip or subtree to node creating a polytomy
+            if not split:
+                # auto-align farthest edge at tip
+                # if dist is None:
+                    # dist = self.up.height - sister.height
+                return self.up.add_child(child=sister, name=name, dist=dist)
+
+            # create a new node with dist 'split_dist'
+            else:
+                # create new node shared by sisters as up
+                olddist = self.dist
+                newnode = self.up.add_child(name='newnode')
+
+                # set sisters as newnode children
+                newnode.children = [self, sister]
+                
+                # remove sisters from old parent
+                self.up.children.remove(self)
+
+                # connect sisters to new parent
+                self.up = newnode
+                sister.up = newnode
+
+                # auto-set distances to both align nicely
+                if dist is None:
+                    newnode.dist = olddist / 2.
+                    self.dist = olddist / 2.
+                    if isinstance(split, (int, float)):
+                        sister.dist = split
+                    else:
+                        sister.dist = olddist / 2.
+                else:
+                    sister.dist = dist
+                    self.dist = split
+                    newnode.dist = olddist - split
+
 
 
     def remove_sister(self, sister=None):
