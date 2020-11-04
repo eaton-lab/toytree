@@ -7,7 +7,6 @@ PCM: phylogenetic comparative methods tools
 import os
 import time
 import numpy as np
-import pandas as pd
 import toytree
 
 
@@ -217,6 +216,9 @@ def calculate_tip_level_diversification(trees, njobs=1):
     with open(hugetreefile, 'r') as treegenerator:
         df = calculate_tip_level_diversification(treegenerator, njobs=20)
     """
+
+    # not yet adding pandas as a global dependency
+    import pandas as pd
 
     # load data and metadata from newick, toytree, or multitree
     if isinstance(trees, str) and os.path.exists(trees):
