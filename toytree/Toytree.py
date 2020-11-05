@@ -711,17 +711,26 @@ class ToyTree(object):
 
 
 
-    def drop_tips(self, names=None, wildcard=None, regex=None):
+    def prune(self, names=None, wildcard=None, regex=None):
         """
-        Returns a copy of the tree with the selected tips removed. The entered
-        value can be a name or list of names. To prune on an internal node to
-        create a subtree see the .prune() function instead.
+        Returns a copy of a subtree of the existing tree that includes
+        only the selected tips and minimal edges needed to connect them.
+        You can select the tip names using either names, wildcard or regex.
 
         Parameters:
-        tips: list of tip names.
+        -----------
+        names: list of tip names.
+        wildcard: a string to match using wildcard characters like *
+        regex: a regular expression to match multiple names.
 
-        # example:
-        ptre = tre.drop_tips(['a', 'b'])
+        # examples:
+        tre = toytree.rtree.imbtree(ntips=10)
+        ptre = tre.prune(names=['r1', 'r2', 'r3', 'r6'])
+        ptre = tre.prune(regex='r[0-3]')
+
+        Returns:
+        ----------
+        toytree.Toytree.ToyTree
         """
         # make a deepcopy of the tree
         nself = self.copy()
@@ -733,14 +742,51 @@ class ToyTree(object):
         # get matching names list with fuzzy match
         nas = NodeAssist(nself, names, wildcard, regex)
         tipnames = nas.get_tipnames()
-        # tipnames = fuzzy_match_tipnames(
-        #     ttree=nself,
-        #     names=names,
-        #     wildcard=wildcard,
-        #     regex=regex,
-        #     mrca=False,
-        #     mono=False,
-        # )
+
+        if len(tipnames) == len(nself):
+            raise ToytreeError("You cannot drop all tips from the tree.")
+
+        if not tipnames:
+            raise ToytreeError("No tips selected.")
+
+        nself.treenode.prune(tipnames, preserve_branch_length=True)
+        nself._coords.update()
+        return nself
+
+
+
+    def drop_tips(self, names=None, wildcard=None, regex=None):
+        """
+        Returns a copy of the tree with the selected tips removed. The entered
+        value can be a name or list of names. To prune on an internal node to
+        create a subtree see the .prune() function instead.
+
+        Parameters:
+        -----------
+        names: list of tip names.
+        wildcard: a string to match using wildcard characters like *
+        regex: a regular expression to match multiple names.
+
+        Examples:
+        ----------
+        tre = toytree.rtree.imbtree(ntips=10)
+        ptre = tre.prune(names=['r1', 'r2', 'r3', 'r6'])
+        ptre = tre.prune(regex='r[0-3]')
+
+        Returns:
+        ----------
+        toytree.Toytree.ToyTree
+        """
+        # make a deepcopy of the tree
+        nself = self.copy()
+
+        # return if nothing to drop
+        if not any([names, wildcard, regex]):
+            return nself
+
+        # get matching names list with fuzzy match
+        nas = NodeAssist(nself, names, wildcard, regex)
+        tipnames = nas.get_tipnames()
 
         if len(tipnames) == len(nself):
             raise ToytreeError("You cannot drop all tips from the tree.")
