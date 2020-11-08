@@ -57,7 +57,7 @@ tre.root(wildcard='prz').drop_tips(wildcard="tham").ladderize().draw();
 
 # extensive styling options are available
 rtre.draw(
-    tip_labels_color='pink',
+    tip_labels_colors='pink',
     node_labels='support',
     node_sizes=15,
     node_colors="cyan",
