@@ -338,8 +338,13 @@ class Annotator(object):
             xmax = max(self.mark.ntable[tidxs, 0]) + xspace               
 
         # draw the rectangle
-        mark = self.axes.rectangle(xmin, xmax, ymin, ymax, **kwargs)
-        return mark
+        newmark = self.axes.rectangle(xmin, xmax, ymin, ymax, **kwargs)
+
+        # put tree at the top of the scenegraph
+        self.axes._scenegraph.remove_edge(self.axes, 'render', self.mark)
+        self.axes._scenegraph.add_edge(self.axes, 'render', self.mark)
+
+        return newmark
 
 
 
