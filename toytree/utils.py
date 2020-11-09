@@ -348,92 +348,89 @@ class Annotator(object):
 
 
 
-    def draw_tip_box(
-        self, 
-        names=None, 
-        regex=None, 
-        wildcard=None, 
-        yspace=None, 
-        xspace=None, 
-        **kwargs):
-        """
-        Draw a rectangle around the tips of a clade on a toytree.
+    # def draw_tip_box(
+    #     self, 
+    #     names=None, 
+    #     regex=None, 
+    #     wildcard=None, 
+    #     yspace=None, 
+    #     xspace=None, 
+    #     **kwargs):
+    #     """
+    #     Draw a rectangle around the tips of a clade on a toytree.
 
-        Parameters:
-        -----------
-        names, regex, wildcard:
-            Choose one of these three methods to select one or more tipnames. 
-            The clade composing all descendants of their common ancestor will 
-            be highlighted.
+    #     Parameters:
+    #     -----------
+    #     names, regex, wildcard:
+    #         Choose one of these three methods to select one or more tipnames. 
+    #         The clade composing all descendants of their common ancestor will 
+    #         be highlighted.
 
-        yspace (float or None):
-            The extent to which boxes extend above and below the root and tip
-            nodes. If None then this is automatically generated.
+    #     yspace (float or None):
+    #         The extent to which boxes extend above and below the root and tip
+    #         nodes. If None then this is automatically generated.
 
-        xspace (float or None):
-            The extent to which the clade box extends to the sides 
-            (out of the clade towards other tips.) If None default uses 0.5.
+    #     xspace (float or None):
+    #         The extent to which the clade box extends to the sides 
+    #         (out of the clade towards other tips.) If None default uses 0.5.
 
-        kwargs:
-            Additional styling options are supported: color, opacity, etc.
+    #     kwargs:
+    #         Additional styling options are supported: color, opacity, etc.
 
-        Returns:
-        ------------
-        Toyplot.mark.Range
-        """
+    #     Returns:
+    #     ------------
+    #     Toyplot.mark.Range
+    #     """
 
-        # get the common ancestor
-        nidx = self.tree.get_mrca_idx_from_tip_labels(
-            names=names, regex=regex, wildcard=wildcard)
+    #     # get the common ancestor
+    #     nidx = self.tree.get_mrca_idx_from_tip_labels(
+    #         names=names, regex=regex, wildcard=wildcard)
 
-        # get tips descended from mrca
-        tips = self.tree.idx_dict[nidx].get_leaves()
-        tidxs = [i.idx for i in tips]
+    #     # get tips descended from mrca
+    #     tips = self.tree.idx_dict[nidx].get_leaves()
+    #     tidxs = [i.idx for i in tips]
 
-        # get nudge size from dists in the tree or user supplied
-        if not yspace:
-            yspace = self.tree.get_node_values("dist", 1, 1).mean() / 4.
-        if not xspace:
-            xspace = 0.5
+    #     # get nudge size from dists in the tree or user supplied
+    #     if not yspace:
+    #         yspace = self.tree.get_node_values("dist", 1, 1).mean() / 4.
+    #     if not xspace:
+    #         xspace = 0.5
 
-        # distance in PIXELS to the tip labels
-        tipx = toyplot.units.convert(
-            mark.tip_labels_style["-toyplot-anchor-shift"], 'px')
+    #     # distance in PIXELS to the tip labels
+    #     tipx = toyplot.units.convert(
+    #         mark.tip_labels_style["-toyplot-anchor-shift"], 'px')
 
-        # left and right positions
-        if self.mark.layout == 'r':           
+    #     # left and right positions
+    #     if self.mark.layout == 'r':           
 
-            # get unit conversion
-            tipstart = tipx / (axes.project('x', 1) - axes.project('x', 0))
+    #         # get unit conversion
+    #         tipstart = tipx / (axes.project('x', 1) - axes.project('x', 0))
+    #         xmin = self.mark.ntable[nidx, 0] - yspace
+    #         xmax = max(self.mark.ntable[tidxs, 0]) + yspace
+    #         ymin = min(self.mark.ntable[tidxs, 1]) - xspace
+    #         ymax = max(self.mark.ntable[tidxs, 1]) + xspace   
 
+    #     if self.mark.layout == 'l':
+    #         xmin = self.mark.ntable[nidx, 0] + yspace
+    #         xmax = max(self.mark.ntable[tidxs, 0]) - yspace
+    #         ymin = max(self.mark.ntable[tidxs, 1]) + xspace
+    #         ymax = min(self.mark.ntable[tidxs, 1]) - xspace   
 
+    #     elif self.mark.layout == 'd':
+    #         ymax = self.mark.ntable[nidx, 1] + yspace
+    #         ymin = min(self.mark.ntable[tidxs, 1]) - yspace
+    #         xmin = min(self.mark.ntable[tidxs, 0]) - xspace
+    #         xmax = max(self.mark.ntable[tidxs, 0]) + xspace               
 
-            xmin = self.mark.ntable[nidx, 0] - yspace
-            xmax = max(self.mark.ntable[tidxs, 0]) + yspace
-            ymin = min(self.mark.ntable[tidxs, 1]) - xspace
-            ymax = max(self.mark.ntable[tidxs, 1]) + xspace   
+    #     elif self.mark.layout == 'u':
+    #         ymin = self.mark.ntable[nidx, 1] - yspace
+    #         ymax = min(self.mark.ntable[tidxs, 1]) + yspace
+    #         xmin = min(self.mark.ntable[tidxs, 0]) - xspace
+    #         xmax = max(self.mark.ntable[tidxs, 0]) + xspace               
 
-        if self.mark.layout == 'l':
-            xmin = self.mark.ntable[nidx, 0] + yspace
-            xmax = max(self.mark.ntable[tidxs, 0]) - yspace
-            ymin = max(self.mark.ntable[tidxs, 1]) + xspace
-            ymax = min(self.mark.ntable[tidxs, 1]) - xspace   
-
-        elif self.mark.layout == 'd':
-            ymax = self.mark.ntable[nidx, 1] + yspace
-            ymin = min(self.mark.ntable[tidxs, 1]) - yspace
-            xmin = min(self.mark.ntable[tidxs, 0]) - xspace
-            xmax = max(self.mark.ntable[tidxs, 0]) + xspace               
-
-        elif self.mark.layout == 'u':
-            ymin = self.mark.ntable[nidx, 1] - yspace
-            ymax = min(self.mark.ntable[tidxs, 1]) + yspace
-            xmin = min(self.mark.ntable[tidxs, 0]) - xspace
-            xmax = max(self.mark.ntable[tidxs, 0]) + xspace               
-
-        # draw the rectangle
-        mark = self.axes.rectangle(xmin, xmax, ymin, ymax, **kwargs)
-        return mark
+    #     # draw the rectangle
+    #     mark = self.axes.rectangle(xmin, xmax, ymin, ymax, **kwargs)
+    #     return mark
 
 
 
