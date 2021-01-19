@@ -766,13 +766,15 @@ class TreeNode(object):
                 node = None
 
 
-    def iter_ancestors(self):
+    # toytree: added the 'stopat' option which is used to faster
+    # finding of mrca and measuring dist between nodes.
+    def iter_ancestors(self, stopat=None):
         """ 
         Iterates over the list of all ancestor nodes from 
         current node to the current tree root.
         """
         node = self
-        while node.up is not None:
+        while node.up is not stopat:
             yield node.up
             node = node.up
 
@@ -956,6 +958,9 @@ class TreeNode(object):
     #########################################################
     # Distance related functions
     #########################################################
+    # Error: TreeNode.get_distance(7, 6) != TreeNode.get_distance(6, 7)
+    # TODO: deprecate whereever possible, but leave as legacy for ete
+    # users. Replace with Toytree funcs.
     def get_distance(self, target, target2=None, topology_only=False):
         """
         Returns the distance between two nodes. If only one target is
