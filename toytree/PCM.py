@@ -240,6 +240,8 @@ def calculate_tip_level_diversification(trees, njobs=1):
         ntips = trees.treelist[0].ntips
         tiporder = trees.treelist[0].get_tip_labels()
         topen = None
+    else:
+    	raise IOError("problem with input: {}".format(trees))
 
     # array to store results 
     tarr = np.zeros((ntips, ntrees))
