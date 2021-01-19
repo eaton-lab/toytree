@@ -7,59 +7,61 @@ PCM: phylogenetic comparative methods tools
 import os
 import time
 import numpy as np
+import pandas as pd
+
+# only in py3
+try:
+    from concurrent.futures import ProcessPoolExecutor 
+except ImportError:
+    pass
+
 import toytree
 
 
 
-class PCM:
+# def independent_contrasts(tre, feature):
+#     """
+#     Set independent contrasts as features on internal nodes labeled
+#     as ...
+#     """
+#     ntre = tre.copy()
+#     resdict = PIC(ntre, feature)
+#     ntre = ntre.set_node_values(
+#         feature="{}-contrast",
+#         values={i.name: j[2] for (i, j) in resdict.items()}
+#     )
+#     ntre = ntre.set_node_values(
+#         feature="{}-contrast-var",
+#         values={i.name: j[3] for (i, j) in resdict.items()}
+#     )        
+#     return ntree
+
+
+
+def ancestral_state_reconstruction(tre, feature):
     """
-    Phylogenetic comparative methods implemented on toytrees.
+    Infer ancestral states on ancestral nodes for continuous traits
+    under a brownian motion model of evolution.
+
+    Modified from IVY interactive (https://github.com/rhr/ivy/)
+
+    Returns a toytree with feature applied to each node.
     """
-    def __init__(self, tree):
-        self.tree = tree
-
-
-    def independent_contrasts(self, feature):
-        ntree = self.tree.copy()
-        resdict = PIC(ntree, feature)
-        ntree = ntree.set_node_values(
-            feature="{}-contrast",
-            values={i.name: j[2] for (i, j) in resdict.items()}
-        )
-        ntree = ntree.set_node_values(
-            feature="{}-contrast-var",
-            values={i.name: j[3] for (i, j) in resdict.items()}
-        )        
-        return ntree
-
-
-    def ancestral_state_reconstruction(self, feature):
-        """
-        Infer ancestral states on ancestral nodes for continuous traits
-        under a brownian motion model of evolution.
-
-        Modified from IVY interactive (https://github.com/rhr/ivy/)
-
-        Returns a toytree with feature applied to each node.
-        """
-        ntree = self.tree.copy()
-        resdict = PIC(ntree, feature)
-        ntree = ntree.set_node_values(
-            feature, 
-            values={i.name: j[0] for (i, j) in resdict.items()}
-        )
-        return ntree
-
-
-    def tree_to_VCV(self):
-        return VCV(self.tree)
+    ntre = tre.copy()
+    resdict = PIC(ntre, feature)
+    ntre = ntre.set_node_values(
+        feature, 
+        values={i.name: j[0] for (i, j) in resdict.items()}
+    )
+    return ntre
 
 
 
-
-def VCV(tree):
+def tree_to_VCV(tre):
     """
-    Return the variance co-variance metrix representing the tree topology.
+    Return a variance-covariance matrix representing the tree topology
+    where the length of shared ancestral edges are covariance and 
+    terminal edges are variance.
     """
     vcv_ = np.zeros((tree.ntips,tree.ntips))
     labs = tree.get_tip_labels()
@@ -69,6 +71,7 @@ def VCV(tree):
             mrca_height = tree.treenode.search_nodes(idx=mrca_idx)[0].height
             vcv_[lab1, lab2] = tree.treenode.height - mrca_height
     return(vcv_)
+
 
 
 
@@ -100,6 +103,7 @@ def PIC(tree, feature):
 
     # return dictionary mapping nodes to (mean, var, contrast, cvar)
     return results
+
 
 
 
@@ -161,7 +165,10 @@ def dynamicPIC(node, data, results):
 
 
 def calculate_ES(tree):
-    "Return DataFrame with equal splits measure sensu Redding and Mooers 2006"
+    """
+    Return DataFrame with equal splits measure sensu Redding and 
+    Mooers 2006
+    """
     # dataframe for storing results
     df = pd.DataFrame(columns=["DR"], index=tree.get_tip_labels())
 
@@ -180,7 +187,10 @@ def calculate_ES(tree):
 
 
 def calculate_DR(tree):
-    "Returns a dataframe with tip-level diversification rates sensu Jetz 2012"
+    """
+    Returns a dataframe with tip-level diversification rates
+    sensu Jetz 2012
+    """
     # ensure tree is a tree
     tree = toytree.tree(tree)
     return 1 / calculate_ES(tree)
@@ -216,10 +226,6 @@ def calculate_tip_level_diversification(trees, njobs=1):
     with open(hugetreefile, 'r') as treegenerator:
         df = calculate_tip_level_diversification(treegenerator, njobs=20)
     """
-
-    # not yet adding pandas as a global dependency
-    import pandas as pd
-
     # load data and metadata from newick, toytree, or multitree
     if isinstance(trees, str) and os.path.exists(trees):
         with open(trees) as tree_generator:
@@ -254,7 +260,6 @@ def calculate_tip_level_diversification(trees, njobs=1):
 
     # or, distribute jobs in parallel (py3 only)
     else:
-        from concurrent.futures import ProcessPoolExecutor 
         pool = ProcessPoolExecutor(njobs)
         treegen = iter(trees)
         rasyncs = {}

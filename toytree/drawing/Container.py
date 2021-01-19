@@ -5,13 +5,16 @@ Container trees for plotting coalescent histories with demographic params
 """
 
 import numpy as np
-import toytree
 import toyplot
+import toytree
+from toytree.utils.exceptions import ToytreeError
 
-from .utils import ToytreeError
 
 
 class Container(object):
+    """
+    Class for generating container tree plots.
+    """
     def __init__(self, model=None, idx=0, width=400, height=400, spacer=0.25, axes=None):
         """
         Returns a Canvas and Axes with a fill container drawn representing
@@ -606,3 +609,8 @@ class Wiggle:
                     print("maxtries")
                     raise ToytreeError("cannot connect wiggle")
             self.xs[i] = jitter
+
+
+
+if __name__ == "__main__":
+    pass

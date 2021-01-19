@@ -1,28 +1,8 @@
 #!/usr/bin/env python
 
-"MultiTree objects"
-
-from __future__ import print_function, absolute_import
-from builtins import range, str
-
-from copy import deepcopy
-from hashlib import md5
-from collections import defaultdict
-import numpy as np
-
-# used in Consensus
-from .TreeNode import TreeNode
-from .Toytree import ToyTree
-from .TreeParser import TreeParser
-from .TreeStyle import TreeStyle
-
-from .StyleChecker import StyleChecker
-from .CanvasSetup import GridSetup, CanvasSetup
-from .Render import ToytreeMark
-from .utils import ToytreeError, bpp2newick
-# from .MultiDrawing import CloudTree
-
 """
+MultiTree objects
+
 TODO: 
     - re-do support for BPP weird format trees.
     - set-like function that drops tips from each tree not shared by all trees.
@@ -33,6 +13,22 @@ TODO:
     - A distinct multitree mark for combining styles on topologies 
     - New mark: leave proper space for tips to mtree fits same as tree.
 """
+
+from builtins import range, str
+
+from copy import deepcopy
+import numpy as np
+
+# used in Consensus
+from toytree.core.TreeNode import TreeNode
+from toytree.core.Toytree import ToyTree
+from toytree.core.Consensus import ConsensusTree
+from toytree.io.TreeParser import TreeParser
+from toytree.drawing.TreeStyle import TreeStyle
+from toytree.drawing.StyleChecker import StyleChecker
+from toytree.drawing.CanvasSetup import GridSetup, CanvasSetup
+from toytree.drawing.Render import ToytreeMark
+# from .MultiDrawing import CloudTree
 
 
 
@@ -567,261 +563,6 @@ class MultiTree(object):
     # # if tree_style:
     # #     nself.style.update(TreeStyle(tree_style[0]))
 
-
-
-class ConsensusTree:
-    """
-    An extended majority rule consensus function.
-    Modelled on the similar function from scikit-bio tree module. If
-    cutoff=0.5 then it is a normal majority rule consensus, while if
-    cutoff=0.0 then subsequent non-conflicting clades are added to the tree.
-    """
-    def __init__(self, treelist, best_tree=None, cutoff=0.0):
-
-        # parse args
-        self.treelist = treelist
-        self.best_tree = best_tree
-        if self.best_tree is not None:
-            self.best_tree = best_tree.copy().unroot()
-            self.names = self.best_tree.get_tip_labels()
-        else:
-            self.names = self.treelist[0].get_tip_labels()
-        self.cutoff = float(cutoff)
-
-        # attrs to fill
-        self.namedict = None
-        self.treedict = {}
-        self.clade_counts = None
-        self.fclade_counts = None
-
-        # results 
-        self.ttree = None
-        self.nodelist = None
-
-        assert cutoff < 1, "cutoff should be a float proportion (e.g., 0.5)"
-
-    def update(self):
-
-        # hash a dict to remove duplicate trees
-        self.hash_trees()
-
-        # map onto best_tree of infer majrule consensus
-        if self.best_tree is not None:
-            self.map_onto_best_tree()
-
-        else:
-            # Find which clades occured with freq > cutoff. 
-            # Fills namedict, clade_counts
-            self.find_clades()
-
-            # Filter out the < cutoff clades
-            # Fills fclade_counts
-            self.filter_clades()
-
-            # Build consensus tree.
-            # Fills .tree
-            self.build_trees()  # fclade_counts, namedict)
-            ## todo. make sure no singleton nodes were left behind ...
-
-
-    def hash_trees(self):
-        "hash ladderized tree topologies"       
-        observed = {}
-        for idx, tree in enumerate(self.treelist):
-            nwk = tree.write(tree_format=9)
-            hashed = md5(nwk.encode("utf-8")).hexdigest()
-            if hashed not in observed:
-                observed[hashed] = idx
-                self.treedict[idx] = 1
-            else:
-                idx = observed[hashed]
-                self.treedict[idx] += 1
-
-
-    def map_onto_best_tree(self):
-        "map clades from tree onto best_tree"
-
-        # index names from the first tree
-        ndict = {j: i for i, j in enumerate(self.names)}
-
-        # dictionary of bits describing all clades in the best tree
-        idict = {}
-        bitdict = {}
-        for node in self.best_tree.treenode.traverse("preorder"):
-
-            # get byte string representing split
-            bits = np.zeros(self.best_tree.ntips, dtype=np.bool_)
-            for child in node.iter_leaf_names():
-                bits[ndict[child]] = True
-            bitstring = bits.tobytes()
-
-            # record split (mirror image not relevant)
-            bitdict[bitstring] = 0
-            idict[bitstring] = node
-        # print(bitdict)
-
-        # count occurrence of clades in best_tree among other trees
-        for tidx, ncopies in self.treedict.items():
-            tre = self.treelist[tidx].unroot()
-            # print(tidx)
-            for node in tre.treenode.traverse("preorder"):
-                bits = np.zeros(tre.ntips, dtype=np.bool_)
-                for child in node.iter_leaf_names():
-                    bits[ndict[child]] = True
-                bitstring = bits.tobytes()
-                # print(bits.astype(int))
-                if bitstring in bitdict:
-                    bitdict[bitstring] += ncopies
-                else:
-                    revstring = np.invert(bits).tobytes()
-                    if revstring in bitdict:
-                        bitdict[revstring] += ncopies
-            # print("")
-
-        # convert to frequencies
-        for key, val in bitdict.items():
-            # print(key, val, idict[key].name)
-            idict[key].support = int(100 * val / float(len(self.treelist)))
-        self.ttree = self.best_tree
-        self.ttree._coords.update()
-
-
-    def find_clades(self):
-        "Count clade occurrences."
-        # index names from the first tree
-        ndict = {j: i for i, j in enumerate(self.names)}
-        namedict = {i: j for i, j in enumerate(self.names)}
-
-        # store counts
-        clade_counts = {}
-        for tidx, ncopies in self.treedict.items():
-
-            # testing on unrooted trees is easiest but for some reason slow
-            ttree = self.treelist[tidx].unroot()
-
-            # traverse over tree
-            for node in ttree.treenode.traverse('preorder'):
-                bits = np.zeros(len(ttree), dtype=np.bool_)
-                for child in node.iter_leaf_names():
-                    bits[ndict[child]] = True
-
-                # get bit string and its reverse
-                bitstring = bits.tobytes()
-                revstring = np.invert(bits).tobytes()
-
-                # add to clades first time, then check for inverse next hits
-                if bitstring in clade_counts:
-                    clade_counts[bitstring] += ncopies
-                else:
-                    if revstring not in clade_counts:
-                        clade_counts[bitstring] = ncopies
-                    else:
-                        clade_counts[revstring] += ncopies
-
-        # convert to freq
-        for key, val in clade_counts.items():
-            clade_counts[key] = val / float(len(self.treelist))
-
-        ## return in sorted order
-        self.namedict = namedict
-        self.clade_counts = sorted(
-            clade_counts.items(),
-            key=lambda x: x[1],
-            reverse=True)
-
-
-    def filter_clades(self):
-        "Remove conflicting clades and those < cutoff to get majority rule"
-        passed = []
-        carrs = np.array([list(i[0]) for i in self.clade_counts], dtype=int)
-        freqs = np.array([i[1] for i in self.clade_counts])
-
-        for idx in range(carrs.shape[0]):
-            conflict = False
-            if freqs[idx] < self.cutoff:
-                continue
-
-            for pidx in passed:
-                intersect = np.max(carrs[idx] + carrs[pidx]) > 1
-
-                # is either one a subset of the other?
-                subset_test0 = np.all(carrs[idx] - carrs[pidx] >= 0)
-                subset_test1 = np.all(carrs[pidx] - carrs[idx] >= 0)
-                if intersect:
-                    if (not subset_test0) and (not subset_test1):
-                        conflict = True
-
-            if not conflict:
-                passed.append(idx)
-
-        rclades = []
-        for idx in passed:
-            rclades.append((carrs[idx], freqs[idx]))
-        self.fclade_counts = rclades
-
-
-    def build_trees(self):
-        "Build an unrooted consensus tree from filtered clade counts."
-
-        # storage
-        nodes = {}
-        idxarr = np.arange(len(self.fclade_counts[0][0]))
-        queue = []
-
-        # create dict of clade counts and set keys
-        countdict = defaultdict(int)
-        for clade, count in self.fclade_counts:
-            mask = np.int_(list(clade)).astype(np.bool)
-            ccx = idxarr[mask]
-            queue.append((len(ccx), frozenset(ccx)))
-            countdict[frozenset(ccx)] = count
-
-        while queue:
-            queue.sort()
-            (clade_size, clade) = queue.pop(0)
-            new_queue = []
-
-            # search for ancestors of clade
-            for (_, ancestor) in queue:
-                if clade.issubset(ancestor):
-                    # update ancestor such that, in the following example:
-                    # ancestor == {1, 2, 3, 4}
-                    # clade == {2, 3}
-                    # new_ancestor == {1, {2, 3}, 4}
-                    new_ancestor = (ancestor - clade) | frozenset([clade])
-                    countdict[new_ancestor] = countdict.pop(ancestor)
-                    ancestor = new_ancestor
-
-                new_queue.append((len(ancestor), ancestor))
-
-            # if the clade is a tip, then we have a name
-            if clade_size == 1:
-                name = list(clade)[0]
-                name = self.namedict[name]
-            else:
-                name = None
-
-            # the clade will not be in nodes if it is a tip
-            children = [nodes.pop(c) for c in clade if c in nodes]
-            node = TreeNode(name=name)
-            for child in children:
-                node.add_child(child)
-            if not node.is_leaf():
-                node.dist = int(round(100 * countdict[clade]))
-                node.support = int(round(100 * countdict[clade]))
-            else:
-                node.dist = int(100)
-                node.support = int(100)
-
-            nodes[clade] = node
-            queue = new_queue
-        nodelist = list(nodes.values())
-        tre = nodelist[0]
-
-        ## return the tree and other trees if present
-        self.ttree = ToyTree(tre.write(format=0))
-        self.ttree._coords.update()
-        self.nodelist = nodelist
 
 
 

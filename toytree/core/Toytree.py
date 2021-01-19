@@ -1,31 +1,41 @@
 #!/usr/bin/env python
 
+"""
+The core toytree class object. 
+Nearly all API functions are accessible from a toytree, including
+tree i/o, modifications, drawing, and analysis.
+
+TODO: Test for speed improvements: 
+- replace fuzzy name calls with NodeAssist
+- reduce deepcopies
+- reduce traversals.
+- .newick and .write are redundant, and need feature support.
+- make separate .get_node_values and .get_node_labels
+- use set_node_heights in set_node_feature('heights')
+
+"""
+
 from __future__ import print_function, absolute_import
 
 import itertools
 from decimal import Decimal
-from copy import copy
 import numpy as np
 
-from .TreeNode import TreeNode
-from .TreeStyle import TreeStyle, COLORS2
-from .StyleChecker import StyleChecker
-from .Coords import Coords
-from .TreeParser import TreeParser, FastTreeParser
-from .TreeWriter import NewickWriter
-from .Treemod import TreeMod
-from .PCM import PCM
-from .Rooter import Rooter
-from .NodeAssist import NodeAssist
-from .utils import ToytreeError, fuzzy_match_tipnames, normalize_values
-from .Render import ToytreeMark
-from .CanvasSetup import CanvasSetup
+from toytree.core.TreeNode import TreeNode
+from toytree.core.NodeAssist import NodeAssist
+from toytree.drawing.TreeStyle import TreeStyle, COLORS2
+from toytree.drawing.StyleChecker import StyleChecker
+from toytree.drawing.Coords import Coords
+from toytree.drawing.Render import ToytreeMark
+from toytree.drawing.CanvasSetup import CanvasSetup
+from toytree.io.TreeParser import TreeParser
+from toytree.io.TreeWriter import NewickWriter
+from toytree.treemod.Rooter import Rooter
+from toytree.utils.exceptions import ToytreeError
+from toytree.utils.transform import normalize_values
+from toytree.treemod.api import TreeModAPI
+from toytree.pcm.api import PhyloCompAPI
 
-"""
-Test for speed improvements: 
-- reduce deepcopies
-- reduce traversals.
-"""
 
 
 
@@ -36,22 +46,26 @@ class ToyTree(object):
     Parameters:
     -----------
     newick: (str, file, URL, or ToyTree)
-        A newick or nexus formatted string, or file handle or URL of file 
-        containing correctly formatted string. A toytree can also be reloaded
-        from another toytree object.
+        A newick or nexus formatted string, or file handle, or URL of 
+        file containing correctly formatted string. A toytree can also 
+        be reloaded from another ToyTree or TreeNode object.
 
     tree_format: int
-        Format of the newick tree structure to be parsed. 
-
-    Attributes:
-    -----------
-    ...
-
-    Functions:
-    ----------
-    ...
+        Format of the newick tree structure to be parsed (see ete3)
     """
     def __init__(self, newick=None, tree_format=0, **kwargs):
+
+        # attributes: most updated by Coords.update()
+        self.nnodes = 0
+        self.ntips = 0
+        self.idx_dict = {}
+        self.treenode = None
+        self.style = None
+
+        # Class objects for plot coordinates, treemods, and analysis.
+        self._coords = None
+        self.mod = TreeModAPI(self)
+        self.pcm = PhyloCompAPI(self)
 
         # if loading from a Toytree then inherit that trees draw style
         inherit_style = False
@@ -73,19 +87,6 @@ class ToyTree(object):
         else:
             self.treenode = TreeNode()
 
-        # init dimensions and cache to be filled during coords update
-        self.nnodes = 0
-        self.ntips = 0
-        self.idx_dict = {}
-
-        # set tips order if fixing for multi-tree plotting (default None)
-        # self._fixed_order = None
-        # self._fixed_idx = list(range(self.ntips))
-        # if fixed_order:
-            # if not isinstance(fixed_order, (list, tuple)):
-                # raise ToytreeError("fixed_order arg should be a list")
-            # self._set_fixed_order(fixed_order)
-
         # ladderize the tree unless user fixed order and wants it not.
         # if not self._fixed_order:
         self.treenode.ladderize()
@@ -97,14 +98,10 @@ class ToyTree(object):
         else:
             self.style = TreeStyle(tree_style='n')
 
-        # Object for plot coordinates. Calls .update() whenever tree modified.
-        self._coords = Coords(self)
+        # get drawing coordinates
+        self._coords = Coords(self)        
         self._coords.update()
-        # if not kwargs.get("copy"):
 
-        # Object for modifying trees beyond root, prune, drop
-        self.mod = TreeMod(self)
-        self.pcm = PCM(self)
 
     # --------------------------------------------------------------------
     # Class definitions 
@@ -119,19 +116,6 @@ class ToyTree(object):
         return len(self.treenode)
 
 
-    # def _set_fixed_order(self, fixed_order):
-    #     """
-    #     Setting fixed_idx is important for when nodes are rotated, and edges
-    #     are different lengths, b/c it allows updating coords to match up.
-    #     """
-    #     if fixed_order:
-    #         if set(fixed_order) != set(self.treenode.get_leaf_names()):
-    #             raise ToytreeError(
-    #                 "fixed_order must include same tipnames as tree")
-    #         self._fixed_order = fixed_order
-    #         names = self.treenode.get_leaf_names()[::-1]
-    #         self._fixed_idx = [names.index(i) for i in self._fixed_order]
-
     # --------------------------------------------------------------------
     # properties are not changeable by the user
     # --------------------------------------------------------------------    
@@ -141,18 +125,6 @@ class ToyTree(object):
         for node in self.treenode.traverse():
             feats.update(node.features)    
         return feats
-
-    # @property
-    # def nnodes(self):
-    #     "The total number of nodes in the tree including tips and root."
-    #     return self._nnodes
-    #     # return sum(1 for i in self.treenode.traverse())
-
-    # @property
-    # def ntips(self):
-    #     "The number of tip nodes in the tree."
-    #     return self._ntips
-    #     # return sum(1 for i in self.treenode.get_leaves())
 
     @property
     def newick(self, tree_format=0):
@@ -371,12 +343,7 @@ class ToyTree(object):
             return self._coords.get_linear_coords(layout, use_edge_lengths)
 
 
-    def get_node_values(
-        self, 
-        feature=None, 
-        show_root=False, 
-        show_tips=False, 
-        ):
+    def get_node_values(self, feature=None, show_root=False, show_tips=False):
         """
         Returns node values from tree object in node plot order. To modify
         values you must modify the .treenode object directly by setting new
@@ -631,9 +598,11 @@ class ToyTree(object):
 
 
     def copy(self):
-        """ Returns a new ToyTree equivalent to a deepcopy (but faster) """
-
-        # copy treenodes w/ topology, node attrs, nnodes, ntips, and idx_dict
+        """ 
+        Returns a new ToyTree equivalent to a deepcopy (but faster) 
+        """
+        # copy treenodes w/ topology, node attrs, nnodes, ntips, 
+        # and idx_dict... copy=True is important, or atlest kwargs is...
         nself = ToyTree(
             self.treenode._clone(), 
             # fixed_order=self._fixed_order,
@@ -648,7 +617,7 @@ class ToyTree(object):
         # nself._coords.verts = self._coords.verts.copy()
         return nself
 
-
+    # deprecated 
     # def copy(self):
     #     """ returns a deepcopy of the tree object"""
     #     return deepcopy(self)
@@ -868,52 +837,6 @@ class ToyTree(object):
             recursive=recursive)
         nself._coords.update()
         return nself
-
-
-
-    # def speciate(self, idx, name=None, dist_prop=0.5):
-    #     """
-    #     Split an edge to create a new tip in the tree as in a speciation event.
-    #     """
-    #     # make a copy of the toytree
-    #     nself = self.copy()
-
-    #     # get Treenodes of selected node and parent 
-    #     ndict = nself.get_feature_dict('idx')
-    #     node = ndict[idx]
-    #     parent = node.up
-
-    #     # get new node species name
-    #     if not name:
-    #         if node.is_leaf():
-    #             name = node.name + ".sis"
-    #         else:
-    #             names = nself.get_tip_labels(idx=idx)
-    #             name = "{}.sis".format("_".join(names))
-
-    #     # create new speciation node between them at dist_prop dist.
-    #     newnode = parent.add_child(
-    #         name=parent.name + ".spp",
-    #         dist=node.dist * dist_prop
-    #     )
-
-    #     # connect original node to speciation node.
-    #     node.up = newnode
-    #     node.dist = node.dist - newnode.dist
-    #     newnode.add_child(node)
-
-    #     # drop original node from original parent child list
-    #     parent.children.remove(node)
-
-    #     # add new tip node (new sister) and set same dist as onode
-    #     newnode.add_child(
-    #         name=name,
-    #         dist=node.up.height,
-    #     )
-
-    #     # update toytree coordinates
-    #     nself._coords.update()
-    #     return nself        
 
 
     def unroot(self):
@@ -1205,54 +1128,3 @@ class ToyTree(object):
         # add mark to axes
         axes.add_mark(mark)
         return canvas, axes, mark
-
-
-
-
-class RawTree():
-    """
-    Barebones tree object that parses newick strings faster, assigns idx 
-    to labels, and ...
-    """
-    def __init__(self, newick, tree_format=0):
-        self.treenode = FastTreeParser(newick, tree_format).treenode
-        self.ntips = len(self.treenode)
-        self.nnodes = (len(self.treenode) * 2) - 1
-        self.update_idxs()
-
-
-    def write(self, tree_format=5, dist_formatter=None):
-        # get newick string
-        writer = NewickWriter(
-            treenode=self.treenode,
-            tree_format=tree_format,
-            dist_formatter=dist_formatter,
-        )
-        newick = writer.write_newick()
-        return newick
-
-
-    def update_idxs(self):
-        "set root idx highest, tip idxs lowest ordered as ladderized"
-
-        # n internal nodes - 1 
-        idx = self.nnodes - 1
-
-        # from root to tips label idx
-        for node in self.treenode.traverse("levelorder"):
-            if not node.is_leaf():
-                node.add_feature("idx", idx)
-                if not node.name:
-                    node.name = str(idx)
-                idx -= 1
-
-        # external nodes: lowest numbers are for tips (0-N)
-        for node in self.treenode.iter_leaves():
-            node.add_feature("idx", idx)
-            if not node.name:
-                node.name = str(idx)
-            idx -= 1
-
-
-    def copy(self):
-        return copy(self)

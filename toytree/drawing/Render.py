@@ -3,17 +3,18 @@
 """
 A custom Mark and mark generator to create Toytree drawings in toyplot.
 """
-import numpy as np
+
+import functools
 import xml.etree.ElementTree as xml
+from multipledispatch import dispatch
+import numpy as np
 import toyplot
 from toyplot.mark import Mark
 from toyplot.html import _draw_bar, _draw_triangle, _draw_circle, _draw_rect
-from .TreeStyle import COLORS1
+from toytree.drawing.TreeStyle import COLORS1
 # from toytree.utils import ToytreeError
 
 # Register multipledispatch to share with toyplot.html
-import functools
-from multipledispatch import dispatch
 dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 
 """
@@ -31,6 +32,7 @@ PATH_FORMAT = {
     'p2': "M {px:.1f} {py:.1f} L {cx:.1f} {py:.1f} L {cx:.1f} {cy:.1f}",
     'pc': "M {cx:.1f} {cy:.1f} L {dx:.1f} {dy:.1f} A {rr:.1f} {rr:.1f} 0 0 {flag} {px:.1f} {py:.1f}",
 }
+
 
 
 class ToytreeMark(Mark):

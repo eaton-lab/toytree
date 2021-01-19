@@ -9,11 +9,8 @@ from decimal import Decimal
 import numpy as np
 import toyplot
 
-# from .Admixture import AdmixEdges
-
 # for setting values from iterables
 ITERABLE = (list, tuple, np.ndarray)
-
 
 
 class GridSetup:

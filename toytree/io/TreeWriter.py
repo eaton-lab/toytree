@@ -5,7 +5,7 @@ Write Toytree or TreeNode to newick string
 """
 
 import re
-from .utils import NW_FORMAT
+from toytree.utils.globals import NW_FORMAT
 
 # globals
 ILLEGAL_NEWICK_CHARS = r":;(),\[\]\t\n\r="

@@ -1,19 +1,20 @@
 #!/usr/bin/env python
 
-import itertools
-import toyplot
-import numpy as np
-from .Render import split_rgba_style
-from .NodeAssist import NodeAssist
-from .TreeStyle import COLORS1
-from .utils import ToytreeError
-
-ITERABLE = (list, tuple, np.ndarray)
-
 """
 Checks style dictionaries for types and size and builds out arguments
 into arrays for variable styles.
 """
+
+import itertools
+import toyplot
+import numpy as np
+from toytree.core.NodeAssist import NodeAssist
+from toytree.drawing.Render import split_rgba_style
+from toytree.drawing.TreeStyle import COLORS1
+from toytree.utils.exceptions import ToytreeError
+
+ITERABLE = (list, tuple, np.ndarray)
+
 
 
 class StyleChecker:

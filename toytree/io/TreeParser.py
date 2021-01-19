@@ -6,13 +6,23 @@ input a string or file that contains one or multiple lines that contain
 newick strings. Lines that do not contain newick strings are ignored, unless
 the #NEXUS is in the header in which case the 'translate' and 'trees' blocks
 are parsed. 
+
+Classes:
+    - FastTreeParse
+    - TreeParser
+    - Newick2TreeNode
+    - NexusParser
+    - Matchers
+    - FastNewick2TreeNode
 """
 
 import os
 import re
 import requests
-from .TreeNode import TreeNode
-from .utils import NW_FORMAT
+from toytree.core.TreeNode import TreeNode
+from toytree.utils.globals import NW_FORMAT
+from toytree.utils.exceptions import NewickError, NexusError
+
 
 # Regular expressions used for reading newick format
 FLOAT_RE = r"\s*[+-]?\d+\.?\d*(?:[eE][-+]\d+)?\s*"
@@ -21,20 +31,8 @@ NHX_RE = r"\[&&NHX:[^\]]*\]"
 MB_BRLEN_RE = r"\[&B (\w+) [0-9.e-]+\]"
 
 
-class NewickError(Exception):
-    """Exception class designed for NewickIO errors."""
-    def __init__(self, value):
-        Exception.__init__(self, value)
 
-
-class NexusError(Exception):
-    """Exception class designed for NewickIO errors."""
-    def __init__(self, value):
-        Exception.__init__(self, value)
-
-
-
-class FastTreeParser():
+class FastTreeParser:
     """
     A less flexible but faster newick parser for performance sensitive apps.
     Only supports newick string input in format 0.

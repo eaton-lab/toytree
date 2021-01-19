@@ -2,18 +2,16 @@
 
 """
 A class object for generating and storing Toytree plotting coordinates.
-"""
-
-import numpy as np
-from .utils import ToytreeError
 
 
-"""
 TODO:
-
 - it may be useful to decompose update so plotting coords change but not idxs
 -
 """
+
+import numpy as np
+from toytree.utils.exceptions import ToytreeError
+
 
 
 class Coords:

@@ -4,15 +4,15 @@
 Rooting class
 """
 
-from .NodeAssist import NodeAssist
-from .utils import ToytreeError
+from toytree.core.NodeAssist import NodeAssist
+from toytree.utils.exceptions import ToytreeError
 
 
 class Rooter:
+    """
+    See docstring in ToyTree.root()
+    """   
     def __init__(self, tree, nastuple, resolve_root_dist, edge_features):
-        """
-        See docstring in ToyTree.root()
-        """
         # store args
         self.tree = tree
         self.resolve_root_dist = resolve_root_dist

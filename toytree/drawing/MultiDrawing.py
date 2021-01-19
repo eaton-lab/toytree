@@ -2,20 +2,20 @@
 
 """
 Classes for Drawings from MultiTrees.
-"""
-from decimal import Decimal
-import numpy as np
-import toyplot
-from .TreeStyle import TreeStyle
 
-from toyplot.mark import Mark
+"""
+
+import functools
 import xml.etree.ElementTree as xml
+from multipledispatch import dispatch
+import toyplot
+from toyplot.mark import Mark
+# from toytree.drawing.TreeStyle import TreeStyle
+
+
 
 # Register multipledispatch to share with toyplot.html
-import functools
-from multipledispatch import dispatch
 dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
-
 
 
 

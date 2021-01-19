@@ -1,8 +1,11 @@
 #!/usr/bin/env python
 
+"""
+TODO: replace with custom distance, mrca functions...
+"""
 
 import re
-from .utils import ToytreeError
+from toytree.utils.exceptions import ToytreeError
 
 
 

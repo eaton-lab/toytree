@@ -1,26 +1,30 @@
 #!/usr/bin/env python
 
 """
-A Tree Class object modified as a subset of the ete3.Tree Class
+A Node graph object forked from the ete3.Tree Class
+
+Deprecated:
+    - get_distance
+    - RF
+    - write
+New Fix:
+    - recursive copy error
+    - ...
 """
-from __future__ import print_function
+
 from builtins import range, str
 
 import random
 import itertools
-
 from hashlib import md5
 from collections import deque
 from functools import cmp_to_key
-
-# from .newick import write_newick  # , read_newick
-from .TreeWriter import NewickWriter
-from .RobinsonFoulds import RobinsonFoulds
-from .utils import TreeError
+# from .RobinsonFoulds import RobinsonFoulds
+from toytree.io.TreeWriter import NewickWriter
+from toytree.utils.exceptions import TreeError
 
 DEFAULT_EDGE_LENGTH = 1.
 DEFAULT_SUPPORT = 0.
-
 
 
 
@@ -334,46 +338,46 @@ class TreeNode(object):
         """
         if self.up is None:
             raise TreeError("A parent node is required to add a sister")
-        else:
-            # traditional 'add one tip' method
-            if sister is None:
-                return self.up.add_child(child=sister, name=name, dist=dist)
 
-            # add a tip or subtree to node creating a polytomy
-            if not split:
-                # auto-align farthest edge at tip
-                # if dist is None:
-                    # dist = self.up.height - sister.height
-                return self.up.add_child(child=sister, name=name, dist=dist)
+        # traditional 'add one tip' method
+        if sister is None:
+            return self.up.add_child(child=sister, name=name, dist=dist)
 
-            # create a new node with dist 'split_dist'
+        # add a tip or subtree to node creating a polytomy
+        if not split:
+            # auto-align farthest edge at tip
+            # if dist is None:
+                # dist = self.up.height - sister.height
+            return self.up.add_child(child=sister, name=name, dist=dist)
+
+        # create a new node with dist 'split_dist'
+        # create new node shared by sisters as up
+        olddist = self.dist
+        newnode = self.up.add_child(name='newnode')
+
+        # set sisters as newnode children
+        newnode.children = [self, sister]
+        
+        # remove sisters from old parent
+        self.up.children.remove(self)
+
+        # connect sisters to new parent
+        self.up = newnode
+        sister.up = newnode
+
+        # auto-set distances to both align nicely
+        if dist is None:
+            newnode.dist = olddist / 2.
+            self.dist = olddist / 2.
+            if isinstance(split, (int, float)):
+                sister.dist = split
             else:
-                # create new node shared by sisters as up
-                olddist = self.dist
-                newnode = self.up.add_child(name='newnode')
-
-                # set sisters as newnode children
-                newnode.children = [self, sister]
-                
-                # remove sisters from old parent
-                self.up.children.remove(self)
-
-                # connect sisters to new parent
-                self.up = newnode
-                sister.up = newnode
-
-                # auto-set distances to both align nicely
-                if dist is None:
-                    newnode.dist = olddist / 2.
-                    self.dist = olddist / 2.
-                    if isinstance(split, (int, float)):
-                        sister.dist = split
-                    else:
-                        sister.dist = olddist / 2.
-                else:
-                    sister.dist = dist
-                    self.dist = split
-                    newnode.dist = olddist - split
+                sister.dist = olddist / 2.
+        else:
+            sister.dist = dist
+            self.dist = split
+            newnode.dist = olddist - split
+        return newnode
 
 
 
@@ -1510,56 +1514,56 @@ class TreeNode(object):
         return _store
 
 
-    def robinson_foulds(
-        self, 
-        t2, 
-        attr_t1="name", 
-        attr_t2="name",
-        unrooted_trees=False, 
-        expand_polytomies=False,
-        polytomy_size_limit=5, 
-        skip_large_polytomies=False,
-        correct_by_polytomy_size=False, 
-        min_support_t1=0.0,
-        min_support_t2=0.0):
-        """
-        Returns the Robinson-Foulds symmetric distance between current
-        tree and a different tree instance.
+    # def robinson_foulds(
+    #     self, 
+    #     t2, 
+    #     attr_t1="name", 
+    #     attr_t2="name",
+    #     unrooted_trees=False, 
+    #     expand_polytomies=False,
+    #     polytomy_size_limit=5, 
+    #     skip_large_polytomies=False,
+    #     correct_by_polytomy_size=False, 
+    #     min_support_t1=0.0,
+    #     min_support_t2=0.0):
+    #     """
+    #     Returns the Robinson-Foulds symmetric distance between current
+    #     tree and a different tree instance.
 
-        Parameters:
-        -----------
-        t2: 
-            reference tree
-        attr_t1: 
-            Compare trees using a custom node attribute as a node name.
-        attr_t2: 
-            Compare trees using a custom node attribute as a node name in t2.
-        attr_t2: 
-            If True, consider trees as unrooted.
-        False expand_polytomies: 
-            If True, all polytomies in the reference and target tree will be 
-            expanded into all possible binary trees. Robinson-foulds distance 
-            will be calculated between all tree combinations and the minimum 
-            value will be returned.
-            See also, :func:`NodeTree.expand_polytomy`.
+    #     Parameters:
+    #     -----------
+    #     t2: 
+    #         reference tree
+    #     attr_t1: 
+    #         Compare trees using a custom node attribute as a node name.
+    #     attr_t2: 
+    #         Compare trees using a custom node attribute as a node name in t2.
+    #     attr_t2: 
+    #         If True, consider trees as unrooted.
+    #     False expand_polytomies: 
+    #         If True, all polytomies in the reference and target tree will be 
+    #         expanded into all possible binary trees. Robinson-foulds distance 
+    #         will be calculated between all tree combinations and the minimum 
+    #         value will be returned.
+    #         See also, :func:`NodeTree.expand_polytomy`.
 
-        Returns:
-        --------
-        (rf, rf_max, common_attrs, names, edges_t1, edges_t2, 
-         discarded_edges_t1, discarded_edges_t2)
-        """
-        rf = RobinsonFoulds(
-            self, t2, 
-            attr_t1, attr_t2, 
-            unrooted_trees,
-            expand_polytomies,
-            polytomy_size_limit,
-            skip_large_polytomies,
-            correct_by_polytomy_size,
-            min_support_t1,
-            min_support_t2,
-            )
-        return rf.compare_trees()
+    #     Returns:
+    #     --------
+    #     (rf, rf_max, common_attrs, names, edges_t1, edges_t2, 
+    #      discarded_edges_t1, discarded_edges_t2)
+    #     """
+    #     rf = RobinsonFoulds(
+    #         self, t2, 
+    #         attr_t1, attr_t2, 
+    #         unrooted_trees,
+    #         expand_polytomies,
+    #         polytomy_size_limit,
+    #         skip_large_polytomies,
+    #         correct_by_polytomy_size,
+    #         min_support_t1,
+    #         min_support_t2,
+    #         )
+    #     return rf.compare_trees()
 
 
     # def compare(self, 
