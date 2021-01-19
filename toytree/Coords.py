@@ -9,19 +9,19 @@ from .utils import ToytreeError
 
 
 """
-TODO: 
+TODO:
 
 - it may be useful to decompose update so plotting coords change but not idxs
-- 
+-
 """
 
 
 class Coords:
     """
-    Generates and stores plotting coordinates for nodes and edges of a tree. 
+    Generates and stores plotting coordinates for nodes and edges of a tree.
     Uses the toytree _style information (e.g., layout, use_edge_lengths).
 
-    Attributes: 
+    Attributes:
     -----------
     edges: ndarray
         2-d array of pairs showing (parent, child) relationships.
@@ -33,7 +33,7 @@ class Coords:
     """
     def __init__(self, ttree):
 
-        # the toytree 
+        # the toytree
         self.ttree = ttree
 
         # the vertices and edge tuples for normal layouts ('n')
@@ -74,7 +74,7 @@ class Coords:
 
     def update_idxs(self):
         """
-        set root idx highest, then all internal nodes are numbered down 
+        set root idx highest, then all internal nodes are numbered down
         in levelorder traversal, but tips are ordered numerically from
         bottom to top in right facing ladderized tree plot order.
         """
@@ -122,7 +122,7 @@ class Coords:
         """
         This could change if a tree dropped nodes.
         """
-        # use cache to fill edges array 
+        # use cache to fill edges array
         edges = np.zeros((self.ttree.nnodes - 1, 2), dtype=int)
         for idx in range(self.ttree.nnodes - 1):
             parent = self.ttree.idx_dict[idx].up
@@ -140,11 +140,11 @@ class Coords:
 
         verts = np.zeros((self.ttree.nnodes, 2), dtype=float)
 
-        # shortname 
+        # shortname
         if not use_edge_lengths:
             nbits = self.ttree.treenode.get_farthest_leaf(True)[1]
 
-        # use cache to fill edges array 
+        # use cache to fill edges array
         for idx in range(self.ttree.nnodes):
             node = self.ttree.idx_dict[idx]
 
@@ -154,7 +154,7 @@ class Coords:
                 # store radians (how far around from zero to 2pi)
                 node.radians = self.circ.tip_radians[idx]
 
-                # get positions of tips using radians and radius   
+                # get positions of tips using radians and radius
                 if use_edge_lengths:
                     node.radius = self.circ.radius - node.height
                     node.x, node.y = self.circ.get_node_coords(node)
@@ -187,14 +187,14 @@ class Coords:
 
 
     def get_linear_coords(
-        self, 
-        layout=None, 
-        use_edge_lengths=True, 
-        fixed_order=None, 
+        self,
+        layout=None,
+        use_edge_lengths=True,
+        fixed_order=None,
         fixed_position=None,
         ):
         """
-        Sets .edges, .verts for node positions. 
+        Sets .edges, .verts for node positions.
         X and Y positions here refer to base assumption that tree is right
         facing, reorient_coordinates() will handle re-translating this.        
         """
@@ -204,7 +204,7 @@ class Coords:
         # we want tips to align at the right face (larger axis number)
         fartip = self.ttree.treenode.get_farthest_leaf()[0]
         hgt = sum([
-            fartip.dist, 
+            fartip.dist,
             sum(i.dist for i in fartip.iter_ancestors() if not i.is_root())
         ])
 
@@ -218,7 +218,7 @@ class Coords:
             if node.is_leaf() and (not node.is_root()):
                 if use_edge_lengths:
                     toroot = sum(
-                        i.dist for i in node.iter_ancestors() 
+                        i.dist for i in node.iter_ancestors()
                         if not i.is_root()
                     )
                     node.y = hgt - (node.dist + toroot)
@@ -228,7 +228,7 @@ class Coords:
                 # order of xlabels
                 if fixed_order is not None:
 
-                    # the position is exxplicit
+                    # the position is explicit
                     if fixed_position is not None:
                         node.x = fixed_position[fixed_order.index(node.name)]
 
@@ -269,36 +269,36 @@ class Coords:
             adjust = verts[:, 1].min()
             verts[:, 1] -= adjust
 
-        # default: Down-facing tips align at y=0, first ladderized tip at x=0
+        # check layout is in directionals
+        if layout not in "drlu":
+            raise ToytreeError("layout not recognized")
+
+        # default: Down-facing tips align at y=0, first ladderized tip at x=0            
         if layout == 'd':
-            return verts
+            tmp = verts
 
         # right-facing tips align at x=0, last ladderized tip at y=0
-        elif layout == 'r':
-
+        if layout == 'r':
             # verts swap x and ys and make xs 0 to negative
             tmp = np.zeros(verts.shape)
             tmp[:, 1] = verts[:, 0]
             tmp[:, 0] = verts[:, 1] * -1
-            return tmp
 
         elif layout == 'l':
-
             # verts swap x and ys and make xs 0 to negative
             tmp = np.zeros(verts.shape)
             tmp[:, 1] = verts[:, 0]
             tmp[:, 0] = verts[:, 1] 
-            return tmp
 
-        elif layout == 'u':
+        # elif layout == 'u':
+        else:
             # verts swap x and ys and make xs 0 to negative
             tmp = np.zeros(verts.shape)
             tmp[:, 1] = verts[:, 1] * -1
             tmp[:, 0] = verts[:, 0] * -1
-            return tmp
 
-        else:
-            raise ToytreeError("layout not recognized")
+        return tmp
+       
 
 
 
@@ -319,14 +319,13 @@ class Coords:
 
 
 
-
-
-
-
-
-
-
-
+    def get_unrooted_coords(self, layout):
+        """
+        Project nodes onto an unrooted layout of either type A or B.
+        """
+        
+        # get projection
+        return self
 
 
 
