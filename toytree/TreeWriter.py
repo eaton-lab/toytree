@@ -239,7 +239,6 @@ def get_features(self, features=None):
     return string
 
 
-
-
 def is_leaf(node):
     return not bool(node.children)
+    
