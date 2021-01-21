@@ -74,10 +74,9 @@ def unittree(ntips, treeheight=1.0, random_names=False, seed=None):
     tre = rtree(ntips, seed=rng.integers(0, 1e9))
 
     # ladderize, extend terminal edges to align, scale total height
-    tre = (ToyTree(tre)
-        .ladderize()
-        .mod.make_ultrametric()
-        .mod.node_scale_root_height(treeheight)
+    tre = (tre
+        .mod.make_ultrametric(nocopy=True)
+        .mod.node_scale_root_height(treeheight, nocopy=True)
     )
 
     # randomize names

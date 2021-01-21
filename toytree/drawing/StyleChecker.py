@@ -47,7 +47,6 @@ class StyleChecker:
         TODO: check for None and convert to "none"?
         TODO: convert all fill/stroke to rgb and stroke-opacity.
         """
-
         # check for allowable types
         self.style.node_style = toyplot.style.require(
             self.style.node_style, toyplot.style.allowed.marker)
