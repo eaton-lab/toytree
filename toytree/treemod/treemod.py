@@ -22,7 +22,7 @@ __all__ = [
 
 
 
-def node_scale_root_height(tre, treeheight=1, include_stem=False, inplace=False):
+def node_scale_root_height(tre, treeheight=1, include_stem=False, nocopy=False):
     """
     Returns a toytree copy with all nodes multiplied by a constant 
     so that the root node height equals the value entered for 
@@ -30,7 +30,7 @@ def node_scale_root_height(tre, treeheight=1, include_stem=False, inplace=False)
     the tree so that the root + root.dist is equal to treeheight. 
     This effectively sets the stem height.
     """
-    if not inplace:
+    if not nocopy:
         tre = tre.copy()
 
     # get total tree height
@@ -120,7 +120,7 @@ def node_multiplier(tre, multiplier=0.5, seed=None):
 
 
 
-def make_ultrametric(tre, strategy=1, inplace=False):
+def make_ultrametric(tre, strategy=1, nocopy=False):
     """
     Returns a tree with branch lengths transformed so that the tree is 
     ultrametric. Strategies include:
@@ -133,14 +133,13 @@ def make_ultrametric(tre, strategy=1, inplace=False):
     (3) penalized-likelihood: 
         not yet supported.
     """
-    if not inplace:
+    if not nocopy:
         tre = tre.copy()
 
     if strategy == 1:
         for node in tre.treenode.traverse():
             if node.is_leaf():
                 node.dist += node.height
-                # node.dist = node.height + 1
     else:
         raise NotImplementedError(
             "Strategy {} not yet implemented. Seeking developers."
