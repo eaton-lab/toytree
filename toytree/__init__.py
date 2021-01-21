@@ -18,9 +18,13 @@ from . import drawing
 from . import random
 from . import treemod
 from .core.TreeNode import TreeNode
+from .utils.logger import set_loglevel
 # from .drawing import *
 # from .random import *
 # from .pcm import *
 
 # legacy support
 import toytree.random as rtree
+
+# start the logger in INFO
+set_loglevel("WARNING")
