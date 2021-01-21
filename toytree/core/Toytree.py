@@ -6,13 +6,16 @@ Nearly all API functions are accessible from a toytree, including
 tree i/o, modifications, drawing, and analysis.
 
 TODO: Test for speed improvements: 
+- down-facing drawing is broken...
+- fixed-order and tip-labels colors together
+- show bede how to flip scalebar.
+- node_colors supports colormap (docstring link to plot docs)
 - replace fuzzy name calls with NodeAssist
 - reduce deepcopies
 - reduce traversals.
 - .newick and .write are redundant, and need feature support.
 - make separate .get_node_values and .get_node_labels
 - use set_node_heights in set_node_feature('heights')
-
 """
 
 from __future__ import print_function, absolute_import
@@ -20,6 +23,7 @@ from __future__ import print_function, absolute_import
 import itertools
 from decimal import Decimal
 import numpy as np
+from loguru import logger
 
 from toytree.core.TreeNode import TreeNode
 from toytree.core.NodeAssist import NodeAssist
@@ -37,11 +41,9 @@ from toytree.treemod.api import TreeModAPI
 from toytree.pcm.api import PhyloCompAPI
 
 
-
-
 class ToyTree(object):
     """
-    Toytree class object. 
+    Toytree object for parsing, writing, drawing, and analyzing trees.
 
     Parameters:
     -----------
@@ -51,7 +53,8 @@ class ToyTree(object):
         be reloaded from another ToyTree or TreeNode object.
 
     tree_format: int
-        Format of the newick tree structure to be parsed (see ete3)
+        Format of the newick tree structure to be parsed (see ete3).
+        Default is tree_format=0.
     """
     def __init__(self, newick=None, tree_format=0, **kwargs):
 
@@ -60,15 +63,12 @@ class ToyTree(object):
         self.ntips = 0
         self.idx_dict = {}
         self.treenode = None
-        self.style = None
+        self.style = TreeStyle(tree_style='n')
 
         # Class objects for plot coordinates, treemods, and analysis.
         self._coords = None
         self.mod = TreeModAPI(self)
         self.pcm = PhyloCompAPI(self)
-
-        # if loading from a Toytree then inherit that trees draw style
-        inherit_style = False
 
         # load from a TreeNode and detach. Must have .idx attributes on nodes.
         if isinstance(newick, TreeNode):
@@ -77,7 +77,7 @@ class ToyTree(object):
         # load TreeNode from a ToyTree (user should just use .copy())
         elif isinstance(newick, ToyTree):
             self.treenode = newick.treenode
-            inherit_style = True
+            self.style = newick.style
 
         # parse a str, URL, or file
         elif isinstance(newick, (str, bytes)):
@@ -87,19 +87,11 @@ class ToyTree(object):
         else:
             self.treenode = TreeNode()
 
-        # ladderize the tree unless user fixed order and wants it not.
-        # if not self._fixed_order:
+        # enforce ladderize
         self.treenode.ladderize()
 
-        # Object for storing default plot settings or saved styles.
-        # Calls several update functions when self.draw() to fit canvas.
-        if inherit_style:
-            self.style = newick.style
-        else:
-            self.style = TreeStyle(tree_style='n')
-
-        # get drawing coordinates
-        self._coords = Coords(self)        
+        # get drawing coordinates; must be called after all above.
+        self._coords = Coords(self)
         self._coords.update()
 
 
@@ -155,7 +147,6 @@ class ToyTree(object):
             Features of treenodes that should be written to the newick string
             in NHX format. Examples include "height", "idx", or other features
             you may have saved to treenodes. 
-
         """
         if self.treenode.children:
             # features = {"name", "dist", "support", "height", "idx"}
@@ -297,25 +288,21 @@ class ToyTree(object):
         """
         No longer supported. See get_edge_values_mapped()
         """
-        print("Warning: get_edge_values_from_dict no longer supported."
-              " See get_edge_values_mapped() as a replacement.")
+        logger.warning(
+            "FutureWarning: get_edge_values_from_dict() no longer supported."
+            " See get_edge_values_mapped() as a replacement.")
         return self.get_edge_values_mapped(node_value_dict, include_stem)
 
 
-
+    # TODO: replace TN with custom funcs in NAS
     def get_mrca_idx_from_tip_labels(self, names=None, wildcard=None, regex=None):
         """
         Returns the node idx label of the most recent common ancestor node 
         for the clade that includes the selected tips. Arguments can use fuzzy
         name matching: a list of tip names, wildcard selector, or regex string.
         """
-        ns = NodeAssist(self, names, wildcard, regex)
-        return ns.get_mrca().idx
-        # if not any([names, wildcard, regex]):
-        #     raise ToytreeError("at least one argument required")
-        # node = fuzzy_match_tipnames(
-        #     self, names, wildcard, regex, True, False)
-        # return node.idx
+        nas = NodeAssist(self, names, wildcard, regex)
+        return nas.get_mrca().idx
 
 
     def get_node_descendant_idxs(self, idx=None):
@@ -339,8 +326,7 @@ class ToyTree(object):
             layout = self.style.layout
         if layout == 'c':
             return self._coords.get_radial_coords(use_edge_lengths)
-        else:
-            return self._coords.get_linear_coords(layout, use_edge_lengths)
+        return self._coords.get_linear_coords(layout, use_edge_lengths)
 
 
     def get_node_values(self, feature=None, show_root=False, show_tips=False):
@@ -430,7 +416,7 @@ class ToyTree(object):
             If True keys are names, if False keys are node idx labels.
         """
         if return_internal:
-            nodes = [i for i in self.treenode.traverse("preorder")]
+            nodes = list(self.treenode.traverse("preorder"))
 
             # names must be unique
             if keys_as_names:                  
@@ -444,16 +430,12 @@ class ToyTree(object):
             if return_nodes:
                 if keys_as_names:
                     return {i.name: i for i in nodes}
-                else:
-                    return {i.idx: i for i in nodes}
-            else:
-                return {i.idx: i.name for i in nodes}
-        else:
-            nodes = [i for i in self.treenode.traverse("preorder") if i.is_leaf()]
-            if return_nodes:
                 return {i.idx: i for i in nodes}
-            else:
-                return {i.idx: i.name for i in nodes}
+            return {i.idx: i.name for i in nodes}
+        nodes = [i for i in self.treenode.traverse("preorder") if i.is_leaf()]
+        if return_nodes:
+            return {i.idx: i for i in nodes}
+        return {i.idx: i.name for i in nodes}
 
 
     def get_tip_coordinates(self, layout=None, use_edge_lengths=True):
@@ -479,31 +461,17 @@ class ToyTree(object):
 
     def get_tip_labels(self, idx=None):
         """
-        Returns tip labels in the order they will be plotted on the tree, i.e.,
-        starting from zero axis and counting up by units of 1 (bottom to top 
-        in right-facing trees; left to right in down-facing). If 'idx' is 
-        indicated then a list of tip labels descended from that node will be 
-        returned, instead of all tip labels. This is useful in combination 
-        with other functions that select nodes/clades of the tree based on a 
-        list of tip labels. You can use the toytree draw() command with 
-        tip_labels='idx' or tip_labels=True to see idx labels plotted on nodes. 
+        Returns tip labels in the order they will be plotted on the 
+        tree, i.e., "preorder traversal", which will appear from the
+        zero axis and counting up by units of 1 on right-facing 
+        ladderized tree.
 
         Parameters:
-            idx (int): index label of a node.
+            idx (int): idx label of a single node to return name of.
         """
-        if idx is not None:
-            treenode = self.idx_dict[idx]
-            # if self._fixed_order:
-                # return [str(i) for i in self._fixed_order if i in 
-                        # treenode.get_leaf_names()]
-            # else:
-            return [str(i) for i in treenode.get_leaf_names()[::-1]]
-
-        else:
-            # if self._fixed_order:
-                # return [str(i) for i in self._fixed_order]
-            # else:
-            return [str(i) for i in self.treenode.get_leaf_names()[::-1]]
+        if idx:
+            return self.idx_dict[idx].name
+        return [self.idx_dict[idx].name for idx in range(self.ntips)]
 
 
     def set_node_values(self, feature, values=None, default=None):
@@ -596,17 +564,16 @@ class ToyTree(object):
         return nself
 
 
-
     def copy(self):
         """ 
-        Returns a new ToyTree equivalent to a deepcopy (but faster) 
+        Returns a new ToyTree equivalent to a deepcopy (but faster).
         """
         # copy treenodes w/ topology, node attrs, nnodes, ntips, 
         # and idx_dict... copy=True is important, or atlest kwargs is...
         nself = ToyTree(
             self.treenode._clone(), 
-            # fixed_order=self._fixed_order,
             copy=True,
+            # fixed_order=self._fixed_order,
         )
 
         # update style dicts
@@ -616,11 +583,6 @@ class ToyTree(object):
         # nself._coords.edges = nself._coords.get_edges()
         # nself._coords.verts = self._coords.verts.copy()
         return nself
-
-    # deprecated 
-    # def copy(self):
-    #     """ returns a deepcopy of the tree object"""
-    #     return deepcopy(self)
 
 
     def is_rooted(self):
@@ -632,6 +594,7 @@ class ToyTree(object):
         return True
 
 
+    # TODO: replace with .nnodes
     def is_bifurcating(self, include_root=True):
         """
         Returns False if there is a polytomy in the tree, including if the tree
