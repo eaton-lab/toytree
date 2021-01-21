@@ -1,7 +1,19 @@
 #!/usr/bin/env python
 
-from setuptools import setup, find_packages
+"""
+Uesrs: Install with conda:
+    conda install toytree -c conda-forge
+
+Developers: Install with git + pip
+    conda install toytree -c conda-forgex
+    git clone https://github.com/eaton-lab/toytree
+    cd toytree/
+    pip install -e . --no-deps
+"""
+
 import re
+from setuptools import setup, find_packages
+
 
 # get version from __init__.py
 INITFILE = "toytree/__init__.py"
@@ -23,6 +35,8 @@ setup(
     install_requires=[
         "toyplot",
         "numpy",
+        "pandas",
+        "loguru",
         "requests",
         "future",
     ],
