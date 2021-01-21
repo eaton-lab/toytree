@@ -48,7 +48,7 @@ class TreeModAPI:
 
 
 
-    def make_ultrametric(self, strategy=1, inplace=False):
+    def make_ultrametric(self, strategy=1, nocopy=False):
         """
         Returns a tree with branch lengths transformed so that the tree is 
         ultrametric. Strategies include:
@@ -61,4 +61,4 @@ class TreeModAPI:
         (3) penalized-likelihood: 
             not yet supported.
         """
-        return make_ultrametric(self._tree, strategy, inplace)
+        return make_ultrametric(self._tree, strategy, nocopy)
