@@ -19,7 +19,6 @@ import itertools
 from hashlib import md5
 from collections import deque
 from functools import cmp_to_key
-# from .RobinsonFoulds import RobinsonFoulds
 from toytree.io.TreeWriter import NewickWriter
 from toytree.utils.exceptions import TreeError
 
