@@ -138,7 +138,7 @@ class StyleChecker:
             self.style.tip_labels_colors = toyplot.color.broadcast(arg, self.ntips, None)
 
             # if all the same then reset to None
-            if len(set([str(i) for i in self.style.tip_labels_colors])) == 1:
+            if len(set(str(i) for i in self.style.tip_labels_colors)) == 1:
 
                 # save the fixed color and set to None
                 color = self.style.tip_labels_colors[0]

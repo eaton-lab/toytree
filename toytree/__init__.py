@@ -10,8 +10,8 @@ __author__ = "Deren Eaton"
 
 # bring API shortcuts to the front
 from toytree.core.Toytree import ToyTree as tree
-# from .Toytree import RawTree as rawtree
-# from .Multitree import MultiTree as mtree
+from toytree.core.Multitree import MultiTree as mtree
+from toytree.core.Rawtree import RawTree as rawtree
 
 # accessible as toytree.[module].[func] or tree.[module].[func]
 from . import drawing

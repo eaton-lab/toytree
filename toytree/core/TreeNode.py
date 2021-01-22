@@ -100,17 +100,20 @@ class TreeNode(object):
     # properties
     ############################################################
     @property
-    def dist(self): 
+    def dist(self):
+        "TreeNode edge length (distance) feature."
         return self._dist
     @dist.setter
     def dist(self, value):
         try:
             self._dist = float(value)
-        except ValueError:
-            raise TreeError('node dist must be a float number')
+        except ValueError as err:
+            raise TreeError('node dist must be a float number') from err
 
 
     # TODO: setting height should change the .dist values...
+    # this could also be queried faster if we used the .x and .y 
+    # info from Coords, and/or stored the .toroot distances from coords.
     @property
     def height(self):
         # i = 0
@@ -1088,8 +1091,8 @@ class TreeNode(object):
 
     def get_farthest_leaf(self, topology_only=False, is_leaf_fn=None):
         """
-        Returns node's farthest descendant node (which is always a leaf), and the
-        distance to it.
+        Returns node's farthest descendant node (which is always a leaf)
+        and the distance to it.
 
         :argument False topology_only: If set to True, distance
           between nodes will be referred to the number of nodes
@@ -1099,14 +1102,18 @@ class TreeNode(object):
         :return: A tuple containing the farthest leaf referred to the
           current node and the distance to it.
         """
-        min_node, min_dist, max_node, max_dist = self._get_farthest_and_closest_leaves(
-        topology_only=topology_only, is_leaf_fn=is_leaf_fn)
+        min_node, min_dist, max_node, max_dist = (
+            self._get_farthest_and_closest_leaves(
+                topology_only=topology_only, 
+                is_leaf_fn=is_leaf_fn,
+            )
+        )
         return max_node, max_dist
 
 
     def get_closest_leaf(self, topology_only=False, is_leaf_fn=None):
-        """Returns node's closest descendant leaf and the distance to
-        it.
+        """
+        Returns node's closest descendant leaf and the distance to it.
 
         :argument False topology_only: If set to True, distance
           between nodes will be referred to the number of nodes
