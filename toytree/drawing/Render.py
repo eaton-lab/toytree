@@ -9,9 +9,11 @@ TODO:
   - container tree to Mark
 """
 
+
 import functools
 import xml.etree.ElementTree as xml
 from multipledispatch import dispatch
+from loguru import logger
 import numpy as np
 import toyplot
 from toyplot.html import _draw_bar, _draw_triangle, _draw_circle, _draw_rect
@@ -20,7 +22,7 @@ from toytree.drawing.ToytreeMark import ToytreeMark
 from toytree.utils.globals import PATH_FORMAT
 
 
-# Register multipledispatch to share with toyplot.html
+# Register multipledispatch to use the toyplot.html namespace
 dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 
 @dispatch(toyplot.coordinates.Cartesian, ToytreeMark, toyplot.html.RenderContext)
@@ -91,15 +93,15 @@ class RenderToytree:
                     self.axes.project('y', self.mark.ybaseline), ntips)
 
             # coords of tips around a circumference 
-            elif self.mark.layout in ('c'):
+            elif self.mark.layout == 'c':
                 self.tips_x = np.zeros(ntips)
                 self.tips_y = np.zeros(ntips)
                 for idx, angle in enumerate(self.mark.tip_labels_angles):
                     radian = np.deg2rad(angle)
-                    cx = 0 + max(self.mark.radii) * np.cos(radian)
-                    cy = 0 - max(self.mark.radii) * np.sin(radian)
-                    self.tips_x[idx] = self.axes.project('x', cx)
-                    self.tips_y[idx] = self.axes.project('y', cy)             
+                    cordx = 0 + max(self.mark.radii) * np.cos(radian)
+                    cordy = 0 - max(self.mark.radii) * np.sin(radian)
+                    self.tips_x[idx] = self.axes.project('x', cordx)
+                    self.tips_y[idx] = self.axes.project('y', cordy)             
 
 
 

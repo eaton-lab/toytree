@@ -1,9 +1,15 @@
 #!/usr/bin/env python
 
 """
-A toytree Mark Class object built on the toyplot Mark constructor
+A toytree Mark Class object built on the toyplot Mark constructor. 
+This simply inits the Style arguments passed from draw that have 
+already been checked by StyleChecker and it established the 
+domain and extents.
+
+TODO: maybe make an Extents class to construct more clearly.
 """
 
+from loguru import logger
 import toyplot
 import numpy as np
 from toyplot.mark import Mark
