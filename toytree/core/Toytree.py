@@ -1046,19 +1046,19 @@ class ToyTree(object):
 
         # optionally override current style with style args entered to draw()
         kwargs.update(userargs)
-        user = dict([
+        user = dict(
             ("_" + i, j) if isinstance(j, dict) else (i, j)
             for (i, j) in kwargs.items() if j is not None
-        ])
+        )
         curstyle.update(user)
 
-        # warn user if they entered kwargs that arent't supported:
+        # warn user if they entered kwargs that arent't supported.
         allkeys = list(userargs.keys()) + ["debug", "ts"]
         unrecognized = [i for i in kwargs if i not in allkeys]
         if unrecognized:
-            print("unrecognized arguments skipped: {}"
-                  "\ncheck the docs, argument names may have changed."
-                  .format(unrecognized))
+            logger.warning("Unrecognized arguments skipped: {}"
+                "\ncheck the docs, argument names may have changed."
+                .format(unrecognized))
 
         # update coords based on layout
         edges = self._coords.get_edges()
@@ -1070,20 +1070,21 @@ class ToyTree(object):
                 curstyle.use_edge_lengths,
                 fixed_order,
                 fixed_position,
-                )
+            )
+        logger.debug('verts\n{}'.format(verts))
 
         # check all styles
         fstyle = StyleChecker(self, curstyle).style
 
         # debugging returns the mark and prints the modified kwargs
         if kwargs.get('debug'):
-            print(user)
+            logger.debug(user)
             return fstyle
 
         # get canvas and axes
-        cs = CanvasSetup(self, axes, fstyle)
-        canvas = cs.canvas
-        axes = cs.axes
+        csetup = CanvasSetup(self, axes, fstyle)
+        canvas = csetup.canvas
+        axes = csetup.axes
 
         # generate toyplot Mark
         mark = ToytreeMark(ntable=verts, etable=edges, **fstyle.to_dict())
