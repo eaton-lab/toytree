@@ -41,7 +41,7 @@ class Coords:
 
     def update(self, layout=None):
         """
-        Updates cartesian coordinates for drawing tree graph
+        Updates idx_dict and coordinates for drawing tree graph.
         """
         # new idx_dict (can't just overwrite existing b/c nnodes may changed)
         self.ttree.idx_dict = {}
@@ -56,7 +56,6 @@ class Coords:
 
         # updates idxs and fixed_idx for any tree manipulations
         self.update_idxs()
-        self.circ = Circle(self.ttree)
 
         # get new edges shape and fill idx_dict
         self.edges = self.get_edges()
@@ -135,7 +134,7 @@ class Coords:
         Assign .edges and .verts for node positions in a fan tree.
         The farthest tip aligns at the circumference.
         """
-
+        circ = Circle(self.ttree)
         verts = np.zeros((self.ttree.nnodes, 2), dtype=float)
 
         # shortname
@@ -150,29 +149,29 @@ class Coords:
             if node.is_leaf() and (not node.is_root()):
 
                 # store radians (how far around from zero to 2pi)
-                node.radians = self.circ.tip_radians[idx]
+                node.radians = circ.tip_radians[idx]
 
                 # get positions of tips using radians and radius
                 if use_edge_lengths:
-                    node.radius = self.circ.radius - node.height
-                    node.x, node.y = self.circ.get_node_coords(node)
+                    node.radius = circ.radius - node.height
+                    node.x, node.y = circ.get_node_coords(node)
                 else:
                     node.radius = nbits
-                    node.x, node.y = self.circ.get_node_coords(node)
+                    node.x, node.y = circ.get_node_coords(node)
 
             # internal nodes comes after tips. Inherit position from children.
             else:
 
                 # height is either distance or nodes from root
                 if use_edge_lengths:
-                    node.radius = self.circ.radius - node.height
+                    node.radius = circ.radius - node.height
                 else:
                     node.radius = sum(1 for i in node.iter_ancestors())
                     # max([i.radius for i in node.children]) - 1
 
                 # x position is halfway between children x-pos
                 node.radians = np.mean([i.radians for i in node.children])
-                node.x, node.y = self.circ.get_node_coords(node)
+                node.x, node.y = circ.get_node_coords(node)
 
             # store the x,y vertex positions
             verts[node.idx] = [node.x, node.y]
@@ -196,7 +195,7 @@ class Coords:
         X and Y positions here refer to base assumption that tree is right
         facing, reorient_coordinates() will handle re-translating this.        
         """
-        logger.debug("getting {} coords".format(layout))
+        logger.debug("get {} coords".format(layout))
         verts = np.zeros((self.ttree.nnodes, 2), dtype=float)
 
         # store verts array with x,y positions of nodes (lengths of branches)
@@ -236,7 +235,7 @@ class Coords:
                         node.x = fixed_order.index(node.name)
                 else:
 
-                    # the position is exxplicit
+                    # the position is explicit
                     if fixed_position is not None:
                         node.x = fixed_position[node.idx]
 
@@ -275,6 +274,7 @@ class Coords:
         # default: Down-facing tips align at y=0, first ladderized tip at x=0            
         if layout == 'd':
             tmp = verts
+            tmp[:, 1] = verts[:, 1] * -1
 
         # right-facing tips align at x=0, last ladderized tip at y=0
         if layout == 'r':
@@ -299,32 +299,29 @@ class Coords:
         return tmp
        
 
+    # def get_radii(self, layout):
+    #     """
+    #     radius of every node relative to 0,0 origin.
+    #     """
+    #     # custom request layout
+    #     if layout is None:
+    #         layout = self.ttree.layout
+
+    #     # get circular layout
+    #     if layout == 'c':
+    #         self.radii = np.array(
+    #             [self.ttree.idx_dict[i].radius for i in range(self.nnodes)])
+    #     else:
+    #         self.radii = np.repeat(0, self.ntips)
 
 
-    def get_radii(self, layout):
-        """
-        radius of every node relative to 0,0 origin.
-        """
-        # custom request layout
-        if layout is None:
-            layout = self.ttree.layout
-
-        # get circular layout
-        if layout == 'c':
-            self.radii = np.array(
-                [self.ttree.idx_dict[i].radius for i in range(self.nnodes)])
-        else:
-            self.radii = np.repeat(0, self.ntips)
-
-
-
-    def get_unrooted_coords(self, layout):
-        """
-        Project nodes onto an unrooted layout of either type A or B.
-        """
+    # def get_unrooted_coords(self, layout):
+    #     """
+    #     Project nodes onto an unrooted layout of either type A or B.
+    #     """
         
-        # get projection
-        return self
+    #     # get projection
+    #     return self
 
 
 
