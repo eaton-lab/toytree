@@ -8,4 +8,4 @@ A collection of distance functions for:
 """
 
 
-from .distance import get_internal_node_distance_matrix
+from .distance import *

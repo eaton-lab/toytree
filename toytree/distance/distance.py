@@ -10,21 +10,16 @@ A collection of distance functions for:
 import itertools
 import numpy as np
 import pandas as pd
-from toytree.utils import ToytreeError
+from toytree.utils.exceptions import ToytreeError
 
 
-
-class NodeDistances:
-    pass
-
-
-class SequenceDistances:
-    pass
-
-
-class TreeDistances:
-    pass
-
+__all__ = [
+    "get_mrca",
+    "get_node_distance",
+    "get_tip_distance_matrix",
+    "get_internal_node_distance_matrix",
+    "get_node_distance_matrix",
+]
 
 
 # about 3X faster than TreeNode.get_common_ancestor()
@@ -60,7 +55,7 @@ def get_mrca(tre, *node_idxs):
 # >3X faster than TreeNode.get_distance(), and scales better.
 # If the tree is ultrametric we could calculate 2X faster by just 
 # doubling the distance to mrca...
-def get_patristic_distance(tre, idx0, idx1, topology_only=False):
+def get_node_distance(tre, idx0, idx1, topology_only=False):
     """
     Returns the patristic distance between two nodes on a tree.
     """
@@ -91,8 +86,8 @@ def get_patristic_distance(tre, idx0, idx1, topology_only=False):
 # 
 def get_internal_node_distance_matrix(tre, topology_only=False):
     """
-    Create distance matrix between internal nodes of a tree and 
-    returns as a labeled Pandas.DataFrame.
+    Return distance matrix between internal nodes of a tree as 
+    a labeled Pandas.DataFrame.
     """
     inodes = np.arange(tre.ntips, tre.nnodes)
     dists = pd.DataFrame(
@@ -102,7 +97,47 @@ def get_internal_node_distance_matrix(tre, topology_only=False):
     )
     for nodepair in itertools.permutations(inodes, 2):
         idx, jdx = nodepair
-        dist = get_patristic_distance(tre, idx, jdx, topology_only)
+        dist = get_node_distance(tre, idx, jdx, topology_only)
+        dists.loc[idx, jdx] = dist
+        dists.loc[jdx, idx] = dist
+    return dists
+
+
+
+def get_node_distance_matrix(tre, topology_only=False):
+    """
+    Return distance matrix between all nodes of a tree as 
+    a labeled Pandas.DataFrame.
+    """
+    inodes = np.arange(tre.nnodes)
+    dists = pd.DataFrame(
+        columns=inodes,
+        index=inodes,
+        data=np.zeros((inodes.size, inodes.size))
+    )
+    for nodepair in itertools.permutations(inodes, 2):
+        idx, jdx = nodepair
+        dist = get_node_distance(tre, idx, jdx, topology_only)
+        dists.loc[idx, jdx] = dist
+        dists.loc[jdx, idx] = dist
+    return dists
+
+
+
+def get_tip_distance_matrix(tre, topology_only=False):
+    """
+    Return distance matrix between tip nodes of a tree as a 
+    labeled Pandas.DataFrame.
+    """
+    inodes = np.arange(tre.ntips)
+    dists = pd.DataFrame(
+        columns=inodes,
+        index=inodes,
+        data=np.zeros((inodes.size, inodes.size))
+    )
+    for nodepair in itertools.permutations(inodes, 2):
+        idx, jdx = nodepair
+        dist = get_node_distance(tre, idx, jdx, topology_only)
         dists.loc[idx, jdx] = dist
         dists.loc[jdx, idx] = dist
     return dists

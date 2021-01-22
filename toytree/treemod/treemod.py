@@ -45,6 +45,8 @@ def node_scale_root_height(tre, treeheight=1, include_stem=False, nocopy=False):
     else:
         for node in tre.treenode.traverse():
             node.dist = (node.dist / height) * treeheight
+
+    # update idx and coordinates
     tre._coords.update()
     return tre
 
