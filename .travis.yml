@@ -19,7 +19,7 @@ install:
   - conda install pip notebook nbconvert -qy
 
   # install toytree from master using pip
-  - git clone https://github.com/eaton-lab/toytree.git toytree-git
+  - git clone -b reorg https://github.com/eaton-lab/toytree.git toytree-git
   - cd toytree-git
   - pip install -e .
   - cd ..
