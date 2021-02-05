@@ -128,7 +128,7 @@ NW_FORMAT = {
 
 
 
-def parse_network(net, disconnect=True):
+def parse_network(net, disconnect=True, root=None):
     """
     Parse network to extract the major topology. 
     This leaves the hybrid nodes in the tree and labels each with 
@@ -160,11 +160,14 @@ def parse_network(net, disconnect=True):
     # store admix data
     admix = {}
 
-    # if not rooted choose any non-H root
-    if not net.is_rooted():
-        net = net.root(
-            [i for i in net.get_tip_labels() if not i.startswith("#H")][0]
-        )
+    if not root:
+        # if not rooted choose any non-H root
+        if not net.is_rooted():
+            net = net.root(
+                [i for i in net.get_tip_labels() if not i.startswith("#H")][0]
+            )
+    else:
+        net = net.root(root)
 
     # Traverse tree to find hybrid nodes. If a hybrid node is labeled as a 
     # distinct branch in the tree then it is dropped from the tree and 
