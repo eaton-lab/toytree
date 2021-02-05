@@ -133,6 +133,8 @@ def parse_network(net, disconnect=True, root=None):
     Parse network to extract the major topology. 
     This leaves the hybrid nodes in the tree and labels each with 
     .name="H{int}" and .gamma={float}.
+    root: list of tip names used to root the tree. If "None" then roots on a
+    random tip.
     """
     # if net is a file then read the first line
     if os.path.exists(net):
@@ -160,6 +162,7 @@ def parse_network(net, disconnect=True, root=None):
     # store admix data
     admix = {}
 
+    # root on tips if provided by user -- otherwise pick a non-H root
     if not root:
         # if not rooted choose any non-H root
         if not net.is_rooted():
