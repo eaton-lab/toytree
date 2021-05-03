@@ -7,7 +7,7 @@ code until it finds a more permanent home.
 
 from __future__ import print_function, division, absolute_import
 import re
-from toytree.utils.exceptions import ToytreeError
+from exceptions import ToytreeError
 
 
 
@@ -24,6 +24,7 @@ def bpp2newick(bppnewick):
 
 
 
+# Deprecated in place of NodeAssist (TODO: remove all usage from code)
 # def fuzzy_match_tipnames(ttree, names, wildcard, regex, mono=True, retnode=True):
 def fuzzy_match_tipnames(ttree, names, wildcard, regex, mrca=True, mono=True):
     """

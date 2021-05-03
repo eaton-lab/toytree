@@ -112,4 +112,3 @@ NW_FORMAT = {
         ('dist', str, True),
     ]
 }
-

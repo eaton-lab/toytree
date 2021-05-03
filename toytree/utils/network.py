@@ -132,4 +132,3 @@ def parse_network(net, disconnect=True):
     net._coords.update()
     net = net.ladderize()
     return net, admix
-

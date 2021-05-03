@@ -29,5 +29,3 @@ class NexusError(Exception):
     """Exception class designed for NewickIO errors."""
     def __init__(self, value):
         Exception.__init__(self, value)
-
-

@@ -5,6 +5,11 @@ A collection of distance functions for:
     1. distances between nodes on a tree (e.g., patristic).
     2. distances between trees (e.g., RF)
     3. distances between sequences (int or str/bytes seq arrays).
+
+For testing:
+    - compare against R package treedist
+        - test resolved and unresolved trees
+        - test rooted and unrooted trees
 """
 
 import itertools
@@ -13,6 +18,7 @@ import pandas as pd
 from toytree.utils.exceptions import ToytreeError
 
 
+# put functions here to have then exposed to Toytree API
 __all__ = [
     "get_mrca",
     "get_node_distance",
