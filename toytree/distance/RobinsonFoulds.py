@@ -5,8 +5,8 @@ Robinson-Foulds Distance Calculations modified from ete3 TreeNode subfunction.
 """
 
 from __future__ import print_function
-from .utils import TreeError
-# from .TreeParser import TreeParser
+from toytree.utils.exceptions import TreeError
+
 
 
 class RobinsonFoulds(object):
@@ -132,6 +132,10 @@ class RobinsonFoulds(object):
 
 
     def get_corrections(self):
+        """
+        Calculates the number of extra *edges* from each tree and 
+        returns the max value.
+        """ 
         # correct for the N polytomies
         if self.correct_by_polytomy_size:
             corr1 = (
