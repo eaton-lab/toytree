@@ -129,10 +129,7 @@ def make_ultrametric(tre, strategy=1, nocopy=False):
 
     (1) tip-align: 
         extend tips to the length of the fartest tip from the root; 
-    (2) NPRS: 
-        non-parametric rate-smoothing: minimize ancestor-descendant local 
-        rates on branches to align tips (not yet supported); and 
-    (3) penalized-likelihood: 
+    (2) penalized-likelihood: 
         not yet supported.
     """
     if not nocopy:

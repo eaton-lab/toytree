@@ -18,9 +18,11 @@ TODO: Test for speed improvements:
 - use set_node_heights in set_node_feature('heights')
 """
 
-from __future__ import print_function, absolute_import
+# inconsistent-return-statements
 
 import itertools
+from typing import Union, Optional, Mapping, Iterable, List
+from pathlib import Path
 from decimal import Decimal
 import numpy as np
 from loguru import logger
@@ -41,7 +43,240 @@ from toytree.treemod.api import TreeModAPI
 from toytree.pcm.api import PhyloCompAPI
 
 
-class ToyTree(object):
+# PEP 484 recommend capitalizing alias names
+Url = str
+
+class TreeBase:
+    def __init__(self, treenode:Optional[TreeNode]=None):
+        self.treenode = treenode
+        self.mod = TreeModAPI(self)
+        self.pcm = PhyloCompAPI(self)
+        self.style = TreeStyle(tree_style='n')
+
+
+class ToyTree2(TreeBase):
+    def __init__(self, treenode):
+        super().__init__(treenode)
+
+        # filled by Coords
+        self.nnodes: int = 0
+        self.ntips: int = 0
+        self.idx_dict: Mapping[int,TreeNode] = {}
+
+        # compile coords
+        self._coords: np.ndarray = Coords(self)
+        self._coords.update()
+
+    def __str__(self):
+        """ return ascii tree ... (not sure whether to keep this) """
+        return self.treenode.__str__()
+
+    def __repr__(self):
+        """ return nnodes, ntips, other info"""
+        return f"<ToyTree ntips={self.ntips}, ...>"
+
+    def __len__(self):
+        """ return len of treenode (ntips) """
+        return self.ntips
+
+    @property
+    def features(self):
+        """
+        Returns a set of all features assigned as attributes to any 
+        TreeNodes in the Toytree by using .set_node_values().
+        """
+        feats = set()
+        for node in self.treenode.traverse():
+            feats.update(node.features)    
+        return feats
+
+    def write(
+        self, 
+        path:Optional[Path], 
+        tree_format:int=0, 
+        features:Optional[Iterable[str]]=None, 
+        dist_formatter:str="%0.6g",
+        ) -> Optional[str]:
+        """
+        Write newick string representation of the tree with formatting
+        options to include branch or node features according to the 
+        ete3 tree formats. 
+
+        See also: write_nexus(), write_extended()
+
+        Parameters:
+        -----------
+        path: (str):
+            A string file name to write output to. If None then newick is 
+            returned as a string. 
+        tree_format (int):
+            Format of the newick string. See ete3 tree formats. Default=0.
+        features (Iterable):
+            Features of treenodes that should be written to the newick string
+            in NHX format. Examples include "height", "idx", or other features
+            you may have saved to treenodes. 
+        """
+        if not self.ntips:
+            raise ToytreeError("tree is empty")
+
+        # get newick string
+        writer = NewickWriter(
+            treenode=self.treenode,
+            tree_format=tree_format,
+            features=features,
+            dist_formatter=dist_formatter,
+        )
+        newick = writer.write_newick()
+
+        # write to file or return as string
+        if path is None:
+            return newick
+        with open(path, 'w') as out:
+            out.write(newick)
+            logger.info(f"wrote newick to {path}")
+            return None
+
+    def write_extended(self):
+        pass
+
+    def write_nexus(self):
+        pass
+
+    def get_edges(self):
+        """
+        Returns an array with paired edges (parent, child) as  
+        node indices. This array is primarily for internal use.
+        """
+        return self._coords.edges
+
+    def get_node_labels(
+        self, 
+        feature:str, 
+        show_root:bool=False, 
+        show_tips:bool=False,
+        mask:Optional[Iterable[bool]]=None,
+        float_formatter:Optional[str]=".2f",
+        str_formatter:Optional[str]=None,
+        ) -> List[str]:
+        """
+        Returns values for a selected node feature in a post-order 
+        traversal (tree plotting order) as a list of formatted
+        strings for adding as node labels to a tree drawing.
+
+        The root and tip values can be toggled to be shown or not. 
+        The mask argument overrides these two arguments.
+        This is a boolean array of length nnodes in post-order traversal
+        where False indicates that a node should be hidden (i.e., 
+        size, color, shape, label are all hidden). The node labels
+        are returned as a list where hidden nodes are shown as "", and
+        node with hidden labels (but all else shwown) are " ". A mask
+        can be created easily from operations on the array from 
+        get_node_values().
+
+        See also: get_node_values
+
+        Usage:
+        ----------
+        # show node names as node labels
+        tree.draw(node_labels=tree.get_node_labels("name"))
+
+        # to show node support values as node labels
+        tree.draw(node_labels=tree.get_node_labels("support"))
+        """
+        # get array of values as (str,int,float,object) dtype
+        values = self.get_node_values(feature)
+
+        # if float type then apply float formatter
+        # if 
+        # try:
+        #     if np.can_cast(values.dtype, np.float):
+        #         values = []
+        # except TypeError as err:
+        #     raise 
+
+        labels = values.astype(str)
+        labels[labels == "nan"] = " "
+        if not show_root:
+            labels[0] = ""
+        if not show_tips:
+            labels[-self.ntips:] = ""
+        if mask is not None:
+            if isinstance(mask, (tuple, list)):
+                mask = np.array(mask).astype(bool)
+            assert mask.size == values.size, (
+                f"mask must be nnodes is size ({self.nnodes})")
+            assert mask.dtype == np.bool_, (
+                "mask must be a boolean numpy array")
+            labels[np.invert(mask)] = ""
+
+        # TODO: apply string formatter
+        labels = labels.tolist()
+        return labels
+
+
+    def get_node_values(
+        self, 
+        feature:str=None, 
+        *args, 
+        **kwargs,
+        ) -> np.ndarray:
+        """
+        Returns values for a selected node features in post-order 
+        traversal (tree plotting order) as a numpy ndarray. This is
+        intended for performing math or set operations on the data 
+        values. To get string representations of node values for 
+        plotting see instead get_node_labels.
+
+        See also: get_node_labels
+
+        Usage:
+        ---------------------
+        # get support values as integers and hide nodes w/ values > 95
+        mask = tree.get_node_values("support") < 95
+        labels = tree.get_node_labels("support", mask=mask, show_tips=False)
+        tree.draw(node_sizes=16, node_labels=labels)
+        """
+        if args or kwargs:
+            logger.warning(
+                "The get_node_values() function has changed in toytree > 2.1. "
+                "It now returns an array of values in their original type "
+                "(e.g., int, float) with missing values as NaN. "
+                "To get string representations of node values, including "
+                "options to hide root, tips, or other nodes, see the new "
+                "get_node_labels() function."
+            )
+        return np.array([
+            getattr(self.idx_dict[i], feature) for i in self.idx_dict
+        ])
+
+
+    def get_feature_dict(self, key_attr=None, values_attr=None):
+        """
+        Returns a dictionary mapping one or more selected node features
+        to each other, or to node objects (by entering None). 
+
+        Examples:
+        --------
+        tree.get_feature_dict("idx", "name")
+        tree.get_feature_dict("name", None)
+        """
+        ndict = {}
+        for node in self.idx_dict.values():
+            if key_attr is not None:
+                key = getattr(node, key_attr)
+            else:
+                key = node
+            if values_attr is not None:
+                value = getattr(node, values_attr)
+            else:
+                value = node
+            ndict[key] = value
+        return ndict
+
+
+
+
+class ToyTree:
     """
     Toytree object for parsing, writing, drawing, and analyzing trees.
 
@@ -379,63 +614,68 @@ class ToyTree(object):
 
     def get_feature_dict(self, key_attr=None, values_attr=None):
         """
-        Returns a dictionary in which features from nodes can be selected 
-        as the keys or values. By default it returns {node: node}, but if you
-        select key_attr="name" then it returns {node.name: node} and if you
-        enter key_attr="name" values_attr="idx" it returns a dict with
-        {node.name: node.idx}. 
+        Returns a dictionary mapping one or more selected node features
+        to each other, or to node objects (by entering None). 
+
+        Examples:
+        --------
+        tree.get_feature_dict("idx", "name")
+        tree.get_feature_dict("name", None)
         """
         ndict = {}
-        for node in self.treenode.traverse():
-            if key_attr:
+        for node in self.idx_dict.values():
+            if key_attr is not None:
                 key = getattr(node, key_attr)
             else:
                 key = node
-            if values_attr:
+            if values_attr is not None:
                 value = getattr(node, values_attr)
             else:
                 value = node
-            # add to dict
             ndict[key] = value
         return ndict
 
 
-    def get_node_dict(self, return_internal=False, return_nodes=False, keys_as_names=False):
-        """
-        Return node labels as a dictionary mapping {idx: name} where idx is 
-        the order of nodes in 'preorder' traversal. Used internally by the
-        func .get_node_values() to return values in proper order. 
+    def get_node_dict(self, *args, **kwargs):
+        "Deprecated: use .idx_dict instead."
+        logger.error("get_node_dict() is deprecated, use .idx_dict instead")
+        raise ToytreeError("get_node_dict() is deprecated, use .idx_dict instead")
+    # def get_node_dict(self, return_internal=False, return_nodes=False, keys_as_names=False):
+    #     """
+    #     Return node labels as a dictionary mapping {idx: name} where idx is 
+    #     the order of nodes in 'preorder' traversal. Used internally by the
+    #     func .get_node_values() to return values in proper order. 
 
-        Parameters:
-        -----------
-        return_internal (bool): 
-            If True all nodes are returned, if False only tips.
-        return_nodes: (bool)
-            If True returns TreeNodes, if False return node names.
-        keys_as_names: (bool)
-            If True keys are names, if False keys are node idx labels.
-        """
-        if return_internal:
-            nodes = list(self.treenode.traverse("preorder"))
+    #     Parameters:
+    #     -----------
+    #     return_internal (bool): 
+    #         If True all nodes are returned, if False only tips.
+    #     return_nodes: (bool)
+    #         If True returns TreeNodes, if False return node names.
+    #     keys_as_names: (bool)
+    #         If True keys are names, if False keys are node idx labels.
+    #     """
+    #     if return_internal:
+    #         nodes = list(self.treenode.traverse("preorder"))
 
-            # names must be unique
-            if keys_as_names:                  
-                names = [i.name for i in nodes]
-                if len(names) != len(set(names)):
-                    raise ToytreeError(
-                        "cannot return node dict with names as keys "
-                        "because node names are not all unique "
-                        "(some may not be set)"
-                    )
-            if return_nodes:
-                if keys_as_names:
-                    return {i.name: i for i in nodes}
-                return {i.idx: i for i in nodes}
-            return {i.idx: i.name for i in nodes}
-        nodes = [i for i in self.treenode.traverse("preorder") if i.is_leaf()]
-        if return_nodes:
-            return {i.idx: i for i in nodes}
-        return {i.idx: i.name for i in nodes}
+    #         # names must be unique
+    #         if keys_as_names:                  
+    #             names = [i.name for i in nodes]
+    #             if len(names) != len(set(names)):
+    #                 raise ToytreeError(
+    #                     "cannot return node dict with names as keys "
+    #                     "because node names are not all unique "
+    #                     "(some may not be set)"
+    #                 )
+    #         if return_nodes:
+    #             if keys_as_names:
+    #                 return {i.name: i for i in nodes}
+    #             return {i.idx: i for i in nodes}
+    #         return {i.idx: i.name for i in nodes}
+    #     nodes = [i for i in self.treenode.traverse("preorder") if i.is_leaf()]
+    #     if return_nodes:
+    #         return {i.idx: i for i in nodes}
+    #     return {i.idx: i.name for i in nodes}
 
 
     def get_tip_coordinates(self, layout=None, use_edge_lengths=True):
@@ -1092,3 +1332,42 @@ class ToyTree(object):
         # add mark to axes
         axes.add_mark(mark)
         return canvas, axes, mark
+
+
+
+
+def tree(data=Union[Path,str,Url,ToyTree,TreeNode], tree_format:int=0) -> ToyTree2:
+    """
+    Toytree class constructor, returns a ToyTree object from a variety
+    of optional input types, including a newick or nexus string; a 
+    filepath or Url to a newick or nexus string; a TreeNode class 
+    object; or a ToyTree class object. For speed-intensive tasks you 
+    can achieve faster performance with the alternative tree parsing
+    functions listed below. The tree_format argument is an integer 
+    corresponding to an ete3 tree format describing the newick string
+    format (the common format 0 generally works fine).
+
+    See also: read_newick(), read_nexus(), or read_extended()
+    """
+    treenode = None
+
+    # load from a TreeNode and detach. Must have .idx attributes on nodes.
+    if isinstance(data, TreeNode):
+        treenode = data.detach()
+
+    # load TreeNode from a ToyTree (user should use .copy() to preserve style)
+    elif isinstance(data, ToyTree):
+        treenode = data.treenode
+
+    # parse a str, URL, or file
+    elif isinstance(data, (str, bytes, Path)):
+        treenode = TreeParser(data, tree_format).treenodes[0]
+
+    # raise an error (to make an empty tree you must enter empty TreeNode)
+    else:
+        logger.warning(f"invalid input data={data}")
+        raise ToytreeError(f"cannot parse input tree data: {data}")
+
+    # enforce ladderize
+    treenode.ladderize()    
+    return ToyTree2(treenode)
