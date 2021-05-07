@@ -5,6 +5,7 @@ Tree style class objects for storing tree drawing styles.
 Also style dictionaries for pre-built styles are defined here.
 """
 
+
 import numpy as np
 import toyplot
 
@@ -14,6 +15,8 @@ ITERABLE = (list, tuple, np.ndarray)
 COLORS1 = [toyplot.color.to_css(i) for i in toyplot.color.brewer.palette("Set2")]
 COLORS2 = [toyplot.color.to_css(i) for i in toyplot.color.brewer.palette("Dark2")]
 BLACK = toyplot.color.black
+
+
 
 
 DEFAULT_TREE_STYLE = {
@@ -215,8 +218,6 @@ class TreeStyle(dict):
         if tree_style:
             self.update(STYLES[tree_style])
 
-
-
     def update(self, sdict):
         """
         Update this style dict with the values of another. Copies the
@@ -237,8 +238,6 @@ class TreeStyle(dict):
             else:
                 self.__dict__[skey] = sdict[skey]
 
-
-
     def copy(self):
         """
         Returns a new deepcopy of the TreeStyle object
@@ -246,7 +245,6 @@ class TreeStyle(dict):
         newstyle = TreeStyle()
         newstyle.update(self)
         return newstyle
-
 
     def to_dict(self):
         "returns self as a dictionary with _underscore subdicts corrected."
@@ -257,7 +255,6 @@ class TreeStyle(dict):
             else:
                 ndict[key] = val
         return ndict
-
 
     # these only allow updating styledict, not removing items
     @property
