@@ -10,4 +10,4 @@ Functions for sampling random trees by a variety of methods.
 	- bdtree
 """
 
-from .rtree import *
+from toytree.rtree.rtree import *

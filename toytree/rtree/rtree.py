@@ -5,9 +5,12 @@ Random Tree generation Classes. Uses numpy RNG.
 """
 
 import numpy as np
+from loguru import logger
 from toytree.core.Toytree import ToyTree
 from toytree.core.TreeNode import TreeNode
 from toytree.utils.exceptions import ToytreeError
+
+# TODO: coaltree, ...
 
 
 # limit the API view
@@ -17,7 +20,7 @@ __all__ = [
     "imbtree", 
     "baltree",
     "bdtree",
-    # "coaltree",     # TODO
+    # "coaltree",
 ]
 
 
@@ -46,7 +49,6 @@ def rtree(ntips, seed=None):
     # will ladderize the tree and assign names and idxs
     tree = ToyTree(root)
     return tree
-
 
 
 def unittree(ntips, treeheight=1.0, random_names=False, seed=None):
@@ -88,7 +90,6 @@ def unittree(ntips, treeheight=1.0, random_names=False, seed=None):
     return tre
 
 
-
 def imbtree(ntips, treeheight=1.0, random_names=False, seed=None):
     """
     Return an imbalanced (comb-like) tree topology.
@@ -104,10 +105,10 @@ def imbtree(ntips, treeheight=1.0, random_names=False, seed=None):
         tip = child1
 
     # will ladderize the tree and assign names and idxs
+    root.ladderize()
     tre = (ToyTree(root)
-        .ladderize()
-        .mod.make_ultrametric()
-        .mod.node_scale_root_height(treeheight)
+        .mod.make_ultrametric(nocopy=True)
+        .mod.node_scale_root_height(treeheight, nocopy=True)
     )
 
     # randomize names
@@ -118,7 +119,6 @@ def imbtree(ntips, treeheight=1.0, random_names=False, seed=None):
     for nidx in range(tre.ntips):
         tre.idx_dict[nidx].name = "r{}".format(nums[nidx])
     return tre
-
 
 
 def baltree(ntips, treeheight=1.0, random_names=False, seed=None):
@@ -139,10 +139,11 @@ def baltree(ntips, treeheight=1.0, random_names=False, seed=None):
         node.add_child()        
 
     # will ladderize the tree and assign names and idxs
-    tre = (ToyTree(root)
-        .ladderize()
-        .mod.make_ultrametric()
-        .mod.node_scale_root_height(treeheight)
+    root.ladderize()
+    tre = (
+        ToyTree(root)
+        .mod.make_ultrametric(nocopy=True)
+        .mod.node_scale_root_height(treeheight, nocopy=True)
     )
 
     # randomize names
@@ -181,8 +182,6 @@ def baltree(ntips, treeheight=1.0, random_names=False, seed=None):
     #     if node.is_leaf():
     #         node.name = "r{}".format(nidx[idx])
     # return tre
-
-
 
 
 def bdtree(
@@ -230,8 +229,8 @@ def bdtree(
     time_stop = time
 
     # start from random tree (idxs will be re-assigned at end)
-    tre = ToyTree()
-    tre.treenode.idx = 0
+    tre = TreeNode()
+    tre.idx = 0
     gidx = 1
 
     # counters for extinctions, total events, and time
@@ -244,7 +243,7 @@ def bdtree(
     while 1:
 
         # get current tips
-        tips = tre.treenode.get_leaves()
+        tips = tre.get_leaves()
 
         # sample time until next event, increment t and evnts
         dt = np.random.exponential(1 / (len(tips) * (b + d)))
@@ -275,8 +274,8 @@ def bdtree(
             # if no parent then reset to empty tree
             if parent is None:
                 resets += 1
-                tre = ToyTree()
-                tre.treenode.idx = 0
+                tre = TreeNode()
+                tre.idx = 0
                 gidx = 1
                 ext = 0
                 evnts = 0
@@ -286,17 +285,17 @@ def bdtree(
             else:
                 # if parent is None then reset
                 if sp.up is None:
-                    tre = ToyTree()
-                    tre.treenode.idx = 0
+                    tre = TreeNode()
+                    tre.idx = 0
                     gidx = 1
                     ext = 0
                     evnts = 0
                     t = 0
 
                 # if parent is root then sister is new root
-                elif sp.up is tre.treenode:
+                elif sp.up is tre:
                     tre = [i for i in sp.up.children if i != sp][0]
-                    tre = ToyTree()
+                    tre = TreeNode()
                     tre.up = None
 
                 # if parent is a non-root node then connect sister to up.up
@@ -319,7 +318,7 @@ def bdtree(
                 ext += 1
 
         # update branch lengths so all tips end at time=present
-        tips = tre.treenode.get_leaves()
+        tips = tre.get_leaves()
         for x in tips:
             x.dist += dt
 
@@ -332,13 +331,15 @@ def bdtree(
                 break
 
     # report status
-    if verbose:
-        fill = (evnts - ext, ext, evnts / (evnts - ext), resets)
-        print("b:\t{}\nd:\t{}\nb/d:\t{:.2f}\nreset:\t{}".format(*fill))
+    logger.info("\n"
+        f"b:\t{evnts - ext}\n"
+        f"d:\t{ext}\n"
+        f"b/d:\t{evnts / (evnts - ext)}\n"
+        f"resets:\t{resets}")
 
     # update coords and return
-    tre.treenode.ladderize()
-    tre._coords.update()
+    tre.ladderize()
+    tre = ToyTree(tre)
 
     # rename tips so names are in order else random
     nidx = list(range(tre.ntips))
@@ -412,7 +413,7 @@ def bdtree(
 
 
 
-def _prune(tre, verbose=False):
+def _prune(tre):
     """
     Helper function for recursively pruning extinct branches in bd trees.
     Dynamic func!
@@ -421,11 +422,11 @@ def _prune(tre, verbose=False):
     tips = ttree.treenode.get_leaves()
 
     if np.any(np.array([x.height for x in tips]) > 0):
-        for t in tips:
-            if not np.isclose(t.height, 0):
-                if verbose: 
-                    print("Removing node/height {}/{}".format(t.name, t.height))
-                t.delete(prevent_nondicotomic=False)
+        for tip in tips:
+            if not np.isclose(tip.height, 0):
+                logger.debug(
+                    f"Removing node/height {tip.name}/{tip.height}")
+                tip.delete(prevent_nondicotomic=False)
                 ttree = _prune(ttree)
     return ttree
 
@@ -438,7 +439,21 @@ def _return_small_clade(treenode):
     node = treenode
     while 1:
         if node.children:
-            c1, c2 = node.children
-            node = sorted([c1, c2], key=lambda x: len(x.get_leaves()))[0]
+            child1, child2 = node.children
+            node = sorted([child1, child2], key=len)[0]
         else:
             return node
+
+
+if __name__ == "__main__":
+
+    import toytree
+    
+    sim_trees = [
+        toytree.rtree.rtree(10),
+        toytree.rtree.baltree(10),
+        toytree.rtree.imbtree(10),
+        toytree.rtree.bdtree(10),
+        toytree.rtree.unittree(10),
+    ]
+    print(sim_trees)
