@@ -5,7 +5,7 @@ Uesrs: Install with conda:
     conda install toytree -c conda-forge
 
 Developers: Install with git + pip
-    conda install toytree -c conda-forgex
+    conda install toytree -c conda-forge
     git clone https://github.com/eaton-lab/toytree
     cd toytree/
     pip install -e . --no-deps
@@ -35,6 +35,7 @@ setup(
     install_requires=[
         "toyplot",
         "numpy",
+        "scipy",
         "pandas",
         "loguru",
         "requests",
@@ -43,7 +44,6 @@ setup(
     entry_points={},
     license='GPL',
     classifiers=[
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
     ],
 )
