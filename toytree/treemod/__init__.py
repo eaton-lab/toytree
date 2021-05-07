@@ -4,4 +4,4 @@
 Helper functions for modifying tree attributes or features.
 """
 
-from .treemod import *
+from toytree.treemod.treemod import *

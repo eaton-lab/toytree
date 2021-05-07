@@ -8,6 +8,7 @@ TODO:
     - convert to all numpy random.
 """
 
+from typing import Dict
 import numpy as np
 
 
@@ -147,11 +148,13 @@ def make_ultrametric(tre, strategy=1, nocopy=False):
 
 
 
-def set_node_heights(tre, hdict):
+def set_node_heights(tre, mapping:Dict[int,float]):
     """
-    Enter a dictionary mapping node idx to heights. Nodes that 
+    Enter a dictionary mapping node idx to heights. Node idxs that 
     are not included as keys will remain at there existing height.
-
+    
+    Examples:
+    ---------
     tre = toytree.rtree.unitree(10)
     tre = tre.mod.set_node_heights({10: 55, 11: 60, 12: 100})
     """
@@ -160,15 +163,15 @@ def set_node_heights(tre, hdict):
 
     # set node height to current value for those not in hdict
     for nidx in tre.idx_dict:
-        if nidx not in hdict:
-            hdict[nidx] = tre.idx_dict[nidx].height
+        if nidx not in mapping:
+            mapping[nidx] = tre.idx_dict[nidx].height
 
     # iterate over nodes from tips to root
     for node in ntre.treenode.traverse("postorder"):
             
         # shorten or elongate child stems to reach node's new height
         for child in node.children:
-            child.dist = hdict[node.idx] - hdict[child.idx] 
+            child.dist = mapping[node.idx] - mapping[child.idx] 
     return ntre
 
 
@@ -223,11 +226,10 @@ def set_node_heights(tre, hdict):
 
 if __name__ == "__main__":
 
-
     import toytree
-    ttre = toytree.rtree.unittree(ntips=6, treeheight=100, seed=123)
+    TREE = toytree.rtree.unittree(ntips=6, treeheight=100, seed=123)
 
-    new_heights = {
+    NEW_HEIGHTS = {
         10: 200,
         9: 10,
         8: 150,
@@ -235,6 +237,5 @@ if __name__ == "__main__":
         6: 20,
     }
 
-    new_tre = set_node_heights(ttre, new_heights)
-    print(ttre.get_feature_dict("idx", "height"))
-    print(new_tre.get_feature_dict("idx", "height"))    
+    NTREE = set_node_heights(TREE, NEW_HEIGHTS)
+    print(NTREE.get_feature_dict("idx", "height"))

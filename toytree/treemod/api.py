@@ -4,6 +4,7 @@
 A class wrapper for treemod funcs to make accessible from toytrees
 """
 
+from typing import Dict
 from toytree.treemod.treemod import *
 
 
@@ -38,14 +39,12 @@ class TreeModAPI:
         return node_slider(self._tree, prop, seed)
 
 
-
     def node_multiplier(self, multiplier=0.5, seed=None):
         """
         Returns a toytree copy with all nodes multiplied by a constant 
         sampled uniformly between (multiplier, 1/multiplier).
         """
         return node_multiplier(self._tree, multiplier, seed)
-
 
 
     def make_ultrametric(self, strategy=1, nocopy=False):
@@ -62,3 +61,16 @@ class TreeModAPI:
             not yet supported.
         """
         return make_ultrametric(self._tree, strategy, nocopy)
+
+
+    def set_node_heights(self, mapping:Dict[int,float]):
+        """
+        Enter a dictionary mapping node idx to heights. Node idxs that 
+        are not included as keys will remain at there existing height.
+        
+        Examples:
+        ---------
+        tre = toytree.rtree.unitree(10)
+        tre = tre.mod.set_node_heights({10: 55, 11: 60, 12: 100})
+        """
+        return set_node_heights(self._tree, mapping)
