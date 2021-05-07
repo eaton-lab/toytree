@@ -12,8 +12,6 @@ New Fix:
     - ...
 """
 
-from builtins import range, str
-
 import random
 import itertools
 from hashlib import md5

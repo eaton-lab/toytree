@@ -7,6 +7,6 @@ Core Tree objects, as three hierarchical objects:
 	Multitree([Toytree, Toytree, ...])
 """
 
-from .Toytree import ToyTree
-from .Multitree import MultiTree
-from .NodeAssist import NodeAssist
+# from .Toytree import ToyTree
+# from .Multitree import MultiTree
+# from .NodeAssist import NodeAssist

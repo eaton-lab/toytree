@@ -1,18 +1,19 @@
 #!/usr/bin/env python
 
 """
-TODO: replace with custom distance, mrca functions...
+NodeAssist class object for finding subsets of nodes from a 
+set of arguments entered as a set of names, regex, or idx.
 """
 
 import re
 from toytree.utils.exceptions import ToytreeError
 
 
-
 class NodeAssist:
     """
-    Given a search query (list of names, wildcard or regex) a node or list of 
-    names can be retrieved under a set of pre-built functions.
+    Given a search query (list of names, wildcard or regex) a node 
+    or list of names can be retrieved under a set of pre-built 
+    functions.
     """
     def __init__(self, ttree, names, wildcard, regex):
 
@@ -124,7 +125,7 @@ class NodeAssist:
         return self.get_mrca().get_leaves()
 
     def get_mrca_descendants(self):
-        return [i for i in self.get_mrca().traverse()]
+        return list(self.get_mrca().traverse())
 
     def is_query_monophyletic(self):
         # if multiple tips descendant from check if they're monophyletic
