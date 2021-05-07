@@ -6,76 +6,46 @@ PCM: phylogenetic comparative methods tools
 
 import os
 import time
+import itertools
 import numpy as np
 import pandas as pd
-
-# only in py3
-try:
-    from concurrent.futures import ProcessPoolExecutor 
-except ImportError:
-    pass
-
 import toytree
 
 
-
-# def independent_contrasts(tre, feature):
-#     """
-#     Set independent contrasts as features on internal nodes labeled
-#     as ...
-#     """
-#     ntre = tre.copy()
-#     resdict = PIC(ntre, feature)
-#     ntre = ntre.set_node_values(
-#         feature="{}-contrast",
-#         values={i.name: j[2] for (i, j) in resdict.items()}
-#     )
-#     ntre = ntre.set_node_values(
-#         feature="{}-contrast-var",
-#         values={i.name: j[3] for (i, j) in resdict.items()}
-#     )        
-#     return ntree
-
-
-
-def ancestral_state_reconstruction(tre, feature):
+def continuous_ancestral_state_reconstruction(tre, feature):
     """
     Infer ancestral states on ancestral nodes for continuous traits
-    under a brownian motion model of evolution.
+    under a brownian motion model of evolution. Returns a toytree with
+    feature updated to each node.
 
-    Modified from IVY interactive (https://github.com/rhr/ivy/)
-
-    Returns a toytree with feature applied to each node.
+    Modified from IVY interactive (https://github.com/rhr/ivy/)   
     """
     ntre = tre.copy()
-    resdict = PIC(ntre, feature)
+    resdict = phylogenetic_independent_contrasts(ntre, feature)
     ntre = ntre.set_node_values(
         feature, 
         values={i.name: j[0] for (i, j) in resdict.items()}
     )
     return ntre
 
-
-
-def tree_to_VCV(tre):
+def tree_to_vcv(tree):
     """
     Return a variance-covariance matrix representing the tree topology
     where the length of shared ancestral edges are covariance and 
     terminal edges are variance.
     """
-    vcv_ = np.zeros((tree.ntips,tree.ntips))
-    labs = tree.get_tip_labels()
-    for lab1 in range(tree.ntips):
-        for lab2 in range(tree.ntips):
-            mrca_idx = tree.get_mrca_idx_from_tip_labels([labs[lab1],labs[lab2]])
-            mrca_height = tree.treenode.search_nodes(idx=mrca_idx)[0].height
-            vcv_[lab1, lab2] = tree.treenode.height - mrca_height
-    return(vcv_)
+    theight = tree.treenode.height
+    vcv = np.zeros((tree.ntips,tree.ntips))
+    for tip1, tip2 in itertools.combinations(range(tree.ntips), 2):
+        node = toytree.distance.get_mrca(tree, tip1, tip2)
+        vcv[tip1, tip2] = theight - node.height
+        vcv[tip2, tip1] = theight - node.height
+    vcv[np.diag_indices_from(vcv)] = [
+        tree.idx_dict[i].dist for i in range(tree.ntips)]
+    tlabels = tree.get_tip_labels()
+    return pd.DataFrame(vcv, columns=tlabels, index=tlabels)
 
-
-
-
-def PIC(tree, feature):
+def phylogenetic_independent_contrasts(tree, feature):
     """
     Infer ancestral states and calculate phylogenetic independent
     contrasts at nodes for a selected feature (trait). 
@@ -91,23 +61,21 @@ def PIC(tree, feature):
     Returns
     -------
     toytree (Toytree.ToyTree)
-        A modified copy of the input tree is returned with the mean ancestral
-        value for the selected feature inferred for all nodes of the tree. 
+        A modified copy of the input tree is returned with the mean 
+        ancestral value for the selected feature inferred for all nodes 
+        of the tree. 
     """
     # get current node features at the tips
     fdict = tree.get_feature_dict(key_attr="name", values_attr=feature)
-    data = {i: j for (i, j) in fdict.items() if i in tree.get_tip_labels()}
+    data = {i: fdict[i] for i in fdict if i in tree.get_tip_labels()}
 
     # apply dynamic function from ivy to return dict results
-    results = dynamicPIC(tree.treenode, data, results={})
+    results = _dynamic_pic(tree.treenode, data, results={})
 
     # return dictionary mapping nodes to (mean, var, contrast, cvar)
     return results
 
-
-
-
-def dynamicPIC(node, data, results):
+def _dynamic_pic(node, data, results):
     """
     Phylogenetic independent contrasts. Recursively calculate 
     independent contrasts of a bifurcating node given a dictionary
@@ -124,8 +92,8 @@ def dynamicPIC(node, data, results):
               contrasts's variance.
     TODO: modify to accommodate polytomies.
     """    
-    X = []
-    v = []
+    means = []
+    variances = []
 
     # recursively does children until X and v are full
     for child in node.children:
@@ -134,74 +102,86 @@ def dynamicPIC(node, data, results):
         if child.children:
 
             # update results dict with children values
-            dynamicPIC(child, data, results)
+            _dynamic_pic(child, data, results)
             child_results = results[child]
 
             # store childrens values
-            X.append(child_results[0])
-            v.append(child_results[1])
+            means.append(child_results[0])
+            variances.append(child_results[1])
 
         # no child of child, so just do child
         else:
-            X.append(data[child.name])
-            v.append(child.dist)
+            means.append(data[child.name])
+            variances.append(child.dist)
 
     # Xi - Xj is the contrast value
-    Xi, Xj = X  
+    means_i, means_j = means
 
     # vi + vj is the contrast variance
-    vi, vj = v
+    vars_i, vars_j = variances
 
     # Xk is the reconstructed state at the node
-    Xk = ((1.0 / vi) * Xi + (1 / vj) * Xj) / (1.0 / vi + 1.0 / vj)
+    means_k = (
+        ((1.0 / vars_i) * means_i + (1 / vars_j) * means_j) / 
+        (1.0 / vars_i + 1.0 / vars_j)
+    )
 
     # vk is the variance
-    vk = node.dist + (vi * vj) / (vi + vj)
+    vars_k = node.dist + (vars_i * vars_j) / (vars_i + vars_j)
 
     # store in dictionary and 
-    results[node] = (Xk, vk, Xi - Xj, vi + vj)
+    results[node] = (means_k, vars_k, means_i - means_j, vars_i + vars_j)
     return results
 
 
-
-def calculate_ES(tree):
+def calculate_equal_splits(tree):
     """
-    Return DataFrame with equal splits measure sensu Redding and 
-    Mooers 2006
+    Return DataFrame with equal splits (ES) measure sensu Redding and 
+    Mooers 2006.
+
+    Reference:
+    ----------
+    TODO:
     """
     # dataframe for storing results
-    df = pd.DataFrame(columns=["DR"], index=tree.get_tip_labels())
+    data = pd.DataFrame(columns=["ES"], index=tree.get_tip_labels())
 
     # traverse up to root from each tip
     for idx in range(tree.ntips):
         node = tree.idx_dict[idx]
-        DR = 0
+        divrate = 0
         j = 1
         while node.up:
-            DR += node.up.dist / (2 ** j)
+            divrate += node.up.dist / (2 ** j)
             node = node.up
             j += 1
-        df.iloc[idx, 0] = DR
-    return df
+        data.iloc[idx, 0] = divrate
+    return data
 
 
 
-def calculate_DR(tree):
+def _calculate_tip_level_diversification(tree):
     """
     Returns a dataframe with tip-level diversification rates
-    sensu Jetz 2012
+    sensu Jetz 2012.
+
+    Reference:
+    ----------
+    TODO:
     """
     # ensure tree is a tree
     tree = toytree.tree(tree)
-    return 1 / calculate_ES(tree)
+    data = 1 / calculate_equal_splits(tree)
+    data.columns = ["DR"]
+    return data
 
 
 
 def calculate_tip_level_diversification(trees, njobs=1):
     """
     Returns a dataframe with tip-level diversification rates calculated
-    across a set of trees. Enter a multitree object or, for very large trees,
-    you can enter a generator of newick strings (see example).
+    across a set of trees. Enter a multitree object or, for very large
+    trees, you can enter a generator of newick strings (see example).
 
     Parameters:
     -----------
@@ -210,7 +190,7 @@ def calculate_tip_level_diversification(trees, njobs=1):
         datasets use a file as input.
 
     njobs (int):
-        Distribute N jobs in parallel usign ProcessPoolExecutor
+        Distribute N jobs in parallel using ProcessPoolExecutor
 
     Returns:
     --------
@@ -234,20 +214,18 @@ def calculate_tip_level_diversification(trees, njobs=1):
             ntrees = sum(1 for i in tree_generator) + 1
             tiporder = tre.get_tip_labels()
         itertree = open(trees, 'r')
-    elif isinstance(trees, toytree.Toytree.ToyTree):
+    elif isinstance(trees, toytree.core.Toytree.ToyTree):
         itertree = iter([trees])
         ntrees = len(trees)
         ntips = trees.ntips
         tiporder = trees.get_tip_labels()
-        topen = None
-    elif isinstance(trees, toytree.Multitree.MultiTree):
+    elif isinstance(trees, toytree.core.Multitree.MultiTree):
         itertree = iter(i for i in trees)
         ntrees = len(trees)
         ntips = trees.treelist[0].ntips
         tiporder = trees.treelist[0].get_tip_labels()
-        topen = None
     else:
-    	raise IOError("problem with input: {}".format(trees))
+        raise IOError("problem with input: {}".format(trees))
 
     # array to store results 
     tarr = np.zeros((ntips, ntrees))
@@ -255,7 +233,7 @@ def calculate_tip_level_diversification(trees, njobs=1):
     # run non-parallel calculations
     if njobs == 1:
         for tidx, tree in enumerate(itertree):
-            df = calculate_DR(tree)
+            df = _calculate_DR(tree)
             tarr[:, tidx] = df.loc[tiporder, "DR"]
 
     # or, distribute jobs in parallel (py3 only)
@@ -325,41 +303,60 @@ def calculate_tip_level_diversification(trees, njobs=1):
     return df
 
 
+# def independent_contrasts(tre, feature):
+#     """
+#     Set independent contrasts as features on internal nodes labeled
+#     as ...
+#     """
+#     ntre = tre.copy()
+#     resdict = PIC(ntre, feature)
+#     ntre = ntre.set_node_values(
+#         feature="{}-contrast",
+#         values={i.name: j[2] for (i, j) in resdict.items()}
+#     )
+#     ntre = ntre.set_node_values(
+#         feature="{}-contrast-var",
+#         values={i.name: j[3] for (i, j) in resdict.items()}
+#     )        
+#     return ntree
+
+
+
+
 
 
 # single test
 if __name__ == "__main__":
 
     import toyplot
-    import toytree
 
-    colormap = toyplot.color.brewer.map("BlueRed", reverse=True)
-    colormap
+    CMAP = toyplot.color.brewer.map("BlueRed", reverse=True)
 
-    tree = toytree.rtree.imbtree(5, 1e6)
-    tree = tree.set_node_values(
+    TREE = toytree.rtree.imbtree(5, 1e6)
+    TREE = TREE.set_node_values(
         "g", 
-        values={i: 5 for i in (2, 3, 4)},
+        mapping={i: 5 for i in (2, 3, 4)},
         default=1,
     )
-    tree.draw(
+
+    TREE.draw(
         ts='p', 
-        node_labels=tree.get_node_values("g", 1, 1),
+        node_labels=TREE.get_node_labels("g", 1, 1),
         node_colors=[
-            colormap.colors(i, 0, 5) for i in tree.get_node_values('g', 1, 1)]
+            CMAP.colors(i, 0, 5) for i in TREE.get_node_values('g')]
         )
 
     # apply reconstruction
-    ntree = PIC(tree, "g")
+    ntree = phylogenetic_independent_contrasts(TREE, "g")
 
-    # new values are stored as -mean, -var, -contrasts, ...
-    evals = ntree.get_edge_values("g-mean")
+    # # new values are stored as -mean, -var, -contrasts, ...
+    # evals = ntree.get_edge_values("g-mean")
 
-    # draw new tree
-    ntree.draw(
-        ts='p', 
-        node_labels=ntree.get_node_values("g-mean", 1, 1),
-        node_colors=[
-            colormap.colors(i, 0, 5) for i in 
-            ntree.get_node_values('g-mean', 1, 1)]
-    )
+    # # draw new tree
+    # ntree.draw(
+    #     ts='p', 
+    #     node_labels=ntree.get_node_values("g-mean", 1, 1),
+    #     node_colors=[
+    #         colormap.colors(i, 0, 5) for i in 
+    #         ntree.get_node_values('g-mean', 1, 1)]
+    # )

@@ -4,7 +4,12 @@
 PCM: phylogenetic comparative methods tools
 """
 
-from toytree.pcm.phylocomp import *
+from toytree.pcm.phylocomp import (
+    # ancestral_state_reconstruction,
+    tree_to_vcv, 
+    # tip_level_diversification_rates, 
+    # tip_level_equal_splits,
+)
 
 
 class PhyloCompAPI:
