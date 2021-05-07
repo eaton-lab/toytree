@@ -13,6 +13,7 @@ For testing:
 """
 
 import itertools
+from loguru import logger
 import numpy as np
 import pandas as pd
 from toytree.utils.exceptions import ToytreeError
