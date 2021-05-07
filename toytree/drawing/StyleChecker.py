@@ -16,7 +16,6 @@ from toytree.utils.exceptions import ToytreeError
 ITERABLE = (list, tuple, np.ndarray)
 
 
-
 class StyleChecker:
     """
     Checks for allowed styles in style dictionaries and expands args
@@ -38,7 +37,6 @@ class StyleChecker:
 
         # expand to arrays and sometimes set 'fill' or 'stroke' in dicts.
         self.expand_vars()
-
 
 
     def check_dicts(self):
@@ -225,17 +223,17 @@ class StyleChecker:
 
         # set it.
         if arg is True:
-            self.style.node_labels = self.ttree.get_node_values("idx", 1, 1)[::-1]
+            self.style.node_labels = self.ttree.get_node_labels("idx", 1, 1)[::-1]
         elif arg is False:
             self.style.node_labels = None
         elif arg is None:
             self.style.node_labels = None
         elif isinstance(arg, (str, bytes)):
             if arg in self.ttree.features:
-                self.style.node_labels = self.ttree.get_node_values(arg, 0, 0)[::-1]
+                self.style.node_labels = self.ttree.get_node_labels(arg, 0, 0)[::-1]
         elif isinstance(arg, tuple) and (len(arg) == 3):
             if arg[0] in self.ttree.features:
-                self.style.node_labels = self.ttree.get_node_values(*arg)[::-1]
+                self.style.node_labels = self.ttree.get_node_labels(*arg)[::-1]
         elif isinstance(arg, ITERABLE):
             self.style.node_labels = arg[::-1]
         else:
