@@ -504,8 +504,6 @@ class FastNewick2TreeNode:
         self.fmt = tree_format
         self.data = re.sub(r"[\n\r\t ]+", "", self.data)
 
-
-
     def newick_from_string(self):
         "Reads a newick string in the New Hampshire format."
 
@@ -540,7 +538,6 @@ class FastNewick2TreeNode:
                         self.apply_node_data(closing_internal, "internal")
                         self.current_parent = self.current_parent.up
         return self.root
-
 
 
     def apply_node_data(self, subnw, node_type):
