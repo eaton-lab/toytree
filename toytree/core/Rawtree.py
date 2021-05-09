@@ -12,8 +12,11 @@ from toytree.io.TreeWriter import NewickWriter
 
 class RawTree():
     """
-    Barebones tree object that parses newick strings faster, assigns idx 
-    to labels, and ...
+    A faster tree parsing function that returns a RawTree object, which
+    has the functionality for traversing TreeNodes, or extracting 
+    simple info, but not for plotting. Used internally in many
+    statistical tools for faster calculations over large sets of input
+    trees.
     """
     def __init__(self, newick, tree_format=0):
         self.treenode = FastTreeParser(newick, tree_format).treenode
