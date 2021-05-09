@@ -246,7 +246,7 @@ def bdtree(
         tips = tre.get_leaves()
 
         # sample time until next event, increment t and evnts
-        dt = np.random.exponential(1 / (len(tips) * (b + d)))
+        dt = rng.exponential(1 / (len(tips) * (b + d)))
         t = t + dt
         evnts += 1
 
