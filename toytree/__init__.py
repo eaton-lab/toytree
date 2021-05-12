@@ -1,38 +1,25 @@
 #!/usr/bin/env python
 
 """
-Organization of code in toytree
+Toytree: A minimalist Python package for tree drawing and manipulation.
+...
 """
 
 __version__ = "2.1.0-dev"
 __author__ = "Deren Eaton"
 
 
-# bring API shortcuts to the front
-from toytree.core.Toytree import tree, ToyTree
-from toytree.core.Rawtree import RawTree as rawtree
-# from toytree.core.Multitree import MultiTree as mtree
+# expose types: ToyTree, MultiTree
+# expose constructors: .tree, .rtree, .mtree, .rawtree
+from toytree.src.tree import tree, ToyTree
+from toytree.src.rawtree import RawTree as rawtree
+from toytree.src.treenode import TreeNode
+from toytree.src import rtree
+from toytree.src.multitree import mtree, MultiTree
 
-
-# accessible as toytree.[module].[func] or tree.[module].[func]
-from toytree.core.TreeNode import TreeNode
-from toytree.utils.logger import set_loglevel
-
-# legacy support
-# import toytree.random as rtree
-import toytree.rtree
-import toytree.distance
-import toytree.drawing
-import toytree.treemod
-# from . import drawing
-# from . import random
-# from . import treemod
-# from .drawing import *
-# from .random import *
-# from .pcm import *
-
-
-
+# expose submodules
+# import toytree.pcm
 
 # start the logger in INFO
+from toytree.utils.logger import set_loglevel
 set_loglevel("WARNING")

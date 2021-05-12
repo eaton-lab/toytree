@@ -8,8 +8,8 @@ from hashlib import md5
 from collections import defaultdict
 import numpy as np
 
-from toytree.core.Toytree import ToyTree
-from toytree.core.TreeNode import TreeNode
+from toytree.src.tree import ToyTree
+from toytree.src.treenode import TreeNode
 # from toytree.utils.exceptions import ToytreeError
 # from toytree.utils.utils import bpp2newick
 

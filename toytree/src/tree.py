@@ -20,24 +20,23 @@ TODO: Test for speed improvements:
 
 from typing import Union, Optional, Mapping, Iterable, List, Dict, Tuple, Set, Any
 from pathlib import Path
-from decimal import Decimal  # replace with np.format_float...
 import numpy as np
-from loguru import logger
 import toyplot
+from loguru import logger
 
-from toytree.core.TreeNode import TreeNode
-from toytree.core.NodeAssist import NodeAssist
-from toytree.drawing.Coords import Coords
-from toytree.drawing.TreeStyle import TreeStyle, COLORS2
-from toytree.drawing.draw_toytree import draw_toytree
-from toytree.io.TreeParser import TreeParser
-from toytree.io.TreeWriter import NewickWriter
-from toytree.treemod.Rooter import Rooter
+from toytree.src.treenode import TreeNode
+from toytree.src.node_assist import NodeAssist
+from toytree.src.drawing.coords import Coords
+from toytree.src.drawing.tree_style import TreeStyle, COLORS2
+from toytree.src.drawing.draw_toytree import draw_toytree
+from toytree.src.io.TreeParser import TreeParser
+from toytree.src.io.TreeWriter import NewickWriter
 from toytree.utils.exceptions import ToytreeError
 from toytree.utils.transform import normalize_values
-from toytree.treemod.api import TreeModAPI
-from toytree.pcm.api import PhyloCompAPI
-
+from toytree.mod.rooting import Rooter
+import toytree.mod.api
+import toytree.pcm.api
+import toytree.distance.api
 
 # PEP 484 recommend capitalizing alias names
 Url = str
@@ -45,13 +44,19 @@ Url = str
 class TreeBase:
     def __init__(self, treenode:Optional[TreeNode]=None):
         self.treenode = treenode
-        self.mod = TreeModAPI(self)
-        self.pcm = PhyloCompAPI(self)
+        self.mod = toytree.mod.api.TreeModAPI(self)
+        self.pcm = toytree.pcm.api.PhyloCompAPI(self)
+        self.distance = toytree.distance.api.DistanceAPI(self)
         self.style = TreeStyle(tree_style='n')
-        # self.distance = DistanceAPI(self)
 
 
 class ToyTree(TreeBase):
+    """
+    ToyTree class object Type.
+
+    To initialize a ToyTree instance it is recommended to use
+    the general class constructor function `toytree.tree()`.
+    """
     def __init__(self, treenode: TreeNode):
         super().__init__(treenode)
 
@@ -70,14 +75,15 @@ class ToyTree(TreeBase):
 
     def __repr__(self) -> str:
         """ return nnodes, ntips, other info"""
-        return f"<ToyTree ntips={self.ntips}, features={self.features}>"
+        return f"<ToyTree rooted={self.is_rooted()}, ntips={self.ntips}, features={self.features}>"
 
     def __len__(self) -> int:
         """ return len of treenode (ntips) """
         return self.ntips
 
+
     @property
-    def features(self):
+    def features(self) -> set:
         """
         Returns a set of all features assigned as attributes to any 
         TreeNodes in the Toytree by using .set_node_values().
@@ -86,6 +92,11 @@ class ToyTree(TreeBase):
         for node in self.treenode.traverse():
             feats.update(node.features)    
         return feats
+
+    @property
+    def newick(self):
+        return self._newick
+    
 
     def write(
         self, 
@@ -133,13 +144,7 @@ class ToyTree(TreeBase):
             logger.info(f"wrote newick to {path}")
             return None
 
-    # def write_extended(self):
-    #     pass
-
-    # def write_nexus(self):
-    #     pass
-
-    def get_edges(self):
+    def get_edges(self) -> np.ndarray:
         """
         Returns an array with paired edges (parent, child) as  
         node indices. This array is primarily for internal use.
@@ -248,16 +253,16 @@ class ToyTree(TreeBase):
         rmap = {}
         for nidx in self.idx_dict:
             node = self.idx_dict[nidx]
-            if idx in rmap:
+            if nidx in rmap:
 
                 # add value to stem edge
                 if include_stem:
                     if not node.is_root():
-                        values[idx] = rmap[idx]
+                        values[nidx] = rmap[nidx]
 
                 # add value to descendants edges
                 for desc in node.get_descendants():
-                    values[desc.idx] = rmap[idx]
+                    values[desc.idx] = rmap[nidx]
         return values
 
     def get_mrca_idx_from_tip_labels(
@@ -451,7 +456,7 @@ class ToyTree(TreeBase):
         coords = self.get_node_coordinates(layout, use_edge_lengths)
         return coords[:self.ntips]
 
-    def get_tip_labels(self, idx:int=None):
+    def get_tip_labels(self, idx:Optional[int]=None):
         """
         Returns tip labels in the order they will be plotted on the 
         tree, i.e., "preorder traversal", which will appear from the
@@ -463,7 +468,7 @@ class ToyTree(TreeBase):
             idx: returns a list of names for all tips descended from 
             node with index idx. Draw with node_labels='idx' to find.
         """
-        if idx:
+        if idx is not None:
             return [i.name for i in self.idx_dict[idx].get_leaves()]
         return [self.idx_dict[idx].name for idx in range(self.ntips)]
 
@@ -1036,7 +1041,6 @@ def tree(data=Union[str,Path,Url,ToyTree,TreeNode], tree_format:int=0) -> ToyTre
 
     # raise an error (to make an empty tree you must enter empty TreeNode)
     else:
-        logger.warning(f"invalid input data={data}")
         raise ToytreeError(f"cannot parse input tree data: {data}")
 
     # enforce ladderize

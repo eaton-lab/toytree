@@ -6,7 +6,9 @@ Network parsing utilities
 
 import os
 import re
-import toytree
+from toytree.core.tree import ToyTree
+from toytree.core.treenode import TreeNode
+# import toytree
 
 
 

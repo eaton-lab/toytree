@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
 """
-A Node graph object forked from the ete3.Tree Class
+A Node graph object forked from the ete3.Tree Class with 
+some functions removed/deprecated (e.g., parsing, distance)
+and usually re-implemented at the ToyTree level with faster
+execution.
 
 Deprecated:
     - get_distance
@@ -12,20 +15,20 @@ New Fix:
     - ...
 """
 
+# TODO: replace all random with numpy.rng
 import random
 import itertools
 from hashlib import md5
 from collections import deque
 from functools import cmp_to_key
-from toytree.io.TreeWriter import NewickWriter
+from toytree.src.io.TreeWriter import NewickWriter
 from toytree.utils.exceptions import TreeError
 
 DEFAULT_EDGE_LENGTH = 1.
 DEFAULT_SUPPORT = 0.
 
 
-
-class TreeNode(object):
+class TreeNode:
     """
     TreeNode (Tree) class is used to store a tree structure. A tree
     consists of a collection of TreeNode instances connected in a

@@ -5,12 +5,12 @@ Fastest minimal tree for simple non-drawing operations.
 """
 
 from copy import copy
-from toytree.io.TreeParser import FastTreeParser
-from toytree.io.TreeWriter import NewickWriter
+from toytree.src.io.TreeParser import FastTreeParser
+from toytree.src.io.TreeWriter import NewickWriter
 
 
 
-class RawTree():
+class RawTree:
     """
     A faster tree parsing function that returns a RawTree object, which
     has the functionality for traversing TreeNodes, or extracting 

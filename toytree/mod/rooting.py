@@ -4,7 +4,7 @@
 Rooting class
 """
 
-from toytree.core.NodeAssist import NodeAssist
+from toytree.src.node_assist import NodeAssist
 from toytree.utils.exceptions import ToytreeError
 
 

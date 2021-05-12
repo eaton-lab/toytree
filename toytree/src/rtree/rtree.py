@@ -6,8 +6,8 @@ Random Tree generation Classes. Uses numpy RNG.
 
 import numpy as np
 from loguru import logger
-from toytree.core.Toytree import ToyTree
-from toytree.core.TreeNode import TreeNode
+from toytree.src.tree import ToyTree
+from toytree.src.treenode import TreeNode
 from toytree.utils.exceptions import ToytreeError
 
 # TODO: coaltree, ...

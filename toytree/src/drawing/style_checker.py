@@ -8,9 +8,9 @@ into arrays for variable styles.
 import itertools
 import toyplot
 import numpy as np
-from toytree.core.NodeAssist import NodeAssist
-from toytree.drawing.Render import split_rgba_style
-from toytree.drawing.TreeStyle import COLORS1
+from toytree.src.node_assist import NodeAssist
+from toytree.src.drawing.render import split_rgba_style
+from toytree.src.drawing.tree_style import COLORS1
 from toytree.utils.exceptions import ToytreeError
 
 ITERABLE = (list, tuple, np.ndarray)

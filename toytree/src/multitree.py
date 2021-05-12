@@ -14,32 +14,86 @@ TODO:
     - New mark: leave proper space for tips to mtree fits same as tree.
 """
 
-from builtins import range, str
-
+from typing import Union, Iterable, Optional
 from copy import deepcopy
+from pathlib import Path
 import numpy as np
 
-# used in Consensus
-from toytree.core.TreeNode import TreeNode
-from toytree.core.Toytree import ToyTree
-from toytree.core.Consensus import ConsensusTree
-from toytree.io.TreeParser import TreeParser
-from toytree.drawing.TreeStyle import TreeStyle
-from toytree.drawing.StyleChecker import StyleChecker
-from toytree.drawing.CanvasSetup import GridSetup, CanvasSetup
-from toytree.drawing.Render import ToytreeMark
-# from .MultiDrawing import CloudTree
+from toytree.src.tree import ToyTree
+from toytree.src.consensus import ConsensusTree
+from toytree.src.io.TreeParser import TreeParser
+from toytree.src.drawing.tree_style import TreeStyle
+from toytree.src.drawing.style_checker import StyleChecker
+from toytree.src.drawing.canvas_setup import GridSetup, CanvasSetup
+from toytree.src.drawing.render import ToytreeMark
+from toytree.utils.exceptions import ToytreeError
 
 
-
-class MultiTree(object):
+def mtree(
+    data:Union[str, Path, Iterable[ToyTree]],
+    tree_format:int=0,
+    ):
     """
-    Toytree MultiTree object for representing multiple trees. 
+    General class constructor to parse and return a MultiTree class 
+    object from input arguments as a multi-newick string, filepath,
+    Url, or Iterable of Toytree objects.
+    
+    data (Union[str, Path, Iterable[ToyTree]]):
+        string, filepath, or URL for a newick or nexus formatted list 
+        of trees, or an iterable of ToyTree objects.
+
+    Examples:
+    ----------
+    mtre = toytree.mtree("many_trees.nwk")
+    mtre = toytree.mtree("((a,b),c);\n((c,a),b);")
+    mtre = toytree.mtree([toytree.rtree.rtree(10) for i in range(5)])
+    """
+    # parse the newick object into a list of Toytrees
+    treelist = []
+    if isinstance(data, Path):
+        data = str(Path)
+    if isinstance(data, str):
+        tns = TreeParser(data, tree_format, multitree=True).treenodes
+        treelist = [ToyTree(i) for i in tns]
+    elif isinstance(data[0], ToyTree):
+        treelist = data
+    else:
+        raise ToytreeError("mtree input format unrecognized.")
+    return MultiTree(treelist)
+        # set tip plot order for treelist to the first tree order
+        # order trees in treelist to plot in shared order...
+        # self._fixed_order = fixed_order   # (<list>, True, False, or None)
+        # self._user_order = None
+        # self._cons_order = None
+        # self._set_tip_order()
+        # self._parse_treelist()
+
+
+
+class BaseMultiTree:
+    def __init__(self):
+        self.style = TreeStyle('m')
+        self._i = 0
+        self.treelist = []
+
+
+# class MultiTree2(BaseMultiTree):
+#     pass
+
+
+# class MixedTree(BaseMultiTree):
+#     pass
+
+
+class MultiTree:
+    """
+    Toytree MultiTree object for plotting or extracting stats from
+    a set of trees sharing the same tips. 
 
     Parameters:
     -----------
-    newick: (str)
-        string, filepath, or URL for a newick or nexus formatted list of trees
+    data: List[ToyTrees]
+        
     tree_format: (int)
         ete format for newick tree structure. Default is 0. 
     fixed_order: (bool, list, None)    
@@ -59,42 +113,13 @@ class MultiTree(object):
     draw
         Draws a plot with n x m trees in a grid.
     """
-    def __init__(self, newick, tree_format=0):  # , fixed_order=False):
+    def __init__(self, treelist):
 
         # setting attributes
-        self.style = TreeStyle('m')
         self._i = 0
+        self.style = TreeStyle('m')
+        self.treelist = treelist
 
-        # parse the newick object into a list of Toytrees
-        self.treelist = []
-        if isinstance(newick, str):
-            tns = TreeParser(newick, tree_format, multitree=True).treenodes
-            self.treelist = [ToyTree(i) for i in tns]
-
-        # iterables (list, tuple, ndarray, Series)
-        else:
-            # convert to list
-            if newick is not None:
-                newick = list(newick)
-
-            # load list whether it is newicks, toytrees or treenodes
-            if isinstance(newick[0], str):
-                tns = TreeParser(newick, tree_format, multitree=True).treenodes
-                self.treelist = [ToyTree(i) for i in tns]
-            elif isinstance(newick[0], ToyTree):
-                self.treelist = newick
-            elif isinstance(newick[0], TreeNode):
-                self.treelist = [ToyTree(i) for i in newick]
-
-        # set tip plot order for treelist to the first tree order
-        # order trees in treelist to plot in shared order...
-        # self._fixed_order = fixed_order   # (<list>, True, False, or None)
-        # self._user_order = None
-        # self._cons_order = None
-        # self._set_tip_order()
-        # self._parse_treelist()
-
-    # attributes of multitrees
     def __len__(self):  
         return len(self.treelist)
 
@@ -104,21 +129,21 @@ class MultiTree(object):
     def __next__(self):
         try:
             result = self.treelist[self._i]
-        except IndexError:
+        except IndexError as err:
             self._i = 0
-            raise StopIteration
+            raise StopIteration from err
         self._i += 1
         return result
 
     @property
     def ntips(self):
+        "returns the number of tips in each tree."
         return self.treelist[0].ntips
-
 
     @property
     def ntrees(self):
+        "returns the number of trees in the MultiTree treelist."
         return len(self.treelist)
-
 
     @property
     def all_tips_shared(self):
@@ -133,23 +158,34 @@ class MultiTree(object):
             return True
         return False
 
-
     # TODO: this could be sped up by using toytree copy command.
     def copy(self):
         return deepcopy(self)
 
-
-    def write(self, handle=None, format=0):
+    def write(
+        self, 
+        path: Optional[Path], 
+        tree_format:int=0,
+        features: Optional[Iterable[str]]=None,
+        dist_formatter:str="%0.6g",
+        ) -> Optional[str]:
         """
-        Writes a list of newick strings to stdout or to a file handle.
+        Writes a multi-line string of newick trees to stdout or filepath
         """
-        if not handle:
-            return "\n".join([i.write() for i in self.treelist])
-
-        with open(handle, 'w') as outtre:
-            outtre.write("\n".join([i.write() for i in self.treelist]))
-            # for tre in self.treelist:
-            # outtre.write(tre.newick + "\n")
+        treestr = "\n".join([
+            i.write(
+                path=None, 
+                tree_format=tree_format, 
+                features=features,
+                dist_formatter=dist_formatter,
+            )
+            for i in self.treelist]
+        )
+        if not path:
+            return treestr
+        with open(path, 'w') as outtre:
+            outtre.write(treestr)
+        return None
 
 
     def reset_tree_styles(self):

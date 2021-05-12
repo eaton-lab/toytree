@@ -17,8 +17,8 @@ from loguru import logger
 import numpy as np
 import toyplot
 from toyplot.html import _draw_bar, _draw_triangle, _draw_circle, _draw_rect
-from toytree.drawing.TreeStyle import COLORS1
-from toytree.drawing.ToytreeMark import ToytreeMark
+from toytree.src.drawing.tree_style import COLORS1
+from toytree.src.drawing.toytree_mark import ToytreeMark
 from toytree.utils.globals import PATH_FORMAT
 
 

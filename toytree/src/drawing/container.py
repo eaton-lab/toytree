@@ -6,9 +6,8 @@ Container trees for plotting coalescent histories with demographic params
 
 import numpy as np
 import toyplot
-import toytree
+from toytree.src.tree import ToyTree
 from toytree.utils.exceptions import ToytreeError
-
 
 
 class Container(object):
@@ -31,7 +30,7 @@ class Container(object):
         self.spacer = spacer
 
         # draw only the container tree.
-        if isinstance(model, toytree.Toytree.ToyTree):
+        if isinstance(model, ToyTree):
             self.tree = model.copy()
 
         # draw the genealogies within the container tree.

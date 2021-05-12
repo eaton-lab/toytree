@@ -4,22 +4,28 @@
 Penalized likelihood functions
 """
 
-import toytree
+import subprocess
+from typing import Dict, Optional
+from loguru import logger
 import toyplot
 import numpy as np
+import scipy.stats as stats
 from scipy.optimize import minimize, Bounds, LinearConstraint
 from scipy.special import factorial
-from scipy.stats import gamma
-
-from ..utils import ToytreeError
-
+import toytree
+from toytree.utils.exceptions import ToytreeError
 
 
+AGES_MIN = 1e-8
+AGES_MAX = 1e8
+RATES_MIN = 1e-9
+RATES_MAX = 1e5
 
-class Chronos(object):
+
+class Chronos:
     """
-    Scale edge lengths of a tree to make it ultrametric (tips align at 0) 
-    by estimating rate variation with penalized likelihood.
+    Scale edge lengths of a tree to make it ultrametric (tips align 
+    at 0) by estimating rate variation with penalized likelihood.
 
     Parameters:
     -----------
@@ -30,12 +36,11 @@ class Chronos(object):
     weight (float):
         Weighting of the rate variation (penalty component) to the 
         penalized likelihood score. This is referred to as lambda in 
-        chronos and by Sanderson. Lower values allow less rate variation.
-        Default=1.
+        chronos and by Sanderson. Lower values allow less variation.
     epsilon (float):
         Convergence diagnostic... Default=1e-8.
     tol (float):
-        Tolerance for convergence, sets a minimum on rates. Default=1e-8.
+        Tolerance for convergence, the minimum on rates. Default=1e-8.
     verbose (bool):
         Prints information on model fitting and results. Default=False.
 
@@ -48,8 +53,15 @@ class Chronos(object):
       - https://github.com/cran/ape/blob/master/R/chronos.R
       - Paradis article ...
     """
-
-    def __init__(self, tree, calibrations={}, model="relaxed", weight=1, tol=1e-8, verbose=False):
+    def __init__(
+        self, 
+        tree,
+        calibrations:Optional[Dict]=None,
+        model:str="relaxed",
+        weight:float=1, 
+        tol:float=1e-8, 
+        verbose:bool=False,
+        ):
 
         # store tree data
         self.tree = tree
@@ -58,7 +70,8 @@ class Chronos(object):
         self.tol = tol
         self.epsilon = 1e-8
         self.calibrations = (
-            calibrations if calibrations else {self.tree.treenode.idx: (1, 1)}
+            calibrations if calibrations is not None
+            else {self.tree.treenode.idx: (1, 1)}
         )
 
         # simple logger
@@ -90,28 +103,31 @@ class Chronos(object):
             self.rates_init, 
             self.ages_init[self.ages_est_idxs],
         ])
+        self.ploglik = None
         self.results = self.params
         self.print('{} parameters to estimate'.format(self.params.size))
 
         # gradient incidence matrices for relaxed model
-        self.matA = np.array([self.edges[:, 1] == i for i in self.ages_est_idxs])
-        self.matD = np.array([self.edges[:, 0] == i for i in self.ages_est_idxs])
+        self.mat_a = np.array([self.edges[:, 1] == i for i in self.ages_est_idxs])
+        self.mat_d = np.array([self.edges[:, 0] == i for i in self.ages_est_idxs])
 
         # gradient incidence matrices for correlated model
-        self.ni = np.bincount(self.edges[:].flatten())[:-1]
-        self.matN = np.zeros((self.edges.shape[0], self.edges.shape[0]), dtype=bool)
+        self.ni_ = np.bincount(self.edges[:].flatten())[:-1]
+        self.mat_n = np.zeros((self.edges.shape[0], self.edges.shape[0]), dtype=bool)
         for nidx, node in self.tree.idx_dict.items():
             if node.up:
-                self.matN[nidx, nidx] = True
+                self.mat_n[nidx, nidx] = True
                 ind = [i.idx for i in node.children]
-                self.matN[nidx][ind] = True
+                self.mat_n[nidx][ind] = True
 
         # fit the model iteratively
         # self.iterative_model_fit()
 
-
-
     def run(self):
+        """
+        Calls optimization function, calculate PhiiC and applies results
+        to nodes of a Toytree.
+        """
         # report results
         self.print('init ploglik: {}'.format(-self.objective(self.params)))
         self.optimize()
@@ -122,8 +138,6 @@ class Chronos(object):
 
         # store final converted tree
         self.tree = self.get_transformed_tree()
-
-
 
     def get_ages_init(self):
         """
@@ -195,26 +209,20 @@ class Chronos(object):
             # check that all edges are positive in length        
             if all(self.ages_lens >= 0):
                 break
-            else:
-                attempt += 1
-                root_multiplier *= 1.5
-                if attempt == max_attempts:
-                    raise ToytreeError("bad starting values")
+            attempt += 1
+            root_multiplier *= 1.5
+            if attempt == max_attempts:
+                raise ToytreeError("bad starting values")
 
         # store initial values for method validation
         self.init_tree = self.get_transformed_tree()
-
-
 
     def get_bounds(self):
         """
         Stores a list of tuples of (min, max) for every parameter made up 
         of the calibration info or default limits.
         """
-        AGES_MIN = 1e-8
-        AGES_MAX = 1e8
-        RATES_MIN = self.tol
-        RATES_MAX = 1e5
+        # RATES_MIN = max(RATES_MIN, self.tol)
         self.bounds = [(RATES_MIN, RATES_MAX) for i in self.rates_init]
         self.bounds += [(AGES_MIN, AGES_MAX) for i in self.ages_est_idxs]
 
@@ -225,33 +233,42 @@ class Chronos(object):
             # if calibration is a range then add node back to be estimated.
             if cmin != cmax:
                 self.bounds += [cmin, cmax]
-                self.ages_est_idxs = np.concatenate([self.ages_est_idxs, [nidx]])
-
-
+                self.ages_est_idxs = np.concatenate(
+                    [self.ages_est_idxs, [nidx]]
+                )
 
     def optimize(self, rates=True, ages=True):
         """
         Maximum likelihood optimization of the objective function.
         """
         # estimate all rates and all ages except tips and calibrated nodes
-        self.opt = minimize(
+        # fit = minimize(
+        #     fun=self.objective,
+        #     x0=self.params,
+        #     args=(rates, ages),
+        #     # method="L-BFGS-B",
+        #     method="SLSQP",
+        #     # method="TNC",
+        #     bounds=self.bounds,
+        #     jac=self.gradient,
+        #     options={
+        #         # "maxiter": 100,
+        #         # "disp": False,
+        #     }
+        # )
+        fit = minimize(
             fun=self.objective,
             x0=self.params,
             args=(rates, ages),
-            # method="L-BFGS-B",
-            method="SLSQP",
-            # method="TNC",
+            method="L-BFGS-B",
             bounds=self.bounds,
-            jac=self.gradient,
             options={
                 # "maxiter": 100,
                 # "disp": False,
             }
-        )
-        self.results = self.opt.x
-        self.ploglik = self.opt.fun
-
-
+        )        
+        self.results = fit.x
+        self.ploglik = fit.fun
 
     def update(self, params, rates, ages):
         """
@@ -271,13 +288,10 @@ class Chronos(object):
         # impute estimated ages into the full set of ages
         self.ages_init[self.ages_est_idxs] = self.ages_hat
 
-
-
     def objective(self, params, rates=True, ages=True):
         """
         The penalized likelihood function to MINIMIZE
         """
-
         # update params on self
         self.update(params, rates, ages)
 
@@ -289,8 +303,6 @@ class Chronos(object):
 
         # return the full score
         return -self.lik_poisson() + (self.weight * penalty)
-
-
 
     def lik_poisson(self):
         """
@@ -313,18 +325,14 @@ class Chronos(object):
         )
         return loglik
 
-
-
     def lik_penalty_relaxed(self):
         """
         Penalty component to likelihood for the relaxed model.
         """
         alpha = self.rates_hat.mean()
-        pdens = sorted(gamma.cdf(self.rates_hat, alpha))
+        pdens = sorted(stats.gamma.cdf(self.rates_hat, alpha))
         pcdf = ((np.arange(1, self.rates_hat.size + 1) / self.rates_hat.size) - pdens) ** 2
         return pcdf
-
-
 
     def lik_penalty_correlated(self):
         """
@@ -333,11 +341,9 @@ class Chronos(object):
         ele2 = np.var([self.rates_hat[i] for i in self.edges[-2:, 1]])
         ele1 = [
             ((self.rates_hat[edge[0]] - self.rates_hat[edge[1]]) ** 2) 
-            for edge in edges[:-2]
+            for edge in self.edges[:-2]
         ]
         return self.weight * (np.sum(ele1) + ele2)
-
-
 
     def gradient(self, params, rates=True, ages=True):
         """
@@ -351,12 +357,10 @@ class Chronos(object):
 
         # add the effect of rate model on gradients of rate params
         if self.model == "relaxed":
-             gradient[:self.rates_hat.size] += self.gradient_penalty_relaxed()
+            gradient[:self.rates_hat.size] += self.gradient_penalty_relaxed()
 
         # return gradient
         return gradient
-
-
 
     def gradient_poisson(self):
         """
@@ -370,25 +374,21 @@ class Chronos(object):
 
         # gradient for the dates
         inner = (self.dists / age_lens) - self.rates_hat
-        dates_gr = np.sum((inner * self.matA) - (inner * self.matD), axis=1)
+        dates_gr = np.sum((inner * self.mat_a) - (inner * self.mat_d), axis=1)
 
         # return as a concatenated list
         return np.concatenate([rates_gr, dates_gr])
-
-
 
     def gradient_penalty_relaxed(self):
         """
         Gradient function for the relaxed model penalty component
         """
         alpha = self.rates_hat.mean()
-        a = gamma.pdf(self.rates_hat, alpha)
+        a = stats.gamma.pdf(self.rates_hat, alpha)
         b = np.argsort(self.rates_hat) / self.rates_hat.size
-        c = gamma.cdf(self.rates_hat, alpha)
+        c = stats.gamma.cdf(self.rates_hat, alpha)
         gradient = 2 * a * (b - c)       
         return self.weight * gradient
-
-
 
     def gradient_penalty_correlated(self):
         """
@@ -402,8 +402,10 @@ class Chronos(object):
 
         # (eta_i * rate - sapply(X, function(x) sum(rate[x])))
 
-        gradient = (self.ni[i] * self.rates_hat[i]) - self.rates_hat[self.matN[i]].sum()
-         self.weight * 2 * gradient
+        # gradient = (
+        #     self.ni[i] * self.rates_hat[i]) - 
+        #     self.rates_hat[self.matN[i]].sum()
+        #  self.weight * 2 * gradient
         
         # the contribution of the root variance term:
         # if (Nbasal == 2) { # the simpler formulae if there's a basal dichotomy
@@ -423,7 +425,6 @@ class Chronos(object):
         #    gr
         # }
 
-
     def get_transformed_tree(self):
         """
         Returns a toytree with new ages (dists) and rates on nodes from the 
@@ -437,14 +438,11 @@ class Chronos(object):
                 # node.rate = self.params[node.]
         return newtre
 
-        
-
     def iterative_model_fit(self):
         """
         Fits the model by ML iteratively, fitting rates then dates, until
         the change in likelihood score is less than epsilon.
         """
-
         # initial fit: all params
         self.optimize()
         self.print("initial model fit P-loglik: {}".format(self.ploglik))
@@ -489,8 +487,6 @@ class Chronos(object):
         # 
         self.print()
 
-
-
     def get_phiic(self):
 
         # get rates
@@ -501,18 +497,17 @@ class Chronos(object):
             # alpha = self._rates.mean()
             # pgams = gamma.pdf(self._rates, alpha ** 2, loc=0, scale=1 / alpha)
             alpha = self.rates_hat.mean()
-            pdens = sorted(gamma.cdf(self.rates_hat, alpha))
-            dx = np.linalg.svd([pdens])[1][0]
+            pdens = sorted(stats.gamma.cdf(self.rates_hat, alpha))
+            dx_ = np.linalg.svd([pdens])[1][0]
 
         # calculate 
         self.phiic = np.sum([
-            -2 * self.loglik,
+            -2 * self.ploglik,
             2 * len(self.bounds),
-            self.weight * dx,
+            self.weight * dx_,
         ])
         self.print('loglik: {}'.format(self.lik_poisson()))
         self.print('PHIIC: {}'.format(self.phiic))
-
 
 
 
@@ -551,32 +546,102 @@ class Chronos(object):
 
 
 
+RSTRING = """
+library(ape)
+
+# load the Python variables
+btree <- read.tree(text="{tree}")
+min_ages <- c{min_ages}
+max_ages <- c{max_ages}
+tips <- list{tips}
+lamb <- {lamb}
+model <- '{model}'
+
+# run the R code 
+nodes <- c()
+for (tipset in tips) {{
+    mrca <- getMRCA(btree, tipset)
+    nodes <- append(nodes, mrca)
+}}
+
+calib <- data.frame(node=nodes, age.min=min_ages, age.max=max_ages)
+
+ctree <- chronos(
+    btree, 
+    lambda=lamb,
+    model=model,
+    calibration=calib,
+)
+write.tree(ctree)
+"""
+
+
+def convert_to_rvec(tup):
+    return "c('" + "','".join(tup) + "')"
+
+def _run_chronos_in_r(tree, lamb=1, model="relaxed", calibrations=None):
+    """
+    For testing and validating pen.lik. methods
+    """
+    calibrations = calibrations if calibrations is not None else {}
+    if not calibrations:
+        calibrations = {tree.treenode.idx: (1, 1)}
+    cmin_age = [str(calibrations[i][0]) for i in sorted(calibrations)]
+    cmax_age = [str(calibrations[i][1]) for i in sorted(calibrations)]
+
+    data = {
+        "tree": tree.write(),
+        "min_ages": "(" + ",".join(cmin_age) + ")",
+        "max_ages": "(" + ",".join(cmax_age) + ")",
+        "tips": "(" + ",".join(
+            convert_to_rvec(tree.get_tip_labels(x))
+            for x in sorted(calibrations)
+        ) + ")" if calibrations else "()",
+        "lamb": lamb,
+        "model": model,
+    }
+    rst = RSTRING.format(**data)
+    with open("/tmp/chronos.R", 'w') as out:
+        out.write(rst)
+    out = subprocess.run(
+        ["Rscript", "/tmp/chronos.R"], 
+        check=True,
+        stdout=subprocess.PIPE,
+    )
+    out = out.stdout.decode()
+    ctre = out.strip().split("[1] ")[-1].strip('"')
+    return ctre, out
+
 
 
 class TreeSampler:
     """
-    Class for applying uncorrelated gamma rate transformations to edges.
+    Class for applying uncorrelated gamma rate transformations to edges
+    to create Generative data for testing the Chronos functions.
     """
-    def __init__(self, tree, N=5e5, G=1, gamma=3):
+    def __init__(self, tree, neff=5e5, gentime=1, gamma=3):
         self.tree = tree
-        self.N = N
-        self.G = G
+        self.neff = neff
+        self.gentime = gentime
         self.gamma = gamma
         self.nnodes = self.tree.nnodes
-        
-    
+
+
     def plot_gamma_distributed_rates(self, nsamples=10000, bins=30):
+        """
+        Draws the stat distribution for verification.
+        """
         a = (1 / self.gamma) ** 2
         b = 1
         gamma_rates = np.random.gamma(shape=1 / (a*b**2), scale=a*b**2, size=nsamples)
 
         # generate a distribution of G or Ne values
-        NEVAR = gamma_rates * self.N
+        NEVAR = gamma_rates * self.neff
         canvas = toyplot.Canvas(width=600, height=250)
         ax0 = canvas.cartesian(grid=(1, 2, 0), xlabel="gamma distributed Ne variation")
         m0 = ax0.bars(np.histogram(NEVAR, bins=bins))
 
-        GVAR = gamma_rates * self.G
+        GVAR = gamma_rates * self.gentime
         ax1 = canvas.cartesian(grid=(1, 2, 1), xlabel="gamma distributed gentime variation")
         m1 = ax1.bars(np.histogram(GVAR, bins=bins))
         return canvas, (ax0, ax1), (m0, m1)
@@ -612,15 +677,15 @@ class TreeSampler:
             )
 
             # sample Ne values from gamma dist
-            nevals = gamma_rates * self.N
+            nevals = gamma_rates * self.neff
         
             # apply randomly to nodes of the tree
             tree = tree.set_node_values(
                 feature="Ne",
-                values={i: nevals[i] for i in tree.idx_dict}
+                mapping={i: nevals[i] for i in tree.idx_dict}
             )
         else:
-            tree = tree.set_node_values("Ne", default=self.N)
+            tree = tree.set_node_values("Ne", default=self.neff)
         
         if G:
             gamma_rates = np.random.gamma(
@@ -630,27 +695,34 @@ class TreeSampler:
             )
 
             # sample Ne values from gamma dist
-            gvals = gamma_rates * self.G
+            gvals = gamma_rates * self.gentime
         
             # apply randomly to nodes of the tree
             tree = tree.set_node_values(
                 feature="g",
-                values={i: gvals[i] for i in tree.idx_dict}
+                mapping={i: gvals[i] for i in tree.idx_dict}
             )
         else:
-            tree = tree.set_node_values("g", default=self.G)
-        
+            tree = tree.set_node_values("g", default=self.gentime)      
         
         # optionally convert edges to coal units
         if transform == 1:
             tree = tree.set_node_values(
                 feature="dist",
-                values={i: j.dist / (j.Ne * 2 * j.g) for i,j in tree.idx_dict.items()}
+                mapping={i: j.dist / (j.Ne * 2 * j.g) for i,j in tree.idx_dict.items()}
             )
             
         elif transform == 2:
             tree = tree.set_node_values(
                 feature="dist",
-                values={i: j.dist / j.g for i,j in tree.idx_dict.items()}
+                mapping={i: j.dist / j.g for i,j in tree.idx_dict.items()}
             )            
         return tree
+
+
+if __name__ == "__main__":
+
+    TREE = toytree.rtree.unittree(10, treeheight=1e6)
+    TSA = TreeSampler(TREE, neff=5e5, gentime=1, gamma=3)
+    TRE = TSA.get_tree()
+    print(TRE)

@@ -1,11 +1,18 @@
 #!/usr/bin/env python
 
 """
-A class wrapper for treemod funcs to make accessible from toytrees
+A class wrapper for treemod funcs to make accessible from toytrees.
 """
 
 from typing import Dict
-from toytree.treemod.treemod import *
+from toytree.mod.tree_modifications import (
+    node_scale_root_height,
+    node_slider,
+    node_multiplier,
+    set_node_heights,
+    make_ultrametric,
+)
+from toytree.mod.penalized_likelihood import Chronos
 
 
 class TreeModAPI:

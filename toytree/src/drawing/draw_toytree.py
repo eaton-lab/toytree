@@ -7,10 +7,10 @@ See full args/docstring at toytree.core.Toytree.ToyTree.draw()
 
 from loguru import logger
 
-from toytree.drawing.TreeStyle import TreeStyle
-from toytree.drawing.StyleChecker import StyleChecker
-from toytree.drawing.Render import ToytreeMark
-from toytree.drawing.CanvasSetup import CanvasSetup
+from toytree.src.drawing.tree_style import TreeStyle
+from toytree.src.drawing.style_checker import StyleChecker
+from toytree.src.drawing.render import ToytreeMark
+from toytree.src.drawing.canvas_setup import CanvasSetup
 
 
 def draw_toytree(**kwargs):

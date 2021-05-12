@@ -19,7 +19,7 @@ Classes:
 import os
 import re
 import requests
-from toytree.core.TreeNode import TreeNode
+from toytree.src.treenode import TreeNode
 from toytree.utils.globals import NW_FORMAT
 from toytree.utils.exceptions import NewickError, NexusError
 

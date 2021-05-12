@@ -22,7 +22,6 @@ __all__ = [
 ]
 
 
-
 def node_scale_root_height(tre, treeheight=1, include_stem=False, nocopy=False):
     """
     Returns a toytree copy with all nodes multiplied by a constant 

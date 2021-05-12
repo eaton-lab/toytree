@@ -4,7 +4,6 @@
 Robinson-Foulds Distance Calculations modified from ete3 TreeNode subfunction.
 """
 
-from __future__ import print_function
 from toytree.utils.exceptions import TreeError
 
 

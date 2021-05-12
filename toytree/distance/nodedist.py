@@ -1,19 +1,10 @@
 #/usr/bin/env python
 
 """
-A collection of distance functions for:
-    1. distances between nodes on a tree (e.g., patristic).
-    2. distances between trees (e.g., RF)
-    3. distances between sequences (int or str/bytes seq arrays).
-
-For testing:
-    - compare against R package treedist
-        - test resolved and unresolved trees
-        - test rooted and unrooted trees
+Node distance functions.
 """
 
 import itertools
-from loguru import logger
 import numpy as np
 import pandas as pd
 from toytree.utils.exceptions import ToytreeError
