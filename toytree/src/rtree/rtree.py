@@ -4,13 +4,12 @@
 Random Tree generation Classes. Uses numpy RNG.
 """
 
+from typing import Optional
 import numpy as np
 from loguru import logger
 from toytree.src.tree import ToyTree
 from toytree.src.treenode import TreeNode
 from toytree.utils.exceptions import ToytreeError
-
-# TODO: coaltree, ...
 
 
 # limit the API view
@@ -24,7 +23,7 @@ __all__ = [
 ]
 
 
-def rtree(ntips, seed=None):
+def rtree(ntips:int, seed:Optional[int]=None):
     """
     Returns a random topology (fastest method). Default values are
     set on node support (100) and dist (1.0) attributes. To set 
@@ -48,6 +47,8 @@ def rtree(ntips, seed=None):
 
     # will ladderize the tree and assign names and idxs
     tree = ToyTree(root)
+    for nidx in range(tree.ntips):
+        tree.idx_dict[nidx].name = f"r{tree.idx_dict[nidx].name}"
     return tree
 
 
@@ -193,7 +194,8 @@ def bdtree(
     seed=None,
     retain_extinct=False,
     random_names=False,
-    verbose=False):
+    verbose=False,
+    ):
     """
     Generate a classic birth/death tree.
 
@@ -331,11 +333,12 @@ def bdtree(
                 break
 
     # report status
-    logger.info("\n"
-        f"b:\t{evnts - ext}\n"
-        f"d:\t{ext}\n"
-        f"b/d:\t{evnts / (evnts - ext)}\n"
-        f"resets:\t{resets}")
+    if verbose:
+        print("\n"
+            f"b:\t{evnts - ext}\n"
+            f"d:\t{ext}\n"
+            f"b/d:\t{evnts / (evnts - ext)}\n"
+            f"resets:\t{resets}")
 
     # update coords and return
     tre.ladderize()
