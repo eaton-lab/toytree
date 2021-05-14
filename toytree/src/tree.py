@@ -74,8 +74,12 @@ class ToyTree(TreeBase):
         return self.treenode.__str__()
 
     def __repr__(self) -> str:
-        """ return nnodes, ntips, other info"""
-        return f"<ToyTree rooted={self.is_rooted()}, ntips={self.ntips}, features={self.features}>"
+        """string representation of a ToyTree object"""
+        return (
+            f"<ToyTree rooted={self.is_rooted()}, "
+            f"ntips={self.ntips}, "
+            f"features={sorted(self.features)}>"
+        )
 
     def __len__(self) -> int:
         """ return len of treenode (ntips) """
@@ -639,8 +643,11 @@ class ToyTree(TreeBase):
     def prune(self, names:Iterable[str]=None, wildcard:str=None, regex:str=None):
         """
         Returns a copy of a subtree of the existing tree that includes
-        only the selected tips and minimal edges needed to connect them.
-        You can select the tip names using either names, wildcard or regex.
+        only the selected tips and minimal edges needed to connect 
+        them, i.e., it does not enforce keeping the root unless the 
+        relationships among the pruned tips spans the root node.
+
+        Tip names can be selected using either names, wildcard or regex.
 
         Parameters:
         -----------
@@ -676,6 +683,8 @@ class ToyTree(TreeBase):
             raise ToytreeError("No tips selected.")
 
         nself.treenode.prune(tipnames, preserve_branch_length=True)
+        if len(nself.treenode) == 1:
+            nself.treenode = nself.treenode.children[0].detach()
         nself._coords.update()
         return nself
 
