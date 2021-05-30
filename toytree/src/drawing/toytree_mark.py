@@ -9,11 +9,9 @@ domain and extents.
 TODO: maybe make an Extents class to construct more clearly.
 """
 
-from loguru import logger
 import toyplot
 import numpy as np
 from toyplot.mark import Mark
-
 
 
 class ToytreeMark(Mark):
