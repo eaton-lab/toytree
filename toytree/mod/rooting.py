@@ -68,7 +68,9 @@ class Rooter:
 
 
     def update_tree_from_tdict(self):
-        # update tree structure and node labels
+        """
+        update tree structure and node labels
+        """
         for node in self.tdict:
             node.up = self.tdict[node][0]
             node.children = self.tdict[node][1]
@@ -77,11 +79,12 @@ class Rooter:
 
 
     def update(self):
-        # update coordinates which updates idx and adds it to any new nodes.
+        """
+        update coordinates: updates idx and adds it to any new nodes.
+        """
         self.tree.treenode = self.nnode
         self.tree.treenode.ladderize()
         self.tree._coords.update()
-
 
 
     def redirect_edge_features(self):
@@ -98,7 +101,6 @@ class Rooter:
             self.tdict[self.node2][2]['support'] = self.maxsup
         else:
             self.tdict[self.node2][2]['support'] = self.node2.support
-
 
 
     def restructure_tree(self):
@@ -259,12 +261,13 @@ class Rooter:
 
 
     def get_features(self):
-        # define which features to use/keep on nodes and which are "edge" 
-        # features which must be redirected on rooting.
+        """
+        define which features to use/keep on nodes and which are "edge" 
+        features which must be redirected on rooting.
+        """
         testnode = self.tree.treenode.get_leaves()[0]
         extrafeat = {i for i in testnode.features if i not in self.features}
         self.features.update(extrafeat)
-
 
 
     def get_match(self, names, wildcard, regex):
