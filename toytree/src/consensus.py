@@ -2,6 +2,11 @@
 
 """
 Get the consensus tree from a list of trees.
+
+TODO: 
+    - maybe faster using Python array.
+    - calculate mean branch lengths on consensus tree.
+    - calculate mean heights keeping 0 min if ultrametric.
 """
 
 from hashlib import md5
