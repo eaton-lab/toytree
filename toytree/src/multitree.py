@@ -14,7 +14,7 @@ TODO:
     - New mark: leave proper space for tips to mtree fits same as tree.
 """
 
-from typing import Union, Iterable, Optional
+from typing import Union, Iterable, Optional, Tuple
 from copy import deepcopy
 from pathlib import Path
 import numpy as np
@@ -160,6 +160,9 @@ class MultiTree:
 
     # TODO: this could be sped up by using toytree copy command.
     def copy(self):
+        """
+        Returns a deepcopy of the MultiTree object.
+        """
         return deepcopy(self)
 
     def write(
@@ -246,16 +249,16 @@ class MultiTree:
 
 
 
-
     def draw(
         self, 
-        nrows=1, 
-        ncols=4, 
-        shared_axes=False,
-        idxs=None, 
-        width=None,
-        height=None,
-        **kwargs):
+        nrows:int=1, 
+        ncols:int=4, 
+        shared_axes:bool=False,
+        idxs:Optional[Iterable[int]]=None, 
+        width:Optional[int]=None,
+        height:Optional[int]=None,
+        **kwargs,
+        ) -> Tuple:
         """
         Draw a set of trees on a grid with nice spacing and optionally with
         a shared axes. Different styles can be set on each tree individually
