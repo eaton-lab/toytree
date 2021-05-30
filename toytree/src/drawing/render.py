@@ -13,7 +13,6 @@ TODO:
 import functools
 import xml.etree.ElementTree as xml
 from multipledispatch import dispatch
-from loguru import logger
 import numpy as np
 import toyplot
 from toyplot.html import _draw_bar, _draw_triangle, _draw_circle, _draw_rect
@@ -41,8 +40,12 @@ class RenderToytree:
         self.axes = axes
         self.context = context
 
-        # to be constructed ...
-        self.mark_xml = None
+        # to be constructed (are these reused?)
+        self.mark_xml: xml.SubElement = None
+        self.edges_xml: xml.SubElement = None
+        self.nodes_xml: xml.SubElement = None
+        self.admix_xml: xml.SubElement = None
+        self.align_xml: xml.SubElement = None        
 
         # construction funcs
         self.project_coordinates()
