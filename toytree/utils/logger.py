@@ -28,6 +28,7 @@ def colorize():
         return True
     return False
 
+
 def set_loglevel(loglevel="INFO"):
     """
     Set the loglevel for loguru logger. Using 'enable' here as 
@@ -35,13 +36,15 @@ def set_loglevel(loglevel="INFO"):
     This sets the level at which logger calls will be displayed 
     throughout the rest of the code.
     """
-    config = {}
-    config["handlers"] = [{
-        "sink": sys.stderr,
-        "format": LOGFORMAT,
-        "level": loglevel,
-        "colorize": colorize(),
-        # "enqueue": True,
-    }]
-    logger.configure(**config)
-    logger.enable("toytree")
+    logger.add(sys.stderr, level=loglevel)
+    logger.info("toytree logger started")
+    # config = {}
+    # config["handlers"] = [{
+    #     "sink": sys.stderr,
+    #     "format": LOGFORMAT,
+    #     "level": loglevel,
+    #     "colorize": colorize(),
+    #     # "enqueue": True,
+    # }]
+    # logger.configure(**config)
+    # logger.enable("toytree")
