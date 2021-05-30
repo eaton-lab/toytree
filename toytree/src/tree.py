@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
 """
-The core toytree class object. 
-Nearly all API functions are accessible from a toytree, including
+The core ToyTree class object and class constructor function (.tree)
+
+Nearly all API functions are accessible from a ToyTree, including
 tree i/o, modifications, drawing, and analysis.
 
 TODO: Test for speed improvements: 
@@ -102,7 +103,7 @@ class ToyTree(TreeBase):
 
 
     @property
-    def newick(self):
+    def newick(self) -> str:
         """
         Returns a newick representation of the tree, the same as 
         calling .write() with default arguments.
@@ -282,9 +283,10 @@ class ToyTree(TreeBase):
         regex:str=None,
         ) -> int:
         """
-        Returns the node idx label of the most recent common ancestor node 
-        for the clade that includes the selected tips. Arguments can use fuzzy
-        name matching: a list of tip names, wildcard selector, or regex string.
+        Returns the node idx label of the most recent common ancestor 
+        node for the clade that includes the selected tips. Arguments 
+        can use fuzzy name matching: a list of tip names, wildcard 
+        selector, or regex string.
         """
         nas = NodeAssist(self, names, wildcard, regex)
         return nas.get_mrca().idx
@@ -506,7 +508,7 @@ class ToyTree(TreeBase):
         coords = self.get_node_coordinates(layout, use_edge_lengths)
         return coords[:self.ntips]
 
-    def get_tip_labels(self, idx:Optional[int]=None):
+    def get_tip_labels(self, idx:Optional[int]=None) -> List[str]:
         """
         Returns tip labels in the order they will be plotted on the 
         tree, i.e., "preorder traversal", which will appear from the
@@ -527,7 +529,7 @@ class ToyTree(TreeBase):
         feature:str, 
         mapping:Dict[Union[int,str],Any]=None, 
         default:Any=None,
-        ):
+        ) -> 'ToyTree':
         """
         Set values to a node feature and RETURNS A COPY of the toytree.
 
@@ -748,7 +750,7 @@ class ToyTree(TreeBase):
         names:Iterable[str]=None, 
         wildcard:str=None, 
         regex:str=None, 
-        ):
+        ) -> 'ToyTree':
         """
         Returns a copy of the ToyTree with the selected tips (and any 
         empty internal nodes) removed while retaining the original 
@@ -799,11 +801,11 @@ class ToyTree(TreeBase):
 
     def rotate_node(
         self, 
-        names=None, 
-        wildcard=None, 
-        regex=None, 
-        idx=None,
-        ):
+        names:Optional[List[str]]=None, 
+        wildcard:Optional[str]=None, 
+        regex:Optional[str]=None, 
+        idx:Optional[int]=None,
+        ) -> 'ToyTree':
         """
         Returns a ToyTree with the selected node rotated for plotting.
         A node can be selected by one of multiple options.
@@ -836,7 +838,7 @@ class ToyTree(TreeBase):
         nself._coords.update()
         return nself
 
-    def unroot(self):
+    def unroot(self) -> 'ToyTree':
         """
         Returns a copy of the tree unrooted. Does not transform tree in-place.
         """
@@ -850,12 +852,12 @@ class ToyTree(TreeBase):
 
     def root(
         self, 
-        names:Iterable[str]=None, 
-        wildcard:str=None, 
-        regex:str=None, 
+        names:Optional[List[str]]=None, 
+        wildcard:Optional[str]=None, 
+        regex:Optional[str]=None, 
         resolve_root_dist:bool=True,
-        edge_features:List[str]=None,
-        ):
+        edge_features:Optional[List[str]]=None,
+        ) -> 'ToyTree':
         """
         (Re-)root a tree by moving the tree anchor (real or phantom 
         root node) to a new split in the tree. 
@@ -940,8 +942,8 @@ class ToyTree(TreeBase):
         node_colors:Optional[Union[str,List[str]]]=None,
         node_style:Optional[Dict]=None,
         node_hover:bool=None,
-        node_markers=None,
-        edge_colors=None,
+        node_markers:Optional[List[str]]=None,
+        edge_colors:Optional[Union[str,List[str]]]=None,
         edge_widths=None,
         edge_type=None,
         edge_style=None,
