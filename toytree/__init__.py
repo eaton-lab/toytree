@@ -21,5 +21,5 @@ from toytree.src.multitree import mtree, MultiTree
 # import toytree.pcm
 
 # start the logger in INFO
-from toytree.utils.logger import set_loglevel
-set_loglevel("WARNING")
+# from toytree.utils.logger import set_loglevel
+# set_loglevel("WARNING")
