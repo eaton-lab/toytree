@@ -3,12 +3,9 @@
 """
 A class object for generating and storing Toytree plotting coordinates.
 
-TODO:
-- it may be useful to decompose update so plotting coords change but not idxs
--
 """
 
-from loguru import logger
+from typing import Optional, List
 import numpy as np
 from toytree.utils.exceptions import ToytreeError
 
@@ -75,7 +72,6 @@ class Coords:
         in levelorder traversal, but tips are ordered numerically from
         bottom to top in right facing ladderized tree plot order.
         """
-        logger.debug("set idxs")
         # internal nodes: root is highest idx
         idx = self.ttree.nnodes - 1
 
@@ -186,16 +182,15 @@ class Coords:
     def get_linear_coords(
         self,
         layout=None,
-        use_edge_lengths=True,
-        fixed_order=None,
-        fixed_position=None,
+        use_edge_lengths:bool=True,
+        fixed_order:Optional[List]=None,
+        fixed_position:Optional[List]=None,
         ):
         """
         Sets .edges, .verts for node positions.
         X and Y positions here refer to base assumption that tree is right
         facing, reorient_coordinates() will handle re-translating this.        
         """
-        logger.debug("get {} coords".format(layout))
         verts = np.zeros((self.ttree.nnodes, 2), dtype=float)
 
         # store verts array with x,y positions of nodes (lengths of branches)
