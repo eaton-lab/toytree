@@ -6,9 +6,7 @@ Nearly all API functions are accessible from a toytree, including
 tree i/o, modifications, drawing, and analysis.
 
 TODO: Test for speed improvements: 
-- down-facing drawing is broken...
 - fixed-order and tip-labels colors together
-- show bede how to flip scalebar.
 - node_colors supports colormap (docstring link to plot docs)
 - reduce deepcopies (in ToyTree done)
 - reduce traversals.
@@ -16,13 +14,18 @@ TODO: Test for speed improvements:
 - use set_node_heights in set_node_feature('heights')
 """
 
-# inconsistent-return-statements
+# pylint: disable=too-many-lines, too-many-public-methods, invalid-name
+# pylint: disable=inconsistent-return-statements, too-many-branches
 
-from typing import Union, Optional, Mapping, Iterable, List, Dict, Tuple, Set, Any
+import sys
+from typing import (
+    Union, Optional, Mapping, Iterable, List, Dict, Tuple, 
+    Set, Any, Callable
+)
 from pathlib import Path
+from decimal import Decimal
 import numpy as np
 import toyplot
-from loguru import logger
 
 from toytree.src.treenode import TreeNode
 from toytree.src.node_assist import NodeAssist
@@ -97,16 +100,20 @@ class ToyTree(TreeBase):
             feats.update(node.features)    
         return feats
 
+
     @property
     def newick(self):
-        return self._newick
-    
+        """
+        Returns a newick representation of the tree, the same as 
+        calling .write() with default arguments.
+        """
+        return self.write()   
 
     def write(
         self, 
         path:Optional[Path]=None, 
         tree_format:int=0, 
-        features:Optional[Iterable[str]]=None, 
+        features:Optional[List[str]]=None, 
         dist_formatter:str="%0.6g",
         ) -> Optional[str]:
         """
@@ -123,7 +130,7 @@ class ToyTree(TreeBase):
             returned as a string. 
         tree_format (int):
             Format of the newick string. See ete3 tree formats. Default=0.
-        features (Iterable):
+        features (List):
             Features of treenodes that should be written to the newick string
             in NHX format. Examples include "height", "idx", or other features
             you may have saved to treenodes. 
@@ -145,7 +152,6 @@ class ToyTree(TreeBase):
             return newick
         with open(path, 'w') as out:
             out.write(newick)
-            logger.info(f"wrote newick to {path}")
             return None
 
     def get_edges(self) -> np.ndarray:
@@ -274,7 +280,7 @@ class ToyTree(TreeBase):
         names:Iterable[str]=None, 
         wildcard:str=None, 
         regex:str=None,
-        ):
+        ) -> int:
         """
         Returns the node idx label of the most recent common ancestor node 
         for the clade that includes the selected tips. Arguments can use fuzzy
@@ -296,8 +302,7 @@ class ToyTree(TreeBase):
         show_root:bool=False, 
         show_tips:bool=False,
         mask:Optional[Iterable[bool]]=None,
-        # float_formatter:Optional[str]=".2f",
-        # str_formatter:Optional[str]=None,
+        formatter: Callable = None
         ) -> List[str]:
         """
         Returns values for a selected node feature in a post-order 
@@ -314,40 +319,50 @@ class ToyTree(TreeBase):
         can be created easily from operations on the array from 
         get_node_values().
 
+        The formatter arguments takes a function (or lambda func) as 
+        an argument to apply to all non-masked/non-null string labels. 
+        The returned value of the function will be converted to a string
+        if not str. This can be used to apply string or float formatting
+        to node values (see examples).
+
         See also: get_node_values
 
-        Usage:
+        Examples:
         ----------
         # show node names as node labels
-        tree.draw(node_labels=tree.get_node_labels("name"))
+        tre.draw(node_labels=tree.get_node_labels("name"))
 
         # to show node support values as node labels
-        tree.draw(node_labels=tree.get_node_labels("support"))
+        tre.draw(node_labels=tree.get_node_labels("support"))
 
-        # show only node labels where support < 90
-        mask = tree.get_node_values("support") < 90
-        nlabels = tree.get_node_labels("support", mask=mask)
-        tree.draw(node_labels=nlabels)
+        # show only node labels where support <= 90
+        mask = tre.get_node_values("support") > 90
+        tre.draw(
+            node_labels=tree.get_node_labels("support", mask=mask)
+        )
+
+        # apply formatting to convert support to percentages
+        tre.draw(
+            node_labels=tree.get_node_values(
+                feature="support", 
+                formatter=lambda x: f"{float(x) / 100}:.2f}",
+            )
+        )
         """
         # get array of values as (str,int,float,object) dtype
+        # ' ' = show node size but hide label
+        # ''  = hide node size and label
         values = self.get_node_values(feature)
-
-        # if float type then apply float formatter
-        # if issubclass(values.type, np.floating):
-        # values = np.array()
-        # if 
-        # try:
-        #     if np.can_cast(values.dtype, np.float):
-        #         values = []
-        # except TypeError as err:
-        #     raise 
-
         labels = values.astype(str)
         labels[labels == "nan"] = " "
+        
+        # default is to hide tips and root, unless requested
         if not show_root:
             labels[0] = ""
         if not show_tips:
             labels[-self.ntips:] = ""
+
+        # also hide any True indices in mask argument
         if mask is not None:
             if isinstance(mask, (tuple, list)):
                 mask = np.array(mask).astype(bool)
@@ -357,8 +372,21 @@ class ToyTree(TreeBase):
                 "mask must be a boolean numpy array")
             labels[np.invert(mask)] = ""
 
-        # TODO: apply string formatter
-        labels = labels.tolist()
+        # apply formatter lambda func to all non-hidden label strings
+        if formatter is None:
+            labels = labels.tolist()
+        else:
+            labels = [
+                str(formatter(i)) if i not in ("", " ") else i 
+                for i in labels
+            ]
+
+        # try converting float to ints if no floating points
+        try:
+            if all(not Decimal(float(i)) % 1 for i in labels if i not in ("", " ")):
+                labels = [str(int(float(i))) if i not in ("", " ") else i for i in labels]
+        except Exception:
+            pass
         return labels
 
     def get_node_values(
@@ -375,27 +403,42 @@ class ToyTree(TreeBase):
 
         See also: get_node_labels
 
-        Usage:
+        Examples:
         ---------------------
-        # get support values as integers and hide nodes w/ values > 95
-        mask = tree.get_node_values("support") < 95
-        labels = tree.get_node_labels("support", mask=mask, show_tips=False)
-        tree.draw(node_sizes=16, node_labels=labels)
+        # get support values as integers
+        supports = tree.get_node_values("support")
+        
+        # create a mask to hide values > 90
+        mask = supports <= 90
+
+        # supply mask to 'get_node_labels()' to hide nodes
+        tree.draw(
+            node_sizes=16, 
+            node_labels=tree.get_node_labels(
+                "support", 
+                mask=mask, 
+                show_tips=False,
+            ),
+        )
         """
         if kwargs:
-            logger.warning(
-                "The get_node_values() function has changed in toytree > 2.1. "
+            sys.stderr.write(
+                "Warning: get_node_values() has changed in toytree > 2.1. "
                 "It now returns an array of values in their original type "
-                "(e.g., int, float) with missing values as NaN. "
+                "(e.g., int, float) with missing values as NaN.\n "
                 "To get string representations of node values, including "
-                "options to hide root, tips, or other nodes, see the new "
-                "get_node_labels() function."
+                "options to show/hide root, tips, or other nodes, see the "
+                "new get_node_labels() function."
             )
         return np.array([
             getattr(self.idx_dict[i], feature, np.nan) for i in self.idx_dict
         ])
 
-    def get_node_coordinates(self, layout:str=None, use_edge_lengths:bool=True):
+    def get_node_coordinates(
+        self, 
+        layout:str=None, 
+        use_edge_lengths:bool=True,
+        ) -> np.ndarray:
         """
         Returns coordinate locations of nodes in the tree as an array. Each
         row is an (x, y) coordinate, ordered by the 'idx' feature of nodes.
@@ -416,12 +459,15 @@ class ToyTree(TreeBase):
         ) -> Dict:
         """
         Returns a dictionary mapping one or more selected node features
-        to each other, or to node objects (by entering None). 
+        to each other, or to TreeNode objects (by entering None). For
+        example you can create a dictionary mapping names to TreeNodes,
+        or 'idx' labels to 'dist' features.
 
         Examples:
         --------
         tree.get_feature_dict("idx", "name")
         tree.get_feature_dict("name", None)
+        tree.get_feature_dict(None, "dist")        
         """
         ndict = {}
         for node in self.idx_dict.values():
@@ -488,7 +534,7 @@ class ToyTree(TreeBase):
         If the feature is set to only some nodes then others are set to
         NaN. You cannot set "idx" (this is used internally by toytree)
         You can set base features like name, dist, height, support, or
-        create any new feature.
+        create any new named feature.
 
         Example:
         -------- 
@@ -502,13 +548,13 @@ class ToyTree(TreeBase):
         feature (str):
             The name of the node attribute to modify (cannot be 'idx').
         mapping (dict):
-            A dictionary of {node: value}. To select nodes you can use either
-            integer values corresponding to the node 'idx' labels, or strings
-            corresponding to the node 'name' labels. 
-            Note: use tree.draw(node_labels='idx') to see idx labels on tree.
+            A dictionary of {int: value} or {str: value}, where int 
+            keys will be interpreted as node idx labels, and str keys
+            will be interpreted as node name labels. 
+            Note: use tree.draw(node_labels='idx') to see idx labels.
         default (int, str, float):
-            You can use a default value to be filled for all other nodes not 
-            listed in the values dictionary.
+            You can use a default value to be filled for all other 
+            nodes not listed in the 'mapping' dictionary.
 
         Returns:
         ----------
@@ -531,12 +577,15 @@ class ToyTree(TreeBase):
                 raise ToytreeError(
                     "mapping dict keys should be int or str type")
 
-        # find special cases
+        # idx cannot be modified
         if feature == "idx":
             raise ToytreeError("cannot modify idx values.")
+
+        # height modification uses a special method
         if feature == "height":
-            raise ToytreeError(
-                "modifying heights not supported, use .mod.set_node_heights")
+            hmapping = {i: default for i in self.idx_dict if default is not None}
+            hmapping.update(mapping)               
+            return self.mod.set_node_heights(hmapping)
 
         # set everyone to a default value for this attribute
         if default is None:
@@ -551,10 +600,9 @@ class ToyTree(TreeBase):
         # set specific values
         if mapping:
             if not isinstance(mapping, dict):
-                msg = ("Values should be a dictionary. "
-                    "Use default to set a single value.")
-                logger.warning(msg)
-                raise ToytreeError(msg)
+                raise ToytreeError(
+                    "'mapping' arg should be a dictionary. "
+                    "Use 'default' to set a single value.")               
 
             # check that all keys are valid
             for nidx in mapping:
@@ -568,7 +616,7 @@ class ToyTree(TreeBase):
                 node.add_feature(feature, val)
         return nself
 
-    def copy(self):
+    def copy(self) -> 'ToyTree':
         """ 
         Returns a copy of a ToyTree instance (but faster than deepcopy)
         """
@@ -586,7 +634,7 @@ class ToyTree(TreeBase):
         # nself._coords.verts = self._coords.verts.copy()
         return nself
 
-    def is_rooted(self):
+    def is_rooted(self) -> bool:
         """
         Returns False if the tree is unrooted.
         """
@@ -594,23 +642,21 @@ class ToyTree(TreeBase):
             return False
         return True
 
-    # TODO: replace with .nnodes and idx_dict usage.
-    def is_bifurcating(self, include_root:bool=True):
+    def is_bifurcating(self, include_root:bool=True) -> bool:
         """
-        Returns False if there is a polytomy in the tree, including if the tree
-        is unrooted (basal polytomy), unless you use the include_root=False
-        argument.
+        Returns False if there is a polytomy in the tree, including 
+        if the tree is unrooted (basal polytomy), unless you use the 
+        include_root=False argument, in which case it checks only 
+        non-root nodes.
         """
-        ctn1 = -1 + (2 * len(self))
-        ctn2 = -2 + (2 * len(self))
-        if self.is_rooted():
-            return bool(ctn1 == sum(1 for i in self.treenode.traverse()))
         if include_root:
-            return bool(ctn2 == -1 + sum(1 for i in self.treenode.traverse()))
-        return bool(ctn2 == sum(1 for i in self.treenode.traverse()))
+            return any(len(i) > 2 for i in self.idx_dict.values())
+        return any(
+            len(self.idx_dict[i]) > 2 for i in self.idx_dict
+            if not self.idx_dict[i].is_root()
+        )
 
-    # TODO: support alpha
-    def ladderize(self, direction:int=0):#, alphanumeric:bool=False):
+    def ladderize(self, direction:bool=False) -> 'ToyTree': #, alphanumeric:bool=False):
         """
         Ladderize tree (order descendants) so that left/right child
         has fewer/more descendants. To reverse this pattern use 
@@ -622,7 +668,11 @@ class ToyTree(TreeBase):
         nself._coords.update()
         return nself
 
-    def collapse_nodes(self, min_dist:float=1e-6, min_support:float=0):
+    def collapse_nodes(
+        self, 
+        min_dist:float=1e-6, 
+        min_support:float=0,
+        ) -> 'ToyTree':
         """
         Returns a copy of the ToyTree with internal node dists 
         <= min_dist removed, resulting in a collapsed tree.
@@ -640,7 +690,12 @@ class ToyTree(TreeBase):
         nself._coords.update()
         return nself
 
-    def prune(self, names:Iterable[str]=None, wildcard:str=None, regex:str=None):
+    def prune(
+        self, 
+        names:List[str]=None, 
+        wildcard:str=None, 
+        regex:str=None,
+        ) -> 'ToyTree':
         """
         Returns a copy of a subtree of the existing tree that includes
         only the selected tips and minimal edges needed to connect 
@@ -657,9 +712,9 @@ class ToyTree(TreeBase):
 
         Examples:
         ---------
-        tre = toytree.rtree.imbtree(ntips=10)
+        tre = toytree.rtree.imbtree(ntips=15)
         ptre = tre.prune(names=['r1', 'r2', 'r3', 'r6'])
-        ptre = tre.prune(regex='r[0-3]')
+        ptre = tre.prune(regex='r[0-3]$')
 
         Returns:
         ----------
@@ -670,7 +725,7 @@ class ToyTree(TreeBase):
 
         # return if nothing to drop
         if not any([names, wildcard, regex]):
-            return nself
+            raise ToytreeError("must enter a selector argument.")            
 
         # get matching names list with fuzzy match
         nas = NodeAssist(nself, names, wildcard, regex)
@@ -688,12 +743,22 @@ class ToyTree(TreeBase):
         nself._coords.update()
         return nself
 
-    def drop_tips(self, names:Iterable[str]=None, wildcard:str=None, regex:str=None):
+    def drop_tips(
+        self, 
+        names:Iterable[str]=None, 
+        wildcard:str=None, 
+        regex:str=None, 
+        ):
         """
-        Returns a copy of the tree with the selected tips removed. The 
-        entered value can be a name or list of names. To prune on an 
-        internal node to create a subtree see the .prune() function
-        instead.
+        Returns a copy of the ToyTree with the selected tips (and any 
+        empty internal nodes) removed while retaining the original 
+        edge lengths between remaining nodes.
+
+        The tip names to remove can be selected as a list of names,
+        by a shared string in their names (wildcard), or using a 
+        regular expression to match multiple names (regex).
+
+        See also: .prune() to extract subtree from tree.
 
         Parameters:
         -----------
@@ -703,9 +768,10 @@ class ToyTree(TreeBase):
 
         Examples:
         ----------
-        tre = toytree.rtree.imbtree(ntips=10)
-        ptre = tre.prune(names=['r1', 'r2', 'r3', 'r6'])
-        ptre = tre.prune(regex='r[0-3]')
+        tre = toytree.rtree.imbtree(ntips=15)
+        ptre = tre.drop_tips(names=['r1', 'r2', 'r3', 'r6'])
+        ptre = tre.drop_tips(wildcard='r1')
+        ptre = tre.drop_tips(regex='r[0-9]$')
 
         Returns:
         ----------
@@ -713,10 +779,8 @@ class ToyTree(TreeBase):
         """
         # make a deepcopy of the tree
         nself = self.copy()
-
-        # return if nothing to drop
         if not any([names, wildcard, regex]):
-            return nself
+            raise ToytreeError("must enter a selector argument.")
 
         # get matching names list with fuzzy match
         nas = NodeAssist(nself, names, wildcard, regex)
@@ -742,7 +806,7 @@ class ToyTree(TreeBase):
         ):
         """
         Returns a ToyTree with the selected node rotated for plotting.
-        tip colors do not align correct currently if nodes are rotated...
+        A node can be selected by one of multiple options.
         """
         nself = self.copy()
         if idx is None:
@@ -758,11 +822,12 @@ class ToyTree(TreeBase):
         dist:float=1.0,
         support:float=100,
         recursive:bool=True,
-        ):
+        ) -> 'ToyTree':
         """
         Returns a copy of the tree with all polytomies randomly resolved.
         Does not transform tree in-place.
         """
+        # TREENODE FUNC
         nself = self.copy()
         nself.treenode.resolve_polytomy(
             default_dist=dist,
@@ -775,6 +840,7 @@ class ToyTree(TreeBase):
         """
         Returns a copy of the tree unrooted. Does not transform tree in-place.
         """
+        # TREENODE FUNC
         nself = self.copy()
         # updated unroot function to preserve support values to root node
         nself.treenode.unroot()       
@@ -788,7 +854,7 @@ class ToyTree(TreeBase):
         wildcard:str=None, 
         regex:str=None, 
         resolve_root_dist:bool=True,
-        edge_features:List[str]=["support"],
+        edge_features:List[str]=None,
         ):
         """
         (Re-)root a tree by moving the tree anchor (real or phantom 
@@ -802,29 +868,31 @@ class ToyTree(TreeBase):
             A list of tip names. Root is placed along edge to mrca node. 
 
         wildcard: (str) (default=None)
-            A string matching multiple tip names. Root is placed along edge to
-            the mrca node of selected taxa.
-
-        regex: (str) (default=None)
-            A regex string matching multiple tip names. Root is placed along 
+            A string matching multiple tip names. Root is placed along 
             edge to the mrca node of selected taxa.
 
+        regex: (str) (default=None)
+            A regex string matching multiple tip names. Root is placed 
+            along edge to the mrca node of selected taxa.
+
         resolve_root_dist: (float or bool) (default=True)
-            Length along the edge at which to place the new root, or a boolean
-            indicating auto methods. Default is True, which means to use mid-
-            point rooting along the edge. False will root at the ancestral node
-            creating a zero length edge. A float value will place the new node
-            at a point along the edge starting from the ancestral node. A float
-            value greater than the edge length will raise an error.
+            Length along the edge at which to place the new root, or a 
+            boolean indicating auto methods. Default is True, which 
+            means to use mid-point rooting along the edge. False will 
+            root at the ancestral node creating a zero length edge. A 
+            float value will place the new node at a point along the 
+            edge starting from the ancestral node. A float value 
+            greater than the edge length will raise an error.
 
         edge_features: (list) (default=["support"])
-            Node labels in this list are treated as edge labels (e.g., support
-            values represent support for a split/edge in the tree). This effects
-            how labels are moved when the tree is re-rooted. By default support
-            values are treated as edge features and moved to preserve clade
-            supports when the tree is re-rooted. Other node labels, such as 
-            names do not make sense to shift in this way. New splits that are
-            created by rooting are set to 100 by default.
+            Node labels in this list are treated as edge labels (e.g.,
+            support values represent support for a split/edge in the 
+            tree). This effects how labels are moved when the tree is 
+            re-rooted. By default support values are treated as edge 
+            features and moved to preserve clade supports when the tree 
+            is re-rooted. Other node labels, such as names do not make 
+            sense to shift in this way. New splits that are created by 
+            rooting are set to support=100 by default.
 
         Example:
         --------
@@ -836,10 +904,11 @@ class ToyTree(TreeBase):
         rtre = tre.root(regex="1-[A,B]")
         """       
         # insure edge_features is an iterable
-        if not edge_features:
-            edge_features = []
+        edge_features = ["support"]        
         if isinstance(edge_features, (str, int, float)):
-            edge_features = [edge_features]
+            edge_features.append(edge_features)
+        elif isinstance(edge_features, list):
+            edge_features.extend(edge_features)
 
         # make a deepcopy of the tree and pass to Rooter class
         nself = self.copy()
@@ -856,21 +925,21 @@ class ToyTree(TreeBase):
     # --------------------------------------------------------------------
     def draw(
         self,
-        tree_style:Optional[str]=None,
+        tree_style:str="n",
         height:Optional[int]=None,
         width:Optional[int]=None,
         axes:Optional[toyplot.coordinates.Cartesian]=None,    
         layout:Optional[str]=None,
-        tip_labels:Union[bool,Iterable]=None,
-        tip_labels_colors=None,
-        tip_labels_style=None,
-        tip_labels_align=None,
-        node_labels=None,
-        node_labels_style=None,
-        node_sizes=None,
-        node_colors=None,
-        node_style=None,
-        node_hover=None,
+        tip_labels:Optional[Union[bool,Iterable]]=None,
+        tip_labels_colors:Optional[Iterable]=None,
+        tip_labels_style:Optional[Dict]=None,
+        tip_labels_align:Optional[bool]=None,
+        node_labels:Optional[Union[bool,List]]=None,
+        node_labels_style:Optional[Dict]=None,
+        node_sizes:Optional[Union[int,List[int]]]=None,
+        node_colors:Optional[Union[str,List[str]]]=None,
+        node_style:Optional[Dict]=None,
+        node_hover:bool=None,
         node_markers=None,
         edge_colors=None,
         edge_widths=None,
@@ -889,7 +958,10 @@ class ToyTree(TreeBase):
         **kwargs):
         """
         Draw a Toytree plot, returns a tuple of Toyplot objects for the
-        (Canvas, Axes, Mark).
+        (Canvas, Cartesian, Mark) which will automatically render in a 
+        jupyter notebook. The Canvas can be saved to file with toyplot,
+        or the Axes can be combined with additional drawings into 
+        composite drawings.
 
         Examples:
         ---------
@@ -934,27 +1006,29 @@ class ToyTree(TreeBase):
         tip_labels_align:
             ...
 
-        node_labels: [True, False, list]
-            If True then nodes are shown, if False then nodes are suppressed
-            If a list of node labels is provided it must be the same length
-            and order as nodes in .get_node_values(). Node labels can be 
-            generated in the proper order using the the .get_node_labels() 
-            function from a Toytree tree to draw info from the tree features.
-            For example: node_labels=tree.get_node_labels("support").
+        node_labels: Union[bool, List, None]
+            If True then nodes are shown, if False then nodes are 
+            suppressed. If a list of node labels is provided it must be
+            the same length and order as nodes in .get_node_values(). 
+            Node labels can be generated in the proper order using the
+            the .get_node_labels() function from a Toytree tree to draw
+            info from the tree features. 
+            Example: node_labels=tree.get_node_labels("support").
 
-        node_sizes: [int, list, None]
+        node_sizes: Union[int, list, None]]
             If None then nodes are not shown, otherwise, if node_labels
             then node_size can be modified. If a list of node sizes is
             provided it must be the same length and order as nodes in
             .get_node_dict().
 
-        node_colors: [list]
-            Use this argument only if you wish to set different colors for
-            different nodes, in which case you must enter a list of colors
-            as string names or HEX values the length and order of nodes in
-            .get_node_dict(). If all nodes will be the same color then use
-            instead the node_style dictionary:
-            e.g., node_style={"fill": 'red'}
+        node_colors: Union[List, str, None]
+            Use this argument only if you wish to set different colors 
+            for different nodes, in which case you must enter a list of
+            colors as string names or HEX values the length and order 
+            of nodes in .get_node_values(). If all nodes will be the 
+            same color then it is preferable to use the node_style 
+            dictionary (node_style={"fill": 'red'}) but you can also
+            set a single value here.
 
         node_style: [dict]
 
