@@ -43,8 +43,7 @@ class FastTreeParser:
         self.treenode = extractor.newick_from_string()
 
 
-
-class TreeParser(object):
+class TreeParser:
     def __init__(self, intree, tree_format=0, multitree=False, debug=False):
         """
         Reads input as a string or file, figures out format and parses it.
@@ -102,7 +101,9 @@ class TreeParser(object):
 
 
     def warn_about_format(self):
-        # warning about formats
+        """
+        Prints warning about formats
+        """
         if "[&&NHX" not in self.data[0]:
             if ("[&" in self.data[0]) & (self.fmt != 10):
                 print("Warning: data looks like tree_format=10 (mrbayes-like)")          
@@ -116,7 +117,6 @@ class TreeParser(object):
         newick strings in a multiline NEXUS format. In any case, we will read
         in the data as a list on lines. 
         """
-
         # load string: filename or data stream
         if isinstance(self.intree, (str, bytes)):
 
@@ -180,7 +180,9 @@ class TreeParser(object):
 
 
 class Newick2TreeNode:
-    "Parse newick str to a TreeNode object"    
+    """
+    Parse newick str to a TreeNode object
+    """
     def __init__(self, data, fmt=0):
         self.data = data
         self.root = TreeNode()
@@ -191,11 +193,16 @@ class Newick2TreeNode:
 
 
     def cleanup_data(self):
+        """
+        Removes characters from newick that should not be in names or 
+        attributes, such as curly brackets, parentheses, etc, and
+        replaces them with square brackets.
+        """
         # check parentheses
         if self.data.count('(') != self.data.count(')'):
             raise NewickError('Parentheses do not match. Broken tree data.')
 
-        # remove white spaces and separators 
+        # remove white_ spaces and separators 
         self.data = re.sub(r"[\n\r\t ]+", "", self.data)
 
         # mrbayes format terrible formatting hacks--------
@@ -232,8 +239,9 @@ class Newick2TreeNode:
 
 
     def newick_from_string(self):
-        "Reads a newick string in the New Hampshire format."
-
+        """
+        Reads a newick string in the New Hampshire format.
+        """
         # split on parentheses to traverse hierarchical tree structure
         for chunk in self.data.split("(")[1:]:
             # add child to make this node a parent.
@@ -268,7 +276,9 @@ class Newick2TreeNode:
 
 
     def apply_node_data(self, subnw, node_type):
-
+        """
+        Builds the TreeNode graph.
+        """
         if node_type in ("leaf", "single"):
             self.current_node = self.current_parent.add_child()
         else:
