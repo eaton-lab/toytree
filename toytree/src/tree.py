@@ -27,6 +27,7 @@ from pathlib import Path
 from decimal import Decimal
 import numpy as np
 import toyplot
+import pandas as pd
 
 from toytree.src.treenode import TreeNode
 from toytree.src.node_assist import NodeAssist
@@ -100,7 +101,6 @@ class ToyTree(TreeBase):
         for node in self.treenode.traverse():
             feats.update(node.features)    
         return feats
-
 
     @property
     def newick(self) -> str:
@@ -296,7 +296,8 @@ class ToyTree(TreeBase):
         Returns a node idx and all of its descendants node idxs.
         """
         descs = [i.idx for i in self.idx_dict[idx].get_descendants()]
-        return [idx] + [descs]
+        descs.append(idx)
+        return descs
 
     def get_node_labels(
         self, 
@@ -397,8 +398,8 @@ class ToyTree(TreeBase):
         **kwargs,
         ) -> np.ndarray:
         """
-        Returns values for a selected node features in post-order 
-        traversal (tree plotting order) as a numpy ndarray. This is
+        Returns node values for a selected feature in reverse idx 
+        order (root to ordered tips) as a numpy ndarray. This is
         intended for performing math or set operations on the data 
         values. To get string representations of node values for 
         plotting see instead get_node_labels.
@@ -432,9 +433,12 @@ class ToyTree(TreeBase):
                 "options to show/hide root, tips, or other nodes, see the "
                 "new get_node_labels() function."
             )
-        return np.array([
+        data = np.array([
             getattr(self.idx_dict[i], feature, np.nan) for i in self.idx_dict
         ])
+        if np.isnan(data).all():
+            raise ToytreeError("feature does not exist for any nodes in tree.")
+        return data
 
     def get_node_coordinates(
         self, 
@@ -510,19 +514,41 @@ class ToyTree(TreeBase):
 
     def get_tip_labels(self, idx:Optional[int]=None) -> List[str]:
         """
-        Returns tip labels in the order they will be plotted on the 
-        tree, i.e., "preorder traversal", which will appear from the
-        zero axis and counting up by units of 1 on right-facing 
-        ladderized tree.
+        Returns tip labels (node .name features) for all tips in tree,
+        or optionally for just those descended from a selected node
+        idx. Tip labels are returned in node idx order from lowest to
+        highest (the order they are plotted from left to right on a 
+        down-facing ladderized tree).
 
         Parameters:
         -----------
-            idx: returns a list of names for all tips descended from 
-            node with index idx. Draw with node_labels='idx' to find.
+        idx: returns a list of names for all tips descended from 
+        node with index idx. Draw with node_labels='idx' to find.
         """
         if idx is not None:
             return [i.name for i in self.idx_dict[idx].get_leaves()]
         return [self.idx_dict[idx].name for idx in range(self.ntips)]
+
+    def get_tip_data(self, feature:str):
+        """
+        Returns a pandas DataFrame with values for the selected feature
+        at every tip node labeled by tip name.
+
+        Example:
+        --------
+        tree.get_tip_values("dist")
+
+        See Also:
+        ---------
+        - get_feature_dict
+        - set_node_values
+        """
+        data = pd.DataFrame(
+            index=self.get_tip_labels(), 
+            data=self.get_node_values(feature)[-self.ntips:][::-1],
+            columns=[feature],
+        )
+        return data
 
     def set_node_values(
         self, 
@@ -589,7 +615,8 @@ class ToyTree(TreeBase):
             hmapping.update(mapping)               
             return self.mod.set_node_heights(hmapping)
 
-        # set everyone to a default value for this attribute
+        # set everyone to a default value for this attribute, uses copy
+        # if available so users can set a single dict, array, etc.
         if default is None:
             if any(isinstance(i, str) for i in mapping.values()):
                 default = ""
@@ -597,7 +624,10 @@ class ToyTree(TreeBase):
                 default = np.nan
         for key in ndict:
             node = ndict[key]
-            node.add_feature(feature, default)
+            if hasattr(default, 'copy'):
+                node.add_feature(feature, default.copy())
+            else:
+                node.add_feature(feature, default)
 
         # set specific values
         if mapping:
