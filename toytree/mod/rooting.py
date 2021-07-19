@@ -4,7 +4,8 @@
 Rooting class
 """
 
-from toytree.src.node_assist import NodeAssist
+from toytree.core.treenode import TreeNode
+from toytree.core.node_assist import NodeAssist
 from toytree.utils.exceptions import ToytreeError
 
 
@@ -27,7 +28,8 @@ class Rooter:
         self.nnode = None
 
         # make a copy and ensure supports are either all int or float
-        self.maxsup = max([int(i.support) for i in self.tree.treenode.traverse()])
+        self.maxsup = max(
+            [int(i.support) for i in self.tree.treenode.traverse()])
         self.maxsup = (1.0 if self.maxsup <= 1.0 else 100)
         self.get_features()
 
@@ -40,16 +42,15 @@ class Rooter:
         # the node on the other side of the edge to be split.
         self.node2 = self.node1.up
 
-        # experimental: hybrid nodes from networks up to next node.
-        if self.node2.up:
-            if len(self.node2.children) == 1:
-                self.node2 = self.node2.up
-                self.node1 = self.node1.up
+        # experimental: skip hybrid nodes from networks up to next node.
+        if self.node2.up and len(self.node2.children) == 1:
+            self.node2 = self.node2.up
+            self.node1 = self.node1.up
 
         # if rooting where root already exists then return current tree
-        x0 = (self.node1.is_root())
-        x1 = (self.node2.is_root() and self.tree.is_rooted())
-        if not (x0 or x1):           
+        test0 = (self.node1.is_root())
+        test1 = (self.node2.is_root() and self.tree.is_rooted())
+        if not (test0 or test1):
 
             # create new root node on an existing edge to split it.
             self.insert_new_node()
@@ -87,6 +88,7 @@ class Rooter:
         self.tree._coords.update()
 
 
+
     def redirect_edge_features(self):
         """
         Set support values to maximum for new node since the user forced
@@ -101,6 +103,7 @@ class Rooter:
             self.tdict[self.node2][2]['support'] = self.maxsup
         else:
             self.tdict[self.node2][2]['support'] = self.node2.support
+
 
 
     def restructure_tree(self):
@@ -121,7 +124,7 @@ class Rooter:
         while 1:
 
             # early break
-            if not tnode:
+            if tnode is None:
                 break
 
             # get parent node (should be already in tdict)
@@ -171,26 +174,23 @@ class Rooter:
                 # finished
                 break
 
-            # normal nodes
-            else:
-                # update tnode.features [dist will be inherited from child]
-                features = {'dist': tnode.dist, 'support': tnode.support}
+            # update tnode.features [dist will be inherited from child]
+            features = {'dist': tnode.dist, 'support': tnode.support}
 
-                # keep connecting swap parent-child up to root
-                if not tnode.up.is_root():
-                    children += [tnode.up]
+            # keep connecting swap parent-child up to root
+            if not tnode.up.is_root():
+                children += [tnode.up]
 
-                # pass support values down (up in new tree struct)
-                child = [i for i in tnode.children if i in self.tdict][0]                
-                for feature in {'dist'}.union(self.edge_features):                   
-                    features[feature] = getattr(child, feature)
+            # pass support values down (up in new tree struct)
+            child = [i for i in tnode.children if i in self.tdict][0]                
+            for feature in {'dist'}.union(self.edge_features):                   
+                features[feature] = getattr(child, feature)
 
-                # store node update vals
-                self.tdict[tnode] = [parent, children, features]
+            # store node update vals
+            self.tdict[tnode] = [parent, children, features]
 
             # move towards root
             tnode = tnode.up
-
 
 
     def config_root_dist(self):
@@ -226,16 +226,13 @@ class Rooter:
                 )
 
 
-
     def insert_new_node(self):
         """
-
+        Create and insert a new node to break an edge to create root.
         """
-        # the new root node to be placed on the split
-        self.nnode = self.tree.treenode.__class__()
-        self.nnode.name = "root"
-        self.nnode.add_feature("idx", self.tree.treenode.idx)
-        self.nnode.support = self.maxsup
+        # the new root node (.up=None) to be placed on the split
+        self.nnode = TreeNode(name="root", support=self.maxsup)
+        self.nnode.add_feature("idx", self.tree.nnodes)
 
         # remove node1 lineage leaving just node2 branch to be made into child
         self.node2.children.remove(self.node1)
@@ -243,15 +240,16 @@ class Rooter:
         # new node has no parent and 1,2 as children and default features
         self.tdict[self.nnode] = [None, [self.node1, self.node2], {}]
 
-        # node1 has new root parent, same children, and dist preserved 
-        # (or split?), or should: node1.dist / 2.
+        # node1 has new root parent, same children, and dist will be
+        # configured by the config_root_dist function
         self.tdict[self.node1] = [
             self.nnode, 
             self.node1.children, 
             {"dist": self.node1.dist}
         ]  
 
-        # node2 has new root parent, same children + mods, and dist/supp mods
+        # node2 has new root parent, same children (but not nnnode), 
+        # and dist will be configured by the config_root_dist function
         self.tdict[self.node2] = [
             self.nnode,
             self.node2.children,
@@ -259,11 +257,10 @@ class Rooter:
         ]
 
 
-
     def get_features(self):
         """
-        define which features to use/keep on nodes and which are "edge" 
-        features which must be redirected on rooting.
+        define which features to use/keep on nodes and which are 
+        "edge" features which must be redirected on rooting.
         """
         testnode = self.tree.treenode.get_leaves()[0]
         extrafeat = {i for i in testnode.features if i not in self.features}
@@ -277,13 +274,12 @@ class Rooter:
         """
         # find the selected node
         self.nas = NodeAssist(self.tree, names, wildcard, regex)
-        # self.nas.match_query()
         self.tipnames = self.nas.get_tipnames()
 
         # check for reciprocal match
-        x0 = (not self.nas.is_query_monophyletic())
-        x1 = (self.nas.get_mrca().is_root())
-        if x0 or x1:
+        set0 = (not self.nas.is_query_monophyletic())
+        set1 = (self.nas.get_mrca().is_root())
+        if set0 or set1:
             clade1 = self.nas.tipnames
             self.nas.match_reciprocal()
 
