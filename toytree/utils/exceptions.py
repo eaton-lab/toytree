@@ -12,7 +12,7 @@ class ToytreeError(Exception):
 
 class TreeNodeError(Exception):
     def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
+        Exception.__init__(self, *args, **kwargs)
 
 
 class NewickError(Exception):
