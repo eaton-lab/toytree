@@ -11,11 +11,11 @@ __author__ = "Deren Eaton"
 
 # expose types: ToyTree, MultiTree
 # expose constructors: .tree, .rtree, .mtree, .rawtree
-from toytree.src.tree import tree, ToyTree
-from toytree.src.rawtree import RawTree as rawtree
-from toytree.src.treenode import TreeNode
-from toytree.src import rtree
-from toytree.src.multitree import mtree, MultiTree
+from toytree.core.tree import tree, ToyTree
+from toytree.core.rawtree import RawTree as rawtree
+from toytree.core.treenode import TreeNode
+from toytree.core import rtree
+from toytree.core.multitree import mtree, MultiTree
 
 # expose submodules
 # import toytree.pcm
