@@ -6,9 +6,7 @@ Network parsing utilities
 
 import os
 import re
-from toytree.core.tree import ToyTree
-from toytree.core.treenode import TreeNode
-# import toytree
+import toytree
 
 
 
@@ -69,8 +67,8 @@ def parse_network(net, disconnect=True):
 
             # if root is a hybrid edge (ugh)
             if node.up is None:
-                small, big = sorted(node.children, key=lambda x: len(x))
-                root = toytree.TreeNode.TreeNode(name='root')
+                small, big = sorted(node.children, key=len)
+                root = toytree.TreeNode(name='root')
                 node.children = [small]
                 small.up = node
                 node.up = root
