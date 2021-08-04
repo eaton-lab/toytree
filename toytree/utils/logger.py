@@ -6,12 +6,13 @@ logger for development and user warnings.
 
 import sys
 from loguru import logger
+import toytree
 
 
 LOGFORMAT = (
-    "{time:hh:mm} | {level: <7} | "
-    "<b><magenta>{function: <10}</magenta></b> | "
-    "<level>{message}</level>"
+    "<level>{level: <7}</level> | "
+    "<b><magenta>{function: <10}:{line}</magenta></b> | "
+    "{message}"
 )
 
 def colorize():
@@ -37,14 +38,13 @@ def set_loglevel(loglevel="INFO"):
     throughout the rest of the code.
     """
     logger.add(sys.stderr, level=loglevel)
-    logger.info("toytree logger started")
-    # config = {}
-    # config["handlers"] = [{
-    #     "sink": sys.stderr,
-    #     "format": LOGFORMAT,
-    #     "level": loglevel,
-    #     "colorize": colorize(),
-    #     # "enqueue": True,
-    # }]
-    # logger.configure(**config)
-    # logger.enable("toytree")
+    config = {}
+    config["handlers"] = [{
+        "sink": sys.stderr,
+        "format": LOGFORMAT,
+        "level": loglevel,
+        "colorize": colorize(),
+    }]
+    logger.configure(**config)
+    logger.enable("toytree")
+    logger.debug(f"toytree v.{toytree.__version__} logging enabled")
