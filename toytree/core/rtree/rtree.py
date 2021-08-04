@@ -52,12 +52,12 @@ def rtree(ntips:int, seed:Optional[int]=None):
     return tree
 
 
-def unittree(ntips, treeheight=1.0, random_names=False, seed=None):
+def unittree(ntips:int, treeheight:float=1.0, random_names:bool=False, seed:int=None):
     """
-    Returns a random ultrametric topology w/ N tips and all internal
-    edge lengths set to 1.0 (terminal edge lengths extend to make the
-    tree ultrametric). The total tree root height set to 1 or a 
-    user-entered treeheight value. 
+    Returns a random topology w/ ntips by sequentially inserting 
+    new nodes randomly onto edges, and then extending all edges to 
+    align at time=0. The total tree height is set to 1 or an 
+    optional user-defined treeheight value. 
 
     Parameters
     -----------
