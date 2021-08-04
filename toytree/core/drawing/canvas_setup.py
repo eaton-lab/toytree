@@ -17,7 +17,7 @@ class GridSetup:
     """
     Returns Canvas and Cartesian axes objects to fit a grid of trees.
     """
-    def __init__(self, nrows, ncols, width, height, layout):
+    def __init__(self, nrows, ncols, width, height, layout, margin):
 
         # style args can include height/width, nrows, ncols, shared,...
         self.nrows = nrows
@@ -25,6 +25,7 @@ class GridSetup:
         self.width = width
         self.height = height
         self.layout = layout
+        self.margin = margin
 
         # get .canvas and .axes
         self.get_tree_dims()
@@ -40,14 +41,60 @@ class GridSetup:
             width=self.width,
         )        
 
-        self.axes = [
-            self.canvas.cartesian(
-                grid=(self.nrows, self.ncols, i),
+        # set larger margin on top and bottom rows, and even margin
+        # for middle rows.
+        self.axes = []
+        nplots = self.nrows * self.ncols
+        grid = np.arange(nplots).reshape((self.nrows, self.ncols))
+
+        for idx in range(nplots):
+            if self.margin:
+                margin = self.margin
+
+            else:
+                row, col = np.where(grid==idx)
+                if row == 0:
+                    top = 50
+                    bottom = 25
+                elif row == self.nrows - 1:
+                    top = 25
+                    bottom = 50
+                else:
+                    if row == (self.nrows - 1) / 2:
+                        top = bottom = 75 / 2.
+                    elif row < (self.nrows - 1) / 2:
+                        top = 42.5
+                        bottom = 32.5
+                    else:
+                        top = 32.5
+                        bottom = 42.5
+
+                if col == 0:
+                    left = 50
+                    right = 25
+                elif col == self.ncols - 1:
+                    right = 50
+                    left = 25
+                else:
+                    if col == (self.ncols - 1) / 2:
+                        left = right = 75 / 2
+                    elif col < (self.ncols - 1) / 2:
+                        left = 42.5
+                        right = 32.5
+                    else:
+                        left = 32.5
+                        right = 42.5
+
+
+
+                margin = (top, right, bottom, left)
+
+            axes = self.canvas.cartesian(
+                grid=(self.nrows, self.ncols, idx),
                 padding=10,
-                margin=25,
+                margin=margin,
             )
-            for i in range(self.nrows * self.ncols)
-        ]
+            self.axes.append(axes)
 
 
     def get_tree_dims(self):
@@ -59,7 +106,7 @@ class GridSetup:
             miny = 250
         else:
             minx = 200
-            miny = 140
+            miny = 200
 
         # wider than tall
         if self.layout in ("d", "u"):
@@ -146,7 +193,7 @@ class CanvasSetup:
 
     def get_canvas_and_axes(self):
         """
-
+        Sets canvas and axes with dimensions and padding.
         """
         if self.axes is not None: 
             self.canvas = None
@@ -161,10 +208,10 @@ class CanvasSetup:
             )
 
 
-
     def add_axes_style(self):
         """
-
+        Adds scalebar and attempts nice tick formatting
+        TODO: can be improved, especially for small int intervals.
         """
         # style axes with padding and show axes
         self.axes.padding = self.style.padding
@@ -224,7 +271,7 @@ class CanvasSetup:
                 self.axes.y.ticks.locator = toyplot.locator.Explicit(
                     locations=locs,
                     labels=[fmt.format(i) for i in np.abs(locs)],
-                    )
+                )
 
             # elif self.style.layout == "d":
             #     nticks = max((3, np.floor(self.style.height / 100).astype(int)))
