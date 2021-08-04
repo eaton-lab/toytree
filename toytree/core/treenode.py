@@ -216,14 +216,17 @@ class TreeNode:
         # copies the TreeNode object
         ndict = {}
 
+        # features to copy 
+        cfeatures = ("dist", "support", "name", "idx", "x", "y")
+
         # traverse root to tips
         for node in self.traverse("levelorder"):
 
-            # create root node and copy attrs
+            # create root node and copy basic attrs
             if node.is_root():
                 cnode = TreeNode()
-                cnode.__dict__.update(node.__dict__)
-                cnode._children = []
+                for attr in cfeatures:
+                    setattr(cnode, attr, getattr(node, attr))
                 ndict[node.idx] = cnode
 
             # every other node is someones' child
@@ -233,9 +236,9 @@ class TreeNode:
             # attach children and copy attrs
             for child in node.children:
                 tmp = TreeNode()
-                tmp.__dict__.update(child.__dict__)
+                for attr in cfeatures:
+                    setattr(tmp, attr, getattr(child, attr))
                 tmp.up = cnode
-                tmp._children = []
                 cnode.add_child(tmp)
                 ndict[child.idx] = tmp
         return ndict[self.idx]
