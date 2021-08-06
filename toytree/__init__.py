@@ -16,10 +16,12 @@ from toytree.core.rawtree import RawTree as rawtree
 from toytree.core.treenode import TreeNode
 from toytree.core import rtree
 from toytree.core.multitree import mtree, MultiTree
+from toytree.core.drawing.colors import COLORS1 as colors
+from toytree.core.drawing.colors import ICOLORS1 as icolors
 
 # expose submodules
 # import toytree.pcm
 
 # start the logger in INFO
-# from toytree.utils.logger import set_loglevel
-# set_loglevel("WARNING")
+from toytree.utils.logger import set_loglevel
+set_loglevel("WARNING")

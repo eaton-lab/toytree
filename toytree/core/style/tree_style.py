@@ -10,13 +10,14 @@ Usage
 > style = DefaultTreeStyle(**kwargs)  # DefaultTreeStyle(**dict, **tree.style)
 """
 
-from typing import List, Tuple, Optional, Union, Iterable
+from typing import List, Tuple, Optional, Union, Iterable, Dict
 import json
 from enum import Enum
 from dataclasses import dataclass, asdict, field
 import toyplot
-from pandas import Series, DataFrame
-from numpy import ndarray
+from loguru import logger
+import numpy as np
+import pandas as pd
 from toytree.core.style.color import ToyColor, Color
 from toytree.utils.exceptions import ToytreeError
 
@@ -42,7 +43,10 @@ class LayoutType(str, Enum):
     #unrooted = 'unrooted'
 
 class SubStyle:
-    pass
+    """
+    When converted to dict the keys of substyles will be changed
+    from e.g., _toyplot_anchor_shift to -toyplot-anchor-shift.
+    """
 
 @dataclass
 class EdgeStyle(SubStyle):
@@ -53,31 +57,34 @@ class EdgeStyle(SubStyle):
     # stroke_dasharray: str = "2,4"
 
 @dataclass
-class NodeStyle:
+class NodeStyle(SubStyle):
     fill: Color = 'rgba(40.0%,76.1%,64.7%,1.000)'
     stroke: Optional[Color] = None
     stroke_width: float = 1.0
 
 @dataclass
-class NodeLabelStyle:
+class NodeLabelStyle(SubStyle):
     fill: Color = 'rgba(16.1%,15.3%,14.1%,1.000)'
-    font_size: Union[int, str] = "9px"
+    font_size: Union[int, str] = "11px"
+    font_weight: int = 300
+    _toyplot_anchor_shift: Union[str, int] = 0
+    baseline_shift: Union[str,int] = 0
 
 @dataclass
-class EdgeAlignStyle:
+class EdgeAlignStyle(SubStyle):
     stroke: Color = 'rgba(66.3%,66.3%,66.3%,1.000)'
     stroke_width: int = 2
     stroke_linecap: str = "round"
     stroke_dasharray: str = "2,4"
 
 @dataclass
-class TipLabelsStyle:
+class TipLabelsStyle(SubStyle):
     fill: Color = 'rgba(16.1%,15.3%,14.1%,1.000)'
-    fill_opacity: Union[str, float] = 1.0  # fill-opacity
-    font_size: Union[str, float] = 11  # "11px" 'font-size'
-    _toyplot_anchor_shift: Union[str, float] = 15  # '15px', -toyplot-anchor-shift
-    text_anchor: str = "start"  # text-anchor
-
+    fill_opacity: Union[str, float] = 1.0
+    font_size: Union[str, float] = 11
+    _toyplot_anchor_shift: Union[str, float] = 15
+    baseline_shift: Union[str,int] = 0
+    text_anchor: str = "start"
 
 ######################################################################
 #
@@ -133,22 +140,29 @@ class TreeStyle:
         self._validate_node_colors()
         self._validate_node_mask()
         self._validate_node_sizes()
+        self._validate_node_markers()
         self._validate_node_labels()
+        self._validate_node_hover()
         self._validate_node_style()
+
         self._validate_tip_labels()
         self._validate_tip_labels_colors()
+        self._validate_tip_labels_angles()        
 
-    def _serialize_arrays_and_colors(self):
+    def _serialize_colors(self):
         """
-        Convert all ndarrays to lists, and colors to strings, for
-        serialization of JSON. This does not perform full expansion
-        and validation of all style args. This is called in the
-        style repr() for writing to JSON, but actually used for
-        validating style args for drawings (see .validate())
+        Convert all ndarrays to lists for serialization of JSON.
         """
         self._validate_node_colors()
         self._validate_tip_labels_colors()
-        self._serialize_arrays()
+        # ... substyledicts
+
+    def _serialize_css_styles(self):
+        """
+        Convert keys with lower_casendarrays to lists for serialization of JSON.
+        """
+        self._validate_node_colors()
+        self._validate_tip_labels_colors()
         # ... substyledicts
 
     def _serialize_arrays(self):
@@ -169,11 +183,11 @@ class TreeStyle:
         ]
         for key in arrayed:
             values = getattr(self, key)
-            if isinstance(values, ndarray):
+            if isinstance(values, np.ndarray):
                 setattr(self, key, values.tolist())
-            elif isinstance(values, DataFrame):
+            elif isinstance(values, pd.DataFrame):
                 setattr(self, key, values.iloc[:, 0].tolist())
-            elif isinstance(values, Series):
+            elif isinstance(values, pd.Series):
                 setattr(self, key, values.tolist())
 
     def _validate_node_colors(self):
@@ -205,10 +219,10 @@ class TreeStyle:
             Iterable: custom
         """
         if self.node_mask in [True, False]:
-            self.node_mask = [self.node_mask] * self.tree.nnodes
+            self.node_mask = np.repeat(self.node_mask, self.tree.nnodes)
         if self.node_mask is None:
-            self.node_mask = [True] * self.tree.ntips
-            self.node_mask += [False] * (self.tree.nnodes - self.tree.ntips)
+            self.node_mask = np.zeros(self.tree.nnodes, dtype=bool)
+            self.node_mask[:self.tree.ntips] = True
         self.node_mask = toyplot.broadcast.pyobject(
             self.node_mask, self.tree.nnodes).astype(bool)
 
@@ -219,23 +233,68 @@ class TreeStyle:
         self.node_sizes = toyplot.broadcast.scalar(
             self.node_sizes, self.tree.nnodes)
 
+    def _validate_node_markers(self):
+        """
+        Sets node_markers to ndarray[str]
+        """
+        self.node_markers = toyplot.broadcast.pyobject(
+            self.node_markers, self.tree.nnodes)
+
     def _validate_node_labels(self):
         """
-        Sets node_labels to ndarray[str] or None
+        Sets node_labels to ndarray[str] or None and apply simple
+        floating point string formatting on node_labels.
         """
-        if self.node_labels is True:
-            self.node_labels = range(self.tree.nnodes)
-        elif self.node_labels is False:
+        # get node_labels as either None or mixed type
+        if self.node_labels is False:
             self.node_labels = None
-        elif self.node_labels in self.tree.features:
-            self.node_labels = self.tree.get_node_data(self.node_labels).tolist()
-        elif isinstance(self.node_labels, str):
-            self.node_labels = [self.node_labels] * self.tree.nnodes
-        else:
+        elif self.node_labels is None:
+            self.node_labels = None
+        elif self.node_labels is True:
+            self.node_labels = range(self.tree.nnodes)
+        elif isinstance(self.node_labels, pd.Series):
+            # assume user can float format themselves...
             pass
+        elif isinstance(self.node_labels, str):
+            # auto-float format
+            self.node_labels = self.tree.get_node_data(self.node_labels)
+
+            # check if it can be cast from float to int
+            if self.node_labels.dtype == float:
+
+                # wrap in try to allow for customs with NaN
+                try:
+                    # trim off anything after .6, and string format to match
+                    self.node_labels = self.node_labels.round(6)
+
+                    # check if it can be cast to int
+                    if all(i % 1 == 0 for i in self.node_labels):
+                        self.node_labels = self.node_labels.astype(int)
+                except Exception:
+                    pass
+
+        # double check size and cast to str
         if self.node_labels is not None:
             self.node_labels = toyplot.broadcast.pyobject(
                 self.node_labels, self.tree.nnodes).astype(str)
+
+    def _validate_node_hover(self):
+        """
+        Sets node_hover to ndarray[str] or None. No comparisons use
+        'is in' to support flexible input types including pd.Series.
+        """
+        if self.node_hover is None:
+            self.node_hover = None
+        elif self.node_hover is False:
+            self.node_hover = None
+        elif self.node_hover is True:
+            self.node_hover = [str(i) for i in range(self.tree.nnodes)]
+        elif isinstance(self.node_hover, pd.Series):
+            self.node_hover = self.node_hover.astype(str)
+        elif isinstance(self.node_hover, str):
+            self.node_hover = self.tree.get_node_data(self.node_hover).astype(str)
+        else:
+            self.node_hover = toyplot.broadcast.pyobject(self.node_hover, self.tree.nnodes).astype(str)
 
     def _validate_node_style(self):
         """
@@ -269,13 +328,12 @@ class TreeStyle:
         Expand tip labels to a list of strings of len=ntips.
         """
         if self.tip_labels is True:
-            self.tip_labels = self.tree.get_tip_labels()
+            self.tip_labels = np.array(self.tree.get_tip_labels())
         elif self.tip_labels is False:
-            self.tip_labels = [None] * self.tree.ntips
+            self.tip_labels = None
         else:
-            pass
-        self.tip_labels = toyplot.broadcast.pyobject(
-            self.tip_labels, self.tree.ntips).astype(str)
+            self.tip_labels = toyplot.broadcast.pyobject(
+                self.tip_labels, self.tree.ntips).astype(str)
 
     def _validate_tip_labels_angles(self):
         """
@@ -283,8 +341,9 @@ class TreeStyle:
         """
         if self.tip_labels_angles is None:
             if self.layout == 'c':
-                tip_radians = np.linspace(0, -np.pi * 2, self.tree.ntips + 1)[:-1]
-                angles = np.array([np.rad2deg(abs(i)) for i in tip_radians]) * -1
+                # tip_radians = np.linspace(0, -np.pi * 2, self.tree.ntips + 1)[:-1]
+                tip_radians = np.linspace(0, np.pi * 2, self.tree.ntips + 1)[:-1]
+                angles = np.array([np.rad2deg(abs(i)) for i in tip_radians])
             elif self.layout in ["u", "d"]:
                 angles = -90
             else:
@@ -294,24 +353,56 @@ class TreeStyle:
         self.tip_labels_angles = (
             toyplot.broadcast.scalar(angles, self.tree.ntips))
 
+    def dict(
+        self,
+        serialize_colors: bool=False,
+        serialize_arrays: bool=False,
+        validate_css: bool=False,
+        ):
+        """
+        Returns a (serializable) dictionary of the TreeStyle.
 
-
-
-
-    def dict(self, serialize=False):
-        """Returns a dictionary of the TreeStyle"""
-        if serialize:
+        Parameters
+        ----------
+        serialize_colors: bool
+            Converts colors to CSS strings.
+        serialize_arrays: bool
+            Converts ndarrays to lists.
+        validate_css: bool
+            Converts substyle keys to valide CSS (e.g., '_' -> '-'')
+        """
+        if serialize_arrays:
             self._serialize_arrays()
-        return asdict(self)
+        if serialize_colors:
+            self._serialize_colors()
+        style_dict = asdict(self)
+        if validate_css:
+            self._to_css_styles(style_dict)
+        return style_dict
 
     def json(self):
         """Returns a JSON serialized dict of the TreeStyle"""
-        return json.dumps(self.dict(serialize=True), indent=4)
+        mydict = self.dict(True, True, True)
+        return json.dumps(mydict, indent=4)
 
     def __repr__(self):
         """Recursive dict to JSON representation"""
         return self.json()
 
+    def _to_css_styles(self, style_dict: Dict[str,str]):
+        """
+        Convert dict keys to valid CSS styles
+        """
+        style_dict_keys = list(style_dict.keys())
+        for key in style_dict_keys:
+            sub_style = getattr(self, key)
+            if isinstance(sub_style, SubStyle):
+                sub_style_dict = style_dict[key]
+                sub_style_dict_keys = list(sub_style_dict.keys())
+                for skey in sub_style_dict_keys:
+                    new_skey = skey.replace("_", "-")
+                    svalue = sub_style_dict.pop(skey)
+                    sub_style_dict[new_skey] = svalue
 
 
 ######################################################################
