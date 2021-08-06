@@ -5,69 +5,87 @@ Function to parse user args to toytree.draw() and return drawing.
 See full args/docstring at toytree.core.Toytree.ToyTree.draw()
 """
 
-import sys
-from toytree.core.drawing.tree_style import TreeStyle
-from toytree.core.drawing.style_checker import StyleChecker
+from typing import Tuple
+from loguru import logger
+from toytree.core.style.tree_style import get_tree_style, SubStyle, TreeStyle
 from toytree.core.drawing.render import ToytreeMark
 from toytree.core.drawing.canvas_setup import CanvasSetup
 
 
-def draw_toytree(**kwargs):
+STYLE_ARGS = list(TreeStyle().__dict__.keys())
+
+
+def draw_toytree(**user_args) -> Tuple['Canvas', "Cartesian", ToytreeMark]:
     """
-    Draw toytree with user entered kwargs.
+    Draw toytree with user entered kwargs overlaid on a TreeStyle.
     """
     # get the parent toytree object
-    self = kwargs.pop('toytree')
+    self = user_args.pop('toytree')
 
-    # get curstyle: use base style (ts or tree_style), or use default ts
-    if kwargs['kwargs'].get("ts"):
-        kwargs['tree_style'] = kwargs['kwargs'].pop("ts")
-    if kwargs['tree_style']:
-        base_style = TreeStyle(kwargs['tree_style'][0])
+    # get unexpected args, expand 'ts' short arg, and warn of bad args
+    kwargs = user_args.pop('kwargs')
+    if kwargs.get("ts"):
+        user_args['tree_style'] = kwargs.pop("ts")
+    if kwargs:
+        logger.warning(
+            f"Unrecognized arguments skipped: {list(kwargs)}."
+            "\nCheck the docs, argument names may have changed.")
+
+    # get TreeStyle (base or from ToyTree instance)
+    if user_args['tree_style']:
+        base_style = get_tree_style(user_args['tree_style'][0])
     else:
         base_style = self.style.copy()
 
-    # warn user if they entered kwargs that arent't supported.
-    if kwargs.get("kwargs"):
-        sys.stderr.write(
-            f"Unrecognized arguments skipped: {list(kwargs['kwargs'])}."
-            "\nCheck the docs, argument names may have changed.")
-        kwargs.pop('kwargs')
+    # update base_style with user_args
+    for key in user_args:
+        # get value of key but if it is None then skip it
+        value = user_args[key]
+        if value is None:
+            continue
 
-    # drop None value'd args from user kwargs and update base_style
-    user = dict(
-        ("_" + i, j) if isinstance(j, dict) else (i, j)
-        for (i, j) in kwargs.items() if j is not None
-    )
-    base_style.update(user)
+        # check if it is a substyledict
+        substyle = getattr(base_style, key)
+        if not isinstance(substyle, SubStyle):
+            # update value of a standard style argument
+            setattr(base_style, key, value)
+        else:
+            # update a substyle dict
+            for sub_key in value:
+                sub_value = value[sub_key]
+                # support for -toyplot-anchor-shift, etc.
+                sub_key = sub_key.replace("-", "_")
+                try:
+                    _ = getattr(substyle, sub_key)
+                    setattr(substyle, sub_key, sub_value)
+                except AttributeError:
+                    logger.warning(
+                        f"Unrecognized substyle drawing arg skipped: {sub_key}")
 
-    # update coords based on layout
+    # get edges and verts based on layout
     edges = self._coords.get_edges()
-    if kwargs['layout'] == 'c':
-        verts = self._coords.get_radial_coords(base_style.use_edge_lengths)
-    else:
+    if user_args['layout'] != 'c':
         verts = self._coords.get_linear_coords(
-            base_style.layout, 
+            base_style.layout,
             base_style.use_edge_lengths,
-            kwargs['fixed_order'],
-            kwargs['fixed_position'],
+            user_args['fixed_order'],
+            user_args['fixed_position'],
         )
+    else:
+        verts = self._coords.get_radial_coords(base_style.use_edge_lengths)
 
-    # check all styles
-    fstyle = StyleChecker(self, base_style).style
-
-    # debugging returns the mark and prints the modified kwargs
-    if kwargs.get('debug'):
-        print(user)
-        return fstyle
+    # check all styles and expand to array values for all nodes
+    base_style.validate(tree=self)
 
     # get canvas and axes
-    csetup = CanvasSetup(self, kwargs['axes'], fstyle)
+    csetup = CanvasSetup(self, user_args['axes'], base_style)
     canvas = csetup.canvas
     axes = csetup.axes
 
-    # generate toyplot Mark
-    mark = ToytreeMark(ntable=verts, etable=edges, **fstyle.to_dict())
+    # generate toyplot Mark. Style is already validated.
+    mark = ToytreeMark(
+        ntable=verts, etable=edges, **base_style.dict(False, False, True)
+    )
 
     # add mark to axes
     axes.add_mark(mark)
