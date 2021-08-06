@@ -415,14 +415,15 @@ class TreeStyle:
 @dataclass(repr=False)
 class NormalTreeStyle(TreeStyle):
     tree_style: str = 'n'
-    node_sizes: int = 15
+    node_sizes: int = 0
 
 @dataclass(repr=False)
 class SimpleTreeStyle(TreeStyle):
     tree_style: str = 's'
     layout: LayoutType = "r"
     node_labels: bool = True
-    node_sizes: int = 15
+    node_mask: bool = False
+    node_sizes: int = 18
     node_style: NodeStyle = field(
         default_factory=lambda: NodeStyle(
             stroke="#262626",
@@ -438,7 +439,7 @@ class PhyloTreeStyle(TreeStyle):
     tree_style: str = 'p'
     layout: LayoutType = 'd'
     edge_type: EdgeType = 'c'
-    edge_widths: Union[int, Iterable[int], str] = "Ne"  # special
+    edge_widths: Union[int, Iterable[int], str] = 3#"Ne"  # special
     node_labels: bool = True
     node_sizes: int = 15
     node_hover: bool = False
@@ -483,6 +484,7 @@ def get_tree_style(ts: str="n") -> TreeStyle:
     ts = ts.lower()[0]
     style_dict = {
         "n": NormalTreeStyle(),
+        "s": SimpleTreeStyle(),
         "p": PhyloTreeStyle(),
         "o": UmlautTreeStyle(),
     }
