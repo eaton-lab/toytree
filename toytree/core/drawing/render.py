@@ -7,15 +7,16 @@ TODO:
   - fixed-order extension to tip positions for missing labels..?
   - rawtree consensus checking...
   - container tree to Mark
+  - Cirlce tree does not project y-axis...
 """
-
 
 import functools
 import xml.etree.ElementTree as xml
 from multipledispatch import dispatch
 import numpy as np
 import toyplot
-from toyplot.html import _draw_bar, _draw_triangle, _draw_circle, _draw_rect
+from toyplot.html import (
+    _draw_bar, _draw_triangle, _draw_circle, _draw_rect, _draw_text)
 from toytree.core.drawing.tree_style import COLORS1
 from toytree.core.drawing.toytree_mark import ToytreeMark
 from toytree.utils.globals import PATH_FORMAT
@@ -31,7 +32,9 @@ def _render(axes, mark, context):
 
 class RenderToytree:
     """
-    Organized class to call within _render
+    Organized class to call within _render. The top level canvas
+    element is .context. From this parent xml subelements are
+    added to build the drawing. The toytree mark is in .mark.
     """
     def __init__(self, axes, mark, context):
 
@@ -45,7 +48,7 @@ class RenderToytree:
         self.edges_xml: xml.SubElement = None
         self.nodes_xml: xml.SubElement = None
         self.admix_xml: xml.SubElement = None
-        self.align_xml: xml.SubElement = None        
+        self.align_xml: xml.SubElement = None
 
         # construction funcs
         self.project_coordinates()
@@ -82,7 +85,7 @@ class RenderToytree:
         if self.mark.tip_labels_align:
 
             # coords of aligned tips across fixed x axis 0
-            ntips = self.mark.tip_labels.size
+            ntips = self.mark.tip_labels_angles.size
             if self.mark.layout in ('r', 'l'):
                 self.tips_x = np.repeat(
                     self.axes.project('x', self.mark.xbaseline), ntips)
@@ -94,7 +97,7 @@ class RenderToytree:
                 self.tips_y = np.repeat(
                     self.axes.project('y', self.mark.ybaseline), ntips)
 
-            # coords of tips around a circumference 
+            # coords of tips around a circumference
             elif self.mark.layout == 'c':
                 self.tips_x = np.zeros(ntips)
                 self.tips_y = np.zeros(ntips)
@@ -103,8 +106,7 @@ class RenderToytree:
                     cordx = 0 + max(self.mark.radii) * np.cos(radian)
                     cordy = 0 - max(self.mark.radii) * np.sin(radian)
                     self.tips_x[idx] = self.axes.project('x', cordx)
-                    self.tips_y[idx] = self.axes.project('y', cordy)             
-
+                    self.tips_y[idx] = self.axes.project('y', cordy)
 
 
     def get_paths(self):
@@ -115,7 +117,7 @@ class RenderToytree:
         # 'b': M x y C x y, x y, x y        # bezier phylogram
         # 'f': M x y A r r, x, a, f, x y    # arcs/circle tree
 
-        The arc/circle method applies to edge_type 'p' when layout='c'       
+        The arc/circle method applies to edge_type 'p' when layout='c'
         """
         # modify order of x or y shift of edges for p,b types.
         if self.mark.edge_type in ('p', 'b'):
@@ -148,7 +150,7 @@ class RenderToytree:
                 ox = self.nodes_x[-1] + 0.000000123  # avoid cx == ox
                 oy = self.nodes_y[-1] + 0.000000321
                 pr = self.radii[pidx] - ox
-                theta = np.arctan((oy - cy) / (cx - ox))               
+                theta = np.arctan((oy - cy) / (cx - ox))
 
                 # trig to get hypotenuse from theta and parent radius
                 if cx >= ox:
@@ -161,7 +163,7 @@ class RenderToytree:
                 # sweep flag to arc clockwise or not
                 if py <= oy:
                     # this is working to arc within hemispheres
-                    if dy <= oy:                          
+                    if dy <= oy:
                         if px >= dx:
                             flag = 1
                         else:
@@ -184,13 +186,13 @@ class RenderToytree:
                 paths.append(
                     path_format.format(**{
                         'cx': cx, 'cy': cy, 'px': px, 'py': py,
-                        'dx': dx, 'dy': dy, 'rr': pr, 'flag': flag, 
+                        'dx': dx, 'dy': dy, 'rr': pr, 'flag': flag,
                     })
                 )
 
             # build path string for simple types
-            else: 
-                keys.append("{},{}".format(pidx, cidx))                
+            else:
+                keys.append("{},{}".format(pidx, cidx))
                 paths.append(
                     path_format.format(**{
                         'cx': cx, 'cy': cy, 'px': px, 'py': py,
@@ -199,17 +201,15 @@ class RenderToytree:
         return paths, keys
 
 
-
     def mark_toytree(self):
         """
         Creates the top-level Toytree mark.
         """
         self.mark_xml = xml.SubElement(
-            self.context.parent, "g", 
+            self.context.parent, "g",
             id=self.context.get_id(self.mark),
             attrib={"class": "toytree-mark-Toytree"},
         )
-
 
 
     def mark_edges(self):
@@ -225,8 +225,8 @@ class RenderToytree:
 
         # render the edge group
         self.edges_xml = xml.SubElement(
-            self.mark_xml, "g", 
-            attrib={"class": "toytree-Edges"}, 
+            self.mark_xml, "g",
+            attrib={"class": "toytree-Edges"},
             style=style_to_string(self.mark.edge_style)
         )
 
@@ -248,515 +248,476 @@ class RenderToytree:
                 )
 
 
-
     def mark_nodes(self):
         """
         Creates marker elements for each node under class toytree-Nodes.
-        This could store ids to the nodes if we planned some interesting
-        downstream JS interactivity...
+        Stores ids to the nodes which in theory can allow for
+        downstream JS interactivity.
         """
-        # skip if all nodes are size=0
-        if not all([i in (0, None) for i in self.mark.node_sizes]):
+        # skip if all node_mask=True or if all node_sizes=0
+        if (self.mark.node_sizes == 0).all():
+            return
+        if self.mark.node_mask.all():
+            return
 
-            # get fill style if differs among nodes
-            unique_styles = [{} for i in range(self.mark.nnodes)]
+        # get fill style if differs among nodes
+        unique_styles = [{} for i in range(self.mark.nnodes)]
 
-            # only if variable tho
-            if not all([i is None for i in self.mark.node_colors]):                
+        # only if variable tho
+        if not self.mark.node_colors is None:
 
-                # get fill and fill-opacity of each mark (levelorder)
-                for idx in range(self.mark.nnodes):
+            # get fill and fill-opacity of each mark (levelorder)
+            for idx in range(self.mark.nnodes):
 
-                    # get the rgba node color
-                    fill = self.mark.node_colors[idx]
+                # get the rgba node color
+                fill = self.mark.node_colors[idx]
 
-                    # split into rgb and opacity and store result dict
-                    unique_styles[idx] = split_rgba_style({'fill': fill})
+                # split into rgb and opacity and store result dict
+                unique_styles[idx] = split_rgba_style({'fill': fill})
 
-            # Group all Nodes with shared style applied
-            self.nodes_xml = xml.SubElement(
-                self.mark_xml, "g", 
-                attrib={"class": "toytree-Nodes"}, 
-                style=style_to_string(self.mark.node_style),
+        # Group all Nodes with shared style applied
+        self.nodes_xml = xml.SubElement(
+            self.mark_xml, "g",
+            attrib={"class": "toytree-Nodes"},
+            style=style_to_string(self.mark.node_style),
+        )
+
+        # add node markers in reverse idx order (levelorder traversal)
+        for nidx in range(self.mark.nnodes):
+
+            # skip if node is masked
+            if self.mark.node_mask[nidx]:
+                continue
+
+            # create marker with shape and size, e.g., <marker='o' size=12>
+            marker = toyplot.marker.create(
+                shape=self.mark.node_markers[nidx],
+                size=self.mark.node_sizes[nidx],
             )
 
-            # add node markers in reverse idx order (levelorder traversal)
-            for nidx in range(self.mark.nnodes):
+            # create the marker
+            marker_xml = xml.SubElement(
+                self.nodes_xml, "g",
+                attrib={'id': 'node-{}'.format(nidx)},
+                style=style_to_string(unique_styles[nidx]),
+            )
 
-                # levelorder idx is root to tip idxs
-                # idx = self.mark.nnodes - nidx
+            # optionally add a title UNLESS node_label, then put the hover
+            # on the node text instead.
+            if self.mark.node_hover is not None:
+                if self.mark.node_labels is None:
+                    xml.SubElement(marker_xml, "title").text = (
+                        self.mark.node_hover[nidx])
 
-                # create marker with shape and size, e.g., <marker='o' size=12>
-                marker = toyplot.marker.create(
-                    shape=self.mark.node_markers[nidx],
-                    size=self.mark.node_sizes[nidx],
-                )
+            # project marker in coordinate space
+            transform = "translate({:.3f},{:.3f})".format(
+                self.nodes_x[nidx],
+                self.nodes_y[nidx],
+            )
+            if marker.angle:
+                transform += " rotate({:.1f})".format(-marker.angle)
+            marker_xml.set("transform", transform)
 
-                # create the marker
-                attrib = unique_styles[nidx]
-                attrib['id'] = 'node-{}'.format(nidx)
-                marker_xml = xml.SubElement(
-                    self.nodes_xml, "g", attrib=attrib)
-
-                # optionally add a title UNLESS node_label, then put the hover
-                # on the node text instead.
-                if self.mark.node_hover[nidx] is not None:
-                    if self.mark.node_labels[nidx] is None:
-                        xml.SubElement(marker_xml, "title").text = (
-                            self.mark.node_hover[nidx])
-
-                # project marker in coordinate space
-                transform = "translate({:.3f},{:.3f})".format(
-                    self.nodes_x[nidx],
-                    self.nodes_y[nidx],
-                )
-                if marker.angle:
-                    transform += " rotate({:.1f})".format(-marker.angle)
-                marker_xml.set("transform", transform)
-
-                # get shape type
-                if marker.shape == "|":
-                    _draw_bar(marker_xml, marker.size)
-                elif marker.shape == "/":
-                    _draw_bar(marker_xml, marker.size, angle=-45)
-                elif marker.shape == "-":
-                    _draw_bar(marker_xml, marker.size, angle=90)
-                elif marker.shape == "\\":
-                    _draw_bar(marker_xml, marker.size, angle=45)
-                elif marker.shape == "+":
-                    _draw_bar(marker_xml, marker.size)
-                    _draw_bar(marker_xml, marker.size, angle=90)
-                elif marker.shape == "x":
-                    _draw_bar(marker_xml, marker.size, angle=-45)
-                    _draw_bar(marker_xml, marker.size, angle=45)
-                elif marker.shape == "*":
-                    _draw_bar(marker_xml, marker.size)
-                    _draw_bar(marker_xml, marker.size, angle=-60)
-                    _draw_bar(marker_xml, marker.size, angle=60)
-                elif marker.shape == "^":
-                    _draw_triangle(marker_xml, marker.size)
-                elif marker.shape == ">":
-                    _draw_triangle(marker_xml, marker.size, angle=-90)
-                elif marker.shape == "v":
-                    _draw_triangle(marker_xml, marker.size, angle=180)
-                elif marker.shape == "<":
-                    _draw_triangle(marker_xml, marker.size, angle=90)
-                elif marker.shape == "s":
-                    _draw_rect(marker_xml, marker.size)
-                elif marker.shape == "d":
-                    _draw_rect(marker_xml, marker.size, angle=45)
-                elif marker.shape and marker.shape[0] == "r":
-                    width, height = marker.shape[1:].split("x")
-                    _draw_rect(
-                        marker_xml, marker.size,
-                        width=float(width), height=float(height))
-                elif marker.shape == "o":
-                    _draw_circle(marker_xml, marker.size)
-                elif marker.shape == "oo":
-                    _draw_circle(marker_xml, marker.size)
-                    _draw_circle(marker_xml, marker.size / 2)
-                elif marker.shape == "o|":
-                    _draw_circle(marker_xml, marker.size)
-                    _draw_bar(marker_xml, marker.size)
-                elif marker.shape == "o/":
-                    _draw_circle(marker_xml, marker.size)
-                    _draw_bar(marker_xml, marker.size, -45)
-                elif marker.shape == "o-":
-                    _draw_circle(marker_xml, marker.size)
-                    _draw_bar(marker_xml, marker.size, 90)
-                elif marker.shape == "o\\":
-                    _draw_circle(marker_xml, marker.size)
-                    _draw_bar(marker_xml, marker.size, 45)
-                elif marker.shape == "o+":
-                    _draw_circle(marker_xml, marker.size)
-                    _draw_bar(marker_xml, marker.size)
-                    _draw_bar(marker_xml, marker.size, 90)
-                elif marker.shape == "ox":
-                    _draw_circle(marker_xml, marker.size)
-                    _draw_bar(marker_xml, marker.size, -45)
-                    _draw_bar(marker_xml, marker.size, 45)
-                elif marker.shape == "o*":
-                    _draw_circle(marker_xml, marker.size)
-                    _draw_bar(marker_xml, marker.size)
-                    _draw_bar(marker_xml, marker.size, -60)
-                    _draw_bar(marker_xml, marker.size, 60)
-
+            # get shape type
+            if marker.shape == "|":
+                _draw_bar(marker_xml, marker.size)
+            elif marker.shape == "/":
+                _draw_bar(marker_xml, marker.size, angle=-45)
+            elif marker.shape == "-":
+                _draw_bar(marker_xml, marker.size, angle=90)
+            elif marker.shape == "\\":
+                _draw_bar(marker_xml, marker.size, angle=45)
+            elif marker.shape == "+":
+                _draw_bar(marker_xml, marker.size)
+                _draw_bar(marker_xml, marker.size, angle=90)
+            elif marker.shape == "x":
+                _draw_bar(marker_xml, marker.size, angle=-45)
+                _draw_bar(marker_xml, marker.size, angle=45)
+            elif marker.shape == "*":
+                _draw_bar(marker_xml, marker.size)
+                _draw_bar(marker_xml, marker.size, angle=-60)
+                _draw_bar(marker_xml, marker.size, angle=60)
+            elif marker.shape == "^":
+                _draw_triangle(marker_xml, marker.size)
+            elif marker.shape == ">":
+                _draw_triangle(marker_xml, marker.size, angle=-90)
+            elif marker.shape == "v":
+                _draw_triangle(marker_xml, marker.size, angle=180)
+            elif marker.shape == "<":
+                _draw_triangle(marker_xml, marker.size, angle=90)
+            elif marker.shape == "s":
+                _draw_rect(marker_xml, marker.size)
+            elif marker.shape == "d":
+                _draw_rect(marker_xml, marker.size, angle=45)
+            elif marker.shape and marker.shape[0] == "r":
+                width, height = marker.shape[1:].split("x")
+                _draw_rect(
+                    marker_xml, marker.size,
+                    width=float(width), height=float(height))
+            elif marker.shape == "o":
+                _draw_circle(marker_xml, marker.size)
+            elif marker.shape == "oo":
+                _draw_circle(marker_xml, marker.size)
+                _draw_circle(marker_xml, marker.size / 2)
+            elif marker.shape == "o|":
+                _draw_circle(marker_xml, marker.size)
+                _draw_bar(marker_xml, marker.size)
+            elif marker.shape == "o/":
+                _draw_circle(marker_xml, marker.size)
+                _draw_bar(marker_xml, marker.size, -45)
+            elif marker.shape == "o-":
+                _draw_circle(marker_xml, marker.size)
+                _draw_bar(marker_xml, marker.size, 90)
+            elif marker.shape == "o\\":
+                _draw_circle(marker_xml, marker.size)
+                _draw_bar(marker_xml, marker.size, 45)
+            elif marker.shape == "o+":
+                _draw_circle(marker_xml, marker.size)
+                _draw_bar(marker_xml, marker.size)
+                _draw_bar(marker_xml, marker.size, 90)
+            elif marker.shape == "ox":
+                _draw_circle(marker_xml, marker.size)
+                _draw_bar(marker_xml, marker.size, -45)
+                _draw_bar(marker_xml, marker.size, 45)
+            elif marker.shape == "o*":
+                _draw_circle(marker_xml, marker.size)
+                _draw_bar(marker_xml, marker.size)
+                _draw_bar(marker_xml, marker.size, -60)
+                _draw_bar(marker_xml, marker.size, 60)
 
 
     def mark_node_labels(self):
         """
-        Creates text elements for node label under class toytree-NodeLabels.
-        toytree-NodeLabels stores shared text styling but no positional style,
-        and positional styling is interpreted and applied using transform
-        methods in 'custom_draw_text' func, with unique text styling applied
-        there (only 'fill' currently supported).
+        Simpler...
         """
-        if not all([i is None for i in self.mark.node_labels]):
+        if self.mark.node_labels is None:
+            return
 
-            # make xml with non-positioning styles that apply to all text
-            style_group = {}
-            exc = ["baseline-shift", "-toyplot-anchor-shift", "text-anchor"]
-            style_pos = {"text-anchor": "middle", "stroke": "none"}
-            style_pos.update(self.mark.node_labels_style)
-            style_group = {
-                i: j for (i, j) in style_pos.items() if i not in exc
-            }
-
-            # make the group with text style but not position styles
-            nlabels_xml = xml.SubElement(
-                self.mark_xml, "g", 
-                attrib={"class": "toytree-NodeLabels"}, 
-                style=toyplot.style.to_css(style_group),
+        node_labels_xml = xml.SubElement(
+            self.mark_xml, "g",
+            attrib={"class": "toytree-NodeLabels"},
             )
 
-            # if title then put it here instead of on node marker
-            for idx in range(self.mark.nnodes):
+        for idx in range(self.mark.nnodes):
 
-                label = self.mark.node_labels[idx]
-                if label not in ("", " ", None):
+            if self.mark.node_mask[idx]:
+                continue
 
-                    # get size of text box based on style_pos
-                    layout = toyplot.text.layout(
-                        str(label),
-                        style_pos,
-                        toyplot.font.ReportlabLibrary(),
-                    )
+            label = self.mark.node_labels[idx]
+            title = None
+            if self.mark.node_hover is not None:
+                title = self.mark.node_hover[idx]
 
-                    # apply transform to each textbox and add to xml
-                    for child in layout.children:
-                        for textbox in child.children:
+            # self.mark.node_labels_style["text-anchor"] = "start"
+            _draw_text(
+                root=node_labels_xml,
+                text=label,
+                x=self.nodes_x[idx],
+                y=self.nodes_y[idx],
+                angle=0,
+                attributes={"class": "toytree-NodeLabel"},
+                style=self.mark.node_labels_style,
+                title=title,
+            )
 
-                            # project points into coordinate space 
-                            transform = "translate({:.2f},{:.2f})".format(
-                                self.nodes_x[idx] + textbox.left,
-                                self.nodes_y[idx] + textbox.baseline,
-                            )
-                            # if angle:
-                            # transform += "rotate({:.1f})".format(-angle)
 
-                            # create a group marker for positioning text
-                            group = xml.SubElement(
-                                nlabels_xml, "g", 
-                            )
-                            group.set("transform", transform)
+    # def old_mark_node_labels(self):
+    #     """
+    #     Creates text elements for node label under class toytree-NodeLabels.
+    #     toytree-NodeLabels stores shared text styling but no positional style,
+    #     and positional styling is interpreted and applied using transform
+    #     methods in 'custom_draw_text' func, with unique text styling applied
+    #     there (only 'fill' currently supported).
+    #     """
+    #     if self.mark.node_labels is None:
+    #         return
 
-                            # optionally add a title 
-                            title = self.mark.node_hover[idx]
-                            if title is not None:
-                                xml.SubElement(group, "title").text = str(title)
-                            xml.SubElement(group, "text").text = str(label)
+    #     # make xml with non-positioning styles that apply to all text
+    #     style_group = {}
+    #     exc = ["baseline-shift", "-toyplot-anchor-shift", "text-anchor"]
+    #     style_pos = {"stroke": "none", "white-space": "pre"}
 
+    #     # make sure font-size is in pixels
+    #     style_pos.update(self.mark.node_labels_style)
+    #     if "font-size" in style_pos:
+    #         style_pos["font-size"] = "{}px".format(
+    #             int(toyplot.units.convert(style_pos['font-size'], 'px', 'px')))
+
+    #     # separate style from position
+    #     style_group = {
+    #         i: j for (i, j) in style_pos.items() if i not in exc
+    #     }
+
+    #     # make the group with text style but not position styles
+    #     nlabels_xml = xml.SubElement(
+    #         self.mark_xml, "g",
+    #         attrib={"class": "toytree-NodeLabels"},
+    #         style=toyplot.style.to_css(style_group),
+    #     )
+
+    #     # if title then put it here instead of on node marker
+    #     for idx in range(self.mark.nnodes):
+
+    #         # skip if node is masked
+    #         if self.mark.node_mask[idx]:
+    #             continue
+
+    #         # get label and skip if no label
+    #         label = self.mark.node_labels[idx]
+
+    #         # get size of text box based on style_pos
+    #         style_pos['vertical-align'] = 'middle'
+    #         style_pos['text-anchor'] = "middle"
+    #         layout = toyplot.text.layout(
+    #             str(label),
+    #             style_pos,
+    #             toyplot.font.ReportlabLibrary(),
+    #         )
+
+    #         # position of textbox and angle
+    #         nodex = self.nodes_x[idx]
+    #         nodey = self.nodes_y[idx]
+    #         transform = f"translate({nodex:.2f},{nodey:.2f})"
+    #         nlabel_xml = xml.SubElement(
+    #             nlabels_xml, "g",
+    #             attrib={"transform": transform},
+    #         )
+
+    #         # apply transform to each textbox and add to xml
+    #         for linebox in layout.children:
+    #             for textbox in linebox.children:
+
+    #                 # parse tags (e.g., italic)
+    #                 substyle = {}
+    #                 if textbox.style.get("font-style"):
+    #                     substyle['font-style'] = textbox.style.get("font-style")
+
+    #                 # NOTE: HACK
+    #                 # Capital vs lowercase heights are not computed, and
+    #                 # by default capitals are shifted too high, so I generic
+    #                 # -ally shift all baselines down slightly. This is important
+    #                 # since node labels are almost always integers (upper case)
+    #                 shifted_baseline = textbox.baseline + textbox.baseline / 3#.2
+
+    #                 group = xml.SubElement(
+    #                     nlabel_xml,
+    #                     "text",
+    #                     x=f"{textbox.left:.2f}",
+    #                     y=f"{shifted_baseline:.2f}",
+    #                     style=style_to_string(substyle),
+    #                 )
+    #                 group.text = textbox.text
+
+    #         # optionally add hover title (if no labels then it is added to
+    #         # the node marker itself in mark_nodes
+    #         if self.mark.node_hover is not None:
+    #             title = self.mark.node_hover[idx]
+    #             layout = toyplot.text.layout(
+    #                 str(title),
+    #                 style_pos,
+    #                 toyplot.font.ReportlabLibrary(),
+    #             )
+    #             for linebox in layout.children:
+    #                 for textbox in linebox.children:
+
+    #                     # parse tags (e.g., italic)
+    #                     substyle = {}
+    #                     if textbox.style.get("font-style"):
+    #                         substyle['font-style'] = textbox.style.get("font-style")
+
+    #                     group = xml.SubElement(
+    #                         nlabel_xml, "title",
+    #                         style=style_to_string(substyle),
+    #                     )
+    #                     group.text = textbox.text
 
 
     def mark_tip_labels(self):
         """
-        Creates text elements for tip labels under class toytree-TipLabels.
-        Styling here needs to support both linear, circular and unrooted trees,
-        which is trick by combining style for -toyplot-anchor-shift and angles
-        when setting transform.       
+        New try
         """
-        if not all([i is None for i in self.mark.tip_labels]):
+        if self.mark.tip_labels is None:
+            return
 
-            # allowed styling that can be updated by user style
-            top_style = {
-                'font-family': 'helvetica',
-                'font-weight': 'normal',
-                'white-space': 'pre',
-                'fill': 'rgb(90.6%,54.1%,76.5%)',
-                'fill-opacity': '1.0',
-                'stroke': 'none',
-                'font-size': '9px',
-            }
-            for sty in top_style:
-                if sty in self.mark.tip_labels_style:
-                    top_style[sty] = self.mark.tip_labels_style[sty]
+        shared_color = (
+            {} if self.mark.tip_labels_style['fill'] is None
+            else split_rgba_style({"fill": self.mark.tip_labels_style['fill']})
+        )
+        tips_xml = xml.SubElement(
+            self.mark_xml, "g",
+            attrib={"class": "toytree-TipLabels"},
+            style=shared_color,
+        )
 
-            # apply font styling but NOT POSITIONAL styling to group.
-            tips_xml = xml.SubElement(
-                self.mark_xml, "g", 
-                attrib={"class": "toytree-TipLabels"}, 
-                style=style_to_string(top_style),
+        # add tip markers from 0 to ntips
+        for idx, tip in enumerate(self.mark.tip_labels):
+
+            tstyle = self.mark.tip_labels_style.copy()
+            if self.mark.tip_labels_colors is not None:
+                colstyle = split_rgba_style({
+                    "fill": self.mark.tip_labels_colors[idx]
+                })
+                tstyle['fill'] = colstyle['fill']
+                tstyle['fill-opacity'] = colstyle['fill-opacity']
+
+            # align tip at end for tip_labels_align=True
+            cxx = self.nodes_x[idx]
+            cyy = self.nodes_y[idx]
+            if self.mark.tip_labels_align:
+                cxx = self.tips_x[idx]
+                cyy = self.tips_y[idx]
+
+            # assign tip to class depending on coordinates
+            offset = toyplot.units.convert(
+                tstyle["-toyplot-anchor-shift"], "px", "px",
+            )
+            angles = self.mark.tip_labels_angles[idx]
+            if self.mark.layout in ['l', 'u']:
+                angles = self.mark.tip_labels_angles[idx]
+                tstyle['-toyplot-anchor-shift'] = -offset
+                tstyle['text-anchor'] = "end"
+            if self.mark.layout == 'c':
+                angles = self.mark.tip_labels_angles[idx]
+            _draw_text(
+                root=tips_xml,
+                text=tip,
+                x=cxx,
+                y=cyy,
+                angle=angles,
+                attributes={"class": "toytree-TipLabel"},
+                style=tstyle,
             )
 
-            # add tip markers from 0 to ntips
-            for tidx, tip in enumerate(self.mark.tip_labels):
 
-                # allowed positional styling
-                pos_style = {
-                    "font-family": 'helvetica',
-                    "font-size": "11px",
-                    "-toyplot-anchor-shift": "15px",
-                    "baseline-shift": "0px",
-                    "text-anchor": "start",
-                }
-                for sty in pos_style:
-                    if sty in self.mark.tip_labels_style:
-                        pos_style[sty] = self.mark.tip_labels_style[sty]
-
-                # get offset as int in case it needs to be flipped
-                offset = toyplot.units.convert(
-                    pos_style["-toyplot-anchor-shift"], "px",
-                )
-
-                # assign tip to class depending on coordinates
-                if self.mark.layout == "r":
-                    angle = self.mark.tip_labels_angles[tidx]
-                    pos_style["text-anchor"] = "start"
-                    pos_style["-toyplot-anchor-shift"] = offset
-
-                elif self.mark.layout == "l":
-                    angle = self.mark.tip_labels_angles[tidx]  # + 180
-                    pos_style["text-anchor"] = "end"
-                    pos_style["-toyplot-anchor-shift"] = -offset
-
-                elif self.mark.layout == 'd':
-                    angle = self.mark.tip_labels_angles[tidx]
-                    pos_style["text-anchor"] = "end"
-                    pos_style["-toyplot-anchor-shift"] = -offset
-
-                elif self.mark.layout == "u":
-                    angle = self.mark.tip_labels_angles[tidx]  # + 180
-                    pos_style["text-anchor"] = "start"
-                    pos_style["-toyplot-anchor-shift"] = offset
-
-                elif self.mark.layout == "c":
-                    angle = self.mark.tip_labels_angles[tidx]  # * -1
-                    pos_style["text-anchor"] = "start"
-                    pos_style["-toyplot-anchor-shift"] = offset
-                    if (angle < -90) & (angle > -270):
-                        angle += 180
-                        pos_style["text-anchor"] = "end"
-                        pos_style["-toyplot-anchor-shift"] = -offset
-
-                # align tip at end for tip_labels_align=True
-                cx = self.nodes_x[tidx]
-                cy = self.nodes_y[tidx]
-                if self.mark.tip_labels_align:
-                    cx = self.tips_x[tidx]
-                    cy = self.tips_y[tidx]
-
-                # angle of text
-                transform = "translate({:.2f},{:.2f})".format(cx, cy)
-                transform += "rotate({:.0f})".format(angle)
-
-                # the position of the tip TextBox
-                tip_xml = xml.SubElement(tips_xml, "g")
-                tip_xml.set("transform", transform)
-
-                # split unique color if 
-                icolor = self.mark.tip_labels_colors[tidx]
-                colordict = {}
-                if icolor is not None:
-                    # try splitting color:
-                    try:
-                        colordict = split_rgba_style({"fill": icolor})
-                    except Exception:
-                        colordict = {"fill": icolor}
-
-                # get baseline given font-size, etc.,
-                layout = toyplot.text.layout(
-                    tip,
-                    pos_style,
-                    toyplot.font.ReportlabLibrary(),
-                )
-
-                for line in layout.children:
-                    for box in line.children:
-                        xml.SubElement(
-                            tip_xml,
-                            "text", 
-                            x="{:.2f}".format(box.left), 
-                            y="{:.2f}".format(box.baseline),
-                            style=style_to_string(colordict),
-                            ).text = tip
-
-
-    # def mark_tip_labels(self):
+    # def old_mark_tip_labels(self):
     #     """
     #     Creates text elements for tip labels under class toytree-TipLabels.
     #     Styling here needs to support both linear, circular and unrooted trees,
     #     which is trick by combining style for -toyplot-anchor-shift and angles
-    #     when setting transform.       
+    #     when setting transform.
     #     """
-    #     if not all([i is None for i in self.mark.tip_labels]):
+    #     if self.mark.tip_labels is None:
+    #         return
 
-    #         # end anchor style updated for user text style
-    #         top_style = {
-    #             'font-family': 'helvetica',
-    #             'font-weight': 'normal',
-    #             'white-space': 'pre',
-    #             'fill': 'rgb(90.6%,54.1%,76.5%)',
-    #             'fill-opacity': '1.0',
-    #             'stroke': 'none',
-    #             'text-anchor': 'end',
-    #             'font-size': '9px',
+    #     # allowed styling that can be updated by user style
+    #     top_style = {
+    #         'font-family': 'helvetica',
+    #         'font-weight': 'normal',
+    #         'fill': 'rgb(90.6%,54.1%,76.5%)',
+    #         'fill-opacity': '1.0',
+    #         'stroke': 'none',
+    #         'font-size': '9px',
+    #         # 'font-style': 'italic',  parsed from text tags
+    #     }
+    #     for sty in top_style:
+    #         if sty in self.mark.tip_labels_style:
+    #             top_style[sty] = self.mark.tip_labels_style[sty]
+
+    #     # apply font styling but NOT POSITIONAL styling to group.
+    #     tips_xml = xml.SubElement(
+    #         self.mark_xml, "g",
+    #         attrib={"class": "toytree-TipLabels"},
+    #         style=style_to_string(top_style),
+    #     )
+
+    #     # add tip markers from 0 to ntips
+    #     for tidx, tip in enumerate(self.mark.tip_labels):
+
+    #         # allowed positional styling
+    #         pos_style = {
+    #             "font-family": 'Helvetica',
+    #             "font-size": "11px",
+    #             "-toyplot-anchor-shift": "15px",
+    #             "baseline-shift": "0px",
+    #             "text-anchor": "start",
     #         }
-    #         for sty in top_style:
+    #         for sty in pos_style:
     #             if sty in self.mark.tip_labels_style:
-    #                 top_style[sty] = self.mark.tip_labels_style[sty]
+    #                 pos_style[sty] = self.mark.tip_labels_style[sty]
 
-    #         # force text-anchor to end of L-tips
-    #         top_style['text-anchor'] = 'end'
-
-    #         # apply font styling but NOT POSITIONAL styling to group.
-    #         tips_left_xml = xml.SubElement(
-    #             self.mark_xml, "g", 
-    #             attrib={"class": "toytree-Tiplabels-L"}, 
-    #             style=style_to_string(top_style),
+    #         # get offset as int in case it needs to be flipped
+    #         offset = toyplot.units.convert(
+    #             pos_style["-toyplot-anchor-shift"], "px", "px",
     #         )
 
-    #         # apply font styling but not position stylilng to group.
-    #         top_style = {
-    #             'font-weight': 'normal',
-    #             'white-space': 'pre',
-    #             'fill': 'rgb(90.6%,54.1%,76.5%)',
-    #             'fill-opacity': '1.0',
-    #             'stroke': 'none',
-    #             'text-anchor': 'end',
-    #             'font-size': '9px',
-    #         }
-    #         for sty in top_style:
-    #             if sty in self.mark.tip_labels_style:
-    #                 top_style[sty] = self.mark.tip_labels_style[sty]
-    #         top_style['text-anchor'] = 'start'
-    #         tips_right_xml = xml.SubElement(
-    #             self.mark_xml, "g", 
-    #             attrib={"class": "toytree-Tiplabels-R"}, 
-    #             style=style_to_string(top_style)
-    #         )
+    #         # assign tip to class depending on coordinates
+    #         if self.mark.layout == "r":
+    #             angle = self.mark.tip_labels_angles[tidx]
+    #             pos_style["text-anchor"] = "start"
+    #             pos_style["-toyplot-anchor-shift"] = offset
 
-    #         # add tip markers
-    #         for tidx, tip in enumerate(self.mark.tip_labels):
+    #         elif self.mark.layout == "l":
+    #             angle = self.mark.tip_labels_angles[tidx]  # + 180
+    #             pos_style["text-anchor"] = "start"
+    #             pos_style["-toyplot-anchor-shift"] = -offset
 
+    #         elif self.mark.layout == 'd':
+    #             angle = self.mark.tip_labels_angles[tidx]
+    #             pos_style["text-anchor"] = "end"
+    #             pos_style["-toyplot-anchor-shift"] = -offset
+
+    #         elif self.mark.layout == "u":
+    #             angle = self.mark.tip_labels_angles[tidx]  # + 180
+    #             pos_style["text-anchor"] = "start"
+    #             pos_style["-toyplot-anchor-shift"] = offset
+
+    #         elif self.mark.layout == "c":
+    #             angle = self.mark.tip_labels_angles[tidx]  # * -1
+    #             pos_style["text-anchor"] = "start"
+    #             pos_style["-toyplot-anchor-shift"] = offset
+    #             if (angle < -90) & (angle > -270):
+    #                 angle += 180
+    #                 pos_style["text-anchor"] = "end"
+    #                 pos_style["-toyplot-anchor-shift"] = -offset
+
+    #         # align tip at end for tip_labels_align=True
+    #         cxx = self.nodes_x[tidx]
+    #         cyy = self.nodes_y[tidx]
+    #         if self.mark.tip_labels_align:
+    #             cxx = self.tips_x[tidx]
+    #             cyy = self.tips_y[tidx]
+
+    #         # angle of text
+    #         transform = "translate({:.2f},{:.2f})".format(cxx, cyy)
+    #         transform += "rotate({:.0f})".format(angle)
+
+    #         # the position of the tip TextBox
+    #         tip_xml = xml.SubElement(tips_xml, "g")
+    #         tip_xml.set("transform", transform)
+
+    #         # split and apply tip color if unique
+    #         substyle = {}
+    #         if self.mark.tip_labels_colors is not None:
     #             icolor = self.mark.tip_labels_colors[tidx]
-    #             tdict = {}
-    #             if icolor is not None:
-    #                 # try splitting color:
-    #                 try:
-    #                     tdict = split_rgba_style({"fill": icolor})
-    #                 except Exception:
-    #                     tdict = {"fill": icolor}
+    #             substyle = split_rgba_style({"fill": icolor})
 
-    #             # assign tip to class depending on coordinates
-    #             if self.mark.layout == "r":
-    #                 parent = tips_right_xml
-    #                 angle = self.mark.tip_labels_angles[tidx]
-    #             elif self.mark.layout == "l":
-    #                 parent = tips_left_xml
-    #                 angle = self.mark.tip_labels_angles[tidx]
-    #             elif self.mark.layout == "d":
-    #                 parent = tips_left_xml
-    #                 angle = self.mark.tip_labels_angles[tidx] + 90
-    #             elif self.mark.layout == "u":
-    #                 parent = tips_right_xml
-    #                 angle = self.mark.tip_labels_angles[tidx] - 90
-    #             elif self.mark.layout == "c":
-    #                 angle = self.mark.tip_labels_angles[tidx]
-    #                 if (angle > 90) and (angle < 270):
-    #                     parent = tips_left_xml
+    #         # get baseline given font-size, etc.,
+    #         layout = toyplot.text.layout(
+    #             tip,
+    #             pos_style,
+    #             toyplot.font.ReportlabLibrary(),
+    #         )
+    #         print("")
+    #         print(tip, cxx, cyy)
+    #         for linebox in layout.children:
+    #             for textbox in linebox.children:
+    #                 print(textbox.__dict__)
+
+    #                 # parse tags (e.g., italic)
+    #                 if textbox.style.get("font-style"):
+    #                     substyle['font-style'] = textbox.style.get("font-style")
     #                 else:
-    #                     parent = tips_right_xml
+    #                     if substyle.get("font-style"):
+    #                         substyle.pop('font-style')
 
-    #             # short variables
-    #             cx = self.nodes_x[tidx] 
-    #             cy = self.nodes_y[tidx]
-    #             style_pos = self.mark.tip_labels_style
-    #             style_text = tdict
-    #             title = None
-
-    #             # align tip at end for tip_labels_align=True
-    #             if self.mark.tip_labels_align:
-    #                 cx = self.tips_x[tidx]
-    #                 cy = self.tips_y[tidx]
-
-    #             # get baseline given font-size, etc.,
-    #             layout = toyplot.text.layout(
-    #                 tip,
-    #                 style_text,
-    #                 toyplot.font.ReportlabLibrary(),
-    #             )
-    #             baseline = layout.children[0].children[0].baseline
-
-    #             # adjust projections based on angle and shift args
-    #             ashift = toyplot.units.convert(style_pos["-toyplot-anchor-shift"], "px")
-
-    #             # if right facing then use anchor-shift to +x, else -x
-    #             if parent.attrib['class'] == "toytree-Tiplabels-R":
-
-    #                 # anchor shifts left, baseline corrects y
-    #                 if self.mark.layout == "r":
-    #                     cx += ashift
-    #                     cy += baseline
-
-    #                 # anchor shifts up, baseline shifts right, angle is 90
-    #                 elif self.mark.layout == "u":
-    #                     cx += baseline
-    #                     cy -= ashift
-    #                     angle += 90
-
-    #                 # 
-    #                 elif self.mark.layout == 'c':
-    #                     # convert ashift to the angle
-    #                     if not angle:
-    #                         cx += ashift
-    #                         cy += baseline
-    #                     else:
-    #                         # get lengths from trig.
-    #                         trans = toyplot.transform.rotation(angle)[0]                
-    #                         ashift_x = ashift * trans[0, 0]
-    #                         ashift_y = ashift * trans[0, 1]
-    #                         bshift_y = baseline * trans[0, 0]
-    #                         bshift_x = baseline * trans[0, 1]
-    #                         cx += ashift_x + bshift_x
-    #                         cy -= ashift_y - bshift_y
-
-    #             else:
-
-    #                 # anchor shifts down, baseline shifts left, angle is -90
-    #                 if self.mark.layout == "d":
-    #                     cx += baseline
-    #                     cy += ashift
-    #                     angle += 90
-
-    #                 elif self.mark.layout == 'l':
-    #                     cx -= ashift
-    #                     cy += baseline
-    #                     angle += 180
-
-    #                 elif self.mark.layout == 'c':
-    #                     angle += 180
-
-    #                     # get lengths from trig.
-    #                     trans = toyplot.transform.rotation(angle)[0]                
-    #                     ashift_x = ashift * trans[0, 0]
-    #                     ashift_y = ashift * trans[0, 1]
-    #                     bshift_y = baseline * trans[0, 0]
-    #                     bshift_x = baseline * trans[0, 1]
-    #                     cx = cx - ashift_x + bshift_x
-    #                     cy = cy + ashift_y + bshift_y
-
-    #             # project points into coordinate space 
-    #             transform = "translate({:.2f},{:.2f})".format(cx, cy)
-    #             if angle:
-    #                 transform += "rotate({:.1f})".format(-angle)
-
-    #             # create a group marker for positioning text
-    #             if style_text:
-    #                 group = xml.SubElement(
-    #                     parent, "g", style=style_to_string(style_text))
-    #             else:
-    #                 group = xml.SubElement(parent, "g")
-    #             group.set("transform", transform)
-
-    #             # optionally add a title 
-    #             if title is not None:
-    #                 xml.SubElement(group, "title").text = str(title)
-
-    #             # style text should only include unique styling which currently for 
-    #             # nodes is nothing, and for tips is only 'fill' and 'fill-opacity'.
-    #             xml.SubElement(group, "text").text = tip
-
-
+    #                 # print(tidx, tip, cxx, textbox.left)
+    #                 xml.SubElement(
+    #                     tip_xml,
+    #                     "text",
+    #                     x="{:.2f}".format(textbox.right),
+    #                     y="{:.2f}".format(textbox.baseline),
+    #                     style=style_to_string(substyle),
+    #                     ).text = textbox.text
 
 
     def mark_align_edges(self):
@@ -766,12 +727,12 @@ class RenderToytree:
         # get paths based on edge type and layout
         if self.mark.tip_labels_align:
             apaths = []
-            for tidx in range(len(self.mark.tip_labels)):
+            for tidx, _ in enumerate(self.mark.tip_labels_angles):
 
                 adict = {
                     'cx': self.nodes_x[tidx],
                     'cy': self.nodes_y[tidx],
-                    'px': self.tips_x[tidx], 
+                    'px': self.tips_x[tidx],
                     'py': self.tips_y[tidx],
                 }
                 path = PATH_FORMAT['c'].format(**adict)
@@ -779,19 +740,18 @@ class RenderToytree:
 
             # render the edge group
             self.align_xml = xml.SubElement(
-                self.mark_xml, "g", 
-                attrib={"class": "toytree-AlignEdges"}, 
+                self.mark_xml, "g",
+                attrib={"class": "toytree-AlignEdges"},
                 style=style_to_string(self.mark.edge_align_style),
             )
 
             # render the edge paths
-            for idx, path in enumerate(apaths):
+            for _, path in enumerate(apaths):
                 xml.SubElement(
                     self.align_xml, "path",
                     d=path,
                     # style=None,
                 )
-
 
 
     def mark_admixture_edges(self):
@@ -800,14 +760,14 @@ class RenderToytree:
         style as the edge_type of the tree.
         """
         if self.mark.admixture_edges is None:
-            return 
+            return
 
         # iterate over colors for subsequent edges unless provided
         DEFAULT_ADMIXTURE_EDGES_STYLE = {
-            "stroke": COLORS1[3], 
-            "stroke-width": 5, 
+            "stroke": COLORS1[3],
+            "stroke-width": 5,
             "stroke-opacity": 0.6,
-            "stroke-linecap": "round", 
+            "stroke-linecap": "round",
             "fill": "none",
             "font-size": "14px"
         }
@@ -825,7 +785,7 @@ class RenderToytree:
             "L {sux:.1f} {suy:.1f}",
             "L {ddx:.1f} {ddy:.1f}",
             "L {dux:.1f} {duy:.1f}",
-        ]            
+        ]
 
         # ensure admixture_edges is a list of tuples
         if not isinstance(self.mark.admixture_edges, list):
@@ -904,7 +864,7 @@ class RenderToytree:
                     amin = min([sy, dy])
                     amax = max([psy, pdy])
                     admix_ymid = amin - abs(amax - amin) * aprop[0]
-                    dest_mid_y = src_mid_y = admix_ymid                   
+                    dest_mid_y = src_mid_y = admix_ymid
                     # if aprop[0] == aprop[1]:
                     #     admix_ymid = amin + (amax - amin) * aprop[0]
                     #     dest_mid_y = src_mid_y = admix_ymid
@@ -931,21 +891,21 @@ class RenderToytree:
 
 
             # project angle of up/down lines towards parent nodes.
-            if self.mark.edge_type == "c":            
+            if self.mark.edge_type == "c":
 
                 # angle from src to src parent
                 if (psx - sx) == 0:
                     x_shift_src_mid = 0
                 else:
                     theta = np.arctan((psy - sy) / (psx - sx))
-                    x_shift_src_mid = (src_mid_y - sy) / np.tan(theta)                
+                    x_shift_src_mid = (src_mid_y - sy) / np.tan(theta)
 
                 # angle from dest to dest parent
                 if (pdx - dx) == 0:
                     x_shift_dest_mid = 0
                 else:
                     theta = np.arctan((pdy - dy) / (pdx - dx))
-                    x_shift_dest_mid = (dest_mid_y - dy) / np.tan(theta)                
+                    x_shift_dest_mid = (dest_mid_y - dy) / np.tan(theta)
                 xend = pdx
 
             else:
@@ -957,7 +917,7 @@ class RenderToytree:
             if self.mark.layout in ("r", "l"):
                 edge_dict = {
                     'sdy': sx,  # + x_shift_src_tip + snudge,
-                    'sdx': sy,  # src_tip_y, 
+                    'sdx': sy,  # src_tip_y,
                     'suy': sx + x_shift_src_mid,
                     'sux': src_mid_y,  # admix_ymid,
                     'ddy': dx + x_shift_dest_mid,
@@ -974,10 +934,10 @@ class RenderToytree:
                 #     'y2': np.mean([edge_dict['suy'], edge_dict['ddy']]) + 8,
                 # }
 
-            else:            
+            else:
                 edge_dict = {
                     'sdx': sx,             # + x_shift_src_tip + snudge,
-                    'sdy': sy,  # src_tip_y, 
+                    'sdy': sy,  # src_tip_y,
 
                     'sux': sx + x_shift_src_mid,
                     'suy': src_mid_y,  # admix_ymid,
@@ -999,7 +959,7 @@ class RenderToytree:
                 #     'x2': np.mean([edge_dict['suy'], edge_dict['ddy']]) + 8,
                 # }
 
-            # EDGE path                
+            # EDGE path
             path = " ".join(PATH).format(**edge_dict)
             xml.SubElement(
                 self.admix_xml, "path",
@@ -1044,13 +1004,13 @@ class RenderToytree:
                 #     'fill-opacity': '1.0',
                 #     'stroke': 'none',
                 #     'font-size': '9px',
-                #     'baseline-shift': '0px',                
+                #     'baseline-shift': '0px',
                 # }
 
                 # # apply font styling but NOT POSITIONAL styling to group.
                 # lab_xml = xml.SubElement(
-                #     self.admix_xml, "g", 
-                #     attrib={"class": "toytree-AdmixEdge-Label"}, 
+                #     self.admix_xml, "g",
+                #     attrib={"class": "toytree-AdmixEdge-Label"},
                 #     style=style_to_string(top_style),
                 # )
 
@@ -1075,8 +1035,8 @@ class RenderToytree:
                 #         for box in line.children:
                 #             xml.SubElement(
                 #                 t_xml,
-                #                 "text", 
-                #                 x="{:.2f}".format(box.left), 
+                #                 "text",
+                #                 x="{:.2f}".format(box.left),
                 #                 y="{:.2f}".format(box.baseline),
                 #                 style={"fill": "green"},
                 #                 # style=style_to_string(colordict),
@@ -1124,6 +1084,36 @@ class RenderToytree:
 
 # HELPER FUNCTIONS ----------------------
 
+def modify_tip_labels_style_for_layout(tip_labels_style, layout):
+    """
+    Returns a tuple with angle, text-anchor, -toyplot-anchor-shift
+    """
+    # elif self.mark.layout == "l":
+    #     angle = self.mark.tip_labels_angles[tidx]  # + 180
+    #     pos_style["text-anchor"] = "start"
+    #     pos_style["-toyplot-anchor-shift"] = -offset
+
+    # elif self.mark.layout == 'd':
+    #     angle = self.mark.tip_labels_angles[tidx]
+    #     pos_style["text-anchor"] = "end"
+    #     pos_style["-toyplot-anchor-shift"] = -offset
+
+    # elif self.mark.layout == "u":
+    #     angle = self.mark.tip_labels_angles[tidx]  # + 180
+    #     pos_style["text-anchor"] = "start"
+    #     pos_style["-toyplot-anchor-shift"] = offset
+
+    # elif self.mark.layout == "c":
+    #     angle = self.mark.tip_labels_angles[tidx]  # * -1
+    #     pos_style["text-anchor"] = "start"
+    #     pos_style["-toyplot-anchor-shift"] = offset
+    #     if (angle < -90) & (angle > -270):
+    #         angle += 180
+    #         pos_style["text-anchor"] = "end"
+    #         pos_style["-toyplot-anchor-shift"] = -offset
+
+
+
 
 
 
@@ -1134,24 +1124,21 @@ def get_unique_edge_styles(mark):
     # minimum styling of node markers
     unique_styles = [{} for i in range(mark.etable.shape[0])]
 
-    # if edge widths and edge colors are both empty then just return
-    check0 = all([i is None for i in mark.edge_colors])
-    check1 = all([i is None for i in mark.edge_widths])
-    if check0 & check1:
+    # if edge widths and edge colors are both None then just return
+    if (mark.edge_colors is None) & (mark.edge_widths is None):
         return unique_styles
 
     # iterate through styled node marks to get shared styles and expand axes
     for idx in range(mark.etable.shape[0]):
 
-        if mark.edge_widths[idx] is not None:
+        if mark.edge_widths is not None:
             unique_styles[idx]['stroke-width'] = mark.edge_widths[idx]
 
-        if mark.edge_colors[idx] is not None:
+        if mark.edge_colors is not None:
             subd = split_rgba_style({'stroke': mark.edge_colors[idx]})
             unique_styles[idx]['stroke'] = subd['stroke']
             if subd['stroke-opacity'] != mark.edge_style["stroke-opacity"]:
                 unique_styles[idx]['stroke-opacity'] = subd['stroke-opacity']
-
     return unique_styles
 
 
@@ -1159,10 +1146,10 @@ def get_unique_edge_styles(mark):
 
 def split_rgba_style(style):
     """
-    Because many applications (Inkscape, Adobe Illustrator, Qt) don't handle 
+    Because many applications (Inkscape, Adobe Illustrator, Qt) don't handle
     CSS rgba() colors correctly this function does a work-around.
-    Takes a CSS color in rgba, e.g., 'rgba(40.0%,76.1%,64.7%,1.000)' 
-    labeled in a dictionary as {'fill': x, 'fill-opacity': y} and 
+    Takes a CSS color in rgba, e.g., 'rgba(40.0%,76.1%,64.7%,1.000)'
+    labeled in a dictionary as {'fill': x, 'fill-opacity': y} and
     returns with fill as rgb and fill-opacity from rgba or clobbered
     by the fill-opacity arg. Similar functionality for stroke, stroke-opacity.
     """
@@ -1179,8 +1166,8 @@ def split_rgba_style(style):
             style["fill-opacity"] = 1.0
         else:
             rgb = "rgb({:.3g}%,{:.3g}%,{:.3g}%)".format(
-                color["r"] * 100, 
-                color["g"] * 100, 
+                color["r"] * 100,
+                color["g"] * 100,
                 color["b"] * 100,
             )
             style["fill"] = rgb
@@ -1192,7 +1179,7 @@ def split_rgba_style(style):
         try:
             color = toyplot.color.css(color)
         except (TypeError, AttributeError):
-            # print(type(color), color)            
+            # print(type(color), color)
             pass
 
         if str(color) == "none":
@@ -1200,8 +1187,8 @@ def split_rgba_style(style):
             style["stroke-opacity"] = 1.0
         else:
             rgb = "rgb({:.3g}%,{:.3g}%,{:.3g}%)".format(
-                color["r"] * 100, 
-                color["g"] * 100, 
+                color["r"] * 100,
+                color["g"] * 100,
                 color["b"] * 100,
             )
             style["stroke"] = rgb
@@ -1213,11 +1200,9 @@ def split_rgba_style(style):
 
 def style_to_string(style):
     """
-    Takes a style dict and writes to ordered style text:     
+    Takes a style dict and writes to ordered style text:
     input: {'fill': 'rgb(100%,0%,0%', 'fill-opacity': 1.0}
     returns: 'fill:rgb(100%,0%,0%);fill-opacity:1.0'
     """
     strs = ["{}:{}".format(key, value) for key, value in sorted(style.items())]
     return ";".join(strs)
-
-
