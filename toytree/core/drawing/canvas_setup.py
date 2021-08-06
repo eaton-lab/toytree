@@ -85,8 +85,6 @@ class GridSetup:
                         left = 32.5
                         right = 42.5
 
-
-
                 margin = (top, right, bottom, left)
 
             axes = self.canvas.cartesian(
@@ -146,7 +144,8 @@ class CanvasSetup:
 
         # get the longest name for dimension fitting
         self.lname = 0
-        if not all([i is None for i in self.style.tip_labels]):
+        if not self.style.tip_labels is None:
+            # all([i is None for i in self.style.tip_labels]):
             self.lname = max([len(str(i)) for i in self.style.tip_labels])
 
         # ntips and shape to fit with provided args
@@ -190,7 +189,6 @@ class CanvasSetup:
                 self.style.width = max(350, min(1000, 18 * self.tree.ntips))
 
 
-
     def get_canvas_and_axes(self):
         """
         Sets canvas and axes with dimensions and padding.
@@ -224,28 +222,35 @@ class CanvasSetup:
         # scalebar        
         if self.style.scalebar:
             if self.style.layout in ("r", "l"):
-                nticks = max((3, np.floor(self.style.width / 100).astype(int)))
+                nticks = max((4, np.floor(self.style.width / 100).astype(int)))
                 self.axes.y.show = False
                 self.axes.x.show = True
                 self.axes.x.ticks.show = True
 
-                # generate locations
+                # get root tree height
                 if self.style.use_edge_lengths:
-                    th = self.tree.treenode.height
+                    theight = self.tree.treenode.height
                 else:
-                    th = self.tree.treenode.get_farthest_leaf(True)[1] + 1
+                    theight = self.tree.treenode.get_farthest_leaf(True)[1] + 1
                 if self.style.layout == "r":
-                    top = self.style.xbaseline - th
+                    top = self.style.xbaseline - theight
+                    lct = toyplot.locator.Extended(count=nticks, only_inside=True)
+                    locs = lct.ticks(top, 0)[0]
+                    float_limit = abs(min(0, Decimal(locs[1]).adjusted()))
+                    fmt = "{:." + str(float_limit) + "f}"
+                    self.axes.x.ticks.locator = toyplot.locator.Explicit(
+                        locations=locs,
+                        labels=[fmt.format(i) for i in np.abs(locs)],
+                    )
                 else:
-                    top = self.style.xbaseline + th
-                locs = np.linspace(self.style.xbaseline, top, nticks)
-
-                # auto-formatter for axes ticks labels
-                zer = abs(min(0, Decimal(locs[1]).adjusted()))
-                fmt = "{:." + str(zer) + "f}"
-                self.axes.x.ticks.locator = toyplot.locator.Explicit(
-                    locations=locs,
-                    labels=[fmt.format(i) for i in np.abs(locs)],
+                    top = self.style.xbaseline + theight
+                    lct = toyplot.locator.Extended(count=nticks, only_inside=True)
+                    locs = lct.ticks(0, top)[0]
+                    float_limit = abs(min(0, Decimal(locs[1]).adjusted()))
+                    fmt = "{:." + str(float_limit) + "f}"
+                    self.axes.x.ticks.locator = toyplot.locator.Explicit(
+                        locations=locs,
+                        labels=[fmt.format(i) for i in np.abs(locs)],
                     )
 
             elif self.style.layout in ("u", "d"):
@@ -256,77 +261,26 @@ class CanvasSetup:
 
                 # generate locations
                 if self.style.use_edge_lengths:
-                    th = self.tree.treenode.height
+                    theight = self.tree.treenode.height
                 else:
-                    th = self.tree.treenode.get_farthest_leaf(True)[1] + 1
+                    theight = self.tree.treenode.get_farthest_leaf(True)[1] + 1
                 if self.style.layout == "d":
-                    top = self.style.ybaseline + th
+                    top = self.style.ybaseline + theight
+                    lct = toyplot.locator.Extended(count=nticks, only_inside=True)
+                    locs = lct.ticks(0, top)[0]
+                    float_limit = abs(min(0, Decimal(locs[1]).adjusted()))
+                    fmt = "{:." + str(float_limit) + "f}"
+                    self.axes.y.ticks.locator = toyplot.locator.Explicit(
+                        locations=locs,
+                        labels=[fmt.format(i) for i in np.abs(locs)],
+                    )
                 else:
-                    top = self.style.ybaseline - th
-                locs = np.linspace(self.style.ybaseline, top, nticks)
-
-                # auto-formatter for axes ticks labels
-                zer = abs(min(0, Decimal(locs[1]).adjusted()))
-                fmt = "{:." + str(zer) + "f}"
-                self.axes.y.ticks.locator = toyplot.locator.Explicit(
-                    locations=locs,
-                    labels=[fmt.format(i) for i in np.abs(locs)],
-                )
-
-            # elif self.style.layout == "d":
-            #     nticks = max((3, np.floor(self.style.height / 100).astype(int)))
-            #     self.axes.x.show = False
-            #     self.axes.y.show = True
-            #     self.axes.y.ticks.show = True            
-
-            #     # generate locations
-            #     locs = np.linspace(0, self.tree.treenode.height, nticks)
-
-            #     # auto-formatter for axes ticks labels
-            #     zer = abs(min(0, Decimal(locs[1]).adjusted()))
-            #     fmt = "{:." + str(zer) + "f}"
-            #     self.axes.y.ticks.locator = toyplot.locator.Explicit(
-            #         locations=locs,
-            #         labels=[fmt.format(i) for i in np.abs(locs)],
-            #         )
-
-
-
-    # def fit_tip_labels(self):
-    #     """
-    #     DEPRECATED SINCE V2 since Mark now sets its own extents correctly.
-
-    #     Modifies display range to ensure tip labels fit. This is a bit hackish
-    #     still. The problem is that the 'extents' range of the rendered text
-    #     is not totally correct. So we add a little buffer here. Should add for 
-    #     user to be able to modify this if needed. If not using edge lengths
-    #     then need to use unit length for treeheight.
-    #     """
-    #     # bail on unrooted for now; TODO
-    #     if self.style.layout == "c":
-    #         return
-
-    #     # if names
-    #     if self.lname:
-    #         # get ratio of names to tree in plot
-    #         ratio = max(self.lname / 10, 0.15)
-
-    #         # have tree figure make up 85% of plot
-    #         if self.style.use_edge_lengths:
-    #             addon = self.tree.treenode.height
-    #         else:
-    #             addon = self.tree.treenode.get_farthest_leaf(True)[1] + 1
-    #         addon *= ratio
-
-    #         # modify display for layout
-    #         if self.style.layout == "r":
-    #             self.axes.x.domain.max = (addon / 2.) + self.style.xbaseline
-    #         elif self.style.layout == "l":
-    #             self.axes.x.domain.min = (-addon / 2.) + self.style.xbaseline
-    #             # self.axes.x.domain.min -= self.style.xbaseline
-    #         elif self.style.layout == "d":
-    #             self.axes.y.domain.min = (-addon / 2.) + self.style.ybaseline
-    #         elif self.style.layout == "u":
-    #             self.axes.y.domain.max = (addon / 2.) + self.style.ybaseline
-
-    #         # print(addon, ratio, self.axes.x.domain.min, self.axes.x.domain.max)
+                    top = self.style.ybaseline - theight
+                    lct = toyplot.locator.Extended(count=nticks, only_inside=True)
+                    locs = lct.ticks(top, 0)[0]
+                    float_limit = abs(min(0, Decimal(locs[1]).adjusted()))
+                    fmt = "{:." + str(float_limit) + "f}"
+                    self.axes.y.ticks.locator = toyplot.locator.Explicit(
+                        locations=locs,
+                        labels=[fmt.format(i) for i in np.abs(locs)],
+                    )
