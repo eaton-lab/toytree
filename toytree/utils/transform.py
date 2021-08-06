@@ -11,11 +11,10 @@ import numpy as np
 
 def normalize_values(vals, nbins=10, minsize=2, maxsize=12):
     """
-    Distributes values into bins spaced at reasonable sizes for plotting.
-    Example, this can be used automatically scale Ne values to plot as 
-    edge widths.
+    Distributes values into bins spaced at reasonable sizes for
+    plotting. Example, this can be used automatically scale Ne values
+    to plot as edge widths.
     """
-
     # make copy of original
     ovals = deepcopy(vals)
 
