@@ -23,7 +23,6 @@ from typing import (
     Union, Optional, Mapping, Iterable, List, Dict, Tuple, Set, Any
 )
 from pathlib import Path
-from decimal import Decimal
 from loguru import logger
 import numpy as np
 import toyplot
@@ -32,7 +31,6 @@ import pandas as pd
 from toytree.core.treenode import TreeNode
 from toytree.core.node_assist import NodeAssist
 from toytree.core.drawing.coords import Coords
-# from toytree.core.drawing.tree_style import TreeStyle, COLORS2
 from toytree.core.style.tree_style import NormalTreeStyle
 from toytree.core.drawing.render import ToytreeMark
 from toytree.core.drawing.draw_toytree import draw_toytree
