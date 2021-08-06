@@ -7,6 +7,8 @@ A collection of distance functions for:
     3. distances between sequences (int or str/bytes seq arrays).
 
 
+TODO: Kune-Felsenstein distance (topo and bls)
+
 """
 
 

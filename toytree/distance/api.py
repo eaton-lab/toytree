@@ -6,7 +6,7 @@ API to make distance calls accessible from ToyTree objects.
 
 from typing import List
 from toytree.distance.nodedist import (
-    get_mrca, 
+    get_mrca,
     get_node_distance,
     get_tip_distance_matrix,
     get_internal_node_distance_matrix,
@@ -20,7 +20,7 @@ class DistanceAPI:
 
     def get_mrca(self, *node_idxs:int):
         """
-        Returns the TreeNode that is the common ancestor of the 
+        Returns the TreeNode that is the common ancestor of the
         set of input nodes (entered as int idx labels).
 
         Examples:
@@ -39,7 +39,7 @@ class DistanceAPI:
         ----------
         tre = toytree.tree("((a,b),(c,d));")
         tre.distance.get_node_distance(0, 2)
-        """        
+        """
         return get_node_distance(self._tree, idx0, idx1, topology_only)
 
     def get_internal_node_distance_matrix(self, topology_only:bool=False):
@@ -72,7 +72,7 @@ class DistanceAPI:
 
     def treedist_table(self, treelist:List, metric:str="rf"):
         """
-        Returns a DataFrame with pairwise tree distances between 
+        Returns a DataFrame with pairwise tree distances between
         this tree and a list of other trees calculated using the
         entered metric.
         """

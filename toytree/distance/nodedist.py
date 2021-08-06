@@ -8,6 +8,7 @@ import itertools
 import numpy as np
 import pandas as pd
 from toytree.utils.exceptions import ToytreeError
+# import toytree
 
 
 # put functions here to have then exposed to Toytree API
@@ -21,7 +22,7 @@ __all__ = [
 
 
 # about 3X faster than TreeNode.get_common_ancestor()
-def get_mrca(tre, *node_idxs):
+def get_mrca(tre: 'toytree.ToyTree', *node_idxs: int):
     """
     Returns the TreeNode object that is the common ancestor of the 
     set of input nodes (entered by their idx label) on the input tree.
@@ -49,11 +50,15 @@ def get_mrca(tre, *node_idxs):
     return tre.idx_dict[mrca]
 
 
-
 # >3X faster than TreeNode.get_distance(), and scales better.
 # If the tree is ultrametric we could calculate 2X faster by just 
 # doubling the distance to mrca...
-def get_node_distance(tre, idx0, idx1, topology_only=False):
+def get_node_distance(
+    tre: 'toytree.ToyTree', 
+    idx0: int, 
+    idx1: int, 
+    topology_only: bool=False,
+    ) -> float:
     """
     Returns the patristic distance between two nodes on a tree.
     """
@@ -81,8 +86,10 @@ def get_node_distance(tre, idx0, idx1, topology_only=False):
 
 
 
-# 
-def get_internal_node_distance_matrix(tre, topology_only=False):
+def get_internal_node_distance_matrix(
+    tre: 'toytree.ToyTree', 
+    topology_only: bool=False,
+    ) -> pd.DataFrame:
     """
     Return distance matrix between internal nodes of a tree as 
     a labeled Pandas.DataFrame.
@@ -102,7 +109,10 @@ def get_internal_node_distance_matrix(tre, topology_only=False):
 
 
 
-def get_node_distance_matrix(tre, topology_only=False):
+def get_node_distance_matrix(
+    tre: 'toytree.ToyTree', 
+    topology_only: bool=False,
+    ) -> pd.DataFrame:
     """
     Return distance matrix between all nodes of a tree as 
     a labeled Pandas.DataFrame.
@@ -122,7 +132,10 @@ def get_node_distance_matrix(tre, topology_only=False):
 
 
 
-def get_tip_distance_matrix(tre, topology_only=False):
+def get_tip_distance_matrix(
+    tre: 'toytree.ToyTree', 
+    topology_only: bool=False,
+    ) -> pd.DataFrame:
     """
     Return distance matrix between tip nodes of a tree as a 
     labeled Pandas.DataFrame.
