@@ -19,8 +19,9 @@ def draw_toytree(**user_args) -> Tuple['Canvas', "Cartesian", ToytreeMark]:
     """
     Draw toytree with user entered kwargs overlaid on a TreeStyle.
     """
-    # get the parent toytree object
+    # get the parent toytree object and axes
     self = user_args.pop('toytree')
+    existing_axes = user_args.pop("axes")
 
     # get unexpected args, expand 'ts' short arg, and warn of bad args
     kwargs = user_args.pop('kwargs')
@@ -78,7 +79,7 @@ def draw_toytree(**user_args) -> Tuple['Canvas', "Cartesian", ToytreeMark]:
     base_style.validate(tree=self)
 
     # get canvas and axes
-    csetup = CanvasSetup(self, user_args['axes'], base_style)
+    csetup = CanvasSetup(self, existing_axes, base_style)
     canvas = csetup.canvas
     axes = csetup.axes
 
