@@ -2,13 +2,11 @@
 
 """
 A class object for generating and storing Toytree plotting coordinates.
-
 """
 
 from typing import Optional, List
 import numpy as np
 from toytree.utils.exceptions import ToytreeError
-
 
 
 class Coords:
@@ -42,7 +40,7 @@ class Coords:
         # new idx_dict (can't just overwrite existing b/c nnodes may changed)
         self.ttree.idx_dict = {}
 
-        # store tree dimensions on update
+        # update tree dimensions by traversal
         self.ttree.nnodes = 0
         self.ttree.ntips = 0
         for node in self.ttree.treenode.traverse():
@@ -50,19 +48,18 @@ class Coords:
             if node.is_leaf():
                 self.ttree.ntips += 1
 
-        # updates idxs and fixed_idx for any tree manipulations
+        # update idxs by traversing tree in levelorder
         self.update_idxs()
 
-        # get new edges shape and fill idx_dict
+        # update edges table
         self.edges = self.get_edges()
 
-        # get edges and verts (node locations)
+        # update node coordinates table
         layout = self.ttree.style.layout
         if layout == 'c':
             self.verts = self.get_radial_coords()
         else:
             self.verts = self.get_linear_coords(layout=layout)
-
 
     def update_idxs(self):
         """
@@ -89,25 +86,9 @@ class Coords:
                 node.name = str(idx)
             idx -= 1
 
-
-
-    # def update_fixed_order(self):
-    #     "after pruning fixed order needs update to match new nnodes/ntips."
-    #     # set tips order if fixing for multi-tree plotting (default None)
-    #     fixed_order = self.ttree._fixed_order
-    #     self.ttree_fixed_order = None
-    #     self.ttree_fixed_idx = list(range(self.ttree.ntips))
-
-    #     # check if fixed_order changed:
-    #     if fixed_order:
-    #         fixed_order = [
-    #             i for i in fixed_order if i in self.ttree.get_tip_labels()
-    #         ]
-    #         self.ttree._set_fixed_order(fixed_order)
-    #     # else:
-    #         # self.ttree._fixed_idx = list(range(self.ttree.ntips))
-
-
+        # TODO: not really necessary, but reduces user error
+        self.ttree.idx_dict = {
+            i: self.ttree.idx_dict[i] for i in range(self.ttree.nnodes)}
 
     def get_edges(self):
         """
@@ -120,8 +101,6 @@ class Coords:
             if parent:
                 edges[idx, :] = (parent.idx, idx)
         return edges
-
-
 
     def get_radial_coords(self, use_edge_lengths=True):
         """
@@ -171,12 +150,6 @@ class Coords:
             verts[node.idx] = [node.x, node.y]
         return verts
 
-        # scale so that node idx 0 (or fixed_order x) is at (0, 0)
-        # adjust = self.ttree._coords.verts[:, 1].min()
-        # self.ttree._coords.verts[:, 1] -= adjust        
-
-
-
     def get_linear_coords(
         self,
         layout=None,
@@ -185,7 +158,7 @@ class Coords:
         fixed_position:Optional[List]=None,
         ):
         """
-        Sets .edges, .verts for node positions.
+        Sets .verts and node .x and y. for node positions.
         X and Y positions here refer to base assumption that tree is right
         facing, reorient_coordinates() will handle re-translating this.        
         """
