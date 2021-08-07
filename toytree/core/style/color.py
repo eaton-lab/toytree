@@ -11,15 +11,25 @@ the ColorMixer superclass.
 
 # pylint: disable=no-member
 
-from typing import Union, Tuple
+from typing import Union, Tuple, List
 import xml.etree.ElementTree as xml
 import numpy as np
 import toyplot
 import toyplot.color
-import pydantic
-import pydantic.color
+import pandas as pd
 from toytree.core.drawing.render import style_to_string
 from toytree.utils.exceptions import ToytreeError
+
+
+# COLORS1 = [toyplot.color.to_css(i) for i in toyplot.color.brewer.palette("Set2")]
+# COLORS2 = [toyplot.color.to_css(i) for i in toyplot.color.brewer.palette("Dark2")]
+# BLACK = toyplot.color.black
+# ICOLORS1 = _itertools.cycle(COLORS1)
+
+# ITERABLE = (list, tuple, np.ndarray)
+# COLORS1 = [toyplot.color.to_css(i) for i in toyplot.color.brewer.palette("Set2")]
+# COLORS2 = [toyplot.color.to_css(i) for i in toyplot.color.brewer.palette("Dark2")]
+# BLACK = toyplot.color.black
 
 
 DTYPE = {
@@ -46,6 +56,11 @@ class ToyColor(np.ndarray):
     def rgba(self):
         """Returns a tuple of (r,g,b,a) as floats."""
         return Color(self).rgba
+
+    # @property
+    # def rgb(self):
+    #     """Returns a tuple of (r,g,b,a) as floats."""
+    #     return Color(self).rgb
     
     @property
     def color(self):
@@ -53,29 +68,23 @@ class ToyColor(np.ndarray):
         return Color(self)
 
 
-
-class Color(pydantic.color.Color):
+class Color:
     """
     Flexible color parser class to get css or rgba tuple 
     representation, and easier to work with than toyplot.color 
-    arrays. Serializable with pydantic, so this is the object type
-    that is stored in TreeStyle class objects.
+    arrays. 
 
     - rgba = (r:float, g:float, b:float, a:float)
     - rgb = (r:float, g:float, b:float, a:float)
     - hex = "#000000"
     - css = "cornflower"
-    - color = pydantic.color.Color
 
     Attributes
     ----------
     css: str
     rgba: Tuple[float, float, float, float]
     """
-    def __init__(
-        self,
-        color: Union[str, np.ndarray, pydantic.color.Color],
-        ):
+    def __init__(self, color: Union[str, np.ndarray]):
 
         # attrs to fill
         self.css: str = None
@@ -89,31 +98,25 @@ class Color(pydantic.color.Color):
                 raise ToytreeError(f"color str {color} not recognized")
             self.array = toyplot.color.css(color)
             self.rgba = tuple(float(self.array[i]) for i in 'rgba')
-            rgb_ints = [int(i * 255) for i in self.rgba[:3]]
-            rgba = rgb_ints + [self.rgba[3]]
-            super().__init__(rgba)
 
         # input is an ndarray (e.g., toyplot.color ndarray, 1-d 4 floats)
-        elif isinstance(color, np.ndarray):
-            assert all(color[i] <= 1 for i in 'rgba'), (
-                "color array should contain floats in range [0, 1]")
-            self.array = color
+        elif isinstance(color, np.ndarray) and color.dtype == DTYPE:
+            self.array = color.copy()
             self.css = toyplot.color.to_css(color)
             if not self.css:
                 raise ToytreeError(f"color array {color} not recognized")
             self.rgba = tuple(float(self.array[i]) for i in 'rgba')                
-            rgb_ints = [int(i * 255) for i in self.rgba[:3]]
-            rgba = rgb_ints + [self.rgba[3]]
-            super().__init__(rgba)
 
-        # input is a pydantic Color object
-        elif isinstance(color, pydantic.color.Color):
-            super().__init__(color)
-            self.css = color.as_named()
-            rgba = self.as_rgb_tuple(alpha=True)
-            rgb_floats = [i / 255. for i in rgba[:3]]
-            self.rgba = rgb_floats + [float(rgba[3])]
+        elif isinstance(color, tuple) and len(color) == 4:
+            self.rgba = color
             self.array = toyplot.color.rgba(*self.rgba)
+            self.css = toyplot.color.to_css(self.array)
+
+        elif isinstance(color, ToyColor):
+            self.css = color.css
+            self.rgba = color.rgba
+            self.array = color.copy()
+
         else:
             raise ToytreeError(f"color arg {color} not supported")
 
@@ -124,8 +127,8 @@ class Color(pydantic.color.Color):
             "height": "20px",
             "margin-right": "5px",
             "background-color": self.css,
+            "border-radius": "50%",
         }
-
 
     def _repr_html_(self):
         """
@@ -134,23 +137,51 @@ class Color(pydantic.color.Color):
         # create a root dom element
         root_xml = xml.Element(
             "div",
-            style="overflow:hidden; height:auto",
+            style="overflow:hidden; height:auto; display:table",
             attrib={"class": "toytree-ToyColor"},
         )
         _ = xml.SubElement(
             root_xml, "div",
             style=style_to_string(self.style),
         )
-        _ = xml.SubElement(
-            root_xml, "text",
-        ).text = (
-            "ColorMixer({:.2f}, {:.2f}, {:.2f}, {:.2f})"
+        _ = xml.SubElement(root_xml, "text").text = (
+            "Color({:.2f}, {:.2f}, {:.2f}, {:.2f})"
             .format(*self.rgba)
         )
 
         # convert deom to a simple html script
         html = xml.tostring(root_xml, encoding="unicode", method="html")
         return html
+
+
+def color_parser(color) -> Union[ToyColor, List[ToyColor]]:
+    """
+    Parse the input of a color based style argument to .draw(). This
+    supports a wide variety of types, with ndarray being the most
+    troublesome.
+    """
+    # return as a ToyColor if str or toyplot color ndarray
+    if isinstance(color, str):
+        return ToyColor(color)
+
+    if isinstance(color, np.void):
+        return ToyColor(tuple(color))
+
+    if isinstance(color, np.ndarray) and color.dtype == DTYPE:
+        if color.size == 1:
+            return ToyColor(color)
+        return [ToyColor(tuple(i)) for i in color]
+
+    # else, it must be a collection of some type.
+    if isinstance(color, (pd.Series, np.ndarray, list, tuple, toyplot.color.Palette)):
+        return [color_parser(i) for i in color]
+
+    if isinstance(color, toyplot.color.Map):
+        raise ToytreeError(
+            "toyplot.color.Map not supported. Try using the map to broadcast "
+            "your values to a list of colors with colormap.colors(values).")
+    raise ToytreeError(
+        f"{color} ({type(color)}) is not a supported color argument.")
 
 
 
