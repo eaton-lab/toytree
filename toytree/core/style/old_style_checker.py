@@ -8,6 +8,7 @@ into arrays for variable styles.
 import itertools
 import toyplot
 import numpy as np
+from loguru import logger
 from toytree.core.node_assist import NodeAssist
 from toytree.core.drawing.render import split_rgba_style
 from toytree.core.drawing.tree_style import COLORS1
@@ -91,8 +92,6 @@ class StyleChecker:
                         sdict[okey] = coldict[okey]
 
 
-
-
     def expand_vars(self):
         """
         Expand args for individual styles into arrays of correct length. If
@@ -100,6 +99,7 @@ class StyleChecker:
         style dict fill or stroke (and opacity) with all properly using rgb
         and opacity settings.
         """
+        self._assign_node_mask()
         self._assign_node_labels()
         self._assign_node_colors()
         self._assign_node_sizes()
@@ -116,6 +116,26 @@ class StyleChecker:
         self._assign_admixture_idxs()
 
 
+    def _assign_node_mask(self):
+        """
+        Sets self.style.node_mask to boolean array. 
+
+        node_mask=None       |  hide tips, show all else
+        node_mask=ITERABLE   |  [True, False, False, ...]
+        node_mask=True       |  [True, True, True, ...]
+        """
+        if self.style.node_mask is None:
+            mask = np.zeros(self.nnodes, dtype=np.bool_)
+            mask[:self.ntips] = True
+            self.style.node_mask = toyplot.broadcast.pyobject(mask, self.nnodes)
+        elif self.style.node_mask is True:
+            self.style.node_mask = toyplot.broadcast.pyobject(True, self.nnodes)
+        elif self.style.node_mask is False:
+            self.style.node_mask = toyplot.broadcast.pyobject(False, self.nnodes)
+        else:
+            self.style.node_mask = toyplot.broadcast.pyobject(
+                self.style.node_mask, self.nnodes)
+        logger.debug(f"node_mask: {self.style.node_mask}")
 
     def _assign_tip_colors(self):
         """
@@ -131,26 +151,22 @@ class StyleChecker:
         # set it all empty
         if arg is None:
             self.style.tip_labels_colors = toyplot.broadcast.pyobject(None, self.ntips)
+            return
 
-        else:
-            self.style.tip_labels_colors = toyplot.color.broadcast(arg, self.ntips, None)
+        # expand arg to ntips
+        self.style.tip_labels_colors = toyplot.color.broadcast(arg, self.ntips, None)
 
-            # if all the same then reset to None
-            if len(set(str(i) for i in self.style.tip_labels_colors)) == 1:
+        # if all the same then reset to None
+        if len(set(str(i) for i in self.style.tip_labels_colors)) == 1:
 
-                # save the fixed color and set to None
-                color = self.style.tip_labels_colors[0]
-                self.style.tip_labels_colors = toyplot.broadcast.pyobject(None, self.ntips)
+            # save the fixed color and set to None
+            color = self.style.tip_labels_colors[0]
+            self.style.tip_labels_colors = toyplot.broadcast.pyobject(None, self.ntips)
 
-                # set edge_style stroke and stroke-opacity 
-                sub = split_rgba_style({'fill': color})
-                self.style.tip_labels_style['fill'] = sub["fill"]
-                self.style.tip_labels_style['fill-opacity'] = sub["fill-opacity"]
-
-            else:
-                # reorder array for fixed if needed
-                if self.style.fixed_order:
-                    self.style.tip_labels_colors = self.style.tip_labels_colors[self.ttree._fixed_idx]
+            # set edge_style stroke and stroke-opacity 
+            sub = split_rgba_style({'fill': color})
+            self.style.tip_labels_style['fill'] = sub["fill"]
+            self.style.tip_labels_style['fill-opacity'] = sub["fill-opacity"]
 
 
     def _assign_tip_labels(self):
@@ -217,25 +233,25 @@ class StyleChecker:
         node_labels=True                        |  [0, 1, 2, 3]
         node_labels=ITERABLE                    |  [100, 90, 95, ...]
         node_labels=STR in .feat, e.g., "idx"   |  [nan, nan, 2, ..., nan]
+        node_labels=STR not in .feat,           |  ['hi', 'hi', 'hi'...]
         node_labels=TUPLE, e.g., ("idx", 1, 0)  |  [0, 1, 2, ..., nan]
+        node_labels=TUPLE, e.g., ("idx", 1, 0)  |  [0, 1, 2, ..., nan]        
         """
         arg = self.style.node_labels
 
         # set it.
         if arg is True:
-            self.style.node_labels = self.ttree.get_node_labels("idx", 1, 1)[::-1]
+            self.style.node_labels = self.ttree.get_node_labels("idx", 1, 1)
         elif arg is False:
             self.style.node_labels = None
         elif arg is None:
             self.style.node_labels = None
         elif isinstance(arg, (str, bytes)):
-            if arg in self.ttree.features:
-                self.style.node_labels = self.ttree.get_node_labels(arg, 0, 0)[::-1]
+            self.style.node_labels = self.ttree.get_node_labels(arg, 0, 0)
         elif isinstance(arg, tuple) and (len(arg) == 3):
-            if arg[0] in self.ttree.features:
-                self.style.node_labels = self.ttree.get_node_labels(*arg)[::-1]
+            self.style.node_labels = self.ttree.get_node_labels(*arg)
         elif isinstance(arg, ITERABLE):
-            self.style.node_labels = arg[::-1]
+            self.style.node_labels = arg
         else:
             raise ToytreeError(
                 "node_labels argument not recognized: {}".format(arg))
