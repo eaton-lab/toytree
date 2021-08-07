@@ -39,7 +39,7 @@ class GridSetup:
         self.canvas = toyplot.Canvas(
             height=self.height,
             width=self.width,
-        )        
+        )
 
         # set larger margin on top and bottom rows, and even margin
         # for middle rows.
@@ -119,7 +119,7 @@ class GridSetup:
 
         else:
             self.height = (
-                self.height if self.height 
+                self.height if self.height
                 else min(750, minx * self.nrows)
             )
             self.width = (
@@ -131,7 +131,7 @@ class GridSetup:
 
 class CanvasSetup:
     """
-    Returns Canvas and Cartesian axes objects 
+    Returns Canvas and Cartesian axes objects
     """
     def __init__(self, tree, axes, style):
 
@@ -157,7 +157,7 @@ class CanvasSetup:
         # expand the domain/extents for the text
         # self.fit_tip_labels()
 
-        # ticks for tree and scalebar
+        # ticks for tree and scale_bar
         self.add_axes_style()
 
 
@@ -193,7 +193,7 @@ class CanvasSetup:
         """
         Sets canvas and axes with dimensions and padding.
         """
-        if self.axes is not None: 
+        if self.axes is not None:
             self.canvas = None
             self.external_axis = True
         else:
@@ -208,7 +208,7 @@ class CanvasSetup:
 
     def add_axes_style(self):
         """
-        Adds scalebar and attempts nice tick formatting
+        Adds scale_bar and attempts nice tick formatting
         TODO: can be improved, especially for small int intervals.
         """
         # style axes with padding and show axes
@@ -216,11 +216,11 @@ class CanvasSetup:
 
         if not self.external_axis:
             self.axes.show = True
-            if not self.style.scalebar:
+            if not self.style.scale_bar:
                 self.axes.show = False
 
-        # scalebar        
-        if self.style.scalebar:
+        # scale_bar
+        if self.style.scale_bar:
             if self.style.layout in ("r", "l"):
                 nticks = max((4, np.floor(self.style.width / 100).astype(int)))
                 self.axes.y.show = False
@@ -254,7 +254,7 @@ class CanvasSetup:
                     )
 
             elif self.style.layout in ("u", "d"):
-                nticks = max((3, np.floor(self.style.height / 100).astype(int)))
+                nticks = max((4, np.floor(self.style.height / 100).astype(int)))
                 self.axes.x.show = False
                 self.axes.y.show = True
                 self.axes.y.ticks.show = True
