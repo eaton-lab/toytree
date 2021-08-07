@@ -63,6 +63,7 @@ def mtree(
     else:
         raise ToytreeError("mtree input format unrecognized.")
     return MultiTree(treelist)
+
     # set tip plot order for treelist to the first tree order
     # order trees in treelist to plot in shared order...
     # self._fixed_order = fixed_order   # (<list>, True, False, or None)
@@ -79,9 +80,6 @@ class BaseMultiTree:
         self._i = 0
         self.treelist = []
 
-
-# class MultiTree2(BaseMultiTree):
-#     pass
 
 
 # class MixedTree(BaseMultiTree):
@@ -117,7 +115,6 @@ class MultiTree:
         Draws a plot with n x m trees in a grid.
     """
     def __init__(self, treelist):
-
         # setting attributes
         self._i = 0
         self.style = TreeStyle('m')
@@ -196,8 +193,8 @@ class MultiTree:
 
     def reset_tree_styles(self):
         """
-        Sets the .style toytree drawing styles to default for all ToyTrees
-        in a MultiTree .treelist. 
+        Sets the .style toytree drawing styles to default for all 
+        ToyTrees in a MultiTree .treelist. 
         """
         for tre in self.treelist:
             tre.style = TreeStyle('n')
@@ -225,23 +222,26 @@ class MultiTree:
 
     def get_consensus_tree(self, cutoff=0.0, best_tree=None):
         """
-        Returns an extended majority rule consensus tree as a Toytree object.
-        Node labels include 'support' values showing the occurrence of clades 
-        in the consensus tree across trees in the input treelist. 
-        Clades with support below 'cutoff' are collapsed into polytomies.
-        If you enter an optional 'best_tree' then support values from
-        the treelist calculated for clades in this tree, and the best_tree is
-        returned with support values added to nodes. 
+        Returns an extended majority rule consensus tree as a Toytree 
+        object. Node labels include 'support' values showing the 
+        occurrence of clades in the consensus tree across trees in the
+        input treelist. Clades with support below 'cutoff' are 
+        collapsed into polytomies. If you enter an optional 
+        'best_tree' then support values from the treelist calculated 
+        for clades in this tree, and the best_tree is returned with 
+        support values added to nodes. 
 
-        Params
-        ------
+        Parameters
+        ----------
         cutoff (float; default=0.0): 
-            Cutoff below which clades are collapsed in the majority rule 
-            consensus tree. This is a proportion (e.g., 0.5 means 50%). 
+            Cutoff below which clades are collapsed in the majority 
+            rule consensus tree. This is a proportion (e.g., 0.5 means 
+            50%). 
         best_tree (Toytree or newick string; optional):
-            A tree that support values should be calculated for and added to. 
-            For example, you want to calculate how often clades in your best 
-            ML tree are supported in 100 bootstrap trees. 
+            A tree that support values should be calculated for and 
+            added to. For example, you want to calculate how often 
+            clades in your best ML tree are supported in 100 bootstrap
+            trees. 
         """
         if best_tree is not None:
             if not isinstance(best_tree, ToyTree):
@@ -254,25 +254,24 @@ class MultiTree:
 
     def draw(
         self, 
-        nrows:int=1, 
-        ncols:int=4, 
+        shape:Tuple[int,int]=(1, 4),
         shared_axes:bool=False,
         idxs:Optional[Iterable[int]]=None, 
         width:Optional[int]=None,
         height:Optional[int]=None,
+        margin:Union[float, Tuple[int,int,int,int]]=None,
         **kwargs,
-        ) -> Tuple:
+        ) -> Tuple['toyplot.Canvas', List['axes'], List['marks']]:
         """
-        Draw a set of trees on a grid with nice spacing and optionally with
-        a shared axes. Different styles can be set on each tree individually
-        or set here during drawing to be shared across trees.
+        Draw a set of trees on a grid with nice spacing and optionally 
+        with a shared axes. Different styles can be set on each tree 
+        individually or set here during drawing to be shared across 
+        trees.
 
         Parameters:
         -----------
-        nrows (int):
-            Number of grid cells in x dimension (default=1)
-        ncols (int):
-            Number of grid cells in y dimension (default=4)
+        shape: Tuple[int,int]
+            Number of rows and columns of tree grid drawing.
         shared_axes (bool):
             If True then the 'height' dimension will be shared among 
             all trees so heights are comparable, otherwise each tree is 
@@ -285,10 +284,20 @@ class MultiTree:
             Width of the canvas
         height (int):
             Height of the canvas
+        margin: Tuple[int,int,int,int]
+            Spacing between subplots in the grid in pixel units. A 
+            single value or a tuple for top, right, bottom, left.
         kwargs (dict):
             Any style arguments supported by .draw() in toytrees.
         """
+        # legacy support
+        if kwargs.get("nrows") or kwargs.get("ncols"):
+            raise DeprecationWarning(
+                "nrows and ncols args deprecated. Use shape=(nrows, ncols)")
+
         # get index of trees that will be drawn
+        nrows = max(1, shape[0])
+        ncols = max(1, shape[1])
         if idxs is None:
             tidx = range(0, min(nrows * ncols, len(self.treelist)))
         else:
@@ -296,6 +305,8 @@ class MultiTree:
 
         # get the trees
         treelist = [self.treelist[i] for i in tidx]
+
+        # get fix
         if kwargs.get("fixed_order") is True:
             fixed_order = (
                 MultiTree(treelist)
@@ -324,7 +335,7 @@ class MultiTree:
             layout = "r"
 
         # get the canvas and axes that can fit the requested trees.
-        grid = GridSetup(nrows, ncols, width, height, layout)
+        grid = GridSetup(nrows, ncols, width, height, layout, margin)
         canvas = grid.canvas
         axes = grid.axes
 
@@ -345,13 +356,17 @@ class MultiTree:
 
         # add toytree-Grid mark to the axes
         marks = []
+        tmpargs = kwargs.copy()
+        if not tmpargs.get("padding"):
+            tmpargs['padding'] = 10
+
         for idx in range(grid.nrows * grid.ncols):
 
             # get the axis
             ax = grid.axes[idx]
 
             # add the mark
-            _, _, mark = treelist[idx].draw(axes=ax, padding=10, **kwargs.copy())
+            _, _, mark = treelist[idx].draw(axes=ax, **tmpargs)
 
             # store the mark
             marks.append(mark)
@@ -381,8 +396,8 @@ class MultiTree:
                 elif mark.layout == "u":
                     ax.y.domain.min = -maxh
 
-            # axes off if not scalebar
-            if not kwargs.get("scalebar") is True:
+            # axes off if not scale_bar
+            if not kwargs.get("scale_bar") is True:
                 ax.show = False
 
         # add mark to axes
@@ -390,29 +405,12 @@ class MultiTree:
 
 
 
-    # def draw_tree_grid(
-    #     self, 
-    #     axes=None,
-    #     nrows=None, 
-    #     ncols=None, 
-    #     start=0, 
-    #     fixed_order=False, 
-    #     shared_axis=False, 
-    #     **kwargs):
-    #     """        
-    #     Deprecated. Tree grid drawing are now produced with .draw().
-    #     """
-    #     raise DeprecationWarning(
-    #         ".draw_tree_grid() has been replaced by the .draw() function."
-    #     )
-
-
     def draw_cloud_tree(self, axes=None, fixed_order=None, jitter=0.0, **kwargs):
         """
-        Draw a series of trees overlapping each other in coordinate space.
-        The order of tip_labels is fixed in cloud trees so that trees with 
-        discordant relationships can be seen in conflict. To change the tip
-        order enter a list of names to 'fixed_order'.
+        Draw a series of trees overlapping each other in coordinate 
+        space. The order of tip_labels is fixed in cloud trees so that
+        trees with discordant relationships can be seen in conflict. 
+        To change the tip order enter a list of names to 'fixed_order'.
 
         Parameters:
         -----------
@@ -432,7 +430,7 @@ class MultiTree:
         fstyle.tip_labels = self.treelist[0].get_tip_labels()
         fstyle.layout = (kwargs.get("layout") if kwargs.get("layout") else 'r')
         fstyle.padding = (kwargs.get("padding") if kwargs.get("padding") else 20)
-        fstyle.scalebar = (kwargs.get("scalebar") if kwargs.get("scalebar") else False)
+        fstyle.scale_bar = (kwargs.get("scale_bar") if kwargs.get("scale_bar") else False)
         fstyle.use_edge_lengths = (kwargs.get("use_edge_lengths") if kwargs.get("use_edge_lengths") else True)
         fstyle.xbaseline = (kwargs.get("xbaseline") if kwargs.get("xbaseline") else 0)
         fstyle.ybaseline = (kwargs.get("ybaseline") if kwargs.get("ybaseline") else 0)
