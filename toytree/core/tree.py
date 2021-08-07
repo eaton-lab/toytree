@@ -90,7 +90,6 @@ class ToyTree(TreeBase):
         """ return len of treenode (ntips) """
         return self.ntips
 
-
     @property
     def features(self) -> set:
         """
@@ -700,11 +699,11 @@ class ToyTree(TreeBase):
         if feature is None:
             data = pd.DataFrame(
                 index=range(self.nnodes),
+                columns=self.features,
                 data=[[
                     getattr(self.idx_dict[nidx], feature, np.nan)
                     for feature in self.features
                 ] for nidx in range(self.nnodes)],
-                columns=self.features,
             )
             if missing is not None:
                 data = data.where(data.notnull(), missing)
@@ -715,6 +714,7 @@ class ToyTree(TreeBase):
         elif feature in self.features:
             data = pd.Series(
                 index=range(self.nnodes),
+                name=feature,
                 data=[
                     getattr(self.idx_dict[nidx], feature, np.nan)
                     for nidx in range(self.nnodes)
@@ -1161,7 +1161,7 @@ class ToyTree(TreeBase):
         edge_style: Dict[str,Any]=None,
         edge_align_style: Dict[str,Any]=None,
         use_edge_lengths: bool=None,
-        scalebar: bool=None,
+        scale_bar: bool=None,
         padding: float=None,
         xbaseline: float=None,
         ybaseline: float=None,
@@ -1321,7 +1321,7 @@ class ToyTree(TreeBase):
             edge_style=edge_style,
             edge_align_style=edge_align_style,
             use_edge_lengths=use_edge_lengths,
-            scalebar=scalebar,
+            scale_bar=scale_bar,
             padding=padding,
             xbaseline=xbaseline,
             ybaseline=ybaseline,
