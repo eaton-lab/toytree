@@ -183,7 +183,10 @@ class TreeNode:
         return True
 
     def __repr__(self):
-        return f"<TreeNode idx={self.idx}; dist={self.dist:.2e}; is_root={self.up is None}/>"
+        return (f"<TreeNode idx={self.idx}; "
+                f"dist={self.dist:.2e}; "
+                f"is_root={self.up is None} "
+                f"is_leaf={self.is_leaf()}/>")
 
     def __str__(self):
         """ Print tree in newick format. """
