@@ -7,6 +7,7 @@ Data transformations for formatting node values nicely.
 
 from copy import deepcopy
 import numpy as np
+from toytree.utils.exceptions import ToytreeError
 
 
 def normalize_values(vals, nbins=10, minsize=2, maxsize=12):
@@ -15,10 +16,14 @@ def normalize_values(vals, nbins=10, minsize=2, maxsize=12):
     plotting. Example, this can be used automatically scale Ne values
     to plot as edge widths.
     """
+    # missing values are not allowed
+    if np.isnan(np.array(vals)).any():
+        raise ToytreeError(f"missing values are not allowed:\n{vals}.")
+
     # make copy of original
     ovals = deepcopy(vals)
 
-    # if 6X min value is higher than max then add this 
+    # if 6X min value is higher than max then add this
     # as a fake value to scale more nicely
     vals = list(vals)
     if min(vals) * 6 > max(vals):
