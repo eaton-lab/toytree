@@ -226,6 +226,7 @@ class CanvasSetup:
                 self.axes.y.show = False
                 self.axes.x.show = True
                 self.axes.x.ticks.show = True
+                lct = toyplot.locator.Extended(count=nticks, only_inside=True)
 
                 # get root tree height
                 if self.style.use_edge_lengths:
@@ -233,54 +234,39 @@ class CanvasSetup:
                 else:
                     theight = self.tree.treenode.get_farthest_leaf(True)[1] + 1
                 if self.style.layout == "r":
-                    top = self.style.xbaseline - theight
-                    lct = toyplot.locator.Extended(count=nticks, only_inside=True)
-                    locs = lct.ticks(top, 0)[0]
-                    float_limit = abs(min(0, Decimal(locs[1]).adjusted()))
-                    fmt = "{:." + str(float_limit) + "f}"
-                    self.axes.x.ticks.locator = toyplot.locator.Explicit(
-                        locations=locs,
-                        labels=[fmt.format(i) for i in np.abs(locs)],
-                    )
+                    locs = lct.ticks(-theight, 0)[0]
                 else:
-                    top = self.style.xbaseline + theight
-                    lct = toyplot.locator.Extended(count=nticks, only_inside=True)
-                    locs = lct.ticks(0, top)[0]
-                    float_limit = abs(min(0, Decimal(locs[1]).adjusted()))
-                    fmt = "{:." + str(float_limit) + "f}"
-                    self.axes.x.ticks.locator = toyplot.locator.Explicit(
-                        locations=locs,
-                        labels=[fmt.format(i) for i in np.abs(locs)],
-                    )
+                    locs = lct.ticks(0, theight)[0]
+                float_limit = abs(min([0] + [
+                    Decimal(i).adjusted() for i in locs
+                ]))
+                fmt = "{:." + str(float_limit) + "f}"
+                self.axes.x.ticks.locator = toyplot.locator.Explicit(
+                    locations=locs + self.style.xbaseline,
+                    labels=[fmt.format(i) for i in np.abs(locs)],
+                )
 
             elif self.style.layout in ("u", "d"):
                 nticks = max((4, np.floor(self.style.height / 100).astype(int)))
                 self.axes.x.show = False
                 self.axes.y.show = True
                 self.axes.y.ticks.show = True
+                lct = toyplot.locator.Extended(count=nticks, only_inside=True)
 
                 # generate locations
                 if self.style.use_edge_lengths:
                     theight = self.tree.treenode.height
                 else:
                     theight = self.tree.treenode.get_farthest_leaf(True)[1] + 1
-                if self.style.layout == "d":
-                    top = self.style.ybaseline + theight
-                    lct = toyplot.locator.Extended(count=nticks, only_inside=True)
-                    locs = lct.ticks(0, top)[0]
-                    float_limit = abs(min(0, Decimal(locs[1]).adjusted()))
-                    fmt = "{:." + str(float_limit) + "f}"
-                    self.axes.y.ticks.locator = toyplot.locator.Explicit(
-                        locations=locs,
-                        labels=[fmt.format(i) for i in np.abs(locs)],
-                    )
+                if self.style.layout == "u":
+                    locs = lct.ticks(-theight, 0)[0]
                 else:
-                    top = self.style.ybaseline - theight
-                    lct = toyplot.locator.Extended(count=nticks, only_inside=True)
-                    locs = lct.ticks(top, 0)[0]
-                    float_limit = abs(min(0, Decimal(locs[1]).adjusted()))
-                    fmt = "{:." + str(float_limit) + "f}"
-                    self.axes.y.ticks.locator = toyplot.locator.Explicit(
-                        locations=locs,
-                        labels=[fmt.format(i) for i in np.abs(locs)],
-                    )
+                    locs = lct.ticks(0, theight)[0]
+                float_limit = abs(min([0] + [
+                    Decimal(i).adjusted() for i in locs
+                ]))
+                fmt = "{:." + str(float_limit) + "f}"
+                self.axes.y.ticks.locator = toyplot.locator.Explicit(
+                    locations=locs + self.style.ybaseline,
+                    labels=[fmt.format(i) for i in np.abs(locs)],
+                )
