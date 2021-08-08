@@ -12,6 +12,7 @@ the ColorMixer superclass.
 # pylint: disable=no-member
 
 from typing import Union, Tuple, List
+import itertools
 import xml.etree.ElementTree as xml
 import numpy as np
 import toyplot
@@ -21,8 +22,10 @@ from toytree.core.drawing.render import style_to_string
 from toytree.utils.exceptions import ToytreeError
 
 
-# COLORS1 = [toyplot.color.to_css(i) for i in toyplot.color.brewer.palette("Set2")]
-# COLORS2 = [toyplot.color.to_css(i) for i in toyplot.color.brewer.palette("Dark2")]
+
+COLORS1 = toyplot.color.brewer.palette("Set2")
+COLORS2 = toyplot.color.brewer.palette("Dark2")
+ICOLORS1 = itertools.cycle(COLORS1)
 # BLACK = toyplot.color.black
 # ICOLORS1 = _itertools.cycle(COLORS1)
 
