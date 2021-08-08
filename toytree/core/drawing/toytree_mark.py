@@ -211,5 +211,5 @@ class ToytreeMark(Mark):
             ])
         else:
             if self.tip_labels_align:
-                coords[0][:self.tip_labels_angles.size] = 0
+                coords[0][:self.tip_labels_angles.size] = self.xbaseline
         return coords, extents
