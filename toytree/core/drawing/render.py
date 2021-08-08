@@ -16,10 +16,10 @@ from multipledispatch import dispatch
 import numpy as np
 import toyplot
 from toyplot.html import (
-    _draw_bar, _draw_triangle, _draw_circle, _draw_rect, _draw_text)
-from toytree.core.drawing.tree_style import COLORS1
+    _draw_bar, _draw_triangle, _draw_circle, _draw_rect)
 from toytree.core.drawing.toytree_mark import ToytreeMark
 from toytree.core.drawing.render_text import render_text
+# from toytree.core.style.color import COLORS1
 from toytree.utils.globals import PATH_FORMAT
 
 # Register multipledispatch to use the toyplot.html namespace
@@ -747,7 +747,7 @@ class RenderToytree:
 
         # iterate over colors for subsequent edges unless provided
         DEFAULT_ADMIXTURE_EDGES_STYLE = {
-            "stroke": COLORS1[3],
+            "stroke": 'rgba(90.6%,54.1%,76.5%,1.000)',
             "stroke-width": 5,
             "stroke-opacity": 0.6,
             "stroke-linecap": "round",
