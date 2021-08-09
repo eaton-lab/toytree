@@ -10,22 +10,23 @@ import numpy as np
 from toytree.utils.exceptions import ToytreeError
 
 
-def normalize_values(vals, nbins=10, minsize=2, maxsize=12):
+def normalize_values(values, nbins=10, min_value=2, max_value=12):
     """
     Distributes values into bins spaced at reasonable sizes for
     plotting. Example, this can be used automatically scale Ne values
     to plot as edge widths.
     """
     # missing values are not allowed
-    if np.isnan(np.array(vals)).any():
-        raise ToytreeError(f"missing values are not allowed:\n{vals}.")
+    if np.isnan(np.array(values)).any():
+        raise ToytreeError(
+            f"missing values are not allowed:\n{values}.")
 
     # make copy of original
-    ovals = deepcopy(vals)
+    ovals = deepcopy(values)
 
     # if 6X min value is higher than max then add this
     # as a fake value to scale more nicely
-    vals = list(vals)
+    vals = list(values)
     if min(vals) * 6 > max(vals):
         vals.append(min(vals) * 6)
 
@@ -37,7 +38,7 @@ def normalize_values(vals, nbins=10, minsize=2, maxsize=12):
 
     # convert binned vals to widths in 2-12
     newvals = {}
-    sizes = np.linspace(minsize, maxsize, nbins)
+    sizes = np.linspace(min_value, max_value, nbins)
     for idx, inbin in enumerate(bins):
         for _ in range(inbin):
             newvals[svals.pop(0)] = sizes[idx]
