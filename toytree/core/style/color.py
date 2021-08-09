@@ -22,17 +22,9 @@ from toytree.core.drawing.render import style_to_string
 from toytree.utils.exceptions import ToytreeError
 
 
-
 COLORS1 = toyplot.color.brewer.palette("Set2")
 COLORS2 = toyplot.color.brewer.palette("Dark2")
 ICOLORS1 = itertools.cycle(COLORS1)
-# BLACK = toyplot.color.black
-# ICOLORS1 = _itertools.cycle(COLORS1)
-
-# ITERABLE = (list, tuple, np.ndarray)
-# COLORS1 = [toyplot.color.to_css(i) for i in toyplot.color.brewer.palette("Set2")]
-# COLORS2 = [toyplot.color.to_css(i) for i in toyplot.color.brewer.palette("Dark2")]
-# BLACK = toyplot.color.black
 
 
 DTYPE = {
