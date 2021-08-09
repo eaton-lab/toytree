@@ -6,6 +6,7 @@ See full args/docstring at toytree.core.Toytree.ToyTree.draw()
 """
 
 from typing import Tuple
+from copy import deepcopy
 from loguru import logger
 from toytree.core.style.tree_style import get_tree_style, SubStyle, TreeStyle
 from toytree.core.drawing.render import ToytreeMark
@@ -21,9 +22,13 @@ def draw_toytree(**user_args) -> Tuple['Canvas', "Cartesian", ToytreeMark]:
     """
     # get the parent toytree object and axes
     self = user_args.pop('toytree')
-    existing_axes = user_args.pop("axes")
 
-    # get unexpected args, expand 'ts' short arg, and warn of bad args
+    # pop non-TreeStyle arguments
+    existing_axes = user_args.pop("axes")
+    fixed_order = user_args.pop("fixed_order")
+    fixed_position = user_args.pop("fixed_position")
+
+    # warn of unexpected args, expand 'ts' shortcut for tree_style
     kwargs = user_args.pop('kwargs')
     if kwargs.get("ts"):
         user_args['tree_style'] = kwargs.pop("ts")
@@ -32,11 +37,16 @@ def draw_toytree(**user_args) -> Tuple['Canvas', "Cartesian", ToytreeMark]:
             f"Unrecognized arguments skipped: {list(kwargs)}."
             "\nCheck the docs, argument names may have changed.")
 
-    # get TreeStyle (base or from ToyTree instance)
+    # get TreeStyle base style (default 'n' or from ToyTree instance)
+    # if as a userarg it overrides any existing self.style changes.
     if user_args['tree_style']:
         base_style = get_tree_style(user_args['tree_style'][0])
     else:
-        base_style = self.style.copy()
+        if self.style.tree_style is not None:
+            base_style = get_tree_style(self.style.tree_style)
+        else:
+            base_style = deepcopy(self.style)
+            # user_args.update(self.style.dict())
 
     # update base_style with user_args
     for key in user_args:
@@ -69,8 +79,8 @@ def draw_toytree(**user_args) -> Tuple['Canvas', "Cartesian", ToytreeMark]:
         verts = self._coords.get_linear_coords(
             base_style.layout,
             base_style.use_edge_lengths,
-            user_args['fixed_order'],
-            user_args['fixed_position'],
+            fixed_order,
+            fixed_position,
         )
     else:
         verts = self._coords.get_radial_coords(base_style.use_edge_lengths)
