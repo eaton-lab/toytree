@@ -23,13 +23,6 @@ from toytree.utils.transform import normalize_values
 from toytree.utils.exceptions import ToytreeError
 
 
-COLORS1 = list(
-    map(toyplot.color.to_css, toyplot.color.brewer.palette("Set2")))
-COLORS2 = list(
-    map(toyplot.color.to_css, toyplot.color.brewer.palette("Dark2")))
-BLACK = toyplot.color.black
-
-
 class EdgeType(str, Enum):
     cladogram = 'c'
     phylogram = 'p'
@@ -243,7 +236,9 @@ class TreeStyle:
             False: hide all
             Iterable: custom
         """
-        if self.node_mask in [True, False]:
+        if self.node_mask is True:
+            self.node_mask = np.repeat(self.node_mask, self.tree.nnodes)
+        if self.node_mask is False:
             self.node_mask = np.repeat(self.node_mask, self.tree.nnodes)
         if self.node_mask is None:
             self.node_mask = np.zeros(self.tree.nnodes, dtype=bool)
@@ -441,8 +436,9 @@ class TreeStyle:
         None by default, if a value is set then it applies on top of
         existing colors.
         """
-        if self.edge_style.stroke == "none":
-            self.edge_style.stroke = None
+        if isinstance(self.edge_style.stroke, str):
+            if self.edge_style.stroke == "none":
+                self.edge_style.stroke = None
         if self.edge_style.stroke is not None:
             self.edge_style.stoke = ToyColor(self.edge_style.stroke).css
         # self.edge_style.stroke_opacity
@@ -544,7 +540,6 @@ class TreeStyle:
 @dataclass(repr=False)
 class NormalTreeStyle(TreeStyle):
     tree_style: str = 'n'
-    node_sizes: int = 0
 
 @dataclass(repr=False)
 class SimpleTreeStyle(TreeStyle):
