@@ -736,7 +736,6 @@ class RenderToytree:
                 xml.SubElement(self.align_xml, "path",  d=path)
 
 
-    # TODO, this could be simplified...
     def mark_admixture_edges(self):
         """
         Creates an SVG path for an admixture edge. The edge takes the same
@@ -746,8 +745,8 @@ class RenderToytree:
             return
 
         # iterate over colors for subsequent edges unless provided
-        DEFAULT_ADMIXTURE_EDGES_STYLE = {
-            "stroke": 'rgba(90.6%,54.1%,76.5%,1.000)',
+        default_admix_edge_style = {
+            "stroke": 'rgb(90.6%,54.1%,76.5%)',
             "stroke-width": 5,
             "stroke-opacity": 0.6,
             "stroke-linecap": "round",
@@ -759,11 +758,11 @@ class RenderToytree:
         self.admix_xml = xml.SubElement(
             self.mark_xml, 'g',
             attrib={'class': 'toytree-AdmixEdges'},
-            style=style_to_string(DEFAULT_ADMIXTURE_EDGES_STYLE)
+            style=style_to_string(default_admix_edge_style)
         )
 
         # get position of 15% tipward from source point
-        PATH = [
+        path_format = [
             "M {sdx:.1f} {sdy:.1f}",
             "L {sux:.1f} {suy:.1f}",
             "L {ddx:.1f} {ddy:.1f}",
@@ -782,8 +781,8 @@ class RenderToytree:
 
             # get their parents coord positions
             try:
-                ps = self.mark.etable[self.mark.etable[:, 1] == src, 0][0]
-                pd = self.mark.etable[self.mark.etable[:, 1] == dest, 0][0]
+                psrc = self.mark.etable[self.mark.etable[:, 1] == src, 0][0]
+                pdest = self.mark.etable[self.mark.etable[:, 1] == dest, 0][0]
 
             # except if root edge
             except IndexError:
@@ -801,8 +800,8 @@ class RenderToytree:
             if self.mark.layout == "r":
                 sx, sy = self.nodes_y[src], self.nodes_x[src]
                 dx, dy = self.nodes_y[dest], self.nodes_x[dest]
-                psx, psy = self.nodes_y[ps], self.nodes_x[ps]
-                pdx, pdy = self.nodes_y[pd], self.nodes_x[pd]
+                psx, psy = self.nodes_y[psrc], self.nodes_x[psrc]
+                pdx, pdy = self.nodes_y[pdest], self.nodes_x[pdest]
 
                 disjoint = (psy >= dy) or (sy <= pdy)
                 if (disjoint) or (not shared):
@@ -818,8 +817,8 @@ class RenderToytree:
             elif self.mark.layout == "l":
                 sx, sy = self.nodes_y[src], self.nodes_x[src]
                 dx, dy = self.nodes_y[dest], self.nodes_x[dest]
-                psx, psy = self.nodes_y[ps], self.nodes_x[ps]
-                pdx, pdy = self.nodes_y[pd], self.nodes_x[pd]
+                psx, psy = self.nodes_y[psrc], self.nodes_x[psrc]
+                pdx, pdy = self.nodes_y[pdest], self.nodes_x[pdest]
 
                 disjoint = (psy <= dy) or (sy >= pdy)
                 if disjoint or (not shared):
@@ -835,8 +834,8 @@ class RenderToytree:
             elif self.mark.layout == "d":
                 sx, sy = self.nodes_x[src], self.nodes_y[src]
                 dx, dy = self.nodes_x[dest], self.nodes_y[dest]
-                psx, psy = self.nodes_x[ps], self.nodes_y[ps]
-                pdx, pdy = self.nodes_x[pd], self.nodes_y[pd]
+                psx, psy = self.nodes_x[psrc], self.nodes_y[psrc]
+                pdx, pdy = self.nodes_x[pdest], self.nodes_y[pdest]
 
                 disjoint = (psy >= dy) or (sy <= pdy)
                 if disjoint or (not shared):
@@ -858,8 +857,8 @@ class RenderToytree:
             elif self.mark.layout == "u":
                 sx, sy = self.nodes_x[src], self.nodes_y[src]
                 dx, dy = self.nodes_x[dest], self.nodes_y[dest]
-                psx, psy = self.nodes_x[ps], self.nodes_y[ps]
-                pdx, pdy = self.nodes_x[pd], self.nodes_y[pd]
+                psx, psy = self.nodes_x[psrc], self.nodes_y[psrc]
+                pdx, pdy = self.nodes_x[pdest], self.nodes_y[pdest]
 
                 disjoint = (psy <= dy) or (sy >= pdy)
                 if disjoint or (not shared):
@@ -943,7 +942,8 @@ class RenderToytree:
                 # }
 
             # EDGE path
-            path = " ".join(PATH).format(**edge_dict)
+            path = " ".join(path_format).format(**edge_dict)
+            estyle['stroke'] = split_rgba_style(estyle['stroke'])
             xml.SubElement(
                 self.admix_xml, "path",
                 d=path,
