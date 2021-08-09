@@ -31,13 +31,12 @@ import pandas as pd
 from toytree.core.treenode import TreeNode
 from toytree.core.node_assist import NodeAssist
 from toytree.core.drawing.coords import Coords
-from toytree.core.style.tree_style import NormalTreeStyle
+from toytree.core.style.tree_style import TreeStyle
 from toytree.core.drawing.render import ToytreeMark
 from toytree.core.drawing.draw_toytree import draw_toytree
 from toytree.core.io.TreeParser import TreeParser
 from toytree.core.io.TreeWriter import NewickWriter
 from toytree.utils.exceptions import ToytreeError
-from toytree.utils.transform import normalize_values
 from toytree.mod.rooting import Rooter
 import toytree.mod.api
 import toytree.pcm.api
@@ -52,7 +51,7 @@ class TreeBase:
         self.mod = toytree.mod.api.TreeModAPI(self)
         self.pcm = toytree.pcm.api.PhyloCompAPI(self)
         self.distance = toytree.distance.api.DistanceAPI(self)
-        self.style = NormalTreeStyle()
+        self.style = TreeStyle()
 
 
 class ToyTree(TreeBase):
@@ -163,133 +162,6 @@ class ToyTree(TreeBase):
         node indices. This array is primarily for internal use.
         """
         return self._coords.edges
-
-    # def get_edge_values(
-    #     self,
-    #     feature:str='idx',
-    #     normalize:bool=False,
-    #     ) -> Dict[int, Any]:
-    #     """
-    #     DEPRECATED: use get_node_data
-    #
-    #     Returns edge values as a dictionary mapping node idx labels
-    #     to the values of the selected node feature. If a node does not
-    #     have the feature it returns a np.NaN or "" depending on type.
-    #     This function is typically used to pass colors or widths
-    #     to .draw() for 'edge_colors' or 'edge_widths' options.
-
-    #     Parameters:
-    #     -----------
-    #     feature (str):
-    #         The node feature to return for each edge, e.g., idx, dist.
-    #     normalize (bool):
-    #         Normalize values to be binned into discrete categories
-    #         given their range of values to make it easier to assign
-    #         discrete categories to edge widths or colors.
-
-    #     Examples:
-    #     ---------
-    #     colors = tree.get_edge_values("dist", normalize=True)
-    #     tre.draw(edge_colors=colors)
-    #     """
-    #     elist = []
-    #     for eidx in self._coords.edges[:, 1]:
-    #         node = self.idx_dict[eidx]
-    #         elist.append(
-    #             (getattr(node, feature) if hasattr(node, feature) else "")
-    #         )
-    #     elist = np.array(elist)
-    #     if normalize:
-    #         elist = normalize_values(elist)
-    #     return elist
-
-    # def get_edge_values_mapped(
-    #     self,
-    #     clades:Union[Set[int], Dict[int,str]],
-    #     include_stem:bool=True,
-    #     ) -> List:
-    #     """
-    #     DEPRECATED: use get_node_data
-    #
-    #     Enter a dictionary mapping node 'idx' or tuples of tipnames
-    #     to values that you want mapped to descendant edges of that
-    #     node. Edge values are returned in node idx order to be
-    #     entered to the 'edge_colors' or 'edge_widths' args to draw().
-    #     To see node idx values use node_labels=True in .draw(). If
-    #     clades keys are integers they are assumed to be node idxs.
-
-    #     Note: it is safer to use tip labels to select clades than
-    #     node idxs since tree tranformations (e.g., rooting) can change
-    #     the mapping of idx values to nodes on the tree.
-
-    #     This function is most convenient for applying values to
-    #     clades. To instead map values to specific edges (e.g., a
-    #     single internal edge) it will be easier to use
-    #     tre.get_edge_values() and then to set the values of the
-    #     internal edges manually.
-
-    #     Parameters:
-    #     -----------
-    #     clades:
-    #         A set of int idxs, tuple of tip names, or dict of {ints:str}
-    #         designating clades that should be colored. The first two
-    #         options automatically apply colors from a colormap, whereas
-    #         the third option (dict) allow the user to enter the color
-    #         for each
-
-    #     Examples:
-    #     ---------
-    #       tre = toytree.tree("((a,b),(c,d));")
-    #       tre.get_edge_values_mapped({5: 'green', 6: 'red'})
-    #       # ['green', 'green', 'green', 'red', 'red', 'red']
-
-    #       tre = toytree.tree("((a,b),(c,d));")
-    #       tre.get_edge_values_mapped({(a, b): 'green', (c, d): 'red'})
-    #       # ['green', 'green', 'green', 'red', 'red', 'red']
-
-    #       tre = toytree.tree("((a,b),(c,d));")
-    #       tre.get_edge_values_mapped({10, 13})
-    #       # ['green', 'green', 'green', 'red', 'red', 'red']
-
-    #     """
-    #     # get an empty list for length of all edges
-    #     values = [None] * self._coords.edges.shape[0]
-
-    #     # map colors from a generator
-
-    #     # iterate over keys of dict or values in set
-    #     for key in clades:
-
-    #         if isinstance(clades, tuple):
-    #             pass
-
-    #     # if tuple: convert to set of int idxs
-    #     if isinstance(clades, tuple):
-    #         clades = set(
-    #             NodeAssist(self, tup, None, None).get_mrca().idx
-    #             for tup in clades
-    #         )
-
-    #     # if set: convert to dict using COLORS2 set.
-    #     if isinstance(clades, set):
-    #         cols = iter(COLORS2)
-    #         clades = {i: next(cols) for i in clades}
-
-    #     # build an array of colors given the dict[int:color]
-    #     # iterative from the highest idx to the smallest for nestedness.
-    #     for nidx in self.idx_dict:
-    #         node = self.idx_dict[nidx]
-    #         if nidx in clades:
-
-    #             # add value to stem edge
-    #             if include_stem:
-    #                 if not node.is_root():
-    #                     values[nidx] = rmap[nidx]
-
-    #             # add value to descendants edges
-    #             for desc in node.get_descendants():
-    #                 values[desc.idx] = rmap[nidx]
-    #     return values
 
     def get_mrca_idx_from_tip_labels(
         self,
@@ -621,12 +493,16 @@ class ToyTree(TreeBase):
         if feature is None:
             data = pd.DataFrame(
                 index=range(self.ntips),
+                columns=self.features,
                 data=[[
                     getattr(self.idx_dict[nidx], feature, pd.NA)
                     for feature in self.features
                 ] for nidx in range(self.ntips)],
-                columns=self.features,
             )
+            if missing is not None:
+                data = data.where(data.notnull(), missing)
+            else:
+                data = data.where(data.notnull(), np.nan)
         elif feature in self.features:
             data = pd.Series(
                 index=range(self.ntips),
@@ -634,9 +510,15 @@ class ToyTree(TreeBase):
                     getattr(self.idx_dict[nidx], feature, pd.NA)
                     for nidx in range(self.ntips)
                 ])
+            if missing is not None:
+                data = data.where(data.notnull(), missing)
+            else:
+                if data.dtype == "O":
+                    data = data.where(data.notnull(), "")
+                else:
+                    data = data.where(data.notnull(), np.nan)
         else:
             raise ValueError(f"feature not in tree data: {feature}")
-        data[data.isna()] = missing
         return data
 
     def get_node_data(
@@ -805,8 +687,9 @@ class ToyTree(TreeBase):
             # map value to node's descendants
             if inherit:
                 descendants = nself.get_node_descendant_idxs(node.idx)
-                for desc in descendants:
-                    ndict[desc] = value
+                for didx in descendants:
+                    node = nself.idx_dict[didx]
+                    ndict[node] = value
 
         # fill ndict with map {node: default} for nodes not in ndict
         if default is not None:
@@ -867,13 +750,13 @@ class ToyTree(TreeBase):
             if not self.idx_dict[i].is_root()
         )
 
-    def ladderize(self, direction:bool=False) -> 'ToyTree': #, alphanumeric:bool=False):
+    def ladderize(self, direction:bool=False) -> 'ToyTree':
         """
         Ladderize tree (order descendants) so that left/right child
         has fewer/more descendants. To reverse this pattern use
         direction=1. To also ladderize cherry tipnames use alphanumeric.
         """
-        # nself._fixed_order = None
+        # TODO: alphanumeric ordering option?
         nself = self.copy()
         nself.treenode.ladderize(direction=direction)
         nself._coords.update()
@@ -881,8 +764,8 @@ class ToyTree(TreeBase):
 
     def collapse_nodes(
         self,
-        min_dist:float=1e-6,
-        min_support:float=0,
+        min_dist: float=1e-6,
+        min_support: float=0,
         ) -> 'ToyTree':
         """
         Returns a copy of the ToyTree with internal node dists
@@ -1134,11 +1017,12 @@ class ToyTree(TreeBase):
     # --------------------------------------------------------------------
     # Draw functions imported, but docstring here...
     # TODO:
-    #    - fix node_hover=True
+    #    - expand node_hover=True to a table of all features
+    #    - fix admixture_edges
     # --------------------------------------------------------------------
     def draw(
         self,
-        tree_style: str="n",
+        tree_style: Optional[str]=None,
         height: int=None,
         width: int=None,
         axes: toyplot.coordinates.Cartesian=None,
@@ -1356,21 +1240,24 @@ def tree(data:Union[str,Path,Url,ToyTree,TreeNode], tree_format:int=0) -> ToyTre
     tree = toyreee.tree("((a,b),c);")
     tree = toytree.tree("/tmp/test.nwk")
     tree = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
-    tree = toytree.tree(TreeNode())
+    tree = toytree.tree(toytree.TreeNode())
     """
     treenode = None
 
     # load from a TreeNode and detach. Must have .idx attributes on nodes.
     if isinstance(data, TreeNode):
         treenode = data.detach()._clone()
+        tree = ToyTree(treenode)
 
     # load TreeNode from a ToyTree (user should use .copy() to preserve style)
     elif isinstance(data, ToyTree):
-        treenode = data.treenode._clone()
+        # treenode = data.treenode._clone()
+        tree = data.copy()
 
     # parse a str, URL, or file
     elif isinstance(data, (str, bytes, Path)):
         treenode = TreeParser(data, tree_format).treenodes[0]
+        tree = ToyTree(treenode)
 
     # raise an error (to make an empty tree you must enter empty TreeNode)
     else:
@@ -1378,15 +1265,9 @@ def tree(data:Union[str,Path,Url,ToyTree,TreeNode], tree_format:int=0) -> ToyTre
 
     # enforce ladderize
     #treenode.ladderize()
-    return ToyTree(treenode)
+    return tree
 
 
 if __name__ == "__main__":
 
     import toytree
-    tree = toytree.rtree.unittree(10)
-
-    tre = toytree.tree(tree.write())
-    tre = toytree.tree(tre.treenode)
-    tre = toytree.tree(tre)
-    print(tre)
