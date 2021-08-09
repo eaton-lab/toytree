@@ -22,8 +22,7 @@ import numpy as np
 from toytree.core.tree import ToyTree
 from toytree.core.consensus import ConsensusTree
 from toytree.core.io.TreeParser import TreeParser
-from toytree.core.drawing.tree_style import TreeStyle
-from toytree.core.drawing.style_checker import StyleChecker
+from toytree.core.style.tree_style import TreeStyle, get_tree_style
 from toytree.core.drawing.canvas_setup import GridSetup, CanvasSetup
 from toytree.core.drawing.render import ToytreeMark
 from toytree.utils.exceptions import ToytreeError
@@ -76,7 +75,7 @@ def mtree(
 
 class BaseMultiTree:
     def __init__(self):
-        self.style = TreeStyle('m')
+        self.style = TreeStyle()
         self._i = 0
         self.treelist = []
 
@@ -117,7 +116,7 @@ class MultiTree:
     def __init__(self, treelist):
         # setting attributes
         self._i = 0
-        self.style = TreeStyle('m')
+        self.style = TreeStyle()
         self.treelist = treelist
 
     def __len__(self):  
@@ -134,6 +133,10 @@ class MultiTree:
             raise StopIteration from err
         self._i += 1
         return result
+
+    def __repr__(self):
+        """string representation shows ntrees and type"""
+        return f"<toytree.MultiTree ntrees={len(self)}>"
 
     @property
     def ntips(self):
@@ -197,7 +200,7 @@ class MultiTree:
         ToyTrees in a MultiTree .treelist. 
         """
         for tre in self.treelist:
-            tre.style = TreeStyle('n')
+            tre.style = TreeStyle()
 
 
     # -------------------------------------------------------------------
@@ -254,12 +257,14 @@ class MultiTree:
 
     def draw(
         self, 
-        shape:Tuple[int,int]=(1, 4),
-        shared_axes:bool=False,
-        idxs:Optional[Iterable[int]]=None, 
-        width:Optional[int]=None,
-        height:Optional[int]=None,
-        margin:Union[float, Tuple[int,int,int,int]]=None,
+        shape: Tuple[int,int]=(1, 4),
+        shared_axes: bool=False,
+        idxs: Optional[Iterable[int]]=None, 
+        width: Optional[int]=None,
+        height: Optional[int]=None,
+        margin: Union[float, Tuple[int,int,int,int]]=None,
+        # fixed_order: Union[Iterable[str], bool]=None,
+        # fixed_position: Optional[Iterable[float]]=None,
         **kwargs,
         ) -> Tuple['toyplot.Canvas', List['axes'], List['marks']]:
         """
@@ -326,9 +331,9 @@ class MultiTree:
 
         # get layout first from direct arg then from treestyle
         if "ts" in kwargs:
-            layout = TreeStyle(kwargs.get("ts")).layout
-        elif "treestyle" in kwargs:
-            layout = TreeStyle(kwargs.get("ts")).layout
+            layout = get_tree_style(kwargs.get("ts")).layout
+        elif "tree_style" in kwargs:
+            layout = get_tree_style(kwargs.get("ts")).layout
         elif "layout" in kwargs:
             layout = kwargs.get("layout")
         else:
@@ -407,6 +412,8 @@ class MultiTree:
 
     def draw_cloud_tree(self, axes=None, fixed_order=None, jitter=0.0, **kwargs):
         """
+        TODO: update this based on draw_toytree function.
+
         Draw a series of trees overlapping each other in coordinate 
         space. The order of tip_labels is fixed in cloud trees so that
         trees with discordant relationships can be seen in conflict. 
@@ -424,7 +431,7 @@ class MultiTree:
             of toytree objects are also supported by .draw_cloudtree().
         """
         # canvas styler
-        fstyle = TreeStyle('n')
+        fstyle = NormalTreeStyle()
         fstyle.width = (kwargs.get("width") if kwargs.get("width") else None)
         fstyle.height = (kwargs.get("height") if kwargs.get("height") else None)
         fstyle.tip_labels = self.treelist[0].get_tip_labels()
