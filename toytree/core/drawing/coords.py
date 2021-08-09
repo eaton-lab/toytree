@@ -240,10 +240,9 @@ class Coords:
         # default: Down-facing tips align at y=0, first ladderized tip at x=0            
         if layout == 'd':
             tmp = verts
-            tmp[:, 1] = verts[:, 1] * -1
 
         # right-facing tips align at x=0, last ladderized tip at y=0
-        if layout == 'r':
+        elif layout == 'r':
             # verts swap x and ys and make xs 0 to negative
             tmp = np.zeros(verts.shape)
             tmp[:, 1] = verts[:, 0]
@@ -260,8 +259,7 @@ class Coords:
             # verts swap x and ys and make xs 0 to negative
             tmp = np.zeros(verts.shape)
             tmp[:, 1] = verts[:, 1] * -1
-            tmp[:, 0] = verts[:, 0] * -1
-
+            tmp[:, 0] = verts[:, 0]
         return tmp
        
 
