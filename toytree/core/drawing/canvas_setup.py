@@ -222,7 +222,7 @@ class CanvasSetup:
         # scale_bar
         if self.style.scale_bar:
             if self.style.layout in ("r", "l"):
-                nticks = max((4, np.floor(self.style.width / 100).astype(int)))
+                nticks = max((4, np.floor(self.style.width / 75).astype(int)))
                 self.axes.y.show = False
                 self.axes.x.show = True
                 self.axes.x.ticks.show = True
@@ -240,6 +240,8 @@ class CanvasSetup:
                 float_limit = abs(min([0] + [
                     Decimal(i).adjusted() for i in locs
                 ]))
+                if abs(locs).max() < 3 and locs.size < 3:
+                    float_limit += 1
                 fmt = "{:." + str(float_limit) + "f}"
                 self.axes.x.ticks.locator = toyplot.locator.Explicit(
                     locations=locs + self.style.xbaseline,
@@ -247,7 +249,7 @@ class CanvasSetup:
                 )
 
             elif self.style.layout in ("u", "d"):
-                nticks = max((4, np.floor(self.style.height / 100).astype(int)))
+                nticks = max((4, np.floor(self.style.height / 75).astype(int)))
                 self.axes.x.show = False
                 self.axes.y.show = True
                 self.axes.y.ticks.show = True
@@ -265,6 +267,8 @@ class CanvasSetup:
                 float_limit = abs(min([0] + [
                     Decimal(i).adjusted() for i in locs
                 ]))
+                if abs(locs).max() < 3 and locs.size < 3:
+                    float_limit += 1
                 fmt = "{:." + str(float_limit) + "f}"
                 self.axes.y.ticks.locator = toyplot.locator.Explicit(
                     locations=locs + self.style.ybaseline,
