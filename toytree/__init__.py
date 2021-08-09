@@ -18,7 +18,7 @@ from toytree.core import rtree
 from toytree.core.multitree import mtree, MultiTree
 
 # from toytree.core.style.color import ToyColor
-from toytree.core.style.color import COLORS1, COLORS2, ICOLORS1, ToyColor
+from toytree.core.style.color import COLORS1, COLORS2, color_cycler
 # expose submodules
 # import toytree.pcm
 

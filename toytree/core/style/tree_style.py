@@ -18,7 +18,8 @@ import toyplot
 from loguru import logger
 import numpy as np
 import pandas as pd
-from toytree.core.style.color import ToyColor, Color, color_parser
+from toytree.core.node_assist import NodeAssist
+from toytree.core.style.color import ToyColor, Color, color_parser, color_cycler
 from toytree.utils.transform import normalize_values
 from toytree.utils.exceptions import ToytreeError
 
@@ -80,7 +81,7 @@ class TipLabelsStyle(SubStyle):
     fill: Color = 'rgba(16.1%,15.3%,14.1%,1.000)'
     fill_opacity: Optional[float] = None
     font_size: Union[str, float] = 11
-    font_weight: int = 300    
+    font_weight: int = 300
     font_family: str = "Helvetica"
     _toyplot_anchor_shift: Union[str, float] = 15
     baseline_shift: Union[str,int] = 0
@@ -137,7 +138,7 @@ class TreeStyle:
         convert color args to CSS strings. This function is called
         before passing style args to ToyTreeMark.
 
-        The validate x_style funcs should come last in each group 
+        The validate x_style funcs should come last in each group
         because the fill,stroke styles can change.
         """
         self.tree = tree  # ignore
@@ -159,7 +160,9 @@ class TreeStyle:
         self._validate_edge_colors()
         self._validate_edge_widths()
         self._validate_edge_style()
-        self._validate_edge_align_style()        
+        self._validate_edge_align_style()
+
+        self._validate_admixture_edges()
 
     def _serialize_colors(self):
         """
@@ -172,7 +175,7 @@ class TreeStyle:
 
     def _serialize_css_styles(self):
         """
-        Convert keys with lower_case ndarrays to lists for 
+        Convert keys with lower_case ndarrays to lists for
         serialization of JSON...
         """
         self._validate_node_colors()
@@ -183,7 +186,7 @@ class TreeStyle:
         """
         Convert any numpy or pandas inputs to lists for easier
         validation casting. This is called for serialization and
-        during validation. 
+        during validation.
         """
         arrayed = [
             "node_mask",
@@ -198,7 +201,7 @@ class TreeStyle:
                 logger.warning("DataFrame entry is ambiguous, select a Series")
                 setattr(self, key, values.iloc[:, 0].tolist())
             elif isinstance(values, pd.Series):
-                setattr(self, key, values.tolist())          
+                setattr(self, key, values.tolist())
             # TODO, maybe this is unnecessary now with color-parser
             elif isinstance(values, np.ndarray):
                 # array can be a collection of things, or a color array
@@ -304,12 +307,11 @@ class TreeStyle:
         """
         self.node_labels_style.font_size = "{:.1f}px".format(
             toyplot.units.convert(
-                value=self.node_labels_style.font_size, 
+                value=self.node_labels_style.font_size,
                 target="px", default="px")
         )
         if self.node_labels_style.fill is not None:
             self.node_labels_style.fill = ToyColor(self.node_labels_style.fill)
-
 
     def _validate_node_hover(self):
         """
@@ -321,7 +323,21 @@ class TreeStyle:
         elif self.node_hover is False:
             self.node_hover = None
         elif self.node_hover is True:
-            self.node_hover = [str(i) for i in range(self.tree.nnodes)]
+            ordered_features = ["idx", "dist", "support", "height"]
+            lfeatures = list(set(self.tree.features) - set(ordered_features))
+            ordered_features += lfeatures
+            self.node_hover = [" "] * self.tree.nnodes
+            for idx in self.tree.idx_dict:
+                feats = []
+                node = self.tree.idx_dict[idx]
+                for feature in ordered_features:
+                    val = getattr(node, feature)
+                    if isinstance(val, float):
+                        fstring = np.format_float_positional(round(val, 8), trim='0')
+                        feats.append(f"{feature}: {fstring}")
+                    else:
+                        feats.append(f"{feature}: {val}")
+                self.node_hover[idx] = "\n".join(feats)
         elif isinstance(self.node_hover, pd.Series):
             self.node_hover = self.node_hover.astype(str)
         elif isinstance(self.node_hover, str):
@@ -399,7 +415,7 @@ class TreeStyle:
         """
         self.tip_labels_style.font_size = "{:.1f}px".format(
             toyplot.units.convert(
-                value=self.tip_labels_style.font_size, 
+                value=self.tip_labels_style.font_size,
                 target="px", default="px")
         )
         # self.tip_labels_style._toyplot_anchor_shift = "{:.2f}px".format(
@@ -411,8 +427,8 @@ class TreeStyle:
     def _validate_edge_colors(self):
         """
         Sets edge_colors to ndarray[str] or None, and sets
-        edge_style.stroke to None or single color value. Allow 
-        values to be nnodes or nnodes -1, since root edge is not 
+        edge_style.stroke to None or single color value. Allow
+        values to be nnodes or nnodes -1, since root edge is not
         shown?
         """
         if self.edge_colors is None:
@@ -431,7 +447,7 @@ class TreeStyle:
 
     def _validate_edge_style(self):
         """
-        If edge_colors are variable then edge_style.stroke is set to 
+        If edge_colors are variable then edge_style.stroke is set to
         None, else edge_style.stroke is one color. Opacity is set to
         None by default, if a value is set then it applies on top of
         existing colors.
@@ -461,13 +477,91 @@ class TreeStyle:
 
     def _validate_edge_align_style(self):
         """
-        
+
         """
         # if self.edge_align_style.stroke == "none":
         #     self.edge_style.stroke = None
         # if self.edge_style.stroke is not None:
         #     self.edge_style.stoke = ToyColor(self.edge_style.stroke).css
         # # self.edge_style.stroke_opacity
+
+
+    def _validate_admixture_edges(self):
+        """
+        Expand to a list of tuples of form:
+        admixture_edges = [
+            (src_idx, dest_idx, (src_time, dest_time), styledict, label)
+        ]
+        """
+        # bail if empty
+        if self.admixture_edges is None:
+            return
+
+        # if tuple then expand into a list
+        if isinstance(self.admixture_edges, tuple):
+            self.admixture_edges = [self.admixture_edges]
+
+        # get color generator and skip the first
+        icolors = color_cycler()
+        admix_tuples = []
+        for atup in self.admixture_edges:
+
+            # required: src node idx from Union[int, str, Iterable[str]]
+            if isinstance(atup[0], (str, list, tuple)):
+                nas = NodeAssist(self.tree, atup[0], None, None)
+                node = nas.get_mrca()
+                if not node.is_root():
+                    src = node.idx
+                else:
+                    nas.match_reciprocal()
+                    src = nas.get_mrca().idx
+            else:
+                src = int(atup[0])
+
+            # required: dest node idx from Union[int, str, Iterable[str]]
+            if isinstance(atup[1], (str, list, tuple)):
+                nas = NodeAssist(self.tree, atup[1], None, None)
+                node = nas.get_mrca()
+                if not node.is_root():
+                    dest = node.idx
+                else:
+                    nas.match_reciprocal()
+                    dest = nas.get_mrca().idx
+            else:
+                dest = int(atup[1])
+
+            # optional: proportion on edges
+            if len(atup) > 2:
+                if isinstance(atup[2], (int, float)):
+                    prop = float(atup[2])
+                else:
+                    prop = (float(atup[2][0]), float(atup[2][1]))
+            else:
+                prop = 0.5
+
+            # optional: style dictionary
+            if len(atup) > 3:
+                style = dict(atup[3])
+            else:
+                style = {}
+
+            # optional label on midpoint
+            if len(atup) > 4:
+                label = str(atup[4])
+            else:
+                label = None
+
+            # color setting.
+            stroke = (
+                ToyColor(next(icolors)) if "stroke" not in style
+                else ToyColor(style['stroke'])
+            )
+            style['stroke'] = stroke.color.css
+            style['stroke-opacity'] = style.get('stroke-opacity', 0.7)
+
+            # check styledict colors, etc
+            admix_tuples.append((src, dest, prop, style, label))
+        self.admixture_edges = admix_tuples
 
 
     def dict(
@@ -488,7 +582,7 @@ class TreeStyle:
         validate_css: bool
             Converts substyle keys to valide CSS (e.g., '_' -> '-'')
         """
-        # first convert any ndarray colors to CSS str or Collection[str] 
+        # first convert any ndarray colors to CSS str or Collection[str]
         # whether entered as a single value or a Collectin of values.
         if serialize_colors:
             self._serialize_colors()
@@ -499,7 +593,7 @@ class TreeStyle:
         # not called by validate()
         if serialize_arrays:
             self._serialize_arrays()
-        # next convert 
+        # next convert
         style_dict = asdict(self)
         if validate_css:
             self._to_css_styles(style_dict)
