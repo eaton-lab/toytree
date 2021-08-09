@@ -3,6 +3,8 @@
 """
 Classes for Drawings from MultiTrees.
 
+NOT YET IMPLEMENTED.
+
 """
 
 import functools
