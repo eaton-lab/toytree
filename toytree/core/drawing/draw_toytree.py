@@ -13,8 +13,6 @@ from toytree.core.drawing.render import ToytreeMark
 from toytree.core.drawing.canvas_setup import CanvasSetup
 
 
-STYLE_ARGS = list(TreeStyle().__dict__.keys())
-
 
 def draw_toytree(**user_args) -> Tuple['Canvas', "Cartesian", ToytreeMark]:
     """
