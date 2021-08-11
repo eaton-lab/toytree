@@ -6,6 +6,7 @@ Container trees for plotting coalescent histories with demographic params
 
 import numpy as np
 import toyplot
+import toytree
 from toytree.core.tree import ToyTree
 from toytree.utils.exceptions import ToytreeError
 
@@ -37,6 +38,7 @@ class Container:
         else:
             self.model = model
             self.tree = self.model.tree.copy()
+            # raise an error if no genealogies simulated...?
             self.gtree = toytree.tree(self.model.df.genealogy[idx])
             self.gtree = self.gtree.mod.make_ultrametric()
 
@@ -51,7 +53,7 @@ class Container:
         self.nes = {
             i: j for (i, j) in zip(
                 self.nes.keys(), 
-                toytree.utils.normalize_values(
+                toytree.utils.transform.normalize_values(
                     np.sqrt(list(self.nes.values())),
                     10, 2, 8,
                 ),
@@ -63,7 +65,7 @@ class Container:
         self._set_tip_xranges()
 
         # get colors for each spp
-        self.colors = [next(toytree.icolors2) for i in range(len(self.tree))]
+        self.colors = [next(toytree.ICOLORS1) for i in range(len(self.tree))]
 
         # store blocks coordinates
         self.blocks = {}
