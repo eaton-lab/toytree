@@ -348,21 +348,29 @@ class ToyTree(TreeBase):
 
     def get_node_coordinates(
         self,
-        layout:str=None,
-        use_edge_lengths:bool=True,
-        ) -> np.ndarray:
+        layout: str=None,
+        use_edge_lengths: bool=True,
+        ) -> pd.DataFrame:
         """
-        Returns coordinate locations of nodes in the tree as an array.
-        Each row is an (x, y) coordinate, ordered by the 'idx' feature
-        of nodes. The first ntips rows are the tip coordinates, which
-        can also be returned using .get_tip_coordinates().
+        Returns coordinates of nodes in a tree drawing for a given 
+        layout as a pandas.DataFrame. See also get_tip_coordinates().
+
+        Parameters
+        ----------
+        layout: str
+            A layout for the tree drawing ('r', 'l', 'u', 'd', 'c')
+        use_edge_lengths: bool
+            If False then edge lenghts (dists) are all set to 1.
         """
         # if layout argument then set style and update coords.
         if layout is None:
             layout = self.style.layout
         if layout == 'c':
-            return self._coords.get_radial_coords(use_edge_lengths)
-        return self._coords.get_linear_coords(layout, use_edge_lengths)
+            table = self._coords.get_radial_coords(use_edge_lengths)
+        table = self._coords.get_linear_coords(layout, use_edge_lengths)
+        return pd.DataFrame(
+            data=table, index=range(table.shape[0]), columns=list('xy')
+        )
 
     def get_feature_dict(
         self,
@@ -424,7 +432,7 @@ class ToyTree(TreeBase):
         self,
         layout:str=None,
         use_edge_lengths:bool=True,
-        ) -> np.ndarray:
+        ) -> pd.DataFrame:
         """
         Returns coordinates of the tip positions for a tree. If no argument
         for axis then a 2-d array is returned. The first column is the x
@@ -712,7 +720,7 @@ class ToyTree(TreeBase):
                 node.add_feature(feature, value)
         return nself
 
-    def copy(self, deepcopy:bool=True) -> 'ToyTree':
+    def copy(self, deepcopy: bool=True) -> 'ToyTree':
         """
         Returns a copy of a ToyTree instance. You can use the fast
         version (deepcopy=False) unless you wish to copy custom
