@@ -116,10 +116,10 @@ class TreeNode:
         """
         raise TreeNodeError(
             f"Cannot set .height attribute of node {self.idx}.\n"
-            "You cannot modify height attributes on TreeNodes directly "
-            "since they actually represent a emergent feature of the "
+            "You cannot modify height feature on TreeNodes directly "
+            "since this actually represents an emergent feature of the "
             "'dist' attributes of many nodes. Instead, you must use "
-            "the ToyTree func .set_node_values(feature='height', ...) "
+            "the ToyTree func .set_node_data(feature='height', ...) "
             "to set new heights on specific nodes, which will correctly "
             "modify multiple .dists in coordination together."
         )
