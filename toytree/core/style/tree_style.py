@@ -124,7 +124,7 @@ class TreeStyle:
     tip_labels_angles: Union[float, Iterable[float], None] = None
 
     use_edge_lengths: bool = True
-    scale_bar: bool = False
+    scale_bar: Union[bool,float] = False
     padding: int = 15
     xbaseline: int = 0
     ybaseline: int = 0
