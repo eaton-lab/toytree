@@ -3,14 +3,14 @@
 """
 MultiTree objects
 
-TODO: 
+TODO:
     - re-do support for BPP weird format trees.
     - set-like function that drops tips from each tree not shared by all trees.
     - root function that drops tree that cannot be rooted or not set-like
     - consensus function drop tips that are not in set.
     - treegrid simplify args (3, 3) e.g., will make a 600x600 canvas...
     - Annotate class for surrounding markers...
-    - A distinct multitree mark for combining styles on topologies 
+    - A distinct multitree mark for combining styles on topologies
     - New mark: leave proper space for tips to mtree fits same as tree.
 """
 
@@ -24,7 +24,8 @@ from toytree.core.consensus import ConsensusTree
 from toytree.core.io.TreeParser import TreeParser
 from toytree.core.style.tree_style import TreeStyle, get_tree_style
 from toytree.core.drawing.canvas_setup import GridSetup, CanvasSetup
-from toytree.core.drawing.render import ToytreeMark
+# from toytree.core.drawing.render import ToytreeMark
+from toytree.core.drawing.canvas_setup import style_ticks
 from toytree.utils.exceptions import ToytreeError
 import toytree
 
@@ -34,12 +35,12 @@ def mtree(
     tree_format:int=0,
     ):
     """
-    General class constructor to parse and return a MultiTree class 
+    General class constructor to parse and return a MultiTree class
     object from input arguments as a multi-newick string, filepath,
     Url, or Iterable of Toytree objects.
-    
+
     data (Union[str, Path, Iterable[ToyTree]]):
-        string, filepath, or URL for a newick or nexus formatted list 
+        string, filepath, or URL for a newick or nexus formatted list
         of trees, or an iterable of ToyTree objects.
 
     Examples:
@@ -88,38 +89,14 @@ class BaseMultiTree:
 class MultiTree:
     """
     Toytree MultiTree object for plotting or extracting stats from
-    a set of trees sharing the same tips. 
-
-    Parameters:
-    -----------
-    data: List[ToyTrees]
-        
-    tree_format: (int)
-        ete format for newick tree structure. Default is 0. 
-    fixed_order: (bool, list, None)    
-        ...
-
-    Attributes:
-    -----------
-    treelist: list
-        A list of toytree objects from the parsed newick file. 
-
-    Functions():
-    ------------
-    get_consensus_tree: 
-        Returns a ToyTree object with support values on nodes.
-    draw_cloud_tree:
-        Draws a plot with overlapping fixed_order trees.
-    draw
-        Draws a plot with n x m trees in a grid.
+    a set of trees sharing the same tips. Use factory function
+    toytree.mtree to init a MultiTree instance.
     """
     def __init__(self, treelist):
-        # setting attributes
         self._i = 0
-        self.style = TreeStyle()
         self.treelist = treelist
 
-    def __len__(self):  
+    def __len__(self):
         return len(self.treelist)
 
     def __iter__(self):
@@ -140,28 +117,25 @@ class MultiTree:
 
     @property
     def ntips(self):
-        "returns the number of tips in each tree."
+        """returns the number of tips (all the same) in each tree."""
         return self.treelist[0].ntips
 
     @property
     def ntrees(self):
-        "returns the number of trees in the MultiTree treelist."
+        """returns the number of trees in the MultiTree treelist."""
         return len(self.treelist)
 
     @property
     def all_tips_shared(self):
-        """
-        Check if names are the same in all the trees in .treelist.
-        """
+        """Check if names are the same in all the trees in .treelist."""
         alltips_shared = all([
-            set(self.treelist[0].get_tip_labels()) == set(i.get_tip_labels()) 
+            set(self.treelist[0].get_tip_labels()) == set(i.get_tip_labels())
             for i in self.treelist
         ])
         if alltips_shared:
             return True
         return False
 
-    # TODO: this could be sped up by using toytree copy command.
     def copy(self):
         """
         Returns a deepcopy of the MultiTree object.
@@ -169,8 +143,8 @@ class MultiTree:
         return deepcopy(self)
 
     def write(
-        self, 
-        path: Optional[Path], 
+        self,
+        path: Optional[Path],
         tree_format:int=0,
         features: Optional[Iterable[str]]=None,
         dist_formatter:str="%0.6g",
@@ -180,8 +154,8 @@ class MultiTree:
         """
         treestr = "\n".join([
             i.write(
-                path=None, 
-                tree_format=tree_format, 
+                path=None,
+                tree_format=tree_format,
                 features=features,
                 dist_formatter=dist_formatter,
             )
@@ -196,8 +170,8 @@ class MultiTree:
 
     def reset_tree_styles(self):
         """
-        Sets the .style toytree drawing styles to default for all 
-        ToyTrees in a MultiTree .treelist. 
+        Sets the .style toytree drawing styles to default for all
+        ToyTrees in a MultiTree .treelist.
         """
         for tre in self.treelist:
             tre.style = TreeStyle()
@@ -208,14 +182,14 @@ class MultiTree:
     # -------------------------------------------------------------------
     # def get_tip_labels(self):
     #     """
-    #     Returns the tip names in tree plot order for the *list of tree*, 
-    #     starting from the zero axis. If all trees in the treelist do not 
-    #     share the same set of tips then this will return an error message. 
+    #     Returns the tip names in tree plot order for the *list of tree*,
+    #     starting from the zero axis. If all trees in the treelist do not
+    #     share the same set of tips then this will return an error message.
 
     #     If fixed_order is a user entered list then names are returned in that
-    #     order. If fixed_order was True then the consensus tree order is 
+    #     order. If fixed_order was True then the consensus tree order is
     #     returned. If fixed_order was None or False then the order of the first
-    #     ToyTree in .treelist is returned. 
+    #     ToyTree in .treelist is returned.
     #     """
     #     if not self.all_tips_shared:
     #         raise Exception(
@@ -225,26 +199,26 @@ class MultiTree:
 
     def get_consensus_tree(self, cutoff=0.0, best_tree=None):
         """
-        Returns an extended majority rule consensus tree as a Toytree 
-        object. Node labels include 'support' values showing the 
+        Returns an extended majority rule consensus tree as a Toytree
+        object. Node labels include 'support' values showing the
         occurrence of clades in the consensus tree across trees in the
-        input treelist. Clades with support below 'cutoff' are 
-        collapsed into polytomies. If you enter an optional 
-        'best_tree' then support values from the treelist calculated 
-        for clades in this tree, and the best_tree is returned with 
-        support values added to nodes. 
+        input treelist. Clades with support below 'cutoff' are
+        collapsed into polytomies. If you enter an optional
+        'best_tree' then support values from the treelist calculated
+        for clades in this tree, and the best_tree is returned with
+        support values added to nodes.
 
         Parameters
         ----------
-        cutoff (float; default=0.0): 
-            Cutoff below which clades are collapsed in the majority 
-            rule consensus tree. This is a proportion (e.g., 0.5 means 
-            50%). 
+        cutoff (float; default=0.0):
+            Cutoff below which clades are collapsed in the majority
+            rule consensus tree. This is a proportion (e.g., 0.5 means
+            50%).
         best_tree (Toytree or newick string; optional):
-            A tree that support values should be calculated for and 
-            added to. For example, you want to calculate how often 
+            A tree that support values should be calculated for and
+            added to. For example, you want to calculate how often
             clades in your best ML tree are supported in 100 bootstrap
-            trees. 
+            trees.
         """
         if best_tree is not None:
             if not isinstance(best_tree, ToyTree):
@@ -254,43 +228,40 @@ class MultiTree:
         return cons.ttree
 
 
-
     def draw(
-        self, 
+        self,
         shape: Tuple[int,int]=(1, 4),
         shared_axes: bool=False,
-        idxs: Optional[Iterable[int]]=None, 
+        idxs: Optional[Iterable[int]]=None,
         width: Optional[int]=None,
         height: Optional[int]=None,
         margin: Union[float, Tuple[int,int,int,int]]=None,
-        # fixed_order: Union[Iterable[str], bool]=None,
-        # fixed_position: Optional[Iterable[float]]=None,
         **kwargs,
         ) -> Tuple['toyplot.Canvas', List['axes'], List['marks']]:
         """
-        Draw a set of trees on a grid with nice spacing and optionally 
-        with a shared axes. Different styles can be set on each tree 
-        individually or set here during drawing to be shared across 
+        Draw a set of trees on a grid with nice spacing and optionally
+        with a shared axes. Different styles can be set on each tree
+        individually or set here during drawing to be shared across
         trees.
 
         Parameters:
         -----------
         shape: Tuple[int,int]
-            Number of rows and columns of tree grid drawing.
+            A tuple of (nrows, ncolumns) for tree grid drawing.
         shared_axes (bool):
-            If True then the 'height' dimension will be shared among 
-            all trees so heights are comparable, otherwise each tree is 
-            scaled to fill the space in its grid cell.
+            If True then the 'height' dimension will be shared among
+            all trees, otherwise each tree is scaled to fill the
+            space in its grid cell.
         idxs (int):
-            The indices of trees in treelist that you want to draw. By 
-            default the first ncols*nrows trees are drawn, but you can 
+            The indices of trees in treelist that you want to draw. By
+            default the first ncols*nrows trees are drawn, but you can
             select the 10-14th tree by entering idxs=[10,11,12,13]
         width (int):
             Width of the canvas
         height (int):
             Height of the canvas
         margin: Tuple[int,int,int,int]
-            Spacing between subplots in the grid in pixel units. A 
+            Spacing between subplots in the grid in pixel units. A
             single value or a tuple for top, right, bottom, left.
         kwargs (dict):
             Any style arguments supported by .draw() in toytrees.
@@ -308,10 +279,10 @@ class MultiTree:
         else:
             tidx = idxs
 
-        # get the trees
+        # get the subset list of ToyTrees
         treelist = [self.treelist[i] for i in tidx]
 
-        # get fix
+        # special multitree meaning fixed_order=True is consensus order
         if kwargs.get("fixed_order") is True:
             fixed_order = (
                 MultiTree(treelist)
@@ -320,7 +291,7 @@ class MultiTree:
             )
             kwargs["fixed_order"] = fixed_order
 
-        # if less than 4 trees reshape ncols,rows,
+        # if less than 4 trees reshape ncols,rows to use ntrees
         if len(treelist) < 4:
             if nrows > ncols:
                 nrows = len(treelist)
@@ -334,287 +305,213 @@ class MultiTree:
             layout = get_tree_style(kwargs.get("ts")).layout
         elif "tree_style" in kwargs:
             layout = get_tree_style(kwargs.get("ts")).layout
-        elif "layout" in kwargs:
-            layout = kwargs.get("layout")
         else:
-            layout = "r"
+            layout = kwargs.get("layout", 'r')
 
         # get the canvas and axes that can fit the requested trees.
-        grid = GridSetup(nrows, ncols, width, height, layout, margin)
+        padding = kwargs.get("padding", 10)
+        grid = GridSetup(nrows, ncols, width, height, layout, margin, padding)
         canvas = grid.canvas
         axes = grid.axes
 
-        # max height of trees in treelist for shared axes
-        maxh = max([t.treenode.height for t in treelist])
-
-        # default style 
+        # default style
         if "tip_labels_style" in kwargs:
             if "-toyplot-anchor-shift" not in kwargs["tip_labels_style"]:
                 kwargs["tip_labels_style"]["-toyplot-anchor-shift"] = "10px"
             if "font-size" not in kwargs["tip_labels_style"]:
-                kwargs["font-size"] = "9px"
+                kwargs["font-size"] = "10px"
         else:
             kwargs["tip_labels_style"] = {
                 "-toyplot-anchor-shift": "10px",
-                "font-size": "9px",
-            }           
+                "font-size": "10px",
+            }
 
         # add toytree-Grid mark to the axes
         marks = []
         tmpargs = kwargs.copy()
-        if not tmpargs.get("padding"):
-            tmpargs['padding'] = 10
 
+        # get max tree height for shared_axes top
+        ymax = max(abs(i.treenode.height) for i in treelist)
+
+        # add ToyTree marks
         for idx in range(grid.nrows * grid.ncols):
 
             # get the axis
-            ax = grid.axes[idx]
+            axes = grid.axes[idx]
 
             # add the mark
-            _, _, mark = treelist[idx].draw(axes=ax, **tmpargs)
+            _, _, mark = treelist[idx].draw(axes=axes, **tmpargs)
 
             # store the mark
             marks.append(mark)
 
-            # make tip labels align on shared axes if tip labels
-            shrink = (kwargs.get("shrink") if kwargs.get("shrink") else 0)
+        # mod style axes
+        for idx in range(grid.nrows * grid.ncols):
 
             if shared_axes:
-                if not all([i is None for i in mark.tip_labels]):
-                    if mark.layout == "r":
-                        ax.x.domain.max = maxh * 0.5 + shrink
-                    elif mark.layout == "l":
-                        ax.x.domain.min = -maxh * 0.5 - shrink
-                    elif mark.layout == "d":
-                        ax.y.domain.min = -maxh * 0.5 - shrink
-                    elif mark.layout == "u":
-                        ax.y.domain.max = maxh * 0.5 + shrink
+                # grid.axes[idx].y.domain.max = ymax
+                mark.width = canvas.width / ncols
+                mark.height = canvas.height / nrows
+                mark.scale_bar = kwargs.get("scale_bar", False)
+                style_ticks(ymax, grid.axes[idx], mark, only_inside=True)
 
-            # set shared axes
-            if shared_axes:
-                if mark.layout == "r":
-                    ax.x.domain.min = -maxh
-                elif mark.layout == "l":
-                    ax.x.domain.max = maxh
-                elif mark.layout == "d":
-                    ax.y.domain.max = maxh
-                elif mark.layout == "u":
-                    ax.y.domain.min = -maxh
+                # add an invisible spacer point. This does a much
+                # better job than setting ticks alone.
+                if mark.layout == 'd':
+                    grid.axes[idx].scatterplot(
+                        mark.xbaseline + treelist[idx].ntips / 2,
+                        mark.ybaseline + ymax,
+                        color="transparent",
+                    )
+                elif mark.layout == 'u':
+                    grid.axes[idx].scatterplot(
+                        mark.xbaseline + treelist[idx].ntips / 2,
+                        mark.ybaseline - ymax,
+                        color="transparent",
+                    )
+                elif mark.layout == 'l':
+                    grid.axes[idx].scatterplot(
+                        mark.xbaseline + ymax,
+                        mark.ybaseline + treelist[idx].ntips / 2,
+                        color="transparent",
+                    )
+                elif mark.layout == 'r':
+                    grid.axes[idx].scatterplot(
+                        mark.xbaseline - ymax,
+                        mark.ybaseline + treelist[idx].ntips / 2,
+                        color="transparent",
+                    )
 
             # axes off if not scale_bar
-            if not kwargs.get("scale_bar") is True:
-                ax.show = False
+            if kwargs.get("scale_bar", False) is False:
+                if mark.layout in 'du':
+                    grid.axes[idx].y.show = False
+                    grid.axes[idx].x.show = False
+                else:
+                    grid.axes[idx].y.show = False
+                    grid.axes[idx].x.show = False
 
         # add mark to axes
-        return canvas, axes, marks
+        return canvas, grid.axes, marks
 
 
-
-    def draw_cloud_tree(self, axes=None, fixed_order=None, jitter=0.0, **kwargs):
+    def draw_cloud_tree(
+        self,
+        axes: 'toyplot.coordinates.Cartesian'=None,
+        fixed_order: Iterable[str]=None,
+        jitter: float=0.0,
+        **kwargs,
+        ):
         """
-        TODO: update this based on draw_toytree function.
-
-        Draw a series of trees overlapping each other in coordinate 
-        space. The order of tip_labels is fixed in cloud trees so that
-        trees with discordant relationships can be seen in conflict. 
-        To change the tip order enter a list of names to 'fixed_order'.
+        Draw multiple trees overlapping in coordinate space. The
+        order of tip_labels is fixed in cloud trees so that trees
+        with discordant relationships can be seen in conflict.
 
         Parameters:
         -----------
         axes: (None or toyplot.coordinates.Cartesian)
-            If None then a new Canvas and Cartesian axes object is returned,
-            otherwise if a Cartesian axes object is provided the cloudtree
-            will be drawn on the axes.      
+            If None then a new Canvas and Cartesian axes object is
+            returned, otherwise if a Cartesian axes object is provided
+            the cloudtree will be drawn on the axes.
 
-        **kwargs: 
-            All drawing style arguments supported in the .draw() function 
-            of toytree objects are also supported by .draw_cloudtree().
+        fixed_order: Iterable[str]
+            A list of tip names matching those in every tree in the
+            multitree, the order of which will determine the fixed
+            order of tips in plotted trees. If None (default) then a
+            consensus tree is inferred and its ladderized tip order
+            is used.
+
+        jitter: float
+            A value by which to randomly shift the baseline of tree
+            subplots so that they do not overlap perfectly. This adds
+            a value drawn from np.random.uniform(-jitter, jitter).
+
+        **kwargs:
+            All drawing style arguments supported in the .draw()
+            function of toytree objects are also supported by
+            .draw_cloudtree(), most notably here, edge_style.
+
+        Note:
+        -----
+        For style arguments that apply to tips (e.g., tip_labels) the
+        styles will be re-ordered by fixed_order to apply to all trees
+        correctly.
+
+        a series of nodes
+        (e.g., node_colors or tip_labels) the values will be applied
+        to
+
         """
-        # canvas styler
-        fstyle = NormalTreeStyle()
-        fstyle.width = (kwargs.get("width") if kwargs.get("width") else None)
-        fstyle.height = (kwargs.get("height") if kwargs.get("height") else None)
+        # TreeStyle used for canvas, axes setup only, based on
+        # kwargs, not .style from any subtrees.
+        fstyle = TreeStyle()
+        fstyle.width = kwargs.get("width", None)
+        fstyle.height = kwargs.get("height", None)
         fstyle.tip_labels = self.treelist[0].get_tip_labels()
-        fstyle.layout = (kwargs.get("layout") if kwargs.get("layout") else 'r')
-        fstyle.padding = (kwargs.get("padding") if kwargs.get("padding") else 20)
-        fstyle.scale_bar = (kwargs.get("scale_bar") if kwargs.get("scale_bar") else False)
-        fstyle.use_edge_lengths = (kwargs.get("use_edge_lengths") if kwargs.get("use_edge_lengths") else True)
-        fstyle.xbaseline = (kwargs.get("xbaseline") if kwargs.get("xbaseline") else 0)
-        fstyle.ybaseline = (kwargs.get("ybaseline") if kwargs.get("ybaseline") else 0)
+        fstyle.layout = kwargs.get("layout", 'r')
+        fstyle.padding = kwargs.get("padding", 20)
+        fstyle.scale_bar = kwargs.get("scale_bar", False)
+        fstyle.use_edge_lengths = kwargs.get("use_edge_lengths", True)
+        fstyle.xbaseline = kwargs.get("xbaseline", 0)
+        fstyle.ybaseline = kwargs.get("ybaseline", 0)
 
         # get canvas and axes
-        cs = CanvasSetup(self, axes, fstyle)
-        canvas = cs.canvas
-        axes = cs.axes
+        setup = CanvasSetup(self, axes, fstyle)
+        canvas = setup.canvas
+        axes = setup.axes
 
         # fix order treelist
-        if not isinstance(fixed_order, list):
+        if fixed_order is None:
             fixed_order = (
                 MultiTree(self.treelist)
                 .get_consensus_tree()
                 .get_tip_labels()
             )
+        assert len(fixed_order) == len(self.treelist[0]), (
+            f"fixed_order arg must be the same length as ntips. You entered {fixed_order}")
 
         # add trees
+        marks = []
         for tidx, tree in enumerate(self.treelist):
 
-            # the default MultiTree object style.
-            curstyle = self.style.copy()
-
-            # allow THIS tree to override some edge style args
-            curstyle.edge_style.update(tree.style.edge_style)
-            curstyle.edge_colors = tree.style.edge_colors
-            curstyle.edge_widths = tree.style.edge_widths
-
-            # if user did not set opacity (assumed from 1.0) then auto-tune it
-            if curstyle.edge_style["stroke-opacity"] == 1:
-                curstyle.edge_style["stroke-opacity"] = 1 / len(self.treelist)
-
-            # override some styles with user kwargs
-            user = dict([
-                ("_" + i, j) if isinstance(j, dict) else (i, j)
-                for (i, j) in kwargs.items() 
-                if (j is not None)  # and (i != "tip_labels")
-            ])
-            curstyle.update(user)
-
-            # update coords based on layout
-            edges = tree._coords.get_edges()
-            if curstyle.layout == 'c':
-                verts = tree._coords.get_radial_coords(curstyle.use_edge_lengths)
-            else:
-                verts = tree._coords.get_linear_coords(
-                    curstyle.layout, 
-                    curstyle.use_edge_lengths,
-                    fixed_order,
-                    None,  # TODO: add optional jitter to fixed_pos here.
-                    )
-
-            # only draw the tips for the first tree
-            if tidx != 0:
-                curstyle.tip_labels = False
-
-            # check all styles
-            fstyle = StyleChecker(tree, curstyle).style
-
-            # add jitter to tips
+            # add jitter to tip coordinates
             if jitter:
                 if fstyle.layout in ['r', 'l']:
-                    fstyle.ybaseline = np.random.uniform(-jitter, jitter)
+                    kwargs['ybaseline'] = tree.style.ybaseline + np.random.uniform(-jitter, jitter)
                 else:
-                    fstyle.xbaseline = np.random.uniform(-jitter, jitter)
+                    kwargs['xbaseline'] = tree.style.xbaseline + np.random.uniform(-jitter, jitter)
 
-            # generate toyplot Mark
-            mark = ToytreeMark(ntable=verts, etable=edges, **fstyle.to_dict())
+            # set the edge stroke-opacity
+            if not kwargs.get('edge_style'):
+                kwargs['edge_style'] = {"stroke-opacity": 1 / len(self.treelist)}
+            else:
+                if not kwargs['edge_style'].get('stroke-opacity'):
+                    kwargs['edge_style']['stroke-opacity'] = 1 / len(self.treelist)
+
+            # set the edge type to 'c' because the other two look bad
+            if 'edge_type' not in kwargs:
+                kwargs['edge_type'] = 'c'
+
+            # pass kwargs with tree and its style to draw_toytree
+            if not tidx:
+                # reorder tip labels entered into fixed order
+                if not kwargs.get("tip_labels"):
+                    kwargs['tip_labels'] = fixed_order
+            else:
+                kwargs['tip_labels'] = False
 
             # add mark to axes
-            axes.add_mark(mark)
+            _, _, mark = tree.draw(axes=axes, fixed_order=fixed_order, **kwargs)
+            marks.append(mark)
 
         # get shared tree styles.
-        return canvas, axes, None
-
-
-
-    # def draw_cloud_tree(
-    #     self, 
-    #     axes=None, 
-    #     html=False,
-    #     fixed_order=True,
-    #     **kwargs):
-    #     """
-    #     Deprecated
-    #     Draw a series of trees overlapping each other in coordinate space.
-    #     The order of tip_labels is fixed in cloud trees so that trees with 
-    #     discordant relationships can be seen in conflict. To change the tip
-    #     order use the 'fixed_order' argument in toytree.mtree() when creating
-    #     the MultiTree object.
-
-    #     Parameters:
-    #         axes (toyplot.Cartesian): toyplot Cartesian axes object.
-    #         html (bool): whether to return the drawing as html (default=PNG).
-    #         **kwargs (dict): styling options should be input as a dictionary.
-    #     """
-    #     # return nothing if tree is empty
-    #     if not self.treelist:
-    #         print("Treelist is empty")
-    #         return None, None
-
-    #     # return nothing if tree is empty
-    #     if not self.all_tips_shared:
-    #         print("All trees in treelist do not share the same tips")
-    #         return None, None            
-
-    #     # make a copy of the treelist so we don't modify the original
-    #     if not fixed_order:
-    #         raise Exception(
-    #             "fixed_order must be either True or a list with the tip order")
-
-    #     # set fixed order on a copy of the tree list
-    #     if isinstance(fixed_order, (list, tuple)):
-    #         fixed_order = fixed_order
-    #     elif fixed_order is True:
-    #         fixed_order = self.treelist[0].get_tip_labels()
-    #     else:
-    #         raise Exception(
-    #             "fixed_order argument must be True or a list with the tip order")
-    #     treelist = [
-    #         ToyTree(i, fixed_order=fixed_order) for i in self.copy().treelist
-    #     ]  
-
-    #     # give advice if user tries to enter tip_labels
-    #     if kwargs.get("tip_labels"):
-    #         if not isinstance(kwargs.get("tip_labels"), dict):
-    #             print(TIP_LABELS_ADVICE)
-    #             kwargs.pop("tip_labels")
-
-    #     # set autorender format to png so we don't bog down notebooks
-    #     try:
-    #         changed_autoformat = False
-    #         if not html:
-    #             toyplot.config.autoformat = "png"
-    #             changed_autoformat = True
-
-    #         # dict of global cloud tree style 
-    #         mstyle = deepcopy(STYLES['m'])
-
-    #         # if trees in treelist already have some then we don't quash...
-    #         mstyle.update(
-    #             {i: j for (i, j) in kwargs.items() if 
-    #             (j is not None) & (i != "tip_labels")}
-    #         )
-    #         for tree in treelist:
-    #             tree.style.update(mstyle)
-
-    #         # Send a copy of MultiTree to init Drawing object.
-    #         draw = CloudTree(treelist, **kwargs)
-
-    #         # and create drawing
-    #         if kwargs.get("debug"):
-    #             return draw
-
-    #         # allow user axes, and kwargs for width, height
-    #         canvas, axes, mark = draw.update(axes)
-    #         return canvas, axes, mark
-
-    #     finally:
-    #         if changed_autoformat:
-    #             toyplot.config.autoformat = "html"
-
-
-    # # # allow ts as a shorthand for tree_style
-    # # if kwargs.get("ts"):
-    # #     tree_style = kwargs.get("ts")
-
-    # # # pass a copy of this tree so that any mods to .style are not saved
-    # # nself = deepcopy(self)
-    # # if tree_style:
-    # #     nself.style.update(TreeStyle(tree_style[0]))
+        return canvas, axes, marks
 
 
 
 
 TIP_LABELS_ADVICE = """
-Warning: ignoring 'tip_labels' argument. 
+Warning: ignoring 'tip_labels' argument.
 
 The 'tip_labels' arg to draw_cloud_tree() should be a dictionary
 mapping tip names from the contained ToyTrees to a new string value.
