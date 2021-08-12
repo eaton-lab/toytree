@@ -25,11 +25,13 @@ from toytree.utils.exceptions import ToytreeError
 COLORS1 = toyplot.color.brewer.palette("Set2")
 COLORS2 = toyplot.color.brewer.palette("Dark2")
 
-def color_cycler(palette=COLORS1):
+def color_cycler(palette=None):
     """
     Returns an infinite cycling iterator over colors in a palette
     by returning `itertools.cycle(palette)`.    
     """
+    if palette is None:
+        palette = COLORS1
     return itertools.cycle(palette)
 
 
