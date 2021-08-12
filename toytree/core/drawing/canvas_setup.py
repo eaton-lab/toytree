@@ -16,7 +16,17 @@ class GridSetup:
     """
     Returns Canvas and Cartesian axes objects to fit a grid of trees.
     """
-    def __init__(self, nrows, ncols, width, height, layout, margin, padding):
+    def __init__(
+        self,
+        nrows,
+        ncols,
+        width,
+        height,
+        layout,
+        margin,
+        padding,
+        scale_bar,
+        ):
 
         # style args can include height/width, nrows, ncols, shared,...
         self.nrows = nrows
@@ -26,6 +36,7 @@ class GridSetup:
         self.layout = layout
         self.margin = margin
         self.padding = padding
+        self.scale_bar = scale_bar
 
         # get .canvas and .axes
         self.get_tree_dims()
@@ -39,7 +50,7 @@ class GridSetup:
 
     def get_axes(self):
         """
-        Get a list of axes in the grid shape, and set margins to 
+        Get a list of axes in the grid shape, and set margins to
         to make space for optional scale_bars and axes labels.
         """
         nplots = self.nrows * self.ncols
@@ -51,6 +62,8 @@ class GridSetup:
             else:
                 if self.nrows == 1:
                     margin = [50, 10, 50, 30]
+                    # else:
+                        # margin = [50, 20, 50, 20]
                 else:
                     margin = [30, 30, 30, 30]
                     row, _ = np.where(grid==idx)
@@ -59,12 +72,13 @@ class GridSetup:
                         margin[2] -= 10
                     if row == self.nrows - 1:
                         margin[2] += 10
-                        margin[0] -= 10                    
+                        margin[0] -= 10
                 # ...
-                if self.layout in "du":
-                    margin[3] += 20
-                elif self.layout in "lr":
-                    margin[2] += 20
+                if self.scale_bar:
+                    if self.layout in "du":
+                        margin[3] += 20
+                    elif self.layout in "lr":
+                        margin[2] += 20
                 margin = tuple(margin)
 
             axes = self.canvas.cartesian(
@@ -72,19 +86,18 @@ class GridSetup:
                 padding=self.padding,
                 margin=margin,
             )
-            axes.margin = margin            
-            self.axes.append(axes)                
+            axes.margin = margin
+            self.axes.append(axes)
 
 
     def get_tree_dims(self):
         """
         get height and width if not set by user
         """
-        minx = 250
-        miny = 250
-
         # wider than tall
         if self.layout in ("d", "u"):
+            minx = 225
+            miny = 250
             self.width = (
                 self.width if self.width else min(750, minx * self.ncols)
             )
@@ -93,6 +106,8 @@ class GridSetup:
             )
 
         else:
+            minx = 250
+            miny = 225
             self.height = (
                 self.height if self.height else min(750, minx * self.nrows)
             )
@@ -104,7 +119,7 @@ class GridSetup:
 
 class CanvasSetup:
     """
-    Returns Canvas and Cartesian axes objects, and sets values to 
+    Returns Canvas and Cartesian axes objects, and sets values to
     style.height and style.width if not present.
     """
     def __init__(self, tree, axes, style):
@@ -131,7 +146,7 @@ class CanvasSetup:
         if self.style.scale_bar is False:
             if not self.external_axis:
                 self.axes.x.show = False
-                self.axes.y.show = False            
+                self.axes.y.show = False
         else:
             if style.use_edge_lengths:
                 theight = self.tree.treenode.height
@@ -142,7 +157,7 @@ class CanvasSetup:
 
     def get_canvas_height_and_width(self):
         """
-        Calculate reasonable canvas height and width for tree given 
+        Calculate reasonable canvas height and width for tree given
         N tips and set values to self.style.
         """
         if self.style.layout == "c":
@@ -189,7 +204,7 @@ class CanvasSetup:
 def style_ticks(
     tree_height: float,
     axes: 'toyplot.coordinates.Cartesian',
-    style: 'toytree.core.style.tree_style.TreeStyle', 
+    style: 'toytree.core.style.tree_style.TreeStyle',
     only_inside: bool=True,
     ) -> 'toyplot.coordinates.Cartesian':
     """
@@ -220,7 +235,7 @@ def style_ticks(
     else:
         locs = lct.ticks(0, tree_height)[0]
 
-    # apply unit scaling 
+    # apply unit scaling
     if style.scale_bar is False:
         labels = abs(locs.copy())
     elif isinstance(style.scale_bar, (int, float)):
