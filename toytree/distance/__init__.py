@@ -1,16 +1,19 @@
 #!/usr/bin/env python
 
 """
-A collection of distance functions for:
-    1. distances between nodes on a tree (e.g., patristic).
-    2. distances between trees (e.g., RF)
-    3. distances between sequences (int or str/bytes seq arrays).
+Functions for calculating `distances` between nodes or trees.
+
+Distances can be measured between nodes using functions from the
+(:mod:`toytree.distance.nodedist`) submodule, and distances between
+trees using the (:mod:`toytree.distance.treedist`) submodule.
 
 
+Note
+-----
 TODO: Kune-Felsenstein distance (topo and bls)
-
 """
 
-
 from . import api
+from . import nodedist
+from . import treedist
 # from distance_funcs import *

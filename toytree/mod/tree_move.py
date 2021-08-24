@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
 """
+UNDER DEVELOPMENT:
+------------------
+rooted trees need to iterate over placements of the root?
+
 Moves in tree space (SPR, TBR, NNI). 
 
 These functions are not optimized for speed sufficiently to be used in 
@@ -16,32 +20,31 @@ modify the probability of proposed pruning points by updating a
 'distance' parameter as part of the MCMC process. For example in 
 mrbayes. Not implemented here.
 
-UNDER DEVELOPMENT:
-------------------
-rooted trees need to iterate over placements of the root?
 
 """
 
 from typing import Optional
 import numpy as np
-import toytree.src.tree
+import toytree.core.tree
 
 
 def move_nni_unrooted():
     raise NotImplementedError("TODO")
 
 
-def iter_spr_rooted(tree:toytree.src.tree.ToyTree):
-    """
-    Returns a generator that will visit all possible trees within
-    one SPR move of the current tree (does not include the original
-    tree in the returned tree generator).
+def iter_spr_rooted(tree: toytree.ToyTree):
+    """Return a generator that will visit all trees within one SPR 
+    move of the current tree.
+
+    The returned set of trees does not visit the original tree.
 
     NOT YET TESTED (you can help!)
 
-    Example:
+    Examples
     --------
-    logliks = [func(spr_tree) for spr_tree in iter_spr_unrooted(tree)]
+    >>> tree = toytree.rtree.unittree(ntips=10, seed=123)
+    >>> spr_trees = iter_spr_unrooted(tree)
+    >>> logliks = [func(stre) for stre in spr_trees]
     """
     # just iter over each possible subtree and each possible placement,
     # right? But some are redundant? Try it out...
@@ -67,17 +70,17 @@ def iter_spr_rooted(tree:toytree.src.tree.ToyTree):
             sub1 = tree.drop_tips(tips)
             node = sub1.idx_dict[nidx]
 
-            new = toytree.src.treenode.TreeNode(name="spr", dist=node.dist / 2)
+            new = toytree.core.treenode.TreeNode(name="spr", dist=node.dist / 2)
             node.up.children.append(new)
             node.up.children.remove(node)
             node.up = new
             new.children.append(node)
             new.children.append(sub0.treenode)
             sub0.up = new
-            yield toytree.src.tree.ToyTree(sub1.treenode)
+            yield toytree.ToyTree(sub1.treenode)
 
 
-def move_spr_unrooted(tree:toytree.src.tree.ToyTree, seed:Optional[int]=None):
+def move_spr_unrooted(tree:toytree.ToyTree, seed:Optional[int]=None):
     """
     Returns an unrooted ToyTree where one subtree pruning and 
     regrafting move has been performed from the input tree.
@@ -113,7 +116,7 @@ def move_spr_unrooted(tree:toytree.src.tree.ToyTree, seed:Optional[int]=None):
         sub0 = sub0.treenode
         # node.up.children.append(sub0)
 
-    new = toytree.src.treenode.TreeNode(name="spr", dist=rng.uniform(node.dist))
+    new = toytree.core.treenode.TreeNode(name="spr", dist=rng.uniform(node.dist))
     node.up.children.append(new)
     node.up.children.remove(node)
     node.up = new
@@ -121,17 +124,16 @@ def move_spr_unrooted(tree:toytree.src.tree.ToyTree, seed:Optional[int]=None):
     new.children.append(sub0)
     sub0.up = new
 
-    tree = toytree.src.tree.ToyTree(sub1.treenode)
+    tree = toytree.core.tree.ToyTree(sub1.treenode)
     return tree
 
 
-def move_spr_rooted(tree:toytree.src.tree.ToyTree, seed:Optional[int]=None):
-    """
-    Returns an rooted ToyTree where one subtree pruning and 
-    regrafting move has been performed from the input tree.
+def move_spr_rooted(tree: toytree.ToyTree, seed:Optional[int]=None):
+    """Return a rooted ToyTree one SPR move from the current tree.
 
-    Select one edge randomly from the tree and split on that edge to 
-    create two subtrees. Attach one of the subtrees (e.g., the 
+    Performs a subtree pruning and regrafting move on the input tree.
+    Selects one edge randomly from the tree and splits on that edge
+    to create two subtrees, then attaches one of the subtrees (the 
     smaller one) randomly to the larger tree to create a new node.
     """
     # seed generator
@@ -154,7 +156,7 @@ def move_spr_rooted(tree:toytree.src.tree.ToyTree, seed:Optional[int]=None):
     node = sub1.idx_dict[nidx]
     
     # randomly select a point on the branch to add new node
-    new = toytree.src.treenode.TreeNode(name="spr", dist=rng.uniform(node.dist))
+    new = toytree.TreeNode(name="spr", dist=rng.uniform(node.dist))
     node.up.children.append(new)
     node.up.children.remove(node)
     node.up = new
@@ -162,11 +164,11 @@ def move_spr_rooted(tree:toytree.src.tree.ToyTree, seed:Optional[int]=None):
     new.children.append(sub0.treenode)
     sub0.up = new
 
-    tree = toytree.src.tree.ToyTree(sub1.treenode)
+    tree = toytree.ToyTree(sub1.treenode)
     return tree
 
 
-def _move_spr_rooted_fast(tree:toytree.src.tree.ToyTree, seed:Optional[int]=None):
+def _move_spr_rooted_fast(tree:toytree.ToyTree, seed:Optional[int]=None):
     """
     Faster implementation that avoids ToyTree coords updates.
 
@@ -198,7 +200,7 @@ def _move_spr_rooted_fast(tree:toytree.src.tree.ToyTree, seed:Optional[int]=None
     node = rng.choice(list(tree2.iter_descendants()))
     
     # randomly select a point on the branch to add new node
-    new = toytree.src.treenode.TreeNode(name="spr", dist=rng.uniform(node.dist))
+    new = toytree.core.treenode.TreeNode(name="spr", dist=rng.uniform(node.dist))
     node.up.children.append(new)
     node.up.children.remove(node)
     node.up = new
@@ -206,7 +208,7 @@ def _move_spr_rooted_fast(tree:toytree.src.tree.ToyTree, seed:Optional[int]=None
     new.children.append(tree1)
     tree1.up = new
 
-    tree = toytree.src.tree.ToyTree(tree2)
+    tree = toytree.core.tree.ToyTree(tree2)
     return tree
 
 

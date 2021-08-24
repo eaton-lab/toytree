@@ -51,7 +51,6 @@ def node_scale_root_height(tre, treeheight=1, include_stem=False, nocopy=False):
     return tre
 
 
-
 def node_slider(tre, prop=0.999, seed=None):
     """
     Returns a toytree copy with node heights modified while retaining 
@@ -105,7 +104,6 @@ def node_slider(tre, prop=0.999, seed=None):
     return tre
 
 
-
 def node_multiplier(tre, multiplier=0.5, seed=None):
     """
     Returns a toytree copy with all nodes multiplied by a constant 
@@ -119,7 +117,6 @@ def node_multiplier(tre, multiplier=0.5, seed=None):
         node.dist = node.dist * mult
     tre._coords.update()
     return tre
-
 
 
 def make_ultrametric(tre, strategy=1, nocopy=False):
@@ -144,7 +141,6 @@ def make_ultrametric(tre, strategy=1, nocopy=False):
             "Strategy {} not yet implemented. Seeking developers."
             .format(strategy))
     return tre
-
 
 
 def set_node_heights(tre, mapping:Dict[int,float]):
@@ -172,7 +168,6 @@ def set_node_heights(tre, mapping:Dict[int,float]):
         for child in node.children:
             child.dist = mapping[node.idx] - mapping[child.idx] 
     return ntre
-
 
 
 # def speciate(self, idx, name=None, dist_prop=0.5):
