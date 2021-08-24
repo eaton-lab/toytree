@@ -6,7 +6,6 @@ This simply inits the Style arguments passed from draw that have
 already been checked by StyleChecker and it established the
 domain and extents.
 
-TODO: maybe make an Extents class to construct more clearly.
 """
 
 import toyplot
