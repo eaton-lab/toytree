@@ -31,7 +31,8 @@ setup(
     description="minimalist tree plotting using toyplot",
     long_description=open('README.md').read(),
     long_description_content_type='text/x-rst',
-    packages=find_packages(),
+    packages=['toytree'],
+    # packages=find_packages(),
     install_requires=[
         "toyplot",
         "numpy",
@@ -42,7 +43,7 @@ setup(
         "future",
     ],
     entry_points={},
-    license='GPL',
+    license='GPLv3',
     classifiers=[
         'Programming Language :: Python :: 3',
     ],
