@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
 """
-Random Tree generation Classes. Uses numpy RNG.
+Random Tree generation functions. Uses numpy RNG.
 """
 
 from typing import Optional
@@ -24,11 +24,21 @@ __all__ = [
 
 
 def rtree(ntips:int, seed:Optional[int]=None):
-    """
-    Returns a random topology (fastest method). Default values are
-    set on node support (100) and dist (1.0) attributes. To set 
-    more specific dist (edge lengths) either use treemod functions
-    on the resulting tree, or see the other random tree functions.
+    """Return a random topology (fastest method). 
+
+    Default values are set on node support (0) and dist (1.0) 
+    features and can be modified after tree generation.
+
+    Parameters
+    ----------
+    ntips: int
+        The number of tips in the tree.
+    seed: Optional[int]
+        A seed for the np random number generator.
+
+    Example
+    -------
+    >>> rtre = toytree.rtree.rtree(ntips=10, seed=123)
     """
     # seed generator
     rng = np.random.default_rng(seed)
@@ -52,23 +62,25 @@ def rtree(ntips:int, seed:Optional[int]=None):
     return tree
 
 
-def unittree(ntips:int, treeheight:float=1.0, random_names:bool=False, seed:int=None):
-    """
-    Returns a random topology w/ ntips by sequentially inserting 
-    new nodes randomly onto edges, and then extending all edges to 
-    align at time=0. The total tree height is set to 1 or an 
-    optional user-defined treeheight value. 
+def unittree(ntips:int, treeheight:float=1.0, random_names:bool=False, seed:Optional[int]=None):
+    """Return a random ultrametric tree.
 
     Parameters
-    -----------
-    ntips (int):
-        The number of tips in the randomly generated tree
-    treeheight(float):
-        Scale tree height (all edges) so that root is at this height.
-    random_names (bool):
-        If True then numerics in names do not align with the tip order.
-    seed (int):
-        Random number generator seed.
+    ----------
+    ntips: int
+        The number of tips in the tree.
+    treeheight: float
+        All nodes in the tree will be scaled to retain relative node
+        heights when scaling the total tree height to a new age.
+    random_names: bool
+        If True then names on the tips are randomized, else they are
+        set to match with the node idx order.
+    seed: Optional[int]
+        An integer seed for the np random number generator.
+
+    Examples
+    --------
+    >>> rtre = toytree.rtree.unittree(ntips=10, treeheight=1e6)
     """
     # seed generator
     rng = np.random.default_rng(seed)
@@ -91,9 +103,25 @@ def unittree(ntips:int, treeheight:float=1.0, random_names:bool=False, seed:int=
     return tre
 
 
-def imbtree(ntips, treeheight=1.0, random_names=False, seed=None):
-    """
-    Return an imbalanced (comb-like) tree topology.
+def imbtree(ntips:int, treeheight:float=1.0, random_names:bool=False, seed:Optional[int]=None):
+    """Return an imbalanced (comb-like) tree topology.
+
+    Parameters
+    ----------
+    ntips: int
+        The number of tips in the tree.
+    treeheight: float
+        All nodes in the tree will be scaled to retain relative node
+        heights when scaling the total tree height to a new age.
+    random_names: bool
+        If True then names on the tips are randomized, else they are
+        set to match with the node idx order.
+    seed: Optional[int]
+        An integer seed for the np random number generator.
+
+    Example
+    -------
+    >>> rtre = toytree.rtree.imbtree(ntips=10, seed=123)    
     """
     # generate random topology with N tips.
     root = TreeNode()
@@ -122,9 +150,26 @@ def imbtree(ntips, treeheight=1.0, random_names=False, seed=None):
     return tre
 
 
-def baltree(ntips, treeheight=1.0, random_names=False, seed=None):
-    """
-    Returns a balanced tree topology.
+def baltree(ntips:int, treeheight:float=1.0, random_names:bool=False, seed:Optional[int]=None):
+    """Return a balanced tree topology. Raises an error in ntips is 
+    not an even number.
+
+    Parameters
+    ----------
+    ntips: int
+        The number of tips in the tree.
+    treeheight: float
+        All nodes in the tree will be scaled to retain relative node
+        heights when scaling the total tree height to a new age.
+    random_names: bool
+        If True then names on the tips are randomized, else they are
+        set to match with the node idx order.
+    seed: Optional[int]
+        An integer seed for the np random number generator.
+
+    Example
+    -------
+    >>> rtre = toytree.rtree.baltree(ntips=10, seed=123)
     """
     # require even number of tips
     if ntips % 2:
@@ -186,39 +231,47 @@ def baltree(ntips, treeheight=1.0, random_names=False, seed=None):
 
 
 def bdtree(
-    ntips=10,
-    time=4,
-    b=1,
-    d=0,
-    stop="taxa",
-    seed=None,
-    retain_extinct=False,
-    random_names=False,
-    verbose=False,
+    ntips: int=10,
+    time: float=4,
+    b: float=1,
+    d: float=0,
+    stop: str="taxa",
+    seed: Optional[int]=None,
+    retain_extinct: bool=False,
+    random_names: bool=False,
+    verbose: bool=False,
     ):
-    """
-    Generate a classic birth/death tree.
+    """Return a parametric birth/death tree.
+
+    The tree is generated by randomly sampling birth or death events
+    starting from a single ancestor until a stopping criterion is 
+    reached. If the tree goes extinct it is restarted. 
 
     Parameters
-    -----------
-    ntips (int):
+    ----------
+    ntips: int
         Number of tips to generate for 'taxa' stopping criterion.
-    time (float):
+    time: float
         Amount of time to simulate for 'time' stopping criterion.
-    b (float):
+    b: float
         Birth rate per time unit
-    d (float):
+    d: death
         Death rate per time unit (d=0 produces Yule trees)
-    stop (str):
+    stop: str
         Stopping critereon. Valid values are only 'taxa' or 'time'.
-    seed (int):
+    seed: Optional[int]
         Random number generator seed.
-    retain_extinct (bool):
-        (Unimplemented) Whether to retain internal nodes leading to extinct tips.
-    random_names (bool):
+    retain_extinct: bool
+        (NotYetImplemented) Whether to retain internal nodes leading to 
+        extinct tips.
+    random_names: bool
         Whether to randomize tip names or name them in order.
-    verbose (bool):
-        Print some useful information
+    verbose: bool
+        Print some useful information.
+    
+    Examples
+    --------
+    >>> rtre = toytree.rtree.bdtree(ntips=10, b=1.0, d=0.5)
     """
     # require an appropriate option for stopping
     if stop not in ["taxa", "time"]:
