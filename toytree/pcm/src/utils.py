@@ -1,89 +1,76 @@
 #!/usr/bin/env python
 
 """
-Functions for calculating diversification related statistics.
-
-Includes:
----------
-- 
+General phylogenetic comparative methods utilities.
 """
 
+import os
+from typing import Union, Callable
 from concurrent.futures import ProcessPoolExecutor
+import itertools
 import numpy as np
 import pandas as pd
+import toytree
 
 
-def calculate_equal_splits(tree):
-    """
-    Return DataFrame with equal splits (ES) measure sensu Redding and 
-    Mooers 2006.
+def get_vcv_from_tree(tree: 'toytree.ToyTree') -> pd.DataFrame:
+    """Return a variance-covariance matrix from a ToyTree.
 
-    Reference:
+    The VCV represents the lengths of shared ancestral edges as 
+    covariances (off-diagonals) and terminal edge lengths as 
+    variances (diagonals) in a matrix.
+
+    Parameters
     ----------
-    TODO:
+    tree: toytree.ToyTree
+        A tree (usually ultrametric) on which to compute the VCV.
     """
-    # dataframe for storing results
-    data = pd.DataFrame(columns=["ES"], index=tree.get_tip_labels())
-
-    # traverse up to root from each tip
-    for idx in range(tree.ntips):
-        node = tree.idx_dict[idx]
-        divrate = 0
-        j = 1
-        while node.up:
-            divrate += node.up.dist / (2 ** j)
-            node = node.up
-            j += 1
-        data.iloc[idx, 0] = divrate
-    return data
+    theight = tree.treenode.height
+    vcv = np.zeros((tree.ntips,tree.ntips))
+    for tip1, tip2 in itertools.combinations(range(tree.ntips), 2):
+        node = tree.distance.get_mrca(tip1, tip2)
+        vcv[tip1, tip2] = theight - node.height
+        vcv[tip2, tip1] = theight - node.height
+    vcv[np.diag_indices_from(vcv)] = [
+        tree.idx_dict[i].dist for i in range(tree.ntips)]
+    tlabels = tree.get_tip_labels()
+    return pd.DataFrame(vcv, columns=tlabels, index=tlabels)
 
 
+def calculate_posterior(
+    function: Callable,
+    trees: Union[str, 'toytree.MultiTree', 'toytree.ToyTree'], 
+    njobs: int=1,
+    **kwargs,
+    ):
+    """Return a DataFrame with posterior of (metric) from a tree set.
 
-def calculate_tip_level_diversification(tree):
-    """
-    Returns a dataframe with tip-level diversification rates
-    sensu Jetz 2012.
+    Calculations are parallelized and tree(s) can be loaded from a 
+    flexible set of options. For super large files reading from a
+    multi-line newick file is most memory-efficient.
 
-    Reference:
+    Parameters
     ----------
-    TODO:
-    """
-    # ensure tree is a tree
-    data = 1 / calculate_equal_splits(tree)
-    data.columns = ["DR"]
-    return data
+    function: Callable
+        A function that takes a tree as input and returns a float 
+        metric as a pandas.Series.
 
+    trees: ToyTree, MultiTree, or newick file
+        Flexible options to input/parse one or multiple trees.
 
-
-def calculate_posterior_tip_level_diversification(treefile, njobs=1):
-    """
-    Returns a dataframe with tip-level diversification rates calculated
-    across a set of trees. Calculations are parallelized with 
-    multiprocessing and trees are read from file as as a generator to 
-    reduce RAM usage. 
-
-    To calculate for only a single tree see instead the ToyTree 
-    function .pcm.calculate_tip_level_diversification()
-
-    Parameters:
-    -----------
-    trees (multi-line newick file):
-        A multi-line newick tree file. This can be processed very
-        memory-efficiently by not reading the entire file at once.
-
-    njobs (int):
+    njobs: int
         Distribute N jobs in parallel using ProcessPoolExecutor
+    
+    **kwargs: dict
+        A dictionary of arguments to the Callable function.
 
-    Returns:
-    --------
-    df (pandas.DataFrame):
-        The raw DF based on branch lengths of the tree.
-
-    Examples:
-    ---------
-    df = toytree.pcm.calculate_tip_level_diversification(file, njobs=20)
+    Returns
+    -------
+    pandas.DataFrame
     """
     # load data and metadata from newick, toytree, or multitree
+    if isinstance(trees, list):
+        trees = toytree.mtree(trees)
     if isinstance(trees, str) and os.path.exists(trees):
         with open(trees) as tree_generator:
             tre = toytree.tree(next(tree_generator))
@@ -91,18 +78,18 @@ def calculate_posterior_tip_level_diversification(treefile, njobs=1):
             ntrees = sum(1 for i in tree_generator) + 1
             tiporder = tre.get_tip_labels()
         itertree = open(trees, 'r')
-    elif isinstance(trees, toytree.core.toytree.ToyTree):
+    elif isinstance(trees, toytree.ToyTree):
         itertree = iter([trees])
         ntrees = len(trees)
         ntips = trees.ntips
         tiporder = trees.get_tip_labels()
-    elif isinstance(trees, toytree.core.multitree.MultiTree):
+    elif isinstance(trees, toytree.MultiTree):
         itertree = iter(i for i in trees)
         ntrees = len(trees)
         ntips = trees.treelist[0].ntips
         tiporder = trees.treelist[0].get_tip_labels()
     else:
-        raise IOError("problem with input: {}".format(trees))
+        raise IOError(f"problem with input: {trees}")
 
     # array to store results 
     tarr = np.zeros((ntips, ntrees))
@@ -110,22 +97,19 @@ def calculate_posterior_tip_level_diversification(treefile, njobs=1):
     # run non-parallel calculations
     if njobs == 1:
         for tidx, tree in enumerate(itertree):
-            df = _calculate_DR(tree)
-            tarr[:, tidx] = df.loc[tiporder, "DR"]
+            data = function(tree, **kwargs)
+            tarr[:, tidx] = data[tiporder]
 
     # or, distribute jobs in parallel (py3 only)
     else:
         pool = ProcessPoolExecutor(njobs)
-        treegen = iter(trees)
         rasyncs = {}
 
         # submit as many jobs as there are cores
         for job in range(njobs):
             tree = next(itertree)
-            rasyncs[job] = pool.submit(
-                calculate_DR,
-                (tree),
-            )
+            kwargs.update({"tree": tree})
+            rasyncs[job] = pool.submit(function, **kwargs)
 
         # as each job finished submit a new one until none are left.
         # this allows avoiding loading all trees simultaneously.
@@ -139,22 +123,17 @@ def calculate_posterior_tip_level_diversification(treefile, njobs=1):
 
                 # store result
                 result = rasyncs[job].result()
-                tarr[:, tidx] = result.loc[tiporder, "DR"]
+                tarr[:, tidx] = result[tiporder]
                 tidx += 1
                 del rasyncs[job]
 
                 # append new job unless no jobs left
                 try:
                     tree = next(itertree)
-                    rasyncs[job] = pool.submit(
-                        calculate_DR,
-                        (tree),
-                    )
+                    kwargs.update({"tree": tree})
+                    rasyncs[job] = pool.submit(function, **kwargs)
                 except StopIteration:
                     pass
-
-            # wait for next check
-            time.sleep(0.5)           
 
             # wait until all jobs finish
             if not rasyncs:
@@ -167,7 +146,7 @@ def calculate_posterior_tip_level_diversification(treefile, njobs=1):
 
     # calculate summary of DR across the distribution of trees.
     arr = pd.DataFrame(tarr, index=tiporder)
-    df = pd.DataFrame({
+    data = pd.DataFrame({
         'mean': arr.mean(1),
         # 'harmMean': hmean(arr, axis=1),
         'median': arr.median(1),
@@ -177,4 +156,11 @@ def calculate_posterior_tip_level_diversification(treefile, njobs=1):
         'min': arr.min(1),
         'max': arr.max(1),
     })
-    return df
+    return data
+
+
+if __name__ == "__main__":
+
+    import toytree
+    tre = toytree.rtree.rtree(10, seed=123)
+    print(get_vcv_from_tree(tre))

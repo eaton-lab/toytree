@@ -1,81 +1,290 @@
 #!/usr/bin/env python
 
 """
-Discrete State Markov Model Simulator. 
-Some code from ipcoal (McKenzie and Eaton 2020).
+Fit a discrete Markov model to observations using Maximum Likelihood
+to estimate model parameters and ancestral states.
+
+
+>>> toytree.pcm.fit_discrete_markov_data(
+        nstates=3, model="ER", 
+        rates=None,             # will be estimated
+        state_frequencies=None, # will be estimated
+    )
 """
 
-from typing import Optional, Union, Dict, Any
-from enum import Enum
+from typing import Optional, Union, Dict, Any, List
+from dataclasses import dataclass, field, InitVar
 import pandas as pd
 import numpy as np
 from scipy.optimize import minimize
 from scipy.linalg import expm
 from toytree import ToyTree
 from toytree.utils.exceptions import ToytreeError
+from toytree.pcm.src.discrete_markov_model_sim import MarkovModel
+
+@dataclass
+class FitMarkovModelResult:
+    """Result object of a Markov model fit by Maximum Likelihood."""
+    nstates: int
+    model: str
+    transition_matrix: np.ndarray
+    state_frequencies: np.ndarray
+    data: pd.DataFrame = None
+    log_likelihood: float = None
+    fixed_rates: np.ndarray = None
+    nparams: int = None
+
+@dataclass
+class FitMarkovModelBase:
+    """Fit a Markov model to discrete data using Maximum Likelihood.
+
+    This uses Felsenstein's pruning algorith...
+
+    Parameters
+    ----------
+    tree: ToyTree
+        A ToyTree instance (usually ultrametric).
+    data: pandas.Series or pandas.DataFrame
+        If the index is numeric it is interpreted as node idx labels,
+        if not, then as string tip labels. Column names are not used,
+        and if multiple columns present they are treated as replicate 
+        observations of the same trait. Data is treated as categorical
+        (0-nstates). 
+    nstates: int
+        The number of discrete states in the Markov model.
+    model: str
+        The Markov model type ("ER", "SYM", "ARD") will determine the
+        number of parameters to be inferred. The fixed_rates arg can
+        be used to fix parameters, which will then not be inferred.
+    fixed_rates: Optional[np.ndarray]
+        An array of the dimension (nstates,nstates) with fixed rate
+        parameters (not to be estimated) in some or all off-diagonal
+        cells, or np.nan for parameters that should be estimated. 
+        Fixing parameters decrease the number that needs to be 
+        estimated. Fixed rates must match allowed values given the 
+        model type (e.g., ER must fix all to a single rate b/c only
+        on rate is allowed in this model, and SYM model rates must be
+        symmetric). Values on the diagonal are ignored.
+    fixed_state_frequencies: Optional[np.ndarray]
+        An array of dimension nstates with fixed values for the state
+        frequencies... how does this relate to root prior...?
+
+    Examples
+    --------
+    Fit a 2-state character observed for all tips in the tree.
+    >>> tree = ...
+    >>> data = tree.pcm.simulate_discrete_data(3, "ER", tips_only=True)
+    >>> fit = tree.pcm.fit_discrete_data(data, 3, "ER")
+
+    Fit a 3-state SYM model with observations for some internal nodes.
+    >>> data = tree.pcm.simulate_discrete_data(3, "ER", tips_only=True)
+    >>> fit = tree.pcm.fit_discrete_data(data, 3, "ER")
+
+    Fit a 2-state ARD model with some rates fixed:
+    >>> data = tree.pcm.simulate_discrete_data(2, "ARD",
+    >>>    relative_rates=[[0, 2], [1, 0]])
+    >>> fixed = np.array([[0, 2],[np.nan, 0]])
+    >>> fit = tree.pcm.fit_discrete_data(data, 2, "ARD", fixed_rates=fixed)
+
+    Fit a GTR model to DNA-like 4-state data
+    >>> true_rates = 1e-8 * np.array([
+    >>>     [0, 1, 2, 2],
+    >>>     [1, 0, 2, 2],
+    >>>     [2, 2, 0, 1],
+    >>>     [2, 2, 1, 0],
+    >>> ])
+    >>> true_freqs = [0.2,0.3,0.2,0.3]
+    >>> data = tree.pcm.simulate_discrete_data(4, "SYM",
+    >>>    relative_rates=true_rates, 
+    >>>    state_frequencies=true_freqs,
+    >>>    rate=1e-8, 
+    >>>    nreplicates=500, 
+    >>>    tips_only=True,
+    >>> )
+    >>> fit = tree.pcm.fit_discrete_data(data, 4, "SYM")
+
+    References
+    ----------
+    Yang.
+    Paradis et al. (2004).
+    Harmon book.
+    """
+    tree: 'toytree.Toytree'
+    data: Union[pd.Series, pd.DataFrame]
+    nstates: int
+    model: str
+
+    root_prior: Optional[np.ndarray]=None   
+    fixed_rates: Optional[np.ndarray]=None
+    fixed_state_frequencies: Optional[np.ndarray]=None
+
+    nparams_fixed: int=field(init=False)
+    nparams_free: int=field(init=False)
+    rate_matrix: np.ndarray=field(init=False)
+    state_frequencies: np.ndarray=field(init=False)
+
+    def __post_init__(self):
+        self.model = self.model.upper()
+        assert self.model in ("ER", "SYM", "ARD"), (
+            "model must be one of 'ER', 'SYM', 'ARD'")
+
+        # Set parameters to be inferred as np.nan, and fixed params
+        # to the fixed value, and fill nparams_ counters.
+        self._check_freqs()
+        self._check_rates_and_nparams()
+
+        # ...
+        # self._check_data_with_tree()
+
+        # self._check_rates()
+        # self.qmatrix = self._get_qmatrix()
+
+    def _check_freqs(self):
+        """Check stationary frequencies given model and nstates.
+
+        Entered values are checked for correct size and that they 
+        sum to one. If no values are entered then a uniform frequency
+        of the correct size is sampled to represent the best starting
+        guess for root state.
+
+        Sets values for array of shape to nstates - 1, e.g., 
+        infer states for k=3: [np.nan, np.nan]
+        one fixed state for k=3: [0.5, np.nan]
+        """
+        freqs = self.state_frequencies
+        if freqs is None:
+            freqs = np.repeat(1.0 / self.nstates, self.nstates)
+        else:
+            freqs = np.array(freqs)
+            if self.model in ("SYM", "ARD"):
+                assert freqs.size == self.nstates, (
+                    f"states_frequencies should be len={self.nstates}.")
+            else:
+                fixed = np.repeat(1.0 / self.nstates, self.nstates)
+                assert np.allclose(freqs, fixed), (
+                    f"ER model with nstates={self.nstates} has fixed state "
+                    f"frequences: {fixed}. See SYM or ARD models.")
+                freqs = fixed
+        assert np.allclose(sum(freqs), 1.0), (
+            f"state_frequencies must sum to 1. You entered: {freqs}")
+        self.state_frequencies = freqs
+
+    def _check_rates_and_nparams(self):
+        """Get nparams based on model, nstates, and fixed params.
+
+        Checks that fixed params is valid given the other args. For
+        example, you can fix all parameters in which case no ML
+        optimization occurs and the loglik is simply calculated.
+
+        Number of parameters (k=nstates): The "ER" model always has 1 
+        parameter; the "SYM" model has ((k * (k-1)) / 2) + (k - 1) 
+        parameters; the "ARD" is (k * (k-1)) + (k - 1). The effect of
+        fixing a parameter is -2k for SYM, or -k for others.
+        """
+        rates = np.ones((self.nstates, self.nstates))
+        assert rates.shape == self.fixed_rates, (
+            "fixed_rates array must be dimension (nstates, nstates)")
+        np.fill_diagonal(rates, 0)
+        np.fill_diagonal(self.fixed_rates, 0)
+
+        # fixed rates must by symmetric for ER and SYM
+        if self.model in ("ER", "SYM"):
+            assert np.allclose(self.fixed_rates, self.fixed_rates.T, rtol=1e-5, atol=1e-8), (
+                "rates must be symmetric in ER and SYM models. See ARD model.")
+
+        k = self.nstates
+        mask = np.invert(np.eye(self.nstates, dtype=bool))
+        fixed = self.fixed_rates[mask]
+        if self.model == "ER":
+            self.nparams_fixed = fixed[~np.isnan(fixed)].size
+            self.nparams_free = 1 - self.nparams_fixed
+        elif self.model == "SYM":
+            self.nparams_free = (k * (k - 1)) / 2
+            self.nparams_fixed = 2 * fixed[~np.isnan(fixed)].size
+            self.nparams_free = 1 - self.nparams_fixed
+        else:
+            self.nparams_fixed = fixed[~np.isnan(fixed)].size
+            self.nparams_free = (k * (k - 1)) - self.nparams_fixed
+
+    def _check_data_with_tree(self):
+        """ """
 
 
-class DiscreteModelType(str, Enum):
-    ard = "all-rates-different"
-    er = "all-rates-equal"
-    sym = "symmetric"
+class FitMarkovModel(FitMarkovModelBase):
+    """
+    Examples
+    --------
+    >>> tree = toytree.rtree.unittree(10, seed=123)
+    >>> data = toytree.pcm.simulate_discrete_data(tree, 3, "ER")
+
+    Fit an ER model to the data
+    >>> fit = toytree.pcm.fit_discrete_markov_model(tree, data, "ER")
+    >>> print(fit.log_likelihood, fit.data)
+    """
+    def __init__(
+        self,
+        log_likelihood: float,
+        data: pd.DataFrame,
+        ):
+        pass
+
+    def _check_data_with_tree(self):
+        """Data index must be a set length and type.
+
+        Data will be converted to a DataFrame with index=range(nnodes)
+        and discrete data as floats 0-nstates or np.nan for missing.
+        """
+        assert isinstance(self.data, pd.DataFrame), "data must be a DataFrame"
+        # if data index is strings then convert to node idxs
+
+        assert set(self.data.index) == set(self.tree.get_tip_labels()), (
+            "the index of data must have the same tip names as the input tree")
 
 
 
 class DiscreteMarkovModelFit:
-    """
-    Fit an n-state discrete Markov model using maximum likelihood 
-    (in scipy) to estimate transition rate parameters under one of
-    several supported models ("ER", "ARD", ...)
+    """Fit parameters of an n-state discrete Markov model using 
+    maximum likelihood.
 
-    Parameters:
-    -----------
-    tree (ToyTree):
+    Uses scipy to estimate transition rate parameters under one of
+    several supported models ("ER", "SYM", ARD").
+
+    Parameters
+    ----------
+    tree: ToyTree
         A toytree object with ultrametric branch lengths.
-    data (pd.DataFrame):
+    data: pd.DataFrame
         A DataFrame with tip names as the index, and categorical data 
         values (e.g., int, str, etc.) assigned to every tip in the tree.
         The column names are not used. All columns in the DataFrame are
         analyzed as replicate observations.
-    model (str): 
+    model: str
         ...
 
-    Examples:
-    ---------
-    import numpy as np
-    import toytree
-
-    # simulate discrete data on a tree
-    tree = toytree.rtree.unittree(ntips=10, treeheight=10)
-    qmatrix = [[-0.5, 0.5], [0.1, -0.1]]
-    data = tree.pcm.simulate_discrete_data(qmatrix, nsims=10)
+    Examples
+    --------
+    Simulate discrete data on a tree.
+    >>> tree = toytree.rtree.unittree(ntips=10, treeheight=10)
+    >>> data = tree.pcm.simulate_discrete_data(tree, 3, "ER", rate=0.5)
     
-    # fit Markov model to discrete data
-    tree, model = tree.pcm.discrete_markov_model_fit(data)
+    Fit Markov model to discrete data.
+    >>> fit = tree.pcm.fit_discrete_markov_model(tree, data, 3, "ER")
+    >>> print(fit.log_likelihood, fit.data)
 
-    # print model summary, or access rates, states, and other stats
-    print(model.summary)
-    print(model.qmatrix)
+    See also
+    --------
+    :func:`toytree.pcm.simulate_discrete_markov_data`
 
-    # draw tree with inferred ancestral states
-    tree.draw(node_colors=tree.get_node_values('trait'))
-
-    See also: 
-    ---------
-    - toytree.pcm.stochastic_character_mapping
-    - toytree.pcm.discrete_markov_model_sim
-
-    References:
-    -----------
-    - ...
-    - https://github.com/rcohen/hogtie
+    References
+    ----------
+    https://github.com/rcohen/hogtie
     """
     def __init__(
         self, 
-        tree: ToyTree,
+        tree: 'toytree.ToyTree',
         data: pd.DataFrame,
-        model: Union[str,np.ndarray] = "sym",
-        prior: Optional[np.ndarray] = None,
+        model: str,
+        prior: Optional[np.ndarray]=None,
         ):
 
         self.tree = tree    # get's replaced by a copy 
@@ -212,10 +421,8 @@ class DiscreteMarkovModelFit:
             [0, 0, 1]     [0, 1, 0]
                ...           ...
         """
-        self.tree = self.tree.set_node_values(
-            "likelihood", 
-            default=np.zeros((self.unique.shape[1], self.qidx.shape[0])),
-        )
+        value = np.zeros((self.unique.shape[1], self.qidx.shape[0])),
+        self.tree = self.tree.set_node_data("likelihood", default=value)
         for nidx in range(self.tree.ntips):
             node = self.tree.idx_dict[nidx]
 
@@ -348,7 +555,6 @@ class DiscreteMarkovModelFit:
 
 
 
-
 def optim_func(params, model):
     """
     Function to optimize. Takes an iterable as the first argument 
@@ -372,21 +578,25 @@ def optim_func(params, model):
 if __name__ == "__main__":
 
     import toytree
-    from toytree.pcm.discrete_markov_model_sim import simulate_discrete_markov_states    
 
-    TREE = toytree.rtree.unittree(25, treeheight=100)
-    QMATRIX = [
-        [-0.06, 0.05, 0.01], 
-        [0.01, -0.02, 0.01],
-        [0.01, 0.03, -0.04],
-    ]
-    DATA = simulate_discrete_markov_states(TREE, QMATRIX, nsims=10)
+    TREE = toytree.rtree.unittree(5, treeheight=1)
+    print(toytree.pcm.get_markov_model(3, "ER", rate=1).transition_matrix)
+    DATA = toytree.pcm.simulate_discrete_data(TREE, 3, "ER", rate=1)
     print(DATA)
 
-    MOD = DiscreteMarkovModelFit(TREE, data=DATA, model="SYM")
-    print(MOD.qidx)
-    print(MOD.params)
-    print(MOD.unique)
-    print(MOD.tree.idx_dict[0].likelihood)
-    MOD.optimize()
-    # print(MOD.prior)
+    fit = FitMarkovModelBase(TREE, DATA, 3, "ER")
+    print(fit)
+
+
+    # print(TREE.ntips, len(TREE.get_tip_labels()))
+    # DATA = DATA[:TREE.ntips]
+    # DATA.index = TREE.get_tip_labels()
+    # print(DATA)
+
+    # MOD = DiscreteMarkovModelFit(TREE, data=DATA, model="SYM")
+    # print(MOD.qidx)
+    # print(MOD.params)
+    # print(MOD.unique)
+    # print(MOD.tree.idx_dict[0].likelihood)
+    # MOD.optimize()
+    # # print(MOD.prior)

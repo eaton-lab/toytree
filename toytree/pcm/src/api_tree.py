@@ -4,15 +4,15 @@
 PCM: phylogenetic comparative methods tools
 """
 
-from toytree.pcm.phylocomp import tree_to_vcv
-from toytree.pcm.pic import (
-    continuous_ancestral_state_reconstruction,
-    phylogenetic_independent_contrasts,
-)
-from toytree.pcm.diversification import (
-    calculate_tip_level_diversification,
-    calculate_equal_splits,
-)
+from toytree.pcm.src.utils import get_vcv_from_tree
+# from toytree.pcm.src.pic import (
+#     continuous_ancestral_state_reconstruction,
+#     phylogenetic_independent_contrasts,
+# )
+# from toytree.pcm.src.diversification import (
+#     calculate_tip_level_diversification,
+#     calculate_equal_splits,
+# )
 
 
 class PhyloCompAPI:

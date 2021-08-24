@@ -5,11 +5,10 @@ Phylogenetic independent contrasts for continuous traits.
 """
 
 
-def phylogenetic_independent_contrasts(tree, feature):
-    """
-    Returns a dictionary of independent contrasts mapped to each node
-    idx of a tree for a selected continuous feature (trait) under a 
-    Brownian motion model of evolution.
+def get_phylogenetic_independent_contrasts(tree, feature):
+    """Return a dictionary of independent contrasts mapped to each
+    node idx of a tree for a selected continuous feature (trait) 
+    under a Brownian motion model of evolution.
 
     Modified from IVY interactive (https://github.com/rhr/ivy/)
 
@@ -24,7 +23,7 @@ def phylogenetic_independent_contrasts(tree, feature):
     dict
     """
     # get current node features at the tips
-    fdict = tree.get_feature_dict(key_attr="name", values_attr=feature)
+    fdict = tree.get_feature_dict("name", feature)
     data = {i: fdict[i] for i in fdict if i in tree.get_tip_labels()}
 
     # apply dynamic function from ivy to return dict results
@@ -34,11 +33,9 @@ def phylogenetic_independent_contrasts(tree, feature):
     return results
 
 
-def continuous_ancestral_state_reconstruction(tre, feature):
-    """
-    Infer ancestral states on ancestral nodes for continuous traits
-    under a brownian motion model of evolution. Returns a toytree with
-    feature updated to each node.
+def get_continuous_ancestral_states(tre, feature):
+    """Infer ancestral states on ancestral nodes for continuous traits
+    under a brownian motion model of evolution.
 
     Modified from IVY interactive (https://github.com/rhr/ivy/)   
 
@@ -50,28 +47,37 @@ def continuous_ancestral_state_reconstruction(tre, feature):
         of the tree. 
     """
     ntre = tre.copy()
-    resdict = phylogenetic_independent_contrasts(ntre, feature)
+    resdict = get_phylogenetic_independent_contrasts(ntre, feature)
     ntre = ntre.set_node_values(
         feature, 
         values={i.name: j[0] for (i, j) in resdict.items()}
     )
     return ntre
 
+
 def _dynamic_pic(node, data, results):
-    """
+    """Used internally by get_independent_contrasts.
+
     Phylogenetic independent contrasts. Recursively calculate 
     independent contrasts of a bifurcating node given a dictionary
     of trait values.
 
     Modified from IVY interactive (https://github.com/rhr/ivy/)
 
-    Args:
-        node (Node): A node object
-        data (dict): Mapping of leaf names to character values
-    Returns:
-        dict: Mapping of internal nodes to tuples containing ancestral
-              state, its variance (error), the contrast, and the
-              contrasts's variance.
+    Parameters
+    ----------
+    node: 
+        A node object
+    data: dict
+        Mapping of leaf names to character values
+
+    Returns
+    -------
+    dict
+        Mapping of internal nodes to tuples containing ancestral
+        state, its variance (error), the contrast, and the
+        contrasts's variance.
+
     TODO: modify to accommodate polytomies.
     """    
     means = []
@@ -142,7 +148,7 @@ if __name__ == "__main__":
     CMAP = toyplot.color.brewer.map("BlueRed", reverse=True)
 
     TREE = toytree.rtree.imbtree(5, 1e6)
-    TREE = TREE.set_node_values(
+    TREE = TREE.set_node_data(
         "g", 
         mapping={i: 5 for i in (2, 3, 4)},
         default=1,
@@ -150,13 +156,13 @@ if __name__ == "__main__":
 
     TREE.draw(
         ts='p', 
-        node_labels=TREE.get_node_labels("g", 1, 1),
+        node_labels=TREE.get_node_data("g"),
         node_colors=[
-            CMAP.colors(i, 0, 5) for i in TREE.get_node_values('g')]
+            CMAP.colors(i, 0, 5) for i in TREE.get_node_data('g')]
         )
 
     # apply reconstruction
-    ntree = phylogenetic_independent_contrasts(TREE, "g")
+    ntree = get_phylogenetic_independent_contrasts(TREE, "g")
 
     # # new values are stored as -mean, -var, -contrasts, ...
     # evals = ntree.get_edge_values("g-mean")
