@@ -76,16 +76,14 @@ def mtree(
 
 
 
-class BaseMultiTree:
-    def __init__(self):
-        self.style = TreeStyle()
-        self._i = 0
-        self.treelist = []
+# class BaseMultiTree:
+#     def __init__(self):
+#         self.style = TreeStyle()
+#         self._i = 0
+#         self.treelist = []
 
-
-
-# class MixedTree(BaseMultiTree):
-#     pass
+# # class MixedTree(BaseMultiTree):
+# #     pass
 
 
 class MultiTree:
@@ -139,20 +137,33 @@ class MultiTree:
         return False
 
     def copy(self):
-        """
-        Returns a deepcopy of the MultiTree object.
-        """
+        """Return a deepcopy of the MultiTree."""
         return deepcopy(self)
 
     def write(
         self,
-        path: Optional[Path],
+        path: Optional[str],
         tree_format:int=0,
         features: Optional[Iterable[str]]=None,
         dist_formatter:str="%0.6g",
         ) -> Optional[str]:
-        """
-        Writes a multi-line string of newick trees to stdout or filepath
+        """Write a multi-line string of newick trees.
+
+        The output is written to stdout or a file path, and each
+        newick string can be formatted just like when calling 
+        `write` from a standard ToyTree.
+
+        Parameters
+        ----------
+        path: Optional[str]
+            A valid file path string or None (prints to stdout).
+        tree_format: int
+            The newick tree format.
+        features: List[str]
+            A list of feature names to include as data in extended
+            newick format (NHX).
+        dist_formatter: str
+            A formatting string to use for dist value floating point.
         """
         treestr = "\n".join([
             i.write(
@@ -240,14 +251,15 @@ class MultiTree:
         margin: Union[float, Tuple[int,int,int,int]]=None,
         **kwargs,
         ) -> Tuple['toyplot.Canvas', List['axes'], List['marks']]:
-        """
-        Draw a set of trees on a grid with nice spacing and optionally
-        with a shared axes. Different styles can be set on each tree
-        individually or set here during drawing to be shared across
-        trees.
+        """Draw a grid of multiple ToyTrees.
 
-        Parameters:
-        -----------
+        The grid spacing can be controlled with shape and margin 
+        options, and trees can each be on their own axis or on a
+        set of shared axes (same max height dimension), which can be
+        better for highlighting differences in heights.
+
+        Parameters
+        ----------
         shape: Tuple[int,int]
             A tuple of (nrows, ncolumns) for tree grid drawing.
         shared_axes (bool):
@@ -267,8 +279,13 @@ class MultiTree:
         margin: Tuple[int,int,int,int]
             Spacing between subplots in the grid in pixel units. A
             single value or a tuple for top, right, bottom, left.
-        kwargs (dict):
+        **kwargs (dict):
             Any style arguments supported by .draw() in toytrees.
+
+        Examples
+        --------
+        >>> mtre = toytree.mtree([toytree.rtree.unittree(10) for i in range(10)])
+        >>> mtre.draw(shape=(2,3), width=800, edge_widths=4)
         """
         # legacy support
         if kwargs.get("nrows") or kwargs.get("ncols"):
@@ -413,8 +430,8 @@ class MultiTree:
         order of tip_labels is fixed in cloud trees so that trees
         with discordant relationships can be seen in conflict.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         axes: (None or toyplot.coordinates.Cartesian)
             If None then a new Canvas and Cartesian axes object is
             returned, otherwise if a Cartesian axes object is provided
@@ -437,16 +454,11 @@ class MultiTree:
             function of toytree objects are also supported by
             .draw_cloudtree(), most notably here, edge_style.
 
-        Note:
+        Notes
         -----
         For style arguments that apply to tips (e.g., tip_labels) the
         styles will be re-ordered by fixed_order to apply to all trees
         correctly.
-
-        a series of nodes
-        (e.g., node_colors or tip_labels) the values will be applied
-        to
-
         """
         # TreeStyle used for canvas, axes setup only, based on
         # kwargs, not .style from any subtrees.
@@ -523,165 +535,3 @@ class MultiTree:
     #     """
     #     return TreeSequenceDrawing(kwargs)
 
-
-class ScrollableCanvas(toyplot.Canvas):
-    """Canvas subclass with horizontal scrolling on large widths"""
-    def _repr_html_(self):
-        return toyplot.html.tostring(
-            self, style={"text-align": "center", "width": f"{self.width}px"}
-        )
-
-@dataclass
-class Box:
-    left: float
-    right: float
-    top: float
-    bottom: float
-
-@dataclass
-class MultiDrawing:
-    trees: List['toytree.Toytree']
-    breakpoints: List[float]
-    width: float
-    height: float
-    padding: float = 20
-    margin: Tuple[float,float,float,float] = (50, 50, 50, 50)
-    # todo: set width and height from tree dims if None...
-
-
-class TreeSequenceDrawing(MultiDrawing):
-    """
-    Generate a tree-sequence drawing for ntrees.
-    """
-    def __init__(self, colormap=None, **kwargs):
-        super().__init__(**kwargs)
-
-        self.canvas = self.get_canvas()
-        self.axes = self.get_axes()
-
-        # colormap
-        self.icolors = toytree.color_cycler(colormap)
-
-        # positioning
-        self.xprop_space = 0.2
-        self.xspace = self.xprop_space * self.trees[0].ntips - 1
-        self.xtree = self.xspace + self.trees[0].ntips - 1
-        self.xmax = self.xtree * len(self.trees)
-        self.ymax = max(tre.treenode.height for tre in self.trees)
-
-        # store
-        self.boxes = {}
-        self.colors = {}
-
-        # run funcs
-        self.get_position_bar_marks()
-        self.get_polygon_container_marks()
-        self.get_tree_marks()
-        self.axes.y.locator = toyplot.locator.Extended(only_inside=True)
-        self.axes.x.show = True
-
-    def get_canvas(self):
-        """
-        Get a horizontal scrollable canvas
-        """
-        # TODO: use Canvas Method to get dim from tree stats
-        canvas = ScrollableCanvas(width=self.width, height=self.height)
-        return canvas
-
-    def get_axes(self):
-        """
-        Get a 'share' axes on the top of plot
-        """
-        axes = self.canvas.cartesian(margin=self.margin, padding=self.padding)
-        top_axes = axes.share("y")
-        axes.x.show = False
-        top_axes.x.show = True
-        top_axes.x.ticks.show = True
-        return top_axes
-
-    def get_position_bar_marks(self):
-        """
-        Get breakpoint bars.
-        """
-        start = 0
-        for idx, opos in enumerate(self.breakpoints):
-            pos = self.xmax * (opos / max(self.breakpoints))
-            box = Box(
-                left=start,
-                right=pos,
-                top=self.ymax + self.ymax * 0.25,
-                bottom=self.ymax + self.ymax * 0.2,
-            )
-            start = pos
-            self.boxes[idx] = box
-            self.colors[idx] = next(self.icolors)
-
-            self.axes.fill(
-                [box.left, box.right],
-                [box.bottom, box.bottom],
-                [box.top, box.top],
-                style={"fill": self.colors[idx], "fill-opacity": 0.85, 'stroke': 'white', 'stroke-opacity': 0.5},
-            )
-
-    def get_polygon_container_marks(self):
-        """
-        Get polygon fill marks to surround trees.
-        """
-        for idx, _ in enumerate(self.trees):
-            box = self.boxes[idx]
-            tbox = Box(
-                left=self.xspace / 2 + (idx * self.xtree),
-                right=self.xspace / 2 + ((idx + 1) * self.xtree),
-                top=self.ymax,
-                bottom=0,
-            )
-
-            # hover pop-up
-            title = "\n".join([
-                f"idx: {idx}",
-                f"interval: ({self.breakpoints[idx]} - {self.breakpoints[idx]})",
-                f"tmrca: {round(self.trees[idx].treenode.height, 2)}",
-                f"mutations: 0",
-                f"alleles: 1",
-            ])
-
-            # polygon style
-            pstyle = {
-                "fill": self.colors[idx],
-                'fill-opacity': 0.25,
-                'stroke': 'white',
-                'stroke-opacity': 0.5,
-            }
-
-            # draw polygons
-            if box.left < tbox.right:
-                self.axes.fill(
-                    [box.left,   tbox.left,  tbox.left,   tbox.right,  tbox.right, box.right],
-                    [box.bottom, tbox.top,   tbox.bottom, tbox.bottom, tbox.top,   box.bottom],
-                    [box.bottom, box.bottom, box.bottom,  box.bottom,  box.bottom, box.bottom],
-                    annotation=True,
-                    title=title,
-                    style=pstyle,
-                )
-            else:
-                self.axes.fill(
-                    [tbox.left,   box.left,    box.right,   tbox.right,],
-                    [tbox.bottom, tbox.bottom, tbox.bottom, tbox.bottom],
-                    [tbox.top,    box.bottom,  box.bottom,  tbox.top,  ],
-                    annotation=True,
-                    title=title,
-                    style=pstyle,
-                )
-
-    def get_tree_marks(self):
-        """
-        Get ToyTree marks.
-        """
-        for idx, tree in enumerate(self.trees):
-            tree.draw(
-                axes=self.axes,
-                xbaseline=self.xspace + (idx * self.xtree),
-                layout='d',
-                scale_bar=True,
-                tip_labels_style={"font-size": "10px"}
-            )
