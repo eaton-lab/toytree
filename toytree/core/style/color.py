@@ -43,7 +43,7 @@ DTYPE = {
 
 class ToyColor(np.ndarray):
     """
-    ToyColor is a superclass of numpy.ndarray, and 
+    ToyColor is a superclass of numpy.ndarray.
     """
     def __new__(cls, color):
         color = Color(color)
