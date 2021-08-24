@@ -1,20 +1,25 @@
 #!/usr/bin/env python
 
 """
-The core ToyTree class object and class constructor function (.tree)
+The core tree class (`toytree.ToyTree`) and class constructor function
+(`toytree.tree`).
 
-Nearly all API functions are accessible from a ToyTree, including
-tree i/o, modifications, drawing, and analysis.
+Both the class and constructor function are accessible from the 
+top-level package as `toytree.ToyTree` and `toytree.tree`, thus
+users do not need to access the `core` subpackage directly. 
+
+Nearly all API functions are accessible from a ToyTree instance, 
+including tree modifications (`self.mod`), drawing (`self.draw`), 
+comparisons (`self.distance`), and comparative analysis (`self.pcm`).
 """
 
-
-"""
-Notes for TODO
----------------
-- node_colors supports colormap (docstring link to plot docs)
-- reduce traversals in coords.
-- .write w/ feature support.
-"""
+# """
+# Notes for TODO
+# ---------------
+# - node_colors supports colormap (docstring link to plot docs)
+# - reduce traversals in coords.
+# - .write w/ feature support.
+# """
 
 # pylint: disable=too-many-lines, too-many-public-methods, invalid-name
 # pylint: disable=inconsistent-return-statements, too-many-branches
@@ -39,135 +44,49 @@ from toytree.core.io.TreeParser import TreeParser
 from toytree.core.io.TreeWriter import NewickWriter
 from toytree.utils.exceptions import ToytreeError
 from toytree.mod.rooting import Rooter
+from toytree.pcm.src.api_tree import PhyloCompAPI
 import toytree.mod.api
-import toytree.pcm.api
+
 import toytree.distance.api
 
 # PEP 484 recommend capitalizing alias names
 Url = str
 
-class TreeBase:
-    """Base class inherited by ToyTree class
-
-    This class loads the API submodules for styling, manipulating,
-    and analyzing trees including the following:
-
-    Attributes
-    ----------
-    treenode: toytree.TreeNode
-        The root toytree.TreeNode object. A collection of 
-        connected TreeNodes represent the tree hierarchy of the 
-        ToyTree, and are used to store the tree data.
-    mod: Tree Modification API.       
-    pcm: Phylogenetic comparative methods API.
-    distance: Tree and node distance API.
-    style: Base style dictionary that can be overridden by tree_style.
-    """
-    def __init__(self, treenode: TreeNode):
-        self.treenode = treenode
-        self.mod = toytree.mod.api.TreeModAPI(self)
-        self.pcm = toytree.pcm.api.PhyloCompAPI(self)
-        self.distance = toytree.distance.api.DistanceAPI(self)
-        self.style = TreeStyle()
-
-
-class ToyTree(TreeBase):
+class ToyTree:
     """The core toytree class for manipulating and visualizing trees.
 
     Note
     ----
-    To initialize a ToyTree instance it is recommended to use
-    the general class constructor function `toytree.tree()`, or
-    a similar function from `toytree.rtree`, `toytree.mtree`, etc.
+    To initialize a ToyTree instance from data it is recommended to
+    use the general class constructor function :func:`toytree.tree`, 
+    or to generate random or fixed trees see the :mod:`toytree.rtree`
+    submodule.
 
-    Attributes
+    Parameters
     ----------
-    idx_dict: Dict[idx, toytree.TreeNode]
-        The idx_dict maps node index labels (idx) to TreeNode objects
-        represents the nodes of a ToyTree. This dictionary is useful
-        for accessing node data in idx order (where nodes 0-ntips 
-        represent the tip nodes) rather than by tree traversal.
-    
     treenode: toytree.TreeNode
-        The root TreeNode instance connected to other TreeNodes to
-        represent the tree structure. Only advanced users will need
-        to access TreeNode objects directly. See the documentation 
-        for more information on TreeNodes.
-
-    nnodes: int
-        The number of nodes in the ToyTree.
-
-    ntips: int
-        The number of tips in the ToyTree.
-    
-    newick: str
-        Returns the current tree topology as a newick string.
-
-    features: Set[str]
-        A set of the names of all features set to any TreeNode object
-        in the ToyTree using the function `set_node_data()`.
-
-    style: object
-        The style attribute points to the ToyTree instance's base 
-        TreeStyle class. This can be modified to change how the tree
-        will be styled when drawn when the draw() function is called.
-
-        Example
-        -------
-        >>> tree.style.edge_widths = 5    # edit the base style
-        >>> tree.draw()                   # base style shown
-        >>> tree.draw(tree_style='n')     # base style overridden
-
-    pcm: toytree.pcm.PhyloCompApi 
-        Phylogenetic comparative methods API. A number of 
-        functions are available from this submodule that can be 
-        applied to this ToyTree instance.
-
-        Examples
-        --------
-        >>> vcv = tree.pcm.tree_to_vcv()
-        >>> div = tree.pcm.tip_level_diversification_rates()
-        >>> pic = tree.pcm.phylogenetic_independent_contrasts('trait')
-
-        See Also
-        --------
-        toytree.pcm: Phylogenetic comparative methods submodule.
-
-    distance: toytree.distance.DistanceApi
-        Distance API for comparing trees using this ToyTree instance
-        as the input tree argument.
-
-        Examples
-        --------
-        >>> tree1 = toytree.rtree.unittree(10)
-        >>> tree1.distance.robinson_foulds(tree2)
-        >>> tree1.distance.quartet_distance(tree2)
-        >>> tree1.distance.get_tip_distance_matrix()       
-
-        See Also
-        --------
-        toytree.distance: Distance methods for comparing trees.
-
-    mod: toytree.mod.TreeModApi
-        Tree modification API for manipulating tree topology and 
-        edge lengths using this ToyTree instance as the input.
-
-        Examples
-        --------
-        >>> tree1 = toytree.rtree.unittree(10)
-        >>> tree2 = tree1.mod.node_scale_root_height(1e6)
-        >>> tree3 = tree1.mod.node_slider()
-        >>> tree4 = tree1.mod.add_sister_node(idx=0, name="new")
+        A root TreeNode instance representing a tree structure. Users
+        shoulld use the toytree.tree() constructor function to 
+        initialize a ToyTree.
     """
     def __init__(self, treenode: TreeNode):
-        super().__init__(treenode)
-
-        # filled by Coords
+        """Initialize a ToyTree. Users should use toytree.tree()."""
+        self.treenode = treenode
+        """: The root TreeNode. Connected TreeNodes form the tree structure."""
+        self.mod: toytree.mod.api.TreeModAPI = toytree.mod.api.TreeModAPI(self)
+        """: API to apply :mod:`toytree.mod` tree modification funcs to this tree."""                
+        self.pcm = PhyloCompAPI(self)
+        """: API to apply :mod:`toytree.pcm` phylogenetic comparative methods funcs to this tree."""        
+        self.distance = toytree.distance.api.DistanceAPI(self)
+        """: API to apply :mod:`toytree.distance` comparison funcs to this tree."""
+        self.style = TreeStyle()        
+        """: TreeStyle class for setting base drawing style."""
         self.nnodes: int = 0
+        """: number of nodes in the tree."""
         self.ntips: int = 0
+        """: number of tips in the tree."""
         self.idx_dict: Dict[int,TreeNode] = {}
-
-        # compile coords
+        """: dictionary mapping node idx labels to TreeNode instance."""
         self._coords: np.ndarray = Coords(self)
         self._coords.update()
 
@@ -189,9 +108,10 @@ class ToyTree(TreeBase):
 
     @property
     def features(self) -> Set[str]:
-        """
-        Returns a set of all features assigned as attributes to any
-        TreeNodes in the Toytree by using .set_node_values().
+        """Get a set of all TreeNode features.
+
+        Returns a set of the names of all features assigned as 
+        attributes to any TreeNodes in the Toytree.
         """
         feats = set()
         for node in self.treenode.traverse():
@@ -200,9 +120,10 @@ class ToyTree(TreeBase):
 
     @property
     def newick(self) -> str:
-        """Get a newick representation of the tree. See 
-        :meth:`~toytree.core.tree.ToyTree.write` for a function with
-        further formatting options for writing to newick.
+        """Get a newick representation of the tree. 
+
+        See :meth:`~toytree.core.tree.ToyTree.write` for a function
+        with further formatting options for writing to newick.
         """
         return self.write()
 
@@ -213,10 +134,12 @@ class ToyTree(TreeBase):
         features: Optional[List[str]]=None,
         dist_formatter: str="%0.6g",
         ) -> Optional[str]:
-        """
-        Write newick string representation of the tree with formatting
-        options to include branch or node features according to the
-        ete3 tree formats.
+        """Write newick string representation of the tree.
+
+        Formatting options can be used to include branch or node 
+        features according to several ete3 tree formats, and 
+        additional data can be included in extended newick format 
+        (NHX) by listing features by name to the features arg.
 
         Parameters
         ----------
@@ -234,16 +157,14 @@ class ToyTree(TreeBase):
 
         Examples
         --------
-        Write a tree with extra features on it in extended format.
+        >>> # Write a tree with extra features in extended NHX format.
         >>> tree = toytree.rtree.unittree(10)
         >>> tree = tree.set_node_data("trait", default="X")
         >>> tree.write(features=['trait'])
-
-        See Also
-        --------
-        write_nexus: writes tree to nexus format.
-        write_extended: writes tree to extended format w/ features.
         """
+        # TODO: add See Also section for:
+        # write_nexus: writes tree to nexus format.
+        # write_extended: writes tree to extended format w/ features.
         if not self.ntips:
             raise ToytreeError("tree is empty")
         if features is not None:
@@ -334,166 +255,6 @@ class ToyTree(TreeBase):
             descs.append(idx)
         return descs
 
-    # def set_node_values(
-    #     self,
-    #     feature:str,
-    #     mapping:Dict[Union[int,str],Any]=None,
-    #     default:Any=None,
-    #     **kwargs,
-    #     ) -> 'toytree.ToyTree':
-    #     """
-    #     DEPRECATED: see set_node_data()
-
-    #     Set values to a TreeNode feature and RETURNS A COPY of the
-    #     toytree.
-
-    #     If the feature is set to only some nodes then others are set
-    #     to NaN. You cannot set the "idx" feature (this is used
-    #     internally by toytree). You can set base features like name,
-    #     dist, height, support, or create any new named feature.
-
-    #     Example:
-    #     --------
-    #     tre.set_node_values(feature="Ne", default=5000)
-    #     tre.set_node_values(feature="Ne", mapping={0:1e5, 1:1e6, 2:1e3})
-    #     tre.set_node_values(feature="Ne", mapping={0:1e5, 1:1e6}, default=5000)
-    #     tre.set_node_values(feature="Ne", mapping={'r0':1e5, 'r1':1e6})
-    #     tre.set_node_values(feature="state", mapping={0: "A", 1: "B"})
-
-    #     Parameters:
-    #     -----------
-    #     feature (str):
-    #         The name of the node attribute to modify (cannot be 'idx').
-    #     mapping (dict):
-    #         A dictionary of {int: value} or {str: value}, where int
-    #         keys will be interpreted as node idx labels, and str keys
-    #         will be interpreted as node name labels.
-    #         Note: use tree.draw(node_labels='idx') to see idx labels.
-    #     default (int, str, float):
-    #         You can use a default value to be filled for all other
-    #         nodes not listed in the 'mapping' dictionary.
-
-    #     Returns:
-    #     ----------
-    #     A ToyTree object is returned with the node values modified.
-    #     """
-    #     logger.warning(
-    #         "The set_node_values() function is deprecated.\n"
-    #         "It is replaced by the function .set_node_data(), which "
-    #         "performs the same exact action,\nbut is more appropriately "
-    #         "named, and is paired with the get_node_data() function."
-    #     )
-    #     self.set_node_data(feature, mapping, default, **kwargs)
-
-    # def get_node_labels_formatted(
-    #     self,
-    #     feature: str,
-    #     formatter: Callable = None,
-    #     # mask: Optional[Iterable[bool]] = None,
-    #     ) -> List[str]:
-    #     """
-    #     Returns a list of string formatted values from a selected
-    #     node feature in node idx order (tips to root) for formatting
-    #     floats, ints, etc to prettier values for displaying as node
-    #     labels in tree drawings.
-
-    #     See also: get_node_data
-
-    #     Parameters:
-    #     -----------
-    #     feature: str
-    #         The feature of one or more nodes that you wish to extact
-    #         node labels data for.
-    #     mask: Iterable[bool]
-    #         A boolean mask in idx order where True sets a node label
-    #         to an empty string ("") so it is hidden.
-    #     formatter: Callable
-    #         A function (or lambda func) for formatting strings.
-
-    #     Examples:
-    #     ----------
-    #     # get and show node names as node labels
-    #     tre.draw(node_labels="name")
-
-    #     # same: get and show node names as node labels
-    #     tre.draw(node_labels=tree.get_node_labels_formatted("name"))
-
-    #     # apply formatting to convert support to percentages
-    #     tre.draw(
-    #         node_labels=tree.get_node_labels_formatted(
-    #             feature="support",
-    #             formatter=lambda x: f"{(float(x) / 100):.2f}",
-    #         )
-    #     )
-
-    #     # show only nodes and node_labels where support <= 90
-    #     tre.draw(
-    #         node_mask=tre.get_node_data("support") > 90,
-    #         node_labels="support",
-    #         node_sizes=18,
-    #     )
-    #     """
-    #     # get node data for all features. This is a DataFrame where a
-    #     # feature column can be of mixed or single dtypes.
-    #     data = self.get_node_data()
-
-    #     # raise exception if feature is missing, or all values are NAN
-    #     if feature not in data.columns:
-    #         data[feature] = [feature] * self.nnodes
-    #         # raise ToytreeError("feature does not exist for any nodes in tree.")
-    #     if data[feature].isna().all():
-    #         raise ToytreeError("feature does not exist for any nodes in tree.")
-
-    #     # get a list of values as strs: ['A', 'B', '', ' ', ' ', ...]
-    #     # 'x' = show marker and label
-    #     # ' ' = show marker with empty label
-    #     # ''  = hide/mask node marker and label
-    #     labels = [""] * self.nnodes
-    #     for nidx in range(self.nnodes):
-    #         value = data.loc[nidx, feature]
-
-    #         # float NAN -> ""
-    #         if isinstance(value, float):
-    #             if np.isnan(value):
-    #                 value = ""
-    #             else:
-    #                 # trim trailing zeros from floats
-    #                 value = round(value, 8)
-    #                 if not Decimal(value) % 1:
-    #                     value = str(int(value))
-
-    #         # empty strings show as empty strings
-    #         labels[nidx] = str(value)
-
-    #     # mask/hide tips and root
-    #     if not show_root:
-    #         labels[-1] = ""
-    #     if not show_tips:
-    #         for i in range(self.ntips):
-    #             labels[i] = ""
-
-    #     # also hide any True indices in mask argument
-    #     if mask is not None:
-    #         if isinstance(mask, (pd.DataFrame, pd.Series)):
-    #             mask = mask.values
-    #         if isinstance(mask, (tuple, list)):
-    #             mask = np.array(mask).astype(bool)
-    #         assert mask.size == len(labels), (
-    #             f"mask must be nnodes is size ({self.nnodes})")
-    #         assert mask.dtype == np.bool_, (
-    #             "mask must contain only boolean types")
-    #         for idx, val in enumerate(mask):
-    #             if not val:
-    #                 labels[idx] = ""
-
-    #     # apply formatter lambda func to all non-hidden label strings
-    #     if formatter is not None:
-    #         labels = [
-    #             str(formatter(i)) if i not in ("", " ") else i
-    #             for i in labels
-    #         ]
-    #     return labels
-
     def get_node_coordinates(
         self,
         layout: str=None,
@@ -513,10 +274,9 @@ class ToyTree(TreeBase):
         use_edge_lengths: bool
             If False then edge lenghts (dists) are all set to 1.
 
-        Example
-        -------
-        Add additional scatterplot points a tree drawing by using 
-        the node coordinates as the x, y positions.
+        Examples
+        --------
+        >>> # Add scatterplot points at node coordinates.
         >>> tree = toytree.rtree.unittree(10)
         >>> coords = tree.get_node_coordinates()
         >>> canvas, axes, mark = tree.draw()
@@ -543,8 +303,7 @@ class ToyTree(TreeBase):
         For example you can create a dictionary mapping names
         to TreeNodes, or 'idx' to 'dist' features. The feature must
         be present for all nodes. For convenient functions for
-        working with missing data on some nodes see 
-        :meth:~toytree.core.tree.ToyTree.get_node_data`
+        working with missing data on some nodes see `get_node_data`.
 
         Parameters
         ----------
@@ -557,9 +316,10 @@ class ToyTree(TreeBase):
 
         Examples
         --------
-        >>> tree.get_feature_dict("idx", "name")
-        >>> tree.get_feature_dict("name", None)
         >>> tree.get_feature_dict(None, "dist")
+        >>> tree.get_feature_dict("name", None)
+        >>> tree.get_feature_dict("idx", "dist")
+        {0: 1.0, 1: 1.0, 2: 1.0, 3: 1.0, 4: 1.0, 5: 1.0}        
 
         See Also
         --------
@@ -612,11 +372,11 @@ class ToyTree(TreeBase):
         layout: str
             A layout for the tree drawing ('r', 'l', 'u', 'd', 'c')
         use_edge_lengths: bool
-            If False then edge lenghts (dists) are all set to 1.
+            If False edge lengths are set to 1.
 
-        Example
-        -------
-        Add additional scatterplot points to tips of a tree drawing.
+        Examples
+        --------
+        >>> # Add additional scatterplot points to tips of a tree drawing.
         >>> tree = toytree.rtree.unittree(10)
         >>> coords = tree.get_tip_coordinates()
         >>> canvas, axes, mark = tree.draw()
@@ -935,7 +695,7 @@ class ToyTree(TreeBase):
         return nself
 
     def copy(self) -> 'ToyTree':
-        """Return a deepcopy of a ToyTree instance"""
+        """Return a copy (deepcopy) of the ToyTree instance."""
         try:
             return copy.deepcopy(self)
         except RecursionError:
@@ -989,9 +749,11 @@ class ToyTree(TreeBase):
         min_dist: float=1e-6,
         min_support: float=0,
         ) -> 'ToyTree':
-        """Return a copy of the ToyTree with internal nodes with dist
-        or support values below minimums collapsed, resulting in 
-        polytomies.
+        """Return a copy of the ToyTree with internal nodes collapsed.
+
+        Nodes with dist or support values below minimum value setting
+        are collapsed, resulting in polytomies. For example, set
+        min_support=50 to collapse all nodes with support < 50.
 
         Parameters
         ----------
@@ -1538,13 +1300,13 @@ class ToyTree(TreeBase):
 
 
 def tree(data:Union[str,Path,Url,ToyTree,TreeNode], tree_format:int=0) -> ToyTree:
-    """General ToyTree class constructor and flexible data parser.
+    """General ToyTree class constructor function and flexible data parser.
 
-    Returns a ToyTree object from a variety of optional input types,
-    including a newick or nexus string; a filepath or Url to a newick
-    or nexus string; a TreeNode instance; or a ToyTree instance.
-    The tree_format argument is an integer corresponding to an ete3
-    tree format (the common format 0 generally works fine).
+    Returns a :class:`ToyTree` object from a variety of optional 
+    input types, including a newick or nexus string; a filepath or Url 
+    to a newick or nexus string; a TreeNode instance; or a ToyTree 
+    instance. The tree_format argument is an integer corresponding to 
+    an ete3 tree format (the common format 0 generally works fine).
 
     Parameters
     ----------
@@ -1564,17 +1326,18 @@ def tree(data:Union[str,Path,Url,ToyTree,TreeNode], tree_format:int=0) -> ToyTre
 
     Examples
     --------
-    >>> tree = toyreee.tree("((a,b),c);")
+    >>> tree = toytree.tree("((a,b),c);")
     >>> tree = toytree.tree("/tmp/test.nwk")
     >>> tree = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
     >>> tree = toytree.tree(toytree.TreeNode())
-
-    Note
-    ----
-    For speed-intensive tasks you can achieve faster performance with
-    the alternative tree parsing functions: read_newick(), 
-    read_nexus(), or read_extended().
     """
+    # TODO: add this to docstring after supporting these funcs.
+    # Note
+    # ----
+    # For speed-intensive tasks you can achieve faster performance with
+    # the alternative tree parsing functions: read_newick(), 
+    # read_nexus(), or read_extended().
+    # 
     treenode = None
 
     # load from a TreeNode and detach. Must have .idx attributes on nodes.
@@ -1599,6 +1362,168 @@ def tree(data:Union[str,Path,Url,ToyTree,TreeNode], tree_format:int=0) -> ToyTre
     # do not enforce ladderize before returning
     return ttree
 
+
+
+
+# def set_node_values(
+#     self,
+#     feature:str,
+#     mapping:Dict[Union[int,str],Any]=None,
+#     default:Any=None,
+#     **kwargs,
+#     ) -> 'toytree.ToyTree':
+#     """
+#     DEPRECATED: see set_node_data()
+
+#     Set values to a TreeNode feature and RETURNS A COPY of the
+#     toytree.
+
+#     If the feature is set to only some nodes then others are set
+#     to NaN. You cannot set the "idx" feature (this is used
+#     internally by toytree). You can set base features like name,
+#     dist, height, support, or create any new named feature.
+
+#     Example:
+#     --------
+#     tre.set_node_values(feature="Ne", default=5000)
+#     tre.set_node_values(feature="Ne", mapping={0:1e5, 1:1e6, 2:1e3})
+#     tre.set_node_values(feature="Ne", mapping={0:1e5, 1:1e6}, default=5000)
+#     tre.set_node_values(feature="Ne", mapping={'r0':1e5, 'r1':1e6})
+#     tre.set_node_values(feature="state", mapping={0: "A", 1: "B"})
+
+#     Parameters:
+#     -----------
+#     feature (str):
+#         The name of the node attribute to modify (cannot be 'idx').
+#     mapping (dict):
+#         A dictionary of {int: value} or {str: value}, where int
+#         keys will be interpreted as node idx labels, and str keys
+#         will be interpreted as node name labels.
+#         Note: use tree.draw(node_labels='idx') to see idx labels.
+#     default (int, str, float):
+#         You can use a default value to be filled for all other
+#         nodes not listed in the 'mapping' dictionary.
+
+#     Returns:
+#     ----------
+#     A ToyTree object is returned with the node values modified.
+#     """
+#     logger.warning(
+#         "The set_node_values() function is deprecated.\n"
+#         "It is replaced by the function .set_node_data(), which "
+#         "performs the same exact action,\nbut is more appropriately "
+#         "named, and is paired with the get_node_data() function."
+#     )
+#     self.set_node_data(feature, mapping, default, **kwargs)
+
+# def get_node_labels_formatted(
+#     self,
+#     feature: str,
+#     formatter: Callable = None,
+#     # mask: Optional[Iterable[bool]] = None,
+#     ) -> List[str]:
+#     """
+#     Returns a list of string formatted values from a selected
+#     node feature in node idx order (tips to root) for formatting
+#     floats, ints, etc to prettier values for displaying as node
+#     labels in tree drawings.
+
+#     See also: get_node_data
+
+#     Parameters:
+#     -----------
+#     feature: str
+#         The feature of one or more nodes that you wish to extact
+#         node labels data for.
+#     mask: Iterable[bool]
+#         A boolean mask in idx order where True sets a node label
+#         to an empty string ("") so it is hidden.
+#     formatter: Callable
+#         A function (or lambda func) for formatting strings.
+
+#     Examples:
+#     ----------
+#     # get and show node names as node labels
+#     tre.draw(node_labels="name")
+
+#     # same: get and show node names as node labels
+#     tre.draw(node_labels=tree.get_node_labels_formatted("name"))
+
+#     # apply formatting to convert support to percentages
+#     tre.draw(
+#         node_labels=tree.get_node_labels_formatted(
+#             feature="support",
+#             formatter=lambda x: f"{(float(x) / 100):.2f}",
+#         )
+#     )
+
+#     # show only nodes and node_labels where support <= 90
+#     tre.draw(
+#         node_mask=tre.get_node_data("support") > 90,
+#         node_labels="support",
+#         node_sizes=18,
+#     )
+#     """
+#     # get node data for all features. This is a DataFrame where a
+#     # feature column can be of mixed or single dtypes.
+#     data = self.get_node_data()
+
+#     # raise exception if feature is missing, or all values are NAN
+#     if feature not in data.columns:
+#         data[feature] = [feature] * self.nnodes
+#         # raise ToytreeError("feature does not exist for any nodes in tree.")
+#     if data[feature].isna().all():
+#         raise ToytreeError("feature does not exist for any nodes in tree.")
+
+#     # get a list of values as strs: ['A', 'B', '', ' ', ' ', ...]
+#     # 'x' = show marker and label
+#     # ' ' = show marker with empty label
+#     # ''  = hide/mask node marker and label
+#     labels = [""] * self.nnodes
+#     for nidx in range(self.nnodes):
+#         value = data.loc[nidx, feature]
+
+#         # float NAN -> ""
+#         if isinstance(value, float):
+#             if np.isnan(value):
+#                 value = ""
+#             else:
+#                 # trim trailing zeros from floats
+#                 value = round(value, 8)
+#                 if not Decimal(value) % 1:
+#                     value = str(int(value))
+
+#         # empty strings show as empty strings
+#         labels[nidx] = str(value)
+
+#     # mask/hide tips and root
+#     if not show_root:
+#         labels[-1] = ""
+#     if not show_tips:
+#         for i in range(self.ntips):
+#             labels[i] = ""
+
+#     # also hide any True indices in mask argument
+#     if mask is not None:
+#         if isinstance(mask, (pd.DataFrame, pd.Series)):
+#             mask = mask.values
+#         if isinstance(mask, (tuple, list)):
+#             mask = np.array(mask).astype(bool)
+#         assert mask.size == len(labels), (
+#             f"mask must be nnodes is size ({self.nnodes})")
+#         assert mask.dtype == np.bool_, (
+#             "mask must contain only boolean types")
+#         for idx, val in enumerate(mask):
+#             if not val:
+#                 labels[idx] = ""
+
+#     # apply formatter lambda func to all non-hidden label strings
+#     if formatter is not None:
+#         labels = [
+#             str(formatter(i)) if i not in ("", " ") else i
+#             for i in labels
+#         ]
+#     return labels
 
 if __name__ == "__main__":
 
