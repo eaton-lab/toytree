@@ -20,7 +20,7 @@ Deprecated or moved:
 # pylint: disable=too-many-lines, too-many-public-methods, invalid-name
 
 
-# from typing import Type, Set, Tuple #, Any, List, Optional
+from typing import Union #Type, Set, Tuple #, Any, List, Optional
 import itertools
 from hashlib import md5
 from collections import deque
@@ -30,31 +30,36 @@ from toytree.utils.exceptions import TreeNodeError
 
 
 class TreeNode:
-    """
-    TreeNode class is used to represent a vertex in a tree, with one
-    or more connected node/vertices making up a hierarchical tree.
-    All TreeNodes contain a top-level 'root' node that has no parent
-    (it's .up attribute = None) whether or not the tree is rooted.
+    """A TreeNode represents a node in a tree, with one or more 
+    connected nodes making up a hierarchical tree.
 
-    A TreeNode can be initialized from a newick string, or empty 
-    string. To parse newick strings to create a TreeNode it is 
-    recommended to use toytree.tree().
+    To parse a newick string to create a TreeNode see the 
+    :mod:`toytree.core.io` module. The init constructor for this
+    class creates only a single node. To build a tree multiple 
+    TreeNodes must be connected by filling their .children and .up
+    attributes (or using helper functions for this).
+
+    Note
+    ----
+    The toytree.TreeNode class is related to the Tree class from the
+    ete3 module, but has several attributes or functions updated,
+    replaced, or removed.
 
     Parameters
     ----------
-    newick: str
-        Path to the file containing the tree or, alternatively,
-        the text string containing the same information.
-
-    Returns
-    --------
-    A TreeNode object representing the root of a tree of TreeNodes.
+    dist: float
+        Length of the edge associated to this node.
+    support: float
+        Support value for the edge separating this node and its
+        descendants from any nodes ancestral (.up) from this node.
+    name: str
+        A name string stored to this node.
     """
     def __init__(
         self, 
-        dist:float=1.,
-        support:float=0.,
-        name:str="",
+        dist: float=1.,
+        support: float=0.,
+        name: str="",
         ) -> 'TreeNode':
 
         # TreeNode attributes with custom setter/getter functions
@@ -65,14 +70,13 @@ class TreeNode:
         self._height = 0.
         self.name = name
         self.features = set([])
-
-        # ToyTree node drawing information
+        """: Set of feature names associated with one or more nodes."""
         self.idx: int = None
+        """: index label (idx), every node has a unique idx."""
         self.x: float = None
+        """: x coordinate location assuming a down-facing tree."""
         self.y: float = None
-
-        # Add basic features (support is stored as float but displayed)
-        # as an int by get_node_labels if no decimal values.
+        """: y coordinate location assuming a down-facing tree."""
         self.features.update(["dist", "support", "name", "height", "idx"])
 
 
@@ -81,13 +85,12 @@ class TreeNode:
     ############################################################
     @property
     def dist(self):
-        """
-        TreeNode edge length (distance) from this node to it's parent.
+        """Edge length from this node to it's parent.
+
         It is not recommended to change .dist attributes directly on 
-        TreeNodes unless you know what you're doing. Instead, 
-        it is recommended to use the function of a ToyTree object
-        .set_node_values(feature='dist', mapping={...}) to set new
-        dist values on one or more nodes of a ToyTree.
+        TreeNodes unless you know what you're doing. Instead, you
+        should use helper functions from ToyTree object's like
+        :func:`set_node_data`, or functions from :mod:`toytree.mod`.
         """
         return self._dist
 
@@ -143,11 +146,11 @@ class TreeNode:
                 'node support must be a float number') from err
 
     @property
-    def up(self):
-        """
-        Returns the parent node of the current node, meaning the next
-        connected node closer to the root TreeNode of the tree, 
-        from the current node, whether or not the tree is truly rooted.
+    def up(self) -> Union['toytree.TreeNode', None]:
+        """The parent node (next node towards root) from this node.
+        
+        If this node is the root then up will return None. If the
+        tree is unrooted 
         """
         return self._up
 
@@ -160,10 +163,7 @@ class TreeNode:
 
     @property
     def children(self):
-        """
-        Returns a list of TreeNodes that are the direct descendants
-        of the current node. 
-        """
+        """A list of TreeNodes that are direct descendants on this node."""
         return self._children
 
     @children.setter
@@ -952,17 +952,21 @@ class TreeNode:
     #########################################################
     # Distance related functions
     #########################################################
-    # Error: TreeNode.get_distance(7, 6) != TreeNode.get_distance(6, 7)
-    # TODO: deprecate whereever possible, but leave as legacy for ete
-    # users. Replace with Toytree funcs.
     def get_distance(self, target, target2=None, topology_only=False):
-        """
-        Returns the distance between two nodes. If only one target is
-        specified, it returns the distance bewtween the target and the
-        current node.
+        """Return the distance between two nodes. 
 
-        Parameters:
-        -----------
+        If only one target is specified, it returns the distance 
+        between the target and the current node.
+
+        Deprecated
+        ----------
+        This function should not be used. It returns results that do
+        not make sense: e.g., TreeNode.get_distance(7, 6) != 
+        TreeNode.get_distance(6, 7). It remains in the code for legacy
+        purposes only, for now.
+
+        Parameters
+        ----------
         target: 
             a node within the same tree structure.
 
@@ -974,10 +978,11 @@ class TreeNode:
             If set to True, distance will refer to the number of nodes 
             between target and target2.
 
-        Returns:
-        --------
-        branch length distance between target and target2. If topology_only 
-        flag is True, returns the number of nodes between target and target2.
+        Returns
+        -------
+        branch length distance between target and target2. If 
+        topology_only flag is True, returns the number of nodes 
+        between target and target2.
         """
         if target2 is None:
             target2 = self
