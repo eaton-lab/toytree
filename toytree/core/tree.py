@@ -821,9 +821,6 @@ class ToyTree:
         nas = NodeAssist(nself, names, wildcard, regex)
         tipnames = nas.get_tipnames()
 
-        if len(tipnames) == len(nself):
-            raise ToytreeError("You cannot drop all tips from the tree.")
-
         if not tipnames:
             raise ToytreeError("No tips selected.")
 
