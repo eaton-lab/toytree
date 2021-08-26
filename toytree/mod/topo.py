@@ -163,7 +163,7 @@ def topo_move_clade(
     self, 
     idx0: int,
     idx1: int,
-    dist: Optional[float]=None,
+    height: Optional[float]=None,
     name: Optional[str]=None,
     shrink: bool=False,
     ):
@@ -183,7 +183,7 @@ def topo_move_clade(
                           Z
           Z              / \              Z
          / \            E   \            / \  
-        E   \          /     \          /   X --- aut-set dist
+        E   \          /     \          /   X --- auto-set dist
        / \   \        C       Y        /   / \  
       D   \   \  -->            -->   /   /   D --- auto-set dist
      / \   \   \          D          /   /   / \  
@@ -192,80 +192,121 @@ def topo_move_clade(
 
     Note
     ----
-    This operation is synonymous with a subprune regrafting (SPR).
-    Internal nodes that leave no descendants (e.g., E) from above
-    are removed from the tree.
+    This operation is synonymous with a rooted subprune regrafting 
+    (SPR) move. Internal nodes that leave no descendants (e.g., E) 
+    from above are removed from the tree.
     
     Parameters
     ----------
     idx0: int
         The idx label of the Node at the top of the clade that 
         will be pruned from the tree and re-attached elsewhere.
-
     idx1: int
         The idx label of the Node whose branch will be split to 
         create a new parent node of the re-attached clade. 
-
-    dist: Optional[float]
-        The distance along the length of the idx1 Node's edge at
-        which to insert the new parent Node. This must be > 0 
-        and < idx1 Node dist. If None the midpoint is used. The
-        dist of the new internal node will be the original idx1 
-        Node dist minus this value.
-    
+    height: Optional[float]
+        The height at which to insert node idx0 above node idx1.
+        This value must be in the interval between the height of 
+        idx1 and its parent (node.height, node.height + node.dist).
+        If None then the node will be inserted at the midpoint
+        along node idx1's edge.
     name: Optional[s]    
         A name string to apply to the newly created internal node.
-
     shrink: bool
         If shrink is True then the subtree edge lengths (dists) 
         will be scaled to allow the clade to be inserted anywhere
         in the tree. If False a ToyTreeError is raised if the 
         subclade cannot be inserted below the dist value.
     """
+    # create a copy
     tree = self._tree.copy()
 
-    clade = tree.idx_dict[idx0]
-    clade_parent = clade.up
-    clade.detach()
+    # get selected nodes (FIXME: use nas to allow names selections)
+    src = tree.idx_dict[idx0]
+    dest = tree.idx_dict[idx1]
 
-    # this will set new idxs on everything...
-    tree = self._tree.copy()
-    node = tree.idx_dict[idx]
-    parent = node.up
-    dist = dist if dist is not None else node.dist / 2.
-    assert node.dist > dist > 0, (
-        f"the new Node dist must be > 0 and < dist of Node {idx} ({node.dist}")
-    new_node = toytree.TreeNode(
-        name=name if name is not None else "", 
-        dist=node.dist - dist,
+    # cannot move a clade to its own children in rooted move
+    assert idx0 != idx1, "idx0 must be different from idx1"
+    assert idx0 != tree.treenode, "src node cannot be root."
+    assert idx1 != tree.treenode, "dest node cannot be root."    
+    assert dest not in src.get_descendants(), (
+        "dest node cannot be a descendant of src in a rooted SPR move."
     )
-    node.dist = dist
-    parent.children.remove(node)
-    parent.children.append(new_node)
-    new_node.up = parent
-    new_node.children = [node]
-    node.up = new_node
 
+    # check the height arg
+    if height is not None:
+        assert dest.up.height >= height >= dest.height, (
+            f"height {height} does occur on the node {idx1}'s edge: "
+            f"({dest.height}-{dest.up.height})")
 
+    # get dist arg from height
+    if height is None:
+        dist = dest.dist / 2.
+    else:
+        dist = height - dest.height 
 
-    sister_1 = tree.idx_dict[idx]
-    if dist is None:
-        dist = sister_1.dist / 2.
-    sister_2 = toytree.TreeNode(name=name, dist=dist)
-    if parent_dist is None:
-        parent_dist = orig_parent.height - dist
+    # if the dest is the src's parent, then we only need to modify the
+    # dist of dest and return the tree.
+    if dest == src.up:
+        diff = dest.dist - dist
+        dest.dist = dist
+        for child in dest.children:
+            child.dist += diff
+        return tree
 
-    # modify sister_1 and new_parent dist
-    sister_1.dist = sister_1.dist - parent_dist
-    new_parent = toytree.TreeNode(name=parent_name, dist=parent_dist)
+    # create new internal node.
+    newnode = toytree.TreeNode(
+        name=name if name is not None else "", 
+        dist=dest.dist - dist,
+    )
 
-    orig_parent.children.remove(sister_1)
-    orig_parent.children.append(new_parent)
-    sister_1.up = new_parent
-    sister_2.up = new_parent
-    new_parent.children = [sister_1, sister_2]
-    new_parent.up = orig_parent
+    # detach the source clade.
+    ancestor = src.up
+    src = src.detach()
 
-    tree._coords.update()
+    # remove the null node (preserving bls) and in case the null node
+    # is the root, reset the tree variable to a new TreeNode root.
+    if ancestor.is_root():
+        if dest.up == tree.treenode:
+            root = newnode
+        else:
+            root = [i for i in tree.treenode.children if i != ancestor][0]
+        tree.treenode.delete(True, True)
+    else:
+        root = tree.treenode
+    ancestor.delete(True, True)
+    
+    # set src dist (optional allowing shrink to fit)
+    if src.height > dest.height + dist:
+        if not shrink:
+            raise ValueError(
+                f"Clade {idx0} does not fit below clade {idx1}. "
+                "Use shrink=True.\n"
+                f"Details: node {idx0} height={src.height}; "
+                f"node {idx1} height={dest.height + dist}; "
+                f"dist={dist}; "
+                f"Error b/c {src.height} > {dest.height} + {dist}")
+        orig = src.height + src.dist
+        scale = orig / (dest.height + dist)
+        for node in src.traverse():
+            node.dist /= scale
+    else:
+        src.dist = dest.height + dist - src.height
+            
+    # set dest dist
+    dest.dist = dist
+
+    # connect newnode to its parent
+    dest_parent = dest.up
+    dest_parent.children.append(newnode)
+    dest_parent.children.remove(dest)
+
+    # connect newnode to its children
+    newnode.up = dest_parent
+    newnode.children = [src, dest]
+    src.up = newnode
+    dest.up = newnode
+
+    # re-toytree it from the root
+    tree = toytree.tree(root)
     return tree
-
