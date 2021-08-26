@@ -160,7 +160,7 @@ def topo_add_tip_node(
 
 
 def topo_move_clade(
-    self, 
+    tree, 
     idx0: int,
     idx1: int,
     height: Optional[float]=None,
@@ -198,6 +198,8 @@ def topo_move_clade(
     
     Parameters
     ----------
+    tree: ToyTree
+        A tree object.
     idx0: int
         The idx label of the Node at the top of the clade that 
         will be pruned from the tree and re-attached elsewhere.
@@ -217,9 +219,14 @@ def topo_move_clade(
         will be scaled to allow the clade to be inserted anywhere
         in the tree. If False a ToyTreeError is raised if the 
         subclade cannot be inserted below the dist value.
+
+    Returns
+    -------
+    ToyTree
+        A modified copy of the original tree is returned.
     """
     # create a copy
-    tree = self._tree.copy()
+    tree = tree.copy()
 
     # get selected nodes (FIXME: use nas to allow names selections)
     src = tree.idx_dict[idx0]
