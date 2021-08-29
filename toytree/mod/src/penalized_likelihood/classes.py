@@ -23,35 +23,41 @@ RATES_MAX = 1e5
 
 
 class Chronos:
-    """
-    Scale edge lengths of a tree to make it ultrametric (tips align 
-    at 0) by estimating rate variation with penalized likelihood.
+    """Return an ultrametric tree using penalized likelihood.
 
-    Parameters:
+    Scales edge lengths of a non-ultrametric tree to make it 
+    ultrametric (all tips align at zero) by treating edge lengths
+    as rate x time (which is typically true for ML estimated trees),
+    and estimating rate variation among all edges so that the age of 
+    tip nodes=0. 
+
+    Parameters
     -----------
-    tree (Toytree):
-        A toytree object.
-    model (str):
-        The model of rate variation; default="relaxed". 
-    weight (float):
+    tree: ToyTree
+        A toytree instance.
+    model: str
+        A model of rate variation among edges ("relaxed", ...). 
+    weight: float
         Weighting of the rate variation (penalty component) to the 
-        penalized likelihood score. This is referred to as lambda in 
-        chronos and by Sanderson. Lower values allow less variation.
-    epsilon (float):
+        penalized likelihood score. This is referred to as lambda 
+        by Sanderson. Lower values allow less variation.
+    epsilon: float
         Convergence diagnostic... Default=1e-8.
-    tol (float):
+    tol: float
         Tolerance for convergence, the minimum on rates. Default=1e-8.
-    verbose (bool):
+    verbose: bool
         Prints information on model fitting and results. Default=False.
 
-    Returns:
-    -----------
-    tree (Toytree) transformed with new estimated ages and rates.
+    Returns
+    -------
+    A Toytree with transformed dist (edge length) feature values, and
+    features for ages and rates.
 
-    References:
-    -----------
-      - https://github.com/cran/ape/blob/master/R/chronos.R
-      - Paradis article ...
+    References
+    ----------
+    Sanderson
+    https://github.com/cran/ape/blob/master/R/chronos.R
+    Paradis article ...
     """
     def __init__(
         self, 
