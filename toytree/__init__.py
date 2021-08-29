@@ -4,7 +4,7 @@
 A minimalist Python package for tree drawing and manipulation.
 """
 
-__version__ = "2.1.0-dev"
+__version__ = "2.1.1-dev"
 __author__ = "Deren Eaton"
 
 
