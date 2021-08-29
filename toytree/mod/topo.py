@@ -316,4 +316,8 @@ def topo_move_clade(
 
     # re-toytree it from the root
     tree = toytree.tree(root)
+
+    # TODO: add highlight boolean arg and color moved clade.
+    # tree.style.edge_colors = ['black'] * tree.nnodes
+    # for idx in tree.get_node_descendant_idxs(src)
     return tree
