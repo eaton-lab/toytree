@@ -6,7 +6,9 @@ code until it finds a more permanent home.
 """
 
 import re
-from exceptions import ToytreeError
+# from exceptions import ToytreeError
+
+import toyplot
 
 
 def bpp2newick(bppnewick):
@@ -21,3 +23,12 @@ def bpp2newick(bppnewick):
     new = regex3.sub(":", new)
     return new.strip()
 
+
+class ScrollableCanvas(toyplot.Canvas):
+    """Canvas subclass with horizontal scrolling on large widths.
+    This is returned as part of a TreeSequenceDrawing.
+    """
+    def _repr_html_(self):
+        return toyplot.html.tostring(
+            self, style={"text-align": "center", "width": f"{self.width}px"}
+        )
