@@ -11,9 +11,9 @@ from toytree.utils.exceptions import ToytreeError
 
 
 def normalize_values(values, nbins=10, min_value=2, max_value=12):
-    """
-    Distributes values into bins spaced at reasonable sizes for
-    plotting. Example, this can be used automatically scale Ne values
+    """Distributes values into bins spaced at reasonable sizes for plotting.
+
+    This is used in tree_style='p' to automatically scale Ne values
     to plot as edge widths.
     """
     # missing values are not allowed
