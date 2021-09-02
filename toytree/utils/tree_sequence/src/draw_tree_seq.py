@@ -71,7 +71,7 @@ class TreeSequenceDrawing(MultiDrawing):
 
         # positioning
         self.xprop_space = 0.2
-        self.xspace = self.xprop_space * self.trees[0].ntips - 1
+        self.xspace = max(2., self.xprop_space * self.trees[0].ntips - 1)
         self.xtree = self.xspace + self.trees[0].ntips - 1
         self.xmax = self.xtree * len(self.trees)
         self.ymax = max(tre.treenode.height for tre in self.trees)
@@ -221,6 +221,10 @@ class TreeSequenceDrawing(MultiDrawing):
                 node = tree.tsidx_dict[mut.node]
                 time = mut.time
 
+                # skip if on root edge (shared by all)
+                if node.is_root():
+                    continue
+
                 # project mutation points to proper layout type
                 xpos.append(node.x + mark.xbaseline)
                 ypos.append(time)
@@ -244,7 +248,7 @@ class TreeSequenceDrawing(MultiDrawing):
                 mark = self.axes.scatterplot(
                     xpos, ypos,
                     marker='o',
-                    size=8,
+                    size=7,
                     color=colors,
                     mstyle=mstyle,
                     title=titles,
