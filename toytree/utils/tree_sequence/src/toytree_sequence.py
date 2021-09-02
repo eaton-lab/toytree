@@ -134,9 +134,9 @@ class ToyTreeSequence:
             pnode.children.append(cnode)
 
         # wrap TreeNode as a toytree
-        ttree = toytree.ToyTree(idx_dict[root_idx])
+        ttree = toytree.ToyTree(idx_dict[root_idx])#.ladderize()
 
-        # add Tree as metadata
+        # add mutations as metadata
         if site is not None:
             ttree.mutations = [i for i in tree.mutations() if i.position == site]
         else:
@@ -227,6 +227,11 @@ class ToyTreeSequence:
             # get node id and time using the 'tsidx' (tskit node id)
             node = tree.tsidx_dict[mut.node]
             time = mut.time
+
+            # TODO: make optional.
+            # do now show mutations on root node.
+            if node.is_root():
+                continue
 
             # project mutation points to proper layout type
             if mark.layout == "l":
