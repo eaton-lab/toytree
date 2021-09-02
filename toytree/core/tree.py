@@ -824,7 +824,6 @@ class ToyTree:
         # you CAN extract all tips from the tree.
         # if len(tipnames) == len(nself):
         #     raise ToytreeError("You cannot drop all tips from the tree.")
-
         if not tipnames:
             raise ToytreeError("No tips selected.")
 
