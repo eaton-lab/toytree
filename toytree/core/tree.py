@@ -46,11 +46,14 @@ from toytree.utils.exceptions import ToytreeError
 from toytree.mod.rooting import Rooter
 from toytree.pcm.src.api_tree import PhyloCompAPI
 import toytree.mod.api
-
 import toytree.distance.api
+
+# register logger to module
+logger = logger.bind(name="toytree")
 
 # PEP 484 recommend capitalizing alias names
 Url = str
+
 
 class ToyTree:
     """The core toytree class for manipulating and visualizing trees.

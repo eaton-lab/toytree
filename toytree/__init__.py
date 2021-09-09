@@ -26,5 +26,5 @@ from toytree.core.style.color import COLORS1, COLORS2, color_cycler
 # import toytree.pcm
 
 # start the logger in INFO
-from toytree.utils.logger import set_loglevel
-set_loglevel("WARNING")
+from toytree.utils.logger import set_log_level
+set_log_level("WARNING")

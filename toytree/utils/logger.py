@@ -9,18 +9,10 @@ from loguru import logger
 import toytree
 
 
-LOGFORMAT = (
-    "<level>{level: <7}</level> | "
-    "<b><magenta>{function: <10}:{line}</magenta></b> | "
-    "{message}"
-)
-
 def colorize():
-    """
-    colorize the logger if stderr is IPython/Jupyter or a terminal (TTY)
-    """
+    """colorize the logger if stderr is IPython/Jupyter or a terminal (TTY)"""
     try:
-        import IPython
+        import IPython        
         tty1 = bool(IPython.get_ipython())
     except ImportError:
         tty1 = False
@@ -30,21 +22,28 @@ def colorize():
     return False
 
 
-def set_loglevel(loglevel="INFO"):
+LOGGERS = [0]
+def set_log_level(log_level="INFO"):
+    """Set the log level for loguru logger.
+
+    This removes default loguru handler, but leaves any others, 
+    and adds a new one that will filter to only print logs from 
+    toytree modules, which should use `logger.bind(name='toytree')`.
     """
-    Set the loglevel for loguru logger. Using 'enable' here as 
-    described in the loguru docs for logging inside of a library.
-    This sets the level at which logger calls will be displayed 
-    throughout the rest of the code.
-    """
-    logger.add(sys.stderr, level=loglevel)
-    config = {}
-    config["handlers"] = [{
-        "sink": sys.stderr,
-        "format": LOGFORMAT,
-        "level": loglevel,
-        "colorize": colorize(),
-    }]
-    logger.configure(**config)
+    for idx in LOGGERS:
+        try:
+            logger.remove(idx)
+        except ValueError:
+            pass
+    idx = logger.add(
+        sink=sys.stderr,
+        level=log_level,
+        colorize=colorize(),
+        format="{level.icon} toytree: {message}",
+        filter=lambda x: x['extra'].get("name") == "toytree",
+    )
+    LOGGERS.append(idx)
     logger.enable("toytree")
-    logger.debug(f"toytree v.{toytree.__version__} logging enabled")
+    logger.bind(name="toytree").debug(
+        f"toytree v.{toytree.__version__} logging enabled"
+    )
