@@ -198,7 +198,7 @@ class ToyTreeSequence:
         info is present.
         """
         if (site is None) and (idx is None):
-            raise ValueError("must enter a 'site' or 'idx' argument.")
+            idx = 0
         if (site is not None) and (idx is not None):
             raise ValueError("must enter a 'site' or 'idx' argument, but not both.")
         if site is not None:
