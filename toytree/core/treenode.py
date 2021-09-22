@@ -26,7 +26,7 @@ from hashlib import md5
 from collections import deque
 from functools import cmp_to_key
 from toytree.core.io.TreeWriter import NewickWriter
-from toytree.utils.exceptions import TreeNodeError
+from toytree.utils import TreeNodeError
 
 
 class TreeNode:

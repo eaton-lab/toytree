@@ -42,7 +42,7 @@ from toytree.core.drawing.render import ToytreeMark
 from toytree.core.drawing.draw_toytree import draw_toytree
 from toytree.core.io.TreeParser import TreeParser
 from toytree.core.io.TreeWriter import NewickWriter
-from toytree.utils.exceptions import ToytreeError
+from toytree.utils import ToytreeError
 from toytree.mod.rooting import Rooter
 from toytree.pcm.src.api_tree import PhyloCompAPI
 import toytree.mod.api
