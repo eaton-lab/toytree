@@ -17,8 +17,8 @@ TODO:
 from typing import Union, List, Iterable, Optional, Tuple
 from copy import deepcopy
 from pathlib import Path
-from dataclasses import dataclass
-import toyplot
+# from dataclasses import dataclass
+# import toyplot
 import numpy as np
 
 from toytree.core.tree import ToyTree
@@ -28,7 +28,7 @@ from toytree.core.style.tree_style import TreeStyle, get_tree_style
 from toytree.core.drawing.canvas_setup import GridSetup, CanvasSetup
 # from toytree.core.drawing.render import ToytreeMark
 from toytree.core.drawing.canvas_setup import style_ticks
-from toytree.utils.exceptions import ToytreeError
+from toytree.utils import ToytreeError
 import toytree
 
 
