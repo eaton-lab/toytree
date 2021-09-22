@@ -20,8 +20,8 @@ import os
 import re
 import requests
 from toytree.core.treenode import TreeNode
-from toytree.utils.globals import NW_FORMAT
-from toytree.utils.exceptions import NewickError, NexusError
+from toytree.utils import NewickError#, NexusError
+from toytree.utils.src.globals import NW_FORMAT
 
 
 # Regular expressions used for reading newick format

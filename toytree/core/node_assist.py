@@ -6,7 +6,7 @@ set of arguments entered as a set of names, regex, or idx.
 """
 
 import re
-from toytree.utils.exceptions import ToytreeError
+from toytree.utils import ToytreeError
 
 
 class NodeAssist:

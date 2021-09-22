@@ -19,7 +19,7 @@ import toyplot
 import toyplot.color
 import pandas as pd
 from toytree.core.drawing.render import style_to_string
-from toytree.utils.exceptions import ToytreeError
+from toytree.utils import ToytreeError
 
 
 COLORS1 = toyplot.color.brewer.palette("Set2")

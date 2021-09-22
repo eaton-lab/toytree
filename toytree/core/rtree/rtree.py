@@ -9,7 +9,7 @@ import numpy as np
 from loguru import logger
 from toytree.core.tree import ToyTree
 from toytree.core.treenode import TreeNode
-from toytree.utils.exceptions import ToytreeError
+from toytree.utils import ToytreeError
 
 
 # limit the API view

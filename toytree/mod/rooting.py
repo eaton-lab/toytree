@@ -6,7 +6,7 @@ Rooting class
 
 from toytree.core.treenode import TreeNode
 from toytree.core.node_assist import NodeAssist
-from toytree.utils.exceptions import ToytreeError
+from toytree.utils import ToytreeError
 
 
 class Rooter:

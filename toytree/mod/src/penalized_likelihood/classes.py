@@ -13,7 +13,7 @@ import scipy.stats as stats
 from scipy.optimize import minimize, Bounds, LinearConstraint
 from scipy.special import factorial
 import toytree
-from toytree.utils.exceptions import ToytreeError
+from toytree.utils import ToytreeError
 
 
 AGES_MIN = 1e-8

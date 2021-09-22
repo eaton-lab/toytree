@@ -8,7 +8,7 @@ import numpy as np
 import toyplot
 import toytree
 from toytree.core.tree import ToyTree
-from toytree.utils.exceptions import ToytreeError
+from toytree.utils import ToytreeError
 
 
 class Container:

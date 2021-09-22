@@ -4,11 +4,26 @@
 Robinson-Foulds Distance Calculations modified from ete3 TreeNode subfunction.
 """
 
-from toytree.utils.exceptions import TreeError
+from dataclasses import dataclass
+from toytree.utils import ToytreeError
 
 
+@dataclass
+class TreeComparison:
+    tree1: 'toytree.ToyTree'
+    tree2: 'toytree.ToyTree'
+    unrooted: bool
 
-class RobinsonFoulds(object):
+    def __post_init__(self):
+        """Checks that trees are same size and tip set."""
+        # TODO
+
+@dataclass
+class RobinsonFoulds(TreeComparison):
+    pass
+
+
+class OldRobinsonFoulds(object):
     """
     Simplified RF code for comparing TreeNodes.
     """
@@ -58,15 +73,15 @@ class RobinsonFoulds(object):
         # check whether to bail out
         if self.unrooted_trees:
             if self.expand_polytomies:
-                raise TreeError(
+                raise ToytreeError(
                     "Cannot use 'expand_polytomies' and 'unrooted_trees'")                    
         else:
             if (len(self.t1.children) > 2) or (len(self.t2.children) > 2):
-                raise TreeError(
+                raise ToytreeError(
                     "Unrooted tree found! See 'unrooted_trees' flag.")
 
         if self.expand_polytomies and self.correct_by_polytomy_size:
-            raise TreeError(
+            raise ToytreeError(
                 "Cannot use expand_polytomies with correct_by_polytomy_size")
 
 
@@ -92,9 +107,9 @@ class RobinsonFoulds(object):
             getattr(i, self.attr_t2, None) in self.common_attrs
         ))
         if size1 > len(self.common_attrs):
-            raise TreeError('Duplicated items found in source tree')
+            raise ToytreeError('Duplicated items found in source tree')
         if size2 > len(self.common_attrs):
-            raise TreeError('Duplicated items found in reference tree')
+            raise ToytreeError('Duplicated items found in reference tree')
 
 
     def get_trees(self):
@@ -146,7 +161,7 @@ class RobinsonFoulds(object):
                 if len(i.children) > 2
             )
             if corr1 and corr2:
-                raise TreeError(
+                raise ToytreeError(
                     "Both trees have polytomies! Try expand_polytomies=True")
             else:
                 self.polytomy_correction = max((corr1, corr2))

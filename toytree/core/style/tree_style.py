@@ -1,13 +1,12 @@
 #!/usr/bin/env python
 
-"""
-Tree Styles checked and expanded at .draw() or repr().
+"""Tree Styles checked and expanded at .draw() or repr().
 
-Usage
------
-> toytree.tree(...)                   # DefaultTreeStyle() init
-> tree.draw(**kwargs)                 # dict or user args
-> style = DefaultTreeStyle(**kwargs)  # DefaultTreeStyle(**dict, **tree.style)
+Examples
+--------
+>>> toytree.tree(...)                   # DefaultTreeStyle() init
+>>> tree.draw(**kwargs)                 # dict or user args
+>>> style = DefaultTreeStyle(**kwargs)  # DefaultTreeStyle(**dict, **tree.style)
 """
 
 from typing import List, Tuple, Optional, Union, Iterable, Dict
@@ -21,7 +20,7 @@ import pandas as pd
 from toytree.core.node_assist import NodeAssist
 from toytree.core.style.color import ToyColor, Color, color_parser, color_cycler
 from toytree.utils.transform import normalize_values
-from toytree.utils.exceptions import ToytreeError
+from toytree.utils import ToytreeError
 
 
 class EdgeType(str, Enum):

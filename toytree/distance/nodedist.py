@@ -7,7 +7,7 @@ Node distance functions.
 import itertools
 import numpy as np
 import pandas as pd
-from toytree.utils.exceptions import ToytreeError
+from toytree.utils import ToytreeError
 # import toytree
 
 

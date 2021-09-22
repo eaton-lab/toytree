@@ -19,7 +19,7 @@ import numpy as np
 from scipy.optimize import minimize
 from scipy.linalg import expm
 from toytree import ToyTree
-from toytree.utils.exceptions import ToytreeError
+from toytree.utils import ToytreeError
 from toytree.pcm.src.discrete_markov_model_sim import MarkovModel
 
 @dataclass

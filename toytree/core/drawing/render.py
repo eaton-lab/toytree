@@ -20,7 +20,7 @@ from toyplot.html import (
 from toytree.core.drawing.toytree_mark import ToytreeMark
 from toytree.core.drawing.render_text import render_text
 # from toytree.core.style.color import COLORS1
-from toytree.utils.globals import PATH_FORMAT
+from toytree.utils.src.globals import PATH_FORMAT
 
 # Register multipledispatch to use the toyplot.html namespace
 dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)

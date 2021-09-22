@@ -6,7 +6,7 @@ A class object for generating and storing Toytree plotting coordinates.
 
 from typing import Optional, List
 import numpy as np
-from toytree.utils.exceptions import ToytreeError
+from toytree.utils import ToytreeError
 
 
 class Coords:
