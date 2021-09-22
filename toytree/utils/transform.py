@@ -7,7 +7,7 @@ Data transformations for formatting node values nicely.
 
 from copy import deepcopy
 import numpy as np
-from toytree.utils.exceptions import ToytreeError
+from toytree.utils import ToytreeError
 
 
 def normalize_values(values, nbins=10, min_value=2, max_value=12):

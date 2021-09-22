@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
-"""
-logger for development and user warnings.
+"""Logger for development and user warnings.
+
+All toytree modules that use logging use a 'bound' logger that will
+be filtered here to only show for toytree and not for other Python
+packages.
 """
 
 import sys

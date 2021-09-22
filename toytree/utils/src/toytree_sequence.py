@@ -1,7 +1,12 @@
 #!/usr/bin/env python
 
-"""
-The ToyTreeSequence class generates ToyTree drawings from tree sequences.
+"""Utilities for visualizing TreeSequences from tskit or SLiM.
+
+The :class:`ToyTreeSequence` class holds the tskit.trees.TreeSequence 
+object in its `.tree_sequence` attribute. It is primarily used to 
+generate drawings of one or more trees with the option to display 
+mutations, MutationTypes, and a chromosome structure. These latter 
+options are mostly for SLiM simulated TreeSequences.
 
 Examples
 --------
@@ -20,14 +25,18 @@ Draw the TreeSequence w/ mutations.
 from typing import Optional, List, Iterable, Union, Dict
 from loguru import logger
 import numpy as np
-from toytree.utils.tree_sequence.src.draw_tree_seq import TreeSequenceDrawing
+from toytree.utils.src.toytree_sequence_drawing import ToyTreeSequenceDrawing
 import toytree
 
 logger = logger.bind(name="toytree")
 
 
 class ToyTreeSequence:
-    """Wrapper around a tskit.trees.TreeSequence.
+    """Return an instance of a ToyTreeSequence.
+
+    ToyTreeSequence objects wrap around tskit.trees.TreeSequence 
+    objects to make it easier to extract subsamples from trees, and 
+    visualize one or multiple trees as a sequence.
 
     Parameters
     ----------
@@ -206,7 +215,7 @@ class ToyTreeSequence:
         tree_range = range(start, tmax)
         trees = [self.at_index(i) for i in tree_range]
         breaks = self.tree_sequence.breakpoints(True)[start: tmax + 1]
-        tsd = TreeSequenceDrawing(
+        tsd = ToyTreeSequenceDrawing(
             trees, breaks, 
             width=width, height=height,
             scrollable=scrollable,

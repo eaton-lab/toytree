@@ -4,7 +4,8 @@
 toytree drawing annotation module.
 
 Add annotations to drawings to show data or highlight sections
-of a toytree drawing. This module is available as both a 
+of a toytree drawing. This module is available as both a package-level
+module as well as from ToyTree instances as an API.
 
 Examples
 --------

@@ -218,7 +218,7 @@ if __name__ == "__main__":
     DATA = np.array([[0.5, 0.3, 0.2]] * (TREE.nnodes - TREE.ntips))
     COLORS = toytree.COLORS1 #
 
-    MARK = draw_node_pie_chart(
+    MARK = draw_node_pie_charts(
         axes=a, 
         coordinates=TREE.get_node_coordinates('r')[TREE.ntips:],
         data=DATA,

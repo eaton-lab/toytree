@@ -10,16 +10,16 @@ class ToytreeError(Exception):
         Exception.__init__(self, *args, **kwargs)
 
 
-class TreeNodeError(Exception):
+class TreeNodeError(ToytreeError):
     def __init__(self, *args, **kwargs):
-        Exception.__init__(self, *args, **kwargs)
+        ToytreeError.__init__(self, *args, **kwargs)
 
 
-class NewickError(Exception):
+class NewickError(ToytreeError):
     def __init__(self, value):
-        Exception.__init__(self, value)
+        ToytreeError.__init__(self, value)
 
 
-class NexusError(Exception):
+class NexusError(ToytreeError):
     def __init__(self, value):
-        Exception.__init__(self, value)
+        ToytreeError.__init__(self, value)

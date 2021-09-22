@@ -1,18 +1,25 @@
 #!/usr/bin/env python
 
-"""
-Draw a horizontal scrolling toyplot.Canvas with multiple trees.
+"""Utilities for visualizing TreeSequences from tskit or SLiM.
 
-This is currently used by the ipcoal and shadie packages to
-visualize tree sequences simulated in SLiM and/or msprime.
+The :class:`ToyTreeSequence` class holds the tskit.trees.TreeSequence 
+object in its `.tree_sequence` attribute. It is primarily used to 
+generate drawings of one or more trees with the option to display 
+mutations, MutationTypes, and a chromosome structure. These latter 
+options are mostly for SLiM simulated TreeSequences.
+
+Examples
+--------
+>>> tts = toytree.utils.tree_sequence.ToyTreeSequence(tree_sequence)
+>>> tts.draw_tree(idx=0)
+>>> tts.draw()
 """
 
 from typing import List, Union, Tuple, Optional, Iterable
 from dataclasses import dataclass
 import toyplot
-from toytree.utils.utils import ScrollableCanvas
+from toytree.utils.src.scrollable_canvas import ScrollableCanvas
 import toytree
-
 
 
 @dataclass
@@ -40,10 +47,10 @@ class MultiDrawing:
         ))
 
 
-class TreeSequenceDrawing(MultiDrawing):
-    """Return a tree-sequence drawing for ntrees.
+class ToyTreeSequenceDrawing(MultiDrawing):
+    """Return a drawing of multiple trees from a tree sequence.
 
-    A TreeSequence...
+    A ToyTreeSequence...
 
     Parameters
     ----------
@@ -235,7 +242,7 @@ class TreeSequenceDrawing(MultiDrawing):
                 colors.append(color)
                 title = (
                     f"id: {mut.id}\n"
-                    f"pos: {mut.position:.0f}\n"
+                    f"pos: {mut.site:.0f}\n"
                     f"time: {mut.time:.0f}\n"
                     f"mtype: {mtype}")
                 titles.append(title)
