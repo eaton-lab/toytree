@@ -15,16 +15,6 @@ import os
 from toytree.distance.robinson_foulds import OldRobinsonFoulds
 from toytree.distance.sample import Sample
 
-# testing
-
-# workflow goal
-#def robinson_foulds(tree1, tree2, *args):
-   
-#    tool = RobinsonFoulds(tree1, tree2, *args)
-#    tool.run()
-#    return tool.data
-
-
 
 class robinson_foulds():
     """Returns the Robinson-Foulds distance between two trees.
@@ -47,8 +37,6 @@ class robinson_foulds():
     >>> toytree.distance.treedist.robinson_foulds(tree1, tree2)
     """
 
-    # use *args to replace sampmethod, consenustree
-
     def __init__(self, trees, sampmethod, consensustree=None):
         # store inputs
         self.trees = toytree.core.multitree.MultiTree(trees)
@@ -58,7 +46,9 @@ class robinson_foulds():
         # store consensus tree
         self.consensustree = consensustree
         if self.consensustree == None:
-            self.consensustree = self.trees.get_consensus_tree()
+            self.consensustree = self.trees.get_consensus_tree() 
+        # append consensus tree as last in tree list
+        self.trees.treelist.append(self.consensustree)
 
         # store output
         self.getrfout = {}
@@ -72,42 +62,105 @@ class robinson_foulds():
         vs. compare all trees with consensus tree)
         Returns result in a dictionary, with key as tree # and value as RF value. 
         """
-        if self.sampmethod == "pairwise" or self.sampmethod == "random":
-            samporder = Sample(len(self.trees), self.sampmethod)
-            self.samporder = samporder.sampling()
+        for idx in range(len(self.trees)):
+            ttre = self.treelist[idx]
+            
+            
+            # PART 1: count number of internal edges
+            names = ttre.get_tip_labels()
+            
+            # create dictionary mapping numbers to tip labels
+            namedict = dict(enumerate(names))
+            # store final number of internal edges
+            num_of_internal_edges = 0
 
-            for idx in range(len(self.trees)-1):
-                ttre1 = self.treelist[(self.samporder[idx])]
-                ttre2 = self.treelist[(self.samporder[idx+1])]
-
-                rf = ttre1.treenode.robinson_foulds(ttre2.treenode)[0]
-                max_rf = ttre1.treenode.robinson_foulds(ttre2.treenode)[1]
-                final_rf = rf/max_rf
-
-                self.getrfout[str(self.samporder[idx]) + ", " + str(self.samporder[idx+1])] = final_rf
-        
-        else:   #self.sampmethod == "consensus":
-            for idx in range(len(self.trees)):
-                ttre1 = self.treelist[idx]
-                rf = ttre1.treenode.robinson_foulds(self.consensustree.treenode, unrooted_trees=True)[0]
-                max_rf = ttre1.treenode.robinson_foulds(self.consensustree.treenode, unrooted_trees=True)[1]
-                final_rf = rf/max_rf
-                
-                self.getrfout[str(idx) + ", consensus"] = final_rf
-        
-        return self.getrfout 
-    
+            # get all edges in terms of their associated nodes
+            for edge in ttre.get_edges():
+            # check if second value of edge (associated node that is further down the tree) is in dictionary keys
+                if edge[1] not in list(namedict.keys()):
+                # number of internal edges
+                    num_of_internal_edges += 1
+                    
+                    
+            # PART 2: count number of internal partition
+            # create dictionary mapping tip labels to names
+            ndict = {j: i for i, j in enumerate(names)}
+            
+            # save possible internal partitions in set
+            internal_partitions = set()
+            # use binary notation to record possible partitions
+            for node in ttre.treenode.traverse('preorder'):
+                bits = np.zeros(len(ttre), dtype=float)
+                for child in node.iter_leaf_names():
+                    bits[ndict[child]] = True
+                # skip all True (whole tree)
+                # or skip just one true (refers to scenario where only one tip is partitioned on the end)
+                if sum(bits) == 1 or sum(bits) == ttre.ntips:
+                    pass
+                else: 
+                    internal_partitions.add(tuple(bits))
+                        
+            # save RF data for each tree
+            # if last tree, this means this is the RF set for the consensus tree
+            if idx == len(self.trees)-1:
+                self.getrfout['consensus'] = num_of_internal_edges, internal_partitions
+                # remove consensus tree from tree list
+                del self.trees.treelist[-1]
+            # if not, treat RF set as set for a normal tree that will soon be used for comparisons
+            else:
+                self.getrfout[idx] = num_of_internal_edges, internal_partitions
+            
     
     def compare_rf(self):
         """
         Function to compile tree # and associated RFs into a final data frame as output with self.data
         """
-        for idx in self.getrfout:
-            self.data = self.data.append({'trees' : idx, 
-                                              'RF' : self.getrfout[idx]},
+        # follow sampling order if user wants to calculate distances in pairwise/random fashion
+        if self.sampmethod == "pairwise" or self.sampmethod == "random":
+            # generate sampling order depending on pairwise or random user input
+            length = len(self.trees)
+
+            samporder = Sample(length, self.sampmethod)
+            self.samporder = samporder.sampling()
+        
+            # iterate over each pair of trees depending on sampling order
+            for idx in range(len(self.trees)-1):      
+                t0_ninternaledges = self.getrfout[self.samporder[idx]][0]
+                t1_ninternaledges = self.getrfout[self.samporder[idx+1]][0]
+                t0_partitions = self.getrfout[self.samporder[idx]][1]
+                t1_partitions = self.getrfout[self.samporder[idx+1]][1]
+                t0_t1_shared_partitions = len(t0_partitions.intersection(t1_partitions))
+                
+                rf = t0_ninternaledges + t1_ninternaledges - 2*(t0_t1_shared_partitions)
+                max_rf = t0_ninternaledges + t1_ninternaledges
+            
+                self.data = self.data.append({'trees' : str(self.samporder[idx])+ ", " + str(self.samporder[idx+1]), 
+                                              'RF' : rf,
+                                              'max_RF': max_rf,
+                                              'normalized_rf': rf/max_rf},
                                               ignore_index = True)
-        return self.data
-    
+        # compares each tree with consensus
+        else:
+            consensus_ninternaledges = self.getrfout['consensus'][0]
+            consensus_partitions = self.getrfout['consensus'][1]
+            
+            for idx in range(len(self.trees)):
+                t0_ninternaledges = self.getrfout[idx][0]
+                t0_partitions = self.getrfout[idx][1]
+                con_t0_shared_partitions = len(consensus_partitions.intersection(t0_partitions))
+                
+                rf = consensus_ninternaledges + t0_ninternaledges - 2*(con_t0_shared_partitions)
+                max_rf = consensus_ninternaledges + t0_ninternaledges
+                
+                self.data = self.data.append({'trees' : str(idx) + ", consensus", 
+                                              'RF' : rf,
+                                              'max_RF': max_rf,
+                                              'normalized_rf': rf/max_rf},
+                                              ignore_index = True)
+        # return data frame as output
+        return self.data        
+        
+        
     def run(self):
         """
         Define run function
@@ -216,7 +269,7 @@ class quartets():
         # follow sampling order if user wants to calculate distances in pairwise/random fashion
         if self.sampmethod == "pairwise" or self.sampmethod == "random":
             # generate sampling order depending on pairwise or random user input
-            # define max length as self.trees - 1 because last tree in list is consensus tree
+            # consensus tree already removed so use len(self.trees) is accurate
             length = len(self.trees)
 
             samporder = Sample(length, self.sampmethod)
