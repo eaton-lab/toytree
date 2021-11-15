@@ -20,6 +20,8 @@ class TreeComparison:
 
 @dataclass
 class RobinsonFoulds(TreeComparison):
+    # each tree comparison class inherits from shared structure
+    # python class inheritance (decorator @ with class object)
     pass
 
 
