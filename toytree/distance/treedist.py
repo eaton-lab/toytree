@@ -82,7 +82,7 @@ class robinson_foulds():
                     num_of_internal_edges += 1
                     
                     
-            # PART 2: count number of internal partition
+            # PART 2: count number of internal partitions
             # create dictionary mapping tip labels to names
             ndict = {j: i for i, j in enumerate(names)}
             
@@ -90,12 +90,16 @@ class robinson_foulds():
             internal_partitions = set()
             # use binary notation to record possible partitions
             for node in ttre.treenode.traverse('preorder'):
+                # TESTING
+                print(node)
                 bits = np.zeros(len(ttre), dtype=float)
                 for child in node.iter_leaf_names():
                     bits[ndict[child]] = True
+                    print(bits)
                 # skip all True (whole tree)
                 # or skip just one true (refers to scenario where only one tip is partitioned on the end)
                 if sum(bits) == 1 or sum(bits) == ttre.ntips:
+                    print("bits skip", bits)
                     pass
                 else: 
                     internal_partitions.add(tuple(bits))
@@ -130,6 +134,12 @@ class robinson_foulds():
                 t0_partitions = self.getrfout[self.samporder[idx]][1]
                 t1_partitions = self.getrfout[self.samporder[idx+1]][1]
                 t0_t1_shared_partitions = len(t0_partitions.intersection(t1_partitions))
+
+                print(t0_ninternaledges)
+                print(t1_ninternaledges)
+                print(t0_partitions)
+                print(t1_partitions)
+                print(t0_t1_shared_partitions)
                 
                 rf = t0_ninternaledges + t1_ninternaledges - 2*(t0_t1_shared_partitions)
                 max_rf = t0_ninternaledges + t1_ninternaledges
