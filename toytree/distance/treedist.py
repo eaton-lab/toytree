@@ -23,10 +23,17 @@ class robinson_foulds():
 
     Parameters
     ----------
-    tree1: toytree.ToyTree
-        A first toytree instance to compare to another tree.
-    tree2: toytree.ToyTree
-        A second toytree instance to compare to tree1.
+    trees: list of toytree.ToyTrees
+        List of toytrees which will be compared to one another.
+    sampmethod: pairwise, random, consensus
+        Indicates how trees should be compared
+        Pairwise refers to comparing trees in sequential order
+        Random refers to comparing trees in a random order
+        Consensus refers to comparing each tree to the consensus tree
+    consensustree: toytree.Toytree
+        Provide a consensus tree if user wants to compute distances between
+        each tree and the consensus tree. If no consensus tree is provided,
+        default is to create a consensus tree from the given inputted list of trees.
     *args: 
         Additional args TBD.
 
@@ -34,7 +41,8 @@ class robinson_foulds():
     ---------
     >>> tree1 = toytree.rtree.unittree(10, seed=123)
     >>> tree2 = toytree.rtree.unittree(10, seed=321)
-    >>> toytree.distance.treedist.robinson_foulds(tree1, tree2)
+    >>> trees = [tree1, tree2]
+    >>> toytree.distance.treedist.robinson_foulds(trees, "pairwise")
     """
 
     def __init__(self, trees, sampmethod, consensustree=None):
@@ -87,34 +95,43 @@ class robinson_foulds():
             ndict = {j: i for i, j in enumerate(names)}
             
             # save possible internal partitions in set
-            internal_partitions = set()
+            final_partitions = set()
             # use binary notation to record possible partitions
             for node in ttre.treenode.traverse('preorder'):
-                # TESTING
-                print(node)
-                bits = np.zeros(len(ttre), dtype=float)
+                partition = np.zeros(len(ttre), dtype=float)
                 for child in node.iter_leaf_names():
-                    bits[ndict[child]] = True
-                    print(bits)
-                # skip all True (whole tree)
-                # or skip just one true (refers to scenario where only one tip is partitioned on the end)
-                if sum(bits) == 1 or sum(bits) == ttre.ntips:
-                    print("bits skip", bits)
+                    partition[ndict[child]] = True
+                
+                    # account for inverse partition duplicates (later check if inverse partition is already in set)
+                    partition_inverse = np.invert(partition.astype(dtype=bool))
+                    partition_inverse = partition_inverse.astype(dtype=float)
+
+                    # prefer partition with more leading zeros
+                    partition_and_inverse = set()
+                    partition_and_inverse.add(tuple(partition))
+                    partition_and_inverse.add(tuple(partition_inverse))
+                    preferred_partition = sorted(partition_and_inverse)[0]
+
+                # do not add to set if breaking off end tips or partition includes all the tips
+                if sum(partition) == 1 or sum(partition) == ttre.ntips:
+                    pass
+                # do not add to set if preferred partition is already in set
+                elif tuple(preferred_partition) in final_partitions:
                     pass
                 else: 
-                    internal_partitions.add(tuple(bits))
+                    final_partitions.add(tuple(preferred_partition))
                         
             # save RF data for each tree
             # if last tree, this means this is the RF set for the consensus tree
             if idx == len(self.trees)-1:
-                self.getrfout['consensus'] = num_of_internal_edges, internal_partitions
+                self.getrfout['consensus'] = num_of_internal_edges, final_partitions
                 # remove consensus tree from tree list
                 del self.trees.treelist[-1]
             # if not, treat RF set as set for a normal tree that will soon be used for comparisons
             else:
-                self.getrfout[idx] = num_of_internal_edges, internal_partitions
+                self.getrfout[idx] = num_of_internal_edges, final_partitions
+
             
-    
     def compare_rf(self):
         """
         Function to compile tree # and associated RFs into a final data frame as output with self.data
@@ -134,12 +151,6 @@ class robinson_foulds():
                 t0_partitions = self.getrfout[self.samporder[idx]][1]
                 t1_partitions = self.getrfout[self.samporder[idx+1]][1]
                 t0_t1_shared_partitions = len(t0_partitions.intersection(t1_partitions))
-
-                print(t0_ninternaledges)
-                print(t1_ninternaledges)
-                print(t0_partitions)
-                print(t1_partitions)
-                print(t0_t1_shared_partitions)
                 
                 rf = t0_ninternaledges + t1_ninternaledges - 2*(t0_t1_shared_partitions)
                 max_rf = t0_ninternaledges + t1_ninternaledges
