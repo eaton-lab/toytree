@@ -48,4 +48,6 @@ Examples
 from . import api
 from . import nodedist
 from . import treedist
+from . import sample
+from . import robinson_foulds
 # from distance_funcs import *
