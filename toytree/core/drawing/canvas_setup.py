@@ -1,20 +1,13 @@
 #!/usr/bin/env python
 
-"""
-New Drawing class to create new mark and style on axes.
-"""
+"""Canvas setup functions for single or grids of trees."""
 
-# from copy import deepcopy, copy
 import numpy as np
 import toyplot
 
-# for setting values from iterables
-ITERABLE = (list, tuple, np.ndarray)
-
 
 class GridSetup:
-    """
-    Returns Canvas and Cartesian axes objects to fit a grid of trees.
+    """Return Canvas and Cartesian axes objects to fit a grid of trees.
     """
     def __init__(
         self,
@@ -116,11 +109,12 @@ class GridSetup:
             )
 
 
-
 class CanvasSetup:
-    """
-    Returns Canvas and Cartesian axes objects, and sets values to
-    style.height and style.width if not present.
+    """Return Canvas and Cartesian axes objects for drawing size.
+
+    Sets values to style.height and style.width if not present. If a
+    Canvas already exists a set of axes can be entered, instead of
+    being generated anew.
     """
     def __init__(self, tree, axes, style):
 
@@ -151,15 +145,14 @@ class CanvasSetup:
             if style.use_edge_lengths:
                 theight = self.tree.treenode.height
             else:
-                theight = self.tree.treenode.get_farthest_leaf(True)[1] + 1
+                # get number of nodes from farthest leaf to root
+                ndists = self.tree.distance.get_node_distance_matrix(True)
+                theight = ndists[self.tree.treenode.idx].max()
             style_ticks(theight, self.axes, self.style, True)
 
 
     def get_canvas_height_and_width(self):
-        """
-        Calculate reasonable canvas height and width for tree given
-        N tips and set values to self.style.
-        """
+        """Calculate default canvas height&width given N tips and style."""
         if self.style.layout == "c":
             radius = max(
                 [0] + [i for i in [self.style.height, self.style.width] if i])
@@ -185,9 +178,7 @@ class CanvasSetup:
 
 
     def get_canvas_and_axes(self):
-        """
-        Sets canvas and axes with dimensions and padding.
-        """
+        """Sets canvas and axes with dimensions and padding."""
         if self.axes is not None:
             self.canvas = None
             self.external_axis = True
@@ -207,11 +198,26 @@ def style_ticks(
     style: 'toytree.core.style.tree_style.TreeStyle',
     only_inside: bool=True,
     ) -> 'toyplot.coordinates.Cartesian':
-    """
-    Returns a Cartesian axes object with toyplot.locator.Extended
-    ticks locations and labels set as Explicit ticks (wont't change
-    even if data change) and are styled according to a style dict and
-    the only_side arg.
+    """Return a toyplot Cartesian object with custom tick marks.
+
+    This gets tick locations first using toyplot.locator.Extended and
+    then sets labels on them using toyplot.locator.Explicit, because
+    we need time scale bar to be non-negative when axes are rotated
+    for trees facing different directions.
+
+    Note
+    -----
+    Some work is done internally to try to nicely handle floating point
+    precision.
+
+    Parameters
+    ----------
+    ...
+    style: TreeStyle
+        A TreeStyle object with options for styling axes.
+    only_inside: bool
+        Option used by toyplot.locator.Extended to automatically find
+        tick marks given the data range.
     """
     # the axes is either new or passed as an arg, and the scale_bar
     # arg is True or a (float, int), so we need to style the ticks.
