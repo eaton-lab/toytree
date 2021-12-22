@@ -10,11 +10,192 @@ editing TreeNodes directly, since it ensures that the TreeNodes
 have a valid ToyTree coordinate structure when returned.
 """
 
-from typing import Optional
-import toytree
+from typing import Optional, List, Union
+from loguru import logger
+from toytree import Node
+
+logger = logger.bind(name="toytree")
 
 
-def topo_add_internal_node(
+def ladderize(tree, direction: bool=True, inplace: bool=False) -> 'ToyTree':
+    """Return a ladderized tree (ordered descendants)
+
+    In a ladderized tree nodes are rotated so that the left/ 
+    right child always has fewer/more descendants.
+
+    Parameters
+    ----------
+    direction: bool
+        Reverse the laddizered order.
+    """
+    # get a copy of the tree to modify
+    nself = tree if inplace else tree.copy()
+
+    # visit all nodes from tips to root recording size on the way
+    sizes = {}
+    for nidx in range(tree.nnodes):
+        node = nself[nidx]
+
+        # get node size
+        if node.is_leaf():
+            sizes[node.idx] = 1
+        else:
+            sizes[node.idx] = sum(sizes[child.idx] for child in node.children)
+
+            # rotate by size if size > 2 else use alphanumeric names
+            if sizes[node.idx] > 2:
+                key = lambda x: sizes[x.idx]
+            else:
+                key = lambda x: x.name
+                
+            node._children = tuple(sorted(node._children, key=key, reverse=direction))
+
+    # update idx labels for new tree ladderization
+    nself._update()
+    return nself
+
+def collapse_nodes(
+    tree,
+    min_dist: float=1e-6,
+    min_support: float=0,
+    inplace: bool = False,
+    ) -> 'ToyTree':
+    """Return ToyTree with some internal nodes collapsed.
+
+    Nodes with dist or support values below minimum value setting
+    are collapsed, resulting in polytomies. For example, set
+    min_support=50 to collapse all nodes with support < 50.
+
+    Parameters
+    ----------
+    min_dist: float
+        The minimum dist (edge length) value allowed.
+    min_support: float
+        The minimum support (e.g., bootstrap) value allowed.
+
+    Examples
+    --------
+    >>> tree = toytree.rtree.unittree(ntips=20)
+    >>> tree = tree.set_node_data("dist", {22: 0.005, 23: 0.005})
+    >>> tree = tree.set_node_data("support", {25: 50}, default=100)
+    >>> tree = tree.collapse_nodes(min_dist=0.01, min_support=45)
+    """
+    # get a copy of the tree to modify
+    nself = tree if inplace else tree.copy()
+    for nidx in range(nself.nnodes):
+        node = nself[nidx]
+        if not node.is_leaf():
+            if (node.dist <= min_dist) | (node.support < min_support):
+                node._delete()
+    nself._update()
+    return nself
+
+def rotate_node(tree, idx: int, inplace: bool=False) -> 'ToyTree':
+    """Return ToyTree with a selected Node rotated (children reversed).
+
+    Parameters
+    ----------
+    idx: int
+        The idx labels of the Node to rotate. This can be accessed
+        from a Node object as Node.idx.
+    """
+    nself = tree if inplace else tree.copy()
+    nself[idx]._children = nself[idx]._children[::-1] 
+    nself._update()
+    return nself
+
+def prune(
+    tree, 
+    nodes: List[Union[int, 'Node']],
+    preserve_branch_length: bool=True,
+    require_root: bool=True,
+    inplace: bool=False,
+    ) -> "ToyTree":
+    r"""Return a ToyTree as a subtree extracted from an existing tree.
+
+    All nodes not included in the entered 'nodes' list will be
+    removed from the topology, and the mininal spanning edges to
+    connect the remaining nodes are retained. The root node is
+    always preserved if 'require_root=True', otherwise the lowest
+    mrca connecting the selected nodes will be kept as the new root.
+
+                4      prune([0,2])     4     
+               / \                     / \   
+              3   \      ------>      /   \  
+             / \   \                 /     \ 
+            0   1   2               0       2
+
+    Parameters
+    ----------
+    nodes: List[Nodes or ints]
+        A list of int idx labels, or Node instances, representing Nodes
+        (leaves and/or internal) to keep in the pruned subtree.
+    preserve_branch_length: bool
+        If True then the edge lengths of internal nodes that are
+        removed are merged into the 'dist' attribute of their
+        descendant node that is preserved.
+    require_root: bool
+        If True then the root node is always preserved. If False
+        then the root is only preserved if is it the mrca of the
+        selected nodes, otherwise the mrca Node is returned.
+    inplace: bool
+        If True then the original tree is changed in-place, and 
+        returned, rather than leaving original tree unchanged.
+    """
+    # create a copy or operate in place
+    nself = nself if inplace else tree.copy()
+
+    # if nodes was entered as a single Node then make into a list
+    nodes = []
+    if isinstance(nodes, Node):
+        nodes = [nodes]
+
+    # require that root is in the node list to start.
+    nnodes = len(nodes)
+    if nself.treenode not in nodes:
+        nodes.append(nself.treenode)
+
+    # keep track of ndescendants of each node after pruning to make
+    # it easy to find the mrca later, and whether it is a mrca.
+    ndesc = {}
+
+    # traverse tree in postorder (tips to root) and remove nodes
+    for node in nself.traverse("postorder"):
+
+        # remove connections to this node
+        if node not in nodes:
+            for cnode in node.children:
+
+                # add this node's dist to its children's dists
+                if preserve_branch_length:
+                    cnode.dist += node.dist
+
+                # connect children to grandparent, rm self as child.
+                cnode._up = node.up
+                node._up._children = (
+                    node.children + \
+                    tuple(i for i in node.up.children if i != node)
+                )
+
+        # if node is kept then pop it from the input set
+        else:
+            nodes.remove(node)
+
+        # count ndescendants of this node after postorder pruning
+        ndesc[node] = sum(1 for i in node._iter_descendants())
+
+    # if any nodes remain in 'nodes' list then warn the user.
+    for node in nodes:
+        logger.warning(f"{node} is not in the tree.")
+
+    # if a kept node is mrca then return it else return root
+    if not require_root:
+        for node, ndesc in ndesc.items():
+            if ndesc == nnodes - 1:
+                return node
+    return nself
+
+def add_internal_node(
     self, 
     idx: int, 
     dist: Optional[float]=None,
@@ -76,8 +257,7 @@ def topo_add_internal_node(
     tree._coords.update()
     return tree        
 
-
-def topo_add_tip_node(
+def add_tip_node(
     self,
     idx: int,
     name: Optional[str]=None,
@@ -158,14 +338,14 @@ def topo_add_tip_node(
     tree._coords.update()
     return tree
 
-
-def topo_move_clade(
+def move_clade(
     tree, 
     idx0: int,
     idx1: int,
     height: Optional[float]=None,
-    name: Optional[str]=None,
+    name: str="",
     shrink: bool=False,
+    inplace: bool=False,
     ):
     r"""Move a clade from one part of the tree to another.
 
@@ -212,7 +392,7 @@ def topo_move_clade(
         idx1 and its parent (node.height, node.height + node.dist).
         If None then the node will be inserted at the midpoint
         along node idx1's edge.
-    name: Optional[s]    
+    name: str
         A name string to apply to the newly created internal node.
     shrink: bool
         If shrink is True then the subtree edge lengths (dists) 
@@ -226,7 +406,7 @@ def topo_move_clade(
         A modified copy of the original tree is returned.
     """
     # create a copy
-    tree = tree.copy()
+    tree = tree if inplace else tree.copy()
 
     # get selected nodes (FIXME: use nas to allow names selections)
     src = tree.idx_dict[idx0]
@@ -262,10 +442,7 @@ def topo_move_clade(
         return tree
 
     # create new internal node.
-    newnode = toytree.TreeNode(
-        name=name if name is not None else "", 
-        dist=dest.dist - dist,
-    )
+    newnode = Node(name=str(name), dist=dest.dist - dist)
 
     # detach the source clade.
     ancestor = src.up
@@ -321,3 +498,49 @@ def topo_move_clade(
     # tree.style.edge_colors = ['black'] * tree.nnodes
     # for idx in tree.get_node_descendant_idxs(src)
     return tree
+
+
+# def speciate(self, idx, name=None, dist_prop=0.5):
+#     """
+#     Split an edge to create a new tip in the tree as in a
+#     speciation event.
+#     """
+#     # make a copy of the toytree
+#     nself = self.copy()
+
+#     # get Treenodes of selected node and parent 
+#     ndict = nself.get_feature_dict('idx')
+#     node = ndict[idx]
+#     parent = node.up
+
+#     # get new node species name
+#     if not name:
+#         if node.is_leaf():
+#             name = node.name + ".sis"
+#         else:
+#             names = nself.get_tip_labels(idx=idx)
+#             name = "{}.sis".format("_".join(names))
+
+#     # create new speciation node between them at dist_prop dist.
+#     newnode = parent.add_child(
+#         name=parent.name + ".spp",
+#         dist=node.dist * dist_prop
+#     )
+
+#     # connect original node to speciation node.
+#     node.up = newnode
+#     node.dist = node.dist - newnode.dist
+#     newnode.add_child(node)
+
+#     # drop original node from original parent child list
+#     parent.children.remove(node)
+
+#     # add new tip node (new sister) and set same dist as onode
+#     newnode.add_child(
+#         name=name,
+#         dist=node.up.height,
+#     )
+
+#     # update toytree coordinates
+#     nself._coords.update()
+#     return nself     

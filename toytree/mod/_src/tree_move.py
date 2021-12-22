@@ -19,8 +19,6 @@ See also eSPR and eTBR moves used in Bayesian phylogenetics. These
 modify the probability of proposed pruning points by updating a 
 'distance' parameter as part of the MCMC process. For example in 
 mrbayes. Not implemented here.
-
-
 """
 
 from typing import Optional

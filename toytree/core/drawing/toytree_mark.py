@@ -1,11 +1,11 @@
 #!/usr/bin/env python
 
-"""
-A toytree Mark Class object built on the toyplot Mark constructor.
-This simply inits the Style arguments passed from draw that have
-already been checked by StyleChecker and it established the
-domain and extents.
+"""A custom toyplot mark Class built from the toyplot Mark constructor.
 
+The purpose of a Mark is to set the `domain` and `extents` of an 
+mark, so that it can be fit on coordinate axes. This object stores
+this info along with the input Node coordinates and style args that
+have already been checked for validity.
 """
 
 import toyplot
@@ -14,8 +14,11 @@ from toyplot.mark import Mark
 
 
 class ToytreeMark(Mark):
-    """
-    Custom mark for tree edges, nodes, and node_labels.
+    """Custom mark for tree edges, nodes, and node_labels.
+
+    This is a super class of toyplot.mark.Mark. All styles that affect
+    the Node coordinates have already been applied (e.g., xbaseline), 
+    however, layout is still useful for setting tip extents.
     """
     def __init__(
         self,
@@ -63,8 +66,8 @@ class ToytreeMark(Mark):
         # positioning
         self.xbaseline = xbaseline
         self.ybaseline = ybaseline
-        self.ntable[:, 0] += xbaseline
-        self.ntable[:, 1] += ybaseline
+        # self.ntable[:, 0] += xbaseline
+        # self.ntable[:, 1] += ybaseline
 
         # radial positioning
         self.radii = np.sqrt(
@@ -114,8 +117,7 @@ class ToytreeMark(Mark):
         return domain
 
     def extents(self, axes):
-        """
-        Testing a new simpler extents for [left-, right+, top-, bottom+]
+        """Testing a new simpler extents for [left-, right+, top-, bottom+]
         """
         # get tip label text extents
         if self.tip_labels is None:
@@ -209,6 +211,8 @@ class ToytreeMark(Mark):
                 np.repeat(max_extent, self.nnodes),
             ])
         else:
-            if self.tip_labels_align:
-                coords[0][:self.tip_labels_angles.size] = self.xbaseline
+            pass
+            # TODO: what is happending? do we need to project?
+            # if self.tip_labels_align:
+                # coords[0][:self.tip_labels_angles.size] = self.xbaseline
         return coords, extents

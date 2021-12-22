@@ -191,9 +191,11 @@ class ToyTree:
             return None
 
     def get_edges(self) -> np.ndarray:
-        """Return an array with parent and child columns, respectively,
-        representing edges in the tree connecting nodes by their node
-        idx labels. This array is primarily for internal use.
+        """Return an array of parent/child relationships.
+
+        Rows are edges where the first is the parent Node and the
+        second is the child Node idx. This table is primarily for
+        internal use and for plotting.
         """
         return self._coords.edges
 
@@ -785,6 +787,7 @@ class ToyTree:
         names: List[str]=None,
         wildcard: str=None,
         regex: str=None,
+        preserve_branch_length: bool=True,
         ) -> 'ToyTree':
         """Return a copy of a subtree of the current tree.
 
@@ -830,7 +833,9 @@ class ToyTree:
         if not tipnames:
             raise ToytreeError("No tips selected.")
 
-        nself.treenode.prune(tipnames, preserve_branch_length=True)
+        # in ete the root node is always preserved, but that is not 
+        # something we actually want...
+        nself.treenode.prune(tipnames, preserve_branch_length=preserve_branch_length)
         if len(nself.treenode) == 1:
             nself.treenode = nself.treenode.children[0].detach()
         nself._coords.update()
@@ -860,7 +865,7 @@ class ToyTree:
             A regular expression matching to one or more tip names.
 
         Examples
-        --------
+        --------        
         >>> tree = toytree.rtree.imbtree(ntips=15)
         >>> dtre = tree.drop_tips(names=['r1', 'r2', 'r3', 'r6'])
         >>> dtre = tree.drop_tips(regex='r[0-3]$')
@@ -1260,7 +1265,7 @@ class ToyTree:
         >>> tree.draw();
         >>> canvas, axes, mark = tree.draw();
         >>> canvas, axes, mark = tree.draw(ts="o", scale_bar=True)
-        >>> toyplot.svg
+        >>> import toyplot.svg
         >>> toyplot.svg.render(canvas, "saved-plot.svg")
         """
         return draw_toytree(
@@ -1308,7 +1313,7 @@ def tree(data:Union[str,Path,Url,ToyTree,TreeNode], tree_format:int=0) -> ToyTre
     Returns a :class:`ToyTree` object from a variety of optional 
     input types, including a newick or nexus string; a filepath or Url 
     to a newick or nexus string; a TreeNode instance; or a ToyTree 
-    instance. The tree_format argument is an integer corresponding to 
+    instance. The `tree_format` argument is an integer corresponding to 
     an ete3 tree format (the common format 0 generally works fine).
 
     Parameters
@@ -1332,7 +1337,7 @@ def tree(data:Union[str,Path,Url,ToyTree,TreeNode], tree_format:int=0) -> ToyTre
     >>> tree = toytree.tree("((a,b),c);")
     >>> tree = toytree.tree("/tmp/test.nwk")
     >>> tree = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
-    >>> tree = toytree.tree(toytree.TreeNode())
+    >>> tree = toytree.tree(toytree.Node())
     """
     # TODO: add this to docstring after supporting these funcs.
     # Note

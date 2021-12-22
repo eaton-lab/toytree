@@ -1145,6 +1145,7 @@ class TreeNode:
                 current = current.up
         return current
 
+
     # updated from ete to include preservation of support values.
     def unroot(self):
         """

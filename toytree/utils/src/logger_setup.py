@@ -27,11 +27,20 @@ def colorize():
 
 LOGGERS = [0]
 def set_log_level(log_level="INFO"):
-    """Set the log level for loguru logger.
+    """Set the log level for loguru logger bound to toytree.
 
-    This removes default loguru handler, but leaves any others, 
+    This removes default loguru handler, but leaves any others in place, 
     and adds a new one that will filter to only print logs from 
     toytree modules, which should use `logger.bind(name='toytree')`.
+
+    Examples
+    --------
+    >>> # suppress toytree logs below INFO level
+    >>> toytree.set_log_level("INFO") 
+    >>>
+    >>> # write a log message from the toytree logger
+    >>> from loguru import logger
+    >>> logger.bind(name="toytree").info("logged message from toytree")
     """
     for idx in LOGGERS:
         try:

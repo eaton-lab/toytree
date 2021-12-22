@@ -42,8 +42,8 @@ DTYPE = {
 
 
 class ToyColor(np.ndarray):
-    """
-    ToyColor is a superclass of numpy.ndarray.
+    """ToyColor is a superclass of numpy.ndarray.
+
     """
     def __new__(cls, color):
         color = Color(color)
@@ -72,10 +72,9 @@ class ToyColor(np.ndarray):
 
 
 class Color:
-    """
-    Flexible color parser class to get css or rgba tuple 
-    representation, and easier to work with than toyplot.color 
-    arrays. 
+    """Flexible color parser class to get css or rgba tuples.
+
+    This is a bit easier to work with than toyplot.color arrays. 
 
     - rgba = (r:float, g:float, b:float, a:float)
     - rgb = (r:float, g:float, b:float, a:float)

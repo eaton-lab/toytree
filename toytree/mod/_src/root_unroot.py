@@ -1,19 +1,46 @@
 #!/usr/bin/env python
 
-"""
-Rooting class
+"""Class for rooting and unrooting of trees.
+
+Rooting and unrooting trees turns out to be quite a bit more 
+complicated than you might expect. The difficult part is keeping
+track of Node features that in practice are coded as attributes to 
+Nodes, but in reality are sometimes features of *edges*, such as 
+'support' or 'dist', and thus may need to be re-assigned when an 
+edge is created or destroyed.
+
 """
 
-from toytree.core.treenode import TreeNode
-from toytree.core.node_assist import NodeAssist
+from toytree.core.node import Node
+from totyree.core.tree import ToyTree
+# from toytree.core.node_assist import NodeAssist
 from toytree.utils import ToytreeError
 
 
 class Rooter:
-    """
-    See docstring in ToyTree.root()
+    """Root a ToyTree given a monophyletic clade.
+
+    This class is for internal use. Users should access the tree 
+    rooting function from either `ToyTree.root` or `toytree.mod`.
+
+    Parameters
+    ----------
+
+    See Also
+    --------
+    - `ToyTree.root`
+
+    Examples
+    --------
     """   
-    def __init__(self, tree, nastuple, resolve_root_dist, edge_features):
+    def __init__(
+        self, 
+        tree, 
+        nastuple, 
+        resolve_root_dist, 
+        edge_features,
+        ):
+    
         # store args
         self.tree = tree
         self.resolve_root_dist = resolve_root_dist
@@ -67,7 +94,6 @@ class Rooter:
             self.update()
 
 
-
     def update_tree_from_tdict(self):
         """
         update tree structure and node labels
@@ -78,7 +104,6 @@ class Rooter:
             for key, val in self.tdict[node][2].items():
                 setattr(node, key, val)
 
-
     def update(self):
         """
         update coordinates: updates idx and adds it to any new nodes.
@@ -86,7 +111,6 @@ class Rooter:
         self.tree.treenode = self.nnode
         self.tree.treenode.ladderize()
         self.tree._coords.update()
-
 
 
     def redirect_edge_features(self):
@@ -103,7 +127,6 @@ class Rooter:
             self.tdict[self.node2][2]['support'] = self.maxsup
         else:
             self.tdict[self.node2][2]['support'] = self.node2.support
-
 
 
     def restructure_tree(self):
@@ -292,3 +315,22 @@ class Rooter:
                     "Matched query is paraphyletic: {}".format(clade1)
                 )
                 # .format(sorted([clade1, clade2], key=len)[0]))
+
+
+if __name__ == "__main__":
+
+    # Example test: start with a simple balanced tree.
+    import toytree
+    TREE = toytree.rtree2.baltree(ntips=10)
+
+    # unroot the tree
+    TREE = TREE.unroot()
+
+    # root the tree a clade with the first two samples
+    TREE = TREE.root(['r1', 'r2'])
+
+    # re-root on a different clade, for last two samples
+    TREE = TREE.root(['r9', 'r10'])
+
+    # check that dist and support values were properly retained.
+    # ...

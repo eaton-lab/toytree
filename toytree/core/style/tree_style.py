@@ -94,6 +94,21 @@ class TipLabelsStyle(SubStyle):
 
 @dataclass
 class TreeStyle:
+    """TreeStyle is a dict-like object for setting/getting style args.
+
+    ToyTree objects can ...
+
+    Example
+    -------
+    >>> tree = toytree.rtree.unittree(10)
+    >>> tree.style.edge_widths = 4
+    >>> tree.draw();
+
+    Note
+    ----
+    The function `._validate()` ...
+    tree.style._validate(tree)
+    """
     # inherited from tree at validation steps
     tree_style: Optional[str] = None
     height: Optional[int] = None
@@ -130,15 +145,17 @@ class TreeStyle:
     admixture_edges: Union[List[Tuple[int, int]], None] = None
     shrink: int = 0
 
-
     def validate(self, tree: 'toytree.ToyTree'):
-        """
+        """Expand style args and convert types.
+
         Expand iterable style entires to None or ndarray, and
         convert color args to CSS strings. This function is called
         before passing style args to ToyTreeMark.
 
         The validate x_style funcs should come last in each group
         because the fill,stroke styles can change.
+
+        TODO: this is always called when?
         """
         self.tree = tree  # ignore
         self._validate_node_colors()
@@ -164,19 +181,14 @@ class TreeStyle:
         self._validate_admixture_edges()
 
     def _serialize_colors(self):
-        """
-        Convert all ndarrays to lists for serialization of JSON.
-        """
+        """Convert all ndarrays to lists for serialization of JSON."""
         self._validate_node_colors()
         self._validate_tip_labels_colors()
         self._validate_edge_colors()
         # ... substyledicts
 
     def _serialize_css_styles(self):
-        """
-        Convert keys with lower_case ndarrays to lists for
-        serialization of JSON...
-        """
+        """Convert keys with lower_case ndarrays to lists for serialization of JSON..."""
         self._validate_node_colors()
         self._validate_tip_labels_colors()
         # ... substyledicts
@@ -569,8 +581,7 @@ class TreeStyle:
         serialize_arrays: bool=False,
         validate_css: bool=False,
         ):
-        """
-        Returns a (serializable) dictionary of the TreeStyle.
+        """Return a (serializable) dictionary of the TreeStyle.
 
         Parameters
         ----------
@@ -585,7 +596,6 @@ class TreeStyle:
         # whether entered as a single value or a Collectin of values.
         if serialize_colors:
             self._serialize_colors()
-
 
         # first converts pandas/numpy to List[Any] or str. This is
 
@@ -755,22 +765,22 @@ class DarkTreeStyle(TreeStyle):
     )
 
 
+STYLE_DICTS = {
+    "n": NormalTreeStyle,
+    "s": SimpleTreeStyle,
+    "p": PhyloTreeStyle,
+    "o": UmlautTreeStyle,
+    "c": CoalTreeStyle,
+    "d": DarkTreeStyle,
+}    
 
-def get_tree_style(ts: str="n") -> TreeStyle:
+
+def get_tree_style(tree_style: str="n") -> TreeStyle:
+    """Return a standard TreeStyle instance indexed by first letter
     """
-    Convenience function to return an initialized TreeStyle
-    of a given builtin style.
-    """
-    ts = ts.lower()[0]
-    style_dict = {
-        "n": NormalTreeStyle(),
-        "s": SimpleTreeStyle(),
-        "p": PhyloTreeStyle(),
-        "o": UmlautTreeStyle(),
-        "c": CoalTreeStyle(),
-        "d": DarkTreeStyle(),
-    }
-    return style_dict[ts]
+    tree_style = tree_style.lower()[0]
+    style = STYLE_DICTS[tree_style]
+    return (style)()
 
 
 if __name__ == "__main__":

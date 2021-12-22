@@ -46,7 +46,7 @@ def quartet_distance(tree1, tree2, *args):
         Additional args TBD.
 
     Examples
-    ---------
+    --------
     >>> tree1 = toytree.rtree.unittree(10, seed=123)
     >>> tree2 = toytree.rtree.unittree(10, seed=321)
     >>> toytree.distance.treedist.quartets(tree1, tree2)

@@ -10,10 +10,10 @@ from toytree.utils import ToytreeError
 
 
 class NodeAssist:
-    """
+    """Assistant class for returning Nodes or names matching a query.
+
     Given a search query (list of names, wildcard or regex) a node 
-    or list of names can be retrieved under a set of pre-built 
-    functions.
+    or list of names can be retrieved using a set of available funcs.
     """
     def __init__(self, ttree, names, wildcard, regex):
 
@@ -44,9 +44,7 @@ class NodeAssist:
 
 
     def match_query(self):
-        """
-        Get list of **nodes** from {list, wildcard, or regex}
-        """
+        """Return a list of Nodes from {list, wildcard, or regex}"""
         tips = []
         if self.names:
 

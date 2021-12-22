@@ -25,26 +25,33 @@ from toytree.utils.src.globals import PATH_FORMAT
 # Register multipledispatch to use the toyplot.html namespace
 dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 
+# register a _render function for ToyTreeMark objects
 @dispatch(toyplot.coordinates.Cartesian, ToytreeMark, toyplot.html.RenderContext)
 def _render(axes, mark, context):
     RenderToytree(axes, mark, context)
 
 
 class RenderToytree:
-    """
+    """Class with functions to add ToyTree class to the HTML DOM.
+
     Organized class to call within _render. The top level canvas
     element is .context. From this parent xml subelements are
     added to build the drawing. The toytree mark is in .mark.
     """
     def __init__(self, axes, mark, context):
-
-        # inputs
+        # existing 
         self.mark = mark
         self.axes = axes
         self.context = context
 
+        # start rendering of this Mark by connecting to context (Canvas)
+        self.mark_xml: xml.SubElement = xml.SubElement(
+            context.parent, "g",
+            id=context.get_id(self.mark),
+            attrib={"class": "toytree-mark-Toytree"},
+        )        
+
         # to be constructed (are these reused?)
-        self.mark_xml: xml.SubElement = None
         self.edges_xml: xml.SubElement = None
         self.nodes_xml: xml.SubElement = None
         self.admix_xml: xml.SubElement = None
@@ -55,9 +62,7 @@ class RenderToytree:
         self.build_dom()
 
     def build_dom(self):
-        """
-        Creates DOM of xml.SubElements in self.context.
-        """
+        """Creates DOM of xml.SubElements in self.context."""
         self.mark_toytree()
         self.mark_edges()
         self.mark_align_edges()
@@ -69,31 +74,37 @@ class RenderToytree:
         self.mark_tip_labels()
 
     def project_coordinates(self):
-        """
-        Stores node coordinates (data units) projecting as pixel units.
+        """Store node coordinates (data units) projected to pixel units.
+        
+        TODO: this could be mostly replaced by improvements to 
+        ToyTree.get_node_coordinates()
         """
         # project data coordinates into pixels
         self.nodes_x = self.axes.project('x', self.mark.ntable[:, 0])
         self.nodes_y = self.axes.project('y', self.mark.ntable[:, 1])
+
+        # if circular layout then also get radius
         if self.mark.layout == 'c':
             self.radii = self.axes.project('x', self.mark.radii)
             self.maxr = max(self.radii)
 
-        # get align edge tips coords
+        # if tip labels align then store tips projected coords
         if self.mark.tip_labels_align:
 
             # coords of aligned tips across fixed x axis 0
             ntips = self.mark.tip_labels_angles.size
-            if self.mark.layout in ('r', 'l'):
-                self.tips_x = np.repeat(
-                    self.axes.project('x', self.mark.xbaseline), ntips)
+            if self.mark.layout == 'r':
+                self.tips_x = np.repeat(self.nodes_x.max(), ntips)
                 self.tips_y = self.nodes_y[:ntips]
-
-            # coords of aligned tips across fixed y axis 0
-            elif self.mark.layout in ('u', 'd'):
+            elif self.mark.layout == 'l':
+                self.tips_x = np.repeat(self.nodes_x.min(), ntips)
+                self.tips_y = self.nodes_y[:ntips]
+            elif self.mark.layout == 'u':
+                self.tips_y = np.repeat(self.nodes_y.min(), ntips)
                 self.tips_x = self.nodes_x[:ntips]
-                self.tips_y = np.repeat(
-                    self.axes.project('y', self.mark.ybaseline), ntips)
+            elif self.mark.layout == 'd':
+                self.tips_y = np.repeat(self.nodes_y.max(), ntips)
+                self.tips_x = self.nodes_x[:ntips]
 
             # coords of tips around a circumference
             elif self.mark.layout == 'c':
@@ -127,7 +138,8 @@ class RenderToytree:
         paths = []
         keys = []
         for idx in range(self.mark.nnodes - 1):
-            pidx, cidx = self.mark.etable[idx]
+            #pidx, cidx = self.mark.etable[idx]
+            cidx, pidx = self.mark.etable[idx]            
             child_x, child_y = self.nodes_x[cidx], self.nodes_y[cidx]
             parent_x, parent_y = self.nodes_x[pidx], self.nodes_y[pidx]
 
@@ -149,16 +161,9 @@ class RenderToytree:
         """
         Creates the top-level Toytree mark.
         """
-        self.mark_xml = xml.SubElement(
-            self.context.parent, "g",
-            id=self.context.get_id(self.mark),
-            attrib={"class": "toytree-mark-Toytree"},
-        )
 
     def mark_edges(self):
-        """
-        Creates SVG paths for each tree edge under class toytree-Edges
-        """
+        """Create SVG paths for each tree edge as class toytree-Edges"""
         # get paths based on edge type and layout
         paths, keys = self.get_paths()
 
@@ -194,8 +199,8 @@ class RenderToytree:
                 )
 
     def mark_nodes(self):
-        """
-        Creates marker elements for each node under class toytree-Nodes.
+        """Create marker elements for each node in class toytree-Nodes.
+
         Stores ids to the nodes which in theory can allow for
         downstream JS interactivity.
         """
@@ -341,9 +346,7 @@ class RenderToytree:
                 _draw_bar(marker_xml, marker.size, 60)
 
     def mark_node_labels(self):
-        """
-        Simpler...
-        """
+        """Create Node labels in toytree-NodeLabels using render_text"""
         if self.mark.node_labels is None:
             return
 
@@ -393,9 +396,7 @@ class RenderToytree:
             )
 
     def mark_tip_labels(self):
-        """
-        New try
-        """
+        """Create tip labels in toytree-TipLabels using render_text"""
         if self.mark.tip_labels is None:
             return
 
@@ -475,9 +476,7 @@ class RenderToytree:
             )
 
     def mark_align_edges(self):
-        """
-        Creates SVG paths for from each tip to 0 or radius.
-        """
+        """Create SVG paths for each tip to 0 or radius. """
         # get paths based on edge type and layout
         if self.mark.tip_labels_align:
             apaths = []
@@ -507,9 +506,9 @@ class RenderToytree:
                 xml.SubElement(self.align_xml, "path",  d=path)
 
     def mark_admixture_edges(self):
-        """
-        Creates an SVG path for an admixture edge. The edge takes the same
-        style as the edge_type of the tree.
+        """Create SVG paths for admixture edges. 
+
+        The edge takes the same style as the edge_type of the tree.
         """
         if self.mark.admixture_edges is None:
             return
@@ -836,9 +835,7 @@ class RenderToytree:
 
 # HELPER FUNCTIONS ----------------------
 def get_unique_edge_styles(mark):
-    """
-    Reduces node styles to prevent redundancy in HTML.
-    """
+    """Reduces node styles to prevent redundancy in HTML."""
     # minimum styling of node markers
     unique_styles = [{} for i in range(mark.etable.shape[0])]
 
@@ -861,13 +858,16 @@ def get_unique_edge_styles(mark):
 
 
 def split_rgba_style(style):
-    """
+    """Split rgba to rgb and opacity.
+
     Because many applications (Inkscape, Adobe Illustrator, Qt) don't handle
     CSS rgba() colors correctly this function does a work-around.
     Takes a CSS color in rgba, e.g., 'rgba(40.0%,76.1%,64.7%,1.000)'
     labeled in a dictionary as {'fill': x, 'fill-opacity': y} and
     returns with fill as rgb and fill-opacity from rgba or clobbered
     by the fill-opacity arg. Similar functionality for stroke, stroke-opacity.
+
+    TODO: move this to the Color module?
     """
     if "fill" in style:
         color = style['fill']
