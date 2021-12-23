@@ -2,12 +2,13 @@
 
 """Newick parsing functions.
 
-The core functions here are `parse_newick` and `parse_newick_custom`.
-The latter can can take custom parsing functions as input, making it 
-very powerful and flexible, but a bit complex for the average user; 
-the `parse_newick` function offers a simpler interface that should be 
-sufficient for parsing most newicks. These funcs are used internally
-in the generic parsing function `toytree.tree`.
+The core functions here are `parse_newick_string` and 
+`parse_newick_string_custom`. The latter can can take custom parsing
+functions as input, making it very powerful and flexible, but a bit 
+complex for the average user; the `parse_newick_string` function 
+offers a simpler interface that should be sufficient for parsing 
+most newicks. These funcs are used internally in the generic 
+parsing function `toytree.tree`.
 
 Supported formats
 -----------------
@@ -24,7 +25,6 @@ References
 """
 
 from typing import Optional, List, Any, Sequence, Tuple, Callable, Dict
-# from ast import literal_eval
 from functools import partial
 from loguru import logger
 from toytree.core.node import Node
@@ -280,10 +280,7 @@ def feature_parser(
             msg = (
                 "Failed to parse newick format.\n"
                 "Try using `toytree.io.parse_newick` with different "
-                "options "
-                f"Bad prefix ({prefix}), delim ({delim}), or assignment "
-                f"({assignment}) params, cannot parse the newick "
-                f"feature string: '{feats}'."
+                "options."
             ) 
             logger.error(msg)
             raise NewickError(msg) from inst
@@ -351,48 +348,58 @@ def _parse_newick_subtree(
     return aggregator(label, child_nodes, distance, features)
 
 
-def _check_internal_label_for_name_or_support(tree: ToyTree) -> ToyTree:
+def _check_internal_label_for_name_or_support(
+    tree: ToyTree, internal_labels: Optional[str]) -> ToyTree:
     """Return a ToyTree with Node 'name' and 'support' updated.
 
     Check type of 'name' labels on internal Nodes. If all are numeric
     then save them as 'support' values instead of 'name' values.
     Changes are made to the Nodes in-place.
     """
-    try:
-        # record whether we convert to int or float
-        dtype = str
+    if internal_labels == "support":
+        for idx in range(tree.ntips, tree.nnodes):
+            node = tree[idx]
+            node.support = float(node.name)
+            node.name = ""
 
-        # get all internal node 'name' values (except root)
-        supports = tree.get_node_data('name')[tree.ntips:-1]
+    # infer types
+    elif internal_labels is None:
+        try:
+            # record whether we convert to int or float
+            dtype = str
 
-        # try to convert all to floats
-        supports = supports.astype(float)
+            # get all internal node 'name' values (except root)
+            supports = (tree[i].name for i in range(tree.ntips, tree.nnodes - 1))
+            # try to convert all to floats
+            supports = [float(i) for i in supports]
 
-        # try to convert floats to ints if no floating points
-        if supports.apply(float.is_integer).all():
-            supports = supports.astype(int)
-            dtype = int
-        else:
-            dtype = float
+            # try to convert floats to ints if no floating points
+            if all(i.is_integer() for i in supports):
+                supports = [int(i) for i in supports]
+                dtype = int
+            else:
+                dtype = float
 
-        # convert 'name' features to 'support' for internal nodes.
-        for nidx in supports.index:
-            tree[nidx].support = supports[nidx]
-            tree[nidx].name = ""
+            # convert 'name' features to 'support' for internal nodes.
+            for idx, nidx in enumerate(range(tree.ntips, tree.nnodes - 1)):
+                tree[nidx].support = supports[idx]
+                tree[nidx].name = ""
 
-        # try same for root, for which dist/name is not always present
-        tree.treenode.support = 100 if tree.treenode.name == "" else dtype(tree.treenode.name)
-        tree.treenode.name = ""
-    except ValueError:
-        pass
+            # try same for root, for which dist/name is not always present
+            tree.treenode.support = (
+                100 if tree.treenode.name == "" else dtype(tree.treenode.name))
+            tree.treenode.name = ""
+        except ValueError:
+            pass
     return tree
 
 
-def parse_newick_custom(
+def parse_newick_string_custom(
     newick: str,
     dist_formatter: Callable[str, float] = None,
     feat_formatter: Callable[str, Dict[str,Any]] = None,
     aggregator: Callable[[str, List[Node], float, Any], Node] = None,
+    internal_labels: Optional[str] = None,
     ) -> ToyTree:
     """Return a ToyTree from a newick string.
 
@@ -409,7 +416,7 @@ def parse_newick_custom(
 
     See Also
     --------
-    `toytree.tree`, `totyree.io`, ...
+    `toytree.tree`, `totyree.io`
 
     Parameters
     ----------
@@ -434,25 +441,18 @@ def parse_newick_custom(
         A custom function that takes (name, children, dist, features)
         and returns a Node object. This is used to recursively build 
         the Node objects from tuples of extracted newick data.
-
-    Examples
-    --------
-    >>> nwk1 = "((A,B),(C,D));"
-    >>> tree1 = parse_newick(nwk1)
-    >>> print(tree1.get_node_data())    
-    >>> nwk2 = "((a:1,b:2)0.99:3,(c:1,d:1)0.90:3)0.66:1;"
-    >>> tree2 = parse_newick(nwk2)
-    >>> print(tree2.get_node_data())
+    internal_labels: str or None
+        Feature type of internal labels. If None it is inferred to be
+        either 'name' or 'support' based on numeric or string types
+        being present.
     """
     newick = newick.strip()
     assert newick.endswith(";"), "newick string must end with ';'"
     newick = newick[:-1]
 
     # select formatting functions
-    auto_format_features = False
     if feat_formatter is None:
         feat_formatter = feature_parser
-        auto_format_features = True        
     if dist_formatter is None:
         dist_formatter = distance_parser
     if aggregator is None:
@@ -465,22 +465,18 @@ def parse_newick_custom(
     tree = ToyTree(treenode)
 
     # check whether labels on internal nodes are names or supports
-    tree = _check_internal_label_for_name_or_support(tree)
-
-    # check and infer types for features only if _simple_features used.
-    # if auto_format_features:
-        # for feature in tree.features:
-            #tree._set_node_data_dtype(feature)
+    tree = _check_internal_label_for_name_or_support(tree, internal_labels)
 
     # return the final tree
     return tree
 
 
-def parse_newick(
+def parse_newick_string(
     newick: str,
-    comment_prefix: str = "&",
+    feature_prefix: str = "&",
     feature_delim: str = ",", 
     feature_assignment: str = "=",
+    internal_labels: Optional[str] = None,
     ) -> ToyTree:
     """Return a ToyTree from a newick string.
 
@@ -501,7 +497,7 @@ def parse_newick(
 
     Parameters
     ----------
-    comment_prefix: str
+    feature_prefix: str
         If additional features are stored in the newick as comments,
         they should be inside of square brackets. These blocks often
         start with a prefix character, such as "&" or "&&NHX". Check
@@ -512,28 +508,35 @@ def parse_newick(
     feature_assignment: str
         The character separating feature names and values in a comment
         block used for assignment. This is usually "=" or ":". 
+    internal_labels: str or None
+        The feature that is present on internal node labels. If None
+        then it will be inferred from the values present. Internal
+        labels are usually either 'support' or 'name'. If only numeric 
+        values are present then it is parsed as 'support' floats, 
+        but this can overridden here if set `internal_labels='name'`.
 
     Examples
     --------
     >>> nwk1 = "((A,B),(C,D));"
-    >>> tree1 = parse_newick(nwk1)
+    >>> tree1 = parse_newick_string(nwk1)
     >>> print(tree1.get_node_data())    
     >>> 
     >>> nwk2 = "((a:1,b:2)0.99:3,(c:1,d:1)0.90:3)0.66:1;"
-    >>> tree2 = parse_newick(nwk2)
+    >>> tree2 = parse_newick_string(nwk2)
     >>> print(tree2.get_node_data())
     """
     feat_formatter = partial(
         feature_parser, 
-        prefix=comment_prefix,
+        prefix=feature_prefix,
         delim=feature_delim,
         assignment=feature_assignment,
     )
-    tree = parse_newick_custom(
+    tree = parse_newick_string_custom(
         newick=newick,
         feat_formatter=feat_formatter,
         dist_formatter=distance_parser,
-        aggregator=node_aggregator        
+        aggregator=node_aggregator,
+        internal_labels=internal_labels,
     )
     return tree
 
@@ -555,9 +558,9 @@ if __name__ == "__main__":
     NWK = "((a,b)Name[x=3]:30[length=3],c);"
 
     # TOYTREE custom example
-    TREE = parse_newick_custom(NWK)
+    TREE = parse_newick_string_custom(NWK)
     print(TREE.get_node_data())
 
     # TOYTREE simple example
-    TREE = parse_newick(NWK, comment_prefix="")
+    TREE = parse_newick_string(NWK, feature_prefix="")
     print(TREE.get_node_data())
