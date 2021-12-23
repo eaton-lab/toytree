@@ -13,13 +13,10 @@ References
 
 """
 
-from typing import Optional, Tuple, Collection
-from loguru import logger
-from toytree.core.tree2 import ToyTree
-from toytree.core.node import Node
+from typing import Optional, Tuple, Collection, TypeVar
 
-logger = logger.bind(name="toytree")
-
+Node = TypeVar("Node")
+ToyTree = TypeVar("ToyTree")
 
 def get_feature_string(
     node: Node,
@@ -108,9 +105,17 @@ def write_newick(
     features_prefix: str = "&",
     features_delim: str = ",",
     features_assignment: str = "=",
-    **kwargs,
     ) -> Optional[str]:
-    """Write newick.
+    """Write tree to newick string and return or write to filepath.
+
+    The newick string can be formatted in several ways. The default 
+    will include dist values (edge lengths) and support values as 
+    internal node labels. The edge lengths can be suppressed by 
+    setting `dist_formatter=None`, and internal node labels can be
+    similarly suppressed, or set to store a different feature, such 
+    as internal node names. Additional features can be stored in the
+    node comment blocks in extended-newick-format (NHX-like) by using
+    the "features" arguments (see examples).
 
     Parameters
     ----------
@@ -167,10 +172,6 @@ def write_newick(
     >>> tree.write(features=["size"])
     >>> # ((a:3[&state=1],b:3[&state=1])100:1[&state=1],c:4[&state=2])100:1[&state=1]
     """
-    if kwargs:
-        logger.error(
-            "toytree write option {} is deprecated, see updated docs.")
-
     newick = tree_reduce(
         tree.treenode,
         dist_formatter,
@@ -187,25 +188,38 @@ def write_newick(
             return None
     return newick
 
+def write_nexus(tree: ToyTree, path: Optional[str] = None, **kwargs):
+    """Write tree newick string to NEXUS file format.
 
-def write_nexus(tree, **kwargs):
-    """
+    This accepts the same arguments as `toytree.io.write_newick`.
 
     See Also
     ---------
-    `write_newick`
+    `toytree.io.write_newick`, `ToyTree.write`
     """
+    newick = write_newick(tree, **kwargs)
+    nexus = "#NEXUS\n"
+    nexus += "begin trees;\n"
+    rooted = "R" if tree.is_rooted() else "U"
+    nexus += f"  tree 0 = [&{rooted}] {newick}\n"
+    nexus += ";"
+    if path is not None:
+        with open(path, 'w', encoding="utf-8") as out:
+            out.write(nexus)
+            return None
+    return nexus
 
 
 if __name__ == "__main__":
 
     import toytree
-    nwk = "((a:3[&state=1],b:3[&state=1])D:1[&state=1],c:4[&state=2])E:1[&state=1];"
-    tree = toytree.io.parse_newick(nwk)
-    tree = tree.set_node_data("support", default=100)
+    NWK = "((a:3[&state=1],b:3[&state=1])D:1[&state=1],c:4[&state=2])E:1[&state=1];"
+    TREE = toytree.io.parse_newick_string(NWK)
+    TREE = TREE.set_node_data("support", default=100)
 
-    print(write_newick(tree))
-    print(write_newick(tree, dist_formatter=None))    
-    print(write_newick(tree, internal_labels=None))
-    print(write_newick(tree, internal_labels="name"))
-    print(write_newick(tree, features=["state"]))
+    print(write_newick(TREE))
+    print(write_newick(TREE, dist_formatter=None))    
+    print(write_newick(TREE, internal_labels=None))
+    print(write_newick(TREE, internal_labels="name"))
+    print(write_newick(TREE, features=["state"]))
+    print(write_nexus(TREE, features=["state"]))

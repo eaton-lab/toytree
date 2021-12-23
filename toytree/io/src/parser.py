@@ -22,7 +22,7 @@ import requests
 from toytree.core.node import Node
 from toytree.utils import ToytreeError
 from toytree.io.src.newick import parse_newick_string
-from toytree.io.src.nexus_io import get_newicks_and_translation_from_nexus
+from toytree.io.src.nexus import get_newicks_and_translation_from_nexus
 
 logger = logger.bind(name="toytree")
 
@@ -39,6 +39,14 @@ class TreeIOParser:
 
     See `toytree.tree` for the docstring. Use kwargs to enter args
     to the `parse_newick_string` function.
+
+    Parameters
+    ----------
+    multitree: bool
+        If False then only the first tree is read, whereas if True
+        one or more trees will be read from each input. The default
+        of False leads to faster loading when fetching a single tree
+        using `toytree.tree` versus `toytree.mtree` on the same file.
     """
     def __init__(
         self,

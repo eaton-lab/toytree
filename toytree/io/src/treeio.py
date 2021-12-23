@@ -12,7 +12,6 @@ from loguru import logger
 from toytree.core.tree2 import ToyTree
 from toytree.core.node import Node
 from toytree.utils import ToytreeError
-from toytree.io.src.tree_parser import TreeParser
 from toytree.io.src.parser import TreeIOParser
 
 logger = logger.bind(name="toytree")
@@ -21,7 +20,10 @@ logger = logger.bind(name="toytree")
 Url = TypeVar("Url")
 
 
-def tree(data: Union[str,bytes,Path,Url]) -> ToyTree:
+def tree(
+    data: Union[str,bytes,Path,Url],
+
+    ) -> ToyTree:
     """General ToyTree class constructor function and flexible data parser.
 
     Returns a :class:`ToyTree` object from a variety of optional 
@@ -55,16 +57,15 @@ def tree(data: Union[str,bytes,Path,Url]) -> ToyTree:
     >>> tree = toytree.tree("/tmp/test.nex")
     >>> tree = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
     """
-    # load from a TreeNode and detach.
+    # load ToyTree from Node, insures detach if Node is not root.
     if isinstance(data, Node):
         treenode = data.copy(detach=True)
         ttree = ToyTree(treenode)
-    # parse a str, URL, or file
+    # load ToyTree from a newick or nexus from str, URL, or filepath
     elif isinstance(data, (str, bytes, Path)):
-        # treenode = TreeParser(data).treenodes[0]        
         treenode = TreeIOParser(data).trees[0]
         ttree = ToyTree(treenode)
-    # raise an error (to make an empty tree you must enter empty TreeNode)
+    # raise an error (to make an empty tree you must enter empty Node)
     else:
         raise ToytreeError(f"Cannot parse input tree data: {data}")
     return ttree
@@ -72,10 +73,6 @@ def tree(data: Union[str,bytes,Path,Url]) -> ToyTree:
 
 
 if __name__ == "__main__":
-
-    URI = "https://eaton-lab.org/data/Cyathophora.tre"
-    TOOL = TreeParser(URI)
-    print(TOOL.treenodes[0])
 
     URI = "https://eaton-lab.org/data/Cyathophora.tre"
     TOOL = TreeIOParser(URI)
