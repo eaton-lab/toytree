@@ -7,9 +7,11 @@
 
 from __future__ import annotations
 from typing import (
-    Generator, Dict, List, Optional, Iterable, Any, Set, Union, Tuple)
+    Generator, Dict, List, Optional, Iterable, Any, Set, Union, Tuple,
+    Collection)
 import re
 
+from loguru import logger
 import numpy as np
 import pandas as pd
 from toyplot import Canvas
@@ -24,9 +26,12 @@ from toytree.utils import ToytreeError
 from toytree.core.layout import Layout
 from toytree.core.drawing.render import ToytreeMark
 from toytree.core.drawing.draw_toytree2 import draw_toytree
+import toytree
 # from toytree.pcm.api import PhyloCompAPI
 
-# pylint: disable=too-many-branches
+# pylint: disable=too-many-branches, too-many-lines
+
+logger = logger.bind(name="toytree")
 
 
 class ToyTree:
@@ -363,13 +368,22 @@ class ToyTree:
         mrca_idx = min(set.intersection(*idx_sets))
         return self[mrca_idx]
 
-    def is_monophyletic(self, *nodes: Union[Node, int]) -> bool:
+    def is_monophyletic(self, *nodes: Union[Node, int], unrooted: bool=False) -> bool:
         """Return True if leaf Nodes form a monophyletic clade.
 
         If any other leaf Nodes are members of this clade, but not
         included in the input set of 'nodes', then these Nodes are
         not monophyletic. Nodes can be entered either as Node objects
         or by their int idx labels.
+
+        Parameters
+        ----------
+        *nodes: Node or int
+            One or more Node objects or int idx labels to check for
+            monophyly.
+        unrooted: bool
+            If True then the selected Nodes are tested for monophyly
+            without reference to the placement of the root Node.
 
         Examples
         --------
@@ -378,7 +392,10 @@ class ToyTree:
         >>> print(tree.is_monophyletic(0, 1, 2))
         >>> print(tree.is_monophyletic(0, 4, 8))
         """
-        # convert 'nodes' are to Node objects if entered as idx ints
+        # TODO: unrooted check reciprocal sample if root is inside
+        if unrooted:
+            raise NotImplementedError("TODO")
+        # convert 'nodes' arg to Node objects if entered as idx ints
         nodes = [i if isinstance(i, Node) else self[i] for i in nodes]
         mrca = self.get_mrca_node_from_nodes(*nodes)
         for node in mrca._iter_leaves():
@@ -392,63 +409,97 @@ class ToyTree:
     ##################################################
 
     ###################################################
-    ## I/O FORMATTING
+    ## I/O FORMATTING (toytree.io)
     ## read and write trees to newick, nexus, nhx
     ###################################################
 
     def write(
         self,
         path: Optional[str] = None,
-        tree_format: int = 0,
-        features: Optional[Iterable[str]] = None,
-        dist_formatter: str = "%0.6g",
-        support_formatter: str = "%0f",
-        name_formatter: str = "%s",
-        format_root_node=False,
-        ) -> Optional[str]:        
-        """Return newick string of tree and optionally write to file.
+        dist_formatter: str = "%.6g",
+        internal_labels: Optional[str] = "support",
+        internal_labels_formatter: Optional[str] = "%.6g",    
+        features: Optional[Collection] = None,
+        features_prefix: str = "&",
+        features_delim: str = ",",
+        features_assignment: str = "=",
+        **kwargs,
+        ) -> Optional[str]:
+        """Write tree to newick string and return or write to filepath.
 
-        Several arguments control the way in which extra data is shown
-        for every node.
+        The newick string can be formatted in several ways. The default 
+        will include dist values (edge lengths) and support values as 
+        internal node labels. The edge lengths can be suppressed by 
+        setting `dist_formatter=None`, and internal node labels can be
+        similarly suppressed, or set to store a different feature, such 
+        as internal node names. Additional features can be stored in the
+        node comment blocks in extended-newick-format (NHX-like) by using
+        the "features" arguments (see examples).
 
         Parameters
         ----------
-        features: 
-            a list of feature names to be exported using the Extended Newick 
-            Format (i.e. features=["name", "dist"]). Use an empty list to 
-            export all available features in each node (features=[])
+        tree: ToyTree
+            A ToyTree instance to write as a newick string.
+        path: str or None
+            A filepath to write to file, or None to return newick string.
+        dist_formatter: str or None
+            A formatting string to format float dist values (edge lengths),
+            or None to not write dist values. Default is "%.6g".
+        internal_labels: str or None
+            A feature to write as internal node labels. The 'support' 
+            feature is the default, and often used here, but 'name' is 
+            sometimes used as well. Any feature can be selected, or None
+            to not write internal labels.
+        internal_labels_formatter: str or None
+            A formatting string to format internal labels. If an internal
+            label cannot be formatted due to TypeError (e.g., you select
+            'name' for `internal_labels` but leave this optional at its
+            default as a float formatter '%.6g', instead of str formatter)
+            it will simply be converted to a string. 
+        features: List[str]
+            A list of additional features to write in the newick comment
+            block. For example, features=["height"] will save heights.
+        features_prefix: str
+            A prefix character written to the start of newick comment 
+            blocks. Typical values are "&" (default) or "&&NHX:".
+        features_delim: str
+            A character used to delimit features in the newick comment
+            block. Default is ",".
+        features_assignment: str
+            A character used to separate feature keys and values. Default
+            is "=". 
 
-        outfile:
-            writes the output to a given file
+        See Also
+        --------
+        `write_nexus`
+            Write tree newick string in a NEXUS format.
+        `ToyTree.write`
+            This function is available from ToyTree objects as `.write`.
 
-        format: 
-            defines the newick standard used to encode the tree. 
-
-        format_root_node: 
-            If True, it allows features and branch information from root node
-            to be exported as a part of the newick text string. For newick 
-            compatibility reasons, this is False by default.
-
-        is_leaf_fn: 
-            See :func:`TreeNode.traverse` for documentation.
+        Examples
+        --------
+        >>> nwk = "((a:3[&state=1],b:3[&state=1])D:1[&state=1],c:4[&state=2])E:1[&state=1];"
+        >>> tree = toytree.io.parse_newick(nwk, features_prefix="&")
+        >>> tree.write()
+        >>> # ((a:3,b:3)100:1,c:4)100:1
+        >>> tree.write(dist_formatter=None)
+        >>> # ((a,b)100,c)100
+        >>> tree.write(internal_label=None)
+        >>> # ((a:3,b:3):1,c:4):1
+        >>> tree.write(internal_labels="name")
+        >>> # ((a:3,b:3)D:1,c:4)E:1
+        >>> tree.write(features=["size"])
+        >>> # ((a:3[&state=1],b:3[&state=1])100:1[&state=1],c:4[&state=2])100:1[&state=1]
         """
-        writer = NewickWriter(
-            self, 
-            tree_format=format, 
-            features=features,
-            format_root_node=False, 
-            # is_leaf_fn=is_leaf_fn,
-            dist_formatter=dist_formatter,
-            support_formatter=support_formatter,
-            name_formatter=name_formatter,
-            )
-        newick = writer.write_newick()
+        if kwargs:
+            logger.warning(
+                f"Deprecated args to write(): {list(kwargs.values())}. See docs.")
+        return toytree.io.write_newick(
+            self, path, 
+            dist_formatter, internal_labels, internal_labels_formatter,
+            features, features_prefix, features_delim, features_assignment
+        )
 
-        if outfile is not None:
-            with open(outfile, "w") as OUT:
-                OUT.write(newick)
-        else:
-            return newick
 
     ###################################################
     ## TOPOLOGY OR LEAF ANALYSIS FUNCTIONS
