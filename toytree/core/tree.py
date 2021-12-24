@@ -36,8 +36,8 @@ logger = logger.bind(name="toytree")
 
 class ToyTree:
     """ToyTree class for manipulating and drawing trees.
-    
-    Users should generally use the constructor functions `toytree.tree`, 
+
+    Users should generally use the constructor functions `toytree.tree`,
     or `toytree.rtree` to init a ToyTree from input data (e.g. newick)
     or to generate random trees, respectively. This class can be used
     for type hints.
@@ -65,7 +65,7 @@ class ToyTree:
         self.mod = TreeModAPI(self)
         """: API to apply :mod:`toytree.mod` tree modification funcs to this tree."""
         self.pcm = None
-        """: API to apply :mod:`toytree.pcm` phylogenetic comparative methods funcs to this tree."""        
+        """: API to apply :mod:`toytree.pcm` phylogenetic comparative methods funcs to this tree."""
         self.distance = DistanceAPI(self)
         """: API to apply :mod:`toytree.distance` comparison funcs to this tree."""
 
@@ -95,11 +95,11 @@ class ToyTree:
     def features(self) -> Set[str]:
         """Return a set of all Node data feature names.
 
-        The basic 'features' present on all Nodes include 'dist', 
-        'name', 'support', 'height', and 'idx'. These features will 
-        all be shown if you call `ToyTree.get_node_data()`. To add 
+        The basic 'features' present on all Nodes include 'dist',
+        'name', 'support', 'height', and 'idx'. These features will
+        all be shown if you call `ToyTree.get_node_data()`. To add
         additional features to all Nodes use `ToyTree.set_node_data`.
-        
+
         Examples
         --------
         >>> tree = toytree.rtree.unittree(10)
@@ -127,7 +127,7 @@ class ToyTree:
 
     def is_bifurcating(self, include_root: bool=True) -> bool:
         """Return False if no polytomies exist in tree.
-        
+
         Parameters
         ----------
         include_root: bool
@@ -141,18 +141,18 @@ class ToyTree:
 
     def copy(self) -> ToyTree:
         """Return a deepcopy of the ToyTree.
-        
+
         """
         return ToyTree(self.treenode.copy())
 
     #####################################################
-    ## TRAVERSAL 
+    ## TRAVERSAL
     ## Visit all connected Nodes, and/or create idx_dict.
     #####################################################
 
     def traverse(self, strategy: str = "levelorder") -> Generator[Node]:
         """Return a Generator over Nodes in a specific traversal order.
-        
+
         TODO: copy docs from Node.
         """
         for node in self.treenode.traverse(strategy=strategy):
@@ -160,11 +160,11 @@ class ToyTree:
 
     def _update_idxs(self) -> None:
         """Updates the idx labels of all Nodes and `_idx_dict`.
-        
-        If a topology has been modified then idx labels must be 
+
+        If a topology has been modified then idx labels must be
         updated. This function is automatically called by all internal
         functions for tree modifications (add_child, root, rotate, etc)
-        but not if users modify Nodes adhoc, thus we enforce calling 
+        but not if users modify Nodes adhoc, thus we enforce calling
         it again at the start of drawing/layout functions.
         """
         self.nnodes = 0
@@ -185,12 +185,12 @@ class ToyTree:
 
         This does the same as `_update_idxs` but can be used in other
         functions to perform additional operations on each node after
-        idx assignment during the same traversal. 
+        idx assignment during the same traversal.
 
         Note
         -----
-        Take care that the idx_dict and ntips and nnodes attributes are 
-        all incomplete during this operation, thus it is hidden for 
+        Take care that the idx_dict and ntips and nnodes attributes are
+        all incomplete during this operation, thus it is hidden for
         internal use only.
         """
         self.nnodes = 0
@@ -207,13 +207,13 @@ class ToyTree:
 
     def _update(self) -> None:
         """Set idx, x, and y values on Nodes.
-        
+
         Fetching heights requires two traversals. This is performed
         on init of a ToyTree and any mod or draw functions that occur
         after init simply use and/or modify the existing heights.
-        This has a speed tradeoff for init'ing trees (see RawTree), 
+        This has a speed tradeoff for init'ing trees (see RawTree),
         but for most concerns is worth it for the convenience.
-        """        
+        """
         # first traversal: parents then children to get dists to root
         max_dist = 0.
         for node in self.traverse("preorder"):
@@ -235,8 +235,8 @@ class ToyTree:
     #####################################################
     ## TREE MODIFICATION FUNCTIONS (ToyTree.lib.mod)
     ## - root, unroot, rotate_node, ladderize,
-    ## - set_node_heights, collapse_nodes, prune, 
-    ## - drop_tips, resolve_polytomy, 
+    ## - set_node_heights, collapse_nodes, prune,
+    ## - drop_tips, resolve_polytomy,
     #####################################################
 
     #################################################
@@ -263,18 +263,18 @@ class ToyTree:
     def get_nodes_by_name(
         self, *names: str, regex: bool = False) -> Generator[Node]:
         """Return List of Nodes with names matching the 'names' query.
-        
-        Multiple Node names or regular expressions can be entered to 
+
+        Multiple Node names or regular expressions can be entered to
         match Nodes in the ToyTree, which are searched and returned by
-        an 'idxorder' traversal. Name attributes are not required 
+        an 'idxorder' traversal. Name attributes are not required
         to be unique among connected Nodes.
 
         Parameters
         ----------
         *names: str or Iterable[str]
-            One or more strings to 
+            One or more strings to
         regex: bool
-            If True then name strings are treated as regular 
+            If True then name strings are treated as regular
             expressions (e.g., 'n-[1-3]' matches 'n-1', 'n-2', 'n-3')
             such that each name can potentially match multiple Nodes.
 
@@ -295,7 +295,7 @@ class ToyTree:
     #####################################################
     ## MRCA FETCH
     ## this can be done by selecting a Node by idx or name matching
-    ## and used Node funcs to traverse 
+    ## and used Node funcs to traverse
     ## including regex, and fuzzy string matching.
     #####################################################
 
@@ -303,16 +303,16 @@ class ToyTree:
         self, *names: str, regex: bool = False) -> Node:
         """Return the MRCA Node of a set of input leaf Node names.
 
-        Find and return the most-recent-common-ancestor of a set of 
-        connected input Nodes selected by tip labels (leaf names). 
+        Find and return the most-recent-common-ancestor of a set of
+        connected input Nodes selected by tip labels (leaf names).
         If the Nodes do not share a common ancestor this will raise a
-        ToyTreeError. This function is useful for selecting and 
+        ToyTreeError. This function is useful for selecting and
         annotating clades on a tree drawing.
 
         Parameters
         ----------
         *names: str
-            One or more tip labels names or regular expressions to 
+            One or more tip labels names or regular expressions to
             match Node names.
         regex: bool
             If True then 'names' is treated as regular expressions that
@@ -335,9 +335,9 @@ class ToyTree:
     def get_mrca_node_from_nodes(self, *nodes: Node) -> Node:
         """Return the MRCA Node of a set of Nodes.
 
-        Find and return the most-recent-common-ancestor of a set of 
-        connected input Nodes. If the Nodes do not share a common 
-        ancestor this will raise a ToyTreeError. This function is 
+        Find and return the most-recent-common-ancestor of a set of
+        connected input Nodes. If the Nodes do not share a common
+        ancestor this will raise a ToyTreeError. This function is
         useful for selecting and annotating clades on a tree drawing.
 
         See Also
@@ -418,7 +418,7 @@ class ToyTree:
         path: Optional[str] = None,
         dist_formatter: str = "%.6g",
         internal_labels: Optional[str] = "support",
-        internal_labels_formatter: Optional[str] = "%.6g",    
+        internal_labels_formatter: Optional[str] = "%.6g",
         features: Optional[Collection] = None,
         features_prefix: str = "&",
         features_delim: str = ",",
@@ -427,11 +427,11 @@ class ToyTree:
         ) -> Optional[str]:
         """Write tree to newick string and return or write to filepath.
 
-        The newick string can be formatted in several ways. The default 
-        will include dist values (edge lengths) and support values as 
-        internal node labels. The edge lengths can be suppressed by 
+        The newick string can be formatted in several ways. The default
+        will include dist values (edge lengths) and support values as
+        internal node labels. The edge lengths can be suppressed by
         setting `dist_formatter=None`, and internal node labels can be
-        similarly suppressed, or set to store a different feature, such 
+        similarly suppressed, or set to store a different feature, such
         as internal node names. Additional features can be stored in the
         node comment blocks in extended-newick-format (NHX-like) by using
         the "features" arguments (see examples).
@@ -446,8 +446,8 @@ class ToyTree:
             A formatting string to format float dist values (edge lengths),
             or None to not write dist values. Default is "%.6g".
         internal_labels: str or None
-            A feature to write as internal node labels. The 'support' 
-            feature is the default, and often used here, but 'name' is 
+            A feature to write as internal node labels. The 'support'
+            feature is the default, and often used here, but 'name' is
             sometimes used as well. Any feature can be selected, or None
             to not write internal labels.
         internal_labels_formatter: str or None
@@ -455,19 +455,19 @@ class ToyTree:
             label cannot be formatted due to TypeError (e.g., you select
             'name' for `internal_labels` but leave this optional at its
             default as a float formatter '%.6g', instead of str formatter)
-            it will simply be converted to a string. 
+            it will simply be converted to a string.
         features: List[str]
             A list of additional features to write in the newick comment
             block. For example, features=["height"] will save heights.
         features_prefix: str
-            A prefix character written to the start of newick comment 
+            A prefix character written to the start of newick comment
             blocks. Typical values are "&" (default) or "&&NHX:".
         features_delim: str
             A character used to delimit features in the newick comment
             block. Default is ",".
         features_assignment: str
             A character used to separate feature keys and values. Default
-            is "=". 
+            is "=".
 
         See Also
         --------
@@ -495,7 +495,7 @@ class ToyTree:
             logger.warning(
                 f"Deprecated args to write(): {list(kwargs.values())}. See docs.")
         return toytree.io.write_newick(
-            self, path, 
+            self, path,
             dist_formatter, internal_labels, internal_labels_formatter,
             features, features_prefix, features_delim, features_assignment
         )
@@ -533,7 +533,7 @@ class ToyTree:
 
     ###################################################
     ## COORDINATE LAYOUT FUNCTIONS
-    ## push to .layout subpackage 
+    ## push to .layout subpackage
     ###################################################
 
     def _get_node_coordinates(self) -> np.ndarray:
@@ -544,20 +544,20 @@ class ToyTree:
     def get_node_coordinates(self, **kwargs) -> pd.DataFrame:
         """Return a DataFrame with xy coordinates for plotting nodes.
 
-        This returns coordinates that could be used when adding 
-        additional annotations to plots, such as scatterplot points, 
+        This returns coordinates that could be used when adding
+        additional annotations to plots, such as scatterplot points,
         or error bars on top of nodes. By default Node idx=0 will be
         located at coordinate position (0, 0), which can be modified
         using the `xbaseline` and `ybaseline` args.
-        
+
         Take care when calling this function that the coordinates
         will be different depending on the *style* arguments applied.
         The style args come from the `.style` dict-like object of the
         ToyTree, and can be overriden by additional args to this func,
-        the same as in the `.draw()` function. For example, layout 
+        the same as in the `.draw()` function. For example, layout
         facing down ('d') will yield different coordinates than layout
         facing up ('u').
-    
+
         Examples
         --------
         >>> style = {'layout': 'd', 'xbaseline': 10}
@@ -566,7 +566,7 @@ class ToyTree:
         >>> axes.scatterplot(coords.x, coords.y, size=10);
         """
         data = pd.DataFrame(
-            columns=('x', 'y'), 
+            columns=('x', 'y'),
             index=range(self.nnodes),
             data=Layout(self, **kwargs).coords,
         )
@@ -585,14 +585,14 @@ class ToyTree:
 
     def get_feature_dict(self, keys: str=None, values: str=None) -> Dict:
         """Return a dict mapping selected Node features as keys, values.
-        
-        This can be used to return a dict mapping any two arbitrary 
+
+        This can be used to return a dict mapping any two arbitrary
         features, or to Node objects. Examples include mapping Node
-        objects to dist values, or idx labels to Node names, or 
+        objects to dist values, or idx labels to Node names, or
         Node names to Node objects. There are many possibilities. The
-        value of None for `keys` or `values` returns Node objects. 
+        value of None for `keys` or `values` returns Node objects.
         Retured dict is in idxorder.
-        
+
         Parameters
         ----------
         keys: str or None
@@ -609,7 +609,7 @@ class ToyTree:
         See Also
         --------
         get_node_data
-            Return feature data as a DataFrame w/ options for 
+            Return feature data as a DataFrame w/ options for
             how to impute values for missing features on some nodes.
         """
         ndict = {}
@@ -642,17 +642,17 @@ class ToyTree:
 
     def _set_node_data_dtype(self, feature: str, dtype: Optional[Callable]=None) -> None:
         """Set (and infer) the type or dtype of a Node feature in-place.
-        
+
         This is used internally when data is parsed from strings
         and may be a str, float, int, or complex type, and we want
-        to be able to *try* to infer the proper type. Also, if the 
-        user knows the type then it can be set. This will raise a 
+        to be able to *try* to infer the proper type. Also, if the
+        user knows the type then it can be set. This will raise a
         TypeError if the data cannot be cast to the entered dtype.
 
         Parameters
         ----------
         ...
-        """ 
+        """
         raise NotImplementedError("TODO")
 
     def set_node_data(
@@ -667,15 +667,15 @@ class ToyTree:
         Features can be set on all or only some nodes. In the latter
         case a value for nodes with missing features can be imputed
         when you call the function :meth:`~toytree.core.tree.ToyTree.get_node_data`.
-        Some features used internally are protected from modification 
-        (e.g., idx, up, children), but other base features such as 
+        Some features used internally are protected from modification
+        (e.g., idx, up, children), but other base features such as
         name, dist, height, and support can be modified, and any new
-        feature name can be created. 
+        feature name can be created.
 
         Values are set by providing a 'mapping' dictionary mapping node
-        idx labels (int type) or names (str type) as keys and the 
-        associated values as dict values. The 'default' option can be 
-        used to set a value for the feature to all nodes not specified 
+        idx labels (int type) or names (str type) as keys and the
+        associated values as dict values. The 'default' option can be
+        used to set a value for the feature to all nodes not specified
         in the mapping.
 
         Parameters
@@ -781,7 +781,7 @@ class ToyTree:
         feature: Union[str, Iterable[str], None] = None,
         missing: Union[Any, Iterable[Any], None] = None,
         ) -> Union[pd.DataFrame, pd.Series]:
-        """Return a DataFrame with values for one or more selected 
+        """Return a DataFrame with values for one or more selected
         features from every node in the tree.
 
         Parameters
@@ -799,9 +799,9 @@ class ToyTree:
         -------
         data: pd.DataFrame or pd.Series
             If a single feature is selected then a pd.Series will be
-            returned with tip node 'idx' attributes as the index. 
+            returned with tip node 'idx' attributes as the index.
             If multiple features are selected (or None, which selects
-            all features) then a pd.DataFrame is returned with tip 
+            all features) then a pd.DataFrame is returned with tip
             node 'idx' attributes as the index and feature names as
             the column labels.
 
@@ -824,7 +824,7 @@ class ToyTree:
         Note
         ----
         This function is convenient for accessing data in tabular
-        format, but is slightly slower than accessing data directly 
+        format, but is slightly slower than accessing data directly
         from Nodes because it spends time type-checking missing data.
         """
         # select one or more features to fetch values for
@@ -863,14 +863,14 @@ class ToyTree:
         # if a single feature was selected return as a Series else DataFrame
         if len(features) == 1:
             return data[feature]
-        return data        
+        return data
 
     def get_tip_data(
         self,
         feature: Union[str, Iterable[str], None] = None,
         missing: Optional[Any] = pd.NA,
         ) -> pd.DataFrame:
-        """Return a DataFrame with values for one or more selected 
+        """Return a DataFrame with values for one or more selected
         features from every leaf node in the tree.
 
         Parameters
@@ -888,9 +888,9 @@ class ToyTree:
         -------
         data: pd.DataFrame or pd.Series
             If a single feature is selected then a pd.Series will be
-            returned with tip node 'idx' attributes as the index. 
+            returned with tip node 'idx' attributes as the index.
             If multiple features are selected (or None, which selects
-            all features) then a pd.DataFrame is returned with tip 
+            all features) then a pd.DataFrame is returned with tip
             node 'idx' attributes as the index and feature names as
             the column labels.
 
@@ -913,7 +913,7 @@ class ToyTree:
         Note
         ----
         This function is convenient for accessing data in tabular
-        format, but is slightly slower than accessing data directly 
+        format, but is slightly slower than accessing data directly
         from Nodes because it spends time type-checking missing data.
         """
         return self.get_node_data(feature, missing).iloc[:self.ntips]
@@ -937,7 +937,7 @@ class ToyTree:
         layout: str=None,
         tip_labels: Union[bool,Iterable]=None,
         tip_labels_colors: Union[str,Iterable]=None,
-        tip_labels_angles: Union[float,Iterable[float]]=None,        
+        tip_labels_angles: Union[float,Iterable[float]]=None,
         tip_labels_style: Dict[str,Any]=None,
         tip_labels_align: bool=None,
         node_mask: Union[bool,Iterable[bool]]=None,
@@ -969,9 +969,9 @@ class ToyTree:
         The drawing function return a tuple of Toyplot objects as
         (Canvas, Cartesian, Mark), and will automatically render
         in a jupyter notebook. The Canvas can be saved to file in a
-        number of formats using toyplot. The Cartesian axes can be 
+        number of formats using toyplot. The Cartesian axes can be
         used to add additional toyplot marks to the shared cartsian
-        coordinates, and be used to style axes ticks. The Mark can 
+        coordinates, and be used to style axes ticks. The Mark can
         be further modified to edit or access style args.
 
         Parameters
@@ -1059,7 +1059,7 @@ class ToyTree:
 
         node_markers: Iterable[str]
             The shape of node markers: 'o'=circle, 's'=square. See
-            toyplot documentation for all available options: 
+            toyplot documentation for all available options:
             https://toyplot.readthedocs.io/en/stable/markers.html
 
         edge_colors: Union[str,Iterable[str]]
@@ -1074,7 +1074,7 @@ class ToyTree:
             Edges can be phylogram ('p') or cladogram ('c') type.
 
         edge_style: Dict[str,Any]
-            A dictionary of valid CSS style args to apply to edge 
+            A dictionary of valid CSS style args to apply to edge
             lines. See tree.style for available options.
 
         edge_align_style: Dict[str,Any]
@@ -1097,7 +1097,7 @@ class ToyTree:
             Padding space between the drawing and the visible axes.
             Default is 20px.
 
-        margin: 
+        margin:
 
         xbaseline: float
             Shift the position of the tree along x-axis.
