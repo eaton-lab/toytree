@@ -3,7 +3,7 @@
 """A simple immutable Node class.
 
 A Node represents a vertex in a tree or graph, with connections
-represented by references to other Node objects in its `.up` and
+represented by pointers to other Node objects in its `.up` and
 `.children` attributes. The core purpose of Node objects it to
 provide *traversal* functions for accessing connected Nodes in an
 order determined by their connections.
@@ -18,7 +18,7 @@ to directly edit .dist, .up, .children, or other attributes of Node
 objects that affect the tree topology. Instead, ToyTree class objects
 have functions for modifying Nodes that do so in the context of
 updating the entire tree (i.e., updating other Node's attributes
-if needed). Thus, toytree.Node is a more minimal object for used mainly
+if needed). Thus, toytree.Node is a more minimal object used mainly
 for traversal and to store Node data.
 
 References
@@ -83,24 +83,27 @@ class Node:
     --------
     >>> # you can create a Node directly, but this is not intended.
     >>> node = toytree.Node(name='root')
+    >>>
     >>> # instead, create a ToyTree and access Nodes from it.
     >>> tree = toytree.rtree.unittree(ntips=10, seed=123)
+    >>>
     >>> # Nodes can be accessed by traversal from ToyTrees or Nodes
     >>> for node in tree.traverse("postorder"):
     >>>     print(node)
+    >>>
     >>> # or, Nodes can be indexed from ToyTrees by their idx label.
     >>> node = tree[3]
+    >>>
     >>> # other Nodes can be accessed relative to this one by traversal
     >>> parent = node.up
     >>> ancs = node.get_ancestors()
     >>> descs = node.get_descendants()
-
+    >>>
     >>> # Node data/attributes can be accessed from a Node
     >>> print(node.name, node.idx, node.dist)
+    >>>
     >>> # but cannot be modified on Nodes (they are immutable)
-    >>> node.dist = 10  # raises a ToytreeError
-    >>> # instead modify Node data from the ToyTree object
-    >>> tree = tree.set_node_data("dist", {3: 10})
+    >>> node.dist = 10  # raises a TreeNodeError
     """
     def __init__(self, name: str="", dist: float=1., support: float=0.):
         self._name = name
@@ -625,12 +628,6 @@ class Node:
     # def to_toytree(self):
     #     """Return this Node as root treenode of a ToyTree class object."""
     #     return ToyTree(self.copy())
-    # def draw(self):
-    #   """Return a ToyTree drawing of this Node's subtree.
-    #
-    #   This creates a copy of this Node, detaches from any ancestors,
-    #   converts to a ToyTree, and returns the Tree drawing.
-    #   """
 
     def _update_heights(self) -> None:
         """Sets the Node .height attribute by checking all other Nodes.
@@ -642,17 +639,12 @@ class Node:
 
         Note
         ----
-        Height attributes are SLOW to access from TreeNodes, but FAST
-        to access from ToyTrees. This is because calculating the
-        height of a Node requires at least two tree traversals.
-        This is performed on a 'lazy' basis, only when 'height' values
-        are requested. On TreeNode objects this will be repeated for
-        every Node on which the 'height' attribute is requested. By
-        contrast, ToyTree objects will calculate 'height' once for all
-        Nodes and cache the values until the tree is changed. Accessing
-        'height' from the ToyTree `get_node_data` function is thus
-        recommended, since it is much  much faster, especially for
-        large trees.
+        Height attributes are always updated when Nodes are modified
+        by using built-in functions from ToyTree objects, such as in
+        `toytree.mod`. This is why Node objects are purposefuly made
+        to be immutable, to prevent users from changing the tree 
+        structure without properly updating connected Nodes, which
+        could make height attributes incorrect.
         """
         # get the root node
         root = self
@@ -672,10 +664,7 @@ class Node:
             if node.is_leaf():
                 max_dist = max(max_dist, node._height)
 
-        # sets new _height attribute to every Node. This is why if 'height'
-        # is fetched for one Node, all others are also updated, and
-        # thus the cached heights (_height) should be fetched instead of
-        # 'height' again, which is what is done in `get_node_data`.
+        # set height as distance above Node farthest from the root.
         for node in root.traverse("preorder"):
             node._height = max_dist - node._height
 
