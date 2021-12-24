@@ -325,7 +325,7 @@ class Node:
     def _delete(
         self,
         preserve_branch_length: bool=True,
-        prevent_nondicotomic: bool=True,
+        prevent_nondicotomic: bool=False,
         ) -> None:
         """Delete a Node from a tree.
 
@@ -348,13 +348,13 @@ class Node:
         # connect children to grandparent and rm reference to self
         for child in self.children:
             parent._add_child(child)
-        parent._remove_child(self)        
+        parent._remove_child(self)
 
         # do not allow parents with only one child
         if prevent_nondicotomic and len(parent.children) < 2:
-            parent.delete(
-                prevent_nondicotomic=False,
+            parent._delete(
                 preserve_branch_length=preserve_branch_length,
+                prevent_nondicotomic=prevent_nondicotomic,
             )
 
     def _detach(self) -> Node:
@@ -642,7 +642,7 @@ class Node:
         Height attributes are always updated when Nodes are modified
         by using built-in functions from ToyTree objects, such as in
         `toytree.mod`. This is why Node objects are purposefuly made
-        to be immutable, to prevent users from changing the tree 
+        to be immutable, to prevent users from changing the tree
         structure without properly updating connected Nodes, which
         could make height attributes incorrect.
         """
