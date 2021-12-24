@@ -14,7 +14,7 @@ x- toytree.io.parse_tree_from_superbpp_file
 
 from typing import Union, TypeVar, Optional
 import re
-from toytree.core.tree2 import ToyTree
+from toytree.core.tree import ToyTree
 from toytree.io.src.parser import TreeIOParser
 
 # temporary

@@ -9,7 +9,7 @@ from typing import Union, TypeVar
 from pathlib import Path
 from loguru import logger
 
-from toytree.core.tree2 import ToyTree
+from toytree.core.tree import ToyTree
 from toytree.core.node import Node
 from toytree.utils import ToytreeError
 from toytree.io.src.parser import TreeIOParser

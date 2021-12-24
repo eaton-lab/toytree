@@ -28,7 +28,7 @@ from typing import Optional, List, Any, Sequence, Tuple, Callable, Dict
 from functools import partial
 from loguru import logger
 from toytree.core.node import Node
-from toytree.core.tree2 import ToyTree
+from toytree.core.tree import ToyTree
 from toytree.utils import NewickError
 
 logger = logger.bind(name="toytree")
