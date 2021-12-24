@@ -6,10 +6,14 @@
 
 from typing import Optional
 import numpy as np
+import pandas as pd
 from loguru import logger
-from toytree.core.tree2 import ToyTree
+from toytree.core.tree import ToyTree
 from toytree.core.node import Node
 from toytree.utils import ToytreeError
+
+
+logger = logger.bind(name="toytree")
 
 
 def rtree(ntips: int, seed: Optional[int] = None) -> ToyTree:
@@ -261,7 +265,7 @@ def bdtree(
     random_names: bool
         Whether to randomize tip names or name them in order.
     verbose: bool
-        Print some useful information.
+        Sets logging level to INFO to show statistics
     
     Examples
     --------
@@ -278,117 +282,123 @@ def bdtree(
     time_stop = time
 
     # start from random tree (idxs will be re-assigned at end)
-    tre = Node(name="0")
-    gidx = 1
+    root = Node(name="0")
+    root.tdiv = 0
 
     # counters for extinctions, total events, and time
     resets = 0
     ext = 0
     evnts = 0
-    t = 0
+    time = 0
+
+    # keep track of current leaf Nodes
+    tips = [root]
 
     # continue until stop var
     while 1:
 
-        # get current tips
-        tips = tre.get_leaves()
-
         # sample time until next event, increment t and evnts
-        dt = rng.exponential(1 / (len(tips) * (b + d)))
-        t = t + dt
+        dtime = rng.exponential(1 / (len(tips) * (b + d)))
+        time += dtime
         evnts += 1
 
         # sample a [0-1] to choose birth or death and sample a tip node
-        r = rng.random()
-        sp = rng.choice(tips)
+        rvar = rng.random()
+        tip = rng.choice(tips)
 
         # event is a birth
-        if r <= b / (b + d):
-            c1 = sp._add_child(name=str(t) + "-1", dist=0)
-            c1.add_feature("tdiv", t)
-            c1.idx = gidx
-            gidx += 1
-
-            c2 = sp._add_child(name=str(t) + "-2", dist=0)
-            c2.add_feature("tdiv", t)
-            c2.idx = gidx
-            gidx += 1
+        if rvar <= b / (b + d):
+            # add child 1
+            child1 = Node(name=f"{evnts}-1", dist=0)
+            child1.tdiv = time
+            tip._add_child(child1)
+            # add child 2
+            child2 = Node(f"{evnts}-2", dist=0)
+            child2.tdiv = time
+            tip._add_child(child2)
+            # update tip list
+            tips.extend([child1, child2])
+            tips.remove(tip)
 
         # else event is extinction
         else:
-            # get parent node
-            parent = sp.up
+            # get sisters
+            sisters = tip.get_sisters()
 
-            # if no parent then reset to empty tree
-            if parent is None:
+            # drop the extinct tip
+            tips.remove(tip)
+
+            # sister exists and retains connect to unary parent
+            if sisters:
+                tip.up._remove_child(tip)
+
+            # no sisters exist, so in addition to removing
+            # this node we also remove any unary parent nodes
+            # until we reach either the root, or a bipartition
+            # since no descendants exist on this branch.
+            else:
+                while 1:
+                    if tip.is_leaf() and not tip.is_root():
+                        unary_node = tip
+                        tip = tip.up
+                        tip._remove_child(unary_node)
+                    else:
+                        break
+
+            # if parent is None then reset
+            if tip.up is None:
                 resets += 1
-                tre = Node()
-                tre.idx = 0
-                gidx = 1
                 ext = 0
                 evnts = 0
-                t = 0
+                root._dist = time = 0
+                root._children = ()
+                tips = [root]
 
-            # connect parent to sp' children
-            else:
-                # if parent is None then reset
-                if sp.up is None:
-                    tre = Node()
-                    tre.idx = 0
-                    gidx = 1
-                    ext = 0
-                    evnts = 0
-                    t = 0
+            # advance extinction counter
+            ext += 1
 
-                # if parent is root then sister is new root
-                elif sp.up is tre:
-                    tre = [i for i in sp.up.children if i != sp][0]
-                    tre = Node()
-                    tre.up = None
-
-                # if parent is a non-root node then connect sister to up.up
-                else:
-                    # get sister
-                    sister = [i for i in sp.up.children if i != sp][0]
-
-                    # connect sister to grandparent
-                    sister.up = sp.up.up
-
-                    # drop parent from grandparent
-                    sp.up.up.children.remove(sp.up)
-
-                    # add sister to grandparent children
-                    sp.up.up.children.append(sister)
-
-                    # extend sisters dist to reach grandparent
-                    sister.dist += sp.up.dist
-
-                ext += 1
-
-        # update branch lengths so all tips end at time=present
-        tips = tre.get_leaves()
-        for x in tips:
-            x.dist += dt
+        # update branch lengths so all tips end at time=current
+        for tip in tips:
+            tip._dist += dtime
 
         # check stopping criterion
         if stop == "taxa":
             if len(tips) >= taxa_stop:
                 break
         else:
-            if t >= time_stop:
+            if time >= time_stop:
                 break
 
-    # report status
+    # log statistics
     if verbose:
-        print("\n"
-            f"b:\t{evnts - ext}\n"
-            f"d:\t{ext}\n"
-            f"b/d:\t{evnts / (evnts - ext)}\n"
-            f"resets:\t{resets}")
+        results = pd.Series({
+            'time': time,
+            'ntips': len(tips),
+            'b': evnts - ext, 
+            'd': ext,
+            'b/d': evnts / (evnts - ext),
+            'resets': resets,
+        })
+        print(results)
+
+    # if not retain_extinct then remove all internal unary nodes
+    if not retain_extinct:
+        # remove any unary nodes
+        nodes = list(root._traverse_idxorder())
+        for node in nodes[:]:
+            if not node.is_leaf():
+                if len(node.children) < 2:
+                    node._delete(True, False)
+        # make root the deepest node containing a split.
+        while 1:
+            if len(root.children) == 1:
+                root = root.children[0]
+            else:
+                break
 
     # update coords and return
-    tre.ladderize()
-    tre = ToyTree(tre)
+    # tre = tre.mod.ladderize()
+    tre = ToyTree(root)
 
     # rename tips so names are in order else random
     nidx = list(range(tre.ntips))
@@ -399,9 +409,11 @@ def bdtree(
             node.name = "r{}".format(nidx[idx])
     return tre
 
+
 # def coaltree(ntips, Ne, random_names=False, seed=None):
-#     """
-#     Returns a coalescent tree with ntips samples and waiting times 
+#     """Return a coalescent tree with ntips.
+# 
+#     samples and waiting times ...
 #     between coalescent events drawn from the kingman coalescent:
 #     (4N)/(k*(k-1)), where N is effective population size (ne) and 
 #     k is sample size (ntips). Edge lengths on the tree are in 
@@ -458,25 +470,6 @@ def bdtree(
 #     return self
 
 
-
-def _prune(tre):
-    """
-    Helper function for recursively pruning extinct branches in bd trees.
-    Dynamic func!
-    """
-    ttree = tre.copy()
-    tips = ttree.treenode.get_leaves()
-
-    if np.any(np.array([x.height for x in tips]) > 0):
-        for tip in tips:
-            if not np.isclose(tip.height, 0):
-                logger.debug(
-                    f"Removing node/height {tip.name}/{tip.height}")
-                tip.delete(prevent_nondicotomic=False)
-                ttree = _prune(ttree)
-    return ttree
-
-
 if __name__ == "__main__":
 
     TREE = rtree(10)
@@ -484,6 +477,10 @@ if __name__ == "__main__":
 
     TREE = unittree(10)
     print(TREE.get_tip_labels())
+
+    TREE = bdtree(10, b=0.5, d=0.5, verbose=1)
+    print(TREE.get_tip_labels())
+    print(TREE.treenode.draw_ascii())
 
     # TREE = bdtree(10)
     # print(TREE.get_tip_labels())
