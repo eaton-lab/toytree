@@ -2,25 +2,34 @@
 
 """Class for rooting and unrooting of trees.
 
-Rooting and unrooting trees turns out to be quite a bit more 
+Rooting and unrooting trees turns out to be quite a bit more
 complicated than you might expect. The difficult part is keeping
-track of Node features that in practice are coded as attributes to 
-Nodes, but in reality are sometimes features of *edges*, such as 
-'support' or 'dist', and thus may need to be re-assigned when an 
+track of Node features that in practice are coded as attributes to
+Nodes, but in reality are sometimes features of *edges*, such as
+'support' or 'dist', and thus may need to be re-assigned when an
 edge is created or destroyed.
 
 """
 
-from toytree.core.node import Node
-from totyree.core.tree import ToyTree
+from typing import Optional, Sequence, TypeVar
+from loguru import logger
+# from toytree.core.node import Node
+# from toytree.core.tree import ToyTree
 # from toytree.core.node_assist import NodeAssist
 from toytree.utils import ToytreeError
+
+logger = logger.bind(name="toytree")
+
+# type aliases
+ToyTree = TypeVar("ToyTree")
+Node = TypeVar("Node")
+Query = TypeVar("Query", int, str, Node)
 
 
 class Rooter:
     """Root a ToyTree given a monophyletic clade.
 
-    This class is for internal use. Users should access the tree 
+    This class is for internal use. Users should access the tree
     rooting function from either `ToyTree.root` or `toytree.mod`.
 
     Parameters
@@ -32,15 +41,15 @@ class Rooter:
 
     Examples
     --------
-    """   
+    """
     def __init__(
-        self, 
-        tree, 
-        nastuple, 
-        resolve_root_dist, 
+        self,
+        tree,
+        nastuple,
+        resolve_root_dist,
         edge_features,
         ):
-    
+
         # store args
         self.tree = tree
         self.resolve_root_dist = resolve_root_dist
@@ -116,7 +125,7 @@ class Rooter:
     def redirect_edge_features(self):
         """
         Set support values to maximum for new node since the user forced
-        rooting, i.e, it is not uncertain. 
+        rooting, i.e, it is not uncertain.
         """
         # mark new split with zero...
         for feature in set(self.edge_features) - set(["support", "dist"]):
@@ -131,7 +140,7 @@ class Rooter:
 
     def restructure_tree(self):
         """
-        At this point tdict 
+        At this point tdict
            (node): (parent) (children), features
         {
             nnode: [None, [node1, node2], {}]
@@ -139,7 +148,7 @@ class Rooter:
             node2: [nnode, node2.children, {'dist': 0.0}]
         }
         """
-        # start with the node leading from new root child2 to the 
+        # start with the node leading from new root child2 to the
         # rest of the tree structure and move up until old root.
         tnode = self.node2.up
 
@@ -163,8 +172,8 @@ class Rooter:
 
                     # update dist from new parent
                     self.tdict[tnode] = [
-                        parent, 
-                        children, 
+                        parent,
+                        children,
                         {"dist": parent.dist},
                     ]
 
@@ -183,7 +192,7 @@ class Rooter:
                 else:
                     for child in children:
 
-                        # record whose children they are now 
+                        # record whose children they are now
                         # (node2 already did this)
                         if parent is self.node2:
                             self.tdict[self.node2][1].append(child)
@@ -205,8 +214,8 @@ class Rooter:
                 children += [tnode.up]
 
             # pass support values down (up in new tree struct)
-            child = [i for i in tnode.children if i in self.tdict][0]                
-            for feature in {'dist'}.union(self.edge_features):                   
+            child = [i for i in tnode.children if i in self.tdict][0]
+            for feature in {'dist'}.union(self.edge_features):
                 features[feature] = getattr(child, feature)
 
             # store node update vals
@@ -218,8 +227,8 @@ class Rooter:
 
     def config_root_dist(self):
         """
-        Now that the new root node is inserted .dist features must be 
-        set for the two descendant nodes. Midpoint rooting is a common 
+        Now that the new root node is inserted .dist features must be
+        set for the two descendant nodes. Midpoint rooting is a common
         option, but users can toggle 'resolve_root_dist' to change this.
         """
         # if not already at root polytomy, then connect node2 to parent
@@ -238,7 +247,7 @@ class Rooter:
 
         # split the edge on 0 or a float
         if isinstance(self.resolve_root_dist, float):
-            self.tdict[self.node1][2]["dist"] = self.node1.dist - self.resolve_root_dist            
+            self.tdict[self.node1][2]["dist"] = self.node1.dist - self.resolve_root_dist
             self.tdict[self.node2][2]["dist"] = self.resolve_root_dist
             if self.resolve_root_dist > self.node1.dist:
                 raise ToytreeError("\n"
@@ -266,12 +275,12 @@ class Rooter:
         # node1 has new root parent, same children, and dist will be
         # configured by the config_root_dist function
         self.tdict[self.node1] = [
-            self.nnode, 
-            self.node1.children, 
+            self.nnode,
+            self.node1.children,
             {"dist": self.node1.dist}
-        ]  
+        ]
 
-        # node2 has new root parent, same children (but not nnnode), 
+        # node2 has new root parent, same children (but not nnnode),
         # and dist will be configured by the config_root_dist function
         self.tdict[self.node2] = [
             self.nnode,
@@ -282,7 +291,7 @@ class Rooter:
 
     def get_features(self):
         """
-        define which features to use/keep on nodes and which are 
+        define which features to use/keep on nodes and which are
         "edge" features which must be redirected on rooting.
         """
         testnode = self.tree.treenode.get_leaves()[0]
@@ -317,20 +326,115 @@ class Rooter:
                 # .format(sorted([clade1, clade2], key=len)[0]))
 
 
+class Rooting:
+    """
+
+    Examples
+    --------
+    >>> tree.root("A", "B", "C")
+    >>> tree.root("prz", regex=True)
+    >>> tree.root(12)
+    """
+    def __init__(
+        self,
+        tree: ToyTree,
+        *query: Query,
+        resolve_root_dist: bool,
+        edge_features: Optional[Sequence[str]],
+        ):
+
+        self.tree = tree
+        self.query = query
+        self.resolve_root_dist = resolve_root_dist
+        self.edge_features = edge_features
+
+    def get_edge_to_split(self):
+        """Find the edge to root on based on flexible input types."""
+
+        # get mrca of selected Nodes
+        mrca = self.tree.get_mrca_node(self.query)
+
+        # if this Node is already at the psuedo-root, then select the
+        # reciprocal Node set and get its mrca.
+        if mrca == self.tree.treenode:
+            logger.warning("flipping rooting Node selection.")
+
+        # get edge between this Node and its ancestor. This is where
+        # the new Node will be created to split the edge.
+        edge = (mrca, mrca.up)
+
+        # experimental: skip hybrid nodes from networks up to next node.
+        if self.node2.up and len(self.node2.children) == 1:
+            self.node2 = self.node2.up
+            self.node1 = self.node1.up
+
+
+def unroot(tree: ToyTree, inplace: bool = False) -> Optional[ToyTree]:
+    """Return an unrooted ToyTree by collapsing the root Node.
+
+    This will convert a binary split into a multifurcation.
+    The Node idx values can change on unrooting because the number of
+    Nodes has changed.
+
+    Note
+    ----
+    The unrooting process is not destructive of information, you can
+    re-root a tree on the same edge position as before to recover the
+    same tree.
+    """
+    tree = tree if inplace else tree.copy()
+    root = tree.treenode
+
+    # do nothing if the current root node is not binary
+    if len(root.children) != 2:
+        return None
+
+    # find a child with children, checking first left then right.
+    if not root.children[0].is_leaf():
+        child = root.children[0]
+        ochild = root.children[1]
+    elif not root.children[1].is_leaf():
+        child = root.children[1]
+        ochild = root.children[0]
+    else:
+        raise ToytreeError("Cannot unroot a tree with only two leaves")
+
+    # child becomes ochild's new parent
+    ochild._up = child
+    child._children += (ochild,)
+
+    # other child's dist extends to include child->oldroot dist
+    ochild._dist += child.dist
+
+    # ochild->child edge inherits features from child->oldroot edge
+    ochild.support = child.support
+
+    # return new ToyTree with child as root.
+    tree.treenode = child
+    tree._update()
+    return None if inplace else tree
+
+
+
+
 if __name__ == "__main__":
 
     # Example test: start with a simple balanced tree.
     import toytree
-    TREE = toytree.rtree2.baltree(ntips=10)
+    TREE = toytree.rtree.baltree(ntips=10)
+
+    c, a, m = unroot(TREE)._draw_browser()
+    # c2, a, m = unroot(TREE)._draw_browser(axes=a)
+    # print(unroot(TREE))
 
     # unroot the tree
-    TREE = TREE.unroot()
+    # TREE = TREE.unroot()
 
     # root the tree a clade with the first two samples
-    TREE = TREE.root(['r1', 'r2'])
+    # TREE = TREE.root(['r1', 'r2'])
 
     # re-root on a different clade, for last two samples
-    TREE = TREE.root(['r9', 'r10'])
+    # TREE = TREE.root(['r9', 'r10'])
 
     # check that dist and support values were properly retained.
     # ...

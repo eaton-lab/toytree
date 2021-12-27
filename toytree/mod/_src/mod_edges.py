@@ -13,11 +13,12 @@ are ready to be plotted. This means they update the cached heights
 so idx values and x positions do not need to be updated.
 """
 
-from typing import Dict
+from typing import Dict, TypeVar
 from loguru import logger
 import numpy as np
 
 logger = logger.bind(name="toytree")
+ToyTree = TypeVar("ToyTree")
 
 
 def edges_scale_to_root_height(
@@ -25,7 +26,7 @@ def edges_scale_to_root_height(
     treeheight: float = 1, 
     include_stem: bool = False, 
     inplace: bool = False,
-    ) -> "ToyTree":
+    ) -> ToyTree:
     """Return a ToyTree with root height set.
 
     Returns a toytree copy with all nodes multiplied by a constant 
@@ -55,8 +56,8 @@ def edges_slider(
     prop=0.999, 
     seed=None, 
     inplace: bool = False,
-    ) -> "ToyTree":
-    """Return a ToyTree with internal Node heights jittered.
+    ) -> ToyTree:
+    """Return a ToyTree with internal Node heights randomly jittered.
 
     Internal Node heights slide up or down while retaining the same
     topology as well as root and tip heights. The order of traversal
@@ -102,12 +103,8 @@ def edges_slider(
             node._height = newheight
     return tree
 
-def edges_multiplier(tree, multiplier=0.5, seed=None, inplace: bool = False):
+def edges_multiplier(tree, multiplier: float=1.0, inplace: bool = False) -> ToyTree:
     """Return ToyTree w/ all Nodes multiplied by a random constant.
-
-    This function differs from `edges_scale_to_root_height` in that the
-    multiplier is randomly sampled, and in that it applies to the root
-    as well as all other nodes. 
 
     Parameters
     ----------
@@ -115,15 +112,12 @@ def edges_multiplier(tree, multiplier=0.5, seed=None, inplace: bool = False):
         The multiplier will be sampled uniformly in (multiplier, 1/multiplier).
     """
     tree = tree if inplace else tree.copy()    
-    rng = np.random.default_rng(seed)
-    low, high = sorted([multiplier, 1. / multiplier])
-    mult = rng.uniform(low, high)
     for idx in range(tree.nnodes):
-        tree[idx]._dist = tree[idx].dist * mult
-        tree[idx]._height = tree[idx]._height * mult
+        tree[idx]._dist = tree[idx].dist * multiplier
+        tree[idx]._height = tree[idx]._height * multiplier
     return tree
 
-def edges_extend_tips_to_align(tree, inplace: bool = False):
+def edges_extend_tips_to_align(tree, inplace: bool = False) -> ToyTree:
     """Return ToyTree with tip Nodes extended to align at height=0."""
     tree = tree if inplace else tree.copy()
     for idx in range(tree.ntips):
@@ -131,7 +125,7 @@ def edges_extend_tips_to_align(tree, inplace: bool = False):
         tree[idx]._height = 0
     return tree
 
-def edges_set_node_heights(tree, mapping: Dict[int,float], inplace: bool = False):
+def edges_set_node_heights(tree, mapping: Dict[int,float], inplace: bool = False) -> ToyTree:
     """Return a ToyTree with one or more Node heights set explicitly.
     
     Enter a dictionary mapping node idx to heights. Node idxs that 

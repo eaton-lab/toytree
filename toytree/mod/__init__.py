@@ -34,4 +34,12 @@ from toytree.mod._src.mod_edges import (
 from toytree.mod._src.mod_topo import (
 	ladderize,
 	collapse_nodes,
+	rotate_node,
+	prune,
+	drop_tips,
+	resolve_polytomies,
+	remove_unary_nodes,
+	add_internal_node,
+	add_tip_node,
 )
+from toytree.mod._src.root_unroot import unroot
