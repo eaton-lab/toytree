@@ -147,7 +147,7 @@ class Node:
             "Setting .dist on Nodes is not allowed, as it represents a "
             "change to the tree. See the 'toytree.mod' subpackage for "
             "functions to modify Nodes in a ToyTree, or, if you are "
-            "sure of what you are doing then then modify ._dist instead."
+            "sure of what you are doing then modify ._dist instead."
         )
 
     @property
