@@ -14,7 +14,7 @@ Examples
 >>> tree.mod.unroot()
 """
 
-from typing import Dict, Optional, TypeVar
+from typing import Dict, Optional, TypeVar, Sequence
 from toytree.mod._src.mod_edges import (
     edges_scale_to_root_height,
     edges_slider,
@@ -388,10 +388,19 @@ class TreeModAPI:
             dist=dist, support=support, recursive=recursive,
             seed=seed, inplace=inplace)
 
-    def root(self, *query: Query, regex: bool=False, inplace: bool=False):
+    def root(
+        self,
+        *query: Query,
+        regex: bool=False,
+        root_dist: Optional[float] = None,
+        edge_features: Optional[Sequence[str]] = None,
+        inplace: bool = False,
+        ) -> ToyTree:
         """Return Toytree"""
         return root(
-            self._tree, *query, regex=regex, inplace=inplace)
+            self._tree, *query, regex=regex, root_dist=root_dist,
+            edge_features=edge_features, inplace=inplace
+        )
 
     def unroot(self, *query: Query, inplace: bool = False) -> ToyTree:
         """Return Toytree with binary root Node collapsed.

@@ -22,12 +22,13 @@ import pandas as pd
 from toyplot import Canvas
 from toyplot.coordinates import Cartesian
 
+# subpackage object APIs
 from toytree.core.style.tree_style import TreeStyle
-from toytree.core.node import Node
 from toytree.mod._src.api import TreeModAPI
-from toytree.distance.api import DistanceAPI
-from toytree.utils import ToytreeError
+from toytree.distance._src.api import DistanceAPI
 
+from toytree.core.node import Node
+from toytree.utils import ToytreeError
 from toytree.core.layout import Layout
 from toytree.core.drawing.render import ToytreeMark
 from toytree.core.drawing.draw_toytree2 import draw_toytree
@@ -35,7 +36,7 @@ import toytree
 # from toytree.io import write_newick
 # from toytree.pcm.api import PhyloCompAPI
 
-# pylint: disable=too-many-branches, too-many-lines
+# pylint: disable=too-many-branches, too-many-lines, too-many-public-methods
 
 # toytree logger
 logger = logger.bind(name="toytree")
@@ -97,9 +98,9 @@ class ToyTree:
         """ToyTree is indexable by idx label to access Nodes."""
         return self._idx_dict[idx]
 
-    def __str__(self) -> str:
-        """ToyTree string representation"""
-        return self.write()[:20]
+    def __repr__(self) -> str:
+        """Short object representation for toytree.core.tree.ToyTree"""
+        return f"<toytree.ToyTree at {hex(id(self))}>"
 
     #####################################################
     ## FEATURES
@@ -296,6 +297,22 @@ class ToyTree:
     ## - drop_tips, resolve_polytomy,
     #####################################################
 
+    def root(
+        self,
+        *query: Query,
+        regex: bool=False,
+        root_dist: Optional[float] = None,
+        edge_features: Optional[Sequence[str]] = None,
+        inplace: bool=False) -> ToyTree:
+        """..."""
+        return self.mod.root(
+            self, *query, regex=regex, root_dist=root_dist,
+            edge_features=edge_features, inplace=inplace
+        )
+
+    def unroot(self, **kwargs) -> ToyTree:
+        return self.mod.unroot(**kwargs)
+
     #################################################
     ## NODES SEARCH/MATCH BY FLEXIBLE INPUTS
     ## Matching Nodes by name can be used to color nodes/edges...
@@ -374,9 +391,9 @@ class ToyTree:
             if strs:
                 nodes += list(self._iter_nodes_by_name_match(*strs, regex=regex))
 
-        # consistent sorted idx sorted order
+        # NOTE: no longer returning in idx order, user order sometimes wanted.
         logger.debug(nodes)
-        return sorted(set(nodes), key=lambda x: x.idx)
+        return set(nodes)  # sorted(set(nodes), key=lambda x: x.idx)
 
     def get_mrca_node(
         self, *query: Query, regex: bool = False) -> Node:
@@ -432,6 +449,50 @@ class ToyTree:
         # get the lowest idx shared
         mrca_idx = min(set.intersection(*idx_sets))
         return self[mrca_idx]
+
+    def get_node_mask(
+        self, 
+        *unmask: Query,
+        tips: bool=True, 
+        internal: bool=False, 
+        root: bool=False,
+        ) -> Sequence[bool]:
+        """Return a boolean array to mask certain Nodes when drawing.
+
+        The array is in Node idxorder (from 0-nnodes) where boolean 
+        True will *mask* Nodes and False will *show* Nodes. Additional
+        Nodes can be selected to be unmasked by entering Node int idx
+        labels or name strings.
+        
+        Parameters
+        ----------
+        *unmask: int or str
+            Additional Nodes selected by int or str labels will be 
+            unmasked after applying the tips, internal, and root mask.
+        tips: bool
+            If True all tip Nodes will be masked.
+        internal: bool
+            If True all internal Nodes will be masked.
+        root: bool
+            If True the root Node will be masked.
+
+        Examples
+        --------
+        >>> tree = toytree.rtree.unittree(10, seed=123)
+        >>> mask = tree.get_node_mask(15, 16, internal=True, root=True)
+        >>> tree.draw(ts='s', node_mask=mask);
+        """
+        arr = np.zeros(self.nnodes, dtype=bool)
+        if tips:
+            arr[:self.ntips] = 1
+        if internal:
+            arr[self.ntips:-1] = 1
+        if root:
+            arr[-1] = 1
+        if unmask != ():
+            for node in self.get_nodes(*unmask):
+                arr[node.idx] = 0
+        return arr
 
     def is_monophyletic(
         self, 
@@ -599,9 +660,13 @@ class ToyTree:
         feature: str="name", 
         tips_only: bool=True,
         ) -> List[List[str],List[str]]:
-        """Yield bipartitions in a tree. See get_bipartitions for docs."""
+        """Yield bipartitions in a tree. 
+
+        See get_bipartitions for docs. Rooting does not affect result.
+        """
         cache = {}
-        allnodes = set(range(self.nnodes))
+        root_nodes = 2 if self.is_rooted() else 1
+        allnodes = set(range(self.nnodes - root_nodes))
         for nidx in allnodes:
             if self[nidx].up:
                 below = {nidx}
@@ -620,7 +685,12 @@ class ToyTree:
                 other = (getattr(self[i], feature) for i in other)
 
                 # return in a consistent order
-                yield sorted([sorted(other), sorted(below)], key=len)      
+                osort = sorted(other)
+                bsort = sorted(below)
+                if len(osort) == len(bsort):
+                    yield sorted((osort, bsort))
+                else:
+                    yield sorted((osort, bsort), key=len)                
 
     def get_bipartitions(
         self, 
@@ -629,8 +699,13 @@ class ToyTree:
         ) -> pd.DataFrame:
         """Return a DataFrame with partitions in the tree.
         
-        Partitions represent edges that separate Nodes in a tree. This
-        is usually used to find the tip names that are present on either
+        Partitions represent edges that separate sets of Nodes in a 
+        tree, and can be represented by the tips descended from each
+        side of the split, e.g., [['a', 'b'], ['c', 'd']]. Rooting 
+        has no effect on the partitions, since the root separates None
+        from all, e.g., [[], ['a', 'b', 'c', 'd']].
+
+        Partitions are usually used to find tip names present on either
         side of a split. For *some* use cases, it may be useful to find
         other features, such as idx labels, on either side of each 
         split, and even to get internal Node labels.
@@ -639,9 +714,13 @@ class ToyTree:
         ----------
         feature: str
             The Node feature to return for every Node on each side of 
-            a split.
+            a split. Default is "name".
         tips_only: bool
             If True (default) only tip Node features are returned.
+
+        See Also
+        --------
+        `ToyTree._iter_bipartitions`, `ToyTree._get_bipartitions_table`
 
         Examples
         --------
@@ -650,6 +729,14 @@ class ToyTree:
         >>> print(tree.get_bipartitions(feature="idx", tips_only=False))
         """
         return pd.DataFrame(self._iter_bipartitions(feature, tips_only))
+
+    def _get_bipartitions_table(self, dtype: type=bool) -> np.ndarray:
+        """Return a DataFrame with partitions in binary format."""
+        bits = list(self._iter_bipartitions("idx"))
+        arr = np.zeros(shape=(len(bits), self.ntips), dtype=dtype)
+        for idx in enumerate(bits):
+            arr[idx, bits[0]] = 1
+        return arr
 
     def get_topology_id(self, feature="name") -> str:
         """Return a unique ID representing this topology.
@@ -871,7 +958,7 @@ class ToyTree:
         if feature in ["idx", "up", "children"]:
             raise ToytreeError(
                 f"cannot modify '{feature}' feature because it affects the "
-                "tree topology. To modify topology see `toytree.lib.mod` "
+                "tree topology. To modify topology see `toytree.mod` "
                 "subpackage functions.")
 
         # make a copy of ToyTree to return
@@ -885,20 +972,24 @@ class ToyTree:
                 raise TypeError("'mapping' arg should be a dict or None")
 
         # convert fuzzy selectors to Node objects
-        nodes = tree.get_nodes(*mapping.keys(), regex=False)
-        mapping = dict(zip(nodes, mapping.values()))
+        # for key, value in mapping:
+        # nodes = tree.get_nodes(*mapping.keys(), regex=False)
+        # mapping = dict(zip(nodes, mapping.values()))
 
         # make a dict {Node: newvalue} by expanding the entered mapping
         ndict = {}
-        for node, value in mapping.items():
+        for key, value in mapping.items():
 
-            # map selected Node to value.
-            ndict[node] = value
+            # get node matching the key query int or str
+            for node in tree.get_nodes(key, regex=False):
 
-            # optionally map Node's descendants to value as well.
-            if inherit:
-                for desc in tree[node.idx]._iter_descendants():
-                    ndict[desc] = value
+                # map selected Node to value.
+                ndict[node] = value
+
+                # optionally map Node's descendants to value as well.
+                if inherit:
+                    for desc in tree[node.idx]._iter_descendants():
+                        ndict[desc] = value
 
         # map {Node: default} for Nodes not in ndict
         if default is not None:
@@ -1084,7 +1175,13 @@ class ToyTree:
     #    - fix admixture_edges
     # --------------------------------------------------------------------
     def _draw_browser(self, **kwargs):
-        """Open and display tree drawing in default web browser."""
+        """Open and display tree drawing in default web browser.
+
+        TODO: overload toyplot function, option to reuse same tab, 
+        add div styling, etc.
+        Or, maybe make this at toytree level as `toytree.draw(canvas)`
+        also make a `toytree.save()` shortcut to saving in formats.
+        """
         import toyplot.browser
         canvas, axes, mark = self.draw(**kwargs)
         toyplot.browser.show([canvas])
@@ -1349,3 +1446,4 @@ if __name__ == "__main__":
     print(tree.features)
     print(tree.get_node_data())
     print(tree.get_tip_data("height"))
+    print(tree.get_node_mask())
