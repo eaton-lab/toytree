@@ -52,14 +52,14 @@ def ladderize(tree, direction: bool=True, inplace: bool=False) -> ToyTree:
             sizes[node.idx] = sum(sizes[child.idx] for child in node.children)
 
             # rotate by size if size > 2 else use alphanumeric names
+            # TODO: double-check this direction with equal size names.
             if sizes[node.idx] > 2:
                 key = lambda x: sizes[x.idx]
                 direct = direction
             else:
                 key = lambda x: x.name
                 direct = np.invert(direction)
-                
-            node._children = tuple(sorted(node._children, key=key, reverse=direction))
+            node._children = tuple(sorted(node._children, key=key, reverse=direct))
 
     # update idx labels for new tree ladderization
     nself._update()
@@ -263,12 +263,12 @@ def prune(
 def remove_unary_nodes(tree: ToyTree, inplace: bool=False):
     """Return ToyTree with any unary Nodes removed."""
     tree = tree if inplace else tree.copy()
-    for nidx in range(tree.nnodes):
+    for nidx in range(tree.nnodes)[::-1]:
         node = tree[nidx]
         if (not node.is_root()) and (not node.is_leaf()):
             if len(node.children) == 1:
                 child = node.children[0]
-                node.up._add_child(child)
+                node.up._children = (child, )
                 child._up = node.up
                 child._dist =+ node.dist
     tree._update()
@@ -443,7 +443,7 @@ def add_internal_node(
     parent._remove_child(node)
     parent._add_child(new_node)
     new_node._up = parent
-    new_node._children = (node)
+    new_node._children = (node, )
     node._up = new_node
     tree._update()
     return tree        
@@ -515,27 +515,32 @@ def add_tip_node(
     >>>     idx=3, name="x", parent_dist=2e5, dist=3e5)
     >>> tree.ladderize().draw(ts='c', admixture_edges=(['r0', 'r1'], 'x'));
     """
+    # get the selected Node and create a new sister
     tree = tree if inplace else tree.copy()
     idx = tree.get_mrca_node(*query, regex=regex).idx
     orig_parent = tree[idx].up
     sister_1 = tree[idx]
+    sister_2 = Node(name=name, dist=sister_1.height)
+
+    # set the dist and height of sisters (insertion height)
     if dist is None:
         dist = sister_1.dist / 2.
-    sister_2 = Node(name=name, dist=dist)
     if parent_dist is None:
-        parent_dist = orig_parent.height - dist
+        parent_dist = orig_parent.dist - dist
+        if parent_dist < 0:
+            logger.warning("`parent_dist` arg to `add_tip_node` causes negative branch lengths")
+    sister_2._dist += dist
+    sister_1._dist = dist
 
-    # modify sister_1 and new_parent dist
-    sister_1._dist = sister_1.dist - parent_dist
+    # insert new parent Node and re-connect
     new_parent = Node(name=parent_name, dist=parent_dist)
-
     orig_parent._remove_child(sister_1)
     orig_parent._add_child(new_parent)
     sister_1._up = new_parent
     sister_2._up = new_parent
     new_parent._children = (sister_1, sister_2)
     new_parent._up = orig_parent
-    tree.update()
+    tree._update()
     return tree
 
 def move_clade(

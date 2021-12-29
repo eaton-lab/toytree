@@ -27,7 +27,7 @@ from toytree.mod._src.mod_topo import (
     drop_tips, resolve_polytomies, remove_unary_nodes,
     add_internal_node, add_tip_node,
 )
-from toytree.mod._src.root_unroot import unroot
+from toytree.mod._src.root_unroot import unroot, root
 # from toytree import Node
 # from toytree.core.tree2 import ToyTree
 # from toytree.mod.penalized_likelihood import Chronos
@@ -114,7 +114,7 @@ class TreeModAPI:
         """
         return edges_multiplier(self._tree, multiplier=multiplier, inplace=inplace)
 
-    def edges_extend_tips_to_align(self, inplace: bool = False):
+    def edges_extend_tips_to_align(self, inplace: bool = False) -> ToyTree:
         """Return a ToyTree with tips aligned at height=0.
 
         Leaf Node dists are extended to align with the Node that is 
@@ -128,7 +128,7 @@ class TreeModAPI:
         return edges_extend_tips_to_align(self._tree, inplace=inplace)
 
     def edges_set_node_heights(
-        self, mapping: Dict[int, float], inplace: bool = False) -> 'ToyTree':
+        self, mapping: Dict[int, float], inplace: bool = False) -> ToyTree:
         """Return a ToyTree with edge lengths modified to explicitly
         set one or more node heights.
 
@@ -152,7 +152,7 @@ class TreeModAPI:
         """
         return edges_set_node_heights(self._tree, mapping=mapping, inplace=inplace)
 
-    def ladderize(self, direction: bool=True, inplace: bool=False):
+    def ladderize(self, direction: bool=True, inplace: bool=False) -> ToyTree:
         """Return a ladderized tree (ordered descendants)
 
         In a ladderized tree nodes are rotated so that the left/ 
@@ -263,7 +263,7 @@ class TreeModAPI:
         preserve_branch_length: bool=True,
         require_root: bool=True,
         inplace: bool=False,
-        ) -> "ToyTree":
+        ) -> ToyTree:
         r"""Return a ToyTree as a subtree extracted from an existing tree.
 
         All nodes not included in the entered 'nodes' list will be
@@ -398,7 +398,7 @@ class TreeModAPI:
         """
         return unroot(self._tree, *query, inplace=inplace)
 
-    def topo_add_tip_node(
+    def add_tip_node(
         self,
         *query: Query,
         regex: bool=False,
@@ -523,3 +523,8 @@ class TreeModAPI:
         return add_internal_node(
             self._tree, *query, regex=regex,
             dist=dist, name=name, inplace=inplace)
+
+
+if __name__ == "__main__":
+
+    print("TESTING")
