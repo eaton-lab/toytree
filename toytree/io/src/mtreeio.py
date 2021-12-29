@@ -4,9 +4,9 @@
 
 """
 
-from typing import Union, Collection
+from typing import Union, Sequence
 from pathlib import Path
-from toytree.core.tree2 import ToyTree
+from toytree.core.tree import ToyTree
 from toytree.core.multitree import MultiTree
 from toytree.io.src.parser import TreeIOParser
 from toytree.utils import ToytreeError
@@ -14,7 +14,7 @@ import toytree
 
 
 def mtree(
-    data:Union[str, Path, Collection[ToyTree], Collection[str]],
+    data:Union[str, Path, Sequence[ToyTree], Sequence[str]],
     **kwargs) -> MultiTree:
     """General class constructor to parse and return a MultiTree.
 

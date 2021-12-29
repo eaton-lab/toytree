@@ -39,13 +39,15 @@ __author__ = "Deren Eaton"
 
 # toytree v3 supported modules
 from toytree.core.node import Node
-from toytree.core.tree2 import ToyTree
-from toytree.core.io.treeio import tree
+from toytree.core.tree import ToyTree
+from toytree.core.multitree import MultiTree
+from toytree.io.src.treeio import tree
+from toytree.io.src.mtreeio import mtree
 # from toytree.core.multitree import MultiTree, mtree
 
 import toytree.rtree
 import toytree.distance
-# import toytree.io
+import toytree.io
 # import toytree.color
 # import toytree.distance
 # import toytree.pcm
