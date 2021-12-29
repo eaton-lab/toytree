@@ -63,8 +63,7 @@ def tree(
         ttree = ToyTree(treenode)
     # load ToyTree from a newick or nexus from str, URL, or filepath
     elif isinstance(data, (str, bytes, Path)):
-        treenode = TreeIOParser(data).trees[0]
-        ttree = ToyTree(treenode)
+        ttree = TreeIOParser(data).trees[0]
     # raise an error (to make an empty tree you must enter empty Node)
     else:
         raise ToytreeError(f"Cannot parse input tree data: {data}")
