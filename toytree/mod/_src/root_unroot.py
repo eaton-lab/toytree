@@ -13,7 +13,7 @@ edge is created or destroyed.
 
 from typing import Optional, Sequence, TypeVar
 from loguru import logger
-# from toytree.core.node import Node
+from toytree.core.node import Node
 # from toytree.core.tree import ToyTree
 # from toytree.core.node_assist import NodeAssist
 from toytree.utils import ToytreeError
@@ -22,7 +22,6 @@ logger = logger.bind(name="toytree")
 
 # type aliases
 ToyTree = TypeVar("ToyTree")
-Node = TypeVar("Node")
 Query = TypeVar("Query", int, str, Node)
 
 
@@ -327,7 +326,24 @@ class Rooter:
 
 
 class Rooting:
-    """
+    r"""Root ToyTree on ...
+
+          x---A               A
+         /                   /
+     ---R         -->    ---x
+         \                   \
+          o---B               R---o---B
+
+
+    Parameters
+    ----------
+    ...
+
+    Note
+    ----
+    The input tree can be rooted or unrooted. If it is rooted the old
+    root Node is removed. This will discard the root Node features,
+    such as dist and support, which are usually meaningless.
 
     Examples
     --------
@@ -339,37 +355,115 @@ class Rooting:
         self,
         tree: ToyTree,
         *query: Query,
-        resolve_root_dist: bool,
-        edge_features: Optional[Sequence[str]],
+        regex: bool = False,
+        root_dist: Optional[float] = None,
+        edge_features: Optional[Sequence[str]] = None,
         ):
 
         self.tree = tree
-        self.query = query
-        self.resolve_root_dist = resolve_root_dist
+        self.node = self._get_edge_to_split(*query, regex=regex)
+        self.root_dist = root_dist
         self.edge_features = edge_features
 
-    def get_edge_to_split(self):
-        """Find the edge to root on based on flexible input types."""
+    def _get_edge_to_split(self, *query, regex):
+        """Find the edge to root on based on flexible input types.
 
-        # get mrca of selected Nodes
-        mrca = self.tree.get_mrca_node(self.query)
-
-        # if this Node is already at the psuedo-root, then select the
-        # reciprocal Node set and get its mrca.
-        if mrca == self.tree.treenode:
-            logger.warning("flipping rooting Node selection.")
-
-        # get edge between this Node and its ancestor. This is where
-        # the new Node will be created to split the edge.
-        edge = (mrca, mrca.up)
+        Get MRCA Node of the input selection. If it is the root, then
+        get the MRCA of the inverse selection. If that is also root,
+        then raise exception for bad selection.
+        """
+        nodes = self.tree.get_nodes(*query, regex=regex)
+        mrca = self.tree.get_mrca_node(*nodes)
+        if mrca.is_root():
+            nodes = set(self.tree.get_nodes()) - set([mrca])
+            mrca = self.tree.get_mrca_node(*nodes)
+            if mrca.is_root():
+                raise ToytreeError(
+                    f"Bad selection to `root()`, cannot root on {mrca}")
 
         # experimental: skip hybrid nodes from networks up to next node.
-        if self.node2.up and len(self.node2.children) == 1:
-            self.node2 = self.node2.up
-            self.node1 = self.node1.up
+        # if self.node2.up and len(self.node2.children) == 1:
+            # self.node2 = self.node2.up
+            # self.node1 = self.node1.up
+        return mrca
+
+    def run(self):
+        """Return ToyTree rooted on the input selection."""
+        self._insert_root_node()
+        self.tree._update()
+        return self.tree
+
+    def _infer_max_support(self):
+        """Get max support as 1.0 or 100 based on other Node values."""
+        return 1.0
+
+    def _insert_root_node(self):
+        r"""Insert a new node to break an edge to create root.
+
+        Important Nodes are:
+            - oldroot: o
+            - oldroot.children: 1,2
+            - node: n
+            - node.up: u
+            - newroot: x
+
+                 o                    x         polar = [u, 2]
+                / \                  / \        flip = [1]
+               1   2                n   u
+                  / \      -->         / \
+                 .   u                2   .
+                    / x              / \
+                   .   n            1   .
+
+        oldroot is removed, newroot is created. All Nodes that are
+        ancestors of u on the original tree are re-polarized.
+        """
+        # store references to Nodes before their relationships change.
+        newroot = Node(name="root", support=self._infer_max_support())
+        oldroot = self.tree.treenode
+        edge = (self.node, self.node.up)
+
+        # nodes on path from node to root need to be polarized.
+        path = (self.node,) + self.node.get_ancestors() # [n, u, 2, o]
+
+        # polarize each node on path
+        for idx in range(1, len(path) - 1):
+            node = path[idx]                      # u
+            nup = path[idx + 1]                   # 2
+            child = path[idx - 1]                 # n
+            node._up = child                      # u -> n
+            node._remove_child(child)             # n -x u
+            if nup != oldroot:
+                node._add_child(nup)              # 2 -> u
+
+                # TODO: transfer non-root edge features
+                nup._dist = node.dist
+
+        # flip across the oldroot and remove.
+        ochild = path[-2]                    # 2
+        for child in path[-1].children:      # [1, 2]
+            if child != ochild:
+                ochild._add_child(child)     # 1 -> 2
+                child._up = ochild           # 1 -> 2
+                child._dist += ochild.dist
+        del oldroot
+
+        # set node and its parent as sisters, and children of newroot.
+        newroot._children = edge             # n -> x, u -> x
+        edge[0]._up = newroot
+        edge[1]._up = newroot
+
+        # update as ToyTree
+        self.tree.treenode = newroot
+        self.tree._update()
+        return self.tree
 
 
-def unroot(tree: ToyTree, inplace: bool = False) -> Optional[ToyTree]:
+def root(tree: ToyTree, *query: Query, regex: bool=False, inplace: bool=False) -> ToyTree:
+    """..."""
+    print("TODO")
+
+def unroot(tree: ToyTree, inplace: bool = False) -> ToyTree:
     """Return an unrooted ToyTree by collapsing the root Node.
 
     This will convert a binary split into a multifurcation.
@@ -383,38 +477,40 @@ def unroot(tree: ToyTree, inplace: bool = False) -> Optional[ToyTree]:
     same tree.
     """
     tree = tree if inplace else tree.copy()
-    root = tree.treenode
+    rootnode = tree.treenode
 
-    # do nothing if the current root node is not binary
-    if len(root.children) != 2:
+    # do nothing if the current rootnode node is not binary
+    if len(rootnode.children) != 2:
         return None
 
     # find a child with children, checking first left then right.
-    if not root.children[0].is_leaf():
-        child = root.children[0]
-        ochild = root.children[1]
-    elif not root.children[1].is_leaf():
-        child = root.children[1]
-        ochild = root.children[0]
+    if not rootnode.children[0].is_leaf():
+        child = rootnode.children[0]
+        ochild = rootnode.children[1]
+    elif not rootnode.children[1].is_leaf():
+        child = rootnode.children[1]
+        ochild = rootnode.children[0]
     else:
-        raise ToytreeError("Cannot unroot a tree with only two leaves")
+        raise ToytreeError("Cannot unrootnode a tree with only two leaves")
 
     # child becomes ochild's new parent
     ochild._up = child
     child._children += (ochild,)
 
-    # other child's dist extends to include child->oldroot dist
+    # other child's dist extends to include child->oldrootnode dist
     ochild._dist += child.dist
 
-    # ochild->child edge inherits features from child->oldroot edge
+    # ochild->child edge inherits features from child->oldrootnode edge
     ochild.support = child.support
 
-    # return new ToyTree with child as root.
+    # make child the new rootnode and remove old rootnode
+    child._up = None
     tree.treenode = child
+    del rootnode
+
+    # update idxs and return
     tree._update()
-    return None if inplace else tree
-
-
+    return tree
 
 
 if __name__ == "__main__":

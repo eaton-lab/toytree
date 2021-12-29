@@ -126,7 +126,7 @@ def _find_parts_of_subtree(newick: str, delim: str=",") -> Tuple[str,str,str,str
             if ":" in remaining:
                 label, length = remaining.split(":", maxsplit=1)
             else:
-                label, length = remaining, '0.0'
+                label, length = remaining, '1.0'
 
         # if two comment brackets are present then ":" must be present.
         # "Label[&comment1=3]:100[&comment2=3]"
@@ -145,7 +145,7 @@ def _find_parts_of_subtree(newick: str, delim: str=",") -> Tuple[str,str,str,str
         if ":" in remaining:
             label, length = remaining.split(":", maxsplit=1)
         else:
-            label, length = remaining, '0.0'
+            label, length = remaining, '1.0'
 
     # return as a tuple
     return children, label.strip(), length, comment
@@ -229,7 +229,7 @@ def _split_subtree(nodes_str: str) -> List[str]:
 def distance_parser(dist: str) -> Optional[float]:
     """Default float distance parser and formatter.
     """
-    return float(dist) if dist else 0.0
+    return float(dist) if dist else 1.0
 
 
 def feature_parser(
@@ -362,14 +362,24 @@ def _check_internal_label_for_name_or_support(
             node.support = float(node.name)
             node.name = ""
 
-    # infer types
+    # NOTE: first written to not check the root b/c root might not 
+    # have support values, but strange example makes me question this...
+
+    # infer types, any errors cause internal labels to be str names.
     elif internal_labels is None:
         try:
             # record whether we convert to int or float
             dtype = str
 
-            # get all internal node 'name' values (except root)
-            supports = (tree[i].name for i in range(tree.ntips, tree.nnodes - 1))
+            # is root value present?
+            rootval = tree.treenode.name != ""
+
+            # check all node values except root if root is absent ("")
+            inodes = range(tree.ntips, tree.nnodes - (1 if not rootval else 0))
+
+            # get all internal node 'name' values 
+            supports = (tree[i].name for i in inodes)
+                
             # try to convert all to floats
             supports = [float(i) for i in supports]
 
@@ -381,14 +391,16 @@ def _check_internal_label_for_name_or_support(
                 dtype = float
 
             # convert 'name' features to 'support' for internal nodes.
-            for idx, nidx in enumerate(range(tree.ntips, tree.nnodes - 1)):
+            for idx, nidx in enumerate(inodes):
                 tree[nidx].support = supports[idx]
                 tree[nidx].name = ""
 
-            # try same for root, for which dist/name is not always present
-            tree.treenode.support = (
-                100 if tree.treenode.name == "" else dtype(tree.treenode.name))
-            tree.treenode.name = ""
+            # if rootval is absent then set to a default value, using
+            # either 100 or 1.0 as default support based on others.
+            if not rootval:
+                default = 100 if max(supports) > 1 else 1.0
+                tree.treenode.support = dtype(default)
+                tree.treenode.name = ""
         except ValueError:
             pass
     return tree
@@ -482,7 +494,7 @@ def parse_newick_string(
 
     Recursive function to build connected Nodes from nested data in 
     newick format, and return as a ToyTree. Features parsed from the
-    newick can be formatted with a custom formatter function, or using
+    newick can be formatted with a custom formatter function, or with
     the default auto-formatting, which aims to infer the proper dtype
     based on the data.
 
