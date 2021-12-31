@@ -81,24 +81,9 @@ Query = TypeVar("Query", int, str, Node)
 
 
 class Rooter:
-    r"""Root ToyTree on ...
+    r"""Root ToyTree on Node query selection.
 
-    Parameters
-    ----------
-    ...
-
-    Note
-    ----
-    The input tree can be rooted or unrooted. If it is rooted the old
-    root Node is removed. This will discard the root Node features,
-    such as dist and support, which are usually meaningless.
-
-    Examples
-    --------
-    >>> tree.root("A", "B", "C")
-    >>> tree.root("prz", regex=True)
-    >>> tree.root(12)
-    >>>
+    See `toytree.mod.root` docstring for details.
     """
     def __init__(
         self,
@@ -125,7 +110,7 @@ class Rooter:
             return (default | {edge_features}) - disallowed
         return (default | set(edge_features)) - disallowed
 
-    def _get_edge_to_split(self, *query, regex):
+    def _get_edge_to_split(self, *query, regex) -> Node:
         """Return the Node below new root edge from input query.
 
         Get MRCA Node of the input selection. If it is the root, then
@@ -134,21 +119,30 @@ class Rooter:
         """
         nodes = self.tree.get_nodes(*query, regex=regex)
         mrca = self.tree.get_mrca_node(*nodes)
-        if mrca.is_root():
-            nodes = set(self.tree.get_nodes()) - set([mrca])
-            mrca = self.tree.get_mrca_node(*nodes)
-            if mrca.is_root():
-                raise ToytreeError(
-                    f"Bad selection to `root()`, cannot root on {mrca}")
 
+        # if mrca is root, try to get mrca of reciprocal.
+        if mrca.is_root():
+            nodes = set(self.tree.get_nodes()) - set(nodes) - set([mrca])
+            # orig = mrca
+            mrca = self.tree.get_mrca_node(*nodes)
+            # if mrca.is_root():
+                # raise ToytreeError(
+                    # f"Bad selection to `root()`, cannot root on {orig}")
         # experimental: skip hybrid nodes from networks up to next node.
         # if self.node2.up and len(self.node2.children) == 1:
             # self.node2 = self.node2.up
             # self.node1 = self.node1.up
+        logger.debug(f"rooting on mrca of nodes={nodes}")
+        logger.debug(f"mrca={mrca}")
         return mrca
 
     def run(self):
         """Return ToyTree rooted on the input selection."""
+        # if rooting on root of already rooted tree.
+        if self.tree.is_rooted():
+            if self.tree.treenode in [self.node, self.node.up]:
+                return self.tree
+            self.tree.unroot(inplace=True)
         self._insert_root_node()
         self.tree._update()
         return self.tree
@@ -181,7 +175,8 @@ class Rooter:
         ancestors of u on the original tree are re-polarized.
         """
         # store references to Nodes before their relationships change.
-        newroot = Node(name="root", support=self._infer_max_support())
+        support = self._infer_max_support()
+        newroot = Node(name="root", support=support, dist=0)
         edge = (self.node, self.node.up)
 
         # nodes on path from node to the original root.
@@ -245,23 +240,63 @@ def root(
     root_dist: Optional[float] = None,
     edge_features: Optional[Sequence[str]] = None,
     inplace: bool=False) -> ToyTree:
-    """Return a ToyTree rooted on the edge above selected Node query.
+    r"""Return a ToyTree rooted on the edge above selected Node query.
+
+    Rooting a tree involves splitting and edge to insert a new Node.
+    (It helps to think of it as pinching an edge and pulling it back
+    to create a new root). The root Node is named "root" and has
+    support of 100 (or 1.0, depending on support values) and dist=0.
+
+    Example of rooting an unrooted tree:
+                                                x
+                                               / \
+                  _ 2 _        root('n')      n   u
+                 |  |  |         -->             / \
+                 1  .  u                        2   .
+                      / \                      / \
+                     .   n                    1   .
+
+    Example of re-rooting a rooted tree:
+                   o                            x
+                  / \                          / \
+                 1   2         root('n')      n   u
+                    / \          -->             / \
+                   .   u                        2   .
+                      / \                      / \
+                     .   n                    1   .
 
     Parameters
     ----------
-    ...
+    tree: ToyTree
+        A rooted or unrooted ToyTree to (re-)root.
+    *query: str, int, or Node
+        One or more Node selectors, which can be Node objects, names,
+        or int idx labels. If multiple are entered the MRCA node will
+        be used as the base of the edge to split.
+    regex: bool
+        If True then Node name strings are treated as regular
+        expressions that can match to multiple Nodes.
+    root_dist: None or float
+        The length (dist) along the root edge above the Node query
+        where the new root edge should be placed. Default is None
+        which will place root at the midpoint of the edge. A float
+        can be entered, but will raise ToyTreeError if > len of edge.
     edge_features: Sequence[str]
         One or more Node features that should be treated as a feature
-        of the edges above Nodes. These features are re-polarized
-        during rooting, to apply to the correct Node, below the edge.
-        The 'dist' and 'support' features are always treated as
-        edge features. Additional features of a tree can be added.
+        of its edge, not the Node itself. On rooting, edge features
+        are re-polarized, to apply to the correct Node. The 'dist'
+        and 'support' features are always treated as edge features.
+        Add additional edge features here. See docs for example.
     inplace: bool
-        ...
+        If True the original tree is modified and returned, otherwise
+        a modified copy is returned.
 
     Examples
     --------
-    ...
+    >>> tree = toytree.rtree.unittree(ntips=10, seed=123)
+    >>> t1 = tree.root("r8", "r9")
+    >>> t2 = tree.root("r8", "r9", root_dist=0.3)
+    >>> toytree.mtree([t1, t2]).draw();
     """
     tree = tree if inplace else tree.copy()
     return Rooter(
@@ -274,45 +309,55 @@ def unroot(tree: ToyTree, inplace: bool = False) -> ToyTree:
     """Return an unrooted ToyTree by collapsing the root Node.
 
     This will convert a binary split into a multifurcation.
-    The Node idx values can change on unrooting because the number of
+    The Node idx values change on unrooting because the number of
     Nodes has changed.
 
     Note
     ----
     The unrooting process is not destructive of information, you can
     re-root a tree on the same edge position as before to recover the
-    same tree.
+    same tree. The new root Node will have dist=0 and support=100
+    (or 1.0), and the Node on the other side of root will inherit the
+    dist which retains the dist information.
+
+    Parameters
+    ----------
+    inplace: bool
+        If True modify and return original tree, else return a copy.
     """
     tree = tree if inplace else tree.copy()
+    inplace = bool(inplace)
     rootnode = tree.treenode
 
-    # do nothing if the current rootnode node is not binary
+    # just return current tree if the rootnode node is not binary
     if len(rootnode.children) != 2:
-        return None
+        return tree
 
     # find a child with children, checking first left then right.
     if not rootnode.children[0].is_leaf():
-        child = rootnode.children[0]
+        newroot = rootnode.children[0]
         ochild = rootnode.children[1]
     elif not rootnode.children[1].is_leaf():
-        child = rootnode.children[1]
+        newroot = rootnode.children[1]
         ochild = rootnode.children[0]
     else:
         raise ToytreeError("Cannot unroot a tree with only two leaves")
 
     # child becomes ochild's new parent
-    ochild._up = child
-    child._children += (ochild,)
+    ochild._up = newroot
+    newroot._children += (ochild,)
 
     # other child's dist extends to include child->oldrootnode dist
-    ochild._dist += child.dist
+    ochild._dist += newroot.dist
 
     # ochild->child edge inherits features from child->oldrootnode edge
-    ochild.support = child.support
+    ochild.support = newroot.support
 
     # make child the new rootnode and remove old rootnode
-    child._up = None
-    tree.treenode = child
+    newroot._up = None
+    newroot.support = (
+        100 if max(i.support for i in newroot.children) > 1 else 1.0)
+    tree.treenode = newroot
     del rootnode
 
     # update idxs and return
