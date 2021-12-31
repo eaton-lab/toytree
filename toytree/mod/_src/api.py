@@ -2,7 +2,7 @@
 
 """API class for accessing `mod` subpackage functions from ToyTrees.
 
-The `TreeModAPI` can be accessed either at the package level as 
+The `TreeModAPI` can be accessed either at the package level as
 `toytree.mod` or from the object level as `ToyTree.mod`. In the latter
 case the default argument to all functions is the ToyTree object from
 which the function is called.
@@ -47,14 +47,14 @@ class TreeModAPI:
         """Refto a ToyTree instance, hidden for API tab-complete."""
 
     def edges_scale_to_root_height(
-        self, 
-        treeheight: float = 1., 
-        include_stem: bool = False, 
+        self,
+        treeheight: float = 1.,
+        include_stem: bool = False,
         inplace: bool = False,
         ) -> ToyTree:
-        """Return ToyTree w/ new root height and all descendant nodes 
+        """Return ToyTree w/ new root height and all descendant nodes
         scaled proportionately.
-    
+
         Parameters
         ----------
         treeheight: float
@@ -79,14 +79,14 @@ class TreeModAPI:
             self._tree, treeheight, include_stem, inplace)
 
     def edges_slider(
-        self, 
-        prop: float = 0.999, 
+        self,
+        prop: float = 0.999,
         seed: Optional[int] = None,
         ) -> ToyTree:
         """Return a ToyTree with node heights randomly jittered within bounds.
 
         Node heights are moved up or down uniformly between their parent
-        and highest child node heights in 'levelorder', from root to 
+        and highest child node heights in 'levelorder', from root to
         tips. The root and tip heights are fixed, only internal node
         heights are changed.
 
@@ -101,7 +101,7 @@ class TreeModAPI:
         return edges_slider(self._tree, prop, seed)
 
     def edges_multiplier(
-        self, 
+        self,
         multiplier: float = 1.0,
         inplace: bool = False,
         ) -> ToyTree:
@@ -117,7 +117,7 @@ class TreeModAPI:
     def edges_extend_tips_to_align(self, inplace: bool = False) -> ToyTree:
         """Return a ToyTree with tips aligned at height=0.
 
-        Leaf Node dists are extended to align with the Node that is 
+        Leaf Node dists are extended to align with the Node that is
         farthest from the root (at height=0).
 
         Parameters
@@ -155,7 +155,7 @@ class TreeModAPI:
     def ladderize(self, direction: bool=True, inplace: bool=False) -> ToyTree:
         """Return a ladderized tree (ordered descendants)
 
-        In a ladderized tree nodes are rotated so that the left/ 
+        In a ladderized tree nodes are rotated so that the left/
         right child always has fewer/more descendants.
 
         Parameters
@@ -168,7 +168,7 @@ class TreeModAPI:
     def collapse_nodes(
         self,
         *query: Query,
-        regex: bool=False,        
+        regex: bool=False,
         min_dist: float=1e-6,
         min_support: float=0,
         inplace: bool=False,
@@ -176,7 +176,7 @@ class TreeModAPI:
         """Return ToyTree with some internal nodes collapsed.
 
         Nodes can be entered as Node instances, Node names strings,
-        or Node int idx labels, and/or Nodes can be selected by 
+        or Node int idx labels, and/or Nodes can be selected by
         minimum dist or support values. Selected Nodes are collapsed
         into multi-furcating polytomies. For example, set
         min_support=50 to collapse all nodes with support < 50, and/or
@@ -186,23 +186,23 @@ class TreeModAPI:
         ----
         Both query-selected Nodes and min_dist or min_support Nodes
         will be collapsed. To only collapse query-selected Nodes set
-        the other values arbitrarily low. To only collapse on the 
+        the other values arbitrarily low. To only collapse on the
         threshold values do not enter any args to query.
 
         Parameters
         ----------
         *query: str, int, or Node
-            One or more Node selectors, which can be Node objects, names, 
+            One or more Node selectors, which can be Node objects, names,
             or int idx labels.
         regex: bool
-            If True then Node name strings are treated as regular 
-            expressions that can match to multiple Nodes.      
+            If True then Node name strings are treated as regular
+            expressions that can match to multiple Nodes.
         min_dist: float
             The minimum dist (edge length) value allowed.
         min_support: float
             The minimum support (e.g., bootstrap) value allowed.
         inplace: bool
-            If True then the original tree is changed in-place, and 
+            If True then the original tree is changed in-place, and
             returned, rather than leaving original tree unchanged.
 
         Examples
@@ -212,18 +212,18 @@ class TreeModAPI:
         >>> tree = tree.set_node_data("support", {25: 50}, default=100)
         >>> tree = tree.collapse_nodes(min_dist=0.01, min_support=45)
         """
-        return collapse_nodes(self._tree, 
+        return collapse_nodes(self._tree,
             *query, regex=regex,
             min_dist=min_dist, min_support=min_support, inplace=inplace)
 
     def remove_unary_nodes(self, inplace: bool=False) -> ToyTree:
         """Return ToyTree with any unary Nodes removed.
-        
+
         Parameters
         ----------
         inplace: bool
-            If True then the original tree is changed in-place, and 
-            returned, rather than leaving original tree unchanged.    
+            If True then the original tree is changed in-place, and
+            returned, rather than leaving original tree unchanged.
         """
         return remove_unary_nodes(self._tree, inplace=inplace)
 
@@ -231,7 +231,7 @@ class TreeModAPI:
         """Return ToyTree with a selected Node rotated (children reversed).
 
         Rotates only one Node per call. Internal Nodes are easiest selected
-        by idx label, or by selecting multiple Nodes names from which the 
+        by idx label, or by selecting multiple Nodes names from which the
         MRCA will be selected.
 
         Parameters
@@ -241,12 +241,12 @@ class TreeModAPI:
             or its idx label, or name str. For internal Nodes, multiple
             queries can be entered and their MRCA will be rotated.
         regex: bool
-            If True then Node name strings are treated as regular 
+            If True then Node name strings are treated as regular
             expressions that can match to multiple Nodes.
         inplace: bool
-            If True then the original tree is changed in-place, and 
+            If True then the original tree is changed in-place, and
             returned, rather than leaving original tree unchanged.
-                    
+
         Examples
         --------
         >>> tree = toytree.rtree.unittree(10)
@@ -272,19 +272,19 @@ class TreeModAPI:
         always preserved if 'require_root=True', otherwise the lowest
         mrca connecting the selected nodes will be kept as the new root.
 
-                    4      prune([0,2])     4     
-                   / \                     / \   
-                  3   \      ------>      /   \  
-                 / \   \                 /     \ 
+                    4      prune([0,2])     4
+                   / \                     / \
+                  3   \      ------>      /   \
+                 / \   \                 /     \
                 0   1   2               0       2
 
         Parameters
         ----------
         *query: str, int, or Node
-            One or more Node selectors, which can be Node objects, names, 
+            One or more Node selectors, which can be Node objects, names,
             or int idx labels.
         regex: bool
-            If True then Node name strings are treated as regular 
+            If True then Node name strings are treated as regular
             expressions that can match to multiple Nodes.
         preserve_branch_length: bool
             If True then the edge lengths of internal nodes that are
@@ -295,26 +295,26 @@ class TreeModAPI:
             then the root is only preserved if is it the mrca of the
             selected nodes, otherwise the mrca Node is returned.
         inplace: bool
-            If True then the original tree is changed in-place, and 
+            If True then the original tree is changed in-place, and
             returned, rather than leaving original tree unchanged.
         """
-        return prune(self._tree, *query, regex=regex, 
+        return prune(self._tree, *query, regex=regex,
             preserve_branch_length=preserve_branch_length,
             require_root=require_root, inplace=inplace)
 
     def drop_tips(
         self,
-        *query: Query, 
-        regex: bool=False, 
+        *query: Query,
+        regex: bool=False,
         inplace: bool=False,
         ) -> ToyTree:
         """Return a ToyTree with some tip Nodes removed.
 
-        The ToyTree with the selected tip Nodes (and any remaining internal 
+        The ToyTree with the selected tip Nodes (and any remaining internal
         nodes without children) are removed while retaining the original
-        edge lengths between remaining nodes. This is effectively the 
+        edge lengths between remaining nodes. This is effectively the
         inverse of `prune`. Tip names can be selected using a Query method
-        of Node instances, Node names, or Node idx int labels. Only 
+        of Node instances, Node names, or Node idx int labels. Only
         selected tip Nodes affect the result.
 
         Parameters
@@ -322,13 +322,13 @@ class TreeModAPI:
         tree: ToyTree
             An input ToyTree to perform function on.
         *query: str, int, or Node
-            One or more Node selectors, which can be Node objects, names, 
+            One or more Node selectors, which can be Node objects, names,
             or int idx labels.
         regex: bool
-            If True then Node name strings are treated as regular 
-            expressions that can match to multiple Nodes.        
+            If True then Node name strings are treated as regular
+            expressions that can match to multiple Nodes.
         inplace: bool
-            If True then the original tree is changed in-place, and 
+            If True then the original tree is changed in-place, and
             returned, rather than leaving original tree unchanged.
 
         See Also
@@ -355,27 +355,27 @@ class TreeModAPI:
         inplace: bool=False,
         ) -> ToyTree:
         """Return ToyTree with one or more polytomies randomly resolved.
-            
+
         Parameters
         ----------
         *query: str, int, or Node
-            One or more Node selectors, which can be Node objects, names, 
+            One or more Node selectors, which can be Node objects, names,
             or int idx labels. If no Nodes are selected then ALL nodes
             that are multifurcating will be resolved.
         regex: bool
-            If True then Node name strings are treated as regular 
-            expressions that can match to multiple Nodes.     
+            If True then Node name strings are treated as regular
+            expressions that can match to multiple Nodes.
         dist: float
             The dist value to set on newly created nodes.
         support: float
             The support value to set on newly created nodes.
         recursive: bool
             Recursively resolve nested polytomies (default=True); if False
-            then a n-tomy will only be resolved into a (n-1)-tomy. 
+            then a n-tomy will only be resolved into a (n-1)-tomy.
         seed: int or None
             A seed for numpy random generator for reproducible resolving.
         inplace: bool
-            If True then the original tree is changed in-place, and 
+            If True then the original tree is changed in-place, and
             returned, rather than leaving original tree unchanged.
 
         Examples
@@ -394,16 +394,86 @@ class TreeModAPI:
         regex: bool=False,
         root_dist: Optional[float] = None,
         edge_features: Optional[Sequence[str]] = None,
-        inplace: bool = False,
-        ) -> ToyTree:
-        """Return Toytree"""
+        inplace: bool=False) -> ToyTree:
+        r"""Return a ToyTree rooted on the edge above selected Node query.
+
+        Rooting a tree involves splitting and edge to insert a new Node.
+        (It helps to think of it as pinching an edge and pulling it back
+        to create a new root).
+
+        Example of rooting an unrooted tree:
+                                                    x
+                                                   / \
+                      _ 2 _        root('n')      n   u
+                     |  |  |         -->             / \
+                     1  .  u                        2   .
+                          / \                      / \
+                         .   n                    1   .
+
+        Example of re-rooting a rooted tree:
+                       o                            x
+                      / \                          / \
+                     1   2         root('n')      n   u
+                        / \          -->             / \
+                       .   u                        2   .
+                          / \                      / \
+                         .   n                    1   .
+
+        Parameters
+        ----------
+        tree: ToyTree
+            A rooted or unrooted ToyTree to (re-)root.
+        *query: str, int, or Node
+            One or more Node selectors, which can be Node objects, names,
+            or int idx labels. If multiple are entered the MRCA node will
+            be used as the base of the edge to split.
+        regex: bool
+            If True then Node name strings are treated as regular
+            expressions that can match to multiple Nodes.
+        root_dist: None or float
+            The length (dist) along the root edge above the Node query
+            where the new root edge should be placed. Default is None
+            which will place root at the midpoint of the edge. A float
+            can be entered, but will raise ToyTreeError if > len of edge.
+        edge_features: Sequence[str]
+            One or more Node features that should be treated as a feature
+            of its edge, not the Node itself. On rooting, edge features
+            are re-polarized, to apply to the correct Node. The 'dist'
+            and 'support' features are always treated as edge features.
+            Add additional edge features here. See docs for example.
+        inplace: bool
+            If True the original tree is modified and returned, otherwise
+            a modified copy is returned.
+
+        Examples
+        --------
+        >>> tree = toytree.rtree.unittree(ntips=10, seed=123)
+        >>> t1 = tree.root("r8", "r9")
+        >>> t2 = tree.root("r8", "r9", root_dist=0.3)
+        >>> toytree.mtree([t1, t2]).draw();
+        """
         return root(
             self._tree, *query, regex=regex, root_dist=root_dist,
             edge_features=edge_features, inplace=inplace
         )
 
     def unroot(self, *query: Query, inplace: bool = False) -> ToyTree:
-        """Return Toytree with binary root Node collapsed.
+        """Return an unrooted ToyTree by collapsing the root Node.
+
+        This will convert a binary split into a multifurcation.
+        The Node idx values can change on unrooting because the number of
+        Nodes has changed.
+
+        Note
+        ----
+        The unrooting process is not destructive of information, you can
+        re-root a tree on the same edge position as before to recover the
+        same tree.
+
+        Parameters
+        ----------
+        inplace: bool
+            If True modify and return original tree, else return a copy.
         """
         return unroot(self._tree, *query, inplace=inplace)
 
@@ -417,7 +487,7 @@ class TreeModAPI:
         parent_name: Optional[str]=None,
         inplace: bool=False,
         ) -> ToyTree:
-        r"""Add a tip node by splitting an edge to create a new parent 
+        r"""Add a tip node by splitting an edge to create a new parent
         and descendant node pair.
 
         Splits a branch spanning from node idx (A) to its parent (B)
@@ -436,11 +506,11 @@ class TreeModAPI:
         Parameters
         ----------
         *query: str, int, or Node
-            One or more Node selectors, which can be Node objects, names, 
+            One or more Node selectors, which can be Node objects, names,
             or int idx labels. If multiple are entered the MRCA node will
-            be used as the base of the edge to split. 
+            be used as the base of the edge to split.
         regex: bool
-            If True then Node name strings are treated as regular 
+            If True then Node name strings are treated as regular
             expressions that can match to multiple Nodes.
         name: str
             Optional name for the new sister node.
@@ -476,16 +546,16 @@ class TreeModAPI:
         """
         return add_tip_node(
             self._tree, *query, regex=regex,
-            name=name, dist=dist, 
+            name=name, dist=dist,
             parent_dist=parent_dist, parent_name=parent_name,
             inplace=inplace)
 
     def add_internal_node(
         self,
-        *query: Query, 
+        *query: Query,
         regex: bool=False,
         dist: Optional[float]=None,
-        name: Optional[str]=None, 
+        name: Optional[str]=None,
         inplace: bool=False,
         ) -> ToyTree:
         r"""Add an internal node by splitting an edge to create new node.
@@ -504,21 +574,21 @@ class TreeModAPI:
         --------
         :func:`.add_tip_node`:
             Similar to this function but adds a tip node descending from C.
-        
+
         Parameters
         ----------
         *query: str, int, or Node
-            One or more Node selectors, which can be Node objects, names, 
+            One or more Node selectors, which can be Node objects, names,
             or int idx labels. If multiple are entered the MRCA node will
             be used as the base of the edge to split.
         regex: bool
-            If True then Node name strings are treated as regular 
+            If True then Node name strings are treated as regular
             expressions that can match to multiple Nodes.
         dist: float
             The distance from the selected Node at which to insert
-            the new Node. This will be set as the dist of the 
-            descendant (A) whereas the new Node's dist (C) will be 
-            the descendants prior dist minus this dist value. If 
+            the new Node. This will be set as the dist of the
+            descendant (A) whereas the new Node's dist (C) will be
+            the descendants prior dist minus this dist value. If
             no dist value is set then the edge midpoint is used.
         name: Optional[str]
             A name string to apply to the new Node.
