@@ -13,25 +13,34 @@ References
 
 """
 
-from typing import Optional, Tuple, Collection, TypeVar
+from typing import Optional, Tuple, Sequence, TypeVar
+from toytree.utils import ToytreeError
 
 Node = TypeVar("Node")
 ToyTree = TypeVar("ToyTree")
+DISALLOWED_FEATURES = set(['idx', 'dist', 'support', 'up', 'children', 'height'])
+
 
 def get_feature_string(
     node: Node,
-    features: Collection[str],
+    features: Sequence[str],
     features_prefix: str,
     features_delim: str,
     features_assignment: str,
+    internal_labels_formatter: str,
     ) -> str:
     """Return a string of commented features inside square brackets."""
     if not features:
         return ""
     pairs = []
     for feature in features:
-        value = str(getattr(node, feature))
-        pairs.append(features_assignment.join((feature, value)))
+        value = getattr(node, feature, None)
+        if value:
+            try:
+                value = internal_labels_formatter % value
+            except TypeError:
+                value = str(value)
+            pairs.append(features_assignment.join((feature, value)))
     feature_str = features_delim.join(pairs)    
     return f"[{features_prefix}{feature_str}]"
 
@@ -41,7 +50,7 @@ def node_to_newick(
     dist_formatter: str = "%.6g",
     internal_labels: Optional[str] = "support",
     internal_labels_formatter: Optional[str] = "%.6g",
-    features: Optional[Collection] = None,
+    features: Optional[Sequence[str]] = None,
     features_prefix: str = "&",
     features_delim: str = ",",
     features_assignment: str = "=",
@@ -49,7 +58,8 @@ def node_to_newick(
     """Reduce function used in tree_reduce"""
     # format the comment feature string for extra features
     feature_str = get_feature_string(
-        node, features, features_prefix, features_delim, features_assignment)
+        node, features, features_prefix, features_delim, 
+        features_assignment, internal_labels_formatter)
 
     # format the dist values (edge lengths) as strings
     if dist_formatter is None:
@@ -77,7 +87,7 @@ def tree_reduce(
     dist_formatter: str = "%.6g",
     internal_labels: Optional[str] = "support",
     internal_labels_formatter: Optional[str] = "%.6g",
-    features: Optional[Collection] = None,
+    features: Optional[Sequence[str]] = None,
     features_prefix: str = "&",
     features_delim: str = ",",
     features_assignment: str = "=",
@@ -101,7 +111,7 @@ def write_newick(
     dist_formatter: str = "%.6g",
     internal_labels: Optional[str] = "support",
     internal_labels_formatter: Optional[str] = "%.6g",    
-    features: Optional[Collection] = None,
+    features: Optional[Sequence[str]] = None,
     features_prefix: str = "&",
     features_delim: str = ",",
     features_assignment: str = "=",
@@ -172,6 +182,12 @@ def write_newick(
     >>> tree.write(features=["size"])
     >>> # ((a:3[&state=1],b:3[&state=1])100:1[&state=1],c:4[&state=2])100:1[&state=1]
     """
+    if features:
+        features = set(features) - DISALLOWED_FEATURES
+        bad_features = features - set(tree.features)
+        if bad_features:
+            raise ToytreeError(
+                f"Cannot write features not present in tree: {bad_features}")
     newick = tree_reduce(
         tree.treenode,
         dist_formatter,

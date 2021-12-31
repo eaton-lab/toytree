@@ -37,6 +37,7 @@ Url = TypeVar("Url")
 class TreeIOParser:
     """Return a list of Nodes from various tree input types.
 
+    This is intended for internal use only.
     See `toytree.tree` for the docstring. Use kwargs to enter args
     to the `parse_newick_string` function.
 
