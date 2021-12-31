@@ -34,7 +34,7 @@ References
 
 
 from __future__ import annotations
-from typing import List, Optional, Union, Generator, Tuple #, Set, Any
+from typing import List, Optional, Union, Iterator, Tuple #, Set, Any
 from copy import deepcopy
 from collections import deque
 
@@ -60,8 +60,8 @@ class Node:
     Node class objects are intended to be *mostly* immutable, i.e.,
     not directly modified by users. This is to reduce user errors by
     modifying Node features that affect the tree topology or values.
-    Nodes are mutable, however, in terms of assigning arbritrary data
-    to Nodes and modifying these values (e.g., `tree[3].body_size=10`).
+    Nodes are mutable in terms of assigning arbritrary data to Nodes
+    and modifying these values (e.g., `tree[3].body_size=10`).
 
     Although Node's *can* be modified directly, the recommended workflow
     is to use specific ToyTree class functions to change attributes
@@ -262,7 +262,7 @@ class Node:
             else:
                 break
 
-        # make a deepcopy of root.
+        # make a deepcopy of root, otherwise only nested are copied.
         root = deepcopy(node)
 
         # find focal node to be returned
@@ -270,7 +270,7 @@ class Node:
             if (node.idx == self.idx) and (node.name == self.name):
                 # optionally detach to make focal node the root.
                 if detach:
-                    node.detach()
+                    node._detach()
                 return node
         raise TreeNodeError("copy failed, tree structure is broken.")
 
@@ -335,6 +335,7 @@ class Node:
         # get parent node
         parent = self.up
         if not parent:
+            logger.warning("cannot delete root Node.")
             return
 
         # conserve branch lengths: child dist and parent dist grow.
@@ -374,7 +375,7 @@ class Node:
     ## TRAVERSAL                                   ##
     #################################################
 
-    def traverse(self, strategy: str="levelorder") -> Generator[Node]:
+    def traverse(self, strategy: str="levelorder") -> Iterator[Node]:
         """Visit all connected Nodes using a tree traversal strategy.
 
         Notes
@@ -423,7 +424,7 @@ class Node:
             "supported strategies are ['idxorder', 'preorder', "
             "'postorder', 'levelorder', and 'inorder']")
 
-    def _traverse_idxorder(self) -> Generator[Node]:
+    def _traverse_idxorder(self) -> Iterator[Node]:
         """Iterates over all nodes in 'idx' order.
 
         This is a non-standard tree traversal algorithm that is used
@@ -460,7 +461,7 @@ class Node:
         while inner_stack:
             yield inner_stack.pop()
 
-    def _traverse_postorder(self) -> Generator[Node]:
+    def _traverse_postorder(self) -> Iterator[Node]:
         """Iterate over all descendant nodes in tip-to-root order.
 
         This visits all children before parents by visiting nodes...
@@ -480,7 +481,7 @@ class Node:
         while stack:
             yield stack.pop()
 
-    def _traverse_preorder(self) -> Generator[Node]:
+    def _traverse_preorder(self) -> Iterator[Node]:
         """Iterate over all nodes by 'preorder' traversal.
 
         This visits parents before children, by visiting all the way
@@ -495,16 +496,13 @@ class Node:
             # add node's children to queue in [right, left] order.
             queue.extend(node.children[::-1])
 
-    def _traverse_levelorder(self) -> Generator[Node]:
+    def _traverse_levelorder(self) -> Iterator[Node]:
         """Iterate over all desdecendant nodes in levelorder.
 
         This is also called breadth-first search (BFS). It starts at
         the root and visits all nodes that are the same distance from
         the root (number of nodes away) before visiting the next level
         of nodes.
-
-        This traversal is most efficient for finding the shortest path
-        between two nodes.
         """
         visited = set([self])
         queue = deque([self])
@@ -516,7 +514,7 @@ class Node:
                     visited.add(child)
                     queue.append(child)
 
-    def _traverse_inorder(self) -> Generator[Node]:
+    def _traverse_inorder(self) -> Iterator[Node]:
         """Iterate over all nodes by 'inorder' traversal.
 
         This algorithm traverse up each left subtree before each right
@@ -553,7 +551,7 @@ class Node:
     ## Defaults to returning in 'idxorder'         ##
     #################################################
 
-    def _iter_leaves(self) -> Generator[Node]:
+    def _iter_leaves(self) -> Iterator[Node]:
         """Return a Generator of leaves descended from this node in
         idxorder."""
         for node in self.traverse(strategy="idxorder"):
@@ -565,7 +563,7 @@ class Node:
         idxorder."""
         return list(self._iter_leaves())
 
-    def _iter_leaf_names(self) -> Generator[str]:
+    def _iter_leaf_names(self) -> Iterator[str]:
         """Return a Generator of names of Nodes descended from this
         node in idxorder."""
         for node in self._iter_leaves():
@@ -580,27 +578,27 @@ class Node:
     ## NODE RELATIVE RETRIEVAL / TRAVERSAL
     #################################################
 
-    def _iter_sisters(self) -> Generator[Node]:
+    def _iter_sisters(self) -> Iterator[Node]:
         """Return a Generator to iterate over sister nodes."""
         if self.up:
             for child in self.up.children:
                 if child != self:
                     yield child
 
-    def get_sisters(self) -> List[Node]:
+    def get_sisters(self) -> Tuple[Node]:
         """Return list of other Nodes that are children of same parent."""
-        return list(self._iter_sisters())
+        return tuple(self._iter_sisters())
 
-    def _iter_descendants(self, strategy: str="levelorder") -> Generator[Node]:
+    def _iter_descendants(self, strategy: str="levelorder") -> Iterator[Node]:
         """Return a Generator of descendant Nodes (not including self)."""
         for node in self.traverse(strategy=strategy):
             yield node
 
-    def get_descendants(self, strategy: str="levelorder") -> List[Node]:
+    def get_descendants(self, strategy: str="levelorder") -> Tuple[Node]:
         """Return a list of descendant Nodes (not including self)."""
-        return list(self._iter_descendants(strategy=strategy))
+        return tuple(self._iter_descendants(strategy=strategy))
 
-    def _iter_ancestors(self, root: Optional[Node]=None) -> Generator[Node]:
+    def _iter_ancestors(self, root: Optional[Node]=None) -> Iterator[Node]:
         """Return a Generator of Nodes on path from this node to root.
 
         The current node is not included, but the root node is. The
@@ -617,9 +615,9 @@ class Node:
             else:
                 break
 
-    def get_ancestors(self) -> List[Node]:
+    def get_ancestors(self) -> Tuple[Node]:
         """Return a list of Nodes on path from this node to root."""
-        return list(self._iter_ancestors())
+        return tuple(self._iter_ancestors())
 
     #####################################################
     ## TO TOYTREE
@@ -668,7 +666,6 @@ class Node:
         for node in root.traverse("preorder"):
             node._height = max_dist - node._height
 
-
     def _get_ascii(self, char1='-', compact=False):
         """Return the ASCII representation of a tree.
 
@@ -709,7 +706,7 @@ class Node:
         result = [p+l for (p,l) in zip(prefixes, result)]
         return (result, mid)
 
-    def draw_ascii(self, compact=False):
+    def draw_ascii(self, compact: bool=False):
         """Return the ASCII drawing of a Node and its descendants.
 
         Code based on the PyCogent GPL project.

@@ -19,9 +19,6 @@
 # raised to ToyTree level
 >>> tree.root()
 >>> tree.unroot()
->>> tree.make_ultrametric()
-
-
 """
 
 from toytree.mod._src.mod_edges import (
@@ -42,4 +39,4 @@ from toytree.mod._src.mod_topo import (
 	add_internal_node,
 	add_tip_node,
 )
-from toytree.mod._src.root_unroot import unroot
+from toytree.mod._src.root_unroot import unroot, root
