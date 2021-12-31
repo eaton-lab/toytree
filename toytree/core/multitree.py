@@ -1,7 +1,29 @@
 #!/usr/bin/env python
 
-"""
-MultiTree objects
+"""MultiTree classes for representing a collection of trees.
+
+A MultiTree class is used to store a collection of trees, and includes
+functions for visualizing and manipulating multiple trees.
+
+Methods
+-------
+- get_consensus_tree
+    Return a consensus tree from a set of input trees.
+- draw
+    Return a toyplot drawing of multiple trees spaced on a grid.
+- draw_cloud_tree
+    Return a toyplot drawing of multiple trees overlaid.
+
+See Also
+--------
+- toytree.utils.ToyTreeSequence
+    A wrapper around the tskit TreeSequence class. This class has
+    convenience functions for extracting and plotting trees from a
+    TreeSequence object. To use it requires that you install the
+    additional library tskit. By contrast the MultiTree class is a
+    much simpler collection of trees, and does not require any third
+    party packages, and is thus the default object in toytree for
+    working with multiple trees.
 
 TODO:
     - re-do support for BPP weird format trees.
@@ -14,127 +36,124 @@ TODO:
     - New mark: leave proper space for tips to mtree fits same as tree.
 """
 
-from typing import Union, List, Iterable, Optional, Tuple
+from __future__ import annotations
+from typing import (
+    Union, List, Sequence, Optional, Tuple, TypeVar, Iterator)
 from copy import deepcopy
-from pathlib import Path
-# from dataclasses import dataclass
-# import toyplot
 import numpy as np
+import pandas as pd
 
 from toytree.core.tree import ToyTree
-from toytree.core.consensus import ConsensusTree
-from toytree.core.io.TreeParser import TreeParser
+from toytree.core.tree import Node
 from toytree.core.style.tree_style import TreeStyle, get_tree_style
 from toytree.core.drawing.canvas_setup import GridSetup, CanvasSetup
 # from toytree.core.drawing.render import ToytreeMark
 from toytree.core.drawing.canvas_setup import style_ticks
-from toytree.utils import ToytreeError
-import toytree
+from toytree.infer.src.consensus import ConsensusTree
+# from toytree.utils import ToytreeError
 
-
-def mtree(
-    data:Union[str, Path, List[ToyTree], List[str]],
-    tree_format:int=0,
-    ):
-    """
-    General class constructor to parse and return a MultiTree class
-    object from input arguments as a multi-newick string, filepath,
-    Url, or Iterable of Toytree objects.
-
-    data (Union[str, Path, Iterable[ToyTree]]):
-        string, filepath, or URL for a newick or nexus formatted list
-        of trees, or an iterable of ToyTree objects.
-
-    Examples:
-    ----------
-    mtre = toytree.mtree("many_trees.nwk")
-    mtre = toytree.mtree("((a,b),c);\n((c,a),b);")
-    mtre = toytree.mtree([toytree.rtree.rtree(10) for i in range(5)])
-    """
-    # parse the newick object into a list of Toytrees
-    treelist = []
-    if isinstance(data, Path):
-        data = str(Path)
-    if isinstance(data, str):
-        tns = TreeParser(data, tree_format, multitree=True).treenodes
-        treelist = [ToyTree(i) for i in tns]
-    elif isinstance(data[0], ToyTree):
-        treelist = data
-    elif isinstance(data[0], (str, bytes)):
-        treelist = [toytree.tree(i) for i in data]
-    else:
-        raise ToytreeError("mtree input format unrecognized.")
-    return MultiTree(treelist)
-
-    # set tip plot order for treelist to the first tree order
-    # order trees in treelist to plot in shared order...
-    # self._fixed_order = fixed_order   # (<list>, True, False, or None)
-    # self._user_order = None
-    # self._cons_order = None
-    # self._set_tip_order()
-    # self._parse_treelist()
-
-
-
-# class BaseMultiTree:
-#     def __init__(self):
-#         self.style = TreeStyle()
-#         self._i = 0
-#         self.treelist = []
-
-# # class MixedTree(BaseMultiTree):
-# #     pass
+# aliases of Toyplot types returned by draw functions
+Canvas = TypeVar("Canvas")
+Cartesian = TypeVar("Cartesian")
+Mark = TypeVar("Mark")
+Query = TypeVar("Query", str, int, Node)
 
 
 class MultiTree:
+    """MultiTree class to visualize and analyze collections of trees.
+
+    MultiTree objects can be indexed to extract ToyTrees, and are also
+    iterable. They include functions for visualizing sets of trees, and
+    for comparing and calculating statistics on sets of trees.
+
+    Notes
+    -----
+    Use factory function `toytree.mtree` to init a MultiTree instance
+    from a list of ToyTrees, or from a newick or nexus trees file.
+
+    Examples
+    --------
+    >>> trees = [toytree.rtree.unittree(10) for i in range(100)]
+    >>> mtree = toytree.mtree(trees)
+    >>> mtree.draw();
     """
-    Toytree MultiTree object for plotting or extracting stats from
-    a set of trees sharing the same tips. Use factory function
-    toytree.mtree to init a MultiTree instance.
-    """
-    def __init__(self, treelist):
-        self._i = 0
+    def __init__(self, treelist: List[ToyTree]):
         self.treelist = treelist
+        """List of ToyTree objects in the MultiTree."""
+
+        # self.data: pd.DataFrame = self._init_data(treelist, data)
+        """DataFrame with tree metadata (e.g., ipcoal.Model.df)."""
+    # def _init_data(self, treelist, data: Optional[pd.DataFrame]):
+    #     if data is None:
+    #         data = pd.DataFrame(
+    #             index=range(len(self)),
+    #             data={"count": 1},
+    #         )
+    #     return data
 
     def __len__(self):
+        """Return number of trees in the treelist"""
         return len(self.treelist)
 
-    def __iter__(self):
-        return self
+    def __iter__(self) -> Iterator[ToyTree]:
+        """ToyTree is iterable, returning leaf Nodes in idx order."""
+        return self._iter_trees()
 
-    def __next__(self):
-        try:
-            result = self.treelist[self._i]
-        except IndexError as err:
-            self._i = 0
-            raise StopIteration from err
-        self._i += 1
-        return result
+    def __getitem__(self, idx: int) -> ToyTree:
+        """Return ToyTree by indexing from MultiTree.treelist."""
+        return self.treelist[idx]
 
     def __repr__(self):
         """string representation shows ntrees and type"""
         return f"<toytree.MultiTree ntrees={len(self)}>"
 
+    def _iter_trees(self) -> Iterator[ToyTree]:
+        """Return a generator of ToyTrees in treelist."""
+        for tree in self.treelist:
+            yield tree
+
     @property
     def ntips(self):
-        """returns the number of tips (all the same) in each tree."""
+        """Return number of tips (all the same) in each tree."""
         return self.treelist[0].ntips
 
     @property
     def ntrees(self):
-        """returns the number of trees in the MultiTree treelist."""
+        """Return number of trees in the MultiTree.treelist"""
         return len(self.treelist)
 
-    @property
-    def all_tips_shared(self):
-        """Check if names are the same in all the trees in .treelist."""
-        alltips_shared = all([
-            set(self.treelist[0].get_tip_labels()) == set(i.get_tip_labels())
-            for i in self.treelist
-        ])
-        if alltips_shared:
-            return True
-        return False
+    def all_tree_tip_labels_same(self) -> bool:
+        """Return True if names are the same in all the trees."""
+        first = set(self.treelist[0].get_tip_labels())
+        return all(set(i.get_tip_labels()) == first for i in self)
+
+    def all_tree_topologies_same(self) -> bool:
+        """Return True if all topologies in treelist are identical."""
+        return len(set(i.get_topology_id() for i in self)) == 1
+
+    def get_unique_topologies(self) -> List[Tuple[ToyTree, int]]:
+        """Return a list of (ToyTree, count) for each unique tree.
+
+        This can be useful for calculating statistics only on the
+        unique set of trees and multiplying by their frequency (for
+        example this is done when generating consensus trees).
+
+        Examples
+        --------
+        >>> mtree = toytree.mtree(
+        >>>     [toytree.rtree.rtree(6) for i in range(100)])
+        >>> print(mtree.get_unique_topology_counts())
+        >>> # [(ToyTree, 10), (ToyTree, 9), (ToyTree, 9), ...]
+        """
+        trees_dict = {}
+        for tree in self:
+            hashed = tree.get_topology_id()
+            if hashed in trees_dict:
+                trees_dict[hashed][1] += 1
+            else:
+                trees_dict[hashed] = [tree, 1]
+        # sort trees and return as a List of Tuples
+        return sorted(trees_dict.values(), key=lambda x: x[1], reverse=True)
 
     def copy(self):
         """Return a deepcopy of the MultiTree."""
@@ -144,13 +163,13 @@ class MultiTree:
         self,
         path: Optional[str],
         tree_format:int=0,
-        features: Optional[Iterable[str]]=None,
+        features: Optional[Sequence[str]]=None,
         dist_formatter:str="%0.6g",
         ) -> Optional[str]:
         """Write a multi-line string of newick trees.
 
         The output is written to stdout or a file path, and each
-        newick string can be formatted just like when calling 
+        newick string can be formatted just like when calling
         `write` from a standard ToyTree.
 
         Parameters
@@ -180,80 +199,160 @@ class MultiTree:
             outtre.write(treestr)
         return None
 
+    def get_consensus_tree(
+        self,
+        best_tree: ToyTree=None,
+        majority_rule_min: float=0.0,
+        ) -> ToyTree:
+        """Return an extended majority rule consensus Toytree.
 
-    def reset_tree_styles(self):
-        """
-        Sets the .style toytree drawing styles to default for all
-        ToyTrees in a MultiTree .treelist.
-        """
-        for tre in self.treelist:
-            tre.style = TreeStyle()
-
-
-    # -------------------------------------------------------------------
-    # Tree List Statistics or Calculations
-    # -------------------------------------------------------------------
-    # def get_tip_labels(self):
-    #     """
-    #     Returns the tip names in tree plot order for the *list of tree*,
-    #     starting from the zero axis. If all trees in the treelist do not
-    #     share the same set of tips then this will return an error message.
-
-    #     If fixed_order is a user entered list then names are returned in that
-    #     order. If fixed_order was True then the consensus tree order is
-    #     returned. If fixed_order was None or False then the order of the first
-    #     ToyTree in .treelist is returned.
-    #     """
-    #     if not self.all_tips_shared:
-    #         raise Exception(
-    #             "All trees in treelist do not share the same set of tips")
-    #     return self.treelist[0].get_tip_labels()
-
-
-    def get_consensus_tree(self, cutoff=0.0, best_tree=None):
-        """
-        Returns an extended majority rule consensus tree as a Toytree
-        object. Node labels include 'support' values showing the
-        occurrence of clades in the consensus tree across trees in the
-        input treelist. Clades with support below 'cutoff' are
-        collapsed into polytomies. If you enter an optional
-        'best_tree' then support values from the treelist calculated
-        for clades in this tree, and the best_tree is returned with
-        support values added to nodes.
+        Consensus tree Node 'support' features record the frequency of
+        occurrence of clades across the input MultiTree treelist.
+        Clades with support below 'majority_rule_min' are collapsed
+        into polytomies. If you enter an optional 'best_tree' then
+        support values from the input trees will be calculated for
+        clades in this tree, and the 'best_tree' is returned with
+        support values added to Nodes, else a majority-rule consensus
+        tree is generated and returned. The mean, min, and max of
+        additional features in the trees can also be calculated.
 
         Parameters
         ----------
-        cutoff (float; default=0.0):
-            Cutoff below which clades are collapsed in the majority
-            rule consensus tree. This is a proportion (e.g., 0.5 means
-            50%).
-        best_tree (Toytree or newick string; optional):
+        best_tree: Toytree, str, or None
             A tree that support values should be calculated for and
             added to. For example, you want to calculate how often
             clades in your best ML tree are supported in 100 bootstrap
             trees.
-        """
-        if best_tree is not None:
-            if not isinstance(best_tree, ToyTree):
-                best_tree = ToyTree(best_tree)
-        cons = ConsensusTree(self.treelist, best_tree=best_tree, cutoff=cutoff)
-        cons.update()
-        return cons.ttree
+        majority_rule_min: float
+            Cut-off below which clades are collapsed in the majority
+            rule consensus tree. This is a proportion (e.g., 0.5 means
+            50%).
 
+        Examples
+        --------
+        >>> best = toytree.rtree.unittree(ntips=10, seed=123)
+        >>> trees = [toytree.rtree.unittree(ntips=10) for i in range(10)]
+        >>> mtree = toytree.mtree(trees)
+        >>> ctree1 = mtree.get_consensus_tree(trees, best_tree=best)
+        >>> ctree2 = mtree.get_consensus_tree(trees)
+        >>> ctree3 = mtree.get_consensus_tree(trees, majority_rule_min=0.5)
+        >>> toytree.mtree([ctree1, ctree2, ctree3]).draw();
+        """
+        cons = ConsensusTree(
+            mtree=self,
+            best_tree=best_tree,
+            majority_rule_min=majority_rule_min,
+        )
+        return cons.run()
+
+    ################################################################
+    # Tree Modification functions
+    # These visit and possibly modify every tree in treelist
+    ################################################################
+
+    def root(
+        self,
+        *query: Query,
+        regex: bool=False,
+        inplace: bool=False,
+        **kwargs,
+        ) -> MultiTree:
+        """Return a MultiTree with all ToyTrees in treelist rooted.
+
+        If a tree cannot be rooted on the selected position this
+        will raise a ToytreeError.
+
+        Parameters
+        ----------
+        ...
+
+        Examples
+        --------
+        >>> ...
+        """
+        mtree = self if inplace else self.copy()
+        for tree in mtree:
+            tree.root(*query, regex=regex, inplace=True, **kwargs)
+        return mtree
+
+    def unroot(self, inplace: bool=False) -> MultiTree:
+        """Return a MultiTree with all ToyTrees in treelist unrooted"""
+        mtree = self if inplace else self.copy()
+        for tree in mtree:
+            tree.unroot(inplace=True)
+        return mtree
+
+    ################################################################
+    # Tree Comparison/Distance functions
+    #
+    ################################################################
+
+    def get_tree_distance(self, idx0: int, idx1: int, metric: str = "rf") -> float:
+        """Return a distance metric comparing two trees.
+
+        Trees are indexed from the treelist by indices idx0 and idx1.
+
+        Parameters
+        ----------
+        idx0: int
+            Index of a tree from the treelist.
+        idx1: int
+            Index of a tree from the treelist.
+        metric: str
+            Name of a supported tree distance metric. For available
+            options see `toytree.distance.treedist`.
+        **kwargs: Dict
+            Additional options accepted by tree distance method.
+
+        Examples
+        --------
+        >>> ...
+        """
+        return get_tree_distance(
+            self[idx0], self[idx1], metric=metric, **kwargs)
+
+    def get_tree_distance_matrix(self, ) -> float:
+        """TODO..."""
+
+    def get_tree_distance_distribution(
+        self, ) -> np.ndarray:
+        """Return a distribution of tree distances.
+
+        Tree distances are measure between pairs of trees, but several
+        options are available for how pairs will be sampled, including
+        'random', 'consensus', or 'distance'.
+
+        Parameters
+        ----------
+
+        Returns
+        -------
+        pd.DataFrame?
+
+        Examples
+        --------
+        >>> ...
+        """
+
+
+    ################################################################
+    # Drawing functions
+    #
+    ################################################################
 
     def draw(
         self,
         shape: Tuple[int,int]=(1, 4),
         shared_axes: bool=False,
-        idxs: Optional[Iterable[int]]=None,
+        idxs: Optional[Sequence[int]]=None,
         width: Optional[int]=None,
         height: Optional[int]=None,
         margin: Union[float, Tuple[int,int,int,int]]=None,
         **kwargs,
-        ) -> Tuple['toyplot.Canvas', List['axes'], List['marks']]:
-        """Draw a grid of multiple ToyTrees.
+        ) -> Tuple[Canvas, Cartesian, List[Mark]]:
+        """Return a toyplot drawing of a grid of ToyTrees.
 
-        The grid spacing can be controlled with shape and margin 
+        The grid spacing can be controlled with shape and margin
         options, and trees can each be on their own axis or on a
         set of shared axes (same max height dimension), which can be
         better for highlighting differences in heights.
@@ -417,11 +516,10 @@ class MultiTree:
         # add mark to axes
         return canvas, grid.axes, marks
 
-
     def draw_cloud_tree(
         self,
         axes: 'toyplot.coordinates.Cartesian'=None,
-        fixed_order: Iterable[str]=None,
+        fixed_order: Sequence[str]=None,
         jitter: float=0.0,
         **kwargs,
         ):
@@ -436,19 +534,16 @@ class MultiTree:
             If None then a new Canvas and Cartesian axes object is
             returned, otherwise if a Cartesian axes object is provided
             the cloudtree will be drawn on the axes.
-
-        fixed_order: Iterable[str]
+        fixed_order: Sequence[str]
             A list of tip names matching those in every tree in the
             multitree, the order of which will determine the fixed
             order of tips in plotted trees. If None (default) then a
             consensus tree is inferred and its ladderized tip order
             is used.
-
         jitter: float
             A value by which to randomly shift the baseline of tree
             subplots so that they do not overlap perfectly. This adds
             a value drawn from np.random.uniform(-jitter, jitter).
-
         **kwargs:
             All drawing style arguments supported in the .draw()
             function of toytree objects are also supported by
@@ -528,10 +623,36 @@ class MultiTree:
         # get shared tree styles.
         return canvas, axes, marks
 
-
     # def draw_tree_sequence(self, ):
     #     """
     #     Return a tree sequence drawing
     #     """
     #     return TreeSequenceDrawing(kwargs)
 
+    def reset_tree_styles(self):
+        """Set the .style to default for all ToyTrees in treelist."""
+        for tre in self.treelist:
+            tre.style = TreeStyle()
+
+    def get_tip_labels(self) -> Sequence[str]:
+        """Return ordered tip labels from the first tree in treelist.
+
+        Because a MultiTree contains many trees there are many possible
+        orderings of the tip Node labels. For the purposes of plotting,
+        it is sometimes desirable to fetch the tip names before plotting
+        so that they can be modified, and then supplied as an argument
+        to a plotting function, such as `draw_cloud_tree`.
+
+        tree plot order for the *list of tree*, ...
+        starting from the zero axis. If all trees in the treelist do not
+        share the same set of tips then this will return an error message.
+
+        If fixed_order is a user entered list then names are returned in that
+        order. If fixed_order was True then the consensus tree order is
+        returned. If fixed_order was None or False then the order of the first
+        ToyTree in .treelist is returned.
+        """
+        if not self.all_tree_tip_labels_same():
+            raise Exception(
+                "All trees in treelist do not share the same set of tips")
+        return self.treelist[0].get_tip_labels()
