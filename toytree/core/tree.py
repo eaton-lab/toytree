@@ -11,7 +11,7 @@ References
 
 from __future__ import annotations
 from typing import (
-    Sequence, Dict, List, Optional, Iterator, Any, 
+    Sequence, Dict, List, Optional, Iterator, Any,
     Union, Tuple, TypeVar, Callable)
 import re
 from hashlib import md5
@@ -49,7 +49,7 @@ class ToyTree:
     """ToyTree class for manipulating and drawing trees.
 
     ToyTrees should generally be created using a constructor function
-    such as `toytree.tree` or `toytree.rtree`, to init a tree from 
+    such as `toytree.tree` or `toytree.rtree`, to init a tree from
     input data (e.g. newick) or random generators, respectively. This
     class can be used for type checking.
 
@@ -132,7 +132,7 @@ class ToyTree:
 
     def remove_feature(self, *feature: str) -> None:
         """Remove one or more non-deafult data features from all Nodes.
-    
+
         Cannot remove "idx", "name", "height", "dist", or "support".
         """
         for feat in feature:
@@ -210,7 +210,7 @@ class ToyTree:
         >>>     for idx, node in enumerate(tree.treenode.traverse(ord)):
         >>>         node.traverse_order = str(idx)
         >>>     tree.draw(
-        >>>         node_labels="traverse_order", 
+        >>>         node_labels="traverse_order",
         >>>         node_sizes=16, node_mask=False);
         """
         for node in self.treenode.traverse(strategy=strategy):
@@ -303,15 +303,89 @@ class ToyTree:
         regex: bool=False,
         root_dist: Optional[float] = None,
         edge_features: Optional[Sequence[str]] = None,
-        inplace: bool=False) -> ToyTree:
-        """..."""
+        inplace: bool=False,
+        ) -> ToyTree:
+        r"""Return a ToyTree rooted on the edge above selected Node query.
+
+        Rooting a tree involves splitting and edge to insert a new Node.
+        (It helps to think of it as pinching an edge and pulling it back
+        to create a new root).
+
+        Example of rooting an unrooted tree:
+                                                    x
+                                                   / \
+                      _ 2 _        root('n')      n   u
+                     |  |  |         -->             / \
+                     1  .  u                        2   .
+                          / \                      / \
+                         .   n                    1   .
+
+        Example of re-rooting a rooted tree:
+                       o                            x
+                      / \                          / \
+                     1   2         root('n')      n   u
+                        / \          -->             / \
+                       .   u                        2   .
+                          / \                      / \
+                         .   n                    1   .
+
+        Parameters
+        ----------
+        tree: ToyTree
+            A rooted or unrooted ToyTree to (re-)root.
+        *query: str, int, or Node
+            One or more Node selectors, which can be Node objects, names,
+            or int idx labels. If multiple are entered the MRCA node will
+            be used as the base of the edge to split.
+        regex: bool
+            If True then Node name strings are treated as regular
+            expressions that can match to multiple Nodes.
+        root_dist: None or float
+            The length (dist) along the root edge above the Node query
+            where the new root edge should be placed. Default is None
+            which will place root at the midpoint of the edge. A float
+            can be entered, but will raise ToyTreeError if > len of edge.
+        edge_features: Sequence[str]
+            One or more Node features that should be treated as a feature
+            of its edge, not the Node itself. On rooting, edge features
+            are re-polarized, to apply to the correct Node. The 'dist'
+            and 'support' features are always treated as edge features.
+            Add additional edge features here. See docs for example.
+        inplace: bool
+            If True the original tree is modified and returned, otherwise
+            a modified copy is returned.
+
+        Examples
+        --------
+        >>> tree = toytree.rtree.unittree(ntips=10, seed=123)
+        >>> t1 = tree.root("r8", "r9")
+        >>> t2 = tree.root("r8", "r9", root_dist=0.3)
+        >>> toytree.mtree([t1, t2]).draw();
+        """
         return self.mod.root(
-            self, *query, regex=regex, root_dist=root_dist,
+            *query, regex=regex, root_dist=root_dist,
             edge_features=edge_features, inplace=inplace
         )
 
-    def unroot(self, **kwargs) -> ToyTree:
-        return self.mod.unroot(**kwargs)
+    def unroot(self, inplace: bool=False) -> ToyTree:
+        """Return an unrooted ToyTree by collapsing the root Node.
+
+        This will convert a binary split into a multifurcation.
+        The Node idx values can change on unrooting because the number of
+        Nodes has changed.
+
+        Note
+        ----
+        The unrooting process is not destructive of information, you can
+        re-root a tree on the same edge position as before to recover the
+        same tree.
+
+        Parameters
+        ----------
+        inplace: bool
+            If True modify and return original tree, else return a copy.
+        """
+        return self.mod.unroot(inplace=inplace)
 
     #################################################
     ## NODES SEARCH/MATCH BY FLEXIBLE INPUTS
@@ -334,24 +408,24 @@ class ToyTree:
                 yield node
 
     def get_nodes(
-        self, 
+        self,
         *query: Query,
         regex: bool = False,
         ) -> Sequence[Node]:
         """Return a list of Nodes matching a flexible query.
 
-        Node instances can be selected by entering Node name strings, 
-        Node int idx labels, and/or Node objects. Input types are 
+        Node instances can be selected by entering Node name strings,
+        Node int idx labels, and/or Node objects. Input types are
         detected automatically, and even mixed input types can be
-        entered. Node name strings can also be entered as regular 
-        expressions (e.g., 'r[0-3]') to match multiple names, which 
+        entered. Node name strings can also be entered as regular
+        expressions (e.g., 'r[0-3]') to match multiple names, which
         will be expanded if `regex=True`. If no query is entered then
         all Nodes are returned (this is fast, uses cached data.)
 
         This function is used inside many other toytree functions that
-        similarly take `*Query` as an argument; any place users may 
+        similarly take `*Query` as an argument; any place users may
         want to use a flexible query method to select  a set of Nodes,
-        or their common ancestor. 
+        or their common ancestor.
 
         Parameters
         ----------
@@ -360,7 +434,7 @@ class ToyTree:
             label, or by entering a Node directly. Multiple values can
             be entered to return a list with all matching Nodes.
         regex: bool
-            If True then string queries are treated as regular 
+            If True then string queries are treated as regular
             expressions.
 
         Notes
@@ -392,7 +466,6 @@ class ToyTree:
                 nodes += list(self._iter_nodes_by_name_match(*strs, regex=regex))
 
         # NOTE: no longer returning in idx order, user order sometimes wanted.
-        logger.debug(nodes)
         return set(nodes)  # sorted(set(nodes), key=lambda x: x.idx)
 
     def get_mrca_node(
@@ -401,14 +474,14 @@ class ToyTree:
 
         Find and return the most-recent-common-ancestor Node instance
         based on input selectors that can be either Node names, Node
-        int idx labels, or Node objects. Input types are detected 
+        int idx labels, or Node objects. Input types are detected
         automatically and handled, so that even mixed input types can
         be entered (e.g., `get_mrca_node('a', 2, 3)`). If the selected
         Nodes do not share a common ancestor this will raise a
         ToytreeError. This function is useful for selecting and
         annotating clades on a tree drawing. Node names can also be
         entered as regular expressions to match multiple names, which
-        will be detected and expanded if `regex=True`. 
+        will be detected and expanded if `regex=True`.
 
         Parameters
         ----------
@@ -417,7 +490,7 @@ class ToyTree:
             labels, any of which can be used to select Nodes.
 
         regex: bool
-            If True then input node name strings are treated as 
+            If True then input node name strings are treated as
             regular expressions that can match one or more Nodes.
 
         Examples
@@ -451,23 +524,23 @@ class ToyTree:
         return self[mrca_idx]
 
     def get_node_mask(
-        self, 
+        self,
         *unmask: Query,
-        tips: bool=True, 
-        internal: bool=False, 
+        tips: bool=True,
+        internal: bool=False,
         root: bool=False,
         ) -> Sequence[bool]:
         """Return a boolean array to mask certain Nodes when drawing.
 
-        The array is in Node idxorder (from 0-nnodes) where boolean 
+        The array is in Node idxorder (from 0-nnodes) where boolean
         True will *mask* Nodes and False will *show* Nodes. Additional
         Nodes can be selected to be unmasked by entering Node int idx
         labels or name strings.
-        
+
         Parameters
         ----------
         *unmask: int or str
-            Additional Nodes selected by int or str labels will be 
+            Additional Nodes selected by int or str labels will be
             unmasked after applying the tips, internal, and root mask.
         tips: bool
             If True all tip Nodes will be masked.
@@ -495,9 +568,9 @@ class ToyTree:
         return arr
 
     def is_monophyletic(
-        self, 
-        *query: Query, 
-        regex: bool = False, 
+        self,
+        *query: Query,
+        regex: bool = False,
         # unrooted: bool=False,
         ) -> bool:
         """Return True if leaf Nodes form a monophyletic clade.
@@ -510,10 +583,10 @@ class ToyTree:
         Parameters
         ----------
         *query: Node, str, or int
-            One or more Node objects, Node name str, or Node idx int 
+            One or more Node objects, Node name str, or Node idx int
             labels to check for monophyly.
         regex: bool
-            If True then string queries are treated as regular 
+            If True then string queries are treated as regular
             expressions that can match multiple Node names.
         unrooted: bool
             If True then the selected Nodes are tested for monophyly
@@ -649,31 +722,42 @@ class ToyTree:
 
     def get_edges(self) -> pd.DataFrame:
         """Return a DataFrame with child -> parent idx labels.
-        
+
         To return as a numpy array instead of DataFrame you can use
-        tree._get_edges(). 
+        tree._get_edges().
         """
         return pd.DataFrame(self._get_edges(), columns=["child", "parent"])
 
     def _iter_bipartitions(
-        self, 
-        feature: str="name", 
+        self,
+        feature: str="name",
         tips_only: bool=True,
         ) -> List[List[str],List[str]]:
-        """Yield bipartitions in a tree. 
+        """Yield bipartitions in a tree.
 
         See get_bipartitions for docs. Rooting does not affect result.
         """
         cache = {}
-        root_nodes = 2 if self.is_rooted() else 1
-        allnodes = set(range(self.nnodes - root_nodes))
-        for nidx in allnodes:
+        ridx = self.treenode.idx
+        root_nodes = 1 if self.is_rooted() else 0
+        all_nodes = range(self.nnodes - root_nodes)
+        node_set = set(all_nodes)
+        for nidx in all_nodes[:-1]:
             if self[nidx].up:
+
+                # get nodes above and below this edge
                 below = {nidx}
                 for child in self[nidx].children:
                     below |= cache[child.idx]
                 cache[nidx] = below
-                other = allnodes - below
+                other = node_set - below
+
+                # remove ridx, and rm nidx if on same side
+                if ridx in below:
+                    below.discard(ridx)
+                    below.discard(nidx)
+                else:
+                    other.discard(ridx)
 
                 # limit to the tip Nodes
                 if tips_only:
@@ -690,30 +774,40 @@ class ToyTree:
                 if len(osort) == len(bsort):
                     yield sorted((osort, bsort))
                 else:
-                    yield sorted((osort, bsort), key=len)                
+                    yield sorted((osort, bsort), key=len)
 
     def get_bipartitions(
-        self, 
-        feature: str = "name", 
+        self,
+        feature: str = "name",
         tips_only: bool = True,
         ) -> pd.DataFrame:
         """Return a DataFrame with partitions in the tree.
-        
-        Partitions represent edges that separate sets of Nodes in a 
+
+        Partitions represent edges that separate sets of Nodes in a
         tree, and can be represented by the tips descended from each
-        side of the split, e.g., [['a', 'b'], ['c', 'd']]. Rooting 
-        has no effect on the partitions, since the root separates None
-        from all, e.g., [[], ['a', 'b', 'c', 'd']].
+        side of the split, e.g., [['a', 'b'], ['c', 'd']]. Options are
+        available to return all Nodes on either side of a partition,
+        instead of just the tips, and
 
         Partitions are usually used to find tip names present on either
         side of a split. For *some* use cases, it may be useful to find
-        other features, such as idx labels, on either side of each 
-        split, and even to get internal Node labels.
+        other features, such as idx labels, on either side of each
+        split, and even to get internal Node labels, which can be
+        toggled with options to this function.
+
+        Note
+        ----
+        The root Node is ignored, and so rooting has no effect on
+        the partitions. This is because the root separates None from
+        all, e.g., [[], ['a', 'b', 'c', 'd']], and the nodes on
+        either side of the root have the same partition, [['a', 'b'],
+        ['c', 'd']], only one of which is returned.
+
 
         Parameters
         ----------
         feature: str
-            The Node feature to return for every Node on each side of 
+            The Node feature to return for every Node on each side of
             a split. Default is "name".
         tips_only: bool
             If True (default) only tip Node features are returned.
@@ -730,22 +824,26 @@ class ToyTree:
         """
         return pd.DataFrame(self._iter_bipartitions(feature, tips_only))
 
-    def _get_bipartitions_table(self, dtype: type=bool) -> np.ndarray:
+    def _get_bipartitions_table(
+        self, tips_only: bool=True, dtype: type=int) -> np.ndarray:
         """Return a DataFrame with partitions in binary format."""
-        bits = list(self._iter_bipartitions("idx"))
-        arr = np.zeros(shape=(len(bits), self.ntips), dtype=dtype)
-        for idx in enumerate(bits):
-            arr[idx, bits[0]] = 1
+        bits = list(self._iter_bipartitions("idx", tips_only=tips_only))
+        arr = np.zeros(
+            shape=(len(bits), self.ntips if tips_only else self.nnodes - 1),
+            dtype=dtype,
+        )
+        for idx, bit in enumerate(bits):
+            arr[idx, bit[0]] = 1
         return arr
 
     def get_topology_id(self, feature="name") -> str:
         """Return a unique ID representing this topology.
 
-        Two trees with the same topology and tip names will produce 
+        Two trees with the same topology and tip names will produce
         the same id, i.e., the rotation of Nodes does not affect the
         geneated ID. Rooting/Unrooting does affect it. The ID string
-        is useful for identifying unique topologies among a set of 
-        trees without requiring distance comparisons. This method 
+        is useful for identifying unique topologies among a set of
+        trees without requiring distance comparisons. This method
         uses an md5 hash of a string of ordered Node names with
         the digest value represented as a string of hexadecimal digits.
 
@@ -753,7 +851,7 @@ class ToyTree:
         ----------
         features: str
             The feature used to represent tip Nodes (default='name').
-            This should be a feature that is unique among tip Nodes, 
+            This should be a feature that is unique among tip Nodes,
             and is relevant to identifying similarity among the trees
             you plan to compare using topology id strings.
 
@@ -807,7 +905,7 @@ class ToyTree:
 
     def get_tip_coordinates(self, **kwargs) -> pd.DataFrame:
         """Return a DataFrame with xy coordinates for tip nodes.
-    
+
         See `ToyTree.get_node_coordinates` for details.
         """
         return self.get_node_coordinates(**kwargs).iloc[self.ntips]
@@ -962,7 +1060,7 @@ class ToyTree:
                 "subpackage functions.")
 
         # make a copy of ToyTree to return
-        tree = self if inplace else self.copy() 
+        tree = self if inplace else self.copy()
 
         # ensure mapping is proper type
         if not isinstance(mapping, dict):
@@ -1069,7 +1167,7 @@ class ToyTree:
         Note
         ----
         This function is convenient for accessing data in tabular
-        format, but is slower than accessing data directly from Nodes, 
+        format, but is slower than accessing data directly from Nodes,
         for example during a traversal, because it spends time checking
         for Nodes with missing data, and type-checks missing values.
         """
@@ -1177,7 +1275,7 @@ class ToyTree:
     def _draw_browser(self, **kwargs):
         """Open and display tree drawing in default web browser.
 
-        TODO: overload toyplot function, option to reuse same tab, 
+        TODO: overload toyplot function, option to reuse same tab,
         add div styling, etc.
         Or, maybe make this at toytree level as `toytree.draw(canvas)`
         also make a `toytree.save()` shortcut to saving in formats.
@@ -1258,44 +1356,39 @@ class ToyTree:
             it. See documentation for examples of how this option is
             used to create composite drawings combining tree plots
             with other data plots.
-        tip_labels: Union[bool, List[str]]
+        tip_labels: bool or Sequence[str]
             If True tip labels ('name' features on tip nodes) are
             added to the plot; if False no tip labels are added. If a
             list of tip labels is provided it must be the same len as
             ntips and is applied in order to nodes by idx 0-ntips.
-        tip_labels_colors: [Color, Iterable[Color]]:
-            Any valid toyplot Color or Iterable of Colors to apply to
+        tip_labels_colors: Color or Sequence[Color]
+            Any valid toyplot Color or Sequence of Colors to apply to
             tip labels in node idx order.
-        tip_labels_style: Dict[str,str]
+        tip_labels_style: Dict[str, str]
             A dictionary of CSS style arguments to apply to text
             tip labels. See tree.style for options.
-
         tip_labels_align: bool
             If True tip names will be aligned and dashed edges will
             drawn to extend from tree edges to the tip names.
-
-        node_mask: Union[bool, Iterable[bool]]
+        node_mask: bool or Sequence[bool]
             Masks nodes (size, color, shape, label) if True, shows
             nodes if False. An iterable can be entered to selectively
             hide some nodes. The convenience function .get_node_mask()
             can be used to generate mask arrays. Default options
             vary among tree styles, but usually hide tip nodes.
-
-        node_labels: Union[bool, str, Iterable[str]]
+        node_labels: bool, str, or Sequence[str]
             Labels associated with nodes. True shows node idx labels,
             False hides node labels (sets to ""). A string or
             iterable of strings assigns labels to nodes 0-nnodes.
             An iterable of string values can be generated from node
             features using .get_node_data() or .get_node_labels(),
             the latter includes string formatting options.
-
-        node_sizes: Union[int, Iterable[int]]
+        node_sizes: int or Sequence[int]
             Size of node markers can be set as an integer or Iterable
             of integers in node order 0-nnodes. Node size 0 is hidden.
             The node_mask argument sets nodes to size 0 when masked,
             and overrides this argument.
-
-        node_colors: Union[str, Iterable[str]]
+        node_colors: str or Sequence[str]
             Color of node markers can be a single color or Iterable
             of colors in node order 0-nnodes. Any valid toyplot color
             (str, rgb array, rgba array, hex, etc) is accepted. See
@@ -1304,81 +1397,65 @@ class ToyTree:
             to the same color it is more efficient to use the
             node_style dictionary (node_style={"fill": 'red'}). If
             used, node_colors overrides 'fill' in node_style.
-
-        node_style: Dict[str,str]
+        node_style: Dict[str, str]
             A dict of valid CSS styles to apply to node markers, such
             as 'fill', 'stroke'. See tree.style for options.
-
-        node_hover: [True, False, Iterable[str]]
+        node_hover: True, False, or Sequence[str]
             Default is True in which case node hover will show the
             node values. If False then no hover is shown. If a list or
             dict is provided (which should be in node order) then the
             values will be shown in order. If a dict then labels can
             be provided as well.
-
-        node_markers: Iterable[str]
+        node_markers: str or Sequence[str]
             The shape of node markers: 'o'=circle, 's'=square. See
             toyplot documentation for all available options:
             https://toyplot.readthedocs.io/en/stable/markers.html
-
-        edge_colors: Union[str,Iterable[str]]
+        edge_colors: str or Sequence[str]
             A color or collection of colors nnodes in length to apply
             to edges in node idx order.
-
-        edge_widths: Union[float, Iterable[float]]
+        edge_widths: float or Sequence[float]
             A width arg in px units, or collection of widths to apply
             to edges in node idx order.
-
         edge_type: str
             Edges can be phylogram ('p') or cladogram ('c') type.
-
-        edge_style: Dict[str,Any]
+        edge_style: Dict[str, Any]
             A dictionary of valid CSS style args to apply to edge
             lines. See tree.style for available options.
-
-        edge_align_style: Dict[str,Any]
+        edge_align_style: Dict[str, Any]
             A dictionary of valid CSS style args to apply to aligned
             edge lines. See tree.style for available options.
-
         use_edge_lengths: bool
             If True edge lengths ('dist' features of TreeNodes) are
             represented in drawings. If False all terminal edges are
             extended to align tips at 0.
-
         scale_bar: bool
             If True then the axis corresponding to the height of the
             tree will be set to visible and tick marks will be auto-
             generated to span from time=0 to root height. The style
             of the axes can be further modified from the axes object
             after the draw function is called.
-
         padding: float
             Padding space between the drawing and the visible axes.
             Default is 20px.
-
         margin:
-
+            ...
         xbaseline: float
             Shift the position of the tree along x-axis.
-
         ybaseline: float
             Shift the position of the tree along y-axis.
-
-        admixture_edges: [Tuple, List[Tuple]]
+        admixture_edges: Tuple, List[Tuple]
             Admixture edges add colored edges to the plot in the
             style of the 'edge_align_style'. These will be drawn
             from (source, dest, height, width, color). Example:
             [(4, 3, 50000, 3, 'red')].
-
-        fixed_order: Iterable[str]
+        fixed_order: Sequence[str]
             An Iterable of tip labels in the order they should be
             plotted. The default is the node names in idx order
             0-ntips. These nodes will be plotted on the coordinates
             0-ntips on either the x or y-axis depending on the
             layout of the tree drawing. This is a convenient argument
             for visualizing discordance of trees.
-
-        fixed_position: List[float]
+        fixed_position: Sequence[float]
             The positions on the tip axis where ordered tips should
             be plotted. If None then default positions range(0, ntips)
             are used. By setting explicit positions tips can be
@@ -1392,7 +1469,7 @@ class ToyTree:
         >>> tree.draw();
         >>> canvas, axes, mark = tree.draw(ts="o", scale_bar=True);
         >>>
-        >>> # save drawing
+        >>> # save drawing to file.
         >>> import toyplot.svg
         >>> toyplot.svg.render(canvas, "saved-plot.svg")
         """
