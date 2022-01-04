@@ -15,8 +15,18 @@ from toytree.utils import ToytreeError
 
 logger = logger.bind(name="toytree")
 
+def _assign_names(tree: ToyTree, random: bool, rng: np.random.Generator) -> ToyTree:
+    """Return tree with tip names assigned."""
+    if not random:
+        for nidx in range(tree.ntips):
+            tree[nidx].name = f"r{nidx}"
+    else:
+        tidxs = rng.choice(range(tree.ntips), tree.ntips, replace=False)
+        for nidx in range(tree.ntips):
+            tree[nidx].name = f"r{tidxs[nidx]}"
+    return tree
 
-def rtree(ntips: int, seed: Optional[int] = None) -> ToyTree:
+def rtree(ntips: int, random_names: bool=False, seed: Optional[int] = None) -> ToyTree:
     """Return a random topology (fastest method). 
 
     Default values are set on node support (0) and dist (1.0) 
@@ -52,8 +62,7 @@ def rtree(ntips: int, seed: Optional[int] = None) -> ToyTree:
 
     # assign tip labels as r{idx} for leaf nodes.
     tree = ToyTree(root)
-    for nidx in range(tree.ntips):
-        tree[nidx].name = f"r{tree[nidx].idx}"
+    tree = _assign_names(tree, random_names, rng)
     return tree
 
 def unittree(
@@ -98,12 +107,7 @@ def unittree(
     tree.mod.edges_extend_tips_to_align(inplace=True)
 
     # randomize names
-    if random_names:
-        nums = rng.choice(nums, size=len(nums), replace=False)
-    else:
-        nums = range(tree.ntips)        
-    for nidx in range(tree.ntips):
-        tree[nidx].name = f"r{nums[nidx]}"
+    _assign_names(tree, random_names, rng)
     return tree
 
 def imbtree(
@@ -149,12 +153,7 @@ def imbtree(
     tree.mod.edges_scale_to_root_height(treeheight, inplace=True)
 
     # randomize names
-    nums = range(tree.ntips)
-    if random_names:
-        rng = np.random.default_rng(seed)
-        nums = rng.choice(nums, size=len(nums), replace=False)
-    for nidx in range(tree.ntips):
-        tree[nidx].name = f"r{nums[nidx]}"
+    _assign_names(tree, random_names, np.random.default_rng(seed))
     return tree
 
 def baltree(
@@ -220,12 +219,7 @@ def baltree(
     tree.mod.edges_scale_to_root_height(treeheight, inplace=True)
 
     # randomize names
-    nums = range(tree.ntips)
-    if random_names:
-        rng = np.random.default_rng(seed)
-        nums = rng.choice(nums, size=len(nums), replace=False)
-    for nidx in range(tree.ntips):
-        tree[nidx].name = f"r{nums[nidx]}"
+    _assign_names(tree, random_names, np.random.default_rng(seed))
     return tree
 
 def bdtree(
@@ -398,16 +392,9 @@ def bdtree(
 
     # update coords and return
     # tre = tre.mod.ladderize()
-    tre = ToyTree(root)
-
-    # rename tips so names are in order else random
-    nidx = list(range(tre.ntips))
-    if random_names:
-        rng.shuffle(nidx)
-    for idx, node in tre._idx_dict.items():
-        if node.is_leaf():
-            node.name = "r{}".format(nidx[idx])
-    return tre
+    tree = ToyTree(root)
+    _assign_names(tree, random_names, np.random.default_rng(seed))    
+    return tree
 
 
 # def coaltree(ntips, Ne, random_names=False, seed=None):
