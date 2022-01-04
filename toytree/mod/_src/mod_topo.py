@@ -68,7 +68,6 @@ def ladderize(tree, direction: bool=True, inplace: bool=False) -> ToyTree:
 def collapse_nodes(
     tree: ToyTree,
     *query: Query,
-    regex: bool=False,
     min_dist: float=1e-6,
     min_support: float=0,
     inplace: bool=False,
@@ -87,9 +86,6 @@ def collapse_nodes(
     *query: str, int, or Node
         One or more Node selectors, which can be Node objects, names, 
         or int idx labels.
-    regex: bool
-        If True then Node name strings are treated as regular 
-        expressions that can match to multiple Nodes.      
     min_dist: float
         The minimum dist (edge length) value allowed.
     min_support: float
@@ -97,6 +93,11 @@ def collapse_nodes(
     inplace: bool
         If True then the original tree is changed in-place, and 
         returned, rather than leaving original tree unchanged.
+
+    Note
+    ----
+    This will not delete the root Node. To do that you must use 
+    `toytree.mod.unroot`.
 
     Examples
     --------
@@ -109,12 +110,16 @@ def collapse_nodes(
     >>> tree = tree.collapse_nodes(min_dist=0.01, min_support=45)
     """
     tree = tree if inplace else tree.copy()
-    selected = [i.idx for i in tree.get_nodes(*query, regex=regex)]
+    if query == ():
+        selected = []
+    else:
+        selected = [i.idx for i in tree.get_nodes(*query)]
     for nidx in range(tree.nnodes):
         node = tree[nidx]
         if not node.is_leaf():
             if (node.dist < min_dist) | (node.support < min_support) | (nidx in selected):
-                node._delete()
+                if not node.is_root():
+                    node._delete()
     tree._update()
     return tree
 
@@ -202,7 +207,7 @@ def prune(
     tree = tree if inplace else tree.copy()
 
     # if nodes was entered as a single Node then make into a list
-    nodes = tree.get_nodes(*query, regex=regex)
+    nodes = list(tree.get_nodes(*query, regex=regex))
     nnodes = len(nodes)
 
     # add mrca nodes for each pair
@@ -249,7 +254,8 @@ def prune(
                 tree.treenode = node
                 tree._update()
                 return tree
-    # make orig root the root
+
+    # else, make orig root the root
     if len(tree.treenode.children) == 1:
         child = tree.treenode.children[0]
         for gchild in child.children:
@@ -322,7 +328,7 @@ def drop_tips(
     if not tipnames:
         logger.warning(f"No tips selected. Matched query: {nodes}")
     keeptips = [i for i in tree.get_tip_labels() if i not in tipnames]
-    tree.mod.prune(keeptips, preserve_branch_length=True, inplace=True)
+    tree.mod.prune(*keeptips, preserve_branch_length=True, inplace=True)
     return tree
 
 def resolve_polytomies(
