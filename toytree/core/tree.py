@@ -14,6 +14,7 @@ from typing import (
     Sequence, Dict, List, Optional, Iterator, Any,
     Union, Tuple, TypeVar, Callable)
 import re
+import itertools
 from hashlib import md5
 
 from loguru import logger
@@ -309,7 +310,9 @@ class ToyTree:
 
         Rooting a tree involves splitting and edge to insert a new Node.
         (It helps to think of it as pinching an edge and pulling it back
-        to create a new root).
+        to create a new root). This adds a Node to an unrooted tree,
+        or keeps the number of Nodes the same for an already rooted
+        tree, where the former root Node is discarded.
 
         Example of rooting an unrooted tree:
                                                     x
@@ -728,6 +731,70 @@ class ToyTree:
         """
         return pd.DataFrame(self._get_edges(), columns=["child", "parent"])
 
+    def _iter_quartets(self, feature: str="name") -> Tuple[Tuple[str, str]]:
+        """Yield quartets of tip names spanning each edge of a tree.
+
+        Does not sort the order of returned tuples. Stores a cache of
+        observed quartets to return only unique ones. Thus for very
+        large trees this can lead to memory errors.
+
+        Examples
+        --------
+        >>> small_tree = toytree.rtree.unittree(6)
+        >>> print(list(small_tree._iter_quartets()))
+        >>>
+        >>> large_tree = toytree.rtree.unittree(100)
+        >>> nquartets = sum(1 for i in large_tree._iter_quartets())
+        >>> print(f'nquartets={nquartets}')
+        """
+        cache = {i: {i} for i in range(self.ntips)}
+        ridx = self.treenode.idx
+        root_nodes = 1 if self.is_rooted() else 0
+        all_nodes = range(self.ntips, self.nnodes - root_nodes)
+        node_set = set(range(self.nnodes - root_nodes))
+        observed = set([])
+        for nidx in all_nodes[:-1]:
+            if self[nidx].up:
+
+                # get nodes above and below this edge
+                below = {nidx}
+                for child in self[nidx].children:
+                    below |= cache[child.idx]
+                cache[nidx] = below
+                other = node_set - below
+
+                # remove ridx, and rm nidx if on same side
+                if ridx in below:
+                    below.discard(ridx)
+                    below.discard(nidx)
+                else:
+                    other.discard(ridx)
+
+                # limit to the tip Nodes
+                below = (i for i in below if i < self.ntips)
+                other = (i for i in other if i < self.ntips)
+
+                # convert to requested type
+                below = (getattr(self[i], feature) for i in below)
+                other = (getattr(self[i], feature) for i in other)
+
+                # subsample 2 from each side of bipart.
+                # {0, 1, 2} -> {0, 1}, {0, 2}, and {1, 2}.
+                # Perhaps all {0, 1} quartets have already been done,
+                # we still need to visit all {0, 2} and {1, 2} so we
+                # check and skip redundant quartets below.
+                biquarts = itertools.product(
+                    itertools.combinations(below, 2),
+                    itertools.combinations(other, 2),
+                )
+
+                # iterate over quartets from this bipart and yield
+                # if it has not been visited yet.
+                for quart in biquarts:
+                    if quart not in observed:
+                        observed.add(quart)
+                        yield quart
+
     def _iter_bipartitions(
         self,
         feature: str="name",
@@ -736,6 +803,9 @@ class ToyTree:
         """Yield bipartitions in a tree.
 
         See get_bipartitions for docs. Rooting does not affect result.
+        This yields bipartition in idx order of visiting Node edges.
+        The labels within bipartitions are not ordered, unlike in
+        `get_bipartitions`, where ordering is performed.
         """
         cache = {}
         ridx = self.treenode.idx
@@ -769,12 +839,7 @@ class ToyTree:
                 other = (getattr(self[i], feature) for i in other)
 
                 # return in a consistent order
-                osort = sorted(other)
-                bsort = sorted(below)
-                if len(osort) == len(bsort):
-                    yield sorted((osort, bsort))
-                else:
-                    yield sorted((osort, bsort), key=len)
+                yield tuple(below), tuple(other)
 
     def get_bipartitions(
         self,
@@ -803,7 +868,6 @@ class ToyTree:
         either side of the root have the same partition, [['a', 'b'],
         ['c', 'd']], only one of which is returned.
 
-
         Parameters
         ----------
         feature: str
@@ -822,7 +886,16 @@ class ToyTree:
         >>> print(tree.get_bipartitions())
         >>> print(tree.get_bipartitions(feature="idx", tips_only=False))
         """
-        return pd.DataFrame(self._iter_bipartitions(feature, tips_only))
+        biparts = []
+        for bipart in sorted(self._iter_bipartitions(feature, tips_only), key=len):
+            below, other = bipart
+            osort = sorted(other)
+            bsort = sorted(below)
+            if len(osort) == len(bsort):
+                biparts.append(sorted((osort, bsort)))
+            else:
+                biparts.append(sorted((osort, bsort), key=len))
+        return pd.DataFrame(biparts)
 
     def _get_bipartitions_table(
         self, tips_only: bool=True, dtype: type=int) -> np.ndarray:
@@ -1519,8 +1592,10 @@ if __name__ == "__main__":
     print(tree.get_tip_labels())
 
     tree = tree.set_node_data("color", {i: "red" for i in (2,3,4)})
-    print(tree[3].color)
-    print(tree.features)
-    print(tree.get_node_data())
-    print(tree.get_tip_data("height"))
-    print(tree.get_node_mask())
+    # print(tree[3].color)
+    # print(tree.features)
+    # print(tree.get_node_data())
+    # print(tree.get_tip_data("height"))
+    # print(tree.get_node_mask())
+    print(list(tree._iter_quartets()))
+    print(tree.get_bipartitions())
