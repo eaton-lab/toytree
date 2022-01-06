@@ -2,19 +2,19 @@
 
 """Class to construct and return a consensus tree from multiple trees.
 
-Get consensus of unrooted tree topologies. Consensus can be calculated
-for t
-
 Speed
 -----
-Consensus function is fastest for topologies only, i.e., no extra
-features, since it only visits unique trees. However, if dist or 
-other features are requested then every tree is visited which can 
-be a bit slower.
+Reducing to only unique topologies costs as much time as just 
+visiting and computing on them, and would not allow getting dist
+values. So this visits all trees.
 
+TODO
+----
+Support getting mean, etc, of any feature on trees. This is a bit
+of work, needs to check all for int,float type. Not done.
 """
 
-from typing import TypeVar, Sequence, Dict, Optional, Tuple
+from typing import TypeVar, Dict, Optional, Tuple
 from loguru import logger
 import numpy as np
 from toytree.core.node import Node
@@ -43,7 +43,6 @@ class ConsensusTree:
         mtree: MultiTree,
         best_tree: Optional[ToyTree]=None,
         majority_rule_min: float=0.0,
-        # features: Optional[Sequence[str]] = None,
         ):
 
         # creates an unrooted copy of the original tree
@@ -52,12 +51,6 @@ class ConsensusTree:
             best_tree.set_node_data("support", default=0) 
             if best_tree else None)
         self.majority_rule_min = majority_rule_min
-        # self.features = features
-
-    # def _check_args(self):
-    #     """Check that input args are valid."""
-    #     disallowed = {"idx", "children", "up", "support", "dist"}
-    #     self.features = set(self.features) - disallowed
 
     def _iter_unique_trees(self):
         """Yield unique topologies and their counts from mtree."""
@@ -78,7 +71,7 @@ class ConsensusTree:
         features of the input trees will also be 
         """
         # returns ubipartitions (root has no effect)
-        best_tree_parts = list(self.best_tree._iter_bipartitions())
+        best_tree_parts = list(self.best_tree._iter_bipartitions("name", True, False))
 
         # mirror the support on the root Node's children
         cidxs = [i.idx for i in self.best_tree.treenode.children]
@@ -89,7 +82,7 @@ class ConsensusTree:
         for utree, count in self._iter_unique_trees():
 
             # iterate over ubipartitions in tree: [[['a'], ['b', 'c']], [...]]
-            for nidx, bipart in enumerate(utree._iter_bipartitions()):
+            for nidx, bipart in enumerate(utree._iter_bipartitions("name", True, False)):
                 if nidx >= self.best_tree.ntips:
                     try:
                         idx = best_tree_parts.index(bipart)
@@ -153,8 +146,6 @@ class ConsensusTree:
             setattr(node, "dist_max", dists.max().round(10))
             setattr(node, "dist_median", np.median(dists).round(10))
             setattr(node, "dist_std", dists.std().round(10))            
-            # for feat in self.features:
-                # setattr(node, )
 
             # visit existing nodes from SMALLEST to LARGEST
             # children iteratively if node is not an descendant.
@@ -228,7 +219,7 @@ class ConsensusTree:
         for utree in self.mtree:
 
             # iterate over ubipartitions in tree: [[['a'], ['b', 'c']], [...]]
-            for nidx, bipart in enumerate(utree._iter_bipartitions()):
+            for nidx, bipart in enumerate(utree._iter_bipartitions("name", True, False)):
                 # skip tip-only Nodes
                 node = utree[nidx]
                 # store the smaller half
