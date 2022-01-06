@@ -161,18 +161,15 @@ class CanvasSetup:
             self.style.width = self.style.height = radius
             return
 
+        # fit height and width by tree size.
         if self.style.layout in ("r", "l"):
-            # height fit by tree size
             if not self.style.height:
                 self.style.height = max(275, min(1000, 18 * self.tree.ntips))
-            # width fit by name size
             if not self.style.width:
                 self.style.width = max(250, min(500, 250 + 5 * self.lname))
         else:
-            # height fit by name size
             if not self.style.height:
                 self.style.height = max(250, min(500, 250 + 5 * self.lname))
-            # width fit by tree size
             if not self.style.width:
                 self.style.width = max(350, min(1000, 18 * self.tree.ntips))
 

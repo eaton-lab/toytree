@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""
-Random or fixed tree generation submodule.
+"""Random or fixed tree generation subpackage
 
 The :mod:`toytree.core.random.rtree` is accessible from the top-level
 of the toytree package as :mod:`toytree.rtree`. This module includes
