@@ -5,24 +5,28 @@
 """
 
 from typing import Union
-import toytree
 import numpy as np
 import pandas as pd
 from scipy import spatial
+import toytree
 
 
 def get_distance_matrix(
     data: Union[np.ndarray, pd.DataFrame]) -> pd.DataFrame:
-    """Return a DataFrame with pdist between all pairs of samples.
+    """Return pairwise distances between samples from a data matrix.
 
-    The distances measured between samples represents the euclidean
-    distance, also termed the Minkowski distance with p=2, and is 
-    calculated under the hood using `scipy.distance`.
+    D measured between samples represents the Euclidean distance, 
+    also termed the Minkowski distance with p=2, and is calculated
+    under the hood using `scipy.distance`.
 
     Note
     ----
     This method does not currently support missing data. Any missing
     values should be imputed before using.
+
+    Data should be quantitative (e.g., trait measurements) or binary,
+    however, multi-state characters (e.g., DNA sequences) should use
+    the option ...
 
     Examples
     --------
