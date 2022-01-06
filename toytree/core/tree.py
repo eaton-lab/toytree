@@ -798,21 +798,43 @@ class ToyTree:
     def _iter_bipartitions(
         self,
         feature: str="name",
-        tips_only: bool=True,
-        ) -> List[List[str],List[str]]:
-        """Yield bipartitions in a tree.
+        exclude_internal_labels: bool=True,
+        exclude_singleton_splits: bool=True,
+        ) -> Tuple[Tuple[str],Tuple[str]]:
+        """Yield bipartitions of a tree.
 
-        See get_bipartitions for docs. Rooting does not affect result.
-        This yields bipartition in idx order of visiting Node edges.
-        The labels within bipartitions are not ordered, unlike in
-        `get_bipartitions`, where ordering is performed.
+        Bipartitions are yielded in random order, but splits and labels
+        within bipartitions are sorted. Rooted/unrooted has no effect.
+
+        Parameters
+        ----------
+        feature: str
+            Feature to return to represent Nodes on either side of a
+            bipartition. Default is "name".
+        exclude_internal_labels: bool
+            Default is to only show tip Nodes on either side of a
+            bipartition, but internal Nodes can be included as well.
+        exclude_singleton_splits: bool
+            Default is to exclude singleton splits (e.g., {A | B,C,D})
+            since it is implicit that one exists for every tip Node,
+            but these can be included if requested.
+
+        Examples
+        --------
+        >>> splits = set(tree._iter_bipartitions())
         """
+        # store cache of desc below each node to reduce traversals
         cache = {}
         ridx = self.treenode.idx
+
+        # exclude last 0 (unrooted) or 1 (rooted) nodes
+        # exclude last 1 (unrooted) or 2 (rooted) edges
+        # important for: feature='idx' and exclude_internal_labels=False
         root_nodes = 1 if self.is_rooted() else 0
         all_nodes = range(self.nnodes - root_nodes)
+        all_edges = range(self.nnodes - (root_nodes + 1))
         node_set = set(all_nodes)
-        for nidx in all_nodes[:-1]:
+        for nidx in all_edges:
             if self[nidx].up:
 
                 # get nodes above and below this edge
@@ -830,35 +852,46 @@ class ToyTree:
                     other.discard(ridx)
 
                 # limit to the tip Nodes
-                if tips_only:
+                if exclude_internal_labels:
                     below = (i for i in below if i < self.ntips)
                     other = (i for i in other if i < self.ntips)
 
-                # convert to requested type
-                below = (getattr(self[i], feature) for i in below)
-                other = (getattr(self[i], feature) for i in other)
+                # convert to requested feature (name usually)
+                below = tuple(sorted(getattr(self[i], feature) for i in below))
+                other = tuple(sorted(getattr(self[i], feature) for i in other))
 
                 # return in a consistent order
-                yield tuple(below), tuple(other)
+                lenb = len(below)
+                leno = len(other)
+
+                # optionally skip singletons
+                if exclude_singleton_splits & ((leno == 1) | (lenb == 1)):
+                    continue
+
+                # yield as a tuple in order by len or name str
+                if lenb < leno:
+                    yield (below, other)
+                elif leno < lenb:
+                    yield (other, below)
+                else:
+                    if other[0] < below[0]:
+                        yield (other, below)
+                    else:
+                        yield (below, other)
 
     def get_bipartitions(
         self,
         feature: str = "name",
-        tips_only: bool = True,
+        exclude_internal_labels: bool=True,
+        exclude_singleton_splits: bool=True,
         ) -> pd.DataFrame:
         """Return a DataFrame with partitions in the tree.
 
-        Partitions represent edges that separate sets of Nodes in a
+        Partitions represent splits that separate sets of Nodes in a
         tree, and can be represented by the tips descended from each
         side of the split, e.g., [['a', 'b'], ['c', 'd']]. Options are
         available to return all Nodes on either side of a partition,
-        instead of just the tips, and
-
-        Partitions are usually used to find tip names present on either
-        side of a split. For *some* use cases, it may be useful to find
-        other features, such as idx labels, on either side of each
-        split, and even to get internal Node labels, which can be
-        toggled with options to this function.
+        instead of just the tips, but tips are generally of interest.
 
         Note
         ----
@@ -873,8 +906,13 @@ class ToyTree:
         feature: str
             The Node feature to return for every Node on each side of
             a split. Default is "name".
-        tips_only: bool
-            If True (default) only tip Node features are returned.
+        exclude_internal_labels: bool
+            Default is to only show tip Nodes on either side of a
+            bipartition, but internal Nodes can be included as well.
+        exclude_singleton_splits: bool
+            Default is to exclude singleton splits (e.g., {A | B,C,D})
+            since it is implicit that one exists for every tip Node,
+            but these can be included if requested.
 
         See Also
         --------
@@ -884,27 +922,21 @@ class ToyTree:
         --------
         >>> tree = toytree.rtree.unittree(4)
         >>> print(tree.get_bipartitions())
-        >>> print(tree.get_bipartitions(feature="idx", tips_only=False))
         """
-        biparts = []
-        for bipart in sorted(self._iter_bipartitions(feature, tips_only), key=len):
-            below, other = bipart
-            osort = sorted(other)
-            bsort = sorted(below)
-            if len(osort) == len(bsort):
-                biparts.append(sorted((osort, bsort)))
-            else:
-                biparts.append(sorted((osort, bsort), key=len))
-        return pd.DataFrame(biparts)
+        return pd.DataFrame(tuple(self._iter_bipartitions(
+            feature, exclude_internal_labels, exclude_singleton_splits)))
 
     def _get_bipartitions_table(
-        self, tips_only: bool=True, dtype: type=int) -> np.ndarray:
+        self,
+        exclude_internal_labels: bool=True,
+        exclude_singleton_splits: bool=False,
+        dtype: type=int,
+        ) -> np.ndarray:
         """Return a DataFrame with partitions in binary format."""
-        bits = list(self._iter_bipartitions("idx", tips_only=tips_only))
-        arr = np.zeros(
-            shape=(len(bits), self.ntips if tips_only else self.nnodes - 1),
-            dtype=dtype,
-        )
+        bits = list(self._iter_bipartitions(
+            "idx", exclude_internal_labels, exclude_singleton_splits))
+        cols = self.ntips if exclude_internal_labels else self.nnodes - 1
+        arr = np.zeros(shape=(len(bits), cols), dtype=dtype)
         for idx, bit in enumerate(bits):
             arr[idx, bit[0]] = 1
         return arr
