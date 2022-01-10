@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-"""
+"""toytree color utilities.
+
 The ToyColor class is used _internally_ by toytree to store 
 colors while plotting. This object is a superclass of a ndarray,
 consistent with the color representation in toyplot. It differs
@@ -11,7 +12,7 @@ the ColorMixer superclass.
 
 # pylint: disable=no-member
 
-from typing import Union, Tuple, List
+from typing import Union, Tuple, List, Optional, TypeVar
 import itertools
 import xml.etree.ElementTree as xml
 import numpy as np
@@ -21,14 +22,29 @@ import pandas as pd
 from toytree.core.drawing.render import style_to_string
 from toytree.utils import ToytreeError
 
+Palette = TypeVar("Palette")
 
+# default toytree color palettes
 COLORS1 = toyplot.color.brewer.palette("Set2")
 COLORS2 = toyplot.color.brewer.palette("Dark2")
 
-def color_cycler(palette=None):
-    """
-    Returns an infinite cycling iterator over colors in a palette
-    by returning `itertools.cycle(palette)`.    
+def color_cycler(palette: Optional[Palette]=None):
+    """Return an infinite cycling iterator over colors in a palette.
+
+    This returns a generator that will cycle the palette infinitely. 
+    If palette is None it uses `toytree.color.COLORS1` palette.
+
+    Note
+    ----
+    Do NOT call `list(color_cycler())` since it is infinite. Instead
+    you should iterate from the generator with `next`.
+
+    Example
+    --------
+    >>> tree = toytree.rtree.unittree(25)
+    >>> icolors = toytree.color.color_cycler(toytree.color.COLORS2)
+    >>> tipcolors = [next(icolors) for i in tree.get_tip_labels()]
+    >>> tree.draw(tip_labels_colors=tipcolors)
     """
     if palette is None:
         palette = COLORS1
@@ -201,7 +217,7 @@ if __name__ == "__main__":
     col0 = ToyColor(COLOR)
     col1 = ToyColor("red")
     col2 = ToyColor("#262626")
-    col3 = ToyColor(toytree.colors[0])
+    col3 = ToyColor(toytree.color.COLORS1[0])
 
     for col in (col0, col1, col2, col3):
         print(f"{col.css}\t{col.rgba}\t{col}")
