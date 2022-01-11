@@ -14,19 +14,23 @@ TODO: move tip angle estimation code to this module, since it will
 be relevant for unrooted tree layouts.
 """
 
-from typing import List
+from typing import List, TypeVar
 from copy import deepcopy
 import numpy as np
 from loguru import logger
 from toytree.core.style.tree_style import get_tree_style, TreeStyle, SubStyle
 from toytree.utils import ToytreeError
 
-
-logger = logger.bind(name="toytree")
+ToyTree = TypeVar("ToyTree")
+ogger = logger.bind(name="toytree")
 
 
 class Layout:
     """Layout class to get Node drawing coordinates given style args.
+
+    Style args affecting the node layout projection include:
+        'layout': 'r', 'l', 'u', 'd', 'c', 'cx-y', '*'
+        ...
 
     """
     def __init__(self, tree, **kwargs):
@@ -184,6 +188,99 @@ class Layout:
         return np.array(coords)
 
 
+def equal_daylight_algorithm(tree: ToyTree, max_iter: int=1) -> float:
+    """Return coordinates for unrooted layout under the eda algorithm.
+    
+    This algorithm equalizes the sizes of angular gaps between 
+    subtrees. As Felsenstein said, the result is "outstanding".
+
+    References
+    ----------
+    - Felsenstein 2004, page 582 (and see Figure 34.6).
+    """
+    # get the equal angle algorithm tree as a starting tree.
+    coords = equal_angle_algorithm(tree)
+
+    # get all leaves as a set
+    leaves = {tree[i] for i in range(tree.ntips)}
+
+    # visit each internal node.
+    for nidx in range(tree.ntips, tree.nnodes)[::-1]:
+
+        # select this internal node and its current coordinates
+        node = tree[nidx]
+        pos = coords[nidx]
+
+        # get the 3 or more subtrees from this vertex
+        subsets = [set(i.get_leaves()) for i in node.children]
+        subsets.append(leaves - set.union(*subsets))
+
+        # record where the light and shade is...
+        light = []
+        shade = []
+
+        # get daylight between subtrees as lines from this node to 
+        # their tips, finding largest windows.
+        for subset in subsets:
+            for node in subset:
+                npos = coords[node.idx]
+
+                # line is
+                delta_x = pos[0] - npos[0]
+                delta_y = pos[1] - npos[1]
+                print(f"{nidx},{node.name}, {np.rad2deg(np.arctan(delta_y / delta_x)):.3f}")
+
+
+
+def equal_angle_algorithm(tree: ToyTree) -> float:
+    """Return coordinates for unrooted layout under the 'eaa' algorithm.
+
+    Assign the root node a sector from 0-360 degrees, and divide each
+    descendent node into subsectors with size weighted by their n
+    descendants.
+
+    References
+    ----------
+    - Felsenstein (2004), page 578.
+    """
+    coords = np.zeros(shape=(tree.nnodes, 2))
+
+    # if tree is rooted then use root Node as the central vertex.
+    ntips = tree.ntips
+    radians_per_tip = 2 * np.pi / ntips
+
+    # record the sum of sector area for each Node as its N 
+    # descendants * the radians per tip.
+    for node in tree.traverse("postorder"):
+        if node.is_leaf():
+            node.radian_sum = radians_per_tip
+        else:
+            node.radian_sum = sum(i.radian_sum for i in node.children)
+
+    # assign radian sectors in levelorder.
+    for node in tree.traverse("levelorder"):
+        if node.is_root():
+            coords[node.idx] = (0, 0)
+            node.sector = [0, 2 * np.pi]
+        else:
+            cohort = node.up.children
+            idx = cohort.index(node)
+            if not idx:
+                start = node.up.sector[0]
+            else:
+                start = cohort[idx - 1].sector[1]
+            node.sector = [start, start + node.radian_sum]
+            mid = sum(node.sector) / 2.
+
+            # geometry relative to parent position and angle
+            parent_pos = coords[node.up.idx]
+            hypo = node.dist
+            newx = parent_pos[0] + (hypo * np.sin(mid))
+            newy = parent_pos[1] - (hypo * np.cos(mid))            
+            coords[node.idx] = (newx, newy)
+    return coords
+
+
 if __name__ == "__main__":
 
     import toytree
@@ -195,4 +292,40 @@ if __name__ == "__main__":
         fixed_position=None,
         xbaseline=10,
     )
-    print(lay.coords)
+    # print(lay.coords)
+
+    # NWK = "(((((((A:4,B:4):6,C:5):8,D:6):3,E:21):10,((F:4,G:12):14,H:8):13):13,((I:5,J:2):30,(K:11,L:11):2):17):4,M:56);"
+    NWK = "(((E,F),(G, H)),((C,D),(B,(I,J)),A));"
+    TRE = toytree.tree(NWK)
+    #TRE._draw_browser(ts='s', use_edge_lengths=True)
+    # print(equal_angle_algorithm(TRE))
+    print(equal_daylight_algorithm(TRE))
+    # print(equal_daylight_algorithm(tre))
+
+    # lay = Layout(
+    #     tre, 
+    #     layout='c', 
+    #     fixed_order=tre.get_tip_labels()[::-1],
+    #     fixed_position=None,
+    #     xbaseline=10,
+    # )
+    # print(lay.coords)
+
+    # lay = Layout(
+    #     tre, 
+    #     layout='c0-180', 
+    #     fixed_order=tre.get_tip_labels()[::-1],
+    #     fixed_position=None,
+    #     xbaseline=10,
+    # )
+    # print(lay.coords)
+
+    # # unrooted layout 
+    # lay = Layout(
+    #     tre, 
+    #     layout="*",
+    #     fixed_order=tre.get_tip_labels()[::-1],
+    #     fixed_position=None,
+    #     xbaseline=10,
+    # )
+    # print(lay.coords)
