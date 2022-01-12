@@ -53,3 +53,4 @@ utils/src/constants/
 from toytree.utils.src.toytree_sequence import ToyTreeSequence as toytree_sequence
 from toytree.utils.src.exceptions import *
 from toytree.utils.src.scrollable_canvas import ScrollableCanvas
+from toytree.utils.src.browser import show
