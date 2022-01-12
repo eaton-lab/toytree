@@ -42,10 +42,10 @@ from typing import (
 from copy import deepcopy
 import numpy as np
 import pandas as pd
-
+from loguru import logger
 from toytree.core.tree import ToyTree
 from toytree.core.tree import Node
-from toytree.core.style.tree_style import TreeStyle, get_tree_style
+from toytree.core.style import TreeStyle, get_base_style_from_name
 from toytree.core.drawing.canvas_setup import GridSetup, CanvasSetup
 # from toytree.core.drawing.render import ToytreeMark
 from toytree.core.drawing.canvas_setup import style_ticks
@@ -57,6 +57,7 @@ Canvas = TypeVar("Canvas")
 Cartesian = TypeVar("Cartesian")
 Mark = TypeVar("Mark")
 Query = TypeVar("Query", str, int, Node)
+logger = logger.bind(name="toytree")
 
 
 class MultiTree:
@@ -82,7 +83,7 @@ class MultiTree:
         """List of ToyTree objects in the MultiTree."""
 
         # self.data: pd.DataFrame = self._init_data(treelist, data)
-        """DataFrame with tree metadata (e.g., ipcoal.Model.df)."""
+        # """DataFrame with tree metadata (e.g., ipcoal.Model.df)."""
     # def _init_data(self, treelist, data: Optional[pd.DataFrame]):
     #     if data is None:
     #         data = pd.DataFrame(
@@ -161,42 +162,86 @@ class MultiTree:
 
     def write(
         self,
-        path: Optional[str],
-        tree_format:int=0,
-        features: Optional[Sequence[str]]=None,
-        dist_formatter:str="%0.6g",
+        path: Optional[str] = None,
+        dist_formatter: str = "%.6g",
+        internal_labels: Optional[str] = "support",
+        internal_labels_formatter: Optional[str] = "%.6g",
+        features: Optional[Sequence[str]] = None,
+        features_prefix: str = "&",
+        features_delim: str = ",",
+        features_assignment: str = "=",
+        **kwargs,
         ) -> Optional[str]:
-        """Write a multi-line string of newick trees.
+        """Write tree to newick string and return or write to filepath.
 
-        The output is written to stdout or a file path, and each
-        newick string can be formatted just like when calling
-        `write` from a standard ToyTree.
+        The newick string can be formatted in several ways. The default
+        will include dist values (edge lengths) and support values as
+        internal node labels. The edge lengths can be suppressed by
+        setting `dist_formatter=None`, and internal node labels can be
+        similarly suppressed, or set to store a different feature, such
+        as internal node names. Additional features can be stored in the
+        node comment blocks in extended-newick-format (NHX-like) by using
+        the "features" arguments (see examples).
 
         Parameters
         ----------
-        path: Optional[str]
-            A valid file path string or None (prints to stdout).
-        tree_format: int
-            The newick tree format.
+        tree: ToyTree
+            A ToyTree instance to write as a newick string.
+        path: str or None
+            A filepath to write to file, or None to return newick string.
+        dist_formatter: str or None
+            A formatting string to format float dist values (edge lengths),
+            or None to not write dist values. Default is "%.6g".
+        internal_labels: str or None
+            A feature to write as internal node labels. None suppresses
+            internal labels. The 'support' feature is default, and 
+            often used here, but 'name' or any other feature can be 
+            used as well.
+        internal_labels_formatter: str or None
+            A formatting string to format internal labels. If an internal
+            label cannot be formatted due to TypeError (e.g., you select
+            'name' for `internal_labels` but leave this optional at its
+            default as a float formatter '%.6g', instead of str formatter)
+            it will simply be converted to a string.
         features: List[str]
-            A list of feature names to include as data in extended
-            newick format (NHX).
-        dist_formatter: str
-            A formatting string to use for dist value floating point.
+            A list of additional features to write in the newick comment
+            block. For example, features=["height"] will save heights.
+        features_prefix: str
+            A prefix character written to the start of newick comment
+            blocks. Typical values are "&" (default) or "&&NHX:".
+        features_delim: str
+            A character used to delimit features in the newick comment
+            block. Default is ",".
+        features_assignment: str
+            A character used to separate feature keys and values. Default
+            is "=".
+
+        See Also
+        --------
+        `write_nexus`
+            Write tree newick string in a NEXUS format.
+        `ToyTree.write`
+            This function is available from ToyTree objects as `.write`.
         """
-        treestr = "\n".join([
-            i.write(
-                path=None,
-                tree_format=tree_format,
+        if kwargs:
+            logger.warning(
+                f"Deprecated args to write(): {list(kwargs.values())}. See docs.")        
+        newicks = []
+        for tree in self:
+            newicks.append(tree.write(
+                path=None, dist_formatter=dist_formatter, 
+                internal_labels=internal_labels,
+                internal_labels_formatter=internal_labels_formatter,
                 features=features,
-                dist_formatter=dist_formatter,
-            )
-            for i in self.treelist]
-        )
-        if not path:
-            return treestr
-        with open(path, 'w') as outtre:
-            outtre.write(treestr)
+                features_prefix=features_prefix,
+                features_delim=features_delim,
+                features_assignment=features_assignment,
+            ))
+        newicks = "\n".join(newicks)
+        if path is None:
+            return newicks
+        with open(path, 'w', encoding="utf-8") as out:
+            out.write(newicks)
         return None
 
     def get_consensus_tree(
@@ -254,8 +299,9 @@ class MultiTree:
         self,
         *query: Query,
         regex: bool=False,
+        root_dist: Optional[float] = None,
+        edge_features: Optional[Sequence[str]] = None,
         inplace: bool=False,
-        **kwargs,
         ) -> MultiTree:
         """Return a MultiTree with all ToyTrees in treelist rooted.
 
@@ -264,15 +310,33 @@ class MultiTree:
 
         Parameters
         ----------
-        ...
-
-        Examples
-        --------
-        >>> ...
+        *query: str, int, or Node
+            One or more Node selectors, which can be Node objects, names,
+            or int idx labels. If multiple are entered the MRCA node will
+            be used as the base of the edge to split.
+        regex: bool
+            If True then Node name strings are treated as regular
+            expressions that can match to multiple Nodes.
+        root_dist: None or float
+            The length (dist) along the root edge above the Node query
+            where the new root edge should be placed. Default is None
+            which will place root at the midpoint of the edge. A float
+            can be entered, but will raise ToyTreeError if > len of edge.
+        edge_features: Sequence[str]
+            One or more Node features that should be treated as a feature
+            of its edge, not the Node itself. On rooting, edge features
+            are re-polarized, to apply to the correct Node. The 'dist'
+            and 'support' features are always treated as edge features.
+            Add additional edge features here. See docs for example.
+        inplace: bool
+            If True the original tree is modified and returned, otherwise
+            a modified copy is returned.
         """
         mtree = self if inplace else self.copy()
         for tree in mtree:
-            tree.root(*query, regex=regex, inplace=True, **kwargs)
+            tree.root(*query,
+                regex=regex, root_dist=root_dist,
+                edge_features=edge_features, inplace=True)
         return mtree
 
     def unroot(self, inplace: bool=False) -> MultiTree:
@@ -284,55 +348,56 @@ class MultiTree:
 
     ################################################################
     # Tree Comparison/Distance functions
-    #
+    # >>> toytree.distance.get_treedist_rf(mtre[0], mtre[1])
+    # >>> toytree.distance.get_treedist_matrix(*mtre.treelist)
     ################################################################
 
-    def get_tree_distance(self, idx0: int, idx1: int, metric: str = "rf") -> float:
-        """Return a distance metric comparing two trees.
+    # def get_tree_distance(self, idx0: int, idx1: int, metric: str = "rf") -> float:
+    #     """Return a distance metric comparing two trees.
 
-        Trees are indexed from the treelist by indices idx0 and idx1.
+    #     Trees are indexed from the treelist by indices idx0 and idx1.
 
-        Parameters
-        ----------
-        idx0: int
-            Index of a tree from the treelist.
-        idx1: int
-            Index of a tree from the treelist.
-        metric: str
-            Name of a supported tree distance metric. For available
-            options see `toytree.distance.treedist`.
-        **kwargs: Dict
-            Additional options accepted by tree distance method.
+    #     Parameters
+    #     ----------
+    #     idx0: int
+    #         Index of a tree from the treelist.
+    #     idx1: int
+    #         Index of a tree from the treelist.
+    #     metric: str
+    #         Name of a supported tree distance metric. For available
+    #         options see `toytree.distance.treedist`.
+    #     **kwargs: Dict
+    #         Additional options accepted by tree distance method.
 
-        Examples
-        --------
-        >>> ...
-        """
-        return get_tree_distance(
-            self[idx0], self[idx1], metric=metric, **kwargs)
+    #     Examples
+    #     --------
+    #     >>> ...
+    #     """
+    #     return get_tree_distance(
+    #         self[idx0], self[idx1], metric=metric, **kwargs)
 
-    def get_tree_distance_matrix(self, ) -> float:
-        """TODO..."""
+    # def get_tree_distance_matrix(self, ) -> float:
+    #     """TODO..."""
 
-    def get_tree_distance_distribution(
-        self, ) -> np.ndarray:
-        """Return a distribution of tree distances.
+    # def get_tree_distance_distribution(
+    #     self, ) -> np.ndarray:
+    #     """Return a distribution of tree distances.
 
-        Tree distances are measure between pairs of trees, but several
-        options are available for how pairs will be sampled, including
-        'random', 'consensus', or 'distance'.
+    #     Tree distances are measure between pairs of trees, but several
+    #     options are available for how pairs will be sampled, including
+    #     'random', 'consensus', or 'distance'.
 
-        Parameters
-        ----------
+    #     Parameters
+    #     ----------
 
-        Returns
-        -------
-        pd.DataFrame?
+    #     Returns
+    #     -------
+    #     pd.DataFrame?
 
-        Examples
-        --------
-        >>> ...
-        """
+    #     Examples
+    #     --------
+    #     >>> ...
+    #     """
 
 
     ################################################################
@@ -360,7 +425,9 @@ class MultiTree:
         Parameters
         ----------
         shape: Tuple[int,int]
-            A tuple of (nrows, ncolumns) for tree grid drawing.
+            A tuple of (nrows, ncolumns) for a tree grid drawing. The
+            dimension of this matrix determines the number of trees
+            that will be plotted.
         shared_axes (bool):
             If True then the 'height' dimension will be shared among
             all trees, otherwise each tree is scaled to fill the
@@ -369,8 +436,7 @@ class MultiTree:
             The indices of trees in treelist that you want to draw. By
             default the first ncols*nrows trees are drawn, but you can
             select the 10-14th tree by entering idxs=[10,11,12,13].
-            The selected trees will be displayed in the grid setup by
-            the shape argument.
+            The selected trees will be displayed in the grid.
         width (int):
             Width of the canvas
         height (int):
@@ -422,9 +488,9 @@ class MultiTree:
 
         # get layout first from direct arg then from treestyle
         if "ts" in kwargs:
-            layout = get_tree_style(kwargs.get("ts")).layout
+            layout = get_base_style_from_name(kwargs.get("ts")).layout
         elif "tree_style" in kwargs:
-            layout = get_tree_style(kwargs.get("ts")).layout
+            layout = get_base_style_from_name(kwargs.get("ts")).layout
         else:
             layout = kwargs.get("layout", 'r')
 
