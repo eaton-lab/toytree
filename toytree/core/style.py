@@ -17,27 +17,27 @@ import toyplot
 from loguru import logger
 import numpy as np
 import pandas as pd
-from toytree.core.node_assist import NodeAssist
-from toytree.core.style.color import ToyColor, Color, color_parser, color_cycler
+from toytree.color.src.color import ToyColor, Color, color_parser, color_cycler
 from toytree.utils.transform import normalize_values
-from toytree.utils import ToytreeError
+# from toytree.utils import ToytreeError
 
 
 class EdgeType(str, Enum):
-    cladogram = 'c'
-    phylogram = 'p'
-    bezier = 'b'
+    CLADOGRAM = 'c'
+    PHYLOGRAM = 'p'
+    BEZIER = 'b'
 
 class LayoutType(str, Enum):
-    right = 'right'
-    left = 'left'
-    down = 'down'
-    up = 'up'
-    circle = 'circular'
+    RIGHT = 'right'
+    LEFT = 'left'
+    DOWN = 'down'
+    UP = 'up'
+    CIRCLE = 'circular'
     #unrooted = 'unrooted'
 
 class SubStyle:
-    """
+    """A subclass of Style for CSS on markers.
+
     When converted to dict the keys of substyles will be changed
     from e.g., _toyplot_anchor_shift to -toyplot-anchor-shift.
     """
@@ -96,7 +96,9 @@ class TipLabelsStyle(SubStyle):
 class TreeStyle:
     """TreeStyle is a dict-like object for setting/getting style args.
 
-    ToyTree objects can ...
+    TreeStyle validates input style arguments; expands shortcut
+    references to styles before calls to draw; and can serialize 
+    style args for displaying when .style is called interactively.
 
     Example
     -------
@@ -106,7 +108,8 @@ class TreeStyle:
 
     Note
     ----
-    The function `._validate()` ...
+    The function `._validate()` takes args for whether to serialize
+
     tree.style._validate(tree)
     """
     # inherited from tree at validation steps
@@ -220,7 +223,6 @@ class TreeStyle:
                     setattr(self, key, ToyColor(values).css)
                 else:
                     setattr(self, key, values.tolist())
-
 
     def _validate_node_colors(self):
         """
@@ -498,11 +500,18 @@ class TreeStyle:
 
 
     def _validate_admixture_edges(self):
-        """
-        Expand to a list of tuples of form:
-        admixture_edges = [
-            (src_idx, dest_idx, (src_time, dest_time), styledict, label)
-        ]
+        """Expand admixture args to a list of tuples.
+
+        The source and dest Nodes can be selected using either their
+        Node int idx label, or Node name str, or multiple Node name
+        strs, the latter of which will select the MRCA Node.
+
+        The proper format should be:
+        
+        >>> admixture_edges = [
+        >>>     (src_idx, dest_idx, (src_time, dest_time), dict, str)
+        >>> ]
+
         """
         # bail if empty
         if self.admixture_edges is None:
@@ -518,28 +527,30 @@ class TreeStyle:
         for atup in self.admixture_edges:
 
             # required: src node idx from Union[int, str, Iterable[str]]
-            if isinstance(atup[0], (str, list, tuple)):
-                nas = NodeAssist(self.tree, atup[0], None, None)
-                node = nas.get_mrca()
-                if not node.is_root():
-                    src = node.idx
-                else:
-                    nas.match_reciprocal()
-                    src = nas.get_mrca().idx
-            else:
-                src = int(atup[0])
+            src = self.tree.get_mrca_node(*atup[0]).idx
+            # if isinstance(atup[0], (str, list, tuple)):
+            #     nas = NodeAssist(self.tree, atup[0], None, None)
+            #     node = nas.get_mrca()
+            #     if not node.is_root():
+            #         src = node.idx
+            #     else:
+            #         nas.match_reciprocal()
+            #         src = nas.get_mrca().idx
+            # else:
+            #     src = int(atup[0])
 
             # required: dest node idx from Union[int, str, Iterable[str]]
-            if isinstance(atup[1], (str, list, tuple)):
-                nas = NodeAssist(self.tree, atup[1], None, None)
-                node = nas.get_mrca()
-                if not node.is_root():
-                    dest = node.idx
-                else:
-                    nas.match_reciprocal()
-                    dest = nas.get_mrca().idx
-            else:
-                dest = int(atup[1])
+            dest = self.tree.get_mrca_node(*atup[1]).idx
+            # if isinstance(atup[1], (str, list, tuple)):
+            #     nas = NodeAssist(self.tree, atup[1], None, None)
+            #     node = nas.get_mrca()
+            #     if not node.is_root():
+            #         dest = node.idx
+            #     else:
+            #         nas.match_reciprocal()
+            #         dest = nas.get_mrca().idx
+            # else:
+            #     dest = int(atup[1])
 
             # optional: proportion on edges
             if len(atup) > 2:
@@ -775,8 +786,8 @@ STYLE_DICTS = {
 }    
 
 
-def get_tree_style(tree_style: str="n") -> TreeStyle:
-    """Return a standard TreeStyle instance indexed by first letter
+def get_base_style_from_name(tree_style: str="n") -> TreeStyle:
+    """Return a base TreeStyle indexed by unique str name prefix
     """
     tree_style = tree_style.lower()[0]
     style = STYLE_DICTS[tree_style]

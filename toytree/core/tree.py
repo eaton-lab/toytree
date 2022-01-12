@@ -11,7 +11,7 @@ References
 
 from __future__ import annotations
 from typing import (
-    Sequence, Dict, List, Optional, Iterator, Any,
+    Sequence, Dict, List, Optional, Iterator, Any, Set,
     Union, Tuple, TypeVar, Callable)
 import re
 import itertools
@@ -24,15 +24,14 @@ from toyplot import Canvas
 from toyplot.coordinates import Cartesian
 
 # subpackage object APIs
-from toytree.core.style.tree_style import TreeStyle
+from toytree.core.style import TreeStyle
 from toytree.mod._src.api import TreeModAPI
 from toytree.distance._src.api import DistanceAPI
 
 from toytree.core.node import Node
 from toytree.utils import ToytreeError
-from toytree.core.layout import Layout
 from toytree.core.drawing.render import ToytreeMark
-from toytree.core.drawing.draw_toytree2 import draw_toytree
+from toytree.core.drawing.draw_toytree import draw_toytree, get_layout, get_tree_style
 import toytree
 # from toytree.io import write_newick
 # from toytree.pcm.api import PhyloCompAPI
@@ -65,9 +64,9 @@ class ToyTree:
         self.treenode = treenode
         """: The root Node; connected Nodes form the tree structure."""
         self.nnodes: int = 0
-        """: number of Nodes in the tree."""
+        """: number of Nodes in the tree. Automatically updated."""
         self.ntips: int = 0
-        """: number of leaf Nodes (tips) in the tree."""
+        """: number of leaf Nodes (tips) in the tree. Automatically updated."""
         self.style = TreeStyle()
         """: dict-like class for setting base drawing styles."""
         self._idx_dict: Dict[int, Node] = {}
@@ -469,7 +468,7 @@ class ToyTree:
                 nodes += list(self._iter_nodes_by_name_match(*strs, regex=regex))
 
         # NOTE: no longer returning in idx order, user order sometimes wanted.
-        return set(nodes)  # sorted(set(nodes), key=lambda x: x.idx)
+        return list(set(nodes))  # sorted(set(nodes), key=lambda x: x.idx)
 
     def get_mrca_node(
         self, *query: Query, regex: bool = False) -> Node:
@@ -654,10 +653,10 @@ class ToyTree:
             A formatting string to format float dist values (edge lengths),
             or None to not write dist values. Default is "%.6g".
         internal_labels: str or None
-            A feature to write as internal node labels. The 'support'
-            feature is the default, and often used here, but 'name' is
-            sometimes used as well. Any feature can be selected, or None
-            to not write internal labels.
+            A feature to write as internal node labels. None suppresses
+            internal labels. The 'support' feature is default, and 
+            often used here, but 'name' or any other feature can be 
+            used as well.
         internal_labels_formatter: str or None
             A formatting string to format internal labels. If an internal
             label cannot be formatted due to TypeError (e.g., you select
@@ -885,13 +884,15 @@ class ToyTree:
         exclude_internal_labels: bool=True,
         exclude_singleton_splits: bool=True,
         ) -> pd.DataFrame:
-        """Return a DataFrame with partitions in the tree.
+        """Return a DataFrame with partitions from tree in idx order.
 
         Partitions represent splits that separate sets of Nodes in a
         tree, and can be represented by the tips descended from each
         side of the split, e.g., [['a', 'b'], ['c', 'd']]. Options are
         available to return all Nodes on either side of a partition,
         instead of just the tips, but tips are generally of interest.
+        The index of the returned DataFrame corresponds to the Node
+        idx label below the edge of each partition.
 
         Note
         ----
@@ -923,15 +924,20 @@ class ToyTree:
         >>> tree = toytree.rtree.unittree(4)
         >>> print(tree.get_bipartitions())
         """
-        return pd.DataFrame(tuple(self._iter_bipartitions(
-            feature, exclude_internal_labels, exclude_singleton_splits)))
+        biparts = list(self._iter_bipartitions(
+            feature, exclude_internal_labels, exclude_singleton_splits))
+        if exclude_singleton_splits:
+            index = range(self.ntips, self.ntips + len(biparts))
+        else:
+            index = None
+        return pd.DataFrame(biparts, index=index)
 
     def _get_bipartitions_table(
         self,
         exclude_internal_labels: bool=True,
         exclude_singleton_splits: bool=False,
         dtype: type=int,
-        ) -> np.ndarray:
+        ) -> pd.DataFrame:
         """Return a DataFrame with partitions in binary format."""
         bits = list(self._iter_bipartitions(
             "idx", exclude_internal_labels, exclude_singleton_splits))
@@ -939,7 +945,11 @@ class ToyTree:
         arr = np.zeros(shape=(len(bits), cols), dtype=dtype)
         for idx, bit in enumerate(bits):
             arr[idx, bit[0]] = 1
-        return arr
+        if exclude_singleton_splits:
+            index = range(self.ntips, self.ntips + len(bits))
+        else:
+            index = None
+        return pd.DataFrame(arr, columns=self.get_tip_labels(), index=index)
 
     def get_topology_id(self, feature="name") -> str:
         """Return a unique ID representing this topology.
@@ -1001,10 +1011,12 @@ class ToyTree:
         >>> node_coords = tree.get_node_coordinates(**style)
         >>> axes.scatterplot(coords.x, coords.y, size=10);
         """
+        style = get_tree_style(self, **kwargs)
+        coords = get_layout(self, style).coords
         data = pd.DataFrame(
             columns=('x', 'y'),
             index=range(self.nnodes),
-            data=Layout(self, **kwargs).coords,
+            data=coords,
         )
         return data
 
@@ -1629,5 +1641,5 @@ if __name__ == "__main__":
     # print(tree.get_node_data())
     # print(tree.get_tip_data("height"))
     # print(tree.get_node_mask())
-    print(list(tree._iter_quartets()))
-    print(tree.get_bipartitions())
+    print(tree.get_bipartitions(exclude_singleton_splits=False))
+    print(tree._get_bipartitions_table(exclude_singleton_splits=True))    

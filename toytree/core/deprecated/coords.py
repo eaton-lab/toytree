@@ -1,12 +1,254 @@
 #!/usr/bin/env python
 
-"""
-A class object for generating and storing Toytree plotting coordinates.
+"""A class for generating and storing Toytree plotting coordinates.
 """
 
 from typing import Optional, List
 import numpy as np
 from toytree.utils import ToytreeError
+
+
+class BaseCoords:
+    """Store edge table and node layout coordinates for tree drawings.
+
+    """
+    ttree: 'ToyTree'
+    edges: np.ndarray = None
+    verts: np.ndarray = None
+
+    def update(self):
+        """Fill the idx_dict of self.tree with updated node instances.
+
+        This function call is the main utility of the Coords class.
+        
+        Note
+        ----
+        Each TreeNode will have a .x and .y attribute with coordinates.
+        This function is called frequently by ToyTree objects to keep
+        coordinates updated anytime the tree changes, and so it is 
+        optimized for speed as much as possible. See RawTree for an 
+        class with faster operations b/c it does not need to keep 
+        plotting coordinates updated.
+
+        Two traversals: one to count nodes, next to assign labels.
+        """
+        self.ttree.idx_dict = {}
+        self.ttree.nnodes = 0
+        self.ttree.ntips = 0
+
+        self.count_nodes()
+        self.assign_idxs()
+        self.get_edges()
+        self.get_layout()
+
+    def count_nodes(self):
+        """Sets the count for number of nodes and tips. 
+
+        This needs to be performed before assign_idxs b/c the counts
+        are used when assigning idx labels to nodes.
+        """
+        for node in self.ttree.treenode.traverse():
+            self.ttree.nnodes += 1
+            if node.is_leaf():
+                self.ttree.ntips += 1
+
+    def assign_idxs(self):
+        """Assigns idx labels in toytree's 'idx traversal order'.
+
+        This order is a root-to-tip traversal the same as 'level-order'
+        for all internal nodes, however, the tip nodes are assigned idx
+        values in order from the bottom to top most order of the leaves
+        when plotted.
+        """
+        # internal nodes: root is highest idx
+        idx = self.ttree.nnodes - 1
+
+        for node in self.ttree.treenode.traverse("levelorder"):
+            if not node.is_leaf():
+                node.idx = idx
+                self.ttree.idx_dict[idx] = node
+                if not node.name:
+                    node.name = str(idx)
+                idx -= 1
+
+        # external nodes: lowest numbers are for tips (0-N)
+        for node in self.ttree.treenode.get_leaves():
+            node.idx = idx
+            self.ttree.idx_dict[idx] = node
+            if not node.name:
+                node.name = str(idx)
+            idx -= 1
+
+        # Reorder: not really necessary, but reduces user error
+        self.ttree.idx_dict = {
+            i: self.ttree.idx_dict[i] for i in range(self.ttree.nnodes)}
+
+    def get_edges(self):
+        """This could change if a tree dropped nodes.
+
+        """
+        self.edges = np.zeros((self.ttree.nnodes - 1, 2), dtype=int)
+        for idx in range(self.ttree.nnodes - 1):
+            parent = self.ttree.idx_dict[idx].up
+            if parent:
+                self.edges[idx, :] = (parent.idx, idx)
+
+    def get_layout(self):
+        """Fills the .x and .y coordinates and .verts array.
+
+        This will raise an error if called from this Base Class, since
+        it does not have a proper get_layout function. The super classes
+        LinearCoords, RadialCoords, and ...Coords have different layout
+        funcs in this place.
+        """
+        raise NotImplementedError(
+            "Use a superclass of BaseCoords to get a node layout.")
+
+
+class LinearCoords2(BaseCoords):
+    """Linear tree layout.
+
+    Sets .verts and node .x and y. for node positions.
+    X and Y positions here refer to base assumption that tree is right
+    facing, reorient_coordinates() will handle re-translating this.
+
+    Parameters
+    ----------
+    layout: str
+        A categorical linear layout in ['r', 'l', 'u', 'd'].
+    use_edge_lengths: bool
+        If not using edge lengths then tips are extended to align at 
+        zero.
+    fixed_order: List[str]
+        A list of len(tree.ntips) of tip names in the order they 
+        should be plotted. Using a fixed order can cause the tree edges
+        to overlap, which is often used to show discordance.
+    fixed_position: List[float]
+        A list or array of float values representing the x position
+        (spacing) among tips on a down-facing tree. By default all tips
+        are spaced 1 unit apart, but this can be modified here for 
+        various reasons.
+    """
+    layout: str
+    use_edge_lengths: bool = True
+    fixed_order: Optional[List] = None
+    fixed_position: Optional[List] = None
+
+    def __post_init__(self):
+        """Calls the base class update() function."""
+        self.update()
+
+    def get_layout(self):
+        """Fill the verts array with x, y coordinates for a 'd' layout.
+
+        TODO
+        ----
+        traverse and use parent distances to root to get faster
+        calculation of toroot height values.
+        """
+        verts = np.zeros((self.ttree.nnodes, 2), dtype=float)
+
+        # store verts array with x,y positions of nodes (lengths of branches)
+        # we want tips to align at the right face (larger axis number)
+        fartip = self.ttree.treenode.get_farthest_leaf()[0]
+        hgt = sum([
+            fartip.dist,
+            sum(i.dist for i in fartip.iter_ancestors() if not i.is_root())
+        ])
+
+        # finding tip distance from root is a little slow, it would be faster
+        # just progress forward from root, but this wouldn't easily allow for
+        # spacing fixed order tips. So instead we start from tips. 
+        for idx in range(self.ttree.nnodes):
+            node = self.ttree.idx_dict[idx]
+
+            # position the x-labels
+            if node.is_leaf() and (not node.is_root()):
+                if self.use_edge_lengths:
+                    toroot = sum(
+                        i.dist for i in node.iter_ancestors()
+                        if not i.is_root()
+                    )
+                    # limit on precision to avoid zero buffer errors
+                    node.y = round(hgt - (node.dist + toroot), 8)
+                else:
+                    node.y = 0.
+
+                # order of xlabels
+                if self.fixed_order is not None:
+
+                    # the position is explicit
+                    if self.fixed_position is not None:
+                        node.x = self.fixed_position[self.fixed_order.index(node.name)]
+
+                    # simply use the index as position
+                    else:
+                        node.x = self.fixed_order.index(node.name)
+                else:
+
+                    # the position is explicit
+                    if self.fixed_position is not None:
+                        node.x = self.fixed_position[node.idx]
+
+                    # simply use the index as position
+                    else:
+                        node.x = node.idx
+
+            else:
+                nch = node.children
+                # empty trees only
+                if not nch:
+                    node.x = node.y = 0
+
+                # all other trees
+                else:
+                    if self.use_edge_lengths:
+                        node.y = nch[0].y + nch[0].dist
+                    else:
+                        node.y = max((i.y for i in nch)) + 1
+
+                    # internal node at midpoint of children
+                    node.x = sum(i.x for i in nch) / float(len(nch))
+
+            # store the vertex
+            verts[idx] = [node.x, node.y]
+
+        # scale so that node idx 0 (or fixed_order x) is at (0, 0)
+        if self.use_edge_lengths:
+            adjust = verts[:, 1].min()
+            verts[:, 1] -= adjust
+
+        # check layout is in directionals
+        if self.layout not in "drlu":
+            raise ToytreeError("layout not recognized")
+
+        # default: Down-facing tips align at y=0, first ladderized tip at x=0            
+        if self.layout == 'd':
+            tmp = verts
+
+        # right-facing tips align at x=0, last ladderized tip at y=0
+        elif self.layout == 'r':
+            # verts swap x and ys and make xs 0 to negative
+            tmp = np.zeros(verts.shape)
+            tmp[:, 1] = verts[:, 0]
+            tmp[:, 0] = verts[:, 1] * -1
+
+        elif self.layout == 'l':
+            # verts swap x and ys and make xs 0 to negative
+            tmp = np.zeros(verts.shape)
+            tmp[:, 1] = verts[:, 0]
+            tmp[:, 0] = verts[:, 1] 
+
+        # elif layout == 'u':
+        else:
+            # verts swap x and ys and make xs 0 to negative
+            tmp = np.zeros(verts.shape)
+            tmp[:, 1] = verts[:, 1] * -1
+            tmp[:, 0] = verts[:, 0]
+        return tmp
+       
+
+
 
 
 class Coords:
@@ -172,6 +414,9 @@ class Coords:
             sum(i.dist for i in fartip.iter_ancestors() if not i.is_root())
         ])
 
+        # TODO: traverse and use parent distances to root to get faster
+        # calculation of toroot height values.
+
         # finding tip distance from root is a little slow, it would be faster
         # just progress forward from root, but this wouldn't easily allow for
         # spacing fixed order tips. So instead we start from tips. 
@@ -185,7 +430,8 @@ class Coords:
                         i.dist for i in node.iter_ancestors()
                         if not i.is_root()
                     )
-                    node.y = hgt - (node.dist + toroot)
+                    # limit on precision to avoid zero buffer errors
+                    node.y = round(hgt - (node.dist + toroot), 8)
                 else:
                     node.y = 0.
 
