@@ -128,11 +128,11 @@ class ToyTreeSequence:
         # warn use if multiple roots are present
         if tree.has_multiple_roots:
             logger.warning(f"tree has multiple ({len(tree.roots)}) roots.")
-            pseudo_root = toytree.TreeNode(name="pseudo-root")
-            pseudo_root.add_feature("tsidx", -1)
+            pseudo_root = toytree.Node(name="pseudo-root")
+            pseudo_root.tsidx = -1
             for tsidx in tree.roots:
-                node = toytree.TreeNode(name=tsidx, dist=tree.branch_length(tsidx))
-                node.add_feature("tsidx", tsidx)
+                node = toytree.Node(name=tsidx, dist=tree.branch_length(tsidx))
+                node.tsidx = tsidx
                 node.up = None
                 pseudo_root.children.append(node)
                 tsidx_dict[tsidx] = node
@@ -141,8 +141,8 @@ class ToyTreeSequence:
                 # if root has no children then 
         else:
             tsidx = tree.roots[0]
-            pseudo_root = toytree.TreeNode(name=tsidx, dist=0)
-            pseudo_root.add_feature("tsidx", tsidx)
+            pseudo_root = toytree.Node(name=tsidx, dist=0)
+            pseudo_root.tsidx = tsidx
             tsidx_dict[tsidx] = pseudo_root
 
         # root_idx = max(pdict.values())
@@ -157,22 +157,22 @@ class ToyTreeSequence:
             if pidx in tsidx_dict:
                 pnode = tsidx_dict[pidx]
             else:
-                pnode = toytree.TreeNode(
+                pnode = toytree.Node(
                     name=str(pidx),
                     dist=tree.branch_length(pidx)
                 )
-                pnode.add_feature("tsidx", pidx)
+                pnode.tsidx = pidx
                 tsidx_dict[pidx] = pnode
                 logger.debug(f"adding child: {cidx} to parent: {pidx}")                
             if cidx in tsidx_dict:
                 cnode = tsidx_dict[cidx]
             else:
                 pop = self.tree_sequence.tables.nodes.population[cidx]
-                cnode = toytree.TreeNode(
+                cnode = toytree.Node(
                     name=f"p{pop}-{cidx}",
                     dist=tree.branch_length(cidx),
                 )
-                cnode.add_feature("tsidx", cidx)
+                cnode.tsidx = cidx
                 tsidx_dict[cidx] = cnode
             cnode.up = pnode
             pnode.children.append(cnode)
@@ -259,7 +259,7 @@ class ToyTreeSequence:
         # standard color palette for mtypes, or user-specified one.
         colormap = (
             mutation_color_palette if mutation_color_palette is not None
-            else toytree.COLORS1)
+            else toytree.color.COLORS1)
 
         # build mutation marker info
         xpos = []
@@ -332,8 +332,11 @@ if __name__ == "__main__":
     import pyslim
     toytree.set_log_level("DEBUG")
 
-    slim_ts = pyslim.load("/tmp/test2.trees")
-    tts = ToyTreeSequence(slim_ts, sample=5, seed=123).at_index(0)
+    TRE = toytree.rtree.unittree(ntips=6, treeheight=1e6, seed=123)
+    MOD = ipcoal.Model(tree=TRE, Ne=1000)
+
+    # slim_ts = pyslim.load("/tmp/test2.trees")
+    # tts = ToyTreeSequence(slim_ts, sample=5, seed=123).at_index(0)
 
     # TREE = toytree.rtree.unittree(10, treeheight=1e5)
     # MOD = ipcoal.Model(tree=TREE, Ne=1e4, nsamples=1)

@@ -1,13 +1,19 @@
 #!/usr/bin/env python
 
-"""
-Network parsing utilities
+"""Network parsing utilities.
+
+Currently developed for parsing, analyzing and plotting network
+output files in newick-like format produced by the SNAQ program in
+PhyloNetworks.
+
+Examples
+---------
+...
 """
 
 import os
 import re
 import toytree
-
 
 
 def parse_network(net, disconnect=True):
@@ -68,7 +74,7 @@ def parse_network(net, disconnect=True):
             # if root is a hybrid edge (ugh)
             if node.up is None:
                 small, big = sorted(node.children, key=len)
-                root = toytree.TreeNode(name='root')
+                root = toytree.Node(name='root')
                 node.children = [small]
                 small.up = node
                 node.up = root

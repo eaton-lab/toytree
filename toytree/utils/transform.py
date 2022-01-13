@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""
-Data transformations for formatting node values nicely.
+"""Data transformations for formatting node values nicely.
 """
 
 
@@ -11,7 +10,7 @@ from toytree.utils import ToytreeError
 
 
 def normalize_values(values, nbins=10, min_value=2, max_value=12):
-    """Distributes values into bins spaced at reasonable sizes for plotting.
+    """Distribute values into bins spaced at reasonable sizes for plotting.
 
     This is used in tree_style='p' to automatically scale Ne values
     to plot as edge widths.
