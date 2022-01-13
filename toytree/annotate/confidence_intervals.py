@@ -5,33 +5,40 @@ Annotate time-scaled trees to add node height confidence intervals.
 
 """
 
-from typing import Dict, Tuple
+from typing import Dict, Tuple, TypeVar
 import numpy as np
 import toyplot
-from toytree.core.tree import ToyTree
+
+ToyTree = TypeVar("ToyTree")
 
 
-
-def add_node_height_confidence_intervals(
-    axes: toyplot.coordinates.Cartesian, 
+def node_height_confidence_intervals(
     tree: ToyTree,
+    axes: toyplot.coordinates.Cartesian, 
     mapping: Dict[int,Tuple[float,float]],
     **kwargs,
     ) -> 'Mark':
-    """
-    Returns a toyplot.graph marker to overlay confidence intervals 
-    over nodes given an input dictionary mapping node idxs to a 
-    tuple of lower and upper confidence intervals for node heights.
+    """Returns a toyplot marker to add confidence intervals on Nodes.
 
-    Example:
-    --------
-    tree = toytree.rtree.unittree(10, treeheight=1e5)
-    ages_ci = {
-        nidx: (node.dist - 1000, node.dist + 1000) 
-        for nidx, node in tree.idx_dict.items()
-    }
-    canvas, axes, mark0 = tree.draw()
-    mark1 = add_node_height_confidence_intervals(axes, tree, ages_ci)
+    Takes an input dictionary mapping node idxs to a tuple of lower
+    and upper confidence intervals for node heights.
+
+    Parameters
+    ----------
+    ...
+
+    Example
+    -------
+    >>> tree = toytree.rtree.unittree(10, treeheight=1e5)
+    >>> ages_ci = {
+    >>>     nidx: (node.dist - 1000, node.dist + 1000) 
+    >>>     for nidx, node in enumerate(tree)
+    >>> }
+    >>> canvas, axes, mark0 = tree.draw()
+    >>> tree.annotate.node_height_confidence_intervals(axes, ages_ci)
+    >>> 
+    >>> mark = toytree.annotate.node_height_confidence_intervals(
+    >>>     tree=tree, axes=axes, mapping=ages_ci)
     """
     # edge connecting each node to a copy of itself
     edges = np.column_stack([
@@ -40,8 +47,8 @@ def add_node_height_confidence_intervals(
     ])
 
     # vertex for each node -/+ the conf interv.
-    vertices = [(-mapping[i][0], tree.idx_dict[i].x) for i in mapping]
-    vertices += [(-mapping[i][1], tree.idx_dict[i].x) for i in mapping]
+    vertices = [(-mapping[i][0], tree[i].x) for i in mapping]
+    vertices += [(-mapping[i][1], tree[i].x) for i in mapping]
 
     # draw the graph and return the mark
     kwargs["vlabel"] = kwargs.get("vlabel", False)

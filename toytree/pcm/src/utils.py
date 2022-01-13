@@ -32,7 +32,7 @@ def get_vcv_from_tree(tree: 'toytree.ToyTree') -> pd.DataFrame:
         vcv[tip1, tip2] = theight - node.height
         vcv[tip2, tip1] = theight - node.height
     vcv[np.diag_indices_from(vcv)] = [
-        tree.idx_dict[i].dist for i in range(tree.ntips)]
+        tree[i].dist for i in range(tree.ntips)]
     tlabels = tree.get_tip_labels()
     return pd.DataFrame(vcv, columns=tlabels, index=tlabels)
 

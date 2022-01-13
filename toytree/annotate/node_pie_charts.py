@@ -33,7 +33,7 @@ import toyplot
 import numpy as np
 from toytree.core.drawing.render import style_to_string, split_rgba_style
 from toytree.annotate.pie_chart_mark import PieChartMark
-from toytree.core.style.color import ToyColor
+from toytree.color.src.color import ToyColor
 
 # Register multipledispatch to use the toyplot.html namespace
 dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
@@ -127,7 +127,6 @@ class RenderPieChart:
                 style=style_to_string(ostyle),
             )
 
-
 def draw_node_pie_charts(
     axes,
     coordinates,
@@ -186,7 +185,6 @@ def draw_node_pie_charts(
     axes.add_mark(mark)
     return mark
 
-
 def get_pie_path(percent_start, percent_end, radius):
     """Return a SVG path for a circle arc.
     <path d='M end_x end_y A r r 0 flag 1 end_x end_y L 0 0'></path>
@@ -216,11 +214,11 @@ if __name__ == "__main__":
     TREE = toytree.rtree.bdtree(100, seed=123)
     c, a, m = TREE.draw(width=400, height=600, node_sizes=5)
     DATA = np.array([[0.5, 0.3, 0.2]] * (TREE.nnodes - TREE.ntips))
-    COLORS = toytree.COLORS1 #
+    COLORS = toytree.color.COLORS1 #
 
     MARK = draw_node_pie_charts(
         axes=a, 
-        coordinates=TREE.get_node_coordinates('r')[TREE.ntips:],
+        coordinates=TREE.get_node_coordinates(layout='r')[TREE.ntips:],
         data=DATA,
         sizes=10,
         colors=COLORS, 

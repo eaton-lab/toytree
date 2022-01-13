@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""
-Annotation functions for adding to toytree drawings.
+"""Annotation functions for adding to toytree drawings.
 """
 
 
@@ -13,7 +12,6 @@ class Annotator(object):
         self.tree = tree
         self.axes = axes
         self.mark = mark
-
 
     def draw_clade_box(
         self, 
@@ -54,7 +52,7 @@ class Annotator(object):
             names=names, regex=regex, wildcard=wildcard)
 
         # get tips descended from mrca
-        tips = self.tree.idx_dict[nidx].get_leaves()
+        tips = self.tree[nidx].get_leaves()
         tidxs = [i.idx for i in tips]
 
         # extent to which box bounds extend outside of the exact clade size.
@@ -138,7 +136,7 @@ class Annotator(object):
     #         names=names, regex=regex, wildcard=wildcard)
 
     #     # get tips descended from mrca
-    #     tips = self.tree.idx_dict[nidx].get_leaves()
+    #     tips = self.tree[nidx].get_leaves()
     #     tidxs = [i.idx for i in tips]
 
     #     # get nudge size from dists in the tree or user supplied

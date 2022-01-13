@@ -54,7 +54,7 @@ class PieChartMark(Mark):
         self.coordinates = np.array(coordinates)
         self.data = data
         self.sizes = toyplot.broadcast.scalar(sizes, self.coordinates.shape[0])
-        self.colors = colors if colors is not None else toytree.COLORS2
+        self.colors = colors if colors is not None else toytree.color.COLORS2
         self.ostroke = ostroke
         self.ostroke_width = ostroke_width
         self.istroke = istroke

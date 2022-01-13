@@ -219,53 +219,53 @@ class CircularLayout(BaseLayout):
         assert end > start, msg
         return start, end
 
-    def get_radial_coords(self, use_edge_lengths=True):
-        """
-        Assign .edges and .verts for node positions in a fan tree.
-        The farthest tip aligns at the circumference.
-        """
-        circ = Circle(self.ttree)
-        verts = np.zeros((self.ttree.nnodes, 2), dtype=float)
+    # def get_radial_coords(self, use_edge_lengths=True):
+    #     """
+    #     Assign .edges and .verts for node positions in a fan tree.
+    #     The farthest tip aligns at the circumference.
+    #     """
+    #     circ = Circle(self.ttree)
+    #     verts = np.zeros((self.ttree.nnodes, 2), dtype=float)
 
-        # shortname
-        if not use_edge_lengths:
-            nbits = self.ttree.treenode.get_farthest_leaf(True)[1]
+    #     # shortname
+    #     if not use_edge_lengths:
+    #         nbits = self.ttree.treenode.get_farthest_leaf(True)[1]
 
-        # use cache to fill edges array
-        for idx in range(self.ttree.nnodes):
-            node = self.ttree.idx_dict[idx]
+    #     # use cache to fill edges array
+    #     for idx in range(self.ttree.nnodes):
+    #         node = self.ttree[idx]
 
-            # leaves: x positions are evenly spaced around circumference
-            if node.is_leaf() and (not node.is_root()):
+    #         # leaves: x positions are evenly spaced around circumference
+    #         if node.is_leaf() and (not node.is_root()):
 
-                # store radians (how far around from zero to 2pi)
-                node.radians = circ.tip_radians[idx]
+    #             # store radians (how far around from zero to 2pi)
+    #             node.radians = circ.tip_radians[idx]
 
-                # get positions of tips using radians and radius
-                if use_edge_lengths:
-                    node.radius = circ.radius - node.height
-                    node.x, node.y = circ.get_node_coords(node)
-                else:
-                    node.radius = nbits
-                    node.x, node.y = circ.get_node_coords(node)
+    #             # get positions of tips using radians and radius
+    #             if use_edge_lengths:
+    #                 node.radius = circ.radius - node.height
+    #                 node.x, node.y = circ.get_node_coords(node)
+    #             else:
+    #                 node.radius = nbits
+    #                 node.x, node.y = circ.get_node_coords(node)
 
-            # internal nodes comes after tips. Inherit position from children.
-            else:
+    #         # internal nodes comes after tips. Inherit position from children.
+    #         else:
 
-                # height is either distance or nodes from root
-                if use_edge_lengths:
-                    node.radius = circ.radius - node.height
-                else:
-                    node.radius = sum(1 for i in node.iter_ancestors())
-                    # max([i.radius for i in node.children]) - 1
+    #             # height is either distance or nodes from root
+    #             if use_edge_lengths:
+    #                 node.radius = circ.radius - node.height
+    #             else:
+    #                 node.radius = sum(1 for i in node.iter_ancestors())
+    #                 # max([i.radius for i in node.children]) - 1
 
-                # x position is halfway between children x-pos
-                node.radians = np.mean([i.radians for i in node.children])
-                node.x, node.y = circ.get_node_coords(node)
+    #             # x position is halfway between children x-pos
+    #             node.radians = np.mean([i.radians for i in node.children])
+    #             node.x, node.y = circ.get_node_coords(node)
 
-            # store the x,y vertex positions
-            verts[node.idx] = [node.x, node.y]
-        return verts        
+    #         # store the x,y vertex positions
+    #         verts[node.idx] = [node.x, node.y]
+    #     return verts        
 
 class UnrootedLayout(BaseLayout):
     """Layout for unrooted tree projection: "unrooted", "u1", "u2"

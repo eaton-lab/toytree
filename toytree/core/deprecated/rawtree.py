@@ -1,12 +1,20 @@
 #!/usr/bin/env python
 
-"""
-Fastest minimal tree for simple non-drawing operations.
+"""Fastest minimal tree for simple non-drawing operations.
+
+Simple wrapper around a root Node object. This is intended for 
+very simple operations, like newick i/o, without requiring a 
+tree traversal to update Node idxs.
+
+Ideas
+-----
+This has primarily been used only in ipcoal. Perhaps a better 
+option is just a tree_sequence to Node function... 
 """
 
 from copy import copy
-from toytree.core.io.TreeParser import FastTreeParser
-from toytree.core.io.TreeWriter import NewickWriter
+from toytree.io.TreeParser import FastTreeParser
+from toytree.io.TreeWriter import NewickWriter
 
 
 

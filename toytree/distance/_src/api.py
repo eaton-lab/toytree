@@ -16,6 +16,10 @@ from toytree.distance._src.nodedist import (
     get_farthest_node,
     get_farthest_node_distance,
 )
+from toytree.distance._src.treedist import (
+    get_treedist_rf,
+    get_treedist_rfi,    
+)
 
 Node = TypeVar("Node")
 ToyTree = TypeVar("ToyTree")
@@ -207,10 +211,15 @@ class DistanceAPI:
         return get_farthest_node_distance(
             self._tree, idx, topology_only, descendants_only)
 
-    def get_treedist_rf(self, tree, ):
-        raise NotImplementedError("coming soon.")
+    def get_treedist_rf(self, tree, normalize):
+        """..."""
+        return get_treedist_rf(self._tree, tree, normalize)
 
-    def get_treedist_quartets(self, *args):
+    def get_treedist_rfi(self, tree, normalize):
+        """..."""
+        return get_treedist_rfi(self._tree, tree, normalize)
+
+    def get_treedist_qrt(self, *args):
         raise NotImplementedError("coming soon.")
 
     def get_treedist_other(self, *args):

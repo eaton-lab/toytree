@@ -620,8 +620,8 @@ def move_clade(
     tree = tree if inplace else tree.copy()
 
     # get selected nodes (FIXME: use nas to allow names selections)
-    src = tree.idx_dict[idx0]
-    dest = tree.idx_dict[idx1]
+    src = tree[idx0]
+    dest = tree[idx1]
 
     # cannot move a clade to its own children in rooted move
     assert idx0 != idx1, "idx0 must be different from idx1"

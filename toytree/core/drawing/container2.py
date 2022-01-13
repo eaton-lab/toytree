@@ -220,7 +220,7 @@ class Container:
         )
 
         # traverse in idx order (tips then post-order for internal)
-        for idx, node in self.model.tree.idx_dict.items():
+        for idx, node in enumerate(tree):
 
             # tips get x-position from widths starting from zero, whereas
             # internal nodes get their midpoint from child nodes and then

@@ -19,7 +19,7 @@ def _get_equal_splits(tree):
 
     # traverse up to root from each tip
     for idx in range(tree.ntips):
-        node = tree.idx_dict[idx]
+        node = tree[idx]
         divrate = 0
         j = 1
         while node.up:

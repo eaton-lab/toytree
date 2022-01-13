@@ -33,7 +33,7 @@ from toytree.utils import ToytreeError
 from toytree.core.drawing.render import ToytreeMark
 from toytree.core.drawing.draw_toytree import draw_toytree, get_layout, get_tree_style
 import toytree
-# from toytree.io import write_newick
+# from toytree.io.src.writer import write_newick
 # from toytree.pcm.api import PhyloCompAPI
 
 # pylint: disable=too-many-branches, too-many-lines, too-many-public-methods
@@ -70,7 +70,7 @@ class ToyTree:
         self.style = TreeStyle()
         """: dict-like class for setting base drawing styles."""
         self._idx_dict: Dict[int, Node] = {}
-        """: dict mapping Node idx labels to Node instance."""
+        """: dict mapping Node idx labels to Node instance. (private)."""
 
         # toytree subpackage library API (mod, pcm, distance, layout)"""
         self.mod = TreeModAPI(self)
@@ -86,13 +86,14 @@ class ToyTree:
     #####################################################
     ## DUNDERS
     #####################################################
-    def __len__(self) -> int:
-        """Return len of Toytree as number of leaf Nodes."""
-        return self.ntips
+    # def __len__(self) -> int:
+        # """Ambiguous, does one expect ntips or nnodes? So it is 
+        # not supported. See .ntips and .nnodes attrs."""
+        # return self.ntips
 
     def __iter__(self) -> Iterator[Node]:
-        """ToyTree is iterable, returning leaf Nodes in idx order."""
-        return self.treenode._iter_leaves()
+        """ToyTree is iterable, returning Nodes in idx order."""
+        return (self[i] for i in range(self.nnodes))
 
     def __getitem__(self, idx: int) -> Node:
         """ToyTree is indexable by idx label to access Nodes."""
@@ -160,7 +161,7 @@ class ToyTree:
             If False then the state of the root node is ignored when
             checking for polytomies.
         """
-        tris = [len(j.children) <= 2 for i, j in self._idx_dict.items()]
+        tris = [len(j.children) <= 2 for i, j in enumerate(self)]
         if include_root:
             return all(tris)
         return all(tris[:-1])
@@ -171,7 +172,7 @@ class ToyTree:
 
     #####################################################
     ## TRAVERSAL
-    ## Visit all connected Nodes, and/or create idx_dict.
+    ## Visit all connected Nodes, and/or create ._idx_dict cache.
     #####################################################
 
     def traverse(self, strategy: str = "levelorder") -> Iterator[Node]:
@@ -718,8 +719,7 @@ class ToyTree:
 
     def _get_edges(self) -> np.ndarray:
         """Return numpy array of child,parent relationships."""
-        data = np.array(
-            [(i.idx, i.up.idx) for _, i in self._idx_dict.items() if i.up])
+        data = np.array([(i.idx, i.up.idx) for i in self if i.up])
         return data
 
     def get_edges(self) -> pd.DataFrame:
@@ -984,8 +984,7 @@ class ToyTree:
 
     def _get_node_coordinates(self) -> np.ndarray:
         """Return numpy array of 'unstyled' cached node coordinates."""
-        return np.array(
-            [(i._x, i._height) for _, i in self._idx_dict.items()])
+        return np.array([(i._x, i._height) for i in self])        
 
     def get_node_coordinates(self, **kwargs) -> pd.DataFrame:
         """Return a DataFrame with xy coordinates for plotting nodes.

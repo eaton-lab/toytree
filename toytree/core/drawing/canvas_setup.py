@@ -153,7 +153,7 @@ class CanvasSetup:
 
     def get_canvas_height_and_width(self):
         """Calculate default canvas height&width given N tips and style."""
-        if self.style.layout == "c":
+        if self.style.layout[0] == "c":
             radius = max(
                 [0] + [i for i in [self.style.height, self.style.width] if i])
             if not radius:

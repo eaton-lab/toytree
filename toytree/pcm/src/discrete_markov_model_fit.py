@@ -424,7 +424,7 @@ class DiscreteMarkovModelFit:
         value = np.zeros((self.unique.shape[1], self.qidx.shape[0])),
         self.tree = self.tree.set_node_data("likelihood", default=value)
         for nidx in range(self.tree.ntips):
-            node = self.tree.idx_dict[nidx]
+            node = self.tree[nidx]
 
             # get column index of this tip
             sidx = self.data.index.tolist().index(node.name)
@@ -597,6 +597,6 @@ if __name__ == "__main__":
     # print(MOD.qidx)
     # print(MOD.params)
     # print(MOD.unique)
-    # print(MOD.tree.idx_dict[0].likelihood)
+    # print(MOD.tree[0].likelihood)
     # MOD.optimize()
     # # print(MOD.prior)

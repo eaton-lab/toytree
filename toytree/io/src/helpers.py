@@ -107,6 +107,10 @@ def read_mb_file(path: str, **kwargs) -> Union[ToyTree, MultiTree]:
     file may contain many trees (a posterior distribution) or a single
     tree (e.g., a consensus tree).
 
+    Internal node values can include ranges with "," inside, which 
+    requires additional comma-parsing that is automated by this 
+    function, as opposed to using `read_nexus`. TODO.
+
     Returns
     -------
     ToyTree or MultiTree

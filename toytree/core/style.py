@@ -327,9 +327,10 @@ class TreeStyle:
             self.node_labels_style.fill = ToyColor(self.node_labels_style.fill)
 
     def _validate_node_hover(self):
-        """
-        Sets node_hover to ndarray[str] or None. No comparisons use
-        'is in' to support flexible input types including pd.Series.
+        """Sets node_hover to ndarray[str] or None. 
+
+        No comparisons use 'is in' to support flexible input types 
+        including pd.Series.
         """
         if self.node_hover is None:
             self.node_hover = None
@@ -340,9 +341,9 @@ class TreeStyle:
             lfeatures = list(set(self.tree.features) - set(ordered_features))
             ordered_features += lfeatures
             self.node_hover = [" "] * self.tree.nnodes
-            for idx in self.tree.idx_dict:
+            for idx in range(self.tree.nnodes):
                 feats = []
-                node = self.tree.idx_dict[idx]
+                node = self.tree[idx]
                 for feature in ordered_features:
                     val = getattr(node, feature)
                     if isinstance(val, float):
@@ -359,9 +360,7 @@ class TreeStyle:
             self.node_hover = toyplot.broadcast.pyobject(self.node_hover, self.tree.nnodes).astype(str)
 
     def _validate_node_style(self):
-        """
-        Sets node_style.fill and .stroke to str
-        """
+        """Sets node_style.fill and .stroke to str"""
         if self.node_style.stroke is None or self.node_style.stroke == "none":
             self.node_style.stroke = "transparent"
         if self.node_style.stroke is not None:
@@ -372,8 +371,7 @@ class TreeStyle:
             self.node_style.fill = ToyColor(self.node_style.fill).css
 
     def _validate_tip_labels_colors(self):
-        """
-        Sets tip_labels_colors to ndarray[str] or None, and sets
+        """Sets tip_labels_colors to ndarray[str] or None, and sets
         tip_labels.style.fill to None or single color.
         """
         if self.tip_labels_colors is None:

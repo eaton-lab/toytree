@@ -1,21 +1,26 @@
 #!/usr/bin/env python
 
-"""
-Penalized likelihood functions
+"""Apply penalized likelihood to get an ultrametric tree.
+
+References
+----------
+...
 """
 
+from typing import Dict, Optional, TypeVar
 import subprocess
-from typing import Dict, Optional
 from loguru import logger
 import toyplot
 import numpy as np
-import scipy.stats as stats
+from scipy import stats
 from scipy.optimize import minimize, Bounds, LinearConstraint
 from scipy.special import factorial
 import toytree
 from toytree.utils import ToytreeError
 
+logger = logger.bind(name="toytree")
 
+ToyTree = TypeVar("ToyTree")
 AGES_MIN = 1e-8
 AGES_MAX = 1e8
 RATES_MIN = 1e-9
@@ -50,7 +55,7 @@ class Chronos:
 
     Returns
     -------
-    A Toytree with transformed dist (edge length) feature values, and
+    ToyTree: with transformed dist (edge length) feature values, and
     features for ages and rates.
 
     References
@@ -61,12 +66,12 @@ class Chronos:
     """
     def __init__(
         self, 
-        tree,
-        calibrations:Optional[Dict]=None,
-        model:str="relaxed",
-        weight:float=1, 
-        tol:float=1e-8, 
-        verbose:bool=False,
+        tree: ToyTree,
+        calibrations: Optional[Dict]=None,
+        model: str="relaxed",
+        weight: float=1, 
+        tol: float=1e-8, 
+        verbose: bool=False,
         ):
 
         # store tree data
@@ -120,7 +125,8 @@ class Chronos:
         # gradient incidence matrices for correlated model
         self.ni_ = np.bincount(self.edges[:].flatten())[:-1]
         self.mat_n = np.zeros((self.edges.shape[0], self.edges.shape[0]), dtype=bool)
-        for nidx, node in self.tree.idx_dict.items():
+        for nidx in range(self.tree.nnodes):
+            node = self.tree[nidx]
             if node.up:
                 self.mat_n[nidx, nidx] = True
                 ind = [i.idx for i in node.children]
@@ -632,7 +638,6 @@ class TreeSampler:
         self.gamma = gamma
         self.nnodes = self.tree.nnodes
 
-
     def plot_gamma_distributed_rates(self, nsamples=10000, bins=30):
         """
         Draws the stat distribution for verification.
@@ -688,7 +693,7 @@ class TreeSampler:
             # apply randomly to nodes of the tree
             tree = tree.set_node_values(
                 feature="Ne",
-                mapping={i: nevals[i] for i in tree.idx_dict}
+                mapping={i: nevals[i] for i in range(tree.nnodes)}
             )
         else:
             tree = tree.set_node_values("Ne", default=self.neff)
@@ -706,7 +711,7 @@ class TreeSampler:
             # apply randomly to nodes of the tree
             tree = tree.set_node_values(
                 feature="g",
-                mapping={i: gvals[i] for i in tree.idx_dict}
+                mapping={i: gvals[i] for i in range(tree.nnodes)}
             )
         else:
             tree = tree.set_node_values("g", default=self.gentime)      
@@ -715,13 +720,13 @@ class TreeSampler:
         if transform == 1:
             tree = tree.set_node_values(
                 feature="dist",
-                mapping={i: j.dist / (j.Ne * 2 * j.g) for i,j in tree.idx_dict.items()}
+                mapping={i: j.dist / (j.Ne * 2 * j.g) for i,j in enumerate(tree)}
             )
             
         elif transform == 2:
             tree = tree.set_node_values(
                 feature="dist",
-                mapping={i: j.dist / j.g for i,j in tree.idx_dict.items()}
+                mapping={i: j.dist / j.g for i,j in enumerate(tree)}
             )            
         return tree
 

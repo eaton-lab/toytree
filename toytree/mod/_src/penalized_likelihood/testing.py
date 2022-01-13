@@ -1,9 +1,11 @@
 #!/usr/bin/env python
 
-"""
-Scripts to run comparison against chronos in R.
+"""Scripts to run comparison against chronos in R.
 """
 
+import subprocess
+import numpy as np
+import toyplot
 
 RSTRING = """
 library(ape)
@@ -141,7 +143,7 @@ class TreeSampler:
             # apply randomly to nodes of the tree
             tree = tree.set_node_values(
                 feature="Ne",
-                mapping={i: nevals[i] for i in tree.idx_dict}
+                mapping={i: nevals[i] for i in range(tree.nnodes)}
             )
         else:
             tree = tree.set_node_values("Ne", default=self.neff)
@@ -159,7 +161,7 @@ class TreeSampler:
             # apply randomly to nodes of the tree
             tree = tree.set_node_values(
                 feature="g",
-                mapping={i: gvals[i] for i in tree.idx_dict}
+                mapping={i: gvals[i] for i in range(tree.nnodes)}
             )
         else:
             tree = tree.set_node_values("g", default=self.gentime)      
@@ -168,19 +170,20 @@ class TreeSampler:
         if transform == 1:
             tree = tree.set_node_values(
                 feature="dist",
-                mapping={i: j.dist / (j.Ne * 2 * j.g) for i,j in tree.idx_dict.items()}
+                mapping={i: j.dist / (j.Ne * 2 * j.g) for i,j in enumerate(tree)}
             )
             
         elif transform == 2:
             tree = tree.set_node_values(
                 feature="dist",
-                mapping={i: j.dist / j.g for i,j in tree.idx_dict.items()}
+                mapping={i: j.dist / j.g for i,j in enumerate(tree)}
             )            
         return tree
 
 
 if __name__ == "__main__":
 
+    import toytree
     TREE = toytree.rtree.unittree(10, treeheight=1e6)
     TSA = TreeSampler(TREE, neff=5e5, gentime=1, gamma=3)
     TRE = TSA.get_tree()

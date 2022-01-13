@@ -41,15 +41,13 @@ class ConsensusTree:
     def __init__(
         self,
         mtree: MultiTree,
-        best_tree: Optional[ToyTree]=None,
-        majority_rule_min: float=0.0,
+        best_tree: Optional[ToyTree] = None,
+        majority_rule_min: float = 0.0,
         ):
 
         # creates an unrooted copy of the original tree
         self.mtree = mtree
-        self.best_tree = (
-            best_tree.set_node_data("support", default=0) 
-            if best_tree else None)
+        self.best_tree = best_tree
         self.majority_rule_min = majority_rule_min
 
     def _iter_unique_trees(self):
@@ -70,6 +68,9 @@ class ConsensusTree:
         'support' feature for all Nodes in 'best'. Any other requested
         features of the input trees will also be 
         """
+        # copy best tree and set default to 0
+        self.best_tree = self.best_tree.set_node_data("support", default=0) 
+
         # returns ubipartitions (root has no effect)
         best_tree_parts = list(self.best_tree._iter_bipartitions("name", True, False))
 
@@ -87,10 +88,10 @@ class ConsensusTree:
                     try:
                         idx = best_tree_parts.index(bipart)
                         if idx == cmin:
-                            self.best_tree._idx_dict[cmax].support += count
-                            self.best_tree._idx_dict[cmin].support += count
+                            self.best_tree[cmax].support += count
+                            self.best_tree[cmin].support += count
                         else:
-                            self.best_tree._idx_dict[idx].support += count
+                            self.best_tree[idx].support += count
                     except ValueError:
                         pass
         # divide support by ntrees to get proportion

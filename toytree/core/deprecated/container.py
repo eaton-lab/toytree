@@ -4,6 +4,7 @@
 Container trees for plotting coalescent histories with demographic params
 """
 
+from dataclasses import dataclass
 import numpy as np
 import toyplot
 import toytree
@@ -11,15 +12,35 @@ from toytree.core.tree import ToyTree
 from toytree.utils import ToytreeError
 
 
+# @dataclass
+# class Container:
+#     """
+
+#     """
+#     model: ipcoal.Model
+#     idx: int
+#     width: int
+#     height: int
+
+
 class Container:
-    """
-    Class for generating container tree plots.
+    """Class for generating container tree plots.
+
+    Parameters
+    ----------
+    model: ipcoal.Model or None
+        An ipcoal Model object from which the species tree topology
+        and parameters will be extracted to build the container.
+    idx: int
+        Integer index of a simulated genealogy from the Model to draw
+        embedded inside the species tree container.
+    width: int
+    height: int
+    spacer: float
+    axes: ...
+
     """
     def __init__(self, model=None, idx=0, width=400, height=400, spacer=0.25, axes=None):
-        """
-        Returns a Canvas and Axes with a fill container drawn representing
-        widths of lineages (Ne) and divergence times. 
-        """
         # setup 
         if not axes:
             self.canvas = toyplot.Canvas(width=width, height=height)
@@ -46,26 +67,23 @@ class Container:
         try:
             self.nes = self.tree.get_feature_dict("idx", "Ne")
         except AttributeError:
-            self.tree.set_node_values("Ne", None, self.model.Ne)
+            self.tree.set_node_data("Ne", mapping=None, default=self.model.Ne)
             self.nes = self.tree.get_feature_dict("idx", "Ne")
 
         # normalize Ne values for plotting widths
-        self.nes = {
-            i: j for (i, j) in zip(
-                self.nes.keys(), 
-                toytree.utils.transform.normalize_values(
-                    np.sqrt(list(self.nes.values())),
-                    10, 2, 8,
-                ),
-            )
-        }
-        self.tree = self.tree.set_node_values("nNe", self.nes)
-        self.tree = self.tree.set_node_values("xrange", default=(0, 0))
+        normalized_widths = toytree.utils.transform.normalize_values(
+            np.sqrt(list(self.nes.values())),
+            10, 2, 8,
+        )
+        self.nes = dict(zip(self.nes.keys(), normalized_widths))
+        self.tree = self.tree.set_node_data("nNe", mapping=self.nes)
+        self.tree = self.tree.set_node_data("xrange", default=(0, 0))
         self.ndict = self.tree.get_feature_dict("idx")
         self._set_tip_xranges()
 
         # get colors for each spp
-        self.colors = [next(toytree.ICOLORS1) for i in range(len(self.tree))]
+        color_cycle = toytree.color_cycler()
+        self.colors = [next(color_cycle) for i in range(len(self.tree))]
 
         # store blocks coordinates
         self.blocks = {}
@@ -83,10 +101,7 @@ class Container:
 
 
     def _set_tip_xranges(self):
-        """
-        Sets xrange for each node of the species tree representing the
-        log-Ne scaled widths of branches.
-        """
+        """Set the x range (log-Ne scaled widths) of species tree edges."""
         # set tip nodes baselines spaced for Ne
         lidx = 0
         for idx in range(self.tree.ntips):
@@ -112,7 +127,7 @@ class Container:
             self.maxheight = max(height, gheight) + 5
         except AttributeError:
             self.maxheight = height
-        # self.maxheight = height            
+        # self.maxheight = height
 
         mp = self.blocks[self.children[node.idx][0]].xt1
         self.axes.fill(
@@ -123,7 +138,7 @@ class Container:
             opacity=0.25,
             along='y',
             title=(
-                "idx={}\nname={}\nNe={}\nt_g={}\nt_c={}"
+                "idx={}\nname={}\nN<sub>e</sub>={}\nt<sub>g</sub>={}\nt<sub>c</sub>={}"
                 .format(
                     node.idx,
                     '{} (root)'.format(node.name),
@@ -159,18 +174,19 @@ class Container:
 
 
     def _draw_gene_blocks(self):
+        """Set features on gtree and pass to :func:_draw_gene_block()"""
 
         # get gene tree
-        self.gtree = self.gtree.set_node_values("ystart", None, 0)
+        self.gtree = self.gtree.set_node_data("ystart", None, default=0)
 
         # use idx not names of species tree 
         idx2name = self.tree.get_feature_dict("idx", "name")
         tip2idx = {j: i for (i, j) in idx2name.items() if j.startswith("r")}
         gidx2spidx = {
-            i.idx: tip2idx[i.name.split("-")[0]] for i in 
+            i.idx: tip2idx[i.name.split("_")[0]] for i in 
             self.gtree.get_feature_dict() if i.is_leaf()
         }
-        self.gtree = self.gtree.set_node_values("inside", gidx2spidx)
+        self.gtree = self.gtree.set_node_data("inside", mapping=gidx2spidx)
 
         # store coalescences coordinates
         self.node_xs = []
@@ -298,7 +314,7 @@ class Container:
                     return wiggle
 
                 # set color by species shared ancestry
-                spp = [i.split("-")[0] for i in gnode.get_leaf_names()]
+                spp = [i.split("_")[0] for i in gnode.get_leaf_names()]
                 if len(set(spp)) == 1:
                     cidx = int(spp[0][1:])
                     color = self.colors[cidx]
@@ -425,7 +441,6 @@ class Block(object):
     def __repr__(self):
         return str(self.__dict__)
 
-    @property
     def delta_x(self):
         return self.xt0 - self.xb0
 

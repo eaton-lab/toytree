@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""
-Dispatched renderer for toytree marks following the style of toyplot
+"""Dispatched renderer for toytree marks following the style of toyplot
 
 TODO:
   - fixed-order extension to tip positions for missing labels..?

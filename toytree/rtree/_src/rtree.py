@@ -450,7 +450,7 @@ def _get_small_child(node):
 #     nidx = list(range(self.ntips))
 #     if random_names:
 #         random.shuffle(nidx)
-#     for idx, node in self.idx_dict.items():
+#     for idx, node in enumerate(self):
 #         if node.is_leaf():
 #             node.name = "r{}".format(nidx[idx])
 

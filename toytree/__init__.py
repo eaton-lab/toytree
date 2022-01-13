@@ -20,43 +20,27 @@ Examples
 __version__ = "3.0-dev"
 __author__ = "Deren Eaton"
 
-
-# expose core classes (TreeNode, ToyTree, MultiTree)
-# and factory functions (.tree, .rtree, .mtree, .rawtree)
-# from toytree.core.tree import tree, ToyTree
-# from toytree.core.rawtree import RawTree as rawtree
-# from toytree.core.treenode import TreeNode
-# from toytree.core.multitree import mtree, MultiTree
-
-# submodules are exposed with curated functions in their __init__
-# from toytree.pcm import ...
-# from toytree.mod import ...
-# from toytree.distance import ...
-# from toytree.annotate import ...
-
-# should these be made into top-level submodules?
-# from toytree.core import rtree
-
-# toytree v3 supported modules
+# core class objects
 from toytree.core.node import Node
 from toytree.core.tree import ToyTree
 from toytree.core.multitree import MultiTree
+
+# convenience functions
 from toytree.io.src.treeio import tree
 from toytree.io.src.mtreeio import mtree
-# from toytree.core.multitree import MultiTree, mtree
+# from toytree.io.src.save import save    # save(canvas, method="html")
 
+# toytree v3 supported subpackages
 import toytree.rtree
 import toytree.distance
 import toytree.io
-# import toytree.color
-# import toytree.distance
+import toytree.mod
+import toytree.color
 # import toytree.pcm
-# import toytree.mod
 # import toytree.annotate
 
-# from toytree.core.style.color import ToyColor
-# from toytree.core.style.color import COLORS1, COLORS2, color_cycler
+# container trees...
 
-# start the logger in INFO
+# start the logger at log_level WARNING
 from toytree.utils.src.logger_setup import set_log_level
 set_log_level("WARNING")
