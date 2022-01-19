@@ -624,7 +624,7 @@ class ToyTree:
     def write(
         self,
         path: Optional[str] = None,
-        dist_formatter: str = "%.6g",
+        dist_formatter: Optional[str] = "%.6g",
         internal_labels: Optional[str] = "support",
         internal_labels_formatter: Optional[str] = "%.6g",
         features: Optional[Sequence[str]] = None,
