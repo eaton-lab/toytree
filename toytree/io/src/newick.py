@@ -323,7 +323,7 @@ def _dict_aggregator(label, children, distance, features):
 
 def _parse_newick_subtree(
     newick: str,
-    aggregator: Callable[[str, List[Node], float, Any], Node] = None,
+    aggregator = None, #: Callable[[str, List[Node], float, Any], Node] = None,  # This one works.
     dist_formatter = None, #: Callable[str, float] = None,
     feat_formatter = None, #: Callable[str, Any] = None  # FIXME: error on py3.8 'args must be a list.'
     ) -> Node:
@@ -408,9 +408,9 @@ def _check_internal_label_for_name_or_support(
 
 def parse_newick_string_custom(
     newick: str,
-    dist_formatter: Callable[str, float] = None,
-    feat_formatter: Callable[str, Dict[str,Any]] = None,
-    aggregator: Callable[[str, List[Node], float, Any], Node] = None,
+    dist_formatter = None, #: Callable[str, float] = None, # FIXME
+    feat_formatter = None, #: Callable[str, Dict[str,Any]] = None,
+    aggregator = None, #: Callable[[str, List[Node], float, Any], Node] = None,
     internal_labels: Optional[str] = None,
     ) -> ToyTree:
     """Return a ToyTree from a newick string.
