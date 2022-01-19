@@ -13,7 +13,6 @@ specify ahead of time that the file is NHX.
 """
 
 from typing import Union, List, TypeVar, Dict, Tuple
-import os
 import re
 from pathlib import Path
 from loguru import logger
@@ -51,7 +50,7 @@ class TreeIOParser:
     """
     def __init__(
         self,
-        data: Union[str, bytes, Url, Path, List],
+        data: Union[str, Url, Path, List],
         multitree: bool = False,
         **kwargs,
         ) -> List[Node]:
@@ -81,9 +80,6 @@ class TreeIOParser:
 
         # iterate over each input and store newick in self.data list
         for item in inputs:
-            # if bytes then convert to str
-            if isinstance(item, bytes):
-                item = item.encode("utf-8")
 
             # if str data is a URI then parse it to List[str]
             if item.startswith("http"):
@@ -92,7 +88,7 @@ class TreeIOParser:
                 item = response.text.strip()
 
             # if str is a filepath parse newick List[str] from it.
-            elif os.path.exists(str(item)):
+            elif Path(item).exists():
                 with open(item, 'r', encoding="utf-8") as indata:
                     item = indata.read()
 

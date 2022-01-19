@@ -21,8 +21,7 @@ Url = TypeVar("Url")
 
 
 def tree(
-    data: Union[str,bytes,Path,Url],
-
+    data: Union[str,Path,Url],
     ) -> ToyTree:
     """General ToyTree class constructor function and flexible data parser.
 
@@ -62,7 +61,7 @@ def tree(
         treenode = data.copy(detach=True)
         ttree = ToyTree(treenode)
     # load ToyTree from a newick or nexus from str, URL, or filepath
-    elif isinstance(data, (str, bytes, Path)):
+    elif isinstance(data, (str, Path)):
         ttree = TreeIOParser(data).trees[0]
     # raise an error (to make an empty tree you must enter empty Node)
     else:
