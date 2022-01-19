@@ -9,7 +9,9 @@ References
 """
 
 from typing import TypeVar, Tuple, Sequence, Set
-from functools import cache
+
+# FIXME: support backup method old Python does not support
+# from functools import cache
 import itertools
 
 from loguru import logger
@@ -129,14 +131,14 @@ def _get_phylo_prob(size_a:int, size_b:int) -> float:
     trees_w_split = _get_n_trees_matching_split(size_a, size_b)
     return trees_w_split / _get_n_unrooted_trees(size_x)
 
-@cache
+# @cache
 def _get_phylo_info(size_a:int, size_b:int) -> float:
     """Return information of phylo prob in units of bits."""
     if (size_a < 2) or (size_b < 2):
         return 0
     return -np.log2(_get_phylo_prob(size_a, size_b))
 
-@cache
+# @cache
 def _get_split_phylo_info(split: Tuple[Tuple,Tuple]) -> float:
     """Return the phylogenetic info of a split sensu Martin Smith 2020.
 
@@ -186,7 +188,7 @@ def _get_phylo_prob_two_splits(ntips: int, size_a1:int, size_a2:int) -> float:
     ntotal = _get_n_unrooted_trees(ntips)
     return ntrees / ntotal
 
-@cache
+# @cache
 def _get_phylo_info_two_splits(ntips: int, size_a1:int, size_a2:int) -> float:
     """Return the phylo information in two splits matching in a tree"""
     return -np.log2(_get_phylo_prob_two_splits(ntips, size_a1, size_a2))
@@ -265,7 +267,7 @@ def _get_two_splits_matching_split_phylo_info(
 ## Get clustering entropy of bipartitions
 ####################################################
 
-@cache
+# @cache
 def _entropy(*prob: float) -> float:
     """Return sum of entropies where e = prob * log2(prob)"""
     return -sum(p * np.log2(p) if p else 0 for p in prob)
