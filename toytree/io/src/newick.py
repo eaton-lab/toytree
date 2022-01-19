@@ -324,8 +324,8 @@ def _dict_aggregator(label, children, distance, features):
 def _parse_newick_subtree(
     newick: str,
     aggregator: Callable[[str, List[Node], float, Any], Node] = None,
-    dist_formatter: Callable[str, float] = None,
-    feat_formatter: Callable[str, Any] = None
+    dist_formatter = None, #: Callable[str, float] = None,
+    feat_formatter = None, #: Callable[str, Any] = None  # FIXME: error on py3.8 'args must be a list.'
     ) -> Node:
     """Recursive func (private) for building Nodes from newick subtrees.
 
