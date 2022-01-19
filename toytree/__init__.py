@@ -17,7 +17,7 @@ Examples
 >>> tree2.root(wildcard="prz").draw(tree_style='o')
 """
 
-__version__ = "3.0.0-dev"
+__version__ = "3.0.0"
 __author__ = "Deren Eaton"
 
 # core class objects
