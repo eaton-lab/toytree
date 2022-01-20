@@ -87,7 +87,7 @@ class ToyTree:
     ## DUNDERS
     #####################################################
     # def __len__(self) -> int:
-        # """Ambiguous, does one expect ntips or nnodes? So it is 
+        # """Ambiguous, does one expect ntips or nnodes? So it is
         # not supported. See .ntips and .nnodes attrs."""
         # return self.ntips
 
@@ -496,6 +496,12 @@ class ToyTree:
             If True then input node name strings are treated as
             regular expressions that can match one or more Nodes.
 
+        Notes
+        -----
+        If the tree is unrooted then the mrca will be found relative
+        to the 'psuedo-root' (the Node that exists as parent to the
+        basal trichotomy, but has no features associated with it).
+
         Examples
         --------
         >>> tree = toytree.rtree.unittree(12)
@@ -655,8 +661,8 @@ class ToyTree:
             or None to not write dist values. Default is "%.6g".
         internal_labels: str or None
             A feature to write as internal node labels. None suppresses
-            internal labels. The 'support' feature is default, and 
-            often used here, but 'name' or any other feature can be 
+            internal labels. The 'support' feature is default, and
+            often used here, but 'name' or any other feature can be
             used as well.
         internal_labels_formatter: str or None
             A formatting string to format internal labels. If an internal
@@ -984,7 +990,7 @@ class ToyTree:
 
     def _get_node_coordinates(self) -> np.ndarray:
         """Return numpy array of 'unstyled' cached node coordinates."""
-        return np.array([(i._x, i._height) for i in self])        
+        return np.array([(i._x, i._height) for i in self])
 
     def get_node_coordinates(self, **kwargs) -> pd.DataFrame:
         """Return a DataFrame with xy coordinates for plotting nodes.
@@ -1641,4 +1647,4 @@ if __name__ == "__main__":
     # print(tree.get_tip_data("height"))
     # print(tree.get_node_mask())
     print(tree.get_bipartitions(exclude_singleton_splits=False))
-    print(tree._get_bipartitions_table(exclude_singleton_splits=True))    
+    print(tree._get_bipartitions_table(exclude_singleton_splits=True))
