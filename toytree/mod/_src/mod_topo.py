@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""
-Topology manipulation functions for ToyTrees.
+"""Topology manipulation functions for ToyTrees.
 
 This module includes function for manipulating ToyTrees by adding,
 removing, or changing the relationships among TreeNodes. It is the
@@ -133,7 +132,7 @@ def rotate_node(
 
     Rotates only one Node per call. Internal Nodes are easiest selected
     by idx label, or by selecting multiple Nodes names from which the 
-    MRCA will be selected.
+    MRCA will be selected and rotated.
 
     Parameters
     ----------
@@ -168,7 +167,7 @@ def prune(
     preserve_branch_length: bool=True,
     require_root: bool=False,
     inplace: bool=False,
-    ) -> "ToyTree":
+    ) -> ToyTree:
     r"""Return a ToyTree as a subtree extracted from an existing tree.
 
     All nodes not included in the entered 'nodes' list will be
