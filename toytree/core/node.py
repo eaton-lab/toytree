@@ -8,14 +8,15 @@ represented by pointers to other Node objects in its `.up` and
 provide *traversal* functions for accessing connected Nodes in an
 order determined by their connections.
 
-Note
-----
-This class is derived from the ete3.TreeNode class object, and retains
+Notes
+-----
+This class is inspired by the ete3.TreeNode class object, and retains
 similarities in syntax to make it easy to learn for ete users. However,
-it differs in many important respects. Most notably, in toytree the
-Node class is intended to be immutable, meaning users are not able
-to directly edit .dist, .up, .children, or other attributes of Node
-objects that affect the tree topology. Instead, ToyTree class objects
+it is greatly simplified, and differs in several other important
+respects. Most notably, the toytree.Node class is intended to be
+immutable, meaning users are not able to directly edit .dist, .up,
+.children, or other attributes of Node objects that affect the tree
+topology. Instead, ToyTree class objects
 have functions for modifying Nodes that do so in the context of
 updating the entire tree (i.e., updating other Node's attributes
 if needed). Thus, toytree.Node is a more minimal object used mainly
@@ -311,9 +312,9 @@ class Node:
 
         Note
         ----
-        If you use this function to add connections among Nodes be
-        aware that you are modifying Nodes, and thus need to be aware
-        of the `Node/Tree updating rules in toytree <toytree.rtfd.io>`_.
+        If you use this private function to add connections among Nodes
+        be aware that you are modifying the tree, and thus need to
+        follow `Node/Tree updating rules in toytree <toytree.rtfd.io>`_.
         """
         node._up = self
         self._children += (node,)
@@ -433,7 +434,9 @@ class Node:
         thus numbering them sequentially (0-ntips) is convenient. All
         internal nodes are labeled by post-order from (ntips-nnodes).
 
-        Also calculates max-dist on its way down.
+        Notes
+        -----
+        Could also calculate max-dist on its way down...
         """
         queue = deque([self])
         inner_stack = deque()
