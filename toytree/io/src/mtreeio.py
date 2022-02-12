@@ -4,17 +4,16 @@
 
 """
 
-from typing import Union, Sequence
+from typing import Union, Collection
 from pathlib import Path
 from toytree.core.tree import ToyTree
 from toytree.core.multitree import MultiTree
 from toytree.io.src.parser import TreeIOParser
 from toytree.utils import ToytreeError
-import toytree
 
 
 def mtree(
-    data:Union[str, Path, Sequence[ToyTree], Sequence[str]],
+    data:Union[str, Path, Collection[Union[ToyTree, str, Path]]],
     **kwargs) -> MultiTree:
     """General class constructor to parse and return a MultiTree.
 
@@ -35,14 +34,18 @@ def mtree(
     """
     # parse the newick object into a list of Toytrees
     treelist = []
+    # e.g., path to a newick file with multi-line str of trees.
     if isinstance(data, Path):
         data = str(Path)
+    # e.g., a multi-line str of trees.
     if isinstance(data, str):
         treelist = TreeIOParser(data, multitree=True, **kwargs).trees
+    # e.g., a list of ToyTree objects
     elif isinstance(data[0], ToyTree):
         treelist = [i.copy() for i in data]
-    elif isinstance(data[0], (str, bytes)):
-        treelist = [toytree.tree(i) for i in data]
+    # e.g., a list of newick strings or file paths
+    elif isinstance(data[0], (str, Path)):
+        treelist = TreeIOParser(data).trees
     else:
         raise ToytreeError("mtree input format unrecognized.")
     return MultiTree(treelist)
