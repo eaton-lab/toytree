@@ -87,10 +87,16 @@ class TreeIOParser:
                 response.raise_for_status()
                 item = response.text.strip()
 
-            # if str is a filepath parse newick List[str] from it.
-            elif Path(item).exists():
-                with open(item, 'r', encoding="utf-8") as indata:
-                    item = indata.read()
+            # if item is a Path, or a str filepath then parse newick 
+            # List[str] from it. Will raise OSError if name too long 
+            # so clearly not a filepath. Skips if not an existing Path.
+            else:
+                try:
+                    if Path(item).exists():
+                        with open(item, 'r', encoding="utf-8") as indata:
+                            item = indata.read()
+                except OSError:
+                    pass
 
             # if str data is now a newick str then save it.
             if isinstance(item, str):
