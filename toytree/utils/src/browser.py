@@ -41,7 +41,10 @@ def show(canvases, title="toytree", new: bool=False):
     for canvas in canvases:
         body.append(toyplot.html.render(canvas))
 
-    fd, path = tempfile.mkstemp(suffix=".html")
-    with os.fdopen(fd, "wb") as stream:
+    # fd, path = tempfile.mkstemp(suffix=".html")
+    # with os.fdopen(fd, "wb") as stream:
+        # stream.write(xml.tostring(html, method="html"))
+    path = "/tmp/toytree.html"
+    with open(path, "wb") as stream:
         stream.write(xml.tostring(html, method="html"))
-    webbrowser.open("file://" + path, new=new, autoraise=False)
+    # webbrowser.open("file://" + path, new=new, autoraise=False)
