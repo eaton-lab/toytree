@@ -16,6 +16,7 @@ from typing import (
 import re
 import itertools
 from hashlib import md5
+from collections import deque
 
 from loguru import logger
 import numpy as np
@@ -176,7 +177,7 @@ class ToyTree:
     #####################################################
 
     def traverse(self, strategy: str = "levelorder") -> Iterator[Node]:
-        """Return a Generator over Nodes in a specific traversal order.
+        """Return an iterator over Nodes in a specific traversal order.
 
         Notes
         -----
@@ -191,7 +192,9 @@ class ToyTree:
             right, before descending to next level.
         idxorder:
             Leaf nodes are visited left to right, followed by internal
-            nodes in postorder traversal order.
+            nodes in postorder traversal order. But, Nodes can be
+            accessed in idxorder faster by indexing from the ToyTree
+            directly as `[self[i] for i in range(self.nnodes)]`.
         inorder:
             Nodes are visited in non-descreasing order if they are
             a binary search tree: left child, parent, right child.
@@ -217,82 +220,73 @@ class ToyTree:
         for node in self.treenode.traverse(strategy=strategy):
             yield node
 
-    def _update_idxs(self) -> None:
-        """Updates the idx labels of all Nodes and `_idx_dict`.
+    def _update(self) -> None:
+        """Traverse to set and cache Node idxorder and coordinates.
+        
+        idxorder traversal is used to fill the ToyTree._idx_dict to 
+        make Nodes easily indexable. While doing this it also calculates
+        Node heights and spacing (_x) and counts nnodes and ntips.
 
         If a topology has been modified then idx labels must be
-        updated. This function is automatically called by all internal
-        functions for tree modifications (add_child, root, rotate, etc)
-        but not if users modify Nodes adhoc, thus we enforce calling
-        it again at the start of drawing/layout functions.
+        updated. This function is called by all internal `toytree.mod` 
+        functions which modify the topology (e.g., add_child, root, 
+        rotate, etc) but not if users modify Nodes adhoc. This is why
+        Node objects are immutable.
         """
-        self.nnodes = 0
-        self.ntips = 0
-        self._idx_dict = {}
-        # iterate idxorder (post-order but tips first)
-        for idx, node in enumerate(self.traverse('idxorder')):
-            node._idx = idx
-            self._idx_dict[node.idx] = node
-            self.nnodes += 1
+        # clear depth counters used to get heights during traversal
+        depths = {self.treenode: 0}
 
-            # get x,y layout for down-facing tree
+        # queue starts with root children, and stack starts with root.
+        queue = list(self.treenode._children)
+        inner_stack = [self.treenode]
+        outer_stack = []
+
+        # traverse left then right subtrees to fill and pull from queue
+        while queue:
+            # get node from start of queue to proceed levelorder
+            node = queue.pop()
+            
+            # set depth of this node from the root
+            depths[node] = depths[node.up] + node._dist
+            
+            # if leaf add to output stack and update farthest depth
             if node.is_leaf():
-                self.ntips += 1
-
-    def _update_idxs_traversal(self) -> Iterator[Node]:
-        """Return a Generator to update idx and yield Nodes in idxorder.
-
-        This does the same as `_update_idxs` but can be used in other
-        functions to perform additional operations on each node after
-        idx assignment during the same traversal.
-
-        Note
-        -----
-        Take care that the idx_dict and ntips and nnodes attributes are
-        all incomplete during this operation, thus it is hidden for
-        internal use only.
-        """
-        self.nnodes = 0
-        self.ntips = 0
-        self._idx_dict = {}
-        # iterate idxorder (post-order but tips first)
-        for idx, node in enumerate(self.traverse('idxorder')):
-            node._idx = idx
-            self._idx_dict[node.idx] = node
-            self.nnodes += 1
-            if node.is_leaf():
-                self.ntips += 1
-            yield node
-
-    def _update(self) -> None:
-        """Set idx, x, and y values on Nodes.
-
-        Fetching heights requires two traversals. This is performed
-        on init of a ToyTree and any mod or draw functions that occur
-        after init simply use and/or modify the existing heights.
-        This has a speed tradeoff for init'ing trees (see RawTree),
-        but for most concerns is worth it for the convenience.
-        """
-        # first traversal: parents then children to get dists to root
-        max_dist = 0.
-        for node in self.traverse("preorder"):
-            if node.up:
-                node._height = node.dist + node.up._height
+                outer_stack.append(node)
             else:
-                node._height = 0
-            if node.is_leaf():
-                max_dist = max(max_dist, node._height)
+                inner_stack.append(node)
 
-        # second traversal to update idxs while setting new y values
-        for node in self._update_idxs_traversal():
-            node._height = max_dist - node._height
-            if node.is_leaf():
-                node._x = node.idx
-            else:
-                node._x = np.mean([i._x for i in node.children])
+            # add node's children to the queue (left child on end)
+            queue.extend(node._children)
+
+        # get max_depth from root, height is measured relative to this.
+        max_depth = max(depths.values())
+
+        # clear idx cache and counter to be filled next
+        idx = 0
+        self._idx_dict.clear()
+
+        # return nodes in reverse order they were added to stack
+        while outer_stack:
+            node = outer_stack.pop()
+            node._height = max_depth - depths[node]
+            node._x = idx
+            node._idx = idx
+            self._idx_dict[idx] = node
+            idx += 1
+        self.ntips = idx
+
+        # return internal nodes..
+        while inner_stack:
+            node = inner_stack.pop()
+            node._height = max_depth - depths[node]            
+            node._x = sum(i._x for i in node._children) / 2            
+            node._idx = idx
+            self._idx_dict[idx] = node            
+            idx += 1
+        self.nnodes = idx
 
     #####################################################
-    ## TREE MODIFICATION FUNCTIONS (ToyTree.mod)
+    ## TREE MODIFICATION FUNCTIONS (See ToyTree.mod)
     ## - root, unroot, rotate_node, ladderize,
     ## - set_node_heights, collapse_nodes, prune,
     ## - drop_tips, resolve_polytomy,
@@ -397,7 +391,7 @@ class ToyTree:
 
     def _iter_nodes_by_name_match(
         self, *query: str, regex: bool = False) -> Iterator[str]:
-        """Return Generator of Nodes matched by leaf names."""
+        """Return Iterator over Nodes in idxorder matched by leaf names."""
         # get matching function
         if regex:
             comp = [re.compile(q) for q in query]
@@ -456,9 +450,9 @@ class ToyTree:
         """
         # fastest return, all cached Nodes
         if query == ():
-            return list(self._idx_dict.values())
+            return list(self)
 
-        # next most common, user entered all ints
+        # next most common: user entered all ints
         nodes = [self[i] for i in query if isinstance(i, int)]
         if len(nodes) != len(query):
 
@@ -542,9 +536,10 @@ class ToyTree:
         """Return a boolean array to mask certain Nodes when drawing.
 
         The array is in Node idxorder (from 0-nnodes) where boolean
-        True will *mask* Nodes and False will *show* Nodes. Additional
+        True will *mask* Nodes, and False will *show* Nodes. Additional
         Nodes can be selected to be unmasked by entering Node int idx
-        labels or name strings.
+        labels or name strings. By default, the tip Nodes are masked
+        and all internal Nodes are unmasked.
 
         Parameters
         ----------
@@ -721,7 +716,7 @@ class ToyTree:
 
     def get_tip_labels(self) -> List[str]:
         """Return a list of tip labels in Node idx order."""
-        return self.treenode.get_leaf_names()
+        return [self[i].name for i in range(self.ntips)] # .treenode.get_leaf_names()
 
     def _get_edges(self) -> np.ndarray:
         """Return numpy array of child,parent relationships."""
@@ -1030,7 +1025,7 @@ class ToyTree:
 
         See `ToyTree.get_node_coordinates` for details.
         """
-        return self.get_node_coordinates(**kwargs).iloc[self.ntips]
+        return self.get_node_coordinates(**kwargs).iloc[:self.ntips]
 
     ###################################################
     ## FULL TREE DATA GET/SET
@@ -1394,7 +1389,7 @@ class ToyTree:
     #    - expand node_hover=True to a table of all features
     #    - fix admixture_edges
     # --------------------------------------------------------------------
-    def _draw_browser(self, **kwargs):
+    def _draw_browser(self, *args, new: bool = False, **kwargs):
         """Open and display tree drawing in default web browser.
 
         TODO: overload toyplot function, option to reuse same tab,
@@ -1404,7 +1399,7 @@ class ToyTree:
         """
         import toyplot.browser
         canvas, axes, mark = self.draw(**kwargs)
-        toyplot.browser.show([canvas])
+        toytree.utils.show([canvas])
         return canvas, axes, mark
 
     def draw(
@@ -1637,14 +1632,17 @@ class ToyTree:
 if __name__ == "__main__":
 
     import toytree
-    tree = toytree.rtree.unittree(10, seed=123)
-    print(tree.get_tip_labels())
+    tree = toytree.rtree.rtree(12, seed=123)
+    c, a, m = tree._draw_browser(tree_style='s', layout='d', new=False)
 
-    tree = tree.set_node_data("color", {i: "red" for i in (2,3,4)})
+
+    # print(tree.get_tip_labels())
+
+    # tree = tree.set_node_data("color", {i: "red" for i in (2,3,4)})
     # print(tree[3].color)
     # print(tree.features)
     # print(tree.get_node_data())
     # print(tree.get_tip_data("height"))
     # print(tree.get_node_mask())
-    print(tree.get_bipartitions(exclude_singleton_splits=False))
-    print(tree._get_bipartitions_table(exclude_singleton_splits=True))
+    # print(tree.get_bipartitions(exclude_singleton_splits=False))
+    # print(tree._get_bipartitions_table(exclude_singleton_splits=True))
