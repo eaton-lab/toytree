@@ -433,15 +433,20 @@ class Node:
         are typically of special interest as the extant samples, and
         thus numbering them sequentially (0-ntips) is convenient. All
         internal nodes are labeled by post-order from (ntips-nnodes).
+        The order is topologically sorted.
 
-        Notes
-        -----
-        Could also calculate max-dist on its way down...
+        See Also
+        ---------
+        ToyTree._update
+            A similar idxorder traversal is performed by ToyTree class
+            objects in the private update function, which is called
+            everytime a tree is init or topology changed to update the
+            Node idx labels and cache the idxorder. This func also 
+            sets Node height and spacing during traversal.
         """
-        queue = deque([self])
-        inner_stack = deque()
-        outer_stack = deque()
-        node = self
+        queue = [self]
+        inner_stack = []
+        outer_stack = []
         while queue:
 
             # get node from end of the queue
@@ -469,8 +474,8 @@ class Node:
 
         This visits all children before parents by visiting nodes...
         """
-        queue = deque([self])
-        stack = deque()
+        queue = [self]
+        stack = []
         while queue:
 
             # push node from queue onto the output stack
@@ -490,7 +495,7 @@ class Node:
         This visits parents before children, by visiting all the way
         down the left and then right descendants of each node.
         """
-        queue = deque([self])
+        queue = [self]
         while queue:
             # select node from right end of queue
             node = queue.pop()
@@ -507,15 +512,11 @@ class Node:
         the root (number of nodes away) before visiting the next level
         of nodes.
         """
-        visited = set([self])
         queue = deque([self])
         while queue:
             node = queue.popleft()
             yield node
-            for child in node.children:
-                if child not in visited:
-                    visited.add(child)
-                    queue.append(child)
+            queue.extend(node.children)
 
     def _traverse_inorder(self) -> Iterator[Node]:
         """Iterate over all nodes by 'inorder' traversal.
@@ -524,7 +525,7 @@ class Node:
         subtree, and is intended for use on binary-search-trees. It
         may not give intended results when trees are non-binary.
         """
-        queue = deque()
+        queue = []
         node = self
 
         # if both the queue and current node are empty traversal is done
@@ -630,44 +631,44 @@ class Node:
     #     """Return this Node as root treenode of a ToyTree class object."""
     #     return ToyTree(self.copy())
 
-    def _update_heights(self) -> None:
-        """Sets the Node .height attribute by checking all other Nodes.
+    # def _update_heights(self) -> None:
+    #     """Sets the Node .height attribute by checking all other Nodes.
 
-        This is intended for internal use only. It must be called to
-        update Node heights if a tree topology or branch lengths have
-        been modified. This will update *all* connected Node height
-        values in-place.
+    #     This is intended for internal use only. It must be called to
+    #     update Node heights if a tree topology or branch lengths have
+    #     been modified. This will update *all* connected Node height
+    #     values in-place.
 
-        Note
-        ----
-        Height attributes are always updated when Nodes are modified
-        by using built-in functions from ToyTree objects, such as in
-        `toytree.mod`. This is why Node objects are purposefuly made
-        to be immutable, to prevent users from changing the tree
-        structure without properly updating connected Nodes, which
-        could make height attributes incorrect.
-        """
-        # get the root node
-        root = self
-        while 1:
-            if root.up:
-                root = root.up
-            else:
-                break
+    #     Note
+    #     ----
+    #     Height attributes are always updated when Nodes are modified
+    #     by using built-in functions from ToyTree objects, such as in
+    #     `toytree.mod`. This is why Node objects are purposefuly made
+    #     to be immutable, to prevent users from changing the tree
+    #     structure without properly updating connected Nodes, which
+    #     could make height attributes incorrect.
+    #     """
+    #     # get the root node
+    #     root = self
+    #     while 1:
+    #         if root.up:
+    #             root = root.up
+    #         else:
+    #             break
 
-        # get distance from each node to the root
-        max_dist = 0.
-        for node in root.traverse("preorder"):
-            if node.up:
-                node._height = node.dist + node.up._height
-            else:
-                node._height = 0
-            if node.is_leaf():
-                max_dist = max(max_dist, node._height)
+    #     # get distance from each node to the root
+    #     max_dist = 0.
+    #     for node in root.traverse("preorder"):
+    #         if node.up:
+    #             node._height = node.dist + node.up._height
+    #         else:
+    #             node._height = 0
+    #         if node.is_leaf():
+    #             max_dist = max(max_dist, node._height)
 
-        # set height as distance above Node farthest from the root.
-        for node in root.traverse("preorder"):
-            node._height = max_dist - node._height
+    #     # set height as distance above Node farthest from the root.
+    #     for node in root.traverse("preorder"):
+    #         node._height = max_dist - node._height
 
     def _get_ascii(self, char1='-', compact=False):
         """Return the ASCII representation of a tree.
