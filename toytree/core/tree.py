@@ -238,8 +238,14 @@ class ToyTree:
 
         # queue starts with root children, and stack starts with root.
         queue = list(self.treenode._children)
-        inner_stack = [self.treenode]
-        outer_stack = []
+
+        # start w/ root on stack, as either an inner or a tip.
+        if queue:
+            inner_stack = [self.treenode]
+            outer_stack = []
+        else:
+            inner_stack = []
+            outer_stack = [self.treenode]
 
         # traverse left then right subtrees to fill and pull from queue
         while queue:
@@ -275,10 +281,10 @@ class ToyTree:
             idx += 1
         self.ntips = idx
 
-        # return internal nodes..
+        # return internal nodes, or just root if only a single Node.
         while inner_stack:
             node = inner_stack.pop()
-            node._height = max_depth - depths[node]            
+            node._height = max_depth - depths[node]
             node._x = sum(i._x for i in node._children) / len(node._children)
             node._idx = idx
             self._idx_dict[idx] = node            

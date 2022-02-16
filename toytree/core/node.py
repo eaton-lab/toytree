@@ -367,8 +367,8 @@ class Node:
         `add_child` function. However, see toytree.mod subpackage
         for better options for SPR type tree modifications.
         """
-        if self.up:
-            self.up.children = tuple(i for i in self.children if i != self)
+        if self._up:
+            self._up._children = tuple(i for i in self._children if i != self)
             self._up = None
         return self
 

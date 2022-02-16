@@ -239,29 +239,35 @@ def prune(
                 node.up._add_child(cnode)
             node.up._remove_child(node)
 
-        # if node is kept then pop it from the input set
-        else:
-            nodes.remove(node)
-
         # count ndescendants of this node after postorder pruning
-        ndesc[node] = max(1, sum(ndesc[i] for i in node.children))
+        else:
+            ndesc[node] = max(1, sum(ndesc[i] for i in node.children))
 
-    # if a kept node is mrca then return it else return root
+    # if a kept node is mrca then return it as the new root. If the
+    # tree IS only a single Node then 
     if not require_root:
-        for node, ndesc in ndesc.items():
-            if ndesc == nnodes:
-                tree.treenode = node
-                tree._update()
-                return tree
+        if nnodes == 1:
+            tree.treenode = nodes[0]
+        else:
+            for node, ndesc in ndesc.items():
+                if ndesc == nnodes:
+                    tree.treenode = node
+                    break
+        tree.treenode._detach()
+        tree._update()
+        return tree
 
-    # else, make orig root the root
+    # if keeping orig root node, but it is unary, then remove internal
+    # node that is the current pseudo-root and extend its edges to root.
     if len(tree.treenode.children) == 1:
         child = tree.treenode.children[0]
-        for gchild in child.children:
-            gchild._up = tree.treenode
-            gchild._dist += child.dist
-        tree.treenode._remove_child(child)
-        tree.treenode._children = child.children
+        if child.children:
+            for gchild in child.children:
+                gchild._up = tree.treenode
+                gchild._dist += child.dist
+            tree.treenode._remove_child(child)
+            tree.treenode._children = child.children
+
     tree._update()
     return tree
 
@@ -322,7 +328,7 @@ def drop_tips(
     tree = tree if inplace else tree.copy()
     nodes = tree.get_nodes(*query, regex=regex)
     tipnames = [i.name for i in nodes if i.is_leaf()]
-    if len(tipnames) == len(tree):
+    if len(tipnames) == tree.ntips:
         raise ToytreeError("You cannot drop all tips from the tree.")
     if not tipnames:
         logger.warning(f"No tips selected. Matched query: {nodes}")
