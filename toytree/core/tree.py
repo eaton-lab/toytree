@@ -279,7 +279,7 @@ class ToyTree:
         while inner_stack:
             node = inner_stack.pop()
             node._height = max_depth - depths[node]            
-            node._x = sum(i._x for i in node._children) / 2            
+            node._x = sum(i._x for i in node._children) / len(node._children)
             node._idx = idx
             self._idx_dict[idx] = node            
             idx += 1
