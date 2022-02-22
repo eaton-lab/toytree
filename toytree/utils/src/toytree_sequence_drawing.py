@@ -237,7 +237,11 @@ class ToyTreeSequenceDrawing(MultiDrawing):
                 ypos.append(time)
 
                 # store color and title for this point
-                mtype = int(mut.metadata['mutation_list'][0]['mutation_type'])
+                try:
+                    mtype = int(mut.metadata['mutation_list'][0]['mutation_type'])
+                except Exception:
+                    mtype = 0
+                    
                 color = toytree.color.COLORS1[mtype]
                 colors.append(color)
                 title = (
