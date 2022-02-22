@@ -1,7 +1,8 @@
 #!/usr/bin/env python
 
-"""
-Sampling and generating random trees for downstream phylogenetic calcluations
+"""Dist metrics for collections of trees.
+
+Can return values for random samples of trees or all pairwise.
 """
 
 import toytree
@@ -40,3 +41,7 @@ class Sample:
 
         if self.method == "consensus":
             return self.method
+
+
+if __name__ == "__main__":
+    pass
