@@ -15,7 +15,7 @@ Examples
 >>> tts.draw()
 """
 
-from typing import List, Union, Tuple, Optional, Iterable
+from typing import List, Tuple, Optional, Iterable
 from dataclasses import dataclass
 import toyplot
 from toytree.utils.src.scrollable_canvas import ScrollableCanvas
@@ -74,7 +74,7 @@ class ToyTreeSequenceDrawing(MultiDrawing):
         self.marks = []
 
         # colormap
-        self.icolors = toytree.color_cycler(colormap)
+        self.icolors = toytree.color.color_cycler(colormap)
 
         # positioning
         self.xprop_space = 0.2
@@ -238,7 +238,7 @@ class ToyTreeSequenceDrawing(MultiDrawing):
 
                 # store color and title for this point
                 mtype = int(mut.metadata['mutation_list'][0]['mutation_type'])
-                color = toytree.COLORS1[mtype]
+                color = toytree.color.COLORS1[mtype]
                 colors.append(color)
                 title = (
                     f"id: {mut.id}\n"

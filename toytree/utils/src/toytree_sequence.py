@@ -22,7 +22,7 @@ Draw the TreeSequence w/ mutations.
 >>> tts.draw_tree_sequence(max_trees=10, chromosome=...)
 """
 
-from typing import Optional, List, Iterable, Union, Dict
+from typing import Optional, Iterable, Union, Dict, TypeVar
 from loguru import logger
 import numpy as np
 from toytree.utils.src.toytree_sequence_drawing import ToyTreeSequenceDrawing
@@ -30,6 +30,9 @@ import toytree
 
 logger = logger.bind(name="toytree")
 
+ToyTree = TypeVar("toytree.ToyTree")
+TskitTree = TypeVar("tskit.trees")
+TreeSequence = TypeVar("tskit.trees.TreeSequence")
 
 class ToyTreeSequence:
     """Return an instance of a ToyTreeSequence.
@@ -49,7 +52,7 @@ class ToyTreeSequence:
     """
     def __init__(
         self, 
-        tree_sequence: 'tskit.trees.TreeSequence',
+        tree_sequence: TreeSequence,
         sample: Union[int,Iterable[int]]=5,
         seed: Optional[int]=None,
         ):
@@ -111,7 +114,7 @@ class ToyTreeSequence:
         tree = self.tree_sequence.at(pos)
         return self._get_toytree(tree, site=pos)
 
-    def _get_toytree(self, tree: 'tskit.trees.Tree', site: Optional[int]=None):
+    def _get_toytree(self, tree: TskitTree, site: Optional[int]=None) -> ToyTree:
         """Return a ToyTree with mutations for a tree selected by site or index.
 
         It is assumed here that the tree is fully coalesced, returning
@@ -133,8 +136,9 @@ class ToyTreeSequence:
             for tsidx in tree.roots:
                 node = toytree.Node(name=tsidx, dist=tree.branch_length(tsidx))
                 node.tsidx = tsidx
-                node.up = None
-                pseudo_root.children.append(node)
+                node._up = None
+                # pseudo_root._add_child(node) # children parents as None?
+                pseudo_root._children += (node, )
                 tsidx_dict[tsidx] = node
                 logger.debug(f"adding root: {tsidx}")
 
@@ -174,8 +178,7 @@ class ToyTreeSequence:
                 )
                 cnode.tsidx = cidx
                 tsidx_dict[cidx] = cnode
-            cnode.up = pnode
-            pnode.children.append(cnode)
+            pnode._add_child(cnode)
 
         # wrap TreeNode as a toytree
         ttree = toytree.ToyTree(pseudo_root)#root_idx])#.ladderize()
@@ -279,20 +282,25 @@ class ToyTreeSequence:
 
             # project mutation points to proper layout type
             if mark.layout == "l":
-                ypos.append(node.x)
+                ypos.append(node._x)
                 xpos.append(time)        
             elif mark.layout == "r":
-                ypos.append(node.x)
+                ypos.append(node._x)
                 xpos.append(-time)
             elif mark.layout == "d":
-                xpos.append(node.x)
+                xpos.append(node._x)
                 ypos.append(time)      
             elif mark.layout == "u":
-                xpos.append(node.x)
+                xpos.append(node._x)
                 ypos.append(-time)
 
+            # try to extract mtype from metadata if present.
+            try:
+                mtype = int(mut.metadata['mutation_list'][0]['mutation_type'])
+            except Exception:
+                mtype = 0
+
             # store color and title for this point
-            mtype = int(mut.metadata['mutation_list'][0]['mutation_type'])
             color = colormap[mtype]
             colors.append(color)
             title = (
