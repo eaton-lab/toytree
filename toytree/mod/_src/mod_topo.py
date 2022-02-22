@@ -4,7 +4,7 @@
 
 This module includes function for manipulating ToyTrees by adding,
 removing, or changing the relationships among TreeNodes. It is the
-preferred way for users to modify tree topologies, compared to 
+preferred way for users to modify tree topologies, compared to
 editing TreeNodes directly, since it ensures that the TreeNodes
 have a valid ToyTree coordinate structure when returned.
 
@@ -28,7 +28,7 @@ Query = TypeVar("Query", str, int, Node)
 def ladderize(tree, direction: bool=True, inplace: bool=False) -> ToyTree:
     """Return a ladderized tree (ordered descendants)
 
-    In a ladderized tree nodes are rotated so that the left/ 
+    In a ladderized tree nodes are rotated so that the left/
     right child always has fewer/more descendants.
 
     Parameters
@@ -74,7 +74,7 @@ def collapse_nodes(
     """Return ToyTree with some internal nodes collapsed.
 
     Nodes can be entered as Node instances, Node names strings,
-    or Node int idx labels, and/or Nodes can be selected by 
+    or Node int idx labels, and/or Nodes can be selected by
     minimum dist or support values. Selected Nodes are collapsed
     into multi-furcating polytomies. For example, set
     min_support=50 to collapse all nodes with support < 50, and/or
@@ -83,19 +83,19 @@ def collapse_nodes(
     Parameters
     ----------
     *query: str, int, or Node
-        One or more Node selectors, which can be Node objects, names, 
+        One or more Node selectors, which can be Node objects, names,
         or int idx labels.
     min_dist: float
         The minimum dist (edge length) value allowed.
     min_support: float
         The minimum support (e.g., bootstrap) value allowed.
     inplace: bool
-        If True then the original tree is changed in-place, and 
+        If True then the original tree is changed in-place, and
         returned, rather than leaving original tree unchanged.
 
     Note
     ----
-    This will not delete the root Node. To do that you must use 
+    This will not delete the root Node. To do that you must use
     `toytree.mod.unroot`.
 
     Examples
@@ -123,15 +123,15 @@ def collapse_nodes(
     return tree
 
 def rotate_node(
-    tree: ToyTree, 
-    *query: Query, 
-    regex: bool=False, 
+    tree: ToyTree,
+    *query: Query,
+    regex: bool=False,
     inplace: bool=False,
     ) -> ToyTree:
     """Return ToyTree with a selected Node rotated (children reversed).
 
     Rotates only one Node per call. Internal Nodes are easiest selected
-    by idx label, or by selecting multiple Nodes names from which the 
+    by idx label, or by selecting multiple Nodes names from which the
     MRCA will be selected and rotated.
 
     Parameters
@@ -141,12 +141,12 @@ def rotate_node(
         or its idx label, or name str. For internal Nodes, multiple
         queries can be entered and their MRCA will be rotated.
     regex: bool
-        If True then Node name strings are treated as regular 
+        If True then Node name strings are treated as regular
         expressions that can match to multiple Nodes.
     inplace: bool
-        If True then the original tree is changed in-place, and 
+        If True then the original tree is changed in-place, and
         returned, rather than leaving original tree unchanged.
-                
+
     Examples
     --------
     >>> tree = toytree.rtree.unittree(10)
@@ -156,12 +156,12 @@ def rotate_node(
     """
     idx = tree.get_mrca_node(*query, regex=regex).idx
     tree = tree if inplace else tree.copy()
-    tree[idx]._children = tree[idx]._children[::-1] 
+    tree[idx]._children = tree[idx]._children[::-1]
     tree._update()
     return tree
 
 def prune(
-    tree, 
+    tree,
     *query: Query,
     regex: bool=False,
     preserve_branch_length: bool=True,
@@ -172,23 +172,23 @@ def prune(
 
     All nodes not included in the entered 'nodes' list will be
     removed from the topology, and the mininal spanning edges to
-    connect the remaining nodes are retained. The original root node 
+    connect the remaining nodes are retained. The original root node
     is preserved if 'require_root=True', otherwise the lowest
     mrca connecting the selected nodes will be kept as the new root.
 
-                4      prune([0,2])     4     
-               / \                     / \   
-              3   \      ------>      /   \  
-             / \   \                 /     \ 
+                4      prune([0,2])     4
+               / \                     / \
+              3   \      ------>      /   \
+             / \   \                 /     \
             0   1   2               0       2
 
     Parameters
     ----------
     *query: str, int, or Node
-        One or more Node selectors, which can be Node objects, names, 
+        One or more Node selectors, which can be Node objects, names,
         or int idx labels.
     regex: bool
-        If True then Node name strings are treated as regular 
+        If True then Node name strings are treated as regular
         expressions that can match to multiple Nodes.
     preserve_branch_length: bool
         If True then the edge lengths of internal nodes that are
@@ -199,7 +199,7 @@ def prune(
         then the root is only preserved if is it the mrca of the
         selected nodes, otherwise the mrca Node is returned.
     inplace: bool
-        If True then the original tree is changed in-place, and 
+        If True then the original tree is changed in-place, and
         returned, rather than leaving original tree unchanged.
     """
     # create a copy or operate in place
@@ -221,7 +221,7 @@ def prune(
     # it easy to find the mrca later, and whether it is a mrca.
     ndesc = {}
 
-    # traverse tree by idx number since we cannot do traversal func 
+    # traverse tree by idx number since we cannot do traversal func
     # while modifying the tree structure.
     for nidx in range(tree.nnodes):
         node = tree[nidx]
@@ -244,7 +244,7 @@ def prune(
             ndesc[node] = max(1, sum(ndesc[i] for i in node.children))
 
     # if a kept node is mrca then return it as the new root. If the
-    # tree IS only a single Node then 
+    # tree IS only a single Node then
     if not require_root:
         if nnodes == 1:
             tree.treenode = nodes[0]
@@ -286,18 +286,18 @@ def remove_unary_nodes(tree: ToyTree, inplace: bool=False):
     return tree
 
 def drop_tips(
-    tree: ToyTree, 
-    *query: Query, 
-    regex: bool=False, 
+    tree: ToyTree,
+    *query: Query,
+    regex: bool=False,
     inplace: bool=False,
     ) -> ToyTree:
     """Return a ToyTree with some tip Nodes removed.
 
-    The ToyTree with the selected tip Nodes (and any remaining internal 
+    The ToyTree with the selected tip Nodes (and any remaining internal
     nodes without children) are removed while retaining the original
-    edge lengths between remaining nodes. This is effectively the 
+    edge lengths between remaining nodes. This is effectively the
     inverse of `prune`. Tip names can be selected using a Query method
-    of Node instances, Node names, or Node idx int labels. Only 
+    of Node instances, Node names, or Node idx int labels. Only
     selected tip Nodes affect the result.
 
     Parameters
@@ -305,13 +305,13 @@ def drop_tips(
     tree: ToyTree
         An input ToyTree to perform function on.
     *query: str, int, or Node
-        One or more Node selectors, which can be Node objects, names, 
+        One or more Node selectors, which can be Node objects, names,
         or int idx labels.
     regex: bool
-        If True then Node name strings are treated as regular 
-        expressions that can match to multiple Nodes.        
+        If True then Node name strings are treated as regular
+        expressions that can match to multiple Nodes.
     inplace: bool
-        If True then the original tree is changed in-place, and 
+        If True then the original tree is changed in-place, and
         returned, rather than leaving original tree unchanged.
 
     See Also
@@ -347,27 +347,27 @@ def resolve_polytomies(
     inplace: bool=False,
     ) -> ToyTree:
     """Return ToyTree with one or more polytomies randomly resolved.
-        
+
     Parameters
     ----------
     *query: str, int, or Node
-        One or more Node selectors, which can be Node objects, names, 
+        One or more Node selectors, which can be Node objects, names,
         or int idx labels. If no Nodes are selected then ALL nodes
         that are multifurcating will be resolved.
     regex: bool
-        If True then Node name strings are treated as regular 
-        expressions that can match to multiple Nodes.     
+        If True then Node name strings are treated as regular
+        expressions that can match to multiple Nodes.
     dist: float
         The dist value to set on newly created nodes.
     support: float
         The support value to set on newly created nodes.
     recursive: bool
         Recursively resolve nested polytomies (default=True); if False
-        then a n-tomy will only be resolved into a (n-1)-tomy. 
+        then a n-tomy will only be resolved into a (n-1)-tomy.
     seed: int or None
         A seed for numpy random generator for reproducible resolving.
     inplace: bool
-        If True then the original tree is changed in-place, and 
+        If True then the original tree is changed in-place, and
         returned, rather than leaving original tree unchanged.
 
     Examples
@@ -388,10 +388,10 @@ def resolve_polytomies(
 
 def add_internal_node(
     tree: ToyTree,
-    *query: Query, 
+    *query: Query,
     regex: bool=False,
     dist: Optional[float]=None,
-    name: Optional[str]=None, 
+    name: Optional[str]=None,
     inplace: bool=False,
     ) -> ToyTree:
     r"""Add an internal node by splitting an edge to create new node.
@@ -410,21 +410,21 @@ def add_internal_node(
     --------
     :func:`.add_tip_node`:
         Similar to this function but adds a tip node descending from C.
-    
+
     Parameters
     ----------
     *query: str, int, or Node
-        One or more Node selectors, which can be Node objects, names, 
+        One or more Node selectors, which can be Node objects, names,
         or int idx labels. If multiple are entered the MRCA node will
         be used as the base of the edge to split.
     regex: bool
-        If True then Node name strings are treated as regular 
+        If True then Node name strings are treated as regular
         expressions that can match to multiple Nodes.
     dist: float
         The distance from the selected Node at which to insert
-        the new Node. This will be set as the dist of the 
-        descendant (A) whereas the new Node's dist (C) will be 
-        the descendants prior dist minus this dist value. If 
+        the new Node. This will be set as the dist of the
+        descendant (A) whereas the new Node's dist (C) will be
+        the descendants prior dist minus this dist value. If
         no dist value is set then the edge midpoint is used.
     name: Optional[str]
         A name string to apply to the new Node.
@@ -447,7 +447,7 @@ def add_internal_node(
 
     # create the new Node and mend connections nearby
     new_node = Node(
-        name=name if name is not None else "", 
+        name=name if name is not None else "",
         dist=node.dist - dist,
     )
     node._dist = dist
@@ -457,7 +457,7 @@ def add_internal_node(
     new_node._children = (node, )
     node._up = new_node
     tree._update()
-    return tree        
+    return tree
 
 def add_tip_node(
     tree: ToyTree,
@@ -469,7 +469,7 @@ def add_tip_node(
     parent_name: Optional[str]=None,
     inplace: bool=False,
     ) -> ToyTree:
-    r"""Add a tip node by splitting an edge to create a new parent 
+    r"""Add a tip node by splitting an edge to create a new parent
     and descendant node pair.
 
     Splits a branch spanning from node idx (A) to its parent (B)
@@ -488,11 +488,11 @@ def add_tip_node(
     Parameters
     ----------
     *query: str, int, or Node
-        One or more Node selectors, which can be Node objects, names, 
+        One or more Node selectors, which can be Node objects, names,
         or int idx labels. If multiple are entered the MRCA node will
-        be used as the base of the edge to split. 
+        be used as the base of the edge to split.
     regex: bool
-        If True then Node name strings are treated as regular 
+        If True then Node name strings are treated as regular
         expressions that can match to multiple Nodes.
     name: str
         Optional name for the new sister node.
@@ -555,7 +555,7 @@ def add_tip_node(
     return tree
 
 def move_clade(
-    tree: ToyTree, 
+    tree: ToyTree,
     idx0: int,
     idx1: int,
     height: Optional[float]=None,
@@ -565,55 +565,55 @@ def move_clade(
     ):
     r"""Move a clade from one part of the tree to another (SPR).
 
-    Splits a branch spanning from node idx1 (Y) to its parent (Z) 
+    Splits a branch spanning from node idx1 (Y) to its parent (Z)
     to create a new ancestral node (X). The idx0 clade is detached
     from the tree (D) and its parent is removed if it leaves only
-    one child (E). The detached clade is reattached to the new 
-    ancestral node (D -> X) while maintaining the edge lengths of 
+    one child (E). The detached clade is reattached to the new
+    ancestral node (D -> X) while maintaining the edge lengths of
     the subtree. The length of the edge connecting idx0 to the new
-    node (D, X) is automatically set to maintain ultrametricity, 
+    node (D, X) is automatically set to maintain ultrametricity,
     unless the subclade height is greater than the dist arg. This
-    will raise an error unless shrink=True, in which case the 
+    will raise an error unless shrink=True, in which case the
     subtree is scaled to half the dist height to fit.
 
                           Z
           Z              / \              Z
-         / \            E   \            / \  
+         / \            E   \            / \
         E   \          /     \          /   X --- auto-set dist
-       / \   \        C       Y        /   / \  
+       / \   \        C       Y        /   / \
       D   \   \  -->            -->   /   /   D --- auto-set dist
-     / \   \   \          D          /   /   / \  
+     / \   \   \          D          /   /   / \
     A   B   C   Y        / \        A   Y   A   B --- maintained dist
                         A   B
 
     Note
     ----
-    This operation is synonymous with a rooted subprune regrafting 
-    (SPR) move. Internal nodes that leave no descendants (e.g., E) 
+    This operation is synonymous with a rooted subprune regrafting
+    (SPR) move. Internal nodes that leave no descendants (e.g., E)
     from above are removed from the tree.
-    
+
     Parameters
     ----------
     tree: ToyTree
         A tree object.
     idx0: int
-        The idx label of the Node at the top of the clade that 
+        The idx label of the Node at the top of the clade that
         will be pruned from the tree and re-attached elsewhere.
     idx1: int
-        The idx label of the Node whose branch will be split to 
-        create a new parent node of the re-attached clade. 
+        The idx label of the Node whose branch will be split to
+        create a new parent node of the re-attached clade.
     height: float or None
         The height at which to insert node idx0 above node idx1.
-        This value must be in the interval between the height of 
+        This value must be in the interval between the height of
         idx1 and its parent (node.height, node.height + node.dist).
         If None then the node will be inserted at the midpoint
         along node idx1's edge.
     name: str
         A name string to apply to the newly created internal node.
     shrink: bool
-        If shrink is True then the subtree edge lengths (dists) 
+        If shrink is True then the subtree edge lengths (dists)
         will be scaled to allow the clade to be inserted anywhere
-        in the tree. If False a ToyTreeError is raised if the 
+        in the tree. If False a ToyTreeError is raised if the
         subclade cannot be inserted below the dist value.
 
     Returns
@@ -631,7 +631,7 @@ def move_clade(
     # cannot move a clade to its own children in rooted move
     assert idx0 != idx1, "idx0 must be different from idx1"
     assert idx0 != tree.treenode, "src node cannot be root."
-    assert idx1 != tree.treenode, "dest node cannot be root."    
+    assert idx1 != tree.treenode, "dest node cannot be root."
     assert dest not in src.get_descendants(), (
         "dest node cannot be a descendant of src in a rooted SPR move."
     )
@@ -646,7 +646,7 @@ def move_clade(
     if height is None:
         dist = dest.dist / 2.
     else:
-        dist = height - dest.height 
+        dist = height - dest.height
 
     # if the dest is the src's parent, then we only need to modify the
     # dist of dest and return the tree.
@@ -675,7 +675,7 @@ def move_clade(
     else:
         root = tree.treenode
     ancestor.delete(True, True)
-    
+
     # set src dist (optional allowing shrink to fit)
     if src.height > dest.height + dist:
         if not shrink:
@@ -692,7 +692,7 @@ def move_clade(
             node.dist /= scale
     else:
         src.dist = dest.height + dist - src.height
-            
+
     # set dest dist
     dest.dist = dist
 
@@ -716,13 +716,13 @@ def move_clade(
     return tree
 
 def _resolve_nodes(
-    node: Node, 
-    dist: float, 
-    support: float, 
+    node: Node,
+    dist: float,
+    support: float,
     rng: np.random.Generator,
     recursive: bool,
     ) -> Node:
-    """Resolve multifurcating Nodes. 
+    """Resolve multifurcating Nodes.
 
     Randomly choose left/right split among children.
     """
@@ -734,15 +734,15 @@ def _resolve_nodes(
     idx = rng.choice(child_idxs)
     left = node.children[idx]
     remaining = [node.children[i] for i in child_idxs if i != idx]
-    
+
     # create new right parent
     right = Node(dist=dist, support=support)
-    
+
     # resolve this Node
     node._children = (left, right)
     left._up = node
     right._up = node
-    
+
     # connect remaining as (bi-multi) of right
     for child in remaining:
         child._up = right
