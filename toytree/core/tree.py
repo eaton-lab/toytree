@@ -317,8 +317,8 @@ class ToyTree:
         Example of rooting an unrooted tree:
                                                     x
                                                    / \
-                      _ 2 _        root('n')      n   u
-                     |  |  |         -->             / \
+                        2          root('n')      n   u
+                      / | \          -->             / \
                      1  .  u                        2   .
                           / \                      / \
                          .   n                    1   .
