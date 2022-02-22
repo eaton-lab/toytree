@@ -233,7 +233,7 @@ class ToyTreeSequenceDrawing(MultiDrawing):
                     continue
 
                 # project mutation points to proper layout type
-                xpos.append(node.x + mark.xbaseline)
+                xpos.append(node._x + mark.xbaseline)
                 ypos.append(time)
 
                 # store color and title for this point
