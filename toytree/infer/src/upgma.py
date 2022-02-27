@@ -12,7 +12,13 @@ import toytree
 def infer_upgma_tree(data: pd.DataFrame) -> toytree.ToyTree:
     """Return a ToyTree inferred by UPGMA from a distance matrix.
     
+    Parameters
+    ----------
     ...
+
+    Examples
+    --------
+    >>> ...
     """
     # convert data to an array for faster processing.
     arr = np.array(data, dtype=float)
