@@ -509,7 +509,6 @@ class TreeStyle:
         >>> admixture_edges = [
         >>>     (src_idx, dest_idx, (src_time, dest_time), dict, str)
         >>> ]
-
         """
         # bail if empty
         if self.admixture_edges is None:
@@ -525,30 +524,16 @@ class TreeStyle:
         for atup in self.admixture_edges:
 
             # required: src node idx from Union[int, str, Iterable[str]]
-            src = self.tree.get_mrca_node(*atup[0]).idx
-            # if isinstance(atup[0], (str, list, tuple)):
-            #     nas = NodeAssist(self.tree, atup[0], None, None)
-            #     node = nas.get_mrca()
-            #     if not node.is_root():
-            #         src = node.idx
-            #     else:
-            #         nas.match_reciprocal()
-            #         src = nas.get_mrca().idx
-            # else:
-            #     src = int(atup[0])
+            if isinstance(atup[0], (int, str)):
+                src = self.tree.get_mrca_node(atup[0]).idx
+            else:
+                src = self.tree.get_mrca_node(*atup[0]).idx
 
             # required: dest node idx from Union[int, str, Iterable[str]]
-            dest = self.tree.get_mrca_node(*atup[1]).idx
-            # if isinstance(atup[1], (str, list, tuple)):
-            #     nas = NodeAssist(self.tree, atup[1], None, None)
-            #     node = nas.get_mrca()
-            #     if not node.is_root():
-            #         dest = node.idx
-            #     else:
-            #         nas.match_reciprocal()
-            #         dest = nas.get_mrca().idx
-            # else:
-            #     dest = int(atup[1])
+            if isinstance(atup[1], (int, str)):
+                dest = self.tree.get_mrca_node(atup[1]).idx
+            else:
+                dest = self.tree.get_mrca_node(*atup[1]).idx
 
             # optional: proportion on edges
             if len(atup) > 2:
