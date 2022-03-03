@@ -145,10 +145,9 @@ class Node:
     def dist(self, value: float) -> None:
         """Set the dist attribute, forced as an int or float."""
         raise TreeNodeError(
-            "Setting .dist on Nodes is not allowed, as it represents a "
-            "change to the tree. See the 'toytree.mod' subpackage for "
-            "functions to modify Nodes in a ToyTree, or, if you are "
-            "sure of what you are doing then modify ._dist instead."
+            "Cannot set .dist attribute of a Node. If you are an "
+            "advanced user then you can do so by setting ._dist. "
+            "See the docs section on Modifying Nodes and Tree Topology."
         )
 
     @property
@@ -185,7 +184,10 @@ class Node:
         set the height of one or more Nodes to the entered values.
         """
         raise TreeNodeError(
-            "Cannot set Node height. See docs and `toytree.mod.set_node_heights`.")
+            "Cannot set .height attribute of a Node. If you are an "
+            "advanced user then you can do so by setting ._height. "
+            "See the docs section on Modifying Nodes and Tree Topology,"
+            "and/or see function `toytree.mod.set_node_heights`.")
 
     @property
     def children(self) -> Tuple[Node]:
@@ -196,10 +198,9 @@ class Node:
     def children(self, value: Node) -> None:
         """The children tuple cannot be modified. See ToyTree.mod."""
         raise TreeNodeError(
-            "Cannot set/modify .children attribute of a Node. "
-            "You should use the ToyTree level functions in ToyTree.mod. "
-            "If you are an advanced user you can modify .children by "
-            "accessing the private attribute ._children."
+            "Cannot set .children attribute of a Node. If you are an "
+            "advanced user then you can do so by setting ._children. "
+            "See the docs section on Modifying Nodes and Tree Topology."
         )
 
     @property
@@ -211,10 +212,9 @@ class Node:
     def up(self, value: Node) -> None:
         """Modifying up requires a call to ToyTree._update()."""
         raise TreeNodeError(
-            "Cannot set/modify .up attribute of a Node. "
-            "You should use the ToyTree level functions in ToyTree.mod. "
-            "If you are an advanced user you can modify .up by "
-            "accessing the private attribute ._up."
+            "Cannot set .up attribute of a Node. If you are an "
+            "advanced user then you can do so by setting ._up. "
+            "See the docs section on Modifying Nodes and Tree Topology."
         )
 
     @property
@@ -226,11 +226,9 @@ class Node:
     def idx(self, value: int):
         """This will raise an TreeNodeError, users cannot set idx."""
         raise TreeNodeError(
-            "Cannot set 'idx' Node attribute. The idx labels are used "
-            "internally to quickly access the tree structure for plotting."
-            "To change the plotting coordinates of Nodes see the args to "
-            "`.draw()` 'fixed_order' and 'fixed_position', or, to change "
-            "the tree topology see the `.mod` subpackage."
+            "Cannot set .idx attribute of a Node. If you are an "
+            "advanced user then you can do so by setting ._idx. "
+            "See the docs section on Modifying Nodes and Tree Topology."
         )
 
     ################################################
@@ -281,6 +279,8 @@ class Node:
 
     def __repr__(self) -> str:
         """Returned string representation of Node"""
+        if self.name:
+            return f"Node({self.idx}, {self.name})"
         return f"Node({self.idx})"
 
     def __str__(self) -> str:
@@ -441,7 +441,7 @@ class Node:
             A similar idxorder traversal is performed by ToyTree class
             objects in the private update function, which is called
             everytime a tree is init or topology changed to update the
-            Node idx labels and cache the idxorder. This func also 
+            Node idx labels and cache the idxorder. This func also
             sets Node height and spacing during traversal.
         """
         queue = [self]
