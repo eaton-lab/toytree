@@ -612,9 +612,7 @@ class TreeStyle:
         return self.json()
 
     def _to_css_styles(self, style_dict: Dict[str,str]):
-        """
-        Convert dict keys to valid CSS styles
-        """
+        """Convert dict keys to valid CSS styles."""
         style_dict_keys = list(style_dict.keys())
         for key in style_dict_keys:
             sub_style = getattr(self, key)
