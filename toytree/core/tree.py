@@ -15,8 +15,8 @@ from typing import (
     Union, Tuple, TypeVar, Callable)
 import re
 import itertools
+from copy import deepcopy
 from hashlib import md5
-from collections import deque
 
 from loguru import logger
 import numpy as np
@@ -169,7 +169,8 @@ class ToyTree:
 
     def copy(self) -> ToyTree:
         """Return a deepcopy of the ToyTree."""
-        return ToyTree(self.treenode.copy())
+        return deepcopy(self)
+        # return ToyTree(self.treenode.copy())
 
     #####################################################
     ## TRAVERSAL
