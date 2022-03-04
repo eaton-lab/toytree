@@ -23,9 +23,12 @@ mrbayes. Not implemented here.
 """
 
 from typing import Optional, TypeVar
+from loguru import logger
 import numpy as np
-import toytree.core.tree
+import toytree
 
+
+logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
 
 def move_spr(
@@ -56,11 +59,9 @@ def move_spr(
     # randomly select a subtree (any non-root Node)
     sidx = rng.choice(tree.nnodes - 1)
     subtree = tree[sidx]
-    tips = subtree.get_leaf_names()
 
     # get list of Nodes (edges) where subtree can be inserted. This
-    # cannot be the root, or a descendant on the subtree Node, or the
-    # subtree itself.
+    # cannot be root, or a desc on the subtree Node, or the subtree itself.
     edges = (
         set(range(tree.nnodes)) -
         set((i._idx for i in subtree._iter_descendants())) -
@@ -71,6 +72,7 @@ def move_spr(
 
     # sample an edge by its descendant Node
     new_sister = tree[rng.choice(list(edges))]
+    # logger.info(f"SPR: {sidx} -> {new_sister.idx}; options={edges}")
 
     # connect subtree to new sister by inserting a new Node
     new_node = toytree.Node("new")
@@ -95,21 +97,46 @@ def move_spr(
     if new_node_parent:
         new_node_parent._remove_child(new_sister)
         new_node_parent._add_child(new_node)
+
+    # if old root is now a singleton b/c new_sister is one of its children
+    if len(tree.treenode.children) == 1:
+        tree.treenode = tree.treenode.children[0]
+        oldroot = tree.treenode._up
+        tree.treenode._up = None
+        del oldroot
+
+    # if new_sister is now the root.
+    elif new_sister == tree.treenode:
+        tree.treenode = new_node
     tree._update()
 
     # optional: color edges of the subtree that was moved.
     if highlight:
         tree.style.edge_colors = ['black'] * tree.nnodes
-        descs = tree.get_mrca_node(*tips).get_descendants()
-        for node in tree:
-            if node in descs:
-                tree.style.edge_colors[node.idx] = toytree.color.COLORS1[0]
+        tree.style.node_colors = ['white'] * tree.nnodes
+        tree.style.node_style.stroke_width = 1.5
+        tree.style.node_sizes = 8
+        tree.style.node_labels = "idx"
+        tree.style.node_labels_style.font_size = 12
+        tree.style.node_labels_style._toyplot_anchor_shift = -9
+        tree.style.node_labels_style.baseline_shift = 7.5
+        tree.style.use_edge_lengths = False
+
+        # tree.get_mrca_node(*tips)
+        for node in subtree._iter_descendants():
+            tree.style.edge_colors[node.idx] = toytree.color.COLORS2[3]
+            tree.style.node_colors[node.idx] = toytree.color.COLORS2[3]
+        tree.style.node_colors[new_node.idx] = toytree.color.COLORS2[3]
     return tree
 
 
 if __name__ == "__main__":
 
     # should be 15 rooted trees.
-    TREE = toytree.rtree.unittree(4, seed=123)
-    print(TREE._draw_browser())
-    print(move_spr(TREE)._draw_browser())
+    # toytree.set_log_level("INFO")
+    TREE = toytree.rtree.unittree(5, seed=123)
+    MTREE = move_spr(TREE, highlight=True)
+
+    c0, _, _ = TREE.draw()
+    c1, _, _ = MTREE.draw()
+    toytree.utils.show([c0, c1], new=False)
