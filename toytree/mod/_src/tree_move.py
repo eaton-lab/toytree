@@ -130,13 +130,85 @@ def move_spr(
     return tree
 
 
+def move_nni(
+    tree: ToyTree,
+    seed: Optional[int]=None,
+    inplace: bool=False,
+    highlight: bool=False,
+    ) -> ToyTree:
+    """Return a rooted ToyTree one SPR move from the current tree.
+
+    The returned tree will have a different topology from the starting
+    tree, at an SPR distance of 1. It randomly samples a subtree to
+    extract from the tree, and then reinserts the subtree at an edge
+    that is not (1) one of its descendants; (2) its sister; (3) its
+    parent; or (4) itself.
+
+    Parameters
+    ----------
+    ...
+
+    Examples
+    --------
+    >>> ...
+    """
+    tree = tree if inplace else tree.copy()
+    rng = np.random.default_rng(seed)
+
+    # randomly select a subtree (any non-root Node)
+    sidx = rng.choice(tree.nnodes - 1)
+    subtree = tree[sidx]
+
+    # get list of Nodes (edges) where subtree can be inserted. This
+    # cannot be root, or a desc on the subtree Node, or the subtree itself.
+    edges = (
+        set(range(tree.nnodes)) -
+        set((i._idx for i in subtree._iter_descendants())) -
+        set((i._idx for i in subtree._iter_sisters())) -
+        set((subtree._up._idx, )) -
+        set((subtree._idx, ))
+    )
+
+    # sample an edge by its descendant Node
+    new_sister = tree[rng.choice(list(edges))]
+    logger.info(f"NNI: {sidx} -> {new_sister.idx}; options={edges}")
+
+    parent_1 = subtree._up.idx
+    parent_2 = new_sister._up.idx
+    tree[parent_1]._remove_child(tree[subtree.idx])
+    tree[parent_2]._remove_child(tree[new_sister.idx])
+    tree[parent_1]._add_child(tree[new_sister.idx])
+    tree[parent_2]._add_child(tree[subtree.idx])
+
+    tree._update()
+
+    # optional: color edges of the subtree that was moved.
+    if highlight:
+        tree.style.edge_colors = ['black'] * tree.nnodes
+        tree.style.node_colors = ['white'] * tree.nnodes
+        tree.style.node_style.stroke_width = 1.5
+        tree.style.node_sizes = 8
+        tree.style.node_labels = "idx"
+        tree.style.node_labels_style.font_size = 12
+        tree.style.node_labels_style._toyplot_anchor_shift = -9
+        tree.style.node_labels_style.baseline_shift = 7.5
+        tree.style.use_edge_lengths = False
+
+        # tree.get_mrca_node(*tips)
+        for node in subtree._iter_descendants():
+            tree.style.edge_colors[node.idx] = toytree.color.COLORS2[3]
+            tree.style.node_colors[node.idx] = toytree.color.COLORS2[3]
+        # tree.style.node_colors[new_node.idx] = toytree.color.COLORS2[3]
+    return tree
+
+
 if __name__ == "__main__":
 
     # should be 15 rooted trees.
-    # toytree.set_log_level("INFO")
+    toytree.set_log_level("INFO")
     TREE = toytree.rtree.unittree(5, seed=123)
-    MTREE = move_spr(TREE, highlight=True)
+    MTREE = move_nni(TREE, highlight=True)
 
-    c0, _, _ = TREE.draw()
+    c0, _, _ = TREE.draw('s')
     c1, _, _ = MTREE.draw()
     toytree.utils.show([c0, c1], new=False)
