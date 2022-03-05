@@ -1,0 +1,7 @@
+future
+loguru
+numpy
+pandas
+requests
+scipy
+toyplot
