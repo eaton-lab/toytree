@@ -107,7 +107,7 @@ class Node:
     >>> node.dist = 10  # raises a TreeNodeError
     """
     def __init__(self, name: str="", dist: float=1., support: float=0.):
-        self._name = name
+        self._name = str(name)
         """: name string assigned to Node."""
         self._dist = dist
         """: length value associated to the edge above this Node."""
