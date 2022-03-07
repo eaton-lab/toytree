@@ -388,6 +388,53 @@ def bdtree(
     return tree
 
 
+def coaltree(k: int, N: int, seed: Optional[int]=None) -> ToyTree:
+    """Return a random ToyTree generated under the n-coalescent.
+    
+    Waiting times between coal events under the n-coalescent are 
+    exponentially distributed with rate 4N / (k * k-1). A tree is 
+    constructed by randomly samples waiting times from an exponential 
+    for each value of k from k to 1, and randomly joining Nodes at 
+    each coalescent interval.
+    
+    Parameters
+    ----------
+    k: int
+        The number of gene copies sampled at the present.
+    N: int
+        The effective population size (Ne).
+    seed: int or None
+        A seed for the numpy random number generator.
+    """
+    # seed rng
+    rng = np.random.default_rng(seed)
+    
+    # get waiting times
+    kvals = np.arange(k, 1, -1)
+    times = rng.exponential((4 * N) / (kvals * (kvals - 1)))
+    
+    # make tip Nodes for k samples
+    nodes = {i: Node(name=str(i)) for i in range(k)}
+    
+    # iterate over coalescent time intervals
+    for time in times:
+        # increment the dist for all current Nodes
+        for node in nodes:
+            nodes[node]._dist += time
+        
+        # randomly sample two Nodes and connect to a new parent
+        node0 = nodes.pop(rng.choice(tuple(nodes)))
+        node1 = nodes.pop(rng.choice(tuple(nodes)))
+        new_node = Node(str(k + 1))
+        new_node._add_child(node0)
+        new_node._add_child(node1)
+
+        # advance name counter and update tips dict
+        k = k + 1
+        nodes[k] = new_node
+    return ToyTree(new_node)
+
+
 def _get_small_child(node):
     """A recursive to return a Node from the smaller subclade of a
     tree, used for building balanced trees."""
