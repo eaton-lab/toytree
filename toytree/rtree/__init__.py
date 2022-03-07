@@ -15,4 +15,5 @@ Examples
 >>> tree3 = toytree.rtree.baltree(ntips=10, treeheight=1e6)
 """
 
-from toytree.rtree._src.rtree import rtree, unittree, imbtree, baltree, bdtree
+from toytree.rtree._src.rtree import (
+	rtree, unittree, imbtree, baltree, bdtree, coaltree)
