@@ -43,5 +43,5 @@ from toytree.mod._src.root_unroot import unroot, root
 from toytree.mod._src.tree_move import (
 	move_spr, 
 	move_nni,
-	move_nni_generator,
+	move_nni_iter,
 )
