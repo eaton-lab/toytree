@@ -19,7 +19,7 @@ modify the probability of proposed pruning points by updating a
 mrbayes. Not implemented here.
 """
 
-from typing import Optional, TypeVar, Iterator, Callable
+from typing import Optional, TypeVar, Iterator
 from loguru import logger
 import numpy as np
 import toytree
@@ -154,7 +154,7 @@ def move_nni(
     rng = np.random.default_rng(seed)    
 
     # select an internal edge, or tip, which selects parent internal
-    internal_edges = range(tree.ntips, tree.nnodes - 2)
+    internal_edges = range(tree.ntips, tree.nnodes - 1)
     if edge is None:
         node = tree[rng.choice(internal_edges)]
     else:
@@ -168,7 +168,8 @@ def move_nni(
 
     # select a child to swap with
     pick = rng.choice(children)
-    sister = rng.choice(node.get_sisters())
+    sisters = node.get_sisters()
+    sister = sisters[0]
     logger.info(f"NNI: edge={node}, swap={pick} <--> {sister}")
 
     # add labels when debugging
@@ -197,7 +198,24 @@ def move_nni(
 
     # optionally add style highlights
     if highlight:
-        tree = highlight_clades(tree, pick, sister)
+        tree = style_tree(tree)
+        tree.style.node_colors = 'white'
+        tree.style.edge_colors = ['black'] * tree.nnodes
+        tree.style.edge_widths = [2] * tree.nnodes
+
+        # color edge green
+        tree.style.edge_colors[new_node.idx] = toytree.color.COLORS2[0]
+        tree.style.edge_widths[new_node.idx] = 5
+
+        # color clade 1 orange
+        for edg in children:
+            tree.style.edge_colors[edg.idx] = toytree.color.COLORS2[1]
+            tree.style.edge_widths[edg.idx] = 5
+
+        # color clade 1 purple
+        for edg in sisters + (parent,):
+            tree.style.edge_colors[edg.idx] = toytree.color.COLORS2[2]
+            tree.style.edge_widths[edg.idx] = 5    
     return tree
 
 
