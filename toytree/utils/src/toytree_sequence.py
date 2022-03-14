@@ -22,7 +22,7 @@ Draw the TreeSequence w/ mutations.
 >>> tts.draw_tree_sequence(max_trees=10, chromosome=...)
 """
 
-from typing import Optional, Iterable, Union, Dict, TypeVar
+from typing import Optional, Iterable, Union, Dict, TypeVar, Collection
 from loguru import logger
 import numpy as np
 from toytree.utils.src.toytree_sequence_drawing import ToyTreeSequenceDrawing
@@ -33,6 +33,7 @@ logger = logger.bind(name="toytree")
 ToyTree = TypeVar("toytree.ToyTree")
 TskitTree = TypeVar("tskit.trees")
 TreeSequence = TypeVar("tskit.trees.TreeSequence")
+
 
 class ToyTreeSequence:
     """Return an instance of a ToyTreeSequence.
@@ -53,17 +54,25 @@ class ToyTreeSequence:
     def __init__(
         self, 
         tree_sequence: TreeSequence,
-        sample: Union[int,Iterable[int]]=5,
+        sample: Union[int, Iterable[int], None]=None,
         seed: Optional[int]=None,
         ):
 
         # store user args
         self.rng = np.random.default_rng(seed)
         self.npopulations = len(list(tree_sequence.populations()))
-        if isinstance(sample, int):
+        self.sample: Collection = None
+        self.tree_sequence: TreeSequence = None
+
+        # subsample/simplify treesequence to same or smaller nsamples
+        if sample is None:
+            self.sample = [tree_sequence.sample_size]
+        elif isinstance(sample, int):
             self.sample = [sample] * self.npopulations
         else:
             self.sample = sample
+
+        # get simplified ts
         self.tree_sequence = self._get_subsampled_ts(tree_sequence)
         self._i = 0
 
@@ -85,7 +94,7 @@ class ToyTreeSequence:
     def __repr__(self):
         return f"<ToyTreeSequence ntrees={len(self)}>"
 
-    def _get_subsampled_ts(self, tree_sequence):
+    def _get_subsampled_ts(self, tree_sequence: TreeSequence) -> TreeSequence:
         """Return a subsampled (simplify'd) tree sequence.
         
         Samples a maximum of `self.sample` nodes at time=0 from each
@@ -161,10 +170,7 @@ class ToyTreeSequence:
             if pidx in tsidx_dict:
                 pnode = tsidx_dict[pidx]
             else:
-                pnode = toytree.Node(
-                    name=str(pidx),
-                    dist=tree.branch_length(pidx)
-                )
+                pnode = toytree.Node(name=str(pidx), dist=tree.branch_length(pidx))
                 pnode.tsidx = pidx
                 tsidx_dict[pidx] = pnode
                 logger.debug(f"adding child: {cidx} to parent: {pidx}")                
