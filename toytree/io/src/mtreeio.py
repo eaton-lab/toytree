@@ -45,7 +45,31 @@ def mtree(
         treelist = [i.copy() for i in data]
     # e.g., a list of newick strings or file paths
     elif isinstance(data[0], (str, Path)):
-        treelist = TreeIOParser(data).trees
+        treelist = TreeIOParser(data, multitree=True).trees
     else:
         raise ToytreeError("mtree input format unrecognized.")
     return MultiTree(treelist)
+
+
+if __name__ == "__main__":
+
+    import numpy as np
+    import ipcoal
+
+    # set variables
+    Ne = 10000
+    nsamples = 8
+    mut = 1e-7
+    nloci = 100
+
+    # simulate sequence data
+    model = ipcoal.Model(tree="", Ne=Ne, nsamples=nsamples, mut=mut)
+    model.sim_loci(nloci=nloci, nsites=20)
+    model.seqs = np.concatenate(model.seqs, 1)    
+
+    # show some of the genealogies that were produced
+    c, a, m = model.draw_genealogies(height=200, shared_axes=True);
+
+    import toyplot.browser
+    toyplot.browser.show(c)
+

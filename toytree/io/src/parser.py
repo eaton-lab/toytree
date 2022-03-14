@@ -12,7 +12,7 @@ able to parse complex newick strings (e.g., NXH) without having to
 specify ahead of time that the file is NHX.
 """
 
-from typing import Union, List, TypeVar, Dict, Tuple
+from typing import Union, List, TypeVar, Dict, Tuple, Iterator
 import re
 from pathlib import Path
 from loguru import logger
@@ -61,11 +61,12 @@ class TreeIOParser:
         self.trees: List[Node] = []
         self.run()
 
-    def _iter_data_inputs_as_strings(self) -> str:
-        """Return a list of data strings for one or more trees.
+    def _iter_data_inputs_as_strings(self) -> Iterator[str]:
+        """Generator of string data from one or more valid tree inputs.
 
         The data strings could be newick or nexus format at this point,
-        and a data string could contain a single or multiple trees.
+        and the yeilded data string could contain a single or multiple
+        trees.
         """
         # get data as a collection of valid input types
         inputs = []
@@ -81,31 +82,40 @@ class TreeIOParser:
         # iterate over each input and store newick in self.data list
         for item in inputs:
 
-            # if str data is a URI then parse it to List[str]
-            if item.startswith("http"):
-                response = requests.get(item)
-                response.raise_for_status()
-                item = response.text.strip()
+            # Path: read file and yield string
+            if isinstance(item, Path):
+                if item.exists():
+                    with open(item, 'r', encoding='utf-8') as indata:
+                        yield indata.read()
 
-            # if item is a Path, or a str filepath then parse newick 
-            # List[str] from it. Will raise OSError if name too long 
-            # so clearly not a filepath. Skips if not an existing Path.
+            # str: check if it is URI, then Path, then newick.
+            elif isinstance(item, str):
+
+                # newick always starts with "(" whereas a filepath and
+                # URI can never start with this, so... easy enough.
+                if item.startswith("("):
+                    yield item
+
+                # check for URI (hack: doesn't support ftp://, etc.)
+                elif item.startswith("http"):
+                    response = requests.get(item)
+                    response.raise_for_status()
+                    yield response.text.strip()
+
+                # check for Path (fails if str/filename is very large)
+                elif Path(item).exists():
+                    with open(item, 'r', encoding="utf-8") as indata:
+                        yield indata.read()
+
+                else:
+                    raise ToytreeError(f"Error parsing tree data input type: {self.data}.")
+
+            # not str or Path then raise TypeError
             else:
-                try:
-                    if Path(item).exists():
-                        with open(item, 'r', encoding="utf-8") as indata:
-                            item = indata.read()
-                except OSError:
-                    pass
+                raise TypeError(f"Error parsing tree data input type: {self.data}.")
 
-            # if str data is now a newick str then save it.
-            if isinstance(item, str):
-                yield item
-            else:
-                raise ToytreeError("Error parsing tree data input.")
-
-    def _iter_strings_to_newicks(self) -> Tuple[str, Dict]:
-        """Yield (newick str, trans dict) for each tree in each input.
+    def _iter_strings_to_newicks(self) -> Iterator[Tuple[str, Dict]]:
+        """Generator of (newick str, trans dict) for each tree in each input.
         """
         for strdata in self._iter_data_inputs_as_strings():
             strdata = strdata.strip()
@@ -146,7 +156,6 @@ class TreeIOParser:
 
             # save the tree
             self.trees.append(ttree)
-
 
 if __name__ == "__main__":
     pass

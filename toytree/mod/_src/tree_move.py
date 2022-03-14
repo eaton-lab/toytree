@@ -145,6 +145,7 @@ def move_nni(
         If True the .style dict is modified to highlight changes.
     """
     # work with unrooted tree, optionally as a copy (much slower).
+    # TODO: can this be done without requiring unrooting?
     if inplace:
         tree.unroot(inplace=True)
     else:
@@ -156,11 +157,11 @@ def move_nni(
     # select an internal edge, or tip, which selects parent internal
     internal_edges = range(tree.ntips, tree.nnodes - 1)
     if edge is None:
-        node = tree[rng.choice(internal_edges)]
+        edge = rng.choice(internal_edges)
     else:
         if edge not in internal_edges:
             raise ToytreeError(f"idx must be an internal edge: {internal_edges}")
-        node = tree[edge]
+    node = tree[edge]
 
     # get references to neighbor nodes
     parent = node.up
@@ -185,6 +186,7 @@ def move_nni(
     parent._remove_child(node)
 
     # re-insert node
+    # TODO: can this be done re-using node? is it better for data?
     new_node = toytree.Node()
     new_node.label = "new"
     parent._add_child(new_node)
@@ -381,6 +383,8 @@ def highlight_edges(tree: ToyTree, *edges: toytree.Node) -> ToyTree:
 def style_tree(tree: ToyTree) -> ToyTree:
     """Add style to show parts of tree that moved.
     """
+    tree.style.layout = "unroot"
+    tree.style.use_edge_lengths = False
     tree.style.node_style.stroke_width = 1.5
     tree.style.node_sizes = 6
     tree.style.node_labels = "idx"
@@ -582,7 +586,6 @@ if __name__ == "__main__":
         use_edge_lengths=False, 
         tip_labels_style={"baseline-shift": 15},
     )
-
     # get mtree with all trees in NNI generator 
     GEN = toytree.mod.move_nni_iter(TREE, highlight=True)
     MTRE = toytree.mtree(list(GEN))
