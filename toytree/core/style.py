@@ -756,6 +756,21 @@ class DarkTreeStyle(TreeStyle):
         )
     )
 
+# @dataclass(repr=False)
+# class UnrootedTreeStyle(TreeStyle):
+#     tree_style: str = "u"
+#     layout: str = "unrooted"
+#     use_edge_lengths: bool = False
+#     node_style: NodeStyle = field(
+#         default_factory=lambda: NodeStyle(
+#             stroke=None,
+#             stroke_width=1.5,
+#             fill='white',
+#         )
+#     )
+#     node_sizes: int = 6
+#     node_labels: str = "idx"
+    
 
 STYLE_DICTS = {
     "n": NormalTreeStyle,
