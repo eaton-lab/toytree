@@ -6,5 +6,7 @@
 build
 dist
 toyplot.egg-info/
+toytree.egg-info/
 tests/*
 site/
+.idea/
