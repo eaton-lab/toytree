@@ -37,6 +37,7 @@ setup(
         "toyplot",
         "numpy",
         "scipy",
+        "sympy",
         "pandas",
         "loguru",
         "requests",
