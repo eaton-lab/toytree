@@ -505,7 +505,7 @@ class Node:
             queue.extend(node.children[::-1])
 
     def _traverse_levelorder(self) -> Iterator[Node]:
-        """Iterate over all desdecendant nodes in levelorder.
+        """Iterate over all descendant nodes in levelorder.
 
         This is also called breadth-first search (BFS). It starts at
         the root and visits all nodes that are the same distance from
