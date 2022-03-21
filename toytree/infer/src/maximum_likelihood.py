@@ -2,7 +2,7 @@
 """Maximum likelihood tree inference.
 
 """
-from typing import Tuple, Iterator
+from typing import Iterator, Tuple, List
 from numpy.typing import ArrayLike
 import numpy as np
 import sympy
@@ -12,15 +12,10 @@ import toytree
 # BASE_ORDER = list("AGCT")
 BASE_ORDER = list("TCAG")  # ziheng Yang
 
-testing_array = np.array([[179,  23,   1,   0],
-                          [ 30, 219,   2,   0],
-                          [  2,   1, 291,  10],
-                          [  0,   0,  21, 169]])
-
 
 class SubstitutionModel:
     """
-    Base class for other substitution model class objects used to
+    Base class for other substitution TEST_MODEL class objects used to
     generate the rate matrix, probability matrix, (log)likelihood expression and function, etc.
     """
     def __init__(self):
@@ -419,7 +414,7 @@ class TN93(SubstitutionModel):
         """
         if self._p_matrix_w is None:
             self._update_pairwise_likelihood_formula()
-        # here we did not use the self._pairwise_likelihood_formula (directly like JC69 and K80)
+        # here we did not use the self._pairwise_likelihood_formula (directly RES_LIKELIHOOD JC69 and K80)
         # because the generated function will be slow if two many separate parameters were used
         # instead, we use the self._log_p_matrix_w and the array of change_matrix to generate the formula
         like_formula = (self._log_p_matrix_w * change_matrix).sum()
@@ -465,7 +460,8 @@ class TN93(SubstitutionModel):
 
 
 def combine_descendent_conditional_probability(descendant_conditional_prob: Iterator[ArrayLike],
-                                               prob_matrices: Iterator[ArrayLike]):
+                                               prob_matrices: Iterator[ArrayLike])\
+        -> ArrayLike:
     """Used to calculate the conditional probability of current node
     given its descendant conditional probability list and corresponding transition probability matrix.
 
@@ -486,11 +482,12 @@ def combine_descendent_conditional_probability(descendant_conditional_prob: Iter
         e.g. `np.array([[0.8644351 , 0.06591888, 0.03482301, 0.03482301],
                         [0.06591888, 0.8644351 , 0.03482301, 0.03482301],
                         [0.03482301, 0.03482301, 0.8644351 , 0.06591888],
-                        [0.03482301, 0.03482301, 0.06591888, 0.8644351 ]])` # K80 model with d=0.15, k=2.
-        This can be generated using the function of `get_p_matrix_function` under each substitution model objects.
+                        [0.03482301, 0.03482301, 0.06591888, 0.8644351 ]])` # K80 TEST_MODEL with d=0.15, k=2.
+        This can be generated using the function of `get_p_matrix_function` under each substitution TEST_MODEL objects.
+
     Returns
     -------
-    ArrayLike
+    ArrayLike[float]
         Output the conditional probability of the combined use np.array in the shape of (4,).
     """
     accumulated_prob = (next(descendant_conditional_prob) * next(prob_matrices)).sum(axis=1)
@@ -501,30 +498,52 @@ def combine_descendent_conditional_probability(descendant_conditional_prob: Iter
 
 
 # TODO plot each step
-def node_conditional_probability(node: toytree.Node,
-                                 p_matrix_func: sympy.core.function = K80().get_p_matrix_function(kappa=2.),
-                                 ) -> Tuple[float, float, float, float]:
+# TODO: how to set the typing for `node`
+def node_conditional_probability(node,
+                                 p_matrix_func: sympy.core.function,
+                                 ) \
+        -> ArrayLike:
     """
     more description
     """
     if node.is_leaf():
         return node.conditional_prob
     else:
-        child_cd_prob_generator = (node_conditional_probability(child_node) for child_node in node.children)
-        prob_matrix_generator = (p_matrix_func(child_node.dist) for child_node in node.children)
+        child_cd_prob_generator = (node_conditional_probability(child_node, p_matrix_func)
+                                   for child_node in node.children)
+        prob_matrix_generator = (p_matrix_func(child_node.dist)
+                                 for child_node in node.children)
         node.conditional_prob = combine_descendent_conditional_probability(
             descendant_conditional_prob=child_cd_prob_generator,
             prob_matrices=prob_matrix_generator)
         return node.conditional_prob
 
 
-# works! to be continued
-def get_tree_likelihood():
-    tree = toytree.tree("(((sp-A:0.2,sp-B:0.2):0.1,sp-C:0.2):0.1,(sp-D:0.2,sp-E:0.2):0.1);")
-    observed_data = {"sp-A": "T", "sp-B": "C", "sp-C": "A", "sp-D": "C", "sp-E": "C"}
-    for sp_name, sp_state in observed_data.items():
+def get_tree_likelihood(tree: toytree.ToyTree,
+                        tip_states: dict[str: str],
+                        p_matrix_func: sympy.core.function,
+                        pi_list: ArrayLike):
+    """
+
+    """
+    for sp_name, sp_state in tip_states.items():
         sp_node = tree.get_nodes(sp_name)[0]  # do we have better function to do this in toytree?
         sp_node.conditional_prob = np.array(BASE_ORDER) == sp_state
-    root_prob = node_conditional_probability(tree.treenode)
+    root_prob = node_conditional_probability(tree.treenode, p_matrix_func=p_matrix_func)
+    return (root_prob * pi_list).sum()
 
+
+if __name__ == '__main__':
+    TEST_ARRAY = np.array([[179, 23, 1, 0],
+                           [ 30, 219,   2,   0],
+                           [  2,   1, 291,  10],
+                           [  0,   0,  21, 169]])
+    OBSERVED_DATA = {"sp-A": "T", "sp-B": "C", "sp-C": "A", "sp-D": "C", "sp-E": "C"}
+    TEST_TREE = toytree.tree("(((sp-A:0.2,sp-B:0.2):0.1,sp-C:0.2):0.1,(sp-D:0.2,sp-E:0.2):0.1);")
+    TEST_MODEL = K80()
+    RES_LIKELIHOOD = get_tree_likelihood(tree=TEST_TREE,
+                                         tip_states=OBSERVED_DATA,
+                                         p_matrix_func=TEST_MODEL.get_p_matrix_function(kappa=2.),
+                                         pi_list=TEST_MODEL._PI)
+    print(RES_LIKELIHOOD, np.log(RES_LIKELIHOOD))
 
