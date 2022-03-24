@@ -1201,13 +1201,15 @@ class ToyTree:
         # make a dict {Node: newvalue} by expanding the entered mapping.
         ndict = {}
 
+        # convert all keys to Node objects
+        mapping = {tree.get_nodes(i, regex=False): j for (i, j) in mapping.items()}
+
         # sorted key nodes to map oldest to youngest
         key_nodes = sorted(mapping, key=lambda x: x.idx, reverse=True)
 
         # iterate over nodes sorted by oldest first.
-        for key in key_nodes:
-            node = tree.get_nodes(key, regex=False)
-            value = mapping[key]
+        for node in key_nodes:
+            value = mapping[node]
 
             # map selected Node to value.
             ndict[node] = value
