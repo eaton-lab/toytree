@@ -1202,7 +1202,10 @@ class ToyTree:
         ndict = {}
 
         # convert all keys to Node objects
-        mapping = {tree.get_nodes(i, regex=False): j for (i, j) in mapping.items()}
+        mapping = {
+            tree.get_nodes(i, regex=False)[0]: j 
+            for (i, j) in mapping.items()
+        }
 
         # sorted key nodes to map oldest to youngest
         key_nodes = sorted(mapping, key=lambda x: x.idx, reverse=True)
