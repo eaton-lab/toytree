@@ -1198,29 +1198,38 @@ class ToyTree:
         # nodes = tree.get_nodes(*mapping.keys(), regex=False)
         # mapping = dict(zip(nodes, mapping.values()))
 
-        # make a dict {Node: newvalue} by expanding the entered mapping
+        # make a dict {Node: newvalue} by expanding the entered mapping.
         ndict = {}
-        for key, value in mapping.items():
 
-            # get node matching the key query int or str
-            for node in tree.get_nodes(key, regex=False):
+        # convert all keys to Node objects
+        mapping = {
+            tree.get_nodes(i, regex=False)[0]: j 
+            for (i, j) in mapping.items()
+        }
 
-                # map selected Node to value.
-                ndict[node] = value
+        # sorted key nodes to map oldest to youngest
+        key_nodes = sorted(mapping, key=lambda x: x.idx, reverse=True)
 
-                # optionally map Node's descendants to value as well.
-                if inherit:
-                    for desc in tree[node.idx]._iter_descendants():
-                        ndict[desc] = value
+        # iterate over nodes sorted by oldest first.
+        for node in key_nodes:
+            value = mapping[node]
+
+            # map selected Node to value.
+            ndict[node] = value
+
+            # optionally map Node's descendants to value as well.
+            if inherit:
+                for desc in node._iter_descendants():
+                    ndict[desc] = value
 
         # map {Node: default} for Nodes not in ndict
         if default is not None:
-            for idx in range(tree.nnodes):
-                node = tree[idx]
+            for node in tree:
                 if node not in ndict:
                     ndict[node] = default
 
         # special mod submodule method for height modifications
+        # TODO: use inplace=True if entered?
         if feature == "height":
             height_map = {i.idx: j for (i, j) in ndict.items() if j is not None}
             return tree.mod.edges_set_node_heights(height_map)

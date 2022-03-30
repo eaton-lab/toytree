@@ -1,14 +1,22 @@
 #!/usr/bin/env python
+
 """Maximum likelihood tree inference.
 
+A didactic version ...
 """
 from typing import Iterator, Tuple, List, Generator
 from numpy.typing import ArrayLike
 import toyplot
 import numpy as np
-import sympy
 import toytree
 
+# not yet part of core toytree install
+try:
+    import sympy
+except ImportError:
+    pass
+
+# pylint: disable=invalid-name
 
 # BASE_ORDER = list("AGCT")
 BASE_ORDER = list("TCAG")  # ziheng Yang
@@ -19,10 +27,13 @@ AX1_y_width = 15
 AX1_y_width_m = 1.3
 
 
+# TODO: this could be an AbstractBaseClass
 class SubstitutionModel:
-    """
-    Base class for other substitution TEST_MODEL class objects used to
-    generate the rate matrix, probability matrix, (log)likelihood expression and function, etc.
+    """Base class for molecular substitution models.
+
+    SubstitutionModel class objects are used to generate the rate 
+    matrix and probability matrix, as well as the (log)likelihood 
+    expression and function using sympy.
     """
     def __init__(self):
         self._PI = 0.25, 0.25, 0.25, 0.25
@@ -30,25 +41,38 @@ class SubstitutionModel:
         self._q_matrix = sympy.Matrix()
         """: rate matrix assigned to the Model."""
         self._t = sympy.Symbol("t")
-        """: the symbolic variable to express time span"""
+        """: the symbolic variable to express time span."""
         self._p_matrices = []
         """: probability matrices in from the intermediate (for class) to the simplified (for calculation) forms."""
         self._pairwise_likelihood_formula = None
-        """: the likelihood under multinomial probability"""
+        """: the likelihood under multinomial probability."""
         self._pairwise_loglikelihood_formula = None
 
     def q_matrix(self) -> sympy.Matrix:
+        """Return the rate matrix (Q) given the model parameters."""
         return self._q_matrix
 
     def p_matrix(self, intermediate_id: int = -1) -> sympy.Matrix:
+        """Return the transition matrix (P) given the model parameters.
+        
+        Parameters
+        ----------
+        intermediate_id: int
+            ...
+        """
         if not self._p_matrices:
             self._update_p_matrix()
         return self._p_matrices[intermediate_id]
 
     def _update_p_matrix(self):
+        """Child classes have a proper function here."""        
         pass
 
     def get_pairwise_likelihood_formula(self, logarithm: bool = True) -> sympy.Mul:
+        """Return the likelihood formula for the substitution model.
+
+        This function uses sympy ...
+        """
         if not self._pairwise_loglikelihood_formula:
             self._update_pairwise_likelihood_formula()
         if logarithm:
@@ -57,6 +81,7 @@ class SubstitutionModel:
             return self._pairwise_likelihood_formula
 
     def _update_pairwise_likelihood_formula(self):
+        """Child classes have a proper function here."""
         pass
 
 
@@ -563,10 +588,15 @@ def combine_descendent_conditional_probability(child_conditional_prob_gen: Itera
     return accumulated_prob
 
 
-# TODO: how to set the typing for `node`
-def node_conditional_probability(node, p_matrix_func: sympy.core.function) -> ArrayLike:
-    """
-    more description
+def node_conditional_probability(
+    node: toytree.Node, 
+    p_matrix_func: sympy.core.function) -> ArrayLike:
+    """Return the conditional probability of a Node.
+
+    This is a recursive function that can be called on the root Node
+    of a tree to get the conditional likelihood of the whole tree. It
+    calls itself on all children of each internal Node until it reaches
+    the tips of the tree.
     """
     if node.is_leaf():
         return node.conditional_prob
@@ -827,26 +857,32 @@ def get_tree_likelihood(tree: toytree.ToyTree,
                         tip_states: dict[str: str],
                         p_matrix_func: sympy.core.function,
                         pi_list: ArrayLike):
+    """Return the likelihood of observing data given a tree.
+    
     """
-    """
-    for sp_name, sp_state in tip_states.items():
-        sp_node = tree.get_nodes(sp_name)[0]  # do we have better function to do this in toytree?
-        sp_node.conditional_prob = (np.array(BASE_ORDER) == sp_state).astype(float)
+    # set observed data as features of tip Nodes
+    for nidx in range(tree.ntips):
+        node = tree[nidx]
+        assert node.name in data, f"data must include all tips in the tree. Missing={node.name}"
+        state = data[node.name]
+        node.conditional_prob = (np.array(BASE_ORDER) == state).astype(float)
+        
     root_prob = node_conditional_probability(tree.treenode, p_matrix_func=p_matrix_func)
     return (root_prob * pi_list).sum()
 
 
 if __name__ == "__main__":
-    TEST_ARRAY = np.array([[179, 23, 1, 0],
+    TEST_ARRAY = np.array([[179,  23,   1,   0],
                            [ 30, 219,   2,   0],
                            [  2,   1, 291,  10],
                            [  0,   0,  21, 169]])
     OBSERVED_DATA = {"sp-A": "T", "sp-B": "C", "sp-C": "A", "sp-D": "C", "sp-E": "C"}
     TEST_TREE = toytree.tree("(((sp-A:0.2,sp-B:0.2):0.1,sp-C:0.2):0.1,(sp-D:0.2,sp-E:0.2):0.1);")
     TEST_MODEL = K80()
-    RES_LIKELIHOOD = get_tree_likelihood(tree=TEST_TREE,
-                                         tip_states=OBSERVED_DATA,
-                                         p_matrix_func=TEST_MODEL.get_p_matrix_function(kappa=2.),
-                                         pi_list=TEST_MODEL._PI)
-    print(RES_LIKELIHOOD, np.log(RES_LIKELIHOOD))
+    LIK = get_tree_likelihood(tree=TEST_TREE,
+                              tip_states=OBSERVED_DATA,
+                              p_matrix_func=TEST_MODEL.get_p_matrix_function(kappa=2.),
+                              pi_list=TEST_MODEL._PI)
+    print(LIK)
+    TREE.treenode.draw_ascii()
 
