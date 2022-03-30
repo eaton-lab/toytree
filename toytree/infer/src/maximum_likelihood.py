@@ -854,7 +854,7 @@ def get_tree_likelihood_plot_gen(tree: toytree.ToyTree,
 
 
 def get_tree_likelihood(tree: toytree.ToyTree,
-                        tip_states: dict[str: str],
+                        data: dict[str: str],
                         p_matrix_func: sympy.core.function,
                         pi_list: ArrayLike):
     """Return the likelihood of observing data given a tree.
@@ -877,10 +877,10 @@ if __name__ == "__main__":
                            [  2,   1, 291,  10],
                            [  0,   0,  21, 169]])
     OBSERVED_DATA = {"sp-A": "T", "sp-B": "C", "sp-C": "A", "sp-D": "C", "sp-E": "C"}
-    TEST_TREE = toytree.tree("(((sp-A:0.2,sp-B:0.2):0.1,sp-C:0.2):0.1,(sp-D:0.2,sp-E:0.2):0.1);")
+    TREE = toytree.tree("(((sp-A:0.2,sp-B:0.2):0.1,sp-C:0.2):0.1,(sp-D:0.2,sp-E:0.2):0.1);")
     TEST_MODEL = K80()
-    LIK = get_tree_likelihood(tree=TEST_TREE,
-                              tip_states=OBSERVED_DATA,
+    LIK = get_tree_likelihood(tree=TREE,
+                              data=OBSERVED_DATA,
                               p_matrix_func=TEST_MODEL.get_p_matrix_function(kappa=2.),
                               pi_list=TEST_MODEL._PI)
     print(LIK)
