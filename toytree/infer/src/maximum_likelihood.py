@@ -5,7 +5,7 @@
 A didactic version ...
 """
 
-from typing import Tuple, Iterator, Dict
+from typing import Tuple, Iterator, Dict, Callable
 from numpy.typing import ArrayLike
 import numpy as np
 import toytree
@@ -299,7 +299,7 @@ class K80(SubstitutionModel):
         else:
             raise TypeError("Please input change_matrix, or s_obs, v_obs and n_obs!")
 
-    def get_p_matrix_function(self, kappa: float = None):
+    def get_p_matrix_function(self, kappa: float = 2.):
         """
         The function used in maximum likelihood tree inference
 
@@ -524,7 +524,7 @@ def combine_descendent_conditional_probability(descendant_conditional_prob: Iter
 # TODO plot each step
 def node_conditional_probability(
     node: toytree.Node,
-    p_matrix_func: sympy.core.function = K80().get_p_matrix_function(kappa=2.),
+    p_matrix_func: sympy.core.function,# = K80().get_p_matrix_function(kappa=2.),
     ) -> Tuple[float, float, float, float]:
     """Return the conditional probability of a Node.
 
@@ -536,16 +536,22 @@ def node_conditional_probability(
     if node.is_leaf():
         return node.conditional_prob
     else:
-        child_cd_prob_generator = (node_conditional_probability(child_node) for child_node in node.children)
-        prob_matrix_generator = (p_matrix_func(child_node.dist) for child_node in node.children)
+        child_cd_prob_generator = (
+            node_conditional_probability(child_node, p_matrix_func)
+            for child_node in node.children
+        )
+        prob_matrix_generator = (
+            p_matrix_func(child_node.dist) for child_node in node.children
+        )
         node.conditional_prob = combine_descendent_conditional_probability(
             descendant_conditional_prob=child_cd_prob_generator,
-            prob_matrices=prob_matrix_generator)
+            prob_matrices=prob_matrix_generator
+        )
         return node.conditional_prob
 
 
 # works! to be continued
-def get_tree_likelihood(tree: toytree.ToyTree, data: Dict) -> float:
+def get_tree_likelihood(tree: toytree.ToyTree, data: Dict, p_matrix_func: Callable) -> float:
     """Return the likelihood of observing data given a tree.
 
     """
@@ -557,7 +563,7 @@ def get_tree_likelihood(tree: toytree.ToyTree, data: Dict) -> float:
         node.conditional_prob = np.array(BASE_ORDER) == state
 
     # infer internal node conditional probs from tip states
-    root_prob = node_conditional_probability(tree.treenode)
+    root_prob = node_conditional_probability(tree.treenode, p_matrix_func)
     return root_prob
 
 
@@ -568,6 +574,7 @@ if __name__ == "__main__":
                               [ 30, 219,   2,   0],
                               [  2,   1, 291,  10],
                               [  0,   0,  21, 169]])
+
     TREE = toytree.tree("(((sp-A:0.2,sp-B:0.2):0.1,sp-C:0.2):0.1,(sp-D:0.2,sp-E:0.2):0.1);")
     DATA = {"sp-A": "T", "sp-B": "C", "sp-C": "A", "sp-D": "C", "sp-E": "C"}
 
