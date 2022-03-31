@@ -130,6 +130,7 @@ def _find_parts_of_subtree(newick: str, delim: str=",") -> Tuple[str,str,str,str
 
         # if two comment brackets are present then ":" must be present.
         # "Label[&comment1=3]:100[&comment2=3]"
+        # FIXME: but mb format is "Label[&comment1=3][&comment2=3]"
         elif bracket_count == 2:
             label_and, length_and = remaining.split(":", maxsplit=1)
             label, comment1 = label_and.split("[", maxsplit=1)

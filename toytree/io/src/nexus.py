@@ -17,20 +17,21 @@ from typing import List, Tuple, Dict
 
 
 def get_newicks_and_translation_from_nexus(
-    data: List[str],
+    data: str
     ) -> Tuple[List[str], Dict[int, str]]:
     """Extract newick data and translation dict from a NEXUS file.
 
     This can parse generic NEXUS formats, and has also been tested
     on the mrbayes format, which has a lot of non-standard formatting
     for metadata, e.g., this removes spaces from mb newicks.
+
     """
     # vars to be returned
     trans_dict = {}
     newicks = []
 
     # data SHOULD be a list of strings at this point.
-    lines = iter(data)
+    lines = iter(data.split("\n"))
 
     # skip over lines until we reach the 'trees' block
     while 1:
@@ -150,6 +151,5 @@ begin trees;
 end;
 """
     # the TreeParser class would split the string into lines
-    DATA = NEX.split("\n")
-    print(get_newick_and_translation_from_nexus(DATA))
+    print(get_newicks_and_translation_from_nexus(NEX))
     

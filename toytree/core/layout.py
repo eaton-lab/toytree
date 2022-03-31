@@ -27,13 +27,13 @@ logger = logger.bind(name="toytree")
 class BaseLayout(ABC):
     """Abstract base class for Layout objects.
 
-    Layout class object generates a `.style` object as a TreeStyle 
+    Layout class object generates a `.style` object as a TreeStyle
     updated with user kwargs to `.draw()`, and uses relevant args
     in this to build a `.coords` array with Node coordinates, which
     is affected by 'layout', 'use_edge_lengths' and 'tip_labels_align'.
     """
     def __init__(
-        self, 
+        self,
         tree: ToyTree,
         style: TreeStyle,
         fixed_order: Optional[Sequence[str]] = None,
@@ -145,7 +145,7 @@ class LinearLayout(BaseLayout):
             else:
                 newx = np.mean([coords[i.idx][0] for i in node.children])
                 coords.append((newx, node._height))
-        return np.array(coords)    
+        return np.array(coords)
 
 class CircularLayout(BaseLayout):
     """Layout for circular tree projection."""
@@ -158,7 +158,7 @@ class CircularLayout(BaseLayout):
         """Return array with x, y Node coordinates."""
         coords = np.zeros(shape=(self.tree.nnodes, 2))
 
-        # position of the *aligned* tips on the fan circumference, the 
+        # position of the *aligned* tips on the fan circumference, the
         # first tips will be at 'start' (e.g., 0) and the final will be
         # at 'end' (e.g., 360 - unit) where unit is space between tips.
         start, end = self._get_start_and_end_angles()
@@ -181,7 +181,7 @@ class CircularLayout(BaseLayout):
             coords[idx, :] = (hub[0] + delta_x, hub[1] + delta_y)
             node.theta = theta
 
-        # internal node positions are on a spoke pointing towards a 
+        # internal node positions are on a spoke pointing towards a
         # circumferal position intermediate between its children's.
         for idx in range(self.tree.ntips, self.tree.nnodes - 1):
             node = self.tree[idx]
@@ -195,10 +195,10 @@ class CircularLayout(BaseLayout):
 
     def _get_start_and_end_angles(self) -> Tuple[int, int]:
         """Return a tuple with start and end angles as ints.
-        
+
         Users can enter style as 'c', 'c90', or 'c0-90'. All values
-        will be converted to range such that the first is in 0-359, 
-        and the second is in 1-719. 
+        will be converted to range such that the first is in 0-359,
+        and the second is in 1-719.
         - 90,180  -> 90,180
         - 300,100 -> 300,460
         - 359,340 -> 359,609
@@ -265,7 +265,7 @@ class CircularLayout(BaseLayout):
 
     #         # store the x,y vertex positions
     #         verts[node.idx] = [node.x, node.y]
-    #     return verts        
+    #     return verts
 
 class UnrootedLayout(BaseLayout):
     """Layout for unrooted tree projection: "unrooted", "u1", "u2"
@@ -275,8 +275,8 @@ class UnrootedLayout(BaseLayout):
 
         # xbaseline, ybaseline to set origin.
         self.coords = equal_daylight_algorithm(
-            tree=self.tree, 
-            max_iter=50, 
+            tree=self.tree,
+            max_iter=50,
             use_edge_lengths=self.style.use_edge_lengths)
         self.style_overwrite()
 
@@ -295,7 +295,7 @@ class UnrootedLayout(BaseLayout):
 #####################################################
 
 def rotate_arr(
-    points: np.ndarray, 
+    points: np.ndarray,
     origin: Tuple[float,float]=(0, 0),
     degrees: float=0,
     ) -> np.ndarray:
@@ -320,16 +320,16 @@ def equal_daylight_algorithm(
     This algorithm equalizes the sizes of angular gaps between
     subtrees. As Felsenstein said, the result is "outstanding".
     The description however is not very detailed, so there is room
-    for interpretation. 
+    for interpretation.
 
-    I use a levelorder traversal but could it seems that postorder 
+    I use a levelorder traversal but could it seems that postorder
     can yield better results sometimes, but also much worse sometimes.
     If the eda layout is too different from the eaa layout it will
     be rejected.
 
     Notes
     -----
-    We could estimate the length that tip names will extend past the 
+    We could estimate the length that tip names will extend past the
     end of tips when calculating daylight. This would ensure that tip
     names to do not crossover, not just that edges do not cross over.
     This would only be necessary if tip names were text-align=start,
@@ -352,7 +352,7 @@ def equal_daylight_algorithm(
     nodes = set(tree.get_nodes())
 
     # for Y internal nodes we expect an average rotation of X, thus
-    # any solution with more delta than 3 * Y * X is almost surely 
+    # any solution with more delta than 3 * Y * X is almost surely
     # worse than the equal-angles layout and should be discarded.
     n_internal = tree.nnodes - tree.ntips - 1
     min_angles = n_internal * 3
@@ -360,7 +360,7 @@ def equal_daylight_algorithm(
     max_change = (min_angles * avg_change) / 3#.5
 
     # Perform multiple passes through the tree stopping when either
-    # the improvement falls below a threshold, max_iters is reached, 
+    # the improvement falls below a threshold, max_iters is reached,
     # or the iteration results in more changes than a previous one.
     sum_deltas = [] # list of sum change in angles each iter
     full_circle = None # record whether full circle encountered.
@@ -373,7 +373,7 @@ def equal_daylight_algorithm(
         sum_delta = 0
 
         # visit each internal node in levelorder and rotate other nodes
-        # relative to the position of this one. Skip root and leaves, 
+        # relative to the position of this one. Skip root and leaves,
         # they only rotate relative to internals.
         for fnode in tree.traverse("levelorder"):
 
@@ -384,7 +384,7 @@ def equal_daylight_algorithm(
                 continue
 
             # get current focal node coordinates
-            pos = icoords[fnode.idx]            
+            pos = icoords[fnode.idx]
 
             # get the 3 or more subtrees connected to this vertex
             full_set = nodes - {fnode}
@@ -425,7 +425,7 @@ def equal_daylight_algorithm(
 
             # get daylight as sectors between ordered shaded regions
             # e.g., (0, 1), (1, 2), ...
-            light = {}        
+            light = {}
             for gap in gaps:
                 last, this = shade[gap[0]][1], shade[gap[1]][0]
                 if last > this:
@@ -473,33 +473,33 @@ def equal_daylight_algorithm(
             sum_delta += avg_delta
 
         # iteration finished. Should we accept this change to coordinates?
-        logger.info(
+        logger.debug(
             f"sum angles change={sum(sum_deltas):.1f}, "
             f"angles_change_this_iter={sum_delta:.1f}")
 
         # causes to not accept the proposed coordinate change.
         if full_circle is not None:
-            logger.info(f"stopping at {niter} iters because subtree angles sum to > full circle @ node {full_circle}")
+            logger.debug(f"stopping at {niter} iters because subtree angles sum to > full circle @ node {full_circle}")
             break
         if sum_delta > max_change:
-            logger.info(f"stopping at {niter} iters because bad solution ({sum_delta} > {max_change}).")
+            logger.debug(f"stopping at {niter} iters because bad solution ({sum_delta} > {max_change}).")
             break
         if sum_deltas:
             last = sum_deltas[-1]
             if sum_delta > (last + last * .1):
-                logger.info(f"stopping at {niter} iters because encountered a worse solution.")
+                logger.debug(f"stopping at {niter} iters because encountered a worse solution.")
                 break
 
         # accept the coordinates change
-        niter += 1        
+        niter += 1
         sum_deltas.append(sum_delta)
         coords = icoords
 
         if niter == max_iter:
-            logger.info(f"stopping after {niter} iters because max_iter reached.")            
+            logger.debug(f"stopping after {niter} iters because max_iter reached.")
             break
         if sum_delta < min_delta:
-            logger.info(f"stopping after {niter} iters because delta <= min_delta.")
+            logger.debug(f"stopping after {niter} iters because delta <= min_delta.")
             break
 
     return coords

@@ -183,6 +183,7 @@ def write_newick(
     >>> # ((a:3[&state=1],b:3[&state=1])100:1[&state=1],c:4[&state=2])100:1[&state=1]
     """
     if features:
+        features = [features] if isinstance(features, str) else features
         features = set(features) - DISALLOWED_FEATURES
         bad_features = features - set(tree.features)
         if bad_features:

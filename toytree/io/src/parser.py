@@ -42,6 +42,10 @@ class TreeIOParser:
 
     Parameters
     ----------
+    data: str, Path, URL, or a Collection of these types.
+        One or more tree data inputs, where an input can be a newick
+        or nexus str, or a file or URL containing newick or nexus
+        strings. 
     multitree: bool
         If False then only the first tree is read, whereas if True
         one or more trees will be read from each input. The default
@@ -90,10 +94,15 @@ class TreeIOParser:
 
             # str: check if it is URI, then Path, then newick.
             elif isinstance(item, str):
+                item = item.strip()
 
                 # newick always starts with "(" whereas a filepath and
                 # URI can never start with this, so... easy enough.
                 if item.startswith("("):
+                    yield item
+
+                # nexus always starts with #NEXUS
+                elif item[:6].upper() == "#NEXUS":
                     yield item
 
                 # check for URI (hack: doesn't support ftp://, etc.)
@@ -121,7 +130,7 @@ class TreeIOParser:
             strdata = strdata.strip()
 
             # extract newick and translation dict from nexus
-            if strdata.upper().startswith("#NEXUS"):
+            if strdata[:6].upper() == "#NEXUS":
                 nwks, tdict = get_newicks_and_translation_from_nexus(strdata)
             else:
                 nwks, tdict = strdata.split("\n"), {}

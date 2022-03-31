@@ -2,16 +2,15 @@
 
 """Tree moves used in heuristic tree search algorithms.
 
-Tree 'moves' (perturbations) are used to search tree space and 
+Tree 'moves' (perturbations) are used to search tree space and
 usually applied with an optimality criterion to find a best scoring
-tree under either parsimony or maximum likelihood hill-climbing 
+tree under either parsimony or maximum likelihood hill-climbing
 algorithms.
 
 UNDER DEVELOPMENT
 -----------------
-- Moves in tree space (SPR, TBR, NNI).
 - rooted tree moves need to iterate over placements of the root?
-- unrooted tree moves ...
+
 
 See also eSPR and eTBR moves used in Bayesian phylogenetics. These
 modify the probability of proposed pruning points by updating a
@@ -30,12 +29,123 @@ logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
 
 
+# FIXME: needs further work.
+def move_spr_iter(tree: ToyTree, highlight: bool=False) -> Iterator[ToyTree]:
+    """Generator to yield all trees within 1 SPR move of input tree.
+
+    Returns a generator function to iterate through each of the
+    unrooted trees that are within 1 subprune and regraft (SPR)
+    moves from the input tree. This tree move operation is used to
+    heuristically search tree space, and can find relatively large
+    changes from the current tree compared to NNI.
+
+    TODO
+    ----
+    Return only unique topologies, e.g., subtree X inserted to edge
+    Y may not be unique from subtree Y inserted to edge X.
+    """
+    tree = tree.unroot()
+
+    # iterate over internal edges, skip tips, root, and one root child
+    # to select each subtree that could be extacted.
+    for nidx in range(tree.ntips, tree.nnodes - 1):
+
+        # get list of Nodes (edges) where subtree can be inserted. This
+        # cannot be root, or a desc on the subtree Node, or the subtree itself.
+        subtree = tree[nidx]
+        edges = (
+            set(range(tree.nnodes)) -
+            set((i._idx for i in subtree._iter_descendants())) -
+            set((i._idx for i in subtree._iter_sisters())) -
+            set((subtree._up._idx, )) -
+            set((subtree._idx, ))
+        )
+
+        # iterate over each possible insertion point of this edge
+        for iedge in edges:
+            logger.info(f"{subtree} -> {tree[iedge]}")
+
+            # create copy of unrooted starting tree
+            ntree = tree.copy()
+            new_sister = ntree[iedge]
+            subtree = ntree[nidx]
+
+            # connect subtree to new sister by inserting a new Node
+            new_node = toytree.Node("new")
+            new_node_parent = new_sister._up
+            old_node = subtree._up
+            old_node_parent = old_node._up
+            new_node._up = new_node_parent
+            new_node._children = (subtree, new_sister)
+
+            # disconnect 7 from 5
+            old_node._remove_child(subtree)
+
+            # connect 2 nodes on either side of 7
+            if old_node_parent:
+                old_node_parent._remove_child(old_node)
+                for child in old_node._children:
+                    old_node_parent._add_child(child)
+                    child._dist += old_node._dist
+            else:
+                children = sorted(old_node._children, key=lambda x: x.idx)[::-1]
+                for child in children[1:]:
+                    old_node._remove_child(child)
+                    children[0]._add_child(child)
+            del old_node
+
+            # connect subtree to tree
+            subtree._up = new_node
+            new_sister._up = new_node
+            if new_node_parent:
+                new_node_parent._remove_child(new_sister)
+                new_node_parent._add_child(new_node)
+
+            # if old root is now a singleton b/c new_sister is one of its children
+            if len(ntree.treenode.children) == 1:
+                ntree.treenode = ntree.treenode.children[0]
+                oldroot = ntree.treenode._up
+                ntree.treenode._up = None
+                del oldroot
+
+            # if new_sister is now the root.
+            elif new_sister == ntree.treenode:
+                ntree.treenode = new_node
+            ntree._update()
+
+            # optionally add style highlights
+            if highlight:
+                ntree = style_tree(ntree)
+                ntree.style.node_colors = 'white'
+                ntree.style.edge_colors = ['black'] * ntree.nnodes
+                ntree.style.edge_widths = [2] * ntree.nnodes
+
+                # color edge green
+                # ntree.style.edge_colors[new_node.idx] = toytree.color.COLORS2[0]
+                # ntree.style.edge_widths[new_node.idx] = 5
+
+                # # color edge orange
+                # ntree.style.edge_colors[subtree.idx] = toytree.color.COLORS2[1]
+                # ntree.style.edge_widths[subtree.idx] = 5
+
+                # # color clade 1 orange
+                # for edge in nchildren:
+                #     ntree.style.edge_colors[edge.idx] = toytree.color.COLORS2[1]
+                #     ntree.style.edge_widths[edge.idx] = 5
+
+                # # color clade 1 purple
+                # for edge in nsisters + (nparent,):
+                #     ntree.style.edge_colors[edge.idx] = toytree.color.COLORS2[2]
+                #     ntree.style.edge_widths[edge.idx] = 5
+            yield ntree
+
+
 def move_nni_iter(tree: ToyTree, highlight: bool=False) -> Iterator[ToyTree]:
     """Generator to yield all trees within one NNI of input tree.
 
     Returns a generator function to iterate through each of the
     `2 * (ntips - 3)` unrooted trees that are within one nearest-
-    neighbor interchange (NNI) move of the input tree. This tree 
+    neighbor interchange (NNI) move of the input tree. This tree
     move operation is used to heuristically search tree space, and
     is best for finding small changes from the current tree.
 
@@ -44,7 +154,7 @@ def move_nni_iter(tree: ToyTree, highlight: bool=False) -> Iterator[ToyTree]:
     tree: ToyTree
         Tree from which one NNI move will be performed.
     highlight: bool
-        If True the returned tree's .style dict is modified to 
+        If True the returned tree's .style dict is modified to
         highlight the swapped edges when drawn w/o a treestyle.
 
     Example
@@ -114,7 +224,7 @@ def move_nni_iter(tree: ToyTree, highlight: bool=False) -> Iterator[ToyTree]:
                 for edge in nsisters + (nparent,):
                     ntree.style.edge_colors[edge.idx] = toytree.color.COLORS2[2]
                     ntree.style.edge_widths[edge.idx] = 5
-            yield ntree    
+            yield ntree
 
 
 def move_nni(
@@ -134,8 +244,8 @@ def move_nni(
     tree: ToyTree
         A tree on which to perform a single NNI move.
     edge: int or None
-        The int idx label of an edge in the tree to perform NNI on, 
-        selected by the Node idx below the edge. If None then an 
+        The int idx label of an edge in the tree to perform NNI on,
+        selected by the Node idx below the edge. If None then an
         internal edge will be randomly selected.
     seed: int or None
         Seed for the numpy random number generator.
@@ -152,7 +262,7 @@ def move_nni(
         tree = tree.unroot()
 
     # create the random generator
-    rng = np.random.default_rng(seed)    
+    rng = np.random.default_rng(seed)
 
     # select an internal edge, or tip, which selects parent internal
     internal_edges = range(tree.ntips, tree.nnodes - 1)
@@ -217,44 +327,8 @@ def move_nni(
         # color clade 1 purple
         for edg in sisters + (parent,):
             tree.style.edge_colors[edg.idx] = toytree.color.COLORS2[2]
-            tree.style.edge_widths[edg.idx] = 5    
+            tree.style.edge_widths[edg.idx] = 5
     return tree
-
-
-# def move_nni_search(
-#     tree: ToyTree,
-#     criterion: Callable,
-#     tolerance: float,
-#     ) -> Iterator[ToyTree]:
-#     """Return an infinite generator of sequential NNI.
-
-#     This function can be used to perform a greedy hill-climbing
-#     algorithm. It finds all trees within one NNI move from the 
-#     current tree, and applies the criterion function to each. The
-#     tree with the lowest score will be yielded, and becomes the
-#     source from NNI moves in the next iteration. If no trees have
-#     a greater score then the generator ends.
-
-#     Note
-#     ----
-#     To find a best-scoring tree a search should be started from many
-#     different random starting trees.
-
-#     Examples
-#     --------
-#     >>> tree = toytree.rtree.unittree(10, seed=123)
-#     >>> search = nni_search(tree)
-#     >>> path = [i for i in search]
-#     >>> path[-1].draw()
-#     """
-#     pass
-#     # TODO
-#     # score = 0
-#     # while 1:
-#     #     for idx, proposal in enumerate(move_iter_nni):
-#     #         score = criterion(proposal)
-#     #         scores.append(score)
-#     #     yield proposal
 
 
 # TODO: try to simplify more like in NNI
@@ -271,7 +345,7 @@ def move_spr(
     extract from the tree, and then reinserts the subtree at an edge
     that is not (1) one of its descendants; (2) its sister; (3) its
     parent; or (4) itself.
-    
+
     Parameters
     ----------
     tree: ToyTree
@@ -397,10 +471,47 @@ def style_tree(tree: ToyTree) -> ToyTree:
     return tree
 
 
+
+# def move_nni_search(
+#     tree: ToyTree,
+#     criterion: Callable,
+#     tolerance: float,
+#     ) -> Iterator[ToyTree]:
+#     """Return an infinite generator of sequential NNI.
+
+#     This function can be used to perform a greedy hill-climbing
+#     algorithm. It finds all trees within one NNI move from the
+#     current tree, and applies the criterion function to each. The
+#     tree with the lowest score will be yielded, and becomes the
+#     source from NNI moves in the next iteration. If no trees have
+#     a greater score then the generator ends.
+
+#     Note
+#     ----
+#     To find a best-scoring tree a search should be started from many
+#     different random starting trees.
+
+#     Examples
+#     --------
+#     >>> tree = toytree.rtree.unittree(10, seed=123)
+#     >>> search = nni_search(tree)
+#     >>> path = [i for i in search]
+#     >>> path[-1].draw()
+#     """
+#     pass
+#     # TODO
+#     # score = 0
+#     # while 1:
+#     #     for idx, proposal in enumerate(move_iter_nni):
+#     #         score = criterion(proposal)
+#     #         scores.append(score)
+#     #     yield proposal
+
+
 # def move_nni(
 #     tree: ToyTree,
 #     idx1: Optional[int]=None,
-#     idx2: Optional[int]=None,    
+#     idx2: Optional[int]=None,
 #     seed: Optional[int]=None,
 #     inplace: bool=False,
 #     highlight: bool=False,
@@ -444,7 +555,7 @@ def style_tree(tree: ToyTree) -> ToyTree:
 #         tree.unroot(inplace=True)
 #     else:
 #         tree = tree.unroot()
-    
+
 #     # create the random generator
 #     rng = np.random.default_rng(seed)
 
@@ -461,7 +572,7 @@ def style_tree(tree: ToyTree) -> ToyTree:
 #         set(range(tree.nnodes - 1)) -
 #         set((i._idx for i in node1._iter_descendants())) -
 #         set((i._idx for i in node1._iter_sisters())) -
-#         set((node1._up._idx, )) - 
+#         set((node1._up._idx, )) -
 #         set((node1._idx, ))
 #     )
 
@@ -487,11 +598,11 @@ def style_tree(tree: ToyTree) -> ToyTree:
 #     # store idx of both parents.
 #     parent_1 = node1._up._idx
 #     parent_2 = node2._up._idx
-    
+
 #     # remove swapping subtrees from the tree
 #     tree[parent_1]._remove_child(node1)
 #     tree[parent_2]._remove_child(node2)
-    
+
 #     # add the subtrees (node1 to parent2 and node2 to parent1)
 #     tree[parent_1]._add_child(node2)
 #     tree[parent_2]._add_child(node1)
@@ -499,7 +610,7 @@ def style_tree(tree: ToyTree) -> ToyTree:
 #     # call toytree update routine
 #     tree._update()
 
-#     # add style to show subtrees swapped 
+#     # add style to show subtrees swapped
 #     if highlight:
 #         tree.style.edge_colors = ['black'] * tree.nnodes
 #         tree.style.node_colors = ['white'] * tree.nnodes
@@ -525,7 +636,7 @@ def style_tree(tree: ToyTree) -> ToyTree:
 # def get_all_neighbors_nni(
 #     tree: ToyTree,
 #     node=None,
-#     highlight=False, 
+#     highlight=False,
 #     seed=None,
 #     quiet=True,
 #     ):
@@ -533,28 +644,28 @@ def style_tree(tree: ToyTree) -> ToyTree:
 
 #     Given a tree performs multiple NNI to get all the neighbors
 #     given a node. If not is not provided, it is selected randomly.
-    
+
 #     Parameters
 #     ----------
 #     ...
 #     """
 #     tree = tree.copy()
 #     tree = tree.unroot()
-    
+
 #     if not quiet: print(f"There are {2 * (tree.ntips - 3)} expected nearest neighbors for the given tree")
-    
+
 #     rng = np.random.default_rng(seed)
-    
-    
+
+
 #     # randomly select first subtree (any non-root Node)
 #     if node == None:
-#         f_idx = rng.choice(tree.nnodes - 1)  
+#         f_idx = rng.choice(tree.nnodes - 1)
 #     else:
 #         f_idx = node #use node specified by user
-    
+
 #     subtree_a = tree[f_idx]
-       
-      
+
+
 #     # Check available nodes to select second subtree
 #     # It should follow the following statements
 #     available_nodes = (
@@ -567,27 +678,29 @@ def style_tree(tree: ToyTree) -> ToyTree:
 #     neighbor_trees = []
 #     for available_node in available_nodes:
 #         neighbor_trees.append(one_nni(tree, force=(f_idx, available_node), highlight=highlight, quiet=True, seed=seed))
-       
+
 #     return neighbor_trees
 
 
 
 if __name__ == "__main__":
 
-
     toytree.set_log_level("INFO")
 
-    NTIPS = 7
+    NTIPS = 5
 
     # draw the original tree
-    TREE = toytree.rtree.unittree(NTIPS, seed=123).unroot()
+    TREE = toytree.rtree.unittree(NTIPS, seed=333).unroot()
     c0, _, _ = TREE.draw(
-        layout='unroot', 
-        use_edge_lengths=False, 
+        layout='unroot',
+        use_edge_lengths=False,
         tip_labels_style={"baseline-shift": 15},
+        node_labels="idx",
+        node_sizes=13,
     )
-    # get mtree with all trees in NNI generator 
-    GEN = toytree.mod.move_nni_iter(TREE, highlight=True)
+    # get mtree with all trees in NNI generator
+    # GEN = toytree.mod.move_nni_iter(TREE, highlight=True)
+    GEN = move_spr_iter(TREE, highlight=True)
     MTRE = toytree.mtree(list(GEN))
 
     # get shape of tree drawing grid
@@ -598,7 +711,7 @@ if __name__ == "__main__":
     c1, _, _ = MTRE.draw(
         shape=SHAPE,
         layout='unroot',
-        use_edge_lengths=False, 
+        use_edge_lengths=False,
         tip_labels_style={"font-size": 14},
     )
 
