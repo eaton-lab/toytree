@@ -47,8 +47,8 @@ def edges_scale_to_root_height(
 
     # scale Nodes using cached Nodes.
     for idx in range(tree.nnodes):
-        tree[idx]._dist *= ratio
         tree[idx]._height *= ratio
+        tree[idx]._dist *= ratio
     return tree
 
 def edges_slider(
