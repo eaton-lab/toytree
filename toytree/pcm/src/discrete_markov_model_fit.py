@@ -1,26 +1,29 @@
 #!/usr/bin/env python
 
-"""
-Fit a discrete Markov model to observations using Maximum Likelihood
-to estimate model parameters and ancestral states.
+"""Fit a discrete Markov model to data using Maximum Likelihood.
 
+Model fit estimates model parameters and ancestral states.
 
+Example
+-------
 >>> toytree.pcm.fit_discrete_markov_data(
         nstates=3, model="ER", 
-        rates=None,             # will be estimated
-        state_frequencies=None, # will be estimated
+        rates=None,               # will be estimated
+        state_frequencies=None,   # will be estimated
     )
 """
 
-from typing import Optional, Union, Dict, Any, List
-from dataclasses import dataclass, field, InitVar
+from typing import Optional, Union, List, TypeVar
+from dataclasses import dataclass, field
 import pandas as pd
 import numpy as np
 from scipy.optimize import minimize
 from scipy.linalg import expm
-from toytree import ToyTree
 from toytree.utils import ToytreeError
 from toytree.pcm.src.discrete_markov_model_sim import MarkovModel
+
+
+ToyTree = TypeVar("ToyTree")
 
 @dataclass
 class FitMarkovModelResult:
@@ -38,7 +41,10 @@ class FitMarkovModelResult:
 class FitMarkovModelBase:
     """Fit a Markov model to discrete data using Maximum Likelihood.
 
-    This uses Felsenstein's pruning algorith...
+    This uses Felsenstein's pruning algorith to recursively traverse
+    a tree to compute conditional likelihoods of each state at each
+    Node, and returns the total likelihood as the sum of 
+    log-likelihoods of the states at the root.
 
     Parameters
     ----------
@@ -71,22 +77,22 @@ class FitMarkovModelBase:
 
     Examples
     --------
-    Fit a 2-state character observed for all tips in the tree.
+    >>> #Fit a 2-state character observed for all tips in the tree.
     >>> tree = ...
     >>> data = tree.pcm.simulate_discrete_data(3, "ER", tips_only=True)
     >>> fit = tree.pcm.fit_discrete_data(data, 3, "ER")
-
-    Fit a 3-state SYM model with observations for some internal nodes.
+    >>>
+    >>> #Fit a 3-state SYM model with observations for some internal nodes.
     >>> data = tree.pcm.simulate_discrete_data(3, "ER", tips_only=True)
     >>> fit = tree.pcm.fit_discrete_data(data, 3, "ER")
-
-    Fit a 2-state ARD model with some rates fixed:
+    >>>
+    >>> #Fit a 2-state ARD model with some rates fixed:
     >>> data = tree.pcm.simulate_discrete_data(2, "ARD",
     >>>    relative_rates=[[0, 2], [1, 0]])
     >>> fixed = np.array([[0, 2],[np.nan, 0]])
     >>> fit = tree.pcm.fit_discrete_data(data, 2, "ARD", fixed_rates=fixed)
-
-    Fit a GTR model to DNA-like 4-state data
+    >>>
+    >>> #Fit a GTR model to DNA-like 4-state data
     >>> true_rates = 1e-8 * np.array([
     >>>     [0, 1, 2, 2],
     >>>     [1, 0, 2, 2],
@@ -105,11 +111,11 @@ class FitMarkovModelBase:
 
     References
     ----------
-    Yang.
-    Paradis et al. (2004).
-    Harmon book.
+    - Yang.
+    - Paradis et al. (2004).
+    - Harmon book.
     """
-    tree: 'toytree.Toytree'
+    tree: ToyTree
     data: Union[pd.Series, pd.DataFrame]
     nstates: int
     model: str
@@ -207,17 +213,18 @@ class FitMarkovModelBase:
             self.nparams_free = (k * (k - 1)) - self.nparams_fixed
 
     def _check_data_with_tree(self):
-        """ """
+        """TODO... """
 
 
 class FitMarkovModel(FitMarkovModelBase):
-    """
+    """...
+
     Examples
     --------
     >>> tree = toytree.rtree.unittree(10, seed=123)
     >>> data = toytree.pcm.simulate_discrete_data(tree, 3, "ER")
-
-    Fit an ER model to the data
+    >>>
+    >>> # Fit an ER model to the data
     >>> fit = toytree.pcm.fit_discrete_markov_model(tree, data, "ER")
     >>> print(fit.log_likelihood, fit.data)
     """
@@ -556,8 +563,9 @@ class DiscreteMarkovModelFit:
 
 
 def optim_func(params, model):
-    """
-    Function to optimize. Takes an iterable as the first argument 
+    """Function to optimize for discrete Markov Model. 
+
+    Takes an iterable as the first argument 
     containing the parameters to be estimated (alpha, beta), and the
     BinaryStateModel class instance as the second argument.
     """

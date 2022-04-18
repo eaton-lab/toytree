@@ -1,18 +1,29 @@
 #!/usr/bin/env python
 
-"""
-Discrete State Markov Model Simulator. 
+"""Discrete State Markov Model Simulator. 
 
 References
 ----------
-Yang...
+- Yang...
 """
 
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Union
 from dataclasses import dataclass, field
+from enum import Enum
 import numpy as np
 import pandas as pd
 import scipy.linalg
+
+
+class ModelType(Enum):
+    """Supported named Markov model types to be fit or simulated.
+    
+    This will raise an exception is user tries to enter a value not
+    supported in this class.
+    """
+    ER = "ER"
+    SYM = "SYM"
+    ARD = "ARD"
 
 
 @dataclass
@@ -27,28 +38,37 @@ class MarkovModel:
     >>> print(model.qmatrix)
     """
     nstates: int
-    model: str
+    """: Number of possible character states."""
+    mtype: ModelType
+    """: Model type ("ER", "SYM", "ARD")."""
     rate: float=1.0
+    """: Rate..."""
     relative_rates: Optional[np.ndarray]=None
+    """: Relative transition rates. If not entered then values are
+    sampled within model constraints given the random seed."""
     state_frequencies: Optional[np.ndarray]=None
+    """: Equilibrium frequencies of the nstates."""
     seed: Optional[int]=None
+    """: Random seed used if relative_rates is None."""
 
+    # attributes filled after init.
     rng: np.random.Generator = field(init=False, repr=False)
+    """: Random number generator init with seed."""
     transition_matrix: np.ndarray = field(init=False)
+    """: Transition probability matrix (P)."""
     qmatrix: np.ndarray = field(init=False)
+    """: Instantaneous rate matrix (Q)."""
 
     def __post_init__(self):
         self.rng = np.random.default_rng(self.seed)
-        self.model = self.model.upper()
-        assert self.model in ("ER", "SYM", "ARD"), (
-            "model must be one of 'ER', 'SYM', 'ARD'")
+        self.mtype = ModelType(self.mtype)
         self._check_rates()
         self._check_freqs()
         self._set_transition_matrix()
         self._set_qmatrix()
 
     def _check_rates(self):
-        """Checks the relative rates matrix given model and nstates.
+        """Checks the relative rates matrix given mtype and nstates.
 
         If a user entered the matrix it is checked to be appropriate
         given the model type. If no matrix is entered then a random
@@ -57,18 +77,18 @@ class MarkovModel:
         Examples
         --------
         >>> MarkovModel(2, "ER").relative_rates
-        [[0, 1],[1, 0]]        
+        [[0, 1],[1, 0]]
         """
         # user entered rate matrix
         rates = self.relative_rates
         if rates is None:
-            if self.model == "SYM":
+            if self.mtype.name == "SYM":
                 rates = np.random.uniform(0.5, 2, (self.nstates, self.nstates))
                 rates[0, 1] = 1
                 lower = np.tril_indices_from(rates)
                 upper = np.tril_indices_from(rates)[::-1]
                 rates[lower] = rates[upper]
-            elif self.model == "ARD":
+            elif self.mtype.name == "ARD":
                 rates = np.random.uniform(0.5, 2, (self.nstates, self.nstates))
                 rates[0, 1] = 1
             else:
@@ -78,14 +98,14 @@ class MarkovModel:
         else:
             rates = np.array(rates)
             # check if singular for ER model
-            if self.model == "ER":
+            if self.mtype.name == "ER":
                 if rates.size == 1:
                     rates = (np.repeat(rates, self.nstates * self.nstates)
                         .reshape((self.nstates, self.nstates)))
                 assert len(set(rates[rates != 0])) == 1, (
                     "all rates should be equal in ER model. See SYM model.")
             # check if symmetric for SYM models
-            elif self.model == "SYM":
+            elif self.mtype.name == "SYM":
                 assert np.allclose(rates, rates.T, rtol=1e-5, atol=1e-8), (
                     "rates should be symmetric in SYM model. See ARD model.")
             # check shape
@@ -110,14 +130,14 @@ class MarkovModel:
         """
         freqs = self.state_frequencies
         if freqs is None:
-            if self.model in ("SYM", "ARD"):
+            if self.mtype.name in ("SYM", "ARD"):
                 freqs = np.random.uniform(0.5, 2, self.nstates)
                 freqs /= freqs.sum()
             else:
                 freqs = np.repeat(1.0 / self.nstates, self.nstates)
         else:
             freqs = np.array(freqs)
-            if self.model in ("SYM", "ARD"):
+            if self.mtype.name in ("SYM", "ARD"):
                 assert freqs.size == self.nstates, (
                     f"states_frequencies should be len={self.nstates}.")
             else:
@@ -248,10 +268,15 @@ class DiscreteMarkovSimulator:
     ToyTree and MarkModel instances
     """
     tree: 'toytree.ToyTree'
+    """: ToyTree with edge lengths in units of ..."""
     model: MarkovModel
+    """: MarkovModel object with parameterized Q matrix."""
     root_state: Optional[int]=None
+    """: Integer character state at the root."""
     seed: Optional[int]=None
+    """: ..."""
     rng: np.random.Generator = field(init=False)
+    """: ..."""
 
     def __post_init__(self):
         self.tree = self.tree.copy()
@@ -268,12 +293,12 @@ class DiscreteMarkovSimulator:
 
     def _traversal_sim(self, name="trait"):
         """Traverse tree from root to tips simulating trait."""
-        self.tree.treenode.add_feature(name, self.root_state)
+        setattr(self.tree.treenode, name, self.root_state)
         for node in self.tree.treenode.traverse():
             if not node.is_root():
                 parent_state = getattr(node.up, name)
                 state = self._edge_sim(parent_state, node.dist)
-                node.add_feature(name, state)
+                setattr(node, name, state)
 
     def get_single_trait(self) -> pd.Series:
         """Return a Series with simulated integer data, node idx 
@@ -353,7 +378,7 @@ def get_markov_model(
     >>> print(toytree.pcm.get_markov_model(nstates=3, model="ARD")
     """
     model = MarkovModel(
-        model=model, 
+        mtype=str(model).upper(),
         nstates=nstates, 
         rate=rate,
         relative_rates=relative_rates,
@@ -433,14 +458,14 @@ def simulate_discrete_data(
     --------
     >>> tree = toytree.rtree.unittree(10)
     >>> toytree.pcm.simulate_discrete_data(tree, 2, "ER")
-    0    1
-    1    0
-    2    1
-    3    0
-    4    0
-    5    0
-    Name: trait, dtype: int64
-
+    >>> # 0    1
+    >>> # 1    0
+    >>> # 2    1
+    >>> # 3    0
+    >>> # 4    0
+    >>> # 5    0
+    >>> # Name: trait, dtype: int64
+    >>>
     >>> toytree.pcm.simulate_discrete_data(
     >>>     tree=tree, nstates=2, model="ARD", 
     >>>     rate=0.1, 
@@ -450,16 +475,17 @@ def simulate_discrete_data(
     >>>     tips_only=True,
     >>>     state_names=["A", "B"],
     >>> )
-        t0  t1  t2  t3  t4
-    0   A   B   A   A   B
-    1   B   B   A   B   B
-    2   A   B   B   A   B
-    3   A   B   B   B   B
-    4   B   B   A   B   B
-    ...
+    >>>
+    >>> #     t0  t1  t2  t3  t4
+    >>> # 0   A   B   A   A   B
+    >>> # 1   B   B   A   B   B
+    >>> # 2   A   B   B   A   B
+    >>> # 3   A   B   B   B   B
+    >>> # 4   B   B   A   B   B
+    >>> # ...
     """
     model = MarkovModel(
-        model=model, 
+        mtype=model, 
         nstates=nstates, 
         rate=rate,
         relative_rates=relative_rates,
@@ -503,13 +529,16 @@ if __name__ == "__main__":
     tre = toytree.rtree.unittree(10, treeheight=10, seed=123)
     data = simulate_discrete_data(
         tree=tre, 
-        nstates=3, model="SYM", state_frequencies=[0.1, 0.3, 0.6],
+        nstates=3, 
+        model="SYM",
+        # rate=0.1,
+        state_frequencies=[0.1, 0.3, 0.6],
         tips_only=True,
         root_state=0,
         nreplicates=10,
         state_names=['a', 'b', 'c'],
     )
-    print(data)
+    print(data.T)
 
     # get many trees with traits simulated
     # ...

@@ -23,7 +23,11 @@ Instance level API usage
 # from .src.api_tree import PhyloCompAPI
 
 # import the package-api functions: tree.pcm.functions
-from .src.utils import get_vcv_from_tree
+from .src.utils import (
+	get_vcv_matrix_from_tree,
+	get_corr_matrix_from_tree,
+	get_tree_from_vcv,
+)
 from .src.diversification import (
 	get_tip_level_diversification,
 	get_equal_splits,

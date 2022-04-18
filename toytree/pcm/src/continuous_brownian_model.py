@@ -1,13 +1,24 @@
 #!/usr/bin/env python
 
+"""Phylogenetic independent contrasts for continuous traits.
+
+
+References
+----------
+- Felsenstein 1985
+- Harmon textbook
+- ...
+
 """
-Phylogenetic independent contrasts for continuous traits.
-"""
+
+from typing import Tuple
 
 
 def get_phylogenetic_independent_contrasts(tree, feature):
-    """Return a dictionary of independent contrasts mapped to each
-    node idx of a tree for a selected continuous feature (trait) 
+    """Return a dictionary of {idx: standardized-contrasts}.
+
+    Independent contrasts are calculated for every internal node
+    of a tree for a selected continuous feature (trait) 
     under a Brownian motion model of evolution.
 
     Modified from IVY interactive (https://github.com/rhr/ivy/)
@@ -20,10 +31,18 @@ def get_phylogenetic_independent_contrasts(tree, feature):
 
     Returns
     -------
-    dict
+    Dict[int, Tuple(float, float, float, float)]
+
+    Examples
+    --------
+    >>> tree = toytree.rtree.unittree(ntips=10, treeheight=1)
+    >>> tree.set_node_data("trait", dict(range(10), range(10)), inplace=True)
+    >>> pics = toytree.pcm.get_phylogenetic_independent_contrasts(tree, "trait")
+    >>> ...
     """
     # get current node features at the tips
-    fdict = tree.get_feature_dict("name", feature)
+    tips = [tree[i] for i in range(tree.ntips)]
+    fdict = {i.name: getattr(i, feature) for i in tips}
     data = {i: fdict[i] for i in fdict if i in tree.get_tip_labels()}
 
     # apply dynamic function from ivy to return dict results
@@ -32,27 +51,28 @@ def get_phylogenetic_independent_contrasts(tree, feature):
     # return dictionary mapping nodes to (mean, var, contrast, cvar)
     return results
 
+### NEEDS MORE...
 
-def get_continuous_ancestral_states(tre, feature):
-    """Infer ancestral states on ancestral nodes for continuous traits
-    under a brownian motion model of evolution.
+# def get_continuous_ancestral_states(tre, feature):
+#     """Infer ancestral states on ancestral nodes for continuous traits
+#     under a brownian motion model of evolution.
 
-    Modified from IVY interactive (https://github.com/rhr/ivy/)   
+#     Modified from IVY interactive (https://github.com/rhr/ivy/)   
 
-    Returns:
-    --------
-    toytree (toytree.ToyTree)
-        A modified copy of the input tree is returned with the mean 
-        ancestral value for the selected feature applied to all nodes 
-        of the tree. 
-    """
-    ntre = tre.copy()
-    resdict = get_phylogenetic_independent_contrasts(ntre, feature)
-    ntre = ntre.set_node_values(
-        feature, 
-        values={i.name: j[0] for (i, j) in resdict.items()}
-    )
-    return ntre
+#     Returns:
+#     --------
+#     toytree (toytree.ToyTree)
+#         A modified copy of the input tree is returned with the mean 
+#         ancestral value for the selected feature applied to all nodes 
+#         of the tree. 
+#     """
+#     ntre = tre.copy()
+#     resdict = get_phylogenetic_independent_contrasts(ntre, feature)
+#     ntre = ntre.set_node_data(
+#         feature, 
+#         {i.idx: j[0] for (i, j) in resdict.items()}
+#     )
+#     return ntre
 
 
 def _dynamic_pic(node, data, results):
@@ -79,7 +99,8 @@ def _dynamic_pic(node, data, results):
         contrasts's variance.
 
     TODO: modify to accommodate polytomies.
-    """    
+    """
+    # store in lists to support flexible number of children (e.g. polytomies)
     means = []
     variances = []
 
@@ -117,7 +138,7 @@ def _dynamic_pic(node, data, results):
     # vk is the variance
     vars_k = node.dist + (vars_i * vars_j) / (vars_i + vars_j)
 
-    # store in dictionary and 
+    # store in dictionary and return
     results[node] = (means_k, vars_k, means_i - means_j, vars_i + vars_j)
     return results
 
