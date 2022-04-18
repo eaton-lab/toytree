@@ -119,8 +119,8 @@ class Node:
         """: tuple of Node instances directly descended from this Node."""
         self._up: Optional[Node] = None
         """: the ancestor Node instance (towards root) from this Node."""
-        self._idx: int = 0
-        """: unique node index label (idx) assigned to every Node."""
+        self._idx: int = -1
+        """: unique node index label (idx) assigned to Nodes in a ToyTree."""
         self._height: float = 0.
         """: height of this Node above the connected Node farthest from root."""
         self._x: float = 0.
@@ -278,20 +278,15 @@ class Node:
     #################################################
 
     def __repr__(self) -> str:
-        """Returned string representation of Node"""
-        if self.name:
-            return f"Node({self.idx}, {self.name})"
-        return f"Node({self.idx})"
+        """Returned string showing Node idx and name only if present."""
+        _idx = "" if self.idx == -1 else f"idx={self.idx}"
+        _name = "" if not self.name else f"name='{self.name}'"
+        inner = ", ".join([i for i in (_idx, _name) if i])
+        return f"Node({inner})"
 
-    def __str__(self) -> str:
-        """Printed string representation of Node"""
-        if self.is_leaf():
-            pic = "leaf"
-        elif self.is_root():
-            pic = "root"
-        else:
-            pic = "internal"
-        return f"Node(idx={self.idx}, {pic})"
+    # def __str__(self) -> str:
+    #     """Printed string representation of Node"""
+    #     return self.__repr__()f"Node(idx={self.idx}, {pic})"
 
     def __len__(self) -> int:
         """Return length of Node as number of descendant leaf Nodes"""
