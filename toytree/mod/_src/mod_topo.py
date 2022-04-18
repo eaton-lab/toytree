@@ -18,8 +18,9 @@ import numpy as np
 from toytree import Node
 from toytree.utils import ToytreeError
 
-logger = logger.bind(name="toytree")
+# pylint: disable="too-many-branches"
 
+logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
 Query = TypeVar("Query", str, int, Node)
 
@@ -432,18 +433,17 @@ def add_internal_node(
     Examples
     --------
     >>> tree = toytree.rtree.unittree(ntips=5, seed=123)
-    >>> tree = tree.mod.topo_new_internal_node(query=0, dist=0.25)
+    >>> tree = tree.mod.add_internal_node('r0', dist=0.25)
     >>> tree.draw(ts='n', node_sizes=10);
     """
     tree = tree if inplace else tree.copy()
 
     # get insertion edge and dist of the new Node
-    idx = tree.get_mrca_node(*query, regex=regex).idx
-    node = tree[idx]
+    node = tree.get_mrca_node(*query, regex=regex)
     parent = node.up
     dist = dist if dist is not None else node.dist / 2.
     assert node.dist > dist > 0, (
-        f"the new Node dist must be > 0 and < dist of Node {idx} ({node.dist}")
+        f"the new Node dist must be > 0 and < dist of {node} (dist={node.dist}")
 
     # create the new Node and mend connections nearby
     new_node = Node(
@@ -526,24 +526,26 @@ def add_tip_node(
     >>>     idx=3, name="x", parent_dist=2e5, dist=3e5)
     >>> tree.ladderize().draw(ts='c', admixture_edges=(['r0', 'r1'], 'x'));
     """
-    # get the selected Node and create a new sister
     tree = tree if inplace else tree.copy()
-    idx = tree.get_mrca_node(*query, regex=regex).idx
-    orig_parent = tree[idx].up
-    sister_1 = tree[idx]
+    # selected a Node whose edge will be split.
+    sister_1 = tree.get_mrca_node(*query, regex=regex)
+    # create a new Node that will become sister to selected Node and
+    # set its edge length to initially match the selected Node.
     sister_2 = Node(name=name, dist=sister_1.height)
+    # store reference to selected Node's orig parent (later gparent)
+    orig_parent = sister_1.up
 
     # set the dist and height of sisters (insertion height)
     if dist is None:
         dist = sister_1.dist / 2.
     if parent_dist is None:
-        parent_dist = orig_parent.dist - dist
+        parent_dist = orig_parent.height - dist
         if parent_dist < 0:
             logger.warning("`parent_dist` arg to `add_tip_node` causes negative branch lengths")
     sister_2._dist += dist
     sister_1._dist = dist
 
-    # insert new parent Node and re-connect
+    # The two sisters will be childen of the new internal Node.
     new_parent = Node(name=parent_name, dist=parent_dist)
     orig_parent._remove_child(sister_1)
     orig_parent._add_child(new_parent)

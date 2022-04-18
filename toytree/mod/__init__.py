@@ -38,6 +38,7 @@ from toytree.mod._src.mod_topo import (
 	remove_unary_nodes,
 	add_internal_node,
 	add_tip_node,
+	add_subtree,
 )
 from toytree.mod._src.root_unroot import unroot, root
 from toytree.mod._src.tree_move import (
