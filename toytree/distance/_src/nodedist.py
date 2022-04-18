@@ -300,7 +300,7 @@ def get_farthest_node(
     # get distances to all, or only descendants
     node = tree.treenode if idx is None else tree[idx]
     if descendants_only:
-        ndists = _get_dist_to_descendants_dict(tree, node, topology_only)
+        ndists = _get_dist_to_descendants_dict(tree, node.idx, topology_only)
         nidx = np.argmax(ndists.values())
     else:
         ndists = get_node_distance_matrix(tree, topology_only)
@@ -331,7 +331,7 @@ def get_farthest_node_distance(
     """
     node = tree.treenode if idx is None else tree[idx]    
     if descendants_only:
-        ndists = _get_dist_to_descendants_dict(tree, node, topology_only)
+        ndists = _get_dist_to_descendants_dict(tree, node.idx, topology_only)
         return max(ndists.values())
     ndists = get_node_distance_matrix(tree, topology_only)
     return max(ndists[node.idx])
@@ -341,6 +341,9 @@ def get_farthest_node_distance(
 if __name__ == "__main__":
 
     import toytree
-    TREE = toytree.rtree.unittree(10, seed=123)
+    # TREE = toytree.rtree.unittree(10, seed=123)
     # print(TREE.draw())
-    print(get_node_distance_matrix(TREE, True))
+    # print(get_node_distance_matrix(TREE, True))
+
+    TREE = toytree.rtree.unittree(5, seed=123)    
+    print(TREE.distance.get_farthest_node(5))
