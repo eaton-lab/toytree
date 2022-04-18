@@ -83,7 +83,8 @@ def collapse_nodes(
     ----------
     *query: str, int, or Node
         One or more Node selectors, which can be Node objects, names,
-        or int idx labels.
+        or int idx labels. To select internal Nodes use idx labels
+        or Node object from `tree.get_mrca_node('name1', 'name2')`.
     min_dist: float
         The minimum dist (edge length) value allowed.
     min_support: float
@@ -108,7 +109,7 @@ def collapse_nodes(
     >>> tree = tree.collapse_nodes(min_dist=0.01, min_support=45)
     """
     tree = tree if inplace else tree.copy()
-    if query == ():
+    if not query: # == ():
         selected = []
     else:
         selected = [i.idx for i in tree.get_nodes(*query)]

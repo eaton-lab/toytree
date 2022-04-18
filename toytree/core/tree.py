@@ -11,10 +11,9 @@ References
 
 from __future__ import annotations
 from typing import (
-    Sequence, Dict, List, Optional, Iterator, Any, Set,
+    Sequence, Dict, List, Optional, Iterator, Any,
     Union, Tuple, TypeVar, Callable)
 import re
-import itertools
 from copy import deepcopy
 from hashlib import md5
 
@@ -29,6 +28,7 @@ from toytree.core.style import TreeStyle
 from toytree.mod._src.api import TreeModAPI
 from toytree.distance._src.api import DistanceAPI
 
+from toytree import enumeration
 from toytree.core.node import Node
 from toytree.utils import ToytreeError
 from toytree.core.drawing.render import ToytreeMark
@@ -223,14 +223,14 @@ class ToyTree:
 
     def _update(self) -> None:
         """Traverse to set and cache Node idxorder and coordinates.
-        
-        idxorder traversal is used to fill the ToyTree._idx_dict to 
+
+        idxorder traversal is used to fill the ToyTree._idx_dict to
         make Nodes easily indexable. While doing this it also calculates
         Node heights and spacing (_x) and counts nnodes and ntips.
 
         If a topology has been modified then idx labels must be
-        updated. This function is called by all internal `toytree.mod` 
-        functions which modify the topology (e.g., add_child, root, 
+        updated. This function is called by all internal `toytree.mod`
+        functions which modify the topology (e.g., add_child, root,
         rotate, etc) but not if users modify Nodes adhoc. This is why
         Node objects are immutable.
         """
@@ -252,10 +252,10 @@ class ToyTree:
         while queue:
             # get node from start of queue to proceed levelorder
             node = queue.pop()
-            
+
             # set depth of this node from the root
             depths[node] = depths[node.up] + node._dist
-            
+
             # if leaf add to output stack and update farthest depth
             if node.is_leaf():
                 outer_stack.append(node)
@@ -288,7 +288,7 @@ class ToyTree:
             node._height = max_depth - depths[node]
             node._x = sum(i._x for i in node._children) / len(node._children)
             node._idx = idx
-            self._idx_dict[idx] = node            
+            self._idx_dict[idx] = node
             idx += 1
         self.nnodes = idx
 
@@ -397,7 +397,7 @@ class ToyTree:
     #################################################
 
     def _iter_nodes_by_name_match(
-        self, *query: str, regex: bool = False) -> Iterator[str]:
+        self, *query: str, regex: bool = False) -> Iterator[Node]:
         """Return Iterator over Nodes in idxorder matched by leaf names."""
         # get matching function
         if regex:
@@ -738,153 +738,120 @@ class ToyTree:
         """
         return pd.DataFrame(self._get_edges(), columns=["child", "parent"])
 
-    def _iter_quartets(self, feature: str="name") -> Tuple[Tuple[str, str]]:
-        """Yield quartets of tip names spanning each edge of a tree.
-
-        Does not sort the order of returned tuples. Stores a cache of
-        observed quartets to return only unique ones. Thus for very
-        large trees this can lead to memory errors.
-
-        Examples
-        --------
-        >>> small_tree = toytree.rtree.unittree(6)
-        >>> print(list(small_tree._iter_quartets()))
-        >>>
-        >>> large_tree = toytree.rtree.unittree(100)
-        >>> nquartets = sum(1 for i in large_tree._iter_quartets())
-        >>> print(f'nquartets={nquartets}')
-        """
-        cache = {i: {i} for i in range(self.ntips)}
-        ridx = self.treenode.idx
-        root_nodes = 1 if self.is_rooted() else 0
-        all_nodes = range(self.ntips, self.nnodes - root_nodes)
-        node_set = set(range(self.nnodes - root_nodes))
-        observed = set([])
-        for nidx in all_nodes[:-1]:
-            if self[nidx].up:
-
-                # get nodes above and below this edge
-                below = {nidx}
-                for child in self[nidx].children:
-                    below |= cache[child.idx]
-                cache[nidx] = below
-                other = node_set - below
-
-                # remove ridx, and rm nidx if on same side
-                if ridx in below:
-                    below.discard(ridx)
-                    below.discard(nidx)
-                else:
-                    other.discard(ridx)
-
-                # limit to the tip Nodes
-                below = (i for i in below if i < self.ntips)
-                other = (i for i in other if i < self.ntips)
-
-                # convert to requested type
-                below = (getattr(self[i], feature) for i in below)
-                other = (getattr(self[i], feature) for i in other)
-
-                # subsample 2 from each side of bipart.
-                # {0, 1, 2} -> {0, 1}, {0, 2}, and {1, 2}.
-                # Perhaps all {0, 1} quartets have already been done,
-                # we still need to visit all {0, 2} and {1, 2} so we
-                # check and skip redundant quartets below.
-                biquarts = itertools.product(
-                    itertools.combinations(below, 2),
-                    itertools.combinations(other, 2),
-                )
-
-                # iterate over quartets from this bipart and yield
-                # if it has not been visited yet.
-                for quart in biquarts:
-                    if quart not in observed:
-                        observed.add(quart)
-                        yield quart
-
-    def _iter_bipartitions(
+    def iter_bipartitions(
         self,
         feature: str="name",
-        exclude_internal_labels: bool=True,
-        exclude_singleton_splits: bool=True,
-        ) -> Tuple[Tuple[str],Tuple[str]]:
-        """Yield bipartitions of a tree.
+        exclude_root: bool=True,
+        exclude_singletons: bool=True,
+        exclude_internal_nodes: bool=True,
+        ) -> Iterator[Tuple[Tuple[str],Tuple[str]]]:
+        """Generator to yield bipartitions (info about splits in a tree).
 
         Bipartitions are yielded in random order, but splits and labels
-        within bipartitions are sorted. Rooted/unrooted has no effect.
+        within bipartitions are sorted. By default bipartitions do not
+        include the root Node, but this can be toggled on to return
+        bipartitions that can uniquely distinguish rooted topologies.
 
         Parameters
         ----------
         feature: str
             Feature to return to represent Nodes on either side of a
-            bipartition. Default is "name".
-        exclude_internal_labels: bool
-            Default is to only show tip Nodes on either side of a
-            bipartition, but internal Nodes can be included as well.
-        exclude_singleton_splits: bool
+            bipartition. Default is "name", but custom features can
+            also be returned, or use None to return Node objects.
+        exclude_root: bool
+            Default if to exclude root Node. If True the root Node
+            is included in splits, and one additional bipartition is
+            included which specifies root location.
+        exclude_singletons: bool
             Default is to exclude singleton splits (e.g., {A | B,C,D})
             since it is implicit that one exists for every tip Node,
-            but these can be included if requested.
+            but these can also be included if requested.
+        exclude_internal_nodes: bool
+            Default is to only show tip Nodes on either side of a
+            bipartition, but internal Nodes can be included as well. In
+            this case the feature should likely be set to "idx", None, or
+            some other feature for which internal Nodes have unique values.
 
         Examples
         --------
-        >>> splits = set(tree._iter_bipartitions())
+        >>> tree = toytree.rtree.unittree(ntips=5, seed=123)
+        >>> sorted(iter_bipartitions(tree, 'name'))
+        >>> # [(('r0', 'r1'), ('r2', 'r3', 'r4')),
+        >>> #  (('r3', 'r4'), ('r0', 'r1', 'r2'))]
+        >>> #
+        >>> sorted(iter_bipartitions(tree, 'name', exclude_root=False))
+        >>> # [(('r0', 'r1'), ('r2', 'r3', 'r4')),
+        >>> #  (('r3', 'r4'), ('r0', 'r1', 'r2')),
+        >>> #  (('r3', 'r4'), ('r0', 'r1', 'r2'))]
+
+        Note
+        ----
+        feature='idx' is not a good option if you plan to compare
+        bipartitions among trees, since tip idx labels can be
+        different simply due to Node rotations. Using feature='name'
+        will reliably return the same bipartitions regardless of
+        Node rotations. See also `ToyTree.get_topology_id` which
+        uses bipartitions yield unique hash identifiers for trees.
         """
-        # store cache of desc below each node to reduce traversals
-        cache = {}
-        ridx = self.treenode.idx
+        return enumeration.iter_bipartitions(
+            tree=self,
+            feature=feature,
+            exclude_root=exclude_root,
+            exclude_singletons=exclude_singletons,
+            exclude_internal_nodes=exclude_internal_nodes,
+            )
 
-        # exclude last 0 (unrooted) or 1 (rooted) nodes
-        # exclude last 1 (unrooted) or 2 (rooted) edges
-        # important for: feature='idx' and exclude_internal_labels=False
-        root_nodes = 1 if self.is_rooted() else 0
-        all_nodes = range(self.nnodes - root_nodes)
-        all_edges = range(self.nnodes - (root_nodes + 1))
-        node_set = set(all_nodes)
-        for nidx in all_edges:
-            if self[nidx].up:
+    def iter_quartets(
+        self,
+        feature: str="name",
+        collapse: bool=False,
+        ) -> Iterator[Tuple]:
+        """Generator to yield quartets induced by edges on a tree.
 
-                # get nodes above and below this edge
-                below = {nidx}
-                for child in self[nidx].children:
-                    below |= cache[child.idx]
-                cache[nidx] = below
-                other = node_set - below
+        This yields all quartets (4-sample subtrees) that exist within
+        a larger tree. The set of possible quartets is not affected
+        by tree rooting, but is affected by collapsed edges
+        (polytomies), which reduce the number of quartets.
 
-                # remove ridx, and rm nidx if on same side
-                if ridx in below:
-                    below.discard(ridx)
-                    below.discard(nidx)
-                else:
-                    other.discard(ridx)
+        Quartets are returned as tuples of tuples, where e.g.,
+        (('a', 'b'), ('c', 'd')) implies a `ab|cd` quartet. The
+        order in which quartets are yielded depends on the topology,
+        and can be sorted after, but the order of Nodes within each
+        tuple is sorted by the requested feature (e.g., name). The
+        collapse=True argument can be used to simplify the returned
+        format to a single tuple with the same order.
 
-                # limit to the tip Nodes
-                if exclude_internal_labels:
-                    below = (i for i in below if i < self.ntips)
-                    other = (i for i in other if i < self.ntips)
+        Parameters
+        ----------
+        feature: str
+            Feature to return to represent Nodes on either side of a
+            bipartition. Default is "name", but custom features can
+            also be returned, or use None to return Node objects.
+        collapse: bool
+            By default collapse=False returns quartets as a tuple of
+            tuples, e.g., ((0, 1), (2, 3)), but if collapse=True they
+            are returned as a single tuple (0, 1, 2, 3), in the same
+            order, with the split implied between index 1 and 2.
 
-                # convert to requested feature (name usually)
-                below = tuple(sorted(getattr(self[i], feature) for i in below))
-                other = tuple(sorted(getattr(self[i], feature) for i in other))
-
-                # return in a consistent order
-                lenb = len(below)
-                leno = len(other)
-
-                # optionally skip singletons
-                if exclude_singleton_splits & ((leno == 1) | (lenb == 1)):
-                    continue
-
-                # yield as a tuple in order by len or name str
-                if lenb < leno:
-                    yield (below, other)
-                elif leno < lenb:
-                    yield (other, below)
-                else:
-                    if other[0] < below[0]:
-                        yield (other, below)
-                    else:
-                        yield (below, other)
+        Examples
+        --------
+        >>> tree = toytree.rtree.unittree(ntips=5, seed=123)
+        >>> print(sorted(tree.iter_quartets()))
+        >>> # [(('r0', 'r1'), ('r2', 'r3')),
+        >>> #  (('r0', 'r1'), ('r2', 'r4')),
+        >>> #  (('r0', 'r1'), ('r3', 'r4')),
+        >>> #  (('r0', 'r2'), ('r3', 'r4')),
+        >>> #  (('r1', 'r2'), ('r3', 'r4'))]
+        >>>
+        >>> print(sorted(tree.iter_quartets(collapse=True)))
+        >>> # [('r0', 'r1', 'r2', 'r3'),
+        >>> #  ('r0', 'r1', 'r2', 'r4'),
+        >>> #  ('r0', 'r1', 'r3', 'r4'),
+        >>> #  ('r0', 'r2', 'r3', 'r4'),
+        >>> #  ('r1', 'r2', 'r3', 'r4')]
+        """
+        return enumeration.iter_quartets(
+            tree=self, feature=feature, collapse=collapse)
 
     def get_bipartitions(
         self,
@@ -925,7 +892,7 @@ class ToyTree:
 
         See Also
         --------
-        `ToyTree._iter_bipartitions`, `ToyTree._get_bipartitions_table`
+        `ToyTree.iter_bipartitions`, `ToyTree._get_bipartitions_table`
 
         Examples
         --------
@@ -959,7 +926,7 @@ class ToyTree:
             index = None
         return pd.DataFrame(arr, columns=self.get_tip_labels(), index=index)
 
-    def get_topology_id(self, feature="name") -> str:
+    def get_topology_id(self, feature="name", exclude_root: bool=True) -> str:
         """Return a unique ID representing this topology.
 
         Two trees with the same topology and tip names will produce
@@ -976,14 +943,26 @@ class ToyTree:
             The feature used to represent tip Nodes (default='name').
             This should be a feature that is unique among tip Nodes,
             and is relevant to identifying similarity among the trees
-            you plan to compare using topology id strings.
+            you plan to compare using topology id strings. Careful
+            changing this option from 'name' unless you are familiar
+            with the consequences.
+        exclude_root: bool
+            By default the root Node is excluded (if tree is rooted)
+            such that all unrooted trees with the same toplogy return
+            the same topology_id. To distinguish among differently
+            rooted versions of the same tree set `exclude_root=False`.
 
         Examples
         --------
         >>> tree.get_topology_id() # '70f5cfb041f176d86020971ac5f633e1'
+
+        See Also
+        --------
+        - iter_bipartitions
         """
-        bi_list = list(self._iter_bipartitions(feature=feature))
-        return md5(str(sorted(bi_list)).encode('utf-8')).hexdigest()
+        biparts = sorted(self.iter_bipartitions(
+            feature=feature, exclude_root=exclude_root))
+        return md5(str(biparts).encode('utf-8')).hexdigest()
 
     ###################################################
     ## COORDINATE LAYOUT FUNCTIONS
@@ -1203,7 +1182,7 @@ class ToyTree:
 
         # convert all keys to Node objects
         mapping = {
-            tree.get_nodes(i, regex=False)[0]: j 
+            tree.get_nodes(i, regex=False)[0]: j
             for (i, j) in mapping.items()
         }
 
@@ -1304,6 +1283,7 @@ class ToyTree:
         for example during a traversal, because it spends time checking
         for Nodes with missing data, and type-checks missing values.
         """
+        # TODO: AVOID FORMATTING FOR COMPLEX FEATURE TYPES (E.G., DICT, SET, ETC).
         # select one or more features to fetch values for
         if feature is None:
             features = self.features
