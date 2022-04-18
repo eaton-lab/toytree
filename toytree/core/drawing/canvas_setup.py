@@ -228,6 +228,12 @@ def style_ticks(
         axes.x.show = False
         axes.y.show = True
         axes.y.ticks.show = True
+    # e.g., unrooted layout with axes shown (e.g., ts='p')
+    else:
+        # nticks = max((4, np.floor(style.height / 75).astype(int)))
+        nticks = 5
+        axes.x.show = False
+        axes.y.show = False
 
     # get tick locator
     lct = toyplot.locator.Extended(count=nticks, only_inside=only_inside)
@@ -253,7 +259,7 @@ def style_ticks(
             locations=locs + style.xbaseline,
             labels=labels,
         )
-    else:
+    elif style.layout in ("u", "d"):
         axes.y.ticks.locator = toyplot.locator.Explicit(
             locations=locs + style.ybaseline,
             labels=labels,
