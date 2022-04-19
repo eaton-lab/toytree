@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-"""
-Functions for calculating diversification related statistics.
+"""Functions for calculating diversification related statistics.
+
 """
 
 from typing import Union, TypeVar
@@ -13,9 +13,10 @@ from toytree.pcm.src.utils import calculate_posterior
 
 
 ToyTree = TypeVar("ToyTree")
+MultiTree = TypeVar("MultiTree")
 
 
-def _get_equal_splits(tree):
+def _get_equal_splits(tree: ToyTree):
     """Return DataFrame with equal splits (ES) metric sensu Redding 
     and Mooers 2006. See :meth:`.get_equal_splits`
     """
@@ -34,7 +35,7 @@ def _get_equal_splits(tree):
         data[idx] = divrate
     return data    
 
-def _get_tip_level_diversification(tree):
+def _get_tip_level_diversification(tree: ToyTree):
     """Returns a DataFrame with tip-level diversification rates
     sensu Jetz 2012. See :meth:`.get_tip_level_diversification`
     """
@@ -44,7 +45,7 @@ def _get_tip_level_diversification(tree):
     return data
 
 def get_equal_splits(
-    trees: Union['ToyTree', 'MultiTree', str],
+    trees: Union[ToyTree, MultiTree, str],
     njobs: int=1,
     ) -> pd.DataFrame:
     """Return DataFrame with equal splits (ES) metric sensu Redding 
@@ -74,7 +75,7 @@ def get_equal_splits(
     return calculate_posterior(_get_equal_splits, trees, njobs)
 
 def get_tip_level_diversification(
-    trees: Union['ToyTree', 'MultiTree', str],
+    trees: Union[ToyTree, MultiTree, str],
     njobs: int=1,
     **kwargs,
     ) -> pd.DataFrame:

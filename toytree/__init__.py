@@ -36,7 +36,8 @@ import toytree.distance
 import toytree.io
 import toytree.mod
 import toytree.color
-# import toytree.pcm
+import toytree.enumeration
+import toytree.pcm
 # import toytree.annotate
 
 # container trees...

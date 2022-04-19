@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""
-Phylogenetic comparative methods (pcm) subpackage.
+"""Phylogenetic comparative methods (pcm) subpackage.
 
 All `pcm` source code is located in `toytree.pcm.src`, with user-facing 
 functions exposed in the `api` and `tree_api` submodules. In this 
@@ -11,12 +10,17 @@ accessed from top-level locations at either :mod:`toytree.pcm`
 instances (instance-level usage).
 
 Package level API usage
-	>>> tree = toytree.rtree.unittree(ntips=10, treeheight=100, seed=123)	
-	>>> toytree.pcm.simulate_discrete_markov_data(tree, 3, "ER")
+>>> tree = toytree.rtree.unittree(ntips=10, treeheight=100, seed=123)	
+>>> toytree.pcm.simulate_discrete_markov_data(tree, 3, "ER")
 
 Instance level API usage
-	>>> tree = toytree.rtree.unittree(ntips=10, treeheight=100, seed=123)
-	>>> tree.pcm.simulate_discrete_markov_data(nstates=3, "ER")
+>>> tree = toytree.rtree.unittree(ntips=10, treeheight=100, seed=123)
+>>> tree.pcm.simulate_discrete_markov_data(nstates=3, "ER")
+
+Note
+----
+This package may be split into more subdivided packages in the future,
+as it grows, such as `toytree.pcm.markov`, `toytree.pcm.phylocom`.
 """
 
 # import the tree-api: tree.pcm.functions
@@ -36,3 +40,4 @@ from .src.discrete_markov_model_sim import (
 	get_markov_model,
 	simulate_discrete_data,
 )
+from .src.phylocom import simulate_community_data
