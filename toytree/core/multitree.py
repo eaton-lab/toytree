@@ -132,12 +132,18 @@ class MultiTree:
         """Return True if all topologies in treelist are identical."""
         return len(set(i.get_topology_id() for i in self)) == 1
 
-    def get_unique_topologies(self) -> List[Tuple[ToyTree, int]]:
+    def get_unique_topologies(self, exclude_root: bool=True) -> List[Tuple[ToyTree, int]]:
         """Return a list of (ToyTree, count) for each unique tree.
 
         This can be useful for calculating statistics only on the
         unique set of trees and multiplying by their frequency (for
         example this is done when generating consensus trees).
+
+        Parameters
+        ----------
+        exclude_root: 
+            If True then all unique rooted trees are counted and 
+            returned rather than all unique unrooted trees.
 
         Examples
         --------
@@ -148,7 +154,7 @@ class MultiTree:
         """
         trees_dict = {}
         for tree in self:
-            hashed = tree.get_topology_id()
+            hashed = tree.get_topology_id(exclude_root=exclude_root)
             if hashed in trees_dict:
                 trees_dict[hashed][1] += 1
             else:
