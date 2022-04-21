@@ -13,8 +13,8 @@ Examples
 --------
 >>> tree1 = toytree.rtree.unittree(ntips=10)
 >>> tree1.draw();
->>> tree2 = toytree.tree("https://eaton-lab.org/data/Cyathophora.tree")
->>> tree2.root(wildcard="prz").draw(tree_style='o')
+>>> tree2 = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
+>>> tree2.root("prz", regex=True).draw(tree_style='o')
 """
 
 __version__ = "3.0.0"
@@ -40,7 +40,7 @@ import toytree.enumeration
 import toytree.pcm
 # import toytree.annotate
 
-# container trees...
+# container trees... container
 
 # start the logger at log_level WARNING
 from toytree.utils.src.logger_setup import set_log_level

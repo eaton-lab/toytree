@@ -27,6 +27,7 @@ import toytree
 
 
 ToyTree = TypeVar("ToyTree")
+# MultiTree = TypeVar("MultiTree")
 
 
 def get_vcv_matrix_from_tree(tree: ToyTree) -> pd.DataFrame:
@@ -136,19 +137,16 @@ def calculate_posterior(
     function: Callable
         A function that takes a tree as input and returns a float 
         metric as a pandas.Series.
-
     trees: ToyTree, MultiTree, or newick file
         Flexible options to input/parse one or multiple trees.
-
     njobs: int
         Distribute N jobs in parallel using ProcessPoolExecutor
-    
     **kwargs: dict
         A dictionary of arguments to the Callable function.
 
-    Returns
-    -------
-    pandas.DataFrame
+    Examples
+    --------
+    >>> ...
     """
     # load data and metadata from newick, toytree, or multitree
     if isinstance(trees, list):

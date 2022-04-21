@@ -599,6 +599,8 @@ class TreeModAPI:
             self._tree, *query, regex=regex,
             dist=dist, name=name, inplace=inplace)
 
+    # def add_subtree()
+
 
 if __name__ == "__main__":
 

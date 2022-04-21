@@ -167,7 +167,9 @@ def iter_quartets(
 
     # format into ((),()) or (,,,).
     if collapse:
-        format_func = lambda x: tuple(sort_func(x[0]) + sort_func(x[1]))
+        def format_func(qrt: Tuple[Tuple[str,str],Tuple[str,str]]):
+            qrt = sort_func(qrt)
+            return tuple(qrt[0] + qrt[1])
     else:
         format_func = lambda x: tuple(sort_func(x))
 
@@ -295,7 +297,7 @@ if __name__ == "__main__":
             print(i)
 
         print("\nQUARTETS-----------")
-        for i in iter_quartets(TREE):
+        for i in iter_quartets(TREE, collapse=True):
             print(i)
 
         print("\nSPLITS-----------")

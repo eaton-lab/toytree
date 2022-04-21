@@ -10,6 +10,6 @@ Huelsenbeck, J. P., R. Neilsen, and J. P. Bollback (2003) Stochastic mapping of 
 """
 
 class StochasticMap:
-    """
-    Maps nodes to ndarrays of states and times?
+    """Maps nodes to ndarrays of states and times?
+
     """

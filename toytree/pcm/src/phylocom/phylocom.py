@@ -18,6 +18,9 @@ Ecology Letters, 12: 693-715. doi:10.1111/j.1461-0248.2009.01314.x
 PSV and PGLMM methods
 ---------------------
 - Ives and Helmus 2011
+- Helmus M.R., Bland T.J., Williams C.K. & Ives A.R. (2007) 
+  Phylogenetic measures of biodiversity. American Naturalist, 
+  169, E68-E83
 
 Validation
 ----------
@@ -27,6 +30,10 @@ which cites Cadotte et al. for the approach, we can simulate
 communities, compute N different statistics, and perform clustering
 on the outputs to show how similar the results of different metrics
 are.
+
+
+For textbook:
+- Faith: goal is to maximize conservation of features.
 """
 
 from typing import TypeVar, Optional, Union
@@ -39,7 +46,7 @@ import toytree
 ToyTree = TypeVar("ToyTree")
 
 
-# TODO: how to simulate abundances?
+# TODO: simulate abundances as lognormally distributed?
 def simulate_community_data(
     tree: ToyTree,
     scalar: float=0, 
@@ -117,7 +124,9 @@ def get_community_metric(
 
     Examples
     --------
-    ...
+    >>> ...
+    >>>    metric    null_mean    null_std   effect_size    name
+    >>> 0    ...         ...          ...        ...        'MPD'
     """
 
 

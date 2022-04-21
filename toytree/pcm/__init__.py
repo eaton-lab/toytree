@@ -27,17 +27,11 @@ as it grows, such as `toytree.pcm.markov`, `toytree.pcm.phylocom`.
 # from .src.api_tree import PhyloCompAPI
 
 # import the package-api functions: tree.pcm.functions
-from .src.utils import (
+from toytree.pcm.src.utils import (
 	get_vcv_matrix_from_tree,
 	get_corr_matrix_from_tree,
 	get_tree_from_vcv,
 )
-from .src.diversification import (
-	get_tip_level_diversification,
-	get_equal_splits,
-)
-from .src.discrete_markov_model_sim import (
-	get_markov_model,
-	simulate_discrete_data,
-)
-from .src.phylocom import simulate_community_data
+from toytree.pcm.src.diversification import *
+from toytree.pcm.src.traits import *
+from toytree.pcm.src.phylocom import simulate_community_data
