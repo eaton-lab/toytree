@@ -899,7 +899,7 @@ class ToyTree:
         >>> tree = toytree.rtree.unittree(4)
         >>> print(tree.get_bipartitions())
         """
-        biparts = list(self._iter_bipartitions(
+        biparts = list(self.iter_bipartitions(
             feature, exclude_internal_labels, exclude_singleton_splits))
         if exclude_singleton_splits:
             index = range(self.ntips, self.ntips + len(biparts))
@@ -914,7 +914,7 @@ class ToyTree:
         dtype: type=int,
         ) -> pd.DataFrame:
         """Return a DataFrame with partitions in binary format."""
-        bits = list(self._iter_bipartitions(
+        bits = list(self.iter_bipartitions(
             "idx", exclude_internal_labels, exclude_singleton_splits))
         cols = self.ntips if exclude_internal_labels else self.nnodes - 1
         arr = np.zeros(shape=(len(bits), cols), dtype=dtype)
@@ -1211,7 +1211,7 @@ class ToyTree:
         # TODO: use inplace=True if entered?
         if feature == "height":
             height_map = {i.idx: j for (i, j) in ndict.items() if j is not None}
-            return tree.mod.edges_set_node_heights(height_map)
+            return tree.mod.edges_set_node_heights(height_map, inplace=inplace)
 
         # dist is immutable, but allow it here, and do an update.
         if feature == "dist":
