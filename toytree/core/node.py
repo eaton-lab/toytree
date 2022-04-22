@@ -40,6 +40,7 @@ from copy import deepcopy
 from collections import deque
 
 from loguru import logger
+import numpy as np
 from toytree.utils import TreeNodeError
 
 # register the logger
@@ -61,10 +62,10 @@ class Node:
     Node class objects are intended to be *mostly* immutable, i.e.,
     not directly modified by users. This is to reduce user errors by
     modifying Node features that affect the tree topology or values.
-    Nodes are mutable in terms of assigning arbritrary data to Nodes
-    and modifying these values (e.g., `tree[3].body_size=10`).
+    Nodes are mutable, however, in terms of assigning and modifying
+    arbritrary data to Nodes (e.g., `tree[3].body_size = 10`).
 
-    Although Node's *can* be modified directly, the recommended workflow
+    Although Nodes *can* be modified directly, the recommended way
     is to use specific ToyTree class functions to change attributes
     of Nodes (e.g., change topology, edge lengths, rotations, rooting,
     features). See functions in `ToyTree.mod` to modify the tree, and
@@ -106,7 +107,7 @@ class Node:
     >>> # but cannot be modified on Nodes (they are immutable)
     >>> node.dist = 10  # raises a TreeNodeError
     """
-    def __init__(self, name: str="", dist: float=1., support: float=0.):
+    def __init__(self, name: str="", dist: float=1., support: float=np.nan):
         self._name = str(name)
         """: name string assigned to Node."""
         self._dist = dist

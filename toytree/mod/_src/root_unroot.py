@@ -70,6 +70,7 @@ Examples
 """
 from typing import Optional, Sequence, TypeVar, Set
 from loguru import logger
+import numpy as np
 from toytree.core.node import Node
 from toytree.utils import ToytreeError
 
@@ -156,6 +157,8 @@ class Rooter:
     def _insert_root_node(self):
         r"""Insert a new node to break an edge to create root.
 
+        When inserting a new Node it is given the max support value.
+
         Important Nodes are:
             - oldroot: o
             - oldroot.children: 1,2
@@ -175,8 +178,9 @@ class Rooter:
         ancestors of u on the original tree are re-polarized.
         """
         # store references to Nodes before their relationships change.
-        support = self._infer_max_support()
-        newroot = Node(name="root", support=support, dist=0)
+        # support = self._infer_max_support()
+        # self.node.support = np.nan
+        newroot = Node(name="root", support=np.nan, dist=0)
         edge = (self.node, self.node.up)
 
         # nodes on path from node to the original root.
@@ -208,6 +212,9 @@ class Rooter:
                     setattr(node, feature, value)
                 else:
                     delattr(node, feature)
+
+        # set support of mirror root child to nan
+        # self.node.support = np.nan
 
         # set node and its parent as sisters, and children of newroot.
         newroot._children = edge             # n -> x, u -> x
@@ -355,8 +362,9 @@ def unroot(tree: ToyTree, inplace: bool = False) -> ToyTree:
 
     # make child the new rootnode and remove old rootnode
     newroot._up = None
-    newroot.support = (
-        100 if max(i.support for i in newroot.children) > 1 else 1.0)
+    newroot.support = np.nan
+    # rootnode.support = np.nan
+    # (100 if max(i.support for i in newroot.children) > 1 else 1.0)
     tree.treenode = newroot
     del rootnode
 
