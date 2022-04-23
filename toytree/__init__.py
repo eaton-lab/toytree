@@ -17,7 +17,7 @@ Examples
 >>> tree2.root("prz", regex=True).draw(tree_style='o')
 """
 
-__version__ = "3.0.0"
+__version__ = "3.0.dev1"
 __author__ = "Deren Eaton"
 
 # core class objects

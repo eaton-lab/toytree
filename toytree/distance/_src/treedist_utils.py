@@ -116,7 +116,7 @@ def _get_nye_score(set1: Set, set2: Set) -> float:
 
 def get_tree_splitwise_nye_similarity(tree: ToyTree) -> float:
     """Return the maximum phylogenetic information in a tree."""
-    return sum(1 for i in tree._iter_bipartitions())
+    return sum(1 for i in tree.iter_bipartitions())
 
 #################################################################
 ## Get phylogenetic info from bipartitions
@@ -155,7 +155,7 @@ def _get_split_phylo_info(split: Tuple[Tuple,Tuple]) -> float:
 
 def get_tree_splitwise_phylo_info(tree: ToyTree) -> float:
     """Return the maximum phylogenetic information in a tree."""
-    return sum(_get_split_phylo_info(i) for i in tree._iter_bipartitions())
+    return sum(_get_split_phylo_info(i) for i in tree.iter_bipartitions())
 
 ####################################################
 ## Get phylogenetic info from PAIRS of bipartitions
@@ -285,7 +285,7 @@ def _get_split_entropy(split: Tuple[Tuple,Tuple]) -> float:
 
 def get_tree_splitwise_entropy(tree: ToyTree) -> float:
     """Return the maximum entropy of a tree"""
-    return sum(_get_split_entropy(i) for i in tree._iter_bipartitions())
+    return sum(_get_split_entropy(i) for i in tree.iter_bipartitions())
 
 ####################################################
 ## Get clustering entropy from PAIRS of bipartitions
@@ -404,8 +404,8 @@ def _report_matching(
     A toyplot Canvas with 3 Cartesian axes: [Matrix] [Tree1] [Tree2].
     """
     # get the matching
-    biparts1 = list(tree1._iter_bipartitions())
-    biparts2 = list(tree2._iter_bipartitions())
+    biparts1 = list(tree1.iter_bipartitions())
+    biparts2 = list(tree2.iter_bipartitions())
     pairs, indices = _get_split_matching(biparts1, biparts2, split_similarity_metric)
 
     nb1 = len(biparts1)
@@ -446,8 +446,8 @@ def get_trees_nye_similarity(
     web-based tool for comparing two alternative phylogenetic trees.” 
     Bioinformatics, 22(1), 117--119. doi: 10.1093/bioinformatics/bti720.
     """
-    biparts1 = list(tree1._iter_bipartitions())
-    biparts2 = list(tree2._iter_bipartitions())
+    biparts1 = list(tree1.iter_bipartitions())
+    biparts2 = list(tree2.iter_bipartitions())
     arr, indices = _get_split_matching(biparts1, biparts2, "nye")
     nye = arr[indices].sum()
     if normalize:
@@ -472,8 +472,8 @@ def get_trees_matching_split_dist(
     Distance is the number of elements that must be moved from one
     subset to another in order to make the two splits identical.
     """
-    biparts1 = list(tree1._iter_bipartitions())
-    biparts2 = list(tree2._iter_bipartitions())
+    biparts1 = list(tree1.iter_bipartitions())
+    biparts2 = list(tree2.iter_bipartitions())
     arr, indices = _get_split_matching(biparts1, biparts2, "ms")
     msd = arr[indices].sum()
     if normalize:
@@ -488,8 +488,8 @@ def get_trees_matching_split_info(
     subset to another in order to make the two splits identical, but,
     then the phylo info is returned for each match.
     """
-    biparts1 = list(tree1._iter_bipartitions())
-    biparts2 = list(tree2._iter_bipartitions())
+    biparts1 = list(tree1.iter_bipartitions())
+    biparts2 = list(tree2.iter_bipartitions())
     arr, indices = _get_split_matching(biparts1, biparts2, "msi")
     msi = arr[indices].sum()
     if normalize:
@@ -522,8 +522,8 @@ def get_trees_shared_phylo_info(
     that phylogenetics seeks to reconstruct the single tree that 
     accurately represents historical events.
     """
-    biparts1 = list(tree1._iter_bipartitions())
-    biparts2 = list(tree2._iter_bipartitions())
+    biparts1 = list(tree1.iter_bipartitions())
+    biparts2 = list(tree2.iter_bipartitions())
     arr, indices = _get_split_matching(biparts1, biparts2, "spi")
     spi = arr[indices].sum()
     if normalize:
@@ -569,8 +569,8 @@ def get_trees_mutual_clust_info(
     """Return the mutual clustering information (cid).
 
     """
-    biparts1 = list(tree1._iter_bipartitions())
-    biparts2 = list(tree2._iter_bipartitions())
+    biparts1 = list(tree1.iter_bipartitions())
+    biparts2 = list(tree2.iter_bipartitions())
     arr, indices = _get_split_matching(biparts1, biparts2, "mci")
     mci = arr[indices].sum()
     if normalize:

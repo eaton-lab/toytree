@@ -15,6 +15,7 @@ References
 
 from typing import Optional, Tuple, Sequence, TypeVar
 from toytree.utils import ToytreeError
+import numpy as np
 
 Node = TypeVar("Node")
 ToyTree = TypeVar("ToyTree")
@@ -29,13 +30,17 @@ def get_feature_string(
     features_assignment: str,
     internal_labels_formatter: str,
     ) -> str:
-    """Return a string of commented features inside square brackets."""
+    """Return a string of commented features inside square brackets.
+
+    Intended to handle formatting/serializeation of flexible object 
+    types that could be assigned to Nodes.
+    """
     if not features:
         return ""
     pairs = []
     for feature in features:
         value = getattr(node, feature, None)
-        if value:
+        if value not in [np.nan, None, ""]:
             try:
                 value = internal_labels_formatter % value
             except TypeError:
@@ -72,10 +77,13 @@ def node_to_newick(
         internal = ""
     else:
         internal = getattr(node, internal_labels, "")
-        try:
-            internal = internal_labels_formatter % internal
-        except TypeError:
-            internal = str(internal)
+        if internal in [None, np.nan]:
+            internal = ""
+        else:
+            try:
+                internal = internal_labels_formatter % internal
+            except TypeError:
+                internal = str(internal)
 
     # return the node formatted as newick
     if node.is_leaf():

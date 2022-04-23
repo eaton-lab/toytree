@@ -87,9 +87,9 @@ def _get_rf_distance(
     Parameters
     ----------
     set1: set
-        A set of bipartitions in tree1 (e.g., tree1._iter_bipartitions)
+        A set of bipartitions in tree1 (e.g., tree1.iter_bipartitions)
     set2: set
-        A set of bipartitions in tree2 (e.g., tree2._iter_bipartitions)
+        A set of bipartitions in tree2 (e.g., tree2.iter_bipartitions)
     normalize: bool
         Normalize distance score by the total number of splits in 
         both trees (the max number of possible differences).
@@ -164,8 +164,8 @@ def _get_prop_intersect_over_union(set1: Set, set2: Set) -> float:
 
     Example
     -------
-    >>> set1 = set(tree1._iter_quartets())
-    >>> set2 = set(tree2._iter_quartets())
+    >>> set1 = set(tree1.iter_quartets())
+    >>> set2 = set(tree2.iter_quartets())
     >>> print(_get_prop_intersect_over_union(set1, set2))
     """
     return len(set1 & set2) / len(set1 | set2)
@@ -182,8 +182,8 @@ def _get_prop_intersect_over_set1(set1: Set, set2: Set) -> float:
 
     Example
     -------
-    >>> set1 = set(tree1._iter_quartets())
-    >>> set2 = set(tree2._iter_quartets())
+    >>> set1 = set(tree1.iter_quartets())
+    >>> set2 = set(tree2.iter_quartets())
     >>> print(_get_prop_intersect_over_set1(set1, set2))
     """
     return len(set1 & set2) / len(set1)
@@ -229,8 +229,8 @@ def get_treedist_rf(
     - Robinson and Foulds (xxx)
     """
     assert set(tree1.get_tip_labels()) == set(tree2.get_tip_labels()), TIPS_IDENTICAL
-    set1 = set(tree1._iter_bipartitions())
-    set2 = set(tree2._iter_bipartitions())
+    set1 = set(tree1.iter_bipartitions())
+    set2 = set(tree2.iter_bipartitions())
     return _get_rf_distance(set1, set2, normalize=normalize)
 
 def get_treedist_rfi(
@@ -262,8 +262,8 @@ def get_treedist_rfi(
     - Martin Smith: https://cran.r-project.org/web/packages/TreeDist/vignettes/information.html
     """
     assert set(tree1.get_tip_labels()) == set(tree2.get_tip_labels()), TIPS_IDENTICAL    
-    set1 = set(tree1._iter_bipartitions())
-    set2 = set(tree2._iter_bipartitions())    
+    set1 = set(tree1.iter_bipartitions())
+    set2 = set(tree2.iter_bipartitions())    
     return _get_rf_distance_information_corrected(set1, set2, normalize)
 
 def get_treedist_qrt(
@@ -277,8 +277,8 @@ def get_treedist_qrt(
     trees, divided by the number of quartets in the first tree.
     """
     assert set(tree1.get_tip_labels()) == set(tree2.get_tip_labels()), TIPS_IDENTICAL    
-    set1 = set(tree1._iter_quartets())
-    set2 = set(tree2._iter_quartets())
+    set1 = set(tree1.iter_quartets())
+    set2 = set(tree2.iter_quartets())
     return _get_prop_intersect_over_set1(set1, set2)
 
 def get_treedist_rfg_ms(
@@ -525,7 +525,7 @@ def _expected_variation(
         raise ToytreeError("metric not recognized")
 
     # get bipartition table as ndarray, and array names
-    biparts1 = set(tree1._iter_bipartitions())
+    biparts1 = set(tree1.iter_bipartitions())
     btable = tree2._get_bipartitions_table(exclude_singleton_splits=True).values
     names = np.array(tree2.get_tip_labels())
 
@@ -533,7 +533,7 @@ def _expected_variation(
     reps = np.zeros(shape=nsamples)
     for idx in range(nsamples):
         # get splits when names are randomized
-        biparts2 = set(_iter_random_biparts(btable, names))
+        biparts2 = set(iter_random_biparts(btable, names))
         reps[idx] = metric(biparts1, biparts2, normalize=normalize, **kwargs)
 
     data['estimate'] = reps.mean()

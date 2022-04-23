@@ -6,6 +6,7 @@
 
 from typing import Union, Collection
 from pathlib import Path
+import pandas as pd
 from toytree.core.tree import ToyTree
 from toytree.core.multitree import MultiTree
 from toytree.io.src.parser import TreeIOParser
@@ -40,6 +41,8 @@ def mtree(
     # e.g., a multi-line str of trees.
     if isinstance(data, str):
         treelist = TreeIOParser(data, multitree=True, **kwargs).trees
+    elif isinstance(data, pd.Series):
+        treelist = TreeIOParser(data.to_list(), multitree=True).trees
     # e.g., a list of ToyTree objects
     elif isinstance(data[0], ToyTree):
         treelist = [i.copy() for i in data]
@@ -63,7 +66,7 @@ if __name__ == "__main__":
     nloci = 100
 
     # simulate sequence data
-    model = ipcoal.Model(tree="", Ne=Ne, nsamples=nsamples, mut=mut)
+    model = ipcoal.Model(tree=None, Ne=Ne, nsamples=nsamples, mut=mut)
     model.sim_loci(nloci=nloci, nsites=20)
     model.seqs = np.concatenate(model.seqs, 1)    
 

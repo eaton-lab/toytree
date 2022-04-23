@@ -14,11 +14,12 @@ x- toytree.io.parse_tree_from_superbpp_file
 
 from typing import Union, TypeVar, Optional
 import re
-from toytree.core.tree import ToyTree
+import toytree
 from toytree.io.src.parser import TreeIOParser
+from toytree.utils import ToytreeError
 
 # temporary
-# ToyTree = TypeVar("ToyTree")
+ToyTree = TypeVar("ToyTree")
 MultiTree = TypeVar("MultiTree")
 
 
@@ -81,9 +82,12 @@ def read_newick(
         "internal_labels": internal_labels,
     }
     treeio = TreeIOParser(path, **kwargs)
+    ntrees = len(treeio.trees)
+    if not ntrees:
+        raise ToytreeError("Failed to parse tree.")
     if len(treeio.trees) == 1:
-        return ToyTree(treeio.trees[0])
-    return MultiTree(treeio.trees)
+        return treeio.trees[0]
+    return toytree.MultiTree(treeio.trees)
 
 
 def read_nexus(**kwargs):

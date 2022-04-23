@@ -27,9 +27,11 @@ References
 from typing import Optional, List, Any, Sequence, Tuple, Callable, Dict
 from functools import partial
 from loguru import logger
+import numpy as np
 from toytree.core.node import Node
 from toytree.core.tree import ToyTree
 from toytree.utils import NewickError
+
 
 logger = logger.bind(name="toytree")
 PAIRS = {'(': '()', '[': '[]'}
@@ -360,7 +362,10 @@ def _check_internal_label_for_name_or_support(
     if internal_labels == "support":
         for idx in range(tree.ntips, tree.nnodes):
             node = tree[idx]
-            node.support = float(node.name)
+            try:
+                node.support = float(node.name)
+            except ValueError:
+                node.support = np.nan
             node.name = ""
 
     # NOTE: first written to not check the root b/c root might not 

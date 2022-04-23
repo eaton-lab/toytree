@@ -612,7 +612,7 @@ class ToyTree:
         """
         # if unrooted:
             # raise NotImplementedError("TODO")
-        nodes = self.get_nodes(*query, regex)
+        nodes = self.get_nodes(*query, regex=regex)
         mrca = self.get_mrca_node(*nodes)
         for node in mrca._iter_leaves():
             if node not in nodes:

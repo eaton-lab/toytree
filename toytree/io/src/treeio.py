@@ -20,6 +20,7 @@ logger = logger.bind(name="toytree")
 Url = TypeVar("Url")
 
 
+# TODO: add io.parse_... options.
 def tree(
     data: Union[str,Path,Url],
     ) -> ToyTree:
