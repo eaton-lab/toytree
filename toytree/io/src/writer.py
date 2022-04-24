@@ -13,9 +13,9 @@ References
 
 """
 
+import numpy as np
 from typing import Optional, Tuple, Sequence, TypeVar
 from toytree.utils import ToytreeError
-import numpy as np
 
 Node = TypeVar("Node")
 ToyTree = TypeVar("ToyTree")
@@ -40,11 +40,14 @@ def get_feature_string(
     pairs = []
     for feature in features:
         value = getattr(node, feature, None)
-        if value not in [np.nan, None, ""]:
-            try:
+        # try to format float value to a string
+        try:
+            if np.isnan(value):
+                value = ""
+            else:
                 value = internal_labels_formatter % value
-            except TypeError:
-                value = str(value)
+        except TypeError:
+            value = str(value)
             pairs.append(features_assignment.join((feature, value)))
     feature_str = features_delim.join(pairs)    
     return f"[{features_prefix}{feature_str}]"
@@ -67,21 +70,21 @@ def node_to_newick(
         features_assignment, internal_labels_formatter)
 
     # format the dist values (edge lengths) as strings
-    if dist_formatter is None:
-        dist = ""
-    else:
-        dist = ":" + dist_formatter % node.dist
+    dist = "" if dist_formatter is None else ":" + dist_formatter % node.dist
 
     # format the internal label feature (usually support, name, or "")
     if internal_labels is None:
         internal = ""
     else:
         internal = getattr(node, internal_labels, "")
-        if internal in [None, np.nan]:
+        if internal is None:
             internal = ""
         else:
             try:
-                internal = internal_labels_formatter % internal
+                if np.isnan(internal):
+                    internal = ""
+                else:
+                    internal = internal_labels_formatter % internal
             except TypeError:
                 internal = str(internal)
 
