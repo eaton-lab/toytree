@@ -145,7 +145,7 @@ def imbtree(
         child1 = Node()
         tip._add_child(child0)
         tip._add_child(child1)
-        tip = child1
+        tip = child0
 
     # will ladderize the tree and assign names and idxs
     tree = ToyTree(root)

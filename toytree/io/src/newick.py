@@ -386,7 +386,7 @@ def _check_internal_label_for_name_or_support(
             # get all internal node 'name' values 
             supports = (tree[i].name for i in inodes)
                 
-            # try to convert all to floats
+            # try to convert all to floats (raises an error if str)
             supports = [float(i) for i in supports]
 
             # try to convert floats to ints if no floating points
