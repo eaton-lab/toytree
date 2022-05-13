@@ -39,17 +39,18 @@ def get_feature_string(
         return ""
     pairs = []
     for feature in features:
+        # TODO: how to handle mixed presence/absence or types of features?
         value = getattr(node, feature, None)
         # try to format float value to a string
         try:
             if np.isnan(value):
                 value = ""
             else:
-                value = internal_labels_formatter % value
+                value = internal_labels_formatter % str(value)
         except TypeError:
             value = str(value)
             pairs.append(features_assignment.join((feature, value)))
-    feature_str = features_delim.join(pairs)    
+    feature_str = features_delim.join(pairs)
     return f"[{features_prefix}{feature_str}]"
 
 def node_to_newick(
