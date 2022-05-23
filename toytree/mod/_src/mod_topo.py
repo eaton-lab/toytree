@@ -275,14 +275,17 @@ def prune(
 def remove_unary_nodes(tree: ToyTree, inplace: bool=False):
     """Return ToyTree with any unary Nodes removed."""
     tree = tree if inplace else tree.copy()
-    for nidx in range(tree.nnodes)[::-1]:
-        node = tree[nidx]
-        if (not node.is_root()) and (not node.is_leaf()):
-            if len(node.children) == 1:
-                child = node.children[0]
-                node.up._children = (child, )
-                child._up = node.up
-                child._dist =+ node.dist
+    tipset = set(tree[i] for i in range(tree.ntips))
+    for node in tree.traverse("postorder"):
+        if len(node.children) == 2:
+            tipset.add(node)
+        if not node in tipset:
+            new_parent = node._up
+            if new_parent:
+                true_node = node._children[0]
+                new_parent._add_child(true_node)
+                new_parent._remove_child(node)
+                true_node._dist += node._dist
     tree._update()
     return tree
 
