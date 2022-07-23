@@ -68,6 +68,10 @@ def draw_toytree(**kwargs) -> Tuple['Canvas', 'Cartesian', 'Mark']:
         fixed_position=kwargs.pop("fixed_position"),
     )
 
+    # if no user value to tip-labels-angles then use layout generated val.
+    if style.tip_labels_angles is None:
+        style.tip_labels_angles = layout.angles
+
     # check all styles and expand in-place to array values for all nodes
     style.validate(tree=tree)
 
