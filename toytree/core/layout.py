@@ -47,6 +47,9 @@ class BaseLayout(ABC):
 
         # result to be generated
         self.coords: np.ndarray = None
+        """: Node coordinates in the projected layout."""
+        self.angles: np.ndarray = None
+        """: Tip label angles in the projected layout."""
 
         # subclasses have a run function that fill `self.coords.`
         self.run()
@@ -153,6 +156,11 @@ class CircularLayout(BaseLayout):
     def run(self):
         """Fills .coords array with x, y values."""
         self.coords = self.get_fan_coords()
+        # self.angles = get_tip_labels_angles(self.tree, self.coords)
+        # circular layout can evenly space between start and end angle
+        # elif self.layout[0] == 'c':
+            # tip_radians = np.linspace(0, np.pi * 2, self.tree.ntips + 1)[:-1]
+            # angles = np.array([np.rad2deg(abs(i)) for i in tip_radians])
 
     def get_fan_coords(self):
         """Return array with x, y Node coordinates."""
@@ -164,6 +172,7 @@ class CircularLayout(BaseLayout):
         start, end = self._get_start_and_end_angles()
         endpoint = end - start != 360
         angles = np.linspace(start, end, self.tree.ntips, endpoint=endpoint)
+        self.angles = angles
         radians = np.deg2rad(angles)
 
         # the root Node is at position (0, 0), plus any offset style
@@ -205,18 +214,25 @@ class CircularLayout(BaseLayout):
         - 359,359 -> 359,719  # equivalent to 0-360 starting at -1.
         """
         angles = str(self.style.layout[1:]).strip()
+
+        # if None then use 0-360, if 1 then 0-int, else int-int.
         if not angles:
             start, end = 0, 360
-        elif "-" in angles:
-            start, end = (int(i) for i in angles.split("-"))
-        else:
+        elif "-" not in angles:
             start, end = 0, int(angles)
+        else:
+            start, end = (int(i) for i in angles.split("-"))
+
+        # ...
         msg = "circular style malformed. Should be, e.g., 'c', 'c90', 'c0-180'"
         while start < 0:
             start += 360
         while end < start:
             end += 360
         assert end > start, msg
+        if end - start > 360:
+            end = start + 359
+        logger.debug(f"{start}-{end}")
         return start, end
 
     # def get_radial_coords(self, use_edge_lengths=True):
@@ -278,6 +294,7 @@ class UnrootedLayout(BaseLayout):
             tree=self.tree,
             max_iter=50,
             use_edge_lengths=self.style.use_edge_lengths)
+        self.angles = get_tip_labels_angles(self.tree, self.coords)
         self.style_overwrite()
 
     def style_overwrite(self):
@@ -285,9 +302,41 @@ class UnrootedLayout(BaseLayout):
         of which should have different defaults.
         """
         self.style.tip_labels_align = False
-        self.style.tip_labels_style._toyplot_anchor_shift = 0
-        self.style.tip_labels_style.text_anchor = "middle"
+        # self.style.tip_labels_style._toyplot_anchor_shift = 0
+        # self.style.tip_labels_style.text_anchor = "middle"
         self.style.edge_type = 'c'
+
+
+#####################################################
+## TIP LABELS ANGLES
+#####################################################
+
+def get_tip_labels_angles(tree: ToyTree, coords: np.ndarray) -> np.ndarray:
+    """Get tip label angles given the current layout.
+
+    For unrooted and circular layouts the best angle to project
+    tip labels depends on the coordinate layout, and so it is
+    easiest to re-compute for nodes after projecting.
+    """
+    angles = np.zeros(tree.ntips, dtype=float)
+    for node in tree.traverse():
+        if node.is_leaf():
+            cx, cy = coords[node.idx]
+            px, py = coords[node.up.idx]
+            # px, py = 0, 0
+
+            # get angle based on difference between nodes
+            dx = cx - px
+            dy = cy - py
+
+            # sin(x) = opp / hyp; tan_(x) = opp/adj
+            theta = np.arctan(dy / dx)
+            if dx < 0:
+                theta += np.pi
+            angles[node.idx] = np.rad2deg(theta)
+            # logger.info(f"arctan2 {node.name}, {np.arctan2(dy, dx)}")
+            logger.info(f"{node.name}, {dx:.2f}, {dy:.2f}, {theta:.2f}, {angles[node.idx]:.2f}")
+    return angles
 
 
 #####################################################
@@ -575,8 +624,8 @@ def get_subtrees(tree: ToyTree, node: Node) -> Sequence[Set[Node]]:
 
 if __name__ == "__main__":
 
-    import toytree
     import toyplot
+    import toytree
     from toytree.core.drawing.draw_toytree import get_tree_style, get_layout
 
     TRE = toytree.rtree.rtree(20)
@@ -602,7 +651,7 @@ if __name__ == "__main__":
         canvases.append(canvas)
     toytree.utils.show(canvases)
 
-    raise SystemExit()
+    # raise SystemExit()
 
     # Felsenstein book example
     NWK = "(((((((A:4,B:4):6,C:5):8,D:6):3,E:21):10,((F:4,G:12):14,H:8):13):13,((I:5,J:2):30,(K:11,L:11):2):17):4,M:56);"
