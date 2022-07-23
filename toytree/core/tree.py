@@ -542,6 +542,7 @@ class ToyTree:
         ) -> Sequence[bool]:
         """Return a boolean array to mask certain Nodes when drawing.
 
+        Creates a boolean mask to hide a set of selected Nodes.
         The array is in Node idxorder (from 0-nnodes) where boolean
         True will *mask* Nodes, and False will *show* Nodes. Additional
         Nodes can be selected to be unmasked by entering Node int idx
@@ -573,7 +574,7 @@ class ToyTree:
             arr[self.ntips:-1] = 1
         if root:
             arr[-1] = 1
-        if unmask != ():
+        if unmask:# != ():
             for node in self.get_nodes(*unmask):
                 arr[node.idx] = 0
         return arr
@@ -1091,6 +1092,59 @@ class ToyTree:
         """
         raise NotImplementedError("TODO")
 
+    def set_node_data_from_dataframe(
+        self,
+        table: pd.DataFrame,
+        inplace: bool=False,
+        ) -> ToyTree:
+        """Set new features on Nodes of a ToyTree from a DataFrame.
+
+        The DataFrame should have column names corresponding to features
+        that you wish to apply to Nodes of the ToyTree. The index can
+        be composed of either strings that match to .name attributes
+        of Nodes in the ToyTree, or can be integers, which match to the
+        .idx labels of Nodes.
+
+        To set data to internal Nodes that may not have unique name
+        labels you may need to use idx labels. Be aware that idx
+        labels are unique to each topology, and will change if the
+        tree topology is modified.
+
+        This function simply parses the DataFrame and applies the
+        function `set_node_data()` for each column.
+
+        Parameters
+        ----------
+        table: pd.DataFrame
+            A DataFrame with data to be applied to Nodes of a ToyTree.
+        inplace: bool
+
+        Returns
+        -------
+        A copy of the original ToyTree with node features modified.
+
+        See Also
+        --------
+        :meth:`~toytree.core.tree.ToyTree.get_node_data`.
+
+        Examples
+        --------
+        >>> tree = toytree.rtree.unittree(ntips=10)
+        >>> data = pd.DataFrame({
+        >>>    'trait1': np.arange(tree.nnodes),
+        >>>    'trait2': np.random.randint(0, 100, tree.nnodes),
+        >>> })
+        >>> tree = tree.set_node_data_from_dataframe(data)
+        >>> tree.get_node_data()
+        """
+        # make a copy of ToyTree to return
+        tree = self if inplace else self.copy()
+        for key in table.columns:
+            mapping = table[key].to_dict()
+            tree.set_node_data(feature=key, mapping=mapping, inplace=True)
+        return tree
+
+
     def set_node_data(
         self,
         feature: str,
@@ -1165,7 +1219,7 @@ class ToyTree:
         # make a copy of ToyTree to return
         tree = self if inplace else self.copy()
 
-        # ensure mapping is proper type
+        # ensure mapping is proper type. TODO: support pd.Series?
         if not isinstance(mapping, dict):
             if not mapping:
                 mapping = {}
@@ -1181,10 +1235,14 @@ class ToyTree:
         ndict = {}
 
         # convert all keys to Node objects
-        mapping = {
-            tree.get_nodes(i, regex=False)[0]: j
-            for (i, j) in mapping.items()
-        }
+        try:
+            mapping = {
+                tree.get_nodes(i, regex=False)[0]: j
+                for (i, j) in mapping.items()
+            }
+        except IndexError as inst:
+            diff = set(mapping) - set(tree.get_tip_labels())
+            raise ToytreeError(f"names in mapping dict not in tree: {diff}") from inst
 
         # sorted key nodes to map oldest to youngest
         key_nodes = sorted(mapping, key=lambda x: x.idx, reverse=True)
@@ -1282,7 +1340,19 @@ class ToyTree:
         format, but is slower than accessing data directly from Nodes,
         for example during a traversal, because it spends time checking
         for Nodes with missing data, and type-checks missing values.
+
+        Setting complex objects as Node data, such as lists or sets,
+        rather than float, int, or str, should generally work fine,
+        but take care that toytree will not attempt to check or fill
+        missing values for these data.
         """
+        # Storing missing as pd.NA allows not having to convert the
+        # dtype of other values from e.g., int to float. However, if
+        # <NA> gets converted to a string for plottig it will cause
+        # havoc on the HTML. And it looks weird to have a mix of NaN
+        # and <NA> in the data table. So should we use just one, or
+        # both? Also pd.NA is very slow compared to np.nan.
+
         # TODO: AVOID FORMATTING FOR COMPLEX FEATURE TYPES (E.G., DICT, SET, ETC).
         # select one or more features to fetch values for
         if feature is None:
@@ -1292,40 +1362,65 @@ class ToyTree:
         else:
             features = [feature]
 
+        if missing is None:
+            missing = [np.nan] * len(features)
+        elif isinstance(missing, (list, tuple)):
+            assert len(missing) == len(features), (
+                "when entering multiple missing values it must be the same "
+                "length as the number of features")
+        else:
+            missing = [missing]
+
         # check for bad user features
         for feat in features:
             if feat not in self.features:
                 raise ValueError(f"feature '{feature}' not in tree.features.")
 
         # init a dataframe for all selected features
-        data = pd.DataFrame(
-            index=range(self.nnodes),
-            columns=features,
-        )
+        # data = pd.DataFrame(
+        #     index=range(self.nnodes),
+        #     columns=features,
+        # )
 
-        # get remaining features
-        for feat in features:
+        # # get remaining features
+        # for feat in features:
+        #     for nidx in range(self.nnodes):
+        #         data.loc[nidx, feat] = getattr(self[nidx], feat, pd.NA)
+
+        #     # fill in appropriate missing data value for each Series
+        #     if missing is not None:
+        #         data[feat] = data[feat].where(data[feat].notnull(), missing)
+        #     else:
+        #         if data[feat].dtype == "O":
+        #             data[feat] = data[feat].where(data[feat].notnull(), "")
+        #         else:
+        #             data[feat] = data[feat].where(data[feat].notnull(), pd.NA)
+
+        # store as ordered lists, and let pd.Series convert to dtype
+        data = {}
+        for fidx, feat in enumerate(features):
+
+            # fill ordered list with Node value or missing value
+            ofeat = []
+            miss = missing[fidx]
             for nidx in range(self.nnodes):
-                data.loc[nidx, feat] = getattr(self[nidx], feat, pd.NA)
+                ofeat.append(getattr(self[nidx], feat, miss))
 
-            # fill in appropriate missing data value for each Series
-            if missing is not None:
-                data[feat] = data[feat].where(data[feat].notnull(), missing)
-            else:
-                if data[feat].dtype == "O":
-                    data[feat] = data[feat].where(data[feat].notnull(), "")
-                else:
-                    data[feat] = data[feat].where(data[feat].notnull(), pd.NA)
+            # allow pandas to infer dtype
+            series = pd.Series(ofeat)
+
+            # modify dtype ...
+            data[feat] = series
 
         # if a single feature was selected return as a Series else DataFrame
         if len(features) == 1:
-            return data[feature]
-        return data
+            return series
+        return pd.DataFrame(data)
 
     def get_tip_data(
         self,
         feature: Union[str, Sequence[str], None] = None,
-        missing: Optional[Any] = pd.NA,
+        missing: Optional[Any] = None,
         ) -> pd.DataFrame:
         """Return a DataFrame with values for one or more selected
         features from every leaf node in the tree.
@@ -1628,8 +1723,8 @@ class ToyTree:
 if __name__ == "__main__":
 
     import toytree
-    tree = toytree.rtree.rtree(12, seed=123)
-    c, a, m = tree._draw_browser(tree_style='s', layout='d', new=False)
+    tree_ = toytree.rtree.rtree(12, seed=123)
+    c, a, m = tree_._draw_browser(tree_style='s', layout='d', new=False)
 
 
     # print(tree.get_tip_labels())
