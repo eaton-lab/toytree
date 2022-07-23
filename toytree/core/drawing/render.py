@@ -84,9 +84,11 @@ class RenderToytree:
         self.nodes_y = self.axes.project('y', self.mark.ntable[:, 1])
 
         # if circular layout then also get radius
-        if self.mark.layout == 'c':
+        if self.mark.layout[0] == 'c':
             self.radii = self.axes.project('x', self.mark.radii)
-            self.maxr = max(self.radii)
+            self.maxr = max(self.radii) # used to tips-labels-align
+            # logger.debug(f"mark.radii: {self.mark.radii}")
+            # logger.debug(f"radii: {self.radii}")
 
         # if tip labels align then store tips projected coords
         if self.mark.tip_labels_align:
@@ -107,31 +109,37 @@ class RenderToytree:
                 self.tips_x = self.nodes_x[:ntips]
 
             # coords of tips around a circumference
-            elif self.mark.layout == 'c':
+            elif self.mark.layout[0] == 'c':
                 self.tips_x = np.zeros(ntips)
                 self.tips_y = np.zeros(ntips)
                 for idx, angle in enumerate(self.mark.tip_labels_angles):
                     radian = np.deg2rad(angle)
                     cordx = 0 + max(self.mark.radii) * np.cos(radian)
-                    cordy = 0 - max(self.mark.radii) * np.sin(radian)
+                    cordy = 0 + max(self.mark.radii) * np.sin(radian)
                     self.tips_x[idx] = self.axes.project('x', cordx)
                     self.tips_y[idx] = self.axes.project('y', cordy)
 
     def get_paths(self):
-        """
-        Return paths and keys in idx order
-        """
+        """Return paths and keys in idx order."""
         # modify order of x or y shift of edges for p,b types.
         if self.mark.edge_type in ('p', 'b'):
-            if self.mark.layout == 'c':
+            # selects pc
+            if self.mark.layout[0] == 'c':
                 path_format = PATH_FORMAT["pc"]
+                logger.warning(
+                    "edge_type='p' w/ layout='c' not currently supported. "
+                    "Contact developers to make a request. Changing "
+                    "edge_type to 'c' for now."
+                )
+                path_format = PATH_FORMAT['c']
 
+            # selects p1, p2, or b1, b2
             elif self.mark.layout in ('u', 'd'):
-                path_format = PATH_FORMAT["{}2".format(self.mark.edge_type)]
-
+                path_format = PATH_FORMAT[f"{self.mark.edge_type}2"]
             else:
-                path_format = PATH_FORMAT["{}1".format(self.mark.edge_type)]
+                path_format = PATH_FORMAT[f"{self.mark.edge_type}1"]
         else:
+            # select c (simplest)
             path_format = PATH_FORMAT[self.mark.edge_type]
 
         # store paths here
@@ -143,12 +151,27 @@ class RenderToytree:
             child_x, child_y = self.nodes_x[cidx], self.nodes_y[cidx]
             parent_x, parent_y = self.nodes_x[pidx], self.nodes_y[pidx]
 
-            if self.mark.layout == 'c':
-                pass
+            # circle 'p' format each line is towards root, then across arc
+            if self.mark.layout[0] == 'c':
+                # get start position
+                # "M {cx:.1f} {cy:.1f}
+                # move towards center of circle (y)
+                # L {dx:.1f} {dy:.1f}
+                # arc: rx ry x-axis-rotation large-arc-flag sweeep flag x y
+                # A {rr:.1f} {rr:.1f} 0 0 {flag} {px:.1f} {py:.1f}",
+                keys.append(f"{pidx},{cidx}")
+                paths.append(
+                    path_format.format(**{
+                        'cx': child_x, 'cy': child_y,
+                        'px': parent_x, 'py': parent_y,
+                        'dx': ..., 'dy': ...,
+                        'rr': ..., 'flag': ...,
+                    })
+                )
 
             # build path string for simple types
             else:
-                keys.append("{},{}".format(pidx, cidx))
+                keys.append(f"{pidx},{cidx}")
                 paths.append(
                     path_format.format(**{
                         'cx': child_x, 'cy': child_y,
@@ -158,9 +181,7 @@ class RenderToytree:
         return paths, keys
 
     def mark_toytree(self):
-        """
-        Creates the top-level Toytree mark.
-        """
+        """TODO: Creates the top-level Toytree mark. Not required."""
 
     def mark_edges(self):
         """Create SVG paths for each tree edge as class toytree-Edges"""
@@ -256,7 +277,7 @@ class RenderToytree:
             # create the marker
             marker_xml = xml.SubElement(
                 self.nodes_xml, "g",
-                attrib={'id': 'node-{}'.format(nidx)},
+                attrib={'id': f'node-{nidx}'},
                 style=style_to_string(unique_styles[nidx]),
             )
             if not marker_xml.attrib['style']:
@@ -396,7 +417,7 @@ class RenderToytree:
             )
 
     def mark_tip_labels(self):
-        """Create tip labels in toytree-TipLabels using render_text"""
+        """Create tip labels in toytree-TipLabels using render_text."""
         if self.mark.tip_labels is None:
             return
 
@@ -461,7 +482,7 @@ class RenderToytree:
                 angles = self.mark.tip_labels_angles[idx]
                 tstyle['-toyplot-anchor-shift'] = -offset
                 tstyle['text-anchor'] = "end"
-            if self.mark.layout == 'c':
+            if self.mark.layout[0] == 'c':
                 angles = self.mark.tip_labels_angles[idx]
 
             # add text
@@ -803,12 +824,15 @@ def split_rgba_style(style):
 
 
 def style_to_string(style):
+    """Return a style dict as a style string.
+
+    Example
+    -------
+    >>> x = {'fill': 'rgb(100%,0%,0%)', 'fill-opacity': 1.0}
+    >>> print(style_to_string(x))
+    >>> # 'fill:rgb(100%,0%,0%);fill-opacity:1.0'
     """
-    Takes a style dict and writes to ordered style text:
-    input: {'fill': 'rgb(100%,0%,0%', 'fill-opacity': 1.0}
-    returns: 'fill:rgb(100%,0%,0%);fill-opacity:1.0'
-    """
-    strs = ["{}:{}".format(key, value) for key, value in sorted(style.items())]
+    strs = [f"{key}:{value}" for key, value in sorted(style.items())]
     return ";".join(strs)
 
 

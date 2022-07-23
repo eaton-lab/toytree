@@ -70,9 +70,7 @@ class ToytreeMark(Mark):
         # self.ntable[:, 1] += ybaseline
 
         # radial positioning
-        self.radii = np.sqrt(
-            self.ntable[:, 0] ** 2 + self.ntable[:, 1] ** 2
-        )
+        self.radii = np.sqrt(self.ntable[:, 0] ** 2 + self.ntable[:, 1] ** 2)
 
         # node plotting args
         self.node_mask = node_mask
@@ -144,7 +142,7 @@ class ToytreeMark(Mark):
             elif self.layout == "l":
                 tip_extents[0] *= 2
                 tip_extents[0] -= self.shrink
-            elif self.layout == "c":
+            elif self.layout[0] == "c":
                 # TODO: trigonometry for tip extents and shrink
                 tip_extents[0] *= 1.5
                 tip_extents[1] *= 1.5
@@ -202,7 +200,7 @@ class ToytreeMark(Mark):
             self.ntable[:, 0].copy(),
             self.ntable[:, 1],
         )
-        if self.layout == 'c':
+        if self.layout[0] == 'c':
             max_extent = (np.max(np.abs(extents)) * 1.5) + self.shrink
             extents = tuple([
                 np.repeat(-max_extent, self.nnodes),
