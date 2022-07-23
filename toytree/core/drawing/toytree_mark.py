@@ -108,8 +108,11 @@ class ToytreeMark(Mark):
 
     def domain(self, axis):
         """The domain of data that will be tracked."""
-        #if self.layout == "c":
-        #    return toyplot.data.minimax(self.ntable)
+        if self.layout[0] == "c":
+            domain = toyplot.data.minimax(self.ntable[:, :])
+            absdomain = max(abs(i) for i in domain)
+            # print(absdomain)
+            return -absdomain, absdomain
         index = self._coordinate_axes.index(axis)
         domain = toyplot.data.minimax(self.ntable[:, index])
         return domain
@@ -148,7 +151,8 @@ class ToytreeMark(Mark):
                 tip_extents[1] *= 1.5
                 tip_extents[2] *= 1.5
                 tip_extents[3] *= 1.5
-                # tip_extents[0] -= self.shrink
+                tip_extents[0] -= self.shrink
+
 
         # get node labels text extents
         if self.node_labels is None:
