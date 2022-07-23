@@ -322,8 +322,16 @@ def get_tip_labels_angles(tree: ToyTree, coords: np.ndarray) -> np.ndarray:
     for node in tree.traverse():
         if node.is_leaf():
             cx, cy = coords[node.idx]
-            px, py = coords[node.up.idx]
-            # px, py = 0, 0
+
+            # from grandparent, the tip label spread generally improves.
+            if node.up.up:
+                px, py = coords[node.up.up.idx]
+            else:
+                px, py = coords[node.up.idx]
+
+            # alternative unrooted project tips from origin, sometimes
+            # this is better, would be nice to make this an option.
+            # px, py = coords[-1]
 
             # get angle based on difference between nodes
             dx = cx - px
