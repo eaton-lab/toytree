@@ -9,7 +9,7 @@ Examples
 >>> style = DefaultTreeStyle(**kwargs)  # DefaultTreeStyle(**dict, **tree.style)
 """
 
-from typing import List, Tuple, Optional, Union, Iterable, Dict
+from typing import List, Tuple, Optional, Union, Iterable, Dict, TypeVar
 import json
 from enum import Enum
 from dataclasses import dataclass, asdict, field
@@ -21,6 +21,7 @@ from toytree.color.src.color import ToyColor, Color, color_parser, color_cycler
 from toytree.utils.transform import normalize_values
 # from toytree.utils import ToytreeError
 
+ToyTree = TypeVar("ToyTree")
 
 class EdgeType(str, Enum):
     CLADOGRAM = 'c'
@@ -97,7 +98,7 @@ class TreeStyle:
     """TreeStyle is a dict-like object for setting/getting style args.
 
     TreeStyle validates input style arguments; expands shortcut
-    references to styles before calls to draw; and can serialize 
+    references to styles before calls to draw; and can serialize
     style args for displaying when .style is called interactively.
 
     Example
@@ -148,7 +149,7 @@ class TreeStyle:
     admixture_edges: Union[List[Tuple[int, int]], None] = None
     shrink: int = 0
 
-    def validate(self, tree: 'toytree.ToyTree'):
+    def validate(self, tree: ToyTree):
         """Expand style args and convert types.
 
         Expand iterable style entires to None or ndarray, and
@@ -158,7 +159,7 @@ class TreeStyle:
         The validate x_style funcs should come last in each group
         because the fill,stroke styles can change.
 
-        TODO: this is always called when?
+        TODO: make faster,this is always called when?
         """
         self.tree = tree  # ignore
         self._validate_node_colors()
@@ -224,10 +225,11 @@ class TreeStyle:
                 else:
                     setattr(self, key, values.tolist())
 
-    def _validate_node_colors(self):
-        """
-        Sets node_colors to ndarray[str] or None, and sets
-        node_style.fill to None or single color value.
+    def _validate_node_colors(self) -> None:
+        """Set .node_colors and node_style.fill (competing args).
+
+        If node_style.fill then node_colors will be None, else .fill
+        be None and node_colors will be expanded to an ndarray[str].
         """
         if self.node_colors is None:
             return
@@ -244,9 +246,8 @@ class TreeStyle:
                 colors, self.tree.nnodes).astype(str)
             self.node_style.fill = None
 
-    def _validate_node_mask(self):
-        """
-        Sets node_mask to ndarray[bool].
+    def _validate_node_mask(self) -> None:
+        """Sets node_mask to ndarray[bool].
             None: special to hide tips only
             True: show all
             False: hide all
@@ -262,17 +263,13 @@ class TreeStyle:
         self.node_mask = toyplot.broadcast.pyobject(
             self.node_mask, self.tree.nnodes).astype(bool)
 
-    def _validate_node_sizes(self):
-        """
-        Sets node_sizes to ndarray[float]
-        """
+    def _validate_node_sizes(self) -> None:
+        """Sets node_sizes to ndarray[float]."""
         self.node_sizes = toyplot.broadcast.scalar(
             self.node_sizes, self.tree.nnodes)
 
     def _validate_node_markers(self):
-        """
-        Sets node_markers to ndarray[str]
-        """
+        """Sets node_markers to ndarray[str]."""
         self.node_markers = toyplot.broadcast.pyobject(
             self.node_markers, self.tree.nnodes)
 
@@ -327,9 +324,9 @@ class TreeStyle:
             self.node_labels_style.fill = ToyColor(self.node_labels_style.fill)
 
     def _validate_node_hover(self):
-        """Sets node_hover to ndarray[str] or None. 
+        """Sets node_hover to ndarray[str] or None.
 
-        No comparisons use 'is in' to support flexible input types 
+        No comparisons use 'is in' to support flexible input types
         including pd.Series.
         """
         if self.node_hover is None:
@@ -389,9 +386,7 @@ class TreeStyle:
             self.tip_labels_style.fill = None
 
     def _validate_tip_labels(self):
-        """
-        Expand tip labels to a list of strings of len=ntips.
-        """
+        """Expand tip labels to a list of strings of len=ntips."""
         if self.tip_labels is True:
             self.tip_labels = np.array(self.tree.get_tip_labels())
         elif self.tip_labels is False:
@@ -404,43 +399,41 @@ class TreeStyle:
                 self.tip_labels, self.tree.ntips).astype(str)
 
     def _validate_tip_labels_angles(self):
-        """
-        sets tip_labels_angles to ndarray[float]. None is auto layout.
-        """
+        """Sets tip_labels_angles to ndarray[float]. None is auto layout."""
+
+        # udlr sets simple. c and unr auto sets during layout, unless
+        # user enters an argument for tip_lables_angles to draw.
         if self.tip_labels_angles is None:
-            if self.layout == 'c':
-                tip_radians = np.linspace(0, np.pi * 2, self.tree.ntips + 1)[:-1]
-                angles = np.array([np.rad2deg(abs(i)) for i in tip_radians])
-            elif self.layout in ["u", "d"]:
+            if self.layout in ['u', 'd']:
                 angles = -90
             else:
                 angles = 0
+        # use auto value filled during layout, or user arg.
         else:
             angles = self.tip_labels_angles
         self.tip_labels_angles = (
             toyplot.broadcast.scalar(angles, self.tree.ntips))
 
     def _validate_tip_labels_style(self):
-        """
-
-        """
-        self.tip_labels_style.font_size = "{:.1f}px".format(
-            toyplot.units.convert(
-                value=self.tip_labels_style.font_size,
-                target="px", default="px")
+        """Convert user font-size arg to px units."""
+        size = toyplot.units.convert(
+            value=self.tip_labels_style.font_size,
+            target="px", default="px"
         )
+        self.tip_labels_style.font_size = f"{size:.1f}px"
         # self.tip_labels_style._toyplot_anchor_shift = "{:.2f}px".format(
         #     toyplot.units.convert(
         #         self.tip_labels_style._toyplot_anchor_shift, "px", "px")
         # )
 
-
     def _validate_edge_colors(self):
-        """
-        Sets edge_colors to ndarray[str] or None, and sets
-        edge_style.stroke to None or single color value. Allow
-        values to be nnodes or nnodes -1, since root edge is not
-        shown?
+        """Resolve competing args for edge colors.
+
+        If edge_style.stroke is not None then a single value is used
+        and edge_colors is set to None, else edge_colors will be
+        expanded into an ndarray[str].
+
+        TODO: Allow values to be nnodes or nnodes -1, since root edge is not shown?
         """
         if self.edge_colors is None:
             return
@@ -496,7 +489,6 @@ class TreeStyle:
         #     self.edge_style.stoke = ToyColor(self.edge_style.stroke).css
         # # self.edge_style.stroke_opacity
 
-
     def _validate_admixture_edges(self):
         """Expand admixture args to a list of tuples.
 
@@ -505,7 +497,7 @@ class TreeStyle:
         strs, the latter of which will select the MRCA Node.
 
         The proper format should be:
-        
+
         >>> admixture_edges = [
         >>>     (src_idx, dest_idx, (src_time, dest_time), dict, str)
         >>> ]
@@ -567,7 +559,6 @@ class TreeStyle:
             # check styledict colors, etc
             admix_tuples.append((src, dest, prop, style, label))
         self.admixture_edges = admix_tuples
-
 
     def dict(
         self,
@@ -770,7 +761,7 @@ class DarkTreeStyle(TreeStyle):
 #     )
 #     node_sizes: int = 6
 #     node_labels: str = "idx"
-    
+
 
 STYLE_DICTS = {
     "n": NormalTreeStyle,
@@ -779,7 +770,7 @@ STYLE_DICTS = {
     "o": UmlautTreeStyle,
     "c": CoalTreeStyle,
     "d": DarkTreeStyle,
-}    
+}
 
 
 def get_base_style_from_name(tree_style: str="n") -> TreeStyle:
