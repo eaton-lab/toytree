@@ -87,8 +87,9 @@ class RenderToytree:
         if self.mark.layout[0] == 'c':
             self.radii = self.axes.project('x', self.mark.radii)
             self.maxr = max(self.radii) # used to tips-labels-align
-            # logger.debug(f"mark.radii: {self.mark.radii}")
-            # logger.debug(f"radii: {self.radii}")
+            logger.debug(
+                f"maxr: {self.maxr:.2f}"
+                f"\nself.mark.radii: {self.mark.radii}\nmark.radii: {self.radii}")
 
         # if tip labels align then store tips projected coords
         if self.mark.tip_labels_align:
@@ -120,18 +121,23 @@ class RenderToytree:
                     self.tips_y[idx] = self.axes.project('y', cordy)
 
     def get_paths(self):
-        """Return paths and keys in idx order."""
+        """Return paths and keys in idx order.
+
+        This will build the d="..." path string for the SVG lines 
+        for edges of the tree. Depending on the edge_type this can be
+        relatively simple or more complex.
+        """
         # modify order of x or y shift of edges for p,b types.
         if self.mark.edge_type in ('p', 'b'):
             # selects pc
             if self.mark.layout[0] == 'c':
                 path_format = PATH_FORMAT["pc"]
-                logger.warning(
-                    "edge_type='p' w/ layout='c' not currently supported. "
-                    "Contact developers to make a request. Changing "
-                    "edge_type to 'c' for now."
-                )
-                path_format = PATH_FORMAT['c']
+                # logger.warning(
+                #     "edge_type='p' w/ layout='c' not currently supported. "
+                #     "Contact developers to make a request. Changing "
+                #     "edge_type to 'c' for now."
+                # )
+                # path_format = PATH_FORMAT['c']
 
             # selects p1, p2, or b1, b2
             elif self.mark.layout in ('u', 'd'):
@@ -152,20 +158,52 @@ class RenderToytree:
             parent_x, parent_y = self.nodes_x[pidx], self.nodes_y[pidx]
 
             # circle 'p' format each line is towards root, then across arc
-            if self.mark.layout[0] == 'c':
+            # if self.mark.layout[0] == 'c':
+
+            if "A" in path_format:
+
+                # get angle from node to the root
+                dy = (self.nodes_y[-1] - child_y)
+                dx = (child_x - self.nodes_x[-1])
+                theta = 0 if dx == 0 else np.arctan(dy / dx) 
+                logger.info(f"dx={dx:.2f} dy={dy:.2f}")
+
+                # get length of edge
+                dist = self.radii[idx] - self.radii[pidx]
+
+                # get length of radius to new fake node.
+                rdist = self.radii[idx] - dist
+
+                # get x, y positions of the fake node
+                logger.info(f"theta={theta:.2f}, rdist={rdist:.2f} {self.radii[idx]:.2f} {self.radii[pidx]:.2f} {dist:.2f}")
+
+                # get length of adjacent ( change in x relative to O )
+                x = (dist * np.cos(theta)) #- self.nodes_x[-1]
+                logger.info(f"o={self.nodes_x[-1]:.2f}, x={(rdist * np.cos(theta)):.2f}")
+
+                y = (dist * np.sin(theta)) #+ self.nodes_y[-1] 
+                logger.info(f"o={self.nodes_y[-1]:.2f}, y={(rdist * np.sin(theta)):.2f}")
+                logger.warning("")
+                # logger.info(f"{idx} theta={theta:.2f} r={dist:.1f} "
+                    # f"rd={rdist:.2f} "
+                    # f"x={ + x:.2f} " 
+                    # f"y={self.nodes_y[-1] + y:.2f}")
+                # dy = dist * np.sin(theta)
+
                 # get start position
                 # "M {cx:.1f} {cy:.1f}
                 # move towards center of circle (y)
                 # L {dx:.1f} {dy:.1f}
                 # arc: rx ry x-axis-rotation large-arc-flag sweeep flag x y
                 # A {rr:.1f} {rr:.1f} 0 0 {flag} {px:.1f} {py:.1f}",
+                # logger.info(f"idx={idx}, mark={self.mark.ntable[idx]}, x={child_x:.2f}, y={child_y:.2f}, px={parent_x:.2f}, py={parent_y:.2f}, angle: {angle:.2f}")
                 keys.append(f"{pidx},{cidx}")
                 paths.append(
                     path_format.format(**{
                         'cx': child_x, 'cy': child_y,
                         'px': parent_x, 'py': parent_y,
-                        'dx': ..., 'dy': ...,
-                        'rr': ..., 'flag': ...,
+                        'dx': child_x - x, 'dy': child_y + y,
+                        'rr': dist, 'flag': 0,
                     })
                 )
 
@@ -738,8 +776,8 @@ class RenderToytree:
                 xml.SubElement(
                     self.admix_xml,
                     "text",
-                    x="{:.2f}".format(ytext),
-                    y="{:.2f}".format(xtext),
+                    x=f"{ytext:.2f}",
+                    y=f"{xtext:.2f}",
                     style=style_to_string(lstyle),
                 ).text = str(label)
 
@@ -843,12 +881,24 @@ if __name__ == "__main__":
     toytree.set_log_level("INFO")
 
     # generate a random species tree with 10 tips and a crown age of 10M generations
-    tree = toytree.rtree.unittree(10, treeheight=1e6, seed=123)
-    # create a new tree copy with Ne values mapped to nodes
-    vtree = tree.set_node_data(
-        feature="Ne",
-        mapping={i: 2e5 for i in (6, 7, 8, 9, 12, 15, 17)},
-        default=1e4,
-    )
+    # tree = toytree.rtree.unittree(10, treeheight=1e6, seed=123)
+    # # create a new tree copy with Ne values mapped to nodes
+    # vtree = tree.set_node_data(
+    #     feature="Ne",
+    #     mapping={i: 2e5 for i in (6, 7, 8, 9, 12, 15, 17)},
+    #     default=1e4,
+    # )
+    # vtree._draw_browser(ts='p', admixture_edges=[(0, 12, 0.5, {}, "word")]);
 
-    vtree._draw_browser(ts='p', admixture_edges=[(0, 12, 0.5, {}, "word")]);
+    tree = toytree.rtree.unittree(5, seed=123)
+    kwargs = dict(
+        ts='p',
+        layout='c0-95',
+        edge_type='p',
+        width=800,
+        node_sizes=0,
+        node_mask=False,
+        tip_labels_style={"font-size": 14, "-toyplot-anchor-shift": 10},
+        edge_colors=['red'] + ['blue'] + ['black'] * (tree.nnodes - 2),
+    )
+    tree._draw_browser(**kwargs)
