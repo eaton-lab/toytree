@@ -274,7 +274,6 @@ def wright_fisher_simulation(
         then 
     allele_frequency: float
         Starting allele frequency for bi-allelic variation.
-
     """
     model = WrightFisherPlot(seed=seed, time=time, popsize=popsize, **kwargs)
     model.get_ancestry_edges(sort=sort_edges)
