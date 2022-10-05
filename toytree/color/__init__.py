@@ -11,4 +11,5 @@ from toytree.color.src.color import (
 	COLORS1,
 	COLORS2,
 	color_cycler,
+	Color
 )
