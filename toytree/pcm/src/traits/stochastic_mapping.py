@@ -1,7 +1,14 @@
 # stochastic_mapping.py
 
-"""
+"""Stochastic character mapping.
 
+This is a method of simulating a history for a discrete character
+data set conditioned on the observed states at the tips ...
+(and optionally at internal nodes?).
+
+This method also needs a new plotting framework for displaying 
+changes along edges of a tree using rectangles with linear-gradient
+maps.
 
 References
 -----------
