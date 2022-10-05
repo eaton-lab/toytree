@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""
-Custom toyplot.Mark for displaying pie charts.
+"""Custom toyplot.Mark for displaying pie charts.
 """
 
 import numpy as np

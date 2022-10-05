@@ -207,7 +207,6 @@ def get_radial_coordinates_for_percents(percent):
 
 if __name__ == "__main__":
 
-
     import toytree
     import toyplot
 
