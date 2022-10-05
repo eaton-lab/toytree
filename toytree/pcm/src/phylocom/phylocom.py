@@ -21,6 +21,7 @@ PSV and PGLMM methods
 - Helmus M.R., Bland T.J., Williams C.K. & Ives A.R. (2007) 
   Phylogenetic measures of biodiversity. American Naturalist, 
   169, E68-E83
+- TODO: phylogenetic entropy, Allen et al. 2009
 
 Validation
 ----------
