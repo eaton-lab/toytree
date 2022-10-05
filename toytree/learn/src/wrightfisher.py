@@ -6,7 +6,7 @@ This is used to demonstrate how genetic drift creates by allele
 frequency change over generations, and generates genealogies.
 """
 
-from typing import Optional, Dict, List, Union
+from typing import Optional, Dict
 import toyplot
 import numpy as np
 from toytree import ToyTree, Node
@@ -21,6 +21,8 @@ class WrightFisherPlot:
         """: numpy int (time, 2N) array of node IDs as a grid."""
         self.edges: np.ndarray = None
         """: numpy int (2N * time, 2) array of edges by node IDs."""
+        self.sampled_edges: np.ndarray = None
+        """: numpy int (??, 2) array of edges for nsamples."""
         self.coords: np.ndarray = None
         """: numpy int (2N * time, 2) array of coordinates by ID."""
         self.canvas: toyplot.Canvas = None
@@ -47,8 +49,8 @@ class WrightFisherPlot:
 
         # setup the canvas and axes
         self.canvas = toyplot.Canvas(
-            width=kwargs.get("width", 800),
-            height=kwargs.get("height", 800),
+            width=kwargs.get("width", 500),
+            height=kwargs.get("height", 500),
             style={"background-color": "white"},
         )
         self.axes = self.canvas.cartesian(
@@ -69,7 +71,7 @@ class WrightFisherPlot:
         self.axes.x.label.style["font-size"] = 16
         self.axes.x.label.offset = 0
 
-    def add_diploids(self):
+    def draw_diploids(self):
         """Adds a rectangle around pairs of gene copies to represent a diploid individual."""
         self.marks['diploids'] = self.axes.rectangle(
             self.coords[:, 0][::2] - 0.25,
@@ -82,13 +84,11 @@ class WrightFisherPlot:
             },
         )
 
-    def add_lines(self, sort: bool=True, **kwargs):
-        """Adds lines from gene copies to randomly sampled parents each generation.
+    def get_ancestry_edges(self, sort: bool=True) -> None:
+        """Sample ancestor-descendant relationships and store to .edges.
 
         This defines the ancestry connecting all gene copies in each
-        generation to an ancestor from the previous generation. This
-        also applies color (alleles) to gene copies based on their
-        genealogy.
+        generation to an ancestor from the previous generation. 
         """
         # iterate over each generation adding pairs of node indices
         for gen in range(self.grid.shape[0] - 1, 0, -1):
@@ -113,6 +113,8 @@ class WrightFisherPlot:
             else:
                 self.edges = iedges
 
+    def draw_edges(self, **kwargs):
+        """Draw ancestry edges with information in .edges."""
         # style the graph
         style = {
             "vlshow": False, "ecolor": "black", "ewidth": 1.25, 
@@ -126,11 +128,22 @@ class WrightFisherPlot:
             **style,
         )
 
-    def add_sampled_lines(self, nsamples: int, **kwargs):
+    def get_sampled_edges(self, nsamples: int):
         """Add sampled genealogy lines from N random samples, or a list of sampled indices."""
+        if not nsamples:
+            return
         samples = list(self.rng.choice(self.grid[-1], size=nsamples, replace=False))
+        tracked = samples.copy()
+        for edg in self.edges:
+            if edg[0] in tracked:
+                tracked.append(edg[1])
 
-        # base styles for the graph
+        # get the node pairs that make up each of these edges
+        mask = np.isin(self.edges[:, 0], tracked)
+        self.sampled_edges = self.edges[mask]
+
+    def draw_sampled_edges(self, **kwargs):
+        """Draw genealogy connecting sampled gene copies."""
         style = {
             "vlshow": False,
             "vsize": 8,
@@ -141,27 +154,26 @@ class WrightFisherPlot:
             "ewidth": 3,
             "estyle": {},
         }
-        style.update(kwargs)
-
-        # get selected edges to show
-        tracked = samples.copy()
-        for edg in self.edges:
-            if edg[0] in tracked:
-                tracked.append(edg[1])
-
-        # get the node pairs that make up each of these edges
-        mask = np.isin(self.edges[:, 0], tracked)
-        edges = self.edges[mask]
-
-        # add graph lines from lower_idxs to upper_idxs, using coordinates for all
+        style.update(kwargs)        
         mark = self.axes.graph(
-            edges,
-            vcoordinates=self.coords[sorted(np.unique(edges))],
+            self.sampled_edges,
+            vcoordinates=self.coords[sorted(np.unique(self.sampled_edges))],
             **style,
         )
         self.marks['genealogy'] = mark
 
-    def add_haploids(self, p=0.5, **kwargs):
+    def get_allele_states(self, allele_frequency=0.5):
+        """Fills allele states based on ancestry edges."""
+        if allele_frequency in [0, 1]:
+            self.alleles[:] = 0
+        else:
+            self.alleles[:2 * self.popsize] = self.rng.binomial(
+                n=1, p=allele_frequency, size=2 * self.popsize)
+            for child in range(self.popsize * 2, self.popsize * 2 * self.time):
+                parent = self.edges[self.edges[:, 0] == child, 1][0]
+                self.alleles[child] = self.alleles[parent]
+
+    def draw_nodes(self, color: Optional[Color], **kwargs):
         """Add circle marks for gene copies showing allele frequencies.
 
         Allele frequencies are mapped on generation 1 randomly and then
@@ -181,26 +193,21 @@ class WrightFisherPlot:
                 "stroke-width": 1.5,
             },
         }
-        color1 = Color(COLORS1[0]).css
-        color2 = Color(COLORS1[1]).css
-        color0 = Color('white').css
-        style.update({i:j for i,j in kwargs.items() if i != "color"})
-        colors = [color0] * self.coords.shape[0]
+        style.update(kwargs)        
 
-        # fill all allele states given the edges
-        self.alleles[:2 * self.popsize] = self.rng.binomial(1, p, size=2 * self.popsize)
-        if self.edges is not None:
-            for child in range(self.popsize * 2, self.popsize * 2 * self.time):
-                parent = self.edges[self.edges[:, 0] == child, 1][0]
-                self.alleles[child] = self.alleles[parent]
-                #  colors = [color1 if i == 0 else color2 for i in self.alleles]
-
-        colors = [color1 if i == 0 else color2 for i in self.alleles]        
+        if color is None:
+            color1 = Color(COLORS1[0]).css
+            color2 = Color(COLORS1[1]).css
+        else:
+            color = Color(color)
+            rgb = [1 - i for i in color.rgba[:3]]
+            color1 = color.css
+            color2 = Color(tuple(rgb + [1.0])).css
+        style['color'] = [color1 if i == 0 else color2 for i in self.alleles]        
 
         # plot marks
         mark = self.axes.scatterplot(
             self.coords[:, 0], self.coords[:, 1],
-            color=colors,
             **style,
         )
         self.marks['haploids'] = mark
@@ -208,6 +215,7 @@ class WrightFisherPlot:
     def get_genealogy(self, nsamples: int) -> ToyTree:
         """Returns a toytree matching to the evolved genealogy."""
         
+        raise NotImplementedError("Coming soon.")
         # build dict of samples {0: Node(), 1: Node(), 2: Node(), ...}
         nodes = {i: Node(name=i) for i in range(nsamples)}
 
@@ -225,22 +233,60 @@ def wright_fisher_simulation(
     nsamples: Optional[int]=None,
     sort_edges: bool=True,
     show_diploids: bool=False,
-    show_alleles: bool=True,
+    allele_frequency: float=1.0,
     node_size: int=6,
+    node_color: Optional[Color]=None,
     **kwargs,
     ) -> toyplot.Canvas:
-    """...
+    """Simulate a population evolving as a Wright-Fisher process.
+
+    A WF process model generates 2N haploid gene copies in discrete
+    non-overlapping generations, where each generation gene copies
+    are randomly sampled with replacement from the previous generation.
+    This process creates a genealogy of edges connecting all gene
+    copies. Some gene copies leave no descendants, while others can 
+    leave multiple. Genetic variation, represented by different 
+    alleles (e.g., colors) among gene copies will be lost over time 
+    by this random sampling procedure, representing a manifestation
+    of genetic drift.
     
     Parameters
     ----------
+    time: int
+        Number of generations to simulate evolution.
+    popsize: int
+        The number of diploid individuals in the population (N).
+    seed: int
+        Optional random number seed to make simulation repeatable.
+    nsamples: int
+        Optional, number of random gene copies to sample at the 
+        present. A genealogy will be drawn to connect the samples.
+    sort_edges: bool
+        If True the gene copies will be sorted so that edges are
+        easier to interpret.
+    show_diploids: bool
+        If True a rectangle is drawn around pairs of gene copies to
+        show how they can be randomly joined into diploid genomes.
+    node_size: int
+        The size of node markers for gene copies.
+    node_color: Color
+        Optional, a color of node markers for gene copies. If None
+        then 
+    allele_frequency: float
+        Starting allele frequency for bi-allelic variation.
+
     """
     model = WrightFisherPlot(seed=seed, time=time, popsize=popsize, **kwargs)
+    model.get_ancestry_edges(sort=sort_edges)
+    model.get_allele_states(allele_frequency=allele_frequency)
+    model.get_sampled_edges(nsamples=nsamples)
+
     if show_diploids:
-        model.add_diploids()
-    model.add_lines(sort=sort_edges)
-    model.add_sampled_lines(nsamples, vsize=node_size + 2)
-    if show_alleles:
-        model.add_haploids(size=node_size)
+        model.draw_diploids()
+    model.draw_edges()
+    if nsamples is not None:
+        model.draw_sampled_edges(vsize=node_size + 2)
+    model.draw_nodes(size=node_size, color=node_color)
     return model
 
 
@@ -257,8 +303,9 @@ if __name__ == "__main__":
     wf = wright_fisher_simulation(
         time=30, popsize=16, seed=123, nsamples=5, 
         width=500, height=500,
-        # show_alleles=False,
-        # show_diploids=True,
-        node_size=7
+        show_diploids=True,
+        node_size=7,
+        allele_frequency=0.5,
+        # node_color='red'
     )
     toyplot.browser.show(wf.canvas)
