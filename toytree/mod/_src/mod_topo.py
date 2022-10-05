@@ -432,6 +432,8 @@ def add_internal_node(
         no dist value is set then the edge midpoint is used.
     name: Optional[str]
         A name string to apply to the new Node.
+    inplace: bool
+        Modify tree in place.
 
     Examples
     --------
@@ -864,3 +866,8 @@ def _resolve_nodes(
         right._children = _resolve_nodes(
             right, dist, support, rng, recursive)
     return left, right
+
+
+
+if __name__ == "__main__":
+    pass
