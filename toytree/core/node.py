@@ -16,11 +16,10 @@ it is greatly simplified, and differs in several other important
 respects. Most notably, the toytree.Node class is intended to be
 immutable, meaning users are not able to directly edit .dist, .up,
 .children, or other attributes of Node objects that affect the tree
-topology. Instead, ToyTree class objects
-have functions for modifying Nodes that do so in the context of
-updating the entire tree (i.e., updating other Node's attributes
-if needed). Thus, toytree.Node is a more minimal object used mainly
-for traversal and to store Node data.
+topology. Instead, ToyTree class objects have functions for modifying
+Nodes that do so in the context of updating the entire tree (i.e., 
+updating other Node's attributes if needed). Thus, toytree.Node is a 
+more minimal object used mainly for traversal and to store Node data.
 
 References
 ----------
@@ -36,6 +35,7 @@ References
 
 from __future__ import annotations
 from typing import List, Optional, Union, Iterator, Tuple #, Set, Any
+from functools import total_ordering
 from copy import deepcopy
 from collections import deque
 
@@ -292,6 +292,17 @@ class Node:
     def __len__(self) -> int:
         """Return length of Node as number of descendant leaf Nodes"""
         return sum(1 for i in self._iter_leaves())
+
+    @total_ordering  # auto-creates all other ordering operations
+    def __gt__(self, other: Node) -> bool:
+        """Return True if this Node's idx is greater than the others."""
+        if self.idx > other.idx:
+            return True
+        return False
+
+    def __hash__(self) -> int:
+        """Return a hash of the Node based on its repr."""
+        return hash(repr(self))
 
     #####################################################
     ## TREE MODIFICATION (NOT MUTATING THIS NODE THO?)
@@ -760,3 +771,6 @@ if __name__ == '__main__':
     # print(tree.get_node_data('hello'))
 
     tree.treenode.draw_ascii(compact=False)
+
+    x = tree.copy()
+    print(x[0] <= x[1])
