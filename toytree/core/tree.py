@@ -11,7 +11,7 @@ References
 
 from __future__ import annotations
 from typing import (
-    Sequence, Dict, List, Optional, Iterator, Any,
+    Sequence, Dict, List, Optional, Iterator, Any, Set,
     Union, Tuple, TypeVar, Callable)
 import re
 from copy import deepcopy
@@ -98,6 +98,9 @@ class ToyTree:
 
     def __getitem__(self, idx: int) -> Node:
         """ToyTree is indexable by idx label to access Nodes."""
+        # decided not to support slice here b/c it slows down indexing 2X.
+        # if isinstance(idx, slice): 
+            # return [self._idx_dict[idx] for idx in range(*idx.indices(self.nnodes))]
         return self._idx_dict[idx]
 
     def __repr__(self) -> str:
@@ -415,7 +418,7 @@ class ToyTree:
         self,
         *query: Query,
         regex: bool = False,
-        ) -> Sequence[Node]:
+        ) -> List[Node]:
         """Return a list of Nodes matching a flexible query.
 
         Node instances can be selected by entering Node name strings,
@@ -429,17 +432,19 @@ class ToyTree:
         This function is used inside many other toytree functions that
         similarly take `*Query` as an argument; any place users may
         want to use a flexible query method to select  a set of Nodes,
-        or their common ancestor.
+        or their common ancestor. The order of returned Nodes is 
+        similar random.
 
         Parameters
         ----------
         query: str, int, Node, or None
             Flexible query selector can search for Nodes by name, idx
             label, or by entering a Node directly. Multiple values can
-            be entered to return a list with all matching Nodes.
+            be entered to return a list of matching Nodes.
         regex: bool
             If True then string queries are treated as regular
-            expressions.
+            expressions. If a regular expression fails to match
+            anything it will raise an exception.
 
         Notes
         -----
@@ -447,30 +452,82 @@ class ToyTree:
 
         Examples
         --------
-        >>> tree = toytree.rtree.unittree(6, seed=123)
-        >>> tree.get_nodes()                 # all Nodes are returned.
-        >>> tree.get_nodes("r1")                 # [Node(1)]
-        >>> tree.get_nodes("r1", "r2")           # [Node(1), Node(2)]
-        >>> tree.get_nodes("r[1-2]", regex=True) # [Node(1), Node(2)]
-        >>> tree.get_nodes(5, 6)                 # [Node(5), Node(6)]
-        >>> tree.get_nodes(tree[5], "r1")        # [Node(5), Node(1)]
+        >>> tree = toytree.rtree.unittree(16, seed=123)
+        >>> tree.get_nodes()                      # all Nodes returned
+        >>> tree.get_nodes("r1")                  # [Node(1)]
+        >>> tree.get_nodes("r1", "r2")            # [Node(1), Node(2)]
+        >>> tree.get_nodes("r[1-2]$", regex=True) # [Node(1), Node(2)]
+        >>> tree.get_nodes(5, 6)                  # [Node(5), Node(6)]
+        >>> tree.get_nodes(tree[5], "r1")         # [Node(5), Node(1)]
+        >>> tree.get_nodes(*[2,3])                # [Node(2), Node(3)]
         """
         # fastest return, all cached Nodes
-        if query == ():
+        if query == ():  # ignore b/c query can be 0
             return list(self)
 
-        # next most common: user entered all ints
-        nodes = [self[i] for i in query if isinstance(i, int)]
-        if len(nodes) != len(query):
+        nodes = set()
+        for que in query:
+            if isinstance(que, int):
+                nodes.add(self[que])
+            elif isinstance(que, toytree.Node):
+                nodes.add(que)
+            elif isinstance(que, str):
+                matched = set(self._iter_nodes_by_name_match(que, regex=regex))
+                nodes.update(matched)
+                if not matched:
+                    raise ValueError(
+                        f"No Node names match '{que}' using regex={regex}.")
+            elif isinstance(que, np.integer):
+                nodes.add(self[que])
+            else:
+                raise TypeError(f"query type {type(que)} not supported.")
+        return list(nodes)
 
-            # get more complex query types
-            nodes += [self[i.idx] for i in query if isinstance(i, Node)]
-            strs = [i for i in query if isinstance(i, str)]
-            if strs:
-                nodes += list(self._iter_nodes_by_name_match(*strs, regex=regex))
+    def get_ancestors(
+        self, 
+        *query: Query, 
+        include_query: bool=True, 
+        include_top: bool=True,
+        stop_at_mrca: bool=False,
+        ) -> Set[Node]:
+        """Return a set of Nodes that are ancestors of the query samples.
+        
+        The returned set can include or exclude the sample query; it
+        can trace back all ancestors to the root of the tree, or only
+        to the MRCA of the sample query; and it include or exclude
+        the top node (root or MRCA depending on arguments).
 
-        # NOTE: no longer returning in idx order, user order sometimes wanted.
-        return list(set(nodes))  # sorted(set(nodes), key=lambda x: x.idx)
+        Parameters
+        ----------
+        *query: str, int, Node
+            One or more Node objects, Node str names, or Node int idx
+            labels, any of which can be used to select Nodes.
+        include_query: bool
+            If False the query Nodes are not included in returned set.
+        include_top: bool
+            If False the 'top' Node of the set is not included. This 
+            can be either the tree root, or the MRCA Node, depending 
+            on the `stop_at_mrca` argument.
+        stop_at_mrca: bool
+            If False then all ancestors are included back to the root
+            of the tree. If True, ancestors only trace back to MRCA
+            of the sample query.
+        """
+        query = set(self.get_nodes(*query))
+        ancestors = set.union(*[
+            set(self[i.idx].get_ancestors()) for i in query])
+        if stop_at_mrca:
+            mrca = self.get_mrca_node(*query)
+            for anc in mrca.get_ancestors():
+                ancestors.discard(anc)
+            if include_top is False:
+                ancestors.discard(mrca)
+        else:
+            if include_top is False:
+                ancestors.discard(self.treenode)
+        if include_query:
+            return query.union(ancestors)
+        return ancestors
 
     def get_mrca_node(
         self, *query: Query, regex: bool = False) -> Node:
@@ -492,7 +549,6 @@ class ToyTree:
         *query: str, int, Node
             One or more Node objects, Node str names, or Node int idx
             labels, any of which can be used to select Nodes.
-
         regex: bool
             If True then input node name strings are treated as
             regular expressions that can match one or more Nodes.
@@ -1725,7 +1781,6 @@ if __name__ == "__main__":
     import toytree
     tree_ = toytree.rtree.rtree(12, seed=123)
     c, a, m = tree_._draw_browser(tree_style='s', layout='d', new=False)
-
 
     # print(tree.get_tip_labels())
 
