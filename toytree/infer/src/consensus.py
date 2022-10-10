@@ -72,7 +72,7 @@ class ConsensusTree:
         self.best_tree = self.best_tree.set_node_data("support", default=0) 
 
         # returns ubipartitions (root has no effect)
-        best_tree_parts = list(self.best_tree._iter_bipartitions("name", True, False))
+        best_tree_parts = list(self.best_tree.iter_bipartitions("name", True, False))
 
         # mirror the support on the root Node's children
         cidxs = [i.idx for i in self.best_tree.treenode.children]
@@ -83,7 +83,7 @@ class ConsensusTree:
         for utree, count in self._iter_unique_trees():
 
             # iterate over ubipartitions in tree: [[['a'], ['b', 'c']], [...]]
-            for nidx, bipart in enumerate(utree._iter_bipartitions("name", True, False)):
+            for nidx, bipart in enumerate(utree.iter_bipartitions("name", True, False)):
                 if nidx >= self.best_tree.ntips:
                     try:
                         idx = best_tree_parts.index(bipart)
@@ -220,7 +220,7 @@ class ConsensusTree:
         for utree in self.mtree:
 
             # iterate over ubipartitions in tree: [[['a'], ['b', 'c']], [...]]
-            for nidx, bipart in enumerate(utree._iter_bipartitions("name", True, False)):
+            for nidx, bipart in enumerate(utree.iter_bipartitions("name", True, False)):
                 # skip tip-only Nodes
                 node = utree[nidx]
                 # store the smaller half
