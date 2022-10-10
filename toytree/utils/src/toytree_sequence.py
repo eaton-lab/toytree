@@ -14,15 +14,15 @@ Examples
 >>> mts = msprime.sim_mutations()
 >>> tts = ToyTreeSequence(tts)
 
-Draw an individual tree w/ mutations.
+# Draw an individual tree w/ mutations.
 >>> tts.draw_tree(idx=0, ...)
 >>> tts.draw_tree(site=30, ...)
 
-Draw the TreeSequence w/ mutations.
+# Draw the TreeSequence w/ mutations.
 >>> tts.draw_tree_sequence(max_trees=10, chromosome=...)
 """
 
-from typing import Optional, Iterable, Union, Dict, TypeVar, Collection
+from typing import Optional, Iterable, Union, Dict, TypeVar, Collection, Mapping
 from loguru import logger
 import numpy as np
 from toytree.utils.src.toytree_sequence_drawing import ToyTreeSequenceDrawing
@@ -50,31 +50,43 @@ class ToyTreeSequence:
         The max number of samples per population to include in a tree.
     seed: int
         A random seed used to sample the samples to include in tree.
+    name_dict: Mapping[int,str]
+        Optionally include a dictionary mapping tree sequence int node 
+        IDs to st names. If not provided then tip Nodes will be auto
+        renamed from treesequence data as {pop-id}-{node-id}.
     """
     def __init__(
         self, 
         tree_sequence: TreeSequence,
         sample: Union[int, Iterable[int], None]=None,
         seed: Optional[int]=None,
+        name_dict: Optional[Mapping[int,str]]=None,
         ):
+        # TODO: perhaps combine name_dict and 'sample' request method?
 
         # store user args
         self.rng = np.random.default_rng(seed)
+        """: numpy random number generator seeeded."""
         self.npopulations = len(list(tree_sequence.populations()))
+        """: number of populations in the TreeSequence."""
         self.sample: Collection = None
+        """: the number of haplotypes to sample from the TreeSequence."""
         self.tree_sequence: TreeSequence = None
+        """: the TreeSequence object."""
+        self.name_dict: Mapping[int,str] = {} if name_dict is None else name_dict
+        self._i = 0
+        """: iterable counter."""
 
         # subsample/simplify treesequence to same or smaller nsamples
         if sample is None:
             self.sample = [tree_sequence.sample_size]
+            self.tree_sequence = tree_sequence            
         elif isinstance(sample, int):
             self.sample = [sample] * self.npopulations
+            self.tree_sequence = self._get_subsampled_ts(tree_sequence)
         else:
             self.sample = sample
-
-        # get simplified ts
-        self.tree_sequence = self._get_subsampled_ts(tree_sequence)
-        self._i = 0
+            self.tree_sequence = self._get_subsampled_ts(tree_sequence)
 
     def __len__(self):
         return self.tree_sequence.num_trees
@@ -110,6 +122,7 @@ class ToyTreeSequence:
                 size = min(arr.size, self.sample[pidx])
                 samp = self.rng.choice(arr, size=size, replace=False)
                 samps += samp.tolist()
+        logger.warning(samps)
         sampled_ts = tree_sequence.simplify(samps, keep_input_roots=True)
         return sampled_ts
 
@@ -162,24 +175,36 @@ class ToyTreeSequence:
         # idx_dict = {root_idx: toytree.TreeNode(name=root_idx, dist=0)}
         # idx_dict[root_idx].add_feature("tsidx", root_idx)
 
-        # add all children nodes
+        # dict of {child: parent, ...} e.g., {0: 5, 1: 8, 2: 7, ...}
         pdict = tree.get_parent_dict()
         logger.debug(pdict)
-        for cidx in pdict:
-            pidx = pdict[cidx]
+        
+        # iterate over child, parent items
+        for cidx, pidx in pdict.items():
+            # if parent already in tsdict get existing Node
             if pidx in tsidx_dict:
                 pnode = tsidx_dict[pidx]
+
+            # else create a new Node for it.
             else:
                 pnode = toytree.Node(name=str(pidx), dist=tree.branch_length(pidx))
                 pnode.tsidx = pidx
                 tsidx_dict[pidx] = pnode
                 logger.debug(f"adding child: {cidx} to parent: {pidx}")                
+
+            # if child node already exists use Node.
             if cidx in tsidx_dict:
                 cnode = tsidx_dict[cidx]
+
+            # create a new Node
             else:
-                pop = self.tree_sequence.tables.nodes.population[cidx]
+                if cidx in self.name_dict:
+                    name = self.name_dict[cidx]
+                else:
+                    pop = self.tree_sequence.tables.nodes.population[cidx]
+                    name=f"p{pop}-{cidx}"
                 cnode = toytree.Node(
-                    name=f"p{pop}-{cidx}",
+                    name=name,
                     dist=tree.branch_length(cidx),
                 )
                 cnode.tsidx = cidx
@@ -275,6 +300,10 @@ class ToyTreeSequence:
         ypos = []
         titles = []
         colors = []
+
+        # TODO: iterate over .sites() to show positions and describe
+        # whether multiple mutations occurred at a position. This 
+        # needs to be tested for both msprime and slim data types...
         for mut in tree.mutations:
 
             # get node id and time using the 'tsidx' (tskit node id)
