@@ -2,17 +2,23 @@
 
 """toytree I/O data parsing utilities.
 
+The generic functions are easiest to use, but a bit slower than if 
+the funtions for parsing directly from a string or file.
+
 tree parsing generics
 ---------------------
 - toytree.io.treeio.tree
-	Tree FILE parsing function for newick, nexus, NHX.
+	parse a ToyTree in many possible formats from str, file, or URL.
+- toytree.io.treeio.mtree
+	parse a MultiTree in many possible formats from str, file, or URL.
 
 newick string parsing 
 ---------------------
 - toytree.io.parse_newick
-	Tree STRING parsing function for newick strings, including NHX+.
+	parse a single ToyTree from a newick or NHX+ string.
 - toytree.io.parse_newick_custom
-	Tree STRING parsing function with customizable parsing functions.
+	parse a single ToyTree from a newick or NHX+ string with 
+	additional options to parse custom/odd additional data.
 
 file parsing
 ------------
@@ -39,5 +45,7 @@ from .src.newick import parse_newick_string, parse_newick_string_custom
 from .src.treeio import tree
 from .src.writer import write_newick, write_nexus
 from .src.helpers import (
-	read_newick, read_nexus, read_mb_file
+	read_newick, 
+	read_nexus, 
+	read_mb_file,
 )

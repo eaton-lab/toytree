@@ -7,24 +7,21 @@ Parse flexible input types (filepath, str, Url) to ToyTree class.
 
 from typing import Union, TypeVar
 from pathlib import Path
-from loguru import logger
+# from loguru import logger
 
 from toytree.core.tree import ToyTree
 from toytree.core.node import Node
 from toytree.utils import ToytreeError
-from toytree.io.src.parser import TreeIOParser
+from toytree.io.src.parse import TreeIOParser
 
-logger = logger.bind(name="toytree")
+# logger = logger.bind(name="toytree")
 
 # PEP 484 recommend capitalizing alias names
 Url = TypeVar("Url")
 
 
-# TODO: add io.parse_... options.
-def tree(
-    data: Union[str,Path,Url],
-    ) -> ToyTree:
-    """General ToyTree class constructor function and flexible data parser.
+def tree(data: Union[str, Path, Url]) -> ToyTree:
+    """Return a ToyTree parsed from variable input types and formats.
 
     Returns a :class:`ToyTree` object from a variety of optional 
     input types, including a newick or nexus string, or a filepath or 
@@ -63,7 +60,7 @@ def tree(
         ttree = ToyTree(treenode)
     # load ToyTree from a newick or nexus from str, URL, or filepath
     elif isinstance(data, (str, Path)):
-        ttree = TreeIOParser(data).trees[0]
+        ttree = TreeIOParser(data).parse_node_auto()
     # raise an error (to make an empty tree you must enter empty Node)
     else:
         raise ToytreeError(f"Cannot parse input tree data: {data}")
@@ -74,5 +71,4 @@ def tree(
 if __name__ == "__main__":
 
     URI = "https://eaton-lab.org/data/Cyathophora.tre"
-    TOOL = TreeIOParser(URI)
-    print(TOOL.trees[0])
+    print(tree(URI))

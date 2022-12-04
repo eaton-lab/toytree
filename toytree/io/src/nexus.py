@@ -16,6 +16,12 @@ from typing import List, Tuple, Dict
 # MATCHER = re.compile(MB_BRLEN_RE)
 
 
+# def get_nwk_and_tdict_from_nexus(data: str) -> Tuple[List[str], Dict[int,str]]:
+#     """Return a newick string and translation dictionary from nexus.
+
+#     """
+
+
 def get_newicks_and_translation_from_nexus(
     data: str
     ) -> Tuple[List[str], Dict[int, str]]:
@@ -24,7 +30,6 @@ def get_newicks_and_translation_from_nexus(
     This can parse generic NEXUS formats, and has also been tested
     on the mrbayes format, which has a lot of non-standard formatting
     for metadata, e.g., this removes spaces from mb newicks.
-
     """
     # vars to be returned
     trans_dict = {}
@@ -49,23 +54,24 @@ def get_newicks_and_translation_from_nexus(
         # remove horrible brlen string with spaces from mb if present
         # nextline = MATCHER.sub("", nextline)
 
-        # split into parts on remaining spaces
-        sub = nextline.split()
-
         # skip if a blank line
-        if not sub:
+        if not nextline:
             continue
+
+        # split into parts on remaining spaces
+        sub = nextline.split(maxsplit=1)
 
         # look for 'translate' block inside of 'trees' block
         if sub[0].lower() == "translate":
-            while not sub[-1].endswith(";"):                        
-                sub = next(lines).strip().split()
+            while not sub[-1].endswith(";"):
+                sub = next(lines).strip().split(maxsplit=1)
                 if not sub[-1].endswith(";"):
                     trans_dict[sub[0]] = sub[-1].strip(",").strip(";")
 
         # parse tree blocks
         elif sub[0].lower().startswith("tree"):
-            newicks.append(sub[-1])
+            trim = sub[-1].find("(")
+            newicks.append(sub[-1][trim:])
 
         # end of trees block
         elif sub[0].lower() == "end;":
