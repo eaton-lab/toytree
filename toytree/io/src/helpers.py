@@ -82,13 +82,7 @@ def read_newick(
         "internal_labels": internal_labels,
     }
     treeio = TreeIOParser(path, **kwargs)
-    ntrees = len(treeio.trees)
-    if not ntrees:
-        raise ToytreeError("Failed to parse tree.")
-    if len(treeio.trees) == 1:
-        return treeio.trees[0]
-    return toytree.MultiTree(treeio.trees)
-
+    return treeio.parse_node_from_file()
 
 def read_nexus(**kwargs):
     """Return a ToyTree or MultiTree from a NEXUS file.
