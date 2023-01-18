@@ -79,7 +79,7 @@ class MultiTree:
     >>> mtree.draw();
     """
     def __init__(self, treelist: List[ToyTree]):
-        self.treelist = treelist
+        self.treelist: List[ToyTree] = treelist
         """List of ToyTree objects in the MultiTree."""
 
         # self.data: pd.DataFrame = self._init_data(treelist, data)
