@@ -8,7 +8,7 @@ in a string, file or URL.
 Example
 -------
 >>> parser = TreeIOParse(data)
->>> parser.parse_node_auto()           # auto 
+>>> parser.parse_node_auto()           # auto
 >>> parser.parse_node_from_str()       # faster, reads from str.
 >>> parser.parse_node_from_file()      # faster, reads from file.
 >>> parser.parse_node_from_url()       # faster, reads from url.
@@ -36,7 +36,7 @@ Url = TypeVar("Url")
 
 
 class TreeIOParser:
-    """Return a Node parsed from various tree input types.
+    """Class with functions to return a Node parsed from many inputs.
 
     This is intended for internal use only. See `toytree.io` module
     for functions that use this class. Supports kwargs for parsing
@@ -67,10 +67,11 @@ class TreeIOParser:
         if isinstance(self.data, Path):
             if self.data.exists():
                 with open(self.data, 'r', encoding='utf-8') as indata:
-                    return WHITE_SPACE.sub("", indata.read())
+                    return indata.read()
+            raise IOError(f"Path {self.data} does not exist.")
 
         # str: check if it is URI, then Path, then newick.
-        elif isinstance(self.data, str):
+        if isinstance(self.data, str):
 
             # newick always starts with "(" whereas a filepath and
             # URI can never start with this, so... easy enough.
@@ -88,7 +89,8 @@ class TreeIOParser:
                 with open(self.data, 'r', encoding="utf-8") as indata:
                     return indata.read()
             else:
-                raise ToytreeError(f"Error parsing tree data input type: {self.data}.")
+                raise IOError("Tree input appears to be a file path "
+                    f"but does not exist: {self.data}.")
 
         # if entered as bytes convert to str and restart
         elif isinstance(self.data, bytes):
@@ -96,15 +98,17 @@ class TreeIOParser:
             self._auto_parse_data_to_str()
 
         # not str or Path then raise TypeError
-        raise TypeError(f"Error parsing tree data input type: {self.data}.")
+        raise TypeError(f"Error parsing unrecognized tree data input type: {self.data}.")
 
     def _convert_nwk_or_nex_to_tree(self, data: str, multi: bool=False) -> str:
         """Return a Node given unknown string data format. """
         if data[:6].upper() == "#NEXUS":
+            # splits into: List[str], Dict[str,str]
             data, tdict = get_newicks_and_translation_from_nexus(data)
             self.tdict = tdict
-        elif multi:
-            data = data.split("\n")
+        else:
+            if multi:
+                data = data.split("\n")
         return data
 
     def _translate_node_names(self, tree: Node) -> None:
@@ -114,12 +118,6 @@ class TreeIOParser:
             if node.name:
                 clean_name = ILLEGAL_NEWICK_CHARS.sub("_", self.tdict[node.name])
                 node.name = clean_name
-
-    def parse_multi_nodes_auto(self) -> List[Node]:
-        """..."""
-        data = self._auto_parse_data_to_str().strip()
-        data = self._convert_nwk_or_nex_to_tree(data, multi=True)
-        return [TreeIOParser(i, tdict=self.tdict).parse_node_from_str() for i in data]
 
     def parse_node_from_str(self) -> Node:
         """Return a Node parsed from a nwk, nex, or NHX data."""
@@ -151,9 +149,21 @@ class TreeIOParser:
         self.data = self._auto_parse_data_to_str()
         return self.parse_node_from_str()
 
+    def parse_multi_nodes_auto(self) -> List[Node]:
+        """Parse a multitree input and return as a list of Nodes.
+
+
+        """
+        # convert input type into a nex or newick string.
+        data = self._auto_parse_data_to_str().strip()
+        # convert to multi-line newick string with tdict separate
+        data = self._convert_nwk_or_nex_to_tree(data, multi=True)
+        # apply single tree parser to each line and use tdict to translate
+        return [TreeIOParser(i, tdict=self.tdict).parse_node_from_str() for i in data]
+
 
 if __name__ == "__main__":
-    
+
     TEST = "/home/deren/Downloads/Clustal_Omega_Dec3.txt"
     TEST1 = "((a,b)c);"
     TEST2 = """(
@@ -170,19 +180,19 @@ if __name__ == "__main__":
     tool = TreeIOParser("https://eaton-lab.org/data/Cyathophora.tre")
     print(tool.parse_node_from_url())
 
-    
+
     TEST3 = "https://eaton-lab.org/data/densitree.nex"
     TEST4 = """\
 #NEXUS
 begin trees;
-    translate;
+    translate
            1       apple,
            2       blueberry,
            3       cantaloupe,
            4       durian,
            ;
     tree tree0 = [&U] ((1,2),(3,4));
-    tree tree1 = [&U] ((1,2),(3,4));    
+    tree tree1 = [&U] ((1,2),(3,4));
 end;
 """
 
@@ -198,5 +208,5 @@ end;
 """
 
     tool = TreeIOParser(TEST5)
-    print(tool.parse_multi_nodes_auto())
-    
+    trees = tool.parse_multi_nodes_auto()
+    print(trees[0].get_tip_labels())

@@ -31,19 +31,24 @@ def mtree(data: Union[str, Path, Collection[Union[ToyTree, str, Path]]], **kwarg
     >>> mtre = toytree.mtree("((a,b),c);\n((c,a),b);")
     >>> mtre = toytree.mtree([toytree.rtree.rtree(10) for i in range(5)])
     """
-    # ...
-    assert len(set(type(i) for i in data)) == 1, "input data cannot be multiple types."
-
     # parse the newick object into a list of Toytrees
     treelist = []
 
-    # convert odd but common formats to easier to parse ones
+    ##### Individual inputs #####
+    # a single file path containing multline newicks or nexus.
+    if isinstance(data, (Path, str)):
+        treelist = TreeIOParser(data, **kwargs).parse_multi_nodes_auto()
+        return MultiTree(treelist)
+
+    ##### Collections of inputs #####
+    assert len(set(type(i) for i in data)) == 1, "input data cannot be multiple types."
+
     if isinstance(data, pd.Series):
         treelist = data.to_list()
-    elif isinstance(data, str):
-        treelist = TreeIOParser(data, **kwargs).parse_multi_nodes_auto()
+
     elif isinstance(data[0], ToyTree):
-        treelist = [i.copy() for i in data]
+        data = [i.copy() for i in data]
+        treelist = data
     else:
         raise ToytreeError("mtree input format unrecognized.")
     return MultiTree(treelist)
@@ -55,7 +60,54 @@ if __name__ == "__main__":
     import ipcoal
 
     TEST3 = "https://eaton-lab.org/data/densitree.nex"
+    URL3 = "https://eaton-lab.org/data/densitree.nex"
+    PATHNWK3 = Path("~/Downloads/densitree.nwk").expanduser()
+    PATHNEX3 = Path("~/Downloads/densitree.nex").expanduser()
+    STRP3 = "~/Downloads/densitree.nex"
+
+
+
+    # parse a newick file with many trees
+    print(mtree(PATHNWK3))
+
+    # parse a nexus file with many trees
+    print(mtree(PATHNEX3))
+
+    # parse a URL to a file with many trees
+    print(mtree(URL3))
+
+    
+    TEST3 = "https://eaton-lab.org/data/densitree.nex"
+    TEST4 = """\
+#NEXUS
+begin trees;
+    translate;
+           1       apple,
+           2       blueberry,
+           3       cantaloupe,
+           4       durian,
+           ;
+    tree tree0 = [&U] ((1,2),(3,4));
+    tree tree1 = [&U] ((1,2),(3,4));    
+end;
+"""
+
+    TEST5 = """\
+(((a:1,b:1):1,(d:1.5,e:1.5):0.5):1,c:3);
+(((a:1,d:1):1,(b:1,e:1):1):1,c:3);
+(((a:1.5,b:1.5):1,(d:1,e:1):1.5):1,c:3.5);
+(((a:1.25,b:1.25):0.75,(d:1,e:1):1):1,c:3);
+(((a:1,b:1):1,(d:1.5,e:1.5):0.5):1,c:3);
+(((b:1,a:1):1,(d:1.5,e:1.5):0.5):2,c:4);
+(((a:1.5,b:1.5):0.5,(d:1,e:1):1):1,c:3);
+(((b:1.5,d:1.5):0.5,(a:1,e:1):1):1,c:3);
+"""
+
     print(mtree(TEST3))
+    print(mtree(TEST4))
+    print(mtree(TEST5))
+    print(mtree(mtree(TEST5).treelist))
+    print(mtree(mtree(TEST5).write()))
 
     # # set variables
     # Ne = 10000
