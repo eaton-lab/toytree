@@ -42,7 +42,7 @@ def get_newicks_and_translation_from_nexus(
     while 1:
         try:
             line = next(lines).strip()
-            if line.lower() == "begin trees;":
+            if "begin trees;" in line.lower():
                 break
         except StopIteration:
             break
