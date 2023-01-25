@@ -24,7 +24,7 @@ def parse_network(net, disconnect=True):
     """
     # if net is a file then read the first line
     if os.path.exists(net):
-        with open(net, 'rt') as infile:
+        with open(net, 'r', encoding="utf-8") as infile:
             net = infile.readline()
 
     # trim off loglik and anything after it (TODO: keep loglik)
@@ -43,7 +43,7 @@ def parse_network(net, disconnect=True):
     net = net.replace(":::", "-")
 
     # parse cleaned newick and set empty gamma on all nodes
-    net = toytree.tree(net, tree_format=1)
+    net = toytree.tree(net)
 
     # store admix data
     admix = {}
