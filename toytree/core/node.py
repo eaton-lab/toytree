@@ -335,10 +335,16 @@ class Node:
         preserve_branch_length: bool=True,
         prevent_nondicotomic: bool=False,
         ) -> None:
-        """Delete a Node from a tree.
+        r"""Delete a Node from a tree.
 
         This operates in-place and is retained for compatibility with
         ete3. See toytree.mod for alternative implementations.
+
+                  4                         4
+                 / \       delete 2        / \
+                2   3      ------->       /   3
+               /     \                   /     \
+              0       1                 0       1
         """
         # get parent node
         parent = self.up
@@ -375,7 +381,8 @@ class Node:
         for better options for SPR type tree modifications.
         """
         if self._up:
-            self._up._children = tuple(i for i in self._children if i != self)
+            my_sisters = tuple(i for i in self._up._children if i != self)
+            self._up._children = self._children + my_sisters
             self._up = None
         return self
 
@@ -772,5 +779,5 @@ if __name__ == '__main__':
 
     tree.treenode.draw_ascii(compact=False)
 
-    x = tree.copy()
-    print(x[0] <= x[1])
+    # x = tree.copy()
+    # print(x[0] <= x[1])

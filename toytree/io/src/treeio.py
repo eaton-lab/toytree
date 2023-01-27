@@ -60,7 +60,7 @@ def tree(data: Union[str, Path, Url]) -> ToyTree:
         ttree = ToyTree(treenode)
     # load ToyTree from a newick or nexus from str, URL, or filepath
     elif isinstance(data, (str, Path)):
-        ttree = TreeIOParser(data).parse_node_auto()
+        ttree = TreeIOParser(data).parse_tree_auto()
     # raise an error (to make an empty tree you must enter empty Node)
     else:
         raise ToytreeError(f"Cannot parse input tree data: {data}")
