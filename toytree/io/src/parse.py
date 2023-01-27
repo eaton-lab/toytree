@@ -21,7 +21,8 @@ from loguru import logger
 import requests
 
 from toytree.core.node import Node
-from toytree.utils import ToytreeError
+from toytree.core.tree import ToyTree
+# from toytree.utils import ToytreeError
 from toytree.io.src.newick import parse_newick_string
 from toytree.io.src.nexus import get_newicks_and_translation_from_nexus
 
@@ -111,7 +112,7 @@ class TreeIOParser:
                 data = data.split("\n")
         return data
 
-    def _translate_node_names(self, tree: Node) -> None:
+    def _translate_node_names(self, tree: ToyTree) -> None:
         """Check valid and translate names using nexus translation dictionary."""
         for node in tree.traverse():
             # replace disallowed characters in names with '_'
@@ -119,7 +120,7 @@ class TreeIOParser:
                 clean_name = ILLEGAL_NEWICK_CHARS.sub("_", self.tdict[node.name])
                 node.name = clean_name
 
-    def parse_node_from_str(self) -> Node:
+    def parse_tree_from_str(self) -> ToyTree:
         """Return a Node parsed from a nwk, nex, or NHX data."""
         data = WHITE_SPACE.sub("", self.data)
         nwk = self._convert_nwk_or_nex_to_tree(data)
@@ -130,36 +131,34 @@ class TreeIOParser:
             self._translate_node_names(tre)
         return tre
 
-    def parse_node_from_url(self) -> Node:
+    def parse_tree_from_url(self) -> ToyTree:
         """Return a Node parsed from URL containing nwk, nex, or NHX data."""
         response = requests.get(self.data)
         response.raise_for_status()
         self.data = response.text
-        return self.parse_node_from_str()
+        return self.parse_tree_from_str()
 
-    def parse_node_from_file(self) -> Node:
+    def parse_tree_from_file(self) -> ToyTree:
         """Return a Node parsed from URL containing nwk, nex, or NHX data."""
         path = Path(self.data)
         with open(path, 'r', encoding='utf-8') as indata:
             self.data = WHITE_SPACE.sub("", indata.read())
-        return self.parse_node_from_str()
+        return self.parse_tree_from_str()
 
-    def parse_node_auto(self) -> Node:
+    def parse_tree_auto(self) -> ToyTree:
         """Return a Node parsed from URL containing nwk, nex, or NHX data."""
         self.data = self._auto_parse_data_to_str()
-        return self.parse_node_from_str()
+        return self.parse_tree_from_str()
 
-    def parse_multi_nodes_auto(self) -> List[Node]:
+    def parse_multitree_auto(self) -> List[ToyTree]:
         """Parse a multitree input and return as a list of Nodes.
-
-
         """
         # convert input type into a nex or newick string.
         data = self._auto_parse_data_to_str().strip()
         # convert to multi-line newick string with tdict separate
         data = self._convert_nwk_or_nex_to_tree(data, multi=True)
         # apply single tree parser to each line and use tdict to translate
-        return [TreeIOParser(i, tdict=self.tdict).parse_node_from_str() for i in data]
+        return [TreeIOParser(i, tdict=self.tdict).parse_tree_from_str() for i in data]
 
 
 if __name__ == "__main__":
@@ -171,14 +170,14 @@ if __name__ == "__main__":
     ;
 """
 
-    tool = TreeIOParser(TEST)
-    print(tool.parse_node_auto())
+    tool = TreeIOParser(TEST1)
+    print(tool.parse_tree_auto())
 
     tool = TreeIOParser(TEST2)
-    print(tool.parse_node_from_str())
+    print(tool.parse_tree_from_str())
 
     tool = TreeIOParser("https://eaton-lab.org/data/Cyathophora.tre")
-    print(tool.parse_node_from_url())
+    print(tool.parse_tree_from_url())
 
 
     TEST3 = "https://eaton-lab.org/data/densitree.nex"
@@ -208,5 +207,5 @@ end;
 """
 
     tool = TreeIOParser(TEST5)
-    trees = tool.parse_multi_nodes_auto()
+    trees = tool.parse_multitree_auto()
     print(trees[0].get_tip_labels())
