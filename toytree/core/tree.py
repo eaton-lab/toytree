@@ -689,9 +689,9 @@ class ToyTree:
     def write(
         self,
         path: Optional[str] = None,
-        dist_formatter: Optional[str] = "%.6g",
+        dist_formatter: Optional[str] = "%.12g",
         internal_labels: Optional[str] = "support",
-        internal_labels_formatter: Optional[str] = "%.6g",
+        internal_labels_formatter: Optional[str] = "%.12g",
         features: Optional[Sequence[str]] = None,
         features_prefix: str = "&",
         features_delim: str = ",",
@@ -1779,8 +1779,11 @@ class ToyTree:
 if __name__ == "__main__":
 
     import toytree
-    tree_ = toytree.rtree.rtree(12, seed=123)
-    c, a, m = tree_._draw_browser(tree_style='s', layout='d', new=False)
+    tree_ = toytree.rtree.unittree(12, treeheight=1232344, seed=123)
+    # tree = tree_.mod.edges_slider(0.5)
+    # c, a, m = tree_._draw_browser(tree_style='s', layout='d', new=False)
+    print(tree_.write(dist_formatter="%.12g"))
+    print(tree_.get_node_data())
 
     # print(tree.get_tip_labels())
 
