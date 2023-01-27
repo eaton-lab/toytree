@@ -37,21 +37,28 @@ def mtree(data: Union[str, Path, Collection[Union[ToyTree, str, Path]]], **kwarg
     ##### Individual inputs #####
     # a single file path containing multline newicks or nexus.
     if isinstance(data, (Path, str)):
-        treelist = TreeIOParser(data, **kwargs).parse_multi_nodes_auto()
+        treelist = TreeIOParser(data, **kwargs).parse_multitree_auto()
         return MultiTree(treelist)
 
     ##### Collections of inputs #####
     assert len(set(type(i) for i in data)) == 1, "input data cannot be multiple types."
 
     if isinstance(data, pd.Series):
-        treelist = data.to_list()
+        data = data.to_list()
 
-    elif isinstance(data[0], ToyTree):
+    if isinstance(data[0], ToyTree):
         data = [i.copy() for i in data]
         treelist = data
+
+    elif isinstance(data[0], (str, Path)):
+        data = [TreeIOParser(i, **kwargs).parse_tree_auto() for i in data]
+        treelist = data
+
     else:
         raise ToytreeError("mtree input format unrecognized.")
-    return MultiTree(treelist)
+    mtre = MultiTree(treelist)
+    assert len(mtre.treelist), "MultiTree is empty, parsing failed."
+    return mtre
 
 
 if __name__ == "__main__":
@@ -64,8 +71,6 @@ if __name__ == "__main__":
     PATHNWK3 = Path("~/Downloads/densitree.nwk").expanduser()
     PATHNEX3 = Path("~/Downloads/densitree.nex").expanduser()
     STRP3 = "~/Downloads/densitree.nex"
-
-
 
     # parse a newick file with many trees
     print(mtree(PATHNWK3))
