@@ -38,6 +38,7 @@ import toytree.mod
 import toytree.color
 import toytree.enumeration
 import toytree.pcm
+import toytree.network
 # import toytree.annotate
 
 # container trees... container
