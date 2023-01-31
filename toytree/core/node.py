@@ -34,7 +34,7 @@ References
 
 
 from __future__ import annotations
-from typing import List, Optional, Union, Iterator, Tuple #, Set, Any
+from typing import List, Optional, Union, Iterator, Tuple  # , Set, Any
 from functools import total_ordering
 from copy import deepcopy
 from collections import deque
@@ -107,7 +107,8 @@ class Node:
     >>> # but cannot be modified on Nodes (they are immutable)
     >>> node.dist = 10  # raises a TreeNodeError
     """
-    def __init__(self, name: str="", dist: float=1., support: float=np.nan):
+
+    def __init__(self, name: str = "", dist: float = 1.0, support: float = np.nan):
         self._name = str(name)
         """: name string assigned to Node."""
         self._dist = dist
@@ -122,9 +123,9 @@ class Node:
         """: the ancestor Node instance (towards root) from this Node."""
         self._idx: int = -1
         """: unique node index label (idx) assigned to Nodes in a ToyTree."""
-        self._height: float = 0.
+        self._height: float = 0.0
         """: height of this Node above the connected Node farthest from root."""
-        self._x: float = 0.
+        self._x: float = 0.0
         """: private attribute updated during drawing as x-coordinate."""
 
     @property
@@ -163,7 +164,7 @@ class Node:
         try:
             self._support = float(value)
         except ValueError as err:
-            raise TreeNodeError('Node support must be int or float') from err
+            raise TreeNodeError("Node support must be int or float") from err
 
     @property
     def height(self) -> float:
@@ -188,7 +189,8 @@ class Node:
             "Cannot set .height attribute of a Node. If you are an "
             "advanced user then you can do so by setting ._height. "
             "See the docs section on Modifying Nodes and Tree Topology,"
-            "and/or see function `toytree.mod.set_node_heights`.")
+            "and/or see function `toytree.mod.set_node_heights`."
+        )
 
     @property
     def children(self) -> Tuple[Node]:
@@ -244,7 +246,7 @@ class Node:
         """Return True if Node has no parent."""
         return self.up is None
 
-    def copy(self, detach: bool=False) -> Node:
+    def copy(self, detach: bool = False) -> Node:
         """Return a deepcopy of this Node (and its connected Nodes).
 
         All connected Nodes (ancestral and descendant) are also copied
@@ -332,9 +334,9 @@ class Node:
 
     def _delete(
         self,
-        preserve_branch_length: bool=True,
-        prevent_nondicotomic: bool=False,
-        ) -> None:
+        preserve_branch_length: bool = True,
+        prevent_nondicotomic: bool = False,
+    ) -> None:
         r"""Delete a Node from a tree.
 
         This operates in-place and is retained for compatibility with
@@ -390,7 +392,7 @@ class Node:
     ## TRAVERSAL                                   ##
     #################################################
 
-    def traverse(self, strategy: str="levelorder") -> Iterator[Node]:
+    def traverse(self, strategy: str = "levelorder") -> Iterator[Node]:
         """Visit all connected Nodes using a tree traversal strategy.
 
         Notes
@@ -437,7 +439,8 @@ class Node:
             return self._traverse_idxorder()
         raise TreeNodeError(
             "supported strategies are ['idxorder', 'preorder', "
-            "'postorder', 'levelorder', and 'inorder']")
+            "'postorder', 'levelorder', and 'inorder']"
+        )
 
     def _traverse_idxorder(self) -> Iterator[Node]:
         """Iterates over all nodes in 'idx' order.
@@ -607,16 +610,16 @@ class Node:
         """Return list of other Nodes that are children of same parent."""
         return tuple(self._iter_sisters())
 
-    def _iter_descendants(self, strategy: str="levelorder") -> Iterator[Node]:
+    def _iter_descendants(self, strategy: str = "levelorder") -> Iterator[Node]:
         """Return a Generator of descendant Nodes (not including self)."""
         for node in self.traverse(strategy=strategy):
             yield node
 
-    def get_descendants(self, strategy: str="levelorder") -> Tuple[Node]:
+    def get_descendants(self, strategy: str = "levelorder") -> Tuple[Node]:
         """Return a list of descendant Nodes (not including self)."""
         return tuple(self._iter_descendants(strategy=strategy))
 
-    def _iter_ancestors(self, root: Optional[Node]=None) -> Iterator[Node]:
+    def _iter_ancestors(self, root: Optional[Node] = None) -> Iterator[Node]:
         """Return a Generator of Nodes on path from this node to root.
 
         The current node is not included, but the root node is. The
@@ -684,57 +687,59 @@ class Node:
     #     for node in root.traverse("preorder"):
     #         node._height = max_dist - node._height
 
-    def _get_ascii(self, char1='-', compact=False):
+    def _get_ascii(self, char1="-", compact=False):
         """Return the ASCII representation of a tree.
 
         Code based on the PyCogent GPL project.
         """
         if self.is_leaf():
-            return ([char1 + '-' + self.name], 0)
+            return ([char1 + "-" + self.name], 0)
 
         # internal nodes require spacing concerns
         space = max(3, len(self.name) if not self.children else 3)
-        padding = ' ' * space
-        pad = ' ' * (space - 1)
+        padding = " " * space
+        pad = " " * (space - 1)
         mids = []
         result = []
         for child in self.children:
             if len(self.children) == 1:
-                char2 = '/'
+                char2 = "/"
             elif child is self.children[0]:
-                char2 = '/'
+                char2 = "/"
             elif child is self.children[-1]:
-                char2 = '\\'
+                char2 = "\\"
             else:
-                char2 = '-'
+                char2 = "-"
 
             # recursion
             (clines, mid) = child._get_ascii(char2, compact=compact)
             mids.append(mid + len(result))
             result.extend(clines)
             if not compact:
-                result.append('')
+                result.append("")
         if not compact:
             result.pop()
         (lo, hi, end) = (mids[0], mids[-1], len(result))
 
-        prefixes = [padding] * (lo+1) + [pad+'|'] * (hi-lo-1) + [padding] * (end-hi)
+        prefixes = (
+            [padding] * (lo + 1) + [pad + "|"] * (hi - lo - 1) + [padding] * (end - hi)
+        )
         mid = int((lo + hi) / 2)
-        prefixes[mid] = char1 + '-'*(space - 2) + prefixes[mid][-1]
-        result = [p+l for (p,l) in zip(prefixes, result)]
+        prefixes[mid] = char1 + "-" * (space - 2) + prefixes[mid][-1]
+        result = [p + l for (p, l) in zip(prefixes, result)]
         return (result, mid)
 
-    def draw_ascii(self, compact: bool=False):
+    def draw_ascii(self, compact: bool = False):
         """Return the ASCII drawing of a Node and its descendants.
 
         Code based on the PyCogent GPL project.
         """
         lines, _ = self._get_ascii(compact=compact)
-        tree_lines = '\n'.join(lines)
+        tree_lines = "\n".join(lines)
         print(f"\n{tree_lines}")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     nodes = {i: Node(name=i) for i in range(20)}
     for idx, n in enumerate(nodes):
@@ -771,10 +776,11 @@ if __name__ == '__main__':
     # print(nodes[3].__dict__.keys())
 
     import toytree
+
     tree = toytree.rtree.rtree(10)
     tree[3].hello = "3"
     print(tree.features)
-    print(tree.get_node_data('support'))
+    print(tree.get_node_data("support"))
     # print(tree.get_node_data('hello'))
 
     tree.treenode.draw_ascii(compact=False)
