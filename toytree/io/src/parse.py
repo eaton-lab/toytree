@@ -20,9 +20,7 @@ from pathlib import Path
 from loguru import logger
 import requests
 
-from toytree.core.node import Node
 from toytree.core.tree import ToyTree
-# from toytree.utils import ToytreeError
 from toytree.io.src.newick import parse_newick_string
 from toytree.io.src.nexus import get_newicks_and_translation_from_nexus
 
@@ -64,7 +62,8 @@ class TreeIOParser:
         The returned data string could be any format, it is not yet
         checked at this point.
         """
-        # Path: read file and yield string
+        # Path: read file and yield string. But if a str path then is
+        # found differently further below in str parsing.
         if isinstance(self.data, Path):
             if self.data.exists():
                 with open(self.data, 'r', encoding='utf-8') as indata:
@@ -73,6 +72,15 @@ class TreeIOParser:
 
         # str: check if it is URI, then Path, then newick.
         if isinstance(self.data, str):
+            # is there any scenario (nex?) not to strip by default?...
+            # self.data = self.data.strip()
+
+            # empty string
+            if ";" in self.data:
+                return self.data
+
+            if not self.data:
+                return "(0);"
 
             # newick always starts with "(" whereas a filepath and
             # URI can never start with this, so... easy enough.
@@ -85,13 +93,14 @@ class TreeIOParser:
                 response.raise_for_status()
                 return response.text
 
-            # check if str is a Path (fails if filename is very large)
+            # check if str is actually Path (fails if filename is large)
             if Path(self.data).exists():
                 with open(self.data, 'r', encoding="utf-8") as indata:
                     return indata.read()
             else:
-                raise IOError("Tree input appears to be a file path "
-                    f"but does not exist: {self.data}.")
+                raise IOError(
+                    "Tree input appears to be a file path "
+                    f"but does not exist: '{self.data}'")
 
         # if entered as bytes convert to str and restart
         elif isinstance(self.data, bytes):
