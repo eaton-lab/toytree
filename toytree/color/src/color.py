@@ -60,6 +60,11 @@ DTYPE = {
 class ToyColor(np.ndarray):
     """ToyColor is a superclass of numpy.ndarray.
 
+    This is similar to how toyplot uses a numpy array to represent
+    color. 
+
+    This is mostly used internally to make it easier to check color
+    types and convert when needed.
     """
     def __new__(cls, color):
         color = Color(color)
@@ -87,6 +92,19 @@ class ToyColor(np.ndarray):
         return Color(self)
 
 
+# @dataclass
+# class ColorD:
+#     """Represent a color in multiple formats."""
+#     data: Union[str, np.ndarray]
+
+#     # to be filled from parsed 'color' input.
+#     css: str = None
+#     rgba: Tuple[float, float, float, float] = None
+#     array: np.ndarray = None
+
+#     def __post_init__(self):
+
+
 class Color:
     """Flexible color parser class to get css or rgba tuples.
 
@@ -95,7 +113,7 @@ class Color:
     - rgba = (r:float, g:float, b:float, a:float)
     - rgb = (r:float, g:float, b:float, a:float)
     - hex = "#000000"
-    - css = "cornflower"
+    - css = "cornflowerblue"
 
     Attributes
     ----------
@@ -112,9 +130,11 @@ class Color:
         # input is a css string (parse input based on type
         if isinstance(color, str):
             self.css = color
-            if not self.css:
-                raise ToytreeError(f"color str {color} not recognized")
+            # if not self.css:
+                # raise ToytreeError(f"color str {color} not recognized")
             self.array = toyplot.color.css(color)
+            if self.array is None:
+                raise ToytreeError(f"CSS color '{color}' not recognized")
             self.rgba = tuple(float(self.array[i]) for i in 'rgba')
 
         # input is an ndarray (e.g., toyplot.color ndarray, 1-d 4 floats)
@@ -149,9 +169,7 @@ class Color:
         }
 
     def _repr_html_(self):
-        """
-        Show color as a div in jupyter notebooks
-        """
+        """Show color as a div in jupyter notebooks"""
         # create a root dom element
         root_xml = xml.Element(
             "div",
@@ -173,7 +191,8 @@ class Color:
 
 
 def color_parser(color) -> Union[ToyColor, List[ToyColor]]:
-    """
+    """Return a ToyColor or List of ToyColor from flexible inputs.
+
     Parse the input of a color based style argument to .draw(). This
     supports a wide variety of types, with ndarray being the most
     troublesome.
@@ -197,7 +216,9 @@ def color_parser(color) -> Union[ToyColor, List[ToyColor]]:
     if isinstance(color, toyplot.color.Map):
         raise ToytreeError(
             "toyplot.color.Map not supported. Try using the map to broadcast "
-            "your values to a list of colors with colormap.colors(values).")
+            "your values to a list of colors with colormap.colors(values).\n"
+            ">>> toyplot.color.DivergingMap().colors([0, 1, 2])"
+        )
     raise ToytreeError(
         f"{color} ({type(color)}) is not a supported color argument.")
 
