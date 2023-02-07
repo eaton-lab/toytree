@@ -9,19 +9,23 @@ TODO
   - Cirlce tree does not project y-axis...
 """
 
+from typing import List, Dict, Tuple
 import functools
 import xml.etree.ElementTree as xml
 from multipledispatch import dispatch
 from loguru import logger
 import numpy as np
 import toyplot
-from toyplot.html import (_draw_bar, _draw_triangle, _draw_circle, _draw_rect)
-from toytree.core.drawing.toytree_mark import ToytreeMark
-from toytree.core.drawing.render_text import render_text
+from toytree.drawing import ToytreeMark, render_text
+from toytree.drawing.src.render_marker import render_marker
+from toytree.color.src.utils import style_to_string, split_rgba_style, concat_style_to_str
+from toytree.style.src.utils import concat_style_to_str2
 from toytree.utils.src.globals import PATH_FORMAT
+
 
 logger = logger.bind(name="toytree")
 
+# ---------------------------------------------------------------------
 # Register multipledispatch to use the toyplot.html namespace
 dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 
@@ -29,6 +33,7 @@ dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 @dispatch(toyplot.coordinates.Cartesian, ToytreeMark, toyplot.html.RenderContext)
 def _render(axes, mark, context):
     RenderToytree(axes, mark, context)
+# ---------------------------------------------------------------------    
 
 
 class RenderToytree:
@@ -120,7 +125,7 @@ class RenderToytree:
                     self.tips_x[idx] = self.axes.project('x', cordx)
                     self.tips_y[idx] = self.axes.project('y', cordy)
 
-    def get_paths(self):
+    def get_paths(self) -> Tuple[List[str], List[str]]:
         """Return paths and keys in idx order.
 
         This will build the d="..." path string for the SVG lines 
@@ -221,83 +226,54 @@ class RenderToytree:
     def mark_toytree(self):
         """TODO: Creates the top-level Toytree mark. Not required."""
 
-    def mark_edges(self):
+    def mark_edges(self) -> None:
         """Create SVG paths for each tree edge as class toytree-Edges"""
         # get paths based on edge type and layout
         paths, keys = self.get_paths()
 
-        # get shared versus unique styles
-        unique_styles = get_unique_edge_styles(self.mark)
-        self.mark.edge_style['fill'] = "none"
+        # !always pop 'fill' to set it to 'fill:none' below (no fill btwn edges).
+        _ = self.mark.edge_style.pop('fill', None)
 
         # render the edge group
         self.edges_xml = xml.SubElement(
             self.mark_xml, "g",
             attrib={"class": "toytree-Edges"},
-            style=style_to_string({
-                i: j for (i, j) in self.mark.edge_style.items()
-                if j is not None
-            })
+            style=concat_style_to_str2(self.mark.edge_style, "fill:none")
         )
+
+        # get shared versus unique styles (EdgeStyles)
+        unique_styles = get_unique_edge_styles(self.mark)
 
         # render the edge paths
         for idx, path in enumerate(paths):
-            style = unique_styles[idx]
-            if style:
-                xml.SubElement(
-                    self.edges_xml, "path",
-                    d=path,
-                    id=keys[idx],
-                    style=style_to_string(style),
-                )
-            else:
-                xml.SubElement(
-                    self.edges_xml, "path",
-                    d=path,
-                    id=keys[idx],
-                )
+            xml.SubElement(
+                self.edges_xml, "path",
+                d=path,
+                id=keys[idx],
+                style=concat_style_to_str2(unique_styles[idx])
+            )          
 
-    def mark_nodes(self):
+    def mark_nodes(self) -> None:
         """Create marker elements for each node in class toytree-Nodes.
 
         Stores ids to the nodes which in theory can allow for
         downstream JS interactivity.
         """
-        # skip if all node_mask=True or if all node_sizes=0
+        # Group all Nodes with shared style applied
+        self.nodes_xml = xml.SubElement(
+            self.mark_xml, "g",
+            attrib={"class": "toytree-Nodes"},
+            style=concat_style_to_str2(self.mark.node_style)
+        )
+
+        # skip drawing any nodes if node_mask=True or all node_sizes=0
         if (self.mark.node_sizes == 0).all():
             return
         if self.mark.node_mask.all():
             return
 
-        # get fill style if differs among nodes
-        unique_styles = [{} for i in range(self.mark.nnodes)]
-
-        # only if variable tho
-        if not self.mark.node_colors is None:
-
-            # get fill and fill-opacity of each mark (levelorder)
-            for idx in range(self.mark.nnodes):
-
-                # get the rgba node color
-                fill = self.mark.node_colors[idx]
-
-                # split into rgb and opacity and store result dict
-                unique_styles[idx] = split_rgba_style({'fill': fill})
-
-                # default fill-opacity is None, so if it is set use it
-                if self.mark.node_style['fill-opacity'] is not None:
-                    unique_styles[idx]['fill-opacity'] = (
-                        self.mark.node_style['fill-opacity'])
-
-        # Group all Nodes with shared style applied
-        self.nodes_xml = xml.SubElement(
-            self.mark_xml, "g",
-            attrib={"class": "toytree-Nodes"},
-            style=style_to_string({
-                i: j for (i, j) in self.mark.node_style.items()
-                if j is not None
-            }),
-        )
+        # get shared versus unique styles (NodeStyles)
+        unique_styles = get_unique_node_styles(self.mark)
 
         # add node markers in reverse idx order (levelorder traversal)
         for nidx in range(self.mark.nnodes):
@@ -315,14 +291,16 @@ class RenderToytree:
             # create the marker
             marker_xml = xml.SubElement(
                 self.nodes_xml, "g",
-                attrib={'id': f'node-{nidx}'},
-                style=style_to_string(unique_styles[nidx]),
+                attrib={"id": f"Node-{nidx}"},
+                style=concat_style_to_str2(unique_styles[nidx]),
             )
+
+            # if style string is empty then remove it.
             if not marker_xml.attrib['style']:
                 marker_xml.attrib.pop('style')
 
-            # optionally add a title UNLESS node_label, then put the hover
-            # on the node text instead.
+            # optionally add a title (hover) here only if there is no
+            # node_label, otherwise we put the hover on the label later.
             if self.mark.node_hover is not None:
                 if self.mark.node_labels is None:
                     xml.SubElement(marker_xml, "title").text = (
@@ -334,84 +312,19 @@ class RenderToytree:
                 self.nodes_y[nidx],
             )
             if marker.angle:
-                transform += " rotate({:.1f})".format(-marker.angle)
+                transform += " rotate({:.2f})".format(-marker.angle)
             marker_xml.set("transform", transform)
 
             # get shape type
-            if marker.shape == "|":
-                _draw_bar(marker_xml, marker.size)
-            elif marker.shape == "/":
-                _draw_bar(marker_xml, marker.size, angle=-45)
-            elif marker.shape == "-":
-                _draw_bar(marker_xml, marker.size, angle=90)
-            elif marker.shape == "\\":
-                _draw_bar(marker_xml, marker.size, angle=45)
-            elif marker.shape == "+":
-                _draw_bar(marker_xml, marker.size)
-                _draw_bar(marker_xml, marker.size, angle=90)
-            elif marker.shape == "x":
-                _draw_bar(marker_xml, marker.size, angle=-45)
-                _draw_bar(marker_xml, marker.size, angle=45)
-            elif marker.shape == "*":
-                _draw_bar(marker_xml, marker.size)
-                _draw_bar(marker_xml, marker.size, angle=-60)
-                _draw_bar(marker_xml, marker.size, angle=60)
-            elif marker.shape == "^":
-                _draw_triangle(marker_xml, marker.size)
-            elif marker.shape == ">":
-                _draw_triangle(marker_xml, marker.size, angle=-90)
-            elif marker.shape == "v":
-                _draw_triangle(marker_xml, marker.size, angle=180)
-            elif marker.shape == "<":
-                _draw_triangle(marker_xml, marker.size, angle=90)
-            elif marker.shape == "s":
-                _draw_rect(marker_xml, marker.size)
-            elif marker.shape == "d":
-                _draw_rect(marker_xml, marker.size, angle=45)
-            elif marker.shape and marker.shape[0] == "r":
-                width, height = marker.shape[1:].split("x")
-                _draw_rect(
-                    marker_xml, marker.size,
-                    width=float(width), height=float(height))
-            elif marker.shape == "o":
-                _draw_circle(marker_xml, marker.size)
-            elif marker.shape == "oo":
-                _draw_circle(marker_xml, marker.size)
-                _draw_circle(marker_xml, marker.size / 2)
-            elif marker.shape == "o|":
-                _draw_circle(marker_xml, marker.size)
-                _draw_bar(marker_xml, marker.size)
-            elif marker.shape == "o/":
-                _draw_circle(marker_xml, marker.size)
-                _draw_bar(marker_xml, marker.size, -45)
-            elif marker.shape == "o-":
-                _draw_circle(marker_xml, marker.size)
-                _draw_bar(marker_xml, marker.size, 90)
-            elif marker.shape == "o\\":
-                _draw_circle(marker_xml, marker.size)
-                _draw_bar(marker_xml, marker.size, 45)
-            elif marker.shape == "o+":
-                _draw_circle(marker_xml, marker.size)
-                _draw_bar(marker_xml, marker.size)
-                _draw_bar(marker_xml, marker.size, 90)
-            elif marker.shape == "ox":
-                _draw_circle(marker_xml, marker.size)
-                _draw_bar(marker_xml, marker.size, -45)
-                _draw_bar(marker_xml, marker.size, 45)
-            elif marker.shape == "o*":
-                _draw_circle(marker_xml, marker.size)
-                _draw_bar(marker_xml, marker.size)
-                _draw_bar(marker_xml, marker.size, -60)
-                _draw_bar(marker_xml, marker.size, 60)
+            render_marker(marker_xml, marker)
 
-    def mark_node_labels(self):
+    def mark_node_labels(self) -> None:
         """Create Node labels in toytree-NodeLabels using render_text"""
         if self.mark.node_labels is None:
             return
 
         # shared styles popped from text boxes AFTER positioning
         shared_style = {
-            "stroke": "none",
             "font-size": self.mark.node_labels_style['font-size'],
             "font-weight": self.mark.node_labels_style['font-weight'],
             "font-family": self.mark.node_labels_style['font-family'],
@@ -423,31 +336,30 @@ class RenderToytree:
         node_labels_xml = xml.SubElement(
             self.mark_xml, "g",
             attrib={"class": "toytree-NodeLabels"},
-            style=style_to_string(shared_style),
+            style=concat_style_to_str2(shared_style, "stroke:none"),
         )
 
+        # apply unique styles to each node label
         for idx in range(self.mark.nnodes):
-
+            # masked label
             if self.mark.node_mask[idx]:
                 continue
 
+            # get the label
             label = self.mark.node_labels[idx]
-            title = None
-            if self.mark.node_hover is not None:
-                title = self.mark.node_hover[idx]
+            title = None if self.mark.node_hover is None else self.mark.node_hover[idx]
 
-            # self.mark.node_labels_style["text-anchor"] = "start"
-            nlstyle = toyplot.style.combine({
-                "-toyplot-vertical-align": "middle",
-                "text-anchor": "middle",
-                },
-                self.mark.node_labels_style,
-            )
+            # always align node labels in middle of marker (?)
+            default = {
+                "-toyplot-vertical-align": "middle", # baseline not supported.
+                "text-anchor": "middle", # start is another option.
+            }
+            nlstyle = toyplot.style.combine(self.mark.node_labels_style, default)
             render_text(
                 root=node_labels_xml,
                 text=label,
-                x=self.nodes_x[idx],
-                y=self.nodes_y[idx],
+                xpos=self.nodes_x[idx],
+                ypos=self.nodes_y[idx],
                 angle=0,
                 attributes={"class": "toytree-NodeLabel"},
                 style=nlstyle,
@@ -461,61 +373,52 @@ class RenderToytree:
 
         # TipLabels style keys are popped from TipLabel styles, but
         # do not include positioning styles, which must be passed on.
-        shared_style = {"stroke": "none"}
-        if self.mark.tip_labels_style['fill'] is not None:
-            # sets fill and fill-opacity
-            shared_style.update(
-                split_rgba_style({"fill": self.mark.tip_labels_style['fill']}))
-        if self.mark.tip_labels_style['fill-opacity'] is not None:
-            # overrides fill-opacity from splitting fill above
-            shared_style.update(
-                {'fill-opacity': self.mark.tip_labels_style['fill-opacity']})
+        # shared_style = self.mark.tip_labels_style.copy()
 
-        # shared styles popped from text boxes AFTER positioning
-        shared_style.update({
+        # base styles for the <g>, this includes some shared styles 
+        # such as: fill, stroke, but cannot do baseline-shift, 
+        # text-anchor, or anchor-shift (positioning text styles)
+        shared_style = {
             "font-size": self.mark.tip_labels_style['font-size'],
             "font-weight": self.mark.tip_labels_style['font-weight'],
             "font-family": self.mark.tip_labels_style['font-family'],
+            "fill": self.mark.tip_labels_style['fill'],
             "vertical-align": "baseline",
             "white-space": "pre",
-        })
+        }
 
-        # Make the TipLabels group element
+        # Make the <g> TipLabels group element
         tips_xml = xml.SubElement(
             self.mark_xml, "g",
             attrib={"class": "toytree-TipLabels"},
-            style=style_to_string(shared_style),
+            style=concat_style_to_str2(shared_style, "stroke:none"),
         )
 
-        # add tip markers from 0 to ntips
+        # add <text> tip markers from 0 to ntips
         for idx, tip in enumerate(self.mark.tip_labels):
 
-            # align tip at end for tip_labels_align=True
+            # get coordinates of tips
             cxx = self.nodes_x[idx]
             cyy = self.nodes_y[idx]
             if self.mark.tip_labels_align:
                 cxx = self.tips_x[idx]
                 cyy = self.tips_y[idx]
 
-            # assign tip substyle
+            # style dict for this specific <text> string. This needs to
+            # ALSO include the font-size, font-weight, etc., so that we
+            # can calculate ... but then it will be popped from CSS.
             tstyle = self.mark.tip_labels_style.copy()
             if self.mark.tip_labels_colors is not None:
-                colstyle = split_rgba_style({
-                    "fill": self.mark.tip_labels_colors[idx]
-                })
-                tstyle['fill'] = colstyle['fill']
-                # allow style fill-opacity to override
-                if self.mark.tip_labels_style['fill-opacity'] is None:
-                    tstyle['fill-opacity'] = colstyle['fill-opacity']
-            else:
-                tstyle.pop('fill')
-                tstyle.pop('fill-opacity')
+                _ = tstyle.pop("fill", None)
+                tstyle["fill"] = self.mark.tip_labels_colors[idx]
 
             # assign tip layout positioning
             offset = toyplot.units.convert(
                 tstyle["-toyplot-anchor-shift"], "px", "px",
             )
             angles = self.mark.tip_labels_angles[idx]
+
+            # modify angles and shifts for different layouts
             if self.mark.layout in ['l', 'u']:
                 angles = self.mark.tip_labels_angles[idx]
                 tstyle['-toyplot-anchor-shift'] = -offset
@@ -527,15 +430,18 @@ class RenderToytree:
             render_text(
                 root=tips_xml,
                 text=tip,
-                x=cxx,
-                y=cyy,
+                xpos=cxx,
+                ypos=cyy,
                 angle=angles,
                 attributes={"class": "toytree-TipLabel"},
                 style=tstyle,
             )
 
     def mark_align_edges(self):
-        """Create SVG paths for each tip to 0 or radius. """
+        """Create SVG paths for each tip to 0 or radius. 
+        
+        Currently only group styles are suppored for aligned edges.
+        """
         # get paths based on edge type and layout
         if self.mark.tip_labels_align:
             apaths = []
@@ -554,10 +460,7 @@ class RenderToytree:
             self.align_xml = xml.SubElement(
                 self.mark_xml, "g",
                 attrib={"class": "toytree-AlignEdges"},
-                style=style_to_string({
-                    i: j for (i, j) in self.mark.edge_align_style.items()
-                    if j is not None
-                })
+                style=concat_style_to_str2(self.mark.edge_align_style),
             )
 
             # render the edge paths
@@ -783,8 +686,11 @@ class RenderToytree:
 
 
 # HELPER FUNCTIONS ----------------------
-def get_unique_edge_styles(mark):
-    """Reduces node styles to prevent redundancy in HTML."""
+def get_unique_edge_styles(mark) -> List[Dict]:
+    """Return dicts of unique edge stroke or width or each Node
+
+    Reduces node styles to prevent redundancy in HTML.
+    """
     # minimum styling of node markers
     unique_styles = [{} for i in range(mark.etable.shape[0])]
 
@@ -799,106 +705,59 @@ def get_unique_edge_styles(mark):
             unique_styles[idx]['stroke-width'] = mark.edge_widths[idx]
 
         if mark.edge_colors is not None:
-            subd = split_rgba_style({'stroke': mark.edge_colors[idx]})
-            unique_styles[idx]['stroke'] = subd['stroke']
-            if mark.edge_style['stroke-opacity'] is None:
-                unique_styles[idx]['stroke-opacity'] = subd['stroke-opacity']
+            unique_styles[idx]['stroke'] = mark.edge_colors[idx]
+    return unique_styles
+
+def get_unique_node_styles(mark) -> List[Dict]:
+    """Return dicts of unique styles (colors) for each Node."""
+    unique_styles = [{} for i in range(mark.nnodes)]
+
+    # only if variable tho
+    if mark.node_colors is None:
+        return unique_styles
+
+    # get fill which will be split later into rgb, a
+    for idx in range(mark.nnodes):
+        unique_styles[idx]['fill'] = mark.node_colors[idx]
     return unique_styles
 
 
-def split_rgba_style(style):
-    """Split rgba to rgb and opacity.
+def test1():
+    tree = toytree.rtree.rtree(8, seed=123)
+    kwargs = dict(
+        ts='p',
+        layout='r', #'c0-95',
+        tip_labels_align=True,
+        edge_type='p',
+        width=400,
+        height=400,
+        node_sizes=18,
+        node_colors=None,
+        node_mask=False,
+        node_hover=True,
+        node_labels=True,
+        node_labels_style={"font-size": 15, "fill": "black"},
+        edge_style={"stroke-width": 3.5},
+        node_style={"stroke-width": 2},
+        tip_labels_style={"font-size": 15, "-toyplot-anchor-shift": 15},
+        # tip_labels_colors=[toytree.color.COLORS1[i] for i in range(tree.ntips)],
+        # edge_colors=['red'] + [toytree.color.COLORS1[0]] + ['black'] * (tree.nnodes - 2),
+    )
+    tree._draw_browser(**kwargs)
 
-    Because many applications (Inkscape, Adobe Illustrator, Qt) don't handle
-    CSS rgba() colors correctly this function does a work-around.
-    Takes a CSS color in rgba, e.g., 'rgba(40.0%,76.1%,64.7%,1.000)'
-    labeled in a dictionary as {'fill': x, 'fill-opacity': y} and
-    returns with fill as rgb and fill-opacity from rgba or clobbered
-    by the fill-opacity arg. Similar functionality for stroke, stroke-opacity.
-
-    TODO: move this to the Color module?
-    """
-    if "fill" in style:
-        color = style['fill']
-        try:
-            color = toyplot.color.css(color)
-        except (TypeError, AttributeError):
-            # print(type(color), color)
-            pass
-
-        if str(color) == "none":
-            style["fill"] = "none"
-            style["fill-opacity"] = 1.0
-        else:
-            rgb = "rgb({:.3g}%,{:.3g}%,{:.3g}%)".format(
-                color["r"] * 100,
-                color["g"] * 100,
-                color["b"] * 100,
-            )
-            style["fill"] = rgb
-            style["fill-opacity"] = str(color["a"])
-
-
-    if "stroke" in style:
-        color = style['stroke']
-        try:
-            color = toyplot.color.css(color)
-        except (TypeError, AttributeError):
-            # print(type(color), color)
-            pass
-
-        if str(color) == "none":
-            style["stroke"] = "none"
-            style["stroke-opacity"] = 1.0
-        else:
-            rgb = "rgb({:.3g}%,{:.3g}%,{:.3g}%)".format(
-                color["r"] * 100,
-                color["g"] * 100,
-                color["b"] * 100,
-            )
-            style["stroke"] = rgb
-            style["stroke-opacity"] = str(color["a"])
-    return style
-
-
-def style_to_string(style):
-    """Return a style dict as a style string.
-
-    Example
-    -------
-    >>> x = {'fill': 'rgb(100%,0%,0%)', 'fill-opacity': 1.0}
-    >>> print(style_to_string(x))
-    >>> # 'fill:rgb(100%,0%,0%);fill-opacity:1.0'
-    """
-    strs = [f"{key}:{value}" for key, value in sorted(style.items())]
-    return ";".join(strs)
-
+def test2():
+    # generate a random species tree with 10 tips and a crown age of 10M generations
+    tree = toytree.rtree.unittree(10, treeheight=1e6, seed=123)
+    # create a new tree copy with Ne values mapped to nodes
+    vtree = tree.set_node_data(
+        feature="Ne",
+        mapping={i: 2e5 for i in (6, 7, 8, 9, 12, 15, 17)},
+        default=1e4,
+    )
+    vtree._draw_browser(ts='p', )#admixture_edges=[(0, 12, 0.5, {}, "word")]);
 
 if __name__ == "__main__":
 
-    import ipcoal
     import toytree
-    toytree.set_log_level("INFO")
-
-    # generate a random species tree with 10 tips and a crown age of 10M generations
-    # tree = toytree.rtree.unittree(10, treeheight=1e6, seed=123)
-    # # create a new tree copy with Ne values mapped to nodes
-    # vtree = tree.set_node_data(
-    #     feature="Ne",
-    #     mapping={i: 2e5 for i in (6, 7, 8, 9, 12, 15, 17)},
-    #     default=1e4,
-    # )
-    # vtree._draw_browser(ts='p', admixture_edges=[(0, 12, 0.5, {}, "word")]);
-
-    tree = toytree.rtree.unittree(5, seed=123)
-    kwargs = dict(
-        ts='p',
-        layout='c0-95',
-        edge_type='p',
-        width=800,
-        node_sizes=0,
-        node_mask=False,
-        tip_labels_style={"font-size": 14, "-toyplot-anchor-shift": 10},
-        edge_colors=['red'] + ['blue'] + ['black'] * (tree.nnodes - 2),
-    )
-    tree._draw_browser(**kwargs)
+    toytree.set_log_level("DEBUG")
+    test2()

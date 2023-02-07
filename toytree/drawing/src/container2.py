@@ -2,6 +2,11 @@
 
 """Rewrite of the container drawing class.
 
+TODO
+----
+This would be much better/easier to develop if I first developed a
+polygon marker type in the style of toyplot.
+
 Note
 ----
 Ne values are fixed within intervals. The steps to drawing are:
@@ -13,24 +18,28 @@ creating an Interval for each tip in a cherry, and for their ancestor.
 The end positions of the tips is designed to lean towards their parent, 
 whose positionCreate a new Interval for the cherry parent.
 
-
+Ideas
+------
+container = mark (square, angled, styled?)
+embedding = mark (must fit within container?, allow migration?)
 """
 
 # pylint: disable=invalid-name
 
 from __future__ import annotations
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, TypeVar
 from functools import cached_property
 from dataclasses import dataclass, field
 from loguru import logger
 import numpy as np
 
-from toytree.utils.transform import normalize_values
-import toytree
 import toyplot
 import ipcoal
+from toytree.utils.transform import normalize_values
+import toytree
 
 logger = logger.bind(name="toytree")
+ToyTree = TypeVar("ToyTree")
 
 
 @dataclass
@@ -95,14 +104,14 @@ class Interval:
     @cached_property
     def xt0(self):
         """Return the left x-position on the upper bound"""
-        if self.left:
+        if not self.left:
             return self.up.xmid - self.width
         return self.up.xmid
 
     @cached_property
     def xt1(self):
         """Return the right x-position on the upper bound"""
-        if self.left:
+        if not self.left:
             return self.up.xmid
         return self.up.xmid + self.width
 
@@ -174,8 +183,10 @@ class Interval:
 class Container:
     """Container to visualize a genealogy embedded in a species tree.
 
-    A container drawing is composed of multiple Interval class 
-    instances that each have coordinates 
+    A Container drawing is composed of multiple Interval class 
+    instances that each have coordinates, and reference each other
+    in a tree structure (.up, .children), and can be accessed from
+    the Container's .intervals dict.
 
     Parameters
     ----------
@@ -200,11 +211,11 @@ class Container:
 
     # Attributes
     intervals: Dict[int, Interval] = field(default_factory=dict, init=False)
-    """Dict of Interval class objects used for coordinates."""
+    """: Dict of Interval class objects used for coordinates."""
     min_width: int = 2
-    """Minimum width of an interval, used to help fit drawing on canvas."""
+    """: Minimum width of an interval, used to help fit drawing on canvas."""
     max_width: int = 8
-    """Maximum width of an interval, used to help fit drawing on canvas."""    
+    """: Maximum width of an interval, used to help fit drawing on canvas."""    
 
     def __post_init__(self):
         """Assign coordinates to Intervals in the species tree model.
@@ -220,7 +231,7 @@ class Container:
         )
 
         # traverse in idx order (tips then post-order for internal)
-        for idx, node in enumerate(tree):
+        for idx, node in enumerate(self.model.tree):
 
             # tips get x-position from widths starting from zero, whereas
             # internal nodes get their midpoint from child nodes and then
@@ -230,11 +241,7 @@ class Container:
                 xmid = sum(xmids) / len(xmids)
                 xpos = xmid - (widths[idx] / 2.)
             else:
-                if not idx:
-                    xpos = 0
-                else:
-                    last_interval = self.intervals[idx - 1]
-                    xpos = last_interval.xb1 + self.spacer
+                xpos = 0 if not idx else self.intervals[idx - 1].xb1 + self.spacer
 
             # store the interval
             self.intervals[idx] = Interval(
@@ -257,7 +264,9 @@ class Container:
 
 
     def draw(self, stripe: bool=False, **kwargs: dict):
-        """Return a toyplot drawing of the container."""
+        """Return a toyplot drawing of the container.
+
+        """
         # setup canvas and axes
         canvas = toyplot.Canvas(
             width=kwargs.pop('width', 400), 
@@ -274,9 +283,9 @@ class Container:
             # hover-over information for interval
             title = (
                 f"idx={idx}\n"
-                f"Ne={ival.neff:.0f}\n"
-                f"Tc={ival.height / (2 * ival.neff):.3f}\n"
-                f"Tg={ival.height:.0f}"
+                f"Ne={ival.neff:.2g}\n"
+                f"Tc={ival.height / (2 * ival.neff):.3g}\n"
+                f"Tg={ival.height:.2g}"
             )
 
             # optional alternating stripes of color opacity
@@ -292,7 +301,7 @@ class Container:
                     kwargs['opacity'] = opacity / 2
                     ival.tone = 'light'
 
-            # draw the root (no angle)
+            # draw the root (no angle) as 20% of treeheight by default.
             if not ival.up:
                 temp_height = self.model.tree.treenode.height * 0.2
                 mark = axes.fill(
@@ -341,6 +350,7 @@ class Container:
         return canvas, axes, marks
 
 
+@dataclass
 class Embedding:
     r"""Sample points within bounds to connect lower to upper edge.
 
@@ -356,17 +366,36 @@ class Embedding:
     Sample points at N intervals across the entire tree, then 
     """
     xs_start: np.ndarray
+    """: X-position of nodes at base of interval."""
     xs_end: np.ndarray
+    """: X-position of nodes at top of interval."""
     y_pos: np.ndarray
+    """: Y-position of nodes at base of interval."""
+    def __post_init__(self):
+        self.xs_start = np.linspace(..., ...)
+        # this takes into account sampled from sister edge.
+        self.xs_end = np.linspace(..., ...)
+
+class GeneTree:
+    """Embed a gene tree in a container.
+
+    This ...
+    """
+    tree: ToyTree
 
 
 if __name__ == "__main__":
 
     toytree.set_log_level("INFO")
 
-    tree = toytree.rtree.unittree(ntips=5, treeheight=1e6, seed=123)
+    tree = toytree.rtree.unittree(ntips=4, treeheight=1e6, seed=123)
+    tree = tree.mod.edges_slider(seed=333)
     model = ipcoal.Model(tree, Ne=1e5)
     model.sim_trees(5)
 
-    con = Container(model, idx=0)
+    con = Container(model, idx=0, blend=True)
     print(con.intervals)
+
+    c, a, m = con.draw(width=500, height=350, color='black', stripe=True, opacity=0.33);
+    a.x.show = True    
+    toytree.utils.show(c)

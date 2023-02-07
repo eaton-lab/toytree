@@ -7,8 +7,8 @@ import toyplot
 
 
 class GridSetup:
-    """Return Canvas and Cartesian axes objects to fit a grid of trees.
-    """
+    """Return Canvas and Cartesian axes objects to fit a grid of trees."""
+
     def __init__(
         self,
         nrows,
@@ -19,7 +19,7 @@ class GridSetup:
         margin,
         padding,
         scale_bar,
-        ):
+    ):
 
         # style args can include height/width, nrows, ncols, shared,...
         self.nrows = nrows
@@ -56,10 +56,10 @@ class GridSetup:
                 if self.nrows == 1:
                     margin = [50, 10, 50, 30]
                     # else:
-                        # margin = [50, 20, 50, 20]
+                    # margin = [50, 20, 50, 20]
                 else:
                     margin = [30, 30, 30, 30]
-                    row, _ = np.where(grid==idx)
+                    row, _ = np.where(grid == idx)
                     if row == 0:
                         margin[0] += 10
                         margin[2] -= 10
@@ -82,7 +82,6 @@ class GridSetup:
             axes.margin = margin
             self.axes.append(axes)
 
-
     def get_tree_dims(self):
         """
         get height and width if not set by user
@@ -91,22 +90,14 @@ class GridSetup:
         if self.layout in ("d", "u"):
             minx = 225
             miny = 250
-            self.width = (
-                self.width if self.width else min(750, minx * self.ncols)
-            )
-            self.height = (
-                self.height if self.height else min(750, miny * self.nrows)
-            )
+            self.width = self.width if self.width else min(750, minx * self.ncols)
+            self.height = self.height if self.height else min(750, miny * self.nrows)
 
         else:
             minx = 250
             miny = 225
-            self.height = (
-                self.height if self.height else min(750, minx * self.nrows)
-            )
-            self.width = (
-                self.width if self.width else min(750, miny * self.ncols)
-            )
+            self.height = self.height if self.height else min(750, minx * self.nrows)
+            self.width = self.width if self.width else min(750, miny * self.ncols)
 
 
 class CanvasSetup:
@@ -116,6 +107,7 @@ class CanvasSetup:
     Canvas already exists a set of axes can be entered, instead of
     being generated anew.
     """
+
     def __init__(self, tree, axes, style):
 
         # args includes axes
@@ -148,14 +140,12 @@ class CanvasSetup:
                 # get number of nodes from farthest leaf to root
                 ndists = self.tree.distance.get_node_distance_matrix(True)
                 theight = ndists[self.tree.treenode.idx].max()
-            style_ticks(theight, self.axes, self.style, True)
-
+            set_axes_ticks_style(theight, self.axes, self.style, True)
 
     def get_canvas_height_and_width(self):
         """Calculate default canvas height&width given N tips and style."""
         if self.style.layout[0] == "c":
-            radius = max(
-                [0] + [i for i in [self.style.height, self.style.width] if i])
+            radius = max([0] + [i for i in [self.style.height, self.style.width] if i])
             if not radius:
                 radius = 400
             self.style.width = self.style.height = radius
@@ -173,7 +163,6 @@ class CanvasSetup:
             if not self.style.width:
                 self.style.width = max(350, min(1000, 18 * self.tree.ntips))
 
-
     def get_canvas_and_axes(self):
         """Sets canvas and axes with dimensions and padding."""
         if self.axes is not None:
@@ -184,17 +173,15 @@ class CanvasSetup:
                 height=self.style.height,
                 width=self.style.width,
             )
-            self.axes = self.canvas.cartesian(
-                padding=self.style.padding
-            )
+            self.axes = self.canvas.cartesian(padding=self.style.padding)
 
 
-def style_ticks(
+def set_axes_ticks_style(
     tree_height: float,
-    axes: 'toyplot.coordinates.Cartesian',
-    style: 'toytree.core.style.tree_style.TreeStyle',
-    only_inside: bool=True,
-    ) -> 'toyplot.coordinates.Cartesian':
+    axes: "toyplot.coordinates.Cartesian",
+    style: "toytree.core.style.tree_style.TreeStyle",
+    only_inside: bool = True,
+) -> "toyplot.coordinates.Cartesian":
     """Return a toyplot Cartesian object with custom tick marks.
 
     This gets tick locations first using toyplot.locator.Extended and
@@ -251,7 +238,7 @@ def style_ticks(
         labels = abs(locs / style.scale_bar)
     else:
         labels = abs(locs.copy())
-    labels = [np.format_float_positional(i, precision=6, trim='-') for i in labels]
+    labels = [np.format_float_positional(i, precision=6, trim="-") for i in labels]
 
     # set the ticks locator
     if style.layout in ("r", "l"):

@@ -9,25 +9,26 @@ The `draw_toytree` func does the following:
     - ToyTreeMark to generate and return the tree drawing.
 """
 
-from typing import Tuple, TypeVar, Optional, Sequence
+from typing import Tuple, TypeVar
 from copy import deepcopy
 from loguru import logger
-from toytree.core.layout import (
-    BaseLayout, LinearLayout, CircularLayout, UnrootedLayout)
-from toytree.core.style import TreeStyle, SubStyle, get_base_style_from_name
-from toytree.core.drawing.render import ToytreeMark
-from toytree.core.drawing.canvas_setup import CanvasSetup
+from toytree.layout import BaseLayout, LinearLayout, CircularLayout, UnrootedLayout
+from toytree.drawing import ToytreeMark, CanvasSetup
+from toytree.style import (
+    TreeStyle, SubStyle, get_base_tree_style_by_name, validate_style
+)
+
 # from toytree.utils import ToytreeError
 
 ToyTree = TypeVar("ToyTree")
 logger = logger.bind(name="toytree")
 
 
-def draw_toytree(**kwargs) -> Tuple['Canvas', 'Cartesian', 'Mark']:
+def draw_toytree(**kwargs) -> Tuple["Canvas", "Cartesian", "Mark"]:
     """Parse arguements to draw function and return drawing objects.
 
     The drawing style arguments can be entered in two ways, either
-    by modifying attributes of the `.style` dict-like object linked 
+    by modifying attributes of the `.style` dict-like object linked
     to a ToyTree, or by providing parameter arguments to the `.draw`
     function. The latter type overrides any values in the `.style`
     settings, and similarly, if a `tree_style` argument is used this
@@ -55,14 +56,15 @@ def draw_toytree(**kwargs) -> Tuple['Canvas', 'Cartesian', 'Mark']:
     if extra_kwargs:
         logger.warning(
             f"Unrecognized arguments skipped: {list(extra_kwargs)}."
-            "\nCheck the docs, argument names may have changed.")
+            "\nCheck the docs, argument names may have changed."
+        )
 
     # get a TreeStyle (as new basestyle or tree.style) and update with draw kwargs
     style = get_tree_style(tree, **kwargs)
 
-    # get a Layout with coordinates projected based on style 
+    # get a Layout with coordinates projected based on style
     layout = get_layout(
-        tree=tree, 
+        tree=tree,
         style=style,
         fixed_order=kwargs.pop("fixed_order"),
         fixed_position=kwargs.pop("fixed_position"),
@@ -73,7 +75,7 @@ def draw_toytree(**kwargs) -> Tuple['Canvas', 'Cartesian', 'Mark']:
         style.tip_labels_angles = layout.angles
 
     # check all styles and expand in-place to array values for all nodes
-    style.validate(tree=tree)
+    validate_style(tree, style)
 
     # get canvas and axes
     csetup = CanvasSetup(tree, axes, style)
@@ -82,18 +84,17 @@ def draw_toytree(**kwargs) -> Tuple['Canvas', 'Cartesian', 'Mark']:
 
     # generate toyplot Mark. Style is already validated.
     mark = ToytreeMark(
-        ntable=layout.coords, 
-        etable=tree._get_edges(),
-        **style.dict(False, False, True)
+        ntable=layout.coords, etable=tree._get_edges(), **style.dict(serialize=False)
     )
 
     # add mark to axes
     axes.add_mark(mark)
     return canvas, axes, mark
 
-def get_tree_style(tree: ToyTree, **kwargs):
+
+def get_tree_style(tree: ToyTree, **kwargs) -> TreeStyle:
     """Return a style class object updated by user-args.
-    
+
     If a `tree_style` arg was entered this overrides the default
     base style. Any additional style options in kwargs are applied
     on top of the base style.
@@ -103,11 +104,11 @@ def get_tree_style(tree: ToyTree, **kwargs):
         kwargs["tree_style"] = kwargs.pop("ts")
 
     # get new TreeStyle from entered key (e.g., 's')
-    if kwargs.get('tree_style'):
-        style = get_base_style_from_name(kwargs['tree_style'][0])
+    if kwargs.get("tree_style"):
+        style = get_base_tree_style_by_name(kwargs["tree_style"][0])
     # get new TreeStyle from the key in .style (e.g., 'n')
     elif tree.style.tree_style is not None:
-        style = get_base_style_from_name(tree.style.tree_style)
+        style = get_base_tree_style_by_name(tree.style.tree_style)
     # use existing TreeStyle in .style (no overwrite of base style)
     else:
         style = deepcopy(tree.style)
@@ -139,30 +140,30 @@ def get_tree_style(tree: ToyTree, **kwargs):
                     setattr(substyle, sub_key, sub_value)
                 else:
                     logger.warning(
-                        f"Unrecognized substyle drawing arg skipped: {sub_key}")
+                        f"Unrecognized substyle drawing arg skipped: {sub_key}"
+                    )
     return style
 
-def get_layout(
-    tree: ToyTree, 
-    style: TreeStyle,
-    fixed_order: Optional[Sequence[str]] = None,
-    fixed_position: Optional[Sequence[int]] = None,
-    ) -> BaseLayout:
-    """Return a Layout class object given a tree, style, and optional 
+
+def get_layout(tree: ToyTree, style: TreeStyle, **kwargs) -> BaseLayout:
+    """Return a Layout class object given a tree, style, and optional
     positional constraints.
     """
     # return a linear layout
-    if style.layout in 'rlud':
-        return LinearLayout(tree, style, fixed_order, fixed_position)
+    if style.layout in "rlud":
+        return LinearLayout(
+            tree, style, 
+            kwargs.get("fixed_order"), kwargs.get("fixed_position")
+        )
 
     # warn user that positional constraints are only for linear layouts
-    if fixed_order is not None:
+    if kwargs.get("fixed_order") is not None:
         logger.warning(f"`fixed_order` has no effect on `{style.layout}` layout.")
-    if fixed_position is not None:
-        logger.warning(f"`fixed_position` has no effect on `{style.layout}` layout.")        
+    if kwargs.get("fixed_position") is not None:
+        logger.warning(f"`fixed_position` has no effect on `{style.layout}` layout.")
 
     # return circular or unrooted layout
-    if style.layout[0] == 'c':
+    if style.layout[0] == "c":
         return CircularLayout(tree, style)
 
     # anything else is unrooted (None, etc.)
@@ -172,4 +173,8 @@ def get_layout(
 
 
 if __name__ == "__main__":
-    pass
+
+    import toytree
+    toytree.set_log_level("DEBUG")
+    tre = toytree.rtree.unittree(10)
+    tre._draw_browser(edge_style={"stroke-width": 5})
