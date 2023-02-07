@@ -14,6 +14,7 @@ Palette = TypeVar("Palette")
 COLORS1 = toyplot.color.brewer.palette("Set2")
 COLORS2 = toyplot.color.brewer.palette("Dark2")
 
+
 def color_cycler(palette: Optional[Palette]=None):
     """Return an infinite cycling iterator over colors in a palette.
 

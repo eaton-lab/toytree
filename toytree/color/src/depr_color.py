@@ -19,7 +19,7 @@ import numpy as np
 import toyplot
 import toyplot.color
 import pandas as pd
-from toytree.core.drawing.render import style_to_string
+# from toytree.drawing.render import style_to_string
 from toytree.utils import ToytreeError
 
 Palette = TypeVar("Palette")
