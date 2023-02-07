@@ -3,18 +3,18 @@
 """Data transformations for formatting node values nicely.
 """
 
+from typing import Sequence, Any
 from copy import deepcopy
 import numpy as np
-import pandas as pd
 from numpy.typing import ArrayLike
 from toytree.utils import ToytreeError
 
 
 def normalize_values(
-    values: pd.Series,
-    nbins: int=10,
+    values: Sequence[Any],
     min_value: int=2,
     max_value: int=12,
+    nbins: int=10,    
     ) -> ArrayLike:
     """Distribute values into bins spaced at reasonable sizes for plotting.
 
@@ -25,7 +25,7 @@ def normalize_values(
     TODO: get_node_data dtype setting..
     """
     # missing values are not allowed
-    if values.isna().any():
+    if np.isnan(values).any():
         raise ToytreeError(
             f"missing values are not allowed:\n{values}.")
 
@@ -67,4 +67,6 @@ if __name__ == "__main__":
         default=1e4,
     )
 
-    vtree._draw_browser(ts='p', admixture_edges=[(0, 12, 0.5, {'stroke': 'red'}, "hello")]);
+    print(vtree.get_node_data())
+    print(normalize_values(vtree.get_node_data("Ne"))) 
+    # vtree._draw_browser(ts='p', admixture_edges=[(0, 12, 0.5, {'stroke': 'red'}, "hello")]);
