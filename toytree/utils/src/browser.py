@@ -19,7 +19,6 @@ def show(canvases, title="toytree", new: bool=False):
     new: bool
         If True then a new window will be opened.
     """
-
     import os
     import tempfile
     import toyplot.canvas
