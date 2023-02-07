@@ -6,6 +6,7 @@ Container trees for plotting coalescent histories with demographic params
 
 from dataclasses import dataclass
 import numpy as np
+import pandas as pd
 import toyplot
 import toytree
 from toytree.core.tree import ToyTree
@@ -61,7 +62,7 @@ class Container:
             self.tree = self.model.tree.copy()
             # raise an error if no genealogies simulated...?
             self.gtree = toytree.tree(self.model.df.genealogy[idx])
-            self.gtree = self.gtree.mod.make_ultrametric()
+            self.gtree = self.gtree.mod.edges_extend_tips_to_align()
 
         # get idx to Ne map from tree, or from model if not on tree.
         try:
@@ -72,7 +73,7 @@ class Container:
 
         # normalize Ne values for plotting widths
         normalized_widths = toytree.utils.transform.normalize_values(
-            np.sqrt(list(self.nes.values())),
+            pd.Series(np.sqrt(list(self.nes.values()))),
             10, 2, 8,
         )
         self.nes = dict(zip(self.nes.keys(), normalized_widths))
@@ -82,8 +83,8 @@ class Container:
         self._set_tip_xranges()
 
         # get colors for each spp
-        color_cycle = toytree.color_cycler()
-        self.colors = [next(color_cycle) for i in range(len(self.tree))]
+        color_cycle = toytree.color.color_cycler()
+        self.colors = [next(color_cycle) for i in range(self.tree.ntips)]
 
         # store blocks coordinates
         self.blocks = {}
@@ -166,7 +167,7 @@ class Container:
         xtext = {i: np.mean([j.xb0, j.xb1]) for (i, j) in self.blocks.items()}
         self.axes.text(
             [xtext[i] for i in range(self.tree.ntips)],
-            np.repeat(0, len(self.tree)),
+            np.repeat(0, self.tree.ntips),
             self.tree.get_tip_labels(),  # range(len(self.tree)),
             color="#262626", 
             style={"baseline-shift": "-18px"}
@@ -186,7 +187,8 @@ class Container:
             i.idx: tip2idx[i.name.split("_")[0]] for i in 
             self.gtree.get_feature_dict() if i.is_leaf()
         }
-        self.gtree = self.gtree.set_node_data("inside", mapping=gidx2spidx)
+        self.gtree = self.gtree.set_node_data("inside", mapping=gidx2spidx, default=0)
+        print(self.gtree.get_node_data())
 
         # store coalescences coordinates
         self.node_xs = []
@@ -477,6 +479,7 @@ class Pair:
         self.nes = con.nes
         self.tree = con.tree
         self.ndict = self.tree.get_feature_dict("idx")
+        print(self.ndict)
 
         # get children idxs sorted by xrange
         nodes = sorted(
@@ -493,8 +496,8 @@ class Pair:
         self.block1 = Block()
 
         # get vertex where these sisters meet (+x from child 0's right)
-        desc = self.tree.get_node_descendant_idxs(self.node0.idx)
-        vert = max([self.ndict[i].xrange[1] for i in desc]) + con.spacer / 2
+        desc = self.node0.get_descendants()
+        vert = max([self.ndict[i.idx].xrange[1] for i in desc]) + con.spacer / 2
 
         # set block0 vertices
         self.block0.xt1 = vert
@@ -629,4 +632,13 @@ class Wiggle:
 
 
 if __name__ == "__main__":
-    pass
+    
+    import ipcoal
+    import toyplot.browser
+
+    tree = toytree.rtree.unittree(2, treeheight=500_000)
+    model = ipcoal.Model(tree=tree, nsamples=10, Ne=1000)
+    model.sim_trees(5)
+    # print(model.df)
+    c = Container(model, idx=0)
+    # toyplot.browser.show(c)

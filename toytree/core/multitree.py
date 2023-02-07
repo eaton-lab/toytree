@@ -41,14 +41,13 @@ from typing import (
     Union, List, Sequence, Optional, Tuple, TypeVar, Iterator)
 from copy import deepcopy
 import numpy as np
-import pandas as pd
+# import pandas as pd
 from loguru import logger
 from toytree.core.tree import ToyTree
 from toytree.core.tree import Node
-from toytree.core.style import TreeStyle, get_base_style_from_name
-from toytree.core.drawing.canvas_setup import GridSetup, CanvasSetup
+from toytree.style import TreeStyle, get_base_tree_style_by_name
+from toytree.drawing import CanvasSetup, GridSetup, set_axes_ticks_style
 # from toytree.core.drawing.render import ToytreeMark
-from toytree.core.drawing.canvas_setup import style_ticks
 from toytree.infer.src.consensus import ConsensusTree
 # from toytree.utils import ToytreeError
 
@@ -494,9 +493,9 @@ class MultiTree:
 
         # get layout first from direct arg then from treestyle
         if "ts" in kwargs:
-            layout = get_base_style_from_name(kwargs.get("ts")).layout
+            layout = get_base_tree_style_by_name(kwargs.get("ts")).layout
         elif "tree_style" in kwargs:
-            layout = get_base_style_from_name(kwargs.get("ts")).layout
+            layout = get_base_tree_style_by_name(kwargs.get("ts")).layout
         else:
             layout = kwargs.get("layout", 'r')
 
@@ -547,7 +546,7 @@ class MultiTree:
                 mark.width = canvas.width / ncols
                 mark.height = canvas.height / nrows
                 mark.scale_bar = kwargs.get("scale_bar", False)
-                style_ticks(ymax, grid.axes[idx], mark, only_inside=True)
+                set_axes_ticks_style(ymax, grid.axes[idx], mark, only_inside=True)
 
                 # add an invisible spacer point. This does a much
                 # better job than setting ticks alone.

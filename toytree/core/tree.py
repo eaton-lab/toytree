@@ -24,15 +24,14 @@ from toyplot import Canvas
 from toyplot.coordinates import Cartesian
 
 # subpackage object APIs
-from toytree.core.style import TreeStyle
+from toytree.style import TreeStyle
 from toytree.mod._src.api import TreeModAPI
 from toytree.distance._src.api import DistanceAPI
 
 from toytree import enumeration
 from toytree.core.node import Node
+from toytree.drawing import ToytreeMark, draw_toytree, get_layout, get_tree_style
 from toytree.utils import ToytreeError
-from toytree.core.drawing.render import ToytreeMark
-from toytree.core.drawing.draw_toytree import draw_toytree, get_layout, get_tree_style
 import toytree
 # from toytree.io.src.writer import write_newick
 # from toytree.pcm.api import PhyloCompAPI
@@ -592,9 +591,9 @@ class ToyTree:
     def get_node_mask(
         self,
         *unmask: Query,
-        tips: bool=True,
-        internal: bool=False,
-        root: bool=False,
+        mask_tips: bool=True,
+        mask_internal: bool=False,
+        mask_root: bool=False,
         ) -> Sequence[bool]:
         """Return a boolean array to mask certain Nodes when drawing.
 
@@ -608,13 +607,14 @@ class ToyTree:
         Parameters
         ----------
         *unmask: int or str
-            Additional Nodes selected by int or str labels will be
-            unmasked after applying the tips, internal, and root mask.
-        tips: bool
+            Any Nodes selected by int or str labels will be unmasked 
+            (shown). If selected, this overrides their inclusion in 
+            mask_tips, mask_internal, or mask_root.
+        mask_tips: bool
             If True all tip Nodes will be masked.
-        internal: bool
+        mask_internal: bool
             If True all internal Nodes will be masked.
-        root: bool
+        mask_root: bool
             If True the root Node will be masked.
 
         Examples
@@ -624,11 +624,11 @@ class ToyTree:
         >>> tree.draw(ts='s', node_mask=mask);
         """
         arr = np.zeros(self.nnodes, dtype=bool)
-        if tips:
+        if mask_tips:
             arr[:self.ntips] = 1
-        if internal:
+        if mask_internal:
             arr[self.ntips:-1] = 1
-        if root:
+        if mask_root:
             arr[-1] = 1
         if unmask:# != ():
             for node in self.get_nodes(*unmask):
@@ -1350,8 +1350,8 @@ class ToyTree:
         feature: Union[str, Sequence[str], None] = None,
         missing: Union[Any, Sequence[Any], None] = None,
         ) -> Union[pd.DataFrame, pd.Series]:
-        """Return a DataFrame with values for one or more selected
-        features from every node in the tree.
+        """Return a pandas Series or DataFrame with values for one or 
+        more selected features in the tree.
 
         Parameters
         ----------
@@ -1360,13 +1360,13 @@ class ToyTree:
         missing: Any, Iterable[Any], or None
             A value to use for missing data (nodes that do not have
             the feature). Default arg is None which will automatically
-            select a missing value based on the data type. Example:
+            impute a missing value based on the data type. Example:
             "" for str type, np.nan for numeric or complex types.
             Any value can be entered here to replace missing data.
 
         Returns
         -------
-        data: pd.DataFrame or pd.Series
+        pd.DataFrame or pd.Series
             If a single feature is selected then a pd.Series will be
             returned with tip node 'idx' attributes as the index.
             If multiple features are selected (or None, which selects
@@ -1460,7 +1460,14 @@ class ToyTree:
             ofeat = []
             miss = missing[fidx]
             for nidx in range(self.nnodes):
-                ofeat.append(getattr(self[nidx], feat, miss))
+                value = getattr(self[nidx], feat, miss)
+                # if the actual value is nan then replace with miss
+                try:
+                    if np.isnan(value):
+                        value = miss
+                except (TypeError, ValueError):
+                    pass
+                ofeat.append(value)
 
             # allow pandas to infer dtype
             series = pd.Series(ofeat)
