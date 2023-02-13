@@ -34,6 +34,7 @@ from copy import deepcopy
 from loguru import logger
 import numpy as np
 from toytree.color import ToyColor
+from toytree.utils import ToytreeError
 from toytree.style.src.sub_styles import (
     NodeStyle, NodeLabelStyle, EdgeStyle, EdgeAlignStyle, TipLabelsStyle
 )
@@ -146,7 +147,18 @@ def serialize_style(key: str, value: Any) -> Any:
 
     # convert colors to serialized form for ...
     if ("color" in key) or (key in ['fill', 'stroke']):
-        col = ToyColor.color_expander(value)
+        try:
+            col = ToyColor.color_expander(value)
+        # exception to allow (feat, colormap) tuple shortcut
+        except ToytreeError as inst:
+            try:
+                if not (isinstance(value, tuple) and len(value) == 2):
+                    raise inst
+                # NOTE: THIS IS ONLY SERIALIZED TO THE OBJECT REPR
+                return (value[0], str(value[1])) # return (feat, colormap)
+            except TypeError:
+                raise inst
+
         if isinstance(col, ToyColor):
             value = col.css
         else:
