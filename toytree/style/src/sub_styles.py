@@ -31,6 +31,7 @@ class SubStyle:
     def __delattr__(self, key) -> None:
         raise ToytreeError("TreeStyle dict keys cannot be deleted.")
 
+    # TOO SLOW TO CHECK EVERY STYLE AS IT IS SET. CHECKED ONLY ON VALIDATION.
     # def __setattr__(self, key: str, value) -> None:
     #     """ColorTypes are always converted to XXX"""
     #     if key in ["fill", "stroke"]:
@@ -45,6 +46,7 @@ class NodeStyle(SubStyle):
         self.fill_opacity: float = None
         self.stroke: ColorType = "#262626"
         self.stroke_width: float = 1.5
+        self.stroke_opacity: float = None
 
 
 class NodeLabelStyle(SubStyle):
@@ -54,6 +56,7 @@ class NodeLabelStyle(SubStyle):
         self.font_weight: int = 300
         self.font_family: str = "Helvetica"
         self._toyplot_anchor_shift: Union[str, int] = 0
+        # self.anchor_shift: Union[str, int] = 0 # TODO: this would be nice...
         self.baseline_shift: Union[str, int] = 0
         self.text_anchor: str = "middle"
 
@@ -81,11 +84,12 @@ class TipLabelsStyle(SubStyle):
         self.fill: ColorType = "rgba(16.1%,15.3%,14.1%,1.000)"
         self.fill_opacity: Optional[float] = None
         self.font_size: Union[str, float] = 11
-        self.font_weight: int = 300
-        self.font_family: str = "Helvetica"
         self._toyplot_anchor_shift: Union[str, float] = 15
         self.baseline_shift: Union[str, int] = 0
         self.text_anchor: str = "start"
+        # TODO: remove these but allow them to be modified if needed?
+        self.font_weight: int = 300
+        self.font_family: str = "Helvetica"
 
 
 if __name__ == "__main__":
