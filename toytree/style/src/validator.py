@@ -39,12 +39,28 @@ def get_color_mapped_feature(values, cmap) -> np.ndarray:
     # select map from str name and check that Map is valid.
     if isinstance(cmap, str):
         cmap = toyplot.color.brewer.map(cmap)
-    assert isinstance(cmap, toyplot.color.Map), (
-        f"colormap ({cmap}) entered as (feature, cmap) is not a "
-        "valid toyplot.color.Map.")
+    if not isinstance(cmap, toyplot.color.Map):
+        raise TypeError(
+            f"colormap ({cmap}) entered as (feature, cmap) is not a "
+            "valid toyplot.color.Map.\n"
+            "You can find many options here:\n"
+            ">>> toyplot.color.brewer.maps\n"
+            "# For example:\n"
+            ">>> toyplot.color.brewer.maps('Spectral')"
+        )
+
+    # auto-set domains to min and max values if not set.
+    if cmap.domain.min is None:
+        cmap.domain.min = np.nanmin(values)
+    if cmap.domain.max is None:
+        cmap.domain.max = np.nanmax(values)
 
     # broadcast values to color map
-    return cmap.colors(values)
+    colors = cmap.colors(values)
+
+    # set colors for nan values to "transparent"
+    colors[np.isnan(values)] = ToyColor("transparent")
+    return colors
 
 def validate_style(tree, style) -> TreeStyle:
     """Return a TreeStyle with values expanded and validated."""
@@ -159,6 +175,9 @@ class Validator(TreeStyle):
                 self.node_style.fill = None
         if self.node_style.fill is not None:
             self.node_style.fill = ToyColor(self.node_style.fill)
+        if self.node_style.fill_opacity:
+            assert isinstance(self.node_style.fill_opacity, float), (
+                "node_style.fill_opacity must be a float value or None.")
 
     def validate_node_labels(self) -> None:
         """Sets node_labels to np.ndarray[str] or None.
@@ -192,12 +211,17 @@ class Validator(TreeStyle):
             # try to float format but OK if fails b/c data may not be a
             # float, and could even be a complex type like a list.
             try:
-                self.node_labels = [f"{i:.3g}" for i in self.node_labels]
-            except Exception:
+                self.node_labels = [f"{i:.4g}" for i in self.node_labels]
+            except (ValueError, TypeError):
                 self.node_labels = [str(i) for i in self.node_labels]
+
+            # set any missing (nan) labels to empty strings.
+            self.node_labels = [
+                "" if i == "nan" else i for i in self.node_labels
+            ]
+            # validate.
             self.node_labels = check_arr(
-                self.node_labels, "node_labels",
-                self.tree.nnodes, (float, str, int, np.integer)
+                self.node_labels, "node_labels", self.tree.nnodes, str,
             )
 
     def validate_node_labels_style(self) -> None:
@@ -370,7 +394,7 @@ class Validator(TreeStyle):
             self.edge_colors = None
             self.edge_style.stroke = colors
         else:
-            self.edge_style.stroke = None
+            # self.edge_style.stroke = None
             self.edge_colors = check_arr(
                 values=colors,
                 label="edge_colors",
