@@ -8,8 +8,10 @@ packages.
 """
 
 import sys
+from contextlib import contextmanager
 from loguru import logger
 import toytree
+# from toytree.utils import ToytreeError
 
 
 def colorize():
@@ -51,7 +53,7 @@ def set_log_level(log_level="INFO"):
         sink=sys.stderr,
         level=log_level,
         colorize=colorize(),
-        format="{level.icon} [toytree] {name}: {message}",
+        format="{level.icon} toytree | {module}:{function}:{line} | {message}",
         filter=lambda x: x['extra'].get("name") == "toytree",
     )
     LOGGERS.append(idx)
@@ -59,3 +61,25 @@ def set_log_level(log_level="INFO"):
     logger.bind(name="toytree").debug(
         f"toytree v.{toytree.__version__} logging enabled"
     )
+
+
+@contextmanager
+def capture_logs(level="INFO", format="{level}:{name}:{message}"):
+    """Capture loguru-based logs (used in unittests mainly.)"""
+    output = []
+    handler_id = logger.add(output.append, level=level, format=format)
+    yield output
+    logger.remove(handler_id)
+
+
+if __name__ == "__main__":
+
+    toytree.set_log_level("DEBUG")
+    logger.bind(name="toytree").info("THIS IS A TEST.")
+
+    with capture_logs("INFO") as cap:
+        logger.bind(name="toytree").debug("Hello")
+        logger.bind(name="toytree").info("Hello2")
+    print(f"Captured: {cap}")
+
+    # logger.error("HO")
