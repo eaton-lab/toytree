@@ -2,6 +2,11 @@
 
 """Core ToyTree class object of the toytree package.
 
+Examples
+--------
+>>> tree = toytree.rtree.unitree(10)
+>>> tree = toytree.ToyTree(toytree.Node('a'))
+>>> tree = toytree.tree("((a,b),c);")
 
 References
 ----------
@@ -98,7 +103,7 @@ class ToyTree:
     def __getitem__(self, idx: int) -> Node:
         """ToyTree is indexable by idx label to access Nodes."""
         # decided not to support slice here b/c it slows down indexing 2X.
-        # if isinstance(idx, slice): 
+        # if isinstance(idx, slice):
             # return [self._idx_dict[idx] for idx in range(*idx.indices(self.nnodes))]
         return self._idx_dict[idx]
 
@@ -403,7 +408,12 @@ class ToyTree:
         """Return Iterator over Nodes in idxorder matched by leaf names."""
         # get matching function
         if regex:
-            comp = [re.compile(q) for q in query]
+            try:
+                comp = [re.compile(q) for q in query]
+            except re.error as inst:
+                msg = f"invalid regex query {query} raised a re.error: {inst}"
+                logger.error(msg)
+                raise ToytreeError(msg) from inst
             match = lambda x: any(q.search(x) for q in comp)
         else:
             match = lambda x: x in query
@@ -413,11 +423,7 @@ class ToyTree:
             if match(node.name):
                 yield node
 
-    def get_nodes(
-        self,
-        *query: Query,
-        regex: bool = False,
-        ) -> List[Node]:
+    def get_nodes(self, *query: Query, regex: bool = False) -> List[Node]:
         """Return a list of Nodes matching a flexible query.
 
         Node instances can be selected by entering Node name strings,
@@ -431,7 +437,7 @@ class ToyTree:
         This function is used inside many other toytree functions that
         similarly take `*Query` as an argument; any place users may
         want to use a flexible query method to select  a set of Nodes,
-        or their common ancestor. The order of returned Nodes is 
+        or their common ancestor. The order of returned Nodes is
         similar random.
 
         Parameters
@@ -468,8 +474,26 @@ class ToyTree:
         for que in query:
             if isinstance(que, int):
                 nodes.add(self[que])
+            # odd case: query a ToyTree with Nodes from a diff tree.
             elif isinstance(que, toytree.Node):
-                nodes.add(que)
+                if que in self:
+                    nodes.add(que)
+                else:
+                    raise ValueError(
+                        f"query {que} is not in *this* tree. Perhaps you are "
+                        "tring to query with a Node\nfrom a different ToyTree. "
+                        "To avoid this warning, which is trying to save you "
+                        "from potential \nerrors, please do the following:\n"
+                        "1. Make sure you actually want to query with this Node.\n"
+                        "2. Because this tree may not be the same as the tree "
+                        "from which the input Node is connected,\nyou should "
+                        "instead find the Node in this tree that is equivalent, "
+                        "e.g.,\n"
+                        ">>> node = tree.get_mrca_node(*other_node.get_tip_labels())\n"
+                        ">>> tree.get_nodes(node) \n"
+                    )
+
+                    # nodes.add(self[que.idx])
             elif isinstance(que, str):
                 matched = set(self._iter_nodes_by_name_match(que, regex=regex))
                 nodes.update(matched)
@@ -483,14 +507,14 @@ class ToyTree:
         return list(nodes)
 
     def get_ancestors(
-        self, 
-        *query: Query, 
-        include_query: bool=True, 
+        self,
+        *query: Query,
+        include_query: bool=True,
         include_top: bool=True,
         stop_at_mrca: bool=False,
         ) -> Set[Node]:
         """Return a set of Nodes that are ancestors of the query samples.
-        
+
         The returned set can include or exclude the sample query; it
         can trace back all ancestors to the root of the tree, or only
         to the MRCA of the sample query; and it include or exclude
@@ -504,13 +528,17 @@ class ToyTree:
         include_query: bool
             If False the query Nodes are not included in returned set.
         include_top: bool
-            If False the 'top' Node of the set is not included. This 
-            can be either the tree root, or the MRCA Node, depending 
+            If False the 'top' Node of the set is not included. This
+            can be either the tree root, or the MRCA Node, depending
             on the `stop_at_mrca` argument.
         stop_at_mrca: bool
             If False then all ancestors are included back to the root
             of the tree. If True, ancestors only trace back to MRCA
             of the sample query.
+
+        Examples
+        --------
+        ...
         """
         query = set(self.get_nodes(*query))
         ancestors = set.union(*[
@@ -607,8 +635,8 @@ class ToyTree:
         Parameters
         ----------
         *unmask: int or str
-            Any Nodes selected by int or str labels will be unmasked 
-            (shown). If selected, this overrides their inclusion in 
+            Any Nodes selected by int or str labels will be unmasked
+            (shown). If selected, this overrides their inclusion in
             mask_tips, mask_internal, or mask_root.
         mask_tips: bool
             If True all tip Nodes will be masked.
@@ -1159,15 +1187,14 @@ class ToyTree:
         that you wish to apply to Nodes of the ToyTree. The index can
         be composed of either strings that match to .name attributes
         of Nodes in the ToyTree, or can be integers, which match to the
-        .idx labels of Nodes.
+        .idx labels of Nodes. Note: to set data to internal Nodes that
+        usually do not have unique name labels you will likely need to
+        use the numeric idx labels. Be aware that idx labels are
+        unique to each topology, and will change if the tree topology
+        is modified.
 
-        To set data to internal Nodes that may not have unique name
-        labels you may need to use idx labels. Be aware that idx
-        labels are unique to each topology, and will change if the
-        tree topology is modified.
-
-        This function simply parses the DataFrame and applies the
-        function `set_node_data()` for each column.
+        This function parses the DataFrame and applies the function
+        `set_node_data()` for each column.
 
         Parameters
         ----------
@@ -1181,7 +1208,8 @@ class ToyTree:
 
         See Also
         --------
-        :meth:`~toytree.core.tree.ToyTree.get_node_data`.
+        :meth:`~toytree.core.tree.ToyTree.get_node_data`,
+        :meth:`~toytree.core.tree.ToyTree.set_node_data`.
 
         Examples
         --------
@@ -1272,40 +1300,34 @@ class ToyTree:
                 "tree topology. To modify topology see `toytree.mod` "
                 "subpackage functions.")
 
-        # make a copy of ToyTree to return
-        tree = self if inplace else self.copy()
-
         # ensure mapping is proper type. TODO: support pd.Series?
         if not isinstance(mapping, dict):
             if not mapping:
                 mapping = {}
             else:
-                raise TypeError("'mapping' arg should be a dict or None")
+                raise TypeError(
+                    "'mapping' arg should be a Dict, Dict-like, or None")
 
-        # convert fuzzy selectors to Node objects
-        # for key, value in mapping:
-        # nodes = tree.get_nodes(*mapping.keys(), regex=False)
-        # mapping = dict(zip(nodes, mapping.values()))
+        # get {idx: values} for all mapping entries. The func get_nodes
+        # raises an exception if any query is not in the tree.
+        mapping = {
+            self.get_nodes(i, regex=False)[0].idx: j
+            for (i, j) in mapping.items()
+        }
+
+        # make a copy of ToyTree to return
+        tree = self if inplace else self.copy()
+
+        # sorted key nodes to map oldest (root) to youngest (tips)
+        key_nodes = sorted(mapping, reverse=True)
 
         # make a dict {Node: newvalue} by expanding the entered mapping.
         ndict = {}
 
-        # convert all keys to Node objects
-        try:
-            mapping = {
-                tree.get_nodes(i, regex=False)[0]: j
-                for (i, j) in mapping.items()
-            }
-        except IndexError as inst:
-            diff = set(mapping) - set(tree.get_tip_labels())
-            raise ToytreeError(f"names in mapping dict not in tree: {diff}") from inst
-
-        # sorted key nodes to map oldest to youngest
-        key_nodes = sorted(mapping, key=lambda x: x.idx, reverse=True)
-
         # iterate over nodes sorted by oldest first.
-        for node in key_nodes:
-            value = mapping[node]
+        for nidx in key_nodes:
+            node = tree[nidx]
+            value = mapping[nidx]
 
             # map selected Node to value.
             ndict[node] = value
@@ -1322,7 +1344,6 @@ class ToyTree:
                     ndict[node] = default
 
         # special mod submodule method for height modifications
-        # TODO: use inplace=True if entered?
         if feature == "height":
             height_map = {i.idx: j for (i, j) in ndict.items() if j is not None}
             return tree.mod.edges_set_node_heights(height_map, inplace=inplace)
@@ -1350,19 +1371,23 @@ class ToyTree:
         feature: Union[str, Sequence[str], None] = None,
         missing: Union[Any, Sequence[Any], None] = None,
         ) -> Union[pd.DataFrame, pd.Series]:
-        """Return a pandas Series or DataFrame with values for one or 
+        """Return a pandas Series or DataFrame with values for one or
         more selected features in the tree.
 
         Parameters
         ----------
         feature: str, Iterable[str], or None
-            One or more features of Nodes to get data for.
+            One or more features of Nodes to get data for. Features
+            include the default Node features (idx, name, height, dist,
+            support) as well as any attribute that has been set to
+            a Node (except attrs with names that start with an '_'.)
         missing: Any, Iterable[Any], or None
             A value to use for missing data (nodes that do not have
             the feature). Default arg is None which will automatically
-            impute a missing value based on the data type. Example:
-            "" for str type, np.nan for numeric or complex types.
-            Any value can be entered here to replace missing data.
+            set missing data to `np.nan`. Example: you can set the
+            missing values to a default value like 0 for an int feature
+            or by entering 0, or you can enter a list of values to
+            set default missing for all features.
 
         Returns
         -------
@@ -1389,6 +1414,8 @@ class ToyTree:
             Get a dict mapping any node feature to another.
         set_node_data
             Set a feature value to one or more Nodes in a ToyTree.
+        get_tip_data
+            Return DataFrame with feature data for only the tip Nodes.
 
         Note
         ----
@@ -1397,10 +1424,10 @@ class ToyTree:
         for example during a traversal, because it spends time checking
         for Nodes with missing data, and type-checks missing values.
 
-        Setting complex objects as Node data, such as lists or sets,
+        Setting complex objects to Node data, such as lists or sets,
         rather than float, int, or str, should generally work fine,
-        but take care that toytree will not attempt to check or fill
-        missing values for these data.
+        but take care that toytree will not attempt to automatically
+        check or fill missing values for these data.
         """
         # Storing missing as pd.NA allows not having to convert the
         # dtype of other values from e.g., int to float. However, if
@@ -1418,14 +1445,16 @@ class ToyTree:
         else:
             features = [feature]
 
+        # create a list of missing values for subs
         if missing is None:
             missing = [np.nan] * len(features)
+            # missing = [None] * len(features)
         elif isinstance(missing, (list, tuple)):
             assert len(missing) == len(features), (
                 "when entering multiple missing values it must be the same "
                 "length as the number of features")
         else:
-            missing = [missing]
+            missing = [missing] * len(features)
 
         # check for bad user features
         for feat in features:
@@ -1459,6 +1488,15 @@ class ToyTree:
             # fill ordered list with Node value or missing value
             ofeat = []
             miss = missing[fidx]
+
+            # if miss is None then find auto-filling type. This is
+            # quite slow (milliseconds) making this not the recommended
+            # method for quick data fetching, as explained in docs.
+            # if miss is None:
+            #     values = [getattr(self[nidx], feat, None) for nidx in range(self.nnodes)]
+            #     types = [type(i) for i in values if i is not None]
+
+            # get value or set to missing
             for nidx in range(self.nnodes):
                 value = getattr(self[nidx], feat, miss)
                 # if the actual value is nan then replace with miss
