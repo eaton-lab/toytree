@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""
-Custom exception classes
+"""Custom exception classes.
 """
 
 
@@ -23,3 +22,8 @@ class NewickError(ToytreeError):
 class NexusError(ToytreeError):
     def __init__(self, value):
         ToytreeError.__init__(self, value)
+
+
+if __name__ == "__main__":
+
+    raise ToytreeError("HELLO WORLD")
