@@ -133,7 +133,7 @@ class TreeParser(object):
 
             # is a file: read by lines to a list
             elif os.path.exists(self.intree):
-                with open(self.intree, 'rU') as indata:
+                with open(self.intree, 'r') as indata:
                     self.data = indata.readlines()
 
             # is a string: make into a list by splitting
