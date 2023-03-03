@@ -28,6 +28,7 @@ import numpy as np
 from toytree.utils.src.toytree_sequence_drawing import ToyTreeSequenceDrawing
 import toytree
 
+
 logger = logger.bind(name="toytree")
 
 ToyTree = TypeVar("toytree.ToyTree")
@@ -108,7 +109,7 @@ class ToyTreeSequence:
 
     def _get_subsampled_ts(self, tree_sequence: TreeSequence) -> TreeSequence:
         """Return a subsampled (simplify'd) tree sequence.
-        
+
         Samples a maximum of `self.sample` nodes at time=0 from each
         population. This is useful for working with simulations from 
         SLiM where nodes of the entire population are often present.
@@ -122,7 +123,7 @@ class ToyTreeSequence:
                 size = min(arr.size, self.sample[pidx])
                 samp = self.rng.choice(arr, size=size, replace=False)
                 samps += samp.tolist()
-        logger.warning(samps)
+        logger.debug(samps)
         sampled_ts = tree_sequence.simplify(samps, keep_input_roots=True)
         return sampled_ts
 
@@ -366,19 +367,22 @@ class ToyTreeSequence:
         return canvas, axes, (mark, mark2)
 
 
-
 if __name__ == "__main__":
 
     # EXAMPLE
     import ipcoal
-    import toyplot.browser
-    import pyslim
+    # import toyplot.browser
+    # import pyslim
     toytree.set_log_level("DEBUG")
 
     TRE = toytree.rtree.unittree(ntips=6, treeheight=1e6, seed=123)
-    MOD = ipcoal.Model(tree=TRE, Ne=1000)
+    MOD = ipcoal.Model(tree=TRE, Ne=1e5, recomb=2e-9, store_tree_sequences=True)
+    MOD.sim_loci(1, 10000)
 
     # slim_ts = pyslim.load("/tmp/test2.trees")
+    ts = MOD.ts_dict[0]
+    tts = ToyTreeSequence(ts, sample=5, seed=123)#.at_index(0)
+    tts.draw_tree(width=None, height=300, idxs=None, scrollable=True)
     # tts = ToyTreeSequence(slim_ts, sample=5, seed=123).at_index(0)
 
     # TREE = toytree.rtree.unittree(10, treeheight=1e5)
