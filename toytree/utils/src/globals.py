@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-"""
-globals.
+"""globals.
+
 """
 
 # Used for edges in tree drawings.
@@ -112,3 +112,11 @@ NW_FORMAT = {
         ('dist', str, True),
     ]
 }
+
+if __name__ == "__main__":
+    pass
+    # import toytree
+    # toytree.set_log_level("DEBUG")
+    # from toytree.utils.src.logger_setup import LOGGER
+    # LOGGER.info("HI")
+    # print(LOGGER)
