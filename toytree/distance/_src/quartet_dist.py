@@ -1,21 +1,25 @@
 #!/usr/bin/env python
 
-"""
+"""Submodule for quartet distance functions.
+
+Authors: Deren Eaton and Scarlet Ming-sha Au
 
 
-
+Description
+------------
 N = s + d + r1 + r2 + u
-
 s = intersection of resolved quartets
 s = intersection of two of these: get_resolved_sorted_quartets()
-
 d = symmetric difference of resolved quartets
 d = symmetric difference of two of these: get_resolved_sorted_quartets()
-
 r1 = unresolved in t1 but resolved in t2
 r2 = vice-versa
 r1 = (qrt1 - qrt2) - d(t1, t2)
 
+References
+----------
+- ...
+- ...
 """
 
 from typing import Iterator, Tuple, TypeVar
@@ -98,23 +102,36 @@ def get_resolved_sorted_quartets(tree: ToyTree) -> Iterator[Tuple[str]]:
             for quart in biquarts:
                 if quart not in observed:
                     observed.add(quart)
-                    pair1 = sorted(quart[0])
-                    pair2 = sorted(quart[1])
-                    yield tuple(itertools.chain(*sorted([pair1, pair2])))
+                    yield tuple(itertools.chain(*quart))
+                    #pair1 = sorted(quart[0])
+                    #pair2 = sorted(quart[1])
+                    #yield tuple(itertools.chain(*sorted([pair1, pair2])))
                     # yield quart    
+
+
+def get_simple_quartets(tree):
+    """TODO..."""
+    tips = set(tree.get_tip_labels())
+    cache = {}
+    for node in tree.traverse("idxorder"):
+        if node.is_leaf():
+            cache[node] = {node.idx}
+        else:
+            cache[node] = set.union(*(cache[i] for i in node.children))
+
+        sisters = set.union(*(cache[i] for i in node.get_sisters()))
+
+
 
 def get_n_resolved_quartets(tree: ToyTree) -> int:
     """..."""
     return sum(1 for i in get_resolved_sorted_quartets(tree))
 
 
-
-
 if __name__ == "__main__":
-
-    TREE1 = toytree.rtree.unittree(10, seed=123)
-    TREE2 = toytree.rtree.unittree(10, seed=321)
-    TREE2 = TREE2.mod.collapse_nodes(12, 13, 14)
+    TREE1 = toytree.rtree.unittree(5, seed=123)
+    TREE2 = toytree.rtree.unittree(5, seed=321)
+    TREE2 = TREE2.mod.collapse_nodes(5, 6, 7)
     # print(list(get_quartet_sets(tree)))
 
 
