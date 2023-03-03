@@ -112,7 +112,7 @@ class ToyTree:
         return f"<toytree.ToyTree at {hex(id(self))}>"
 
     #####################################################
-    ## FEATURES
+    # FEATURES
     #####################################################
 
     @property
@@ -139,19 +139,22 @@ class ToyTree:
         defaults = ("idx", "name", "height", "dist", "support")
         return defaults + tuple(feats)
 
-    def remove_feature(self, *feature: str) -> None:
+    def remove_features(self, *feature: str, inplace: bool = False) -> ToyTree:
         """Remove one or more non-deafult data features from all Nodes.
 
         Cannot remove "idx", "name", "height", "dist", or "support".
         """
+        tree = self if inplace else self.copy()
         for feat in feature:
             if feat in ("idx", "name", "height", "dist", "support"):
-                raise ToytreeError(f"cannot remove feature: {feature}")
-            for node in self.traverse():
+                raise toytree.utils.NodeDataError(
+                    f"Cannot remove required Node feature: {feature}")
+            for node in tree.traverse():
                 delattr(node, feat)
+        return tree
 
     #####################################################
-    ## IDENTITY
+    # IDENTITY
     #####################################################
 
     def is_rooted(self) -> bool:
@@ -160,7 +163,7 @@ class ToyTree:
             return False
         return True
 
-    def is_bifurcating(self, include_root: bool=True) -> bool:
+    def is_bifurcating(self, include_root: bool = True) -> bool:
         """Return False if no polytomies exist in tree.
 
         Parameters
@@ -365,7 +368,7 @@ class ToyTree:
         inplace: bool
             If True the original tree is modified and returned, otherwise
             a modified copy is returned.
-
+t
         Examples
         --------
         >>> tree = toytree.rtree.unittree(ntips=10, seed=123)
@@ -373,7 +376,7 @@ class ToyTree:
         >>> t2 = tree.root("r8", "r9", root_dist=0.3)
         >>> toytree.mtree([t1, t2]).draw();
         """
-        return self.mod.root(
+        return toytree.mod.root(self,
             *query, regex=regex, root_dist=root_dist,
             edge_features=edge_features, inplace=inplace
         )
@@ -1103,7 +1106,7 @@ class ToyTree:
     ## functions to modify features of all connected Nodes
     ###################################################
 
-    def get_feature_dict(self, keys: str=None, values: str=None) -> Dict:
+    def get_feature_dict(self, keys: str = None, values: str = None) -> Dict[str, Any]:
         """Return a dict mapping selected Node features as keys, values.
 
         This can be used to return a dict mapping any two arbitrary
@@ -1161,7 +1164,7 @@ class ToyTree:
         return ndict
 
     def _set_node_data_dtype(
-        self, feature: str, dtype: Optional[Callable]=None) -> None:
+        self, feature: str, dtype: Optional[Callable] = None) -> None:
         """Set the type/dtype (or infer) of a Node feature in-place.
 
         This is used internally when data is parsed from strings
@@ -1179,7 +1182,7 @@ class ToyTree:
     def set_node_data_from_dataframe(
         self,
         table: pd.DataFrame,
-        inplace: bool=False,
+        inplace: bool = False,
         ) -> ToyTree:
         """Set new features on Nodes of a ToyTree from a DataFrame.
 
@@ -1227,7 +1230,6 @@ class ToyTree:
             mapping = table[key].to_dict()
             tree.set_node_data(feature=key, mapping=mapping, inplace=True)
         return tree
-
 
     def set_node_data(
         self,
@@ -1370,7 +1372,7 @@ class ToyTree:
         self,
         feature: Union[str, Sequence[str], None] = None,
         missing: Union[Any, Sequence[Any], None] = None,
-        ) -> Union[pd.DataFrame, pd.Series]:
+        ) -> Union[pd.DataFrame, pd.Series]:  # noqa: E123,E125
         """Return a pandas Series or DataFrame with values for one or
         more selected features in the tree.
 
@@ -1572,7 +1574,7 @@ class ToyTree:
         return self.get_node_data(feature, missing).iloc[:self.ntips]
 
     ###################################################
-    ## DRAWING
+    # DRAWING
     ###################################################
 
     # --------------------------------------------------------------------
@@ -1589,7 +1591,7 @@ class ToyTree:
         Or, maybe make this at toytree level as `toytree.draw(canvas)`
         also make a `toytree.save()` shortcut to saving in formats.
         """
-        import toyplot.browser
+        # import toyplot.browser
         canvas, axes, mark = self.draw(**kwargs)
         toytree.utils.show([canvas])
         return canvas, axes, mark
@@ -1630,14 +1632,15 @@ class ToyTree:
         fixed_position: Sequence[float]=None,
         **kwargs,
         ) -> Tuple[Canvas, Cartesian, ToytreeMark]:
-        """Return a drawing on the tree as a Toyplot figure.
+        """Return a drawing of the tree as a Toyplot figure.
 
-        The drawing function return a tuple of Toyplot objects as
-        (Canvas, Cartesian, Mark), and will automatically render
-        in a jupyter notebook. The Canvas can be saved to file in a
-        number of formats using toyplot. The Cartesian axes can be
-        used to add additional toyplot marks to the shared cartsian
-        coordinates, and be used to style axes ticks. The Mark can
+        Drawings are returned as Tuple[Canvas, Cartesian, ToytreeMark]
+        following the style of the toyplot plotting library and will
+        render as html figures automatically in jupyter notebook. 
+        The Canvas can be saved to file in a number of formats using 
+        toyplot. The Cartesian axes object can be used to position 
+        multiple Marks onto the same cartesian coordinates, and to 
+        style axes ticks and labels (see docs). The Mark object can 
         be further modified to edit or access style args.
 
         Parameters
@@ -1782,7 +1785,7 @@ class ToyTree:
         >>> import toyplot.svg
         >>> toyplot.svg.render(canvas, "saved-plot.svg")
         """
-        return draw_toytree(
+        kwargs = dict(
             toytree=self,
             tree_style=tree_style,
             axes=axes,
@@ -1818,7 +1821,14 @@ class ToyTree:
             fixed_position=fixed_position,
             kwargs=kwargs,
         )
-
+        try:
+            return draw_toytree(**kwargs)
+        except ToytreeError as inst:
+            logger.error(inst)
+            raise inst
+        except Exception as inst:
+            # Unexpected error type
+            raise inst
 
 
 if __name__ == "__main__":
