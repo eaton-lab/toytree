@@ -40,6 +40,8 @@ setup(
         "pandas",
         "loguru",
         "requests",
+        # "ghostscript"
+        # "pillow"
     ],
     entry_points={},
     license='GPLv3',
