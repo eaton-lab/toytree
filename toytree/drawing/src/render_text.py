@@ -12,7 +12,7 @@ from loguru import logger
 import toyplot.style
 import toyplot.font
 import toyplot.text
-from toytree.style.src.utils import concat_style_to_str2
+from toytree.color.src.concat import concat_style_fix_color
 
 logger = logger.bind(name="toytree")
 POP_STYLES = [
@@ -28,13 +28,13 @@ POP_STYLES = [
 def render_text(
     root: xml.SubElement,
     text: Union[str, toyplot.text.Layout],
-    xpos: float=0,
-    ypos: float=0,
-    style: Dict[str,str]=None,
-    angle: float=None,
-    title: str=None,
-    attributes: Dict[str,str]=None,
-    ) -> None:
+    xpos: float = 0,
+    ypos: float = 0,
+    style: Dict[str , str] = None,
+    angle: float = None,
+    title: str = None,
+    attributes: Dict[str, str] = None,
+) -> None:
     """Add xml.SubElements to the DOM for <text> markers.
 
     A replacement for toyplot.html._draw_text() function that allows
@@ -68,7 +68,7 @@ def render_text(
     # apply a transform to the group
     transform = ""
     if xpos or ypos:
-        transform += f"translate({xpos:.3g},{ypos:.3g})" # %r,%r)" % (x, y)        
+        transform += f"translate({xpos:.3g},{ypos:.3g})"  # %r,%r)" % (x, y)        
     if angle:
         transform += f"rotate({-angle:.3g})"  # %r)" % (-angle) # pylint: disable=invalid-unary-operand-type
     if transform:
@@ -96,8 +96,9 @@ def render_text(
                     x=str(box.left), 
                     y=str(box.baseline),
                     # style=toyplot.style.to_css(box.style),
-                    style=concat_style_to_str2(sty)
-                    ).text = box.text
+                    # style=concat_style_to_str2(sty)
+                    style=concat_style_fix_color(sty),
+                ).text = box.text
 
             # NOT TESTED
             elif isinstance(box, toyplot.text.PushHyperlink):
@@ -116,7 +117,7 @@ def render_text(
 
 
 if __name__ == "__main__":
-    
+
     root_ = xml.Element('root')
     group_ = xml.SubElement(root_, "g", attrib={"class": "Labels"})    
     render_text(
