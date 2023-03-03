@@ -25,7 +25,7 @@ ToyTree = TypeVar("ToyTree")
 Query = TypeVar("Query", str, int, Node)
 
 
-def ladderize(tree, direction: bool=True, inplace: bool=False) -> ToyTree:
+def ladderize(tree, direction: bool=False, inplace: bool=False) -> ToyTree:
     """Return a ladderized tree (ordered descendants)
 
     In a ladderized tree nodes are rotated so that the left/
@@ -34,10 +34,13 @@ def ladderize(tree, direction: bool=True, inplace: bool=False) -> ToyTree:
     Parameters
     ----------
     direction: bool
-        Reverse the laddizered order.
+        If False then child Nodes are sorted (left to right) from 
+        smallest to largest number of descendants. If True they are
+        sorted in the reverse order.
     """
     # get a copy of the tree to modify
     nself = tree if inplace else tree.copy()
+    direction = bool(direction) # needed to ensure invert below against int arg
 
     # visit all nodes from tips to root recording size on the way
     sizes = {}
@@ -49,16 +52,8 @@ def ladderize(tree, direction: bool=True, inplace: bool=False) -> ToyTree:
             sizes[node.idx] = 1
         else:
             sizes[node.idx] = sum(sizes[child.idx] for child in node.children)
-
-            # rotate by size if size > 2 else use alphanumeric names
-            # TODO: double-check this direction with equal size names.
-            if sizes[node.idx] > 2:
-                key = lambda x: sizes[x.idx]
-                direct = direction
-            else:
-                key = lambda x: x.name
-                direct = np.invert(direction)
-            node._children = tuple(sorted(node._children, key=key, reverse=direct))
+            key = lambda x: sizes[x.idx]
+            node._children = tuple(sorted(node._children, key=key, reverse=direction))
 
     # update idx labels for new tree ladderization
     nself._update()
@@ -96,8 +91,9 @@ def collapse_nodes(
 
     Note
     ----
-    This will not delete the root Node. To do that you must use
-    `toytree.mod.unroot`.
+    This cannot be used to remove the root Node. To collapse the root
+    into a polytomy use `toytree.mod.unroot`, or collapse the Node(s)
+    directly below the root Node.
 
     Examples
     --------
@@ -109,17 +105,24 @@ def collapse_nodes(
     >>> tree = tree.set_node_data("support", {25: 50}, default=100)
     >>> tree = tree.collapse_nodes(min_dist=0.01, min_support=45)
     """
-    tree = tree if inplace else tree.copy()
-    if not query: # == ():
+    if not query: # == (): # Node 0 is always a tip anyways.
         selected = []
     else:
         selected = [i.idx for i in tree.get_nodes(*query)]
+
+    # get tree and nodes copy
+    if not inplace:
+        tree = tree.copy()
+
+    # remove internal nodes meeting criteria
     for nidx in range(tree.nnodes):
         node = tree[nidx]
         if not node.is_leaf():
             if (node.dist < min_dist) | (node.support < min_support) | (nidx in selected):
                 if not node.is_root():
                     node._delete()
+        # else:
+            # logger.warning("Tip Nodes cannot be collapsed.")
     tree._update()
     return tree
 
@@ -129,10 +132,10 @@ def rotate_node(
     regex: bool=False,
     inplace: bool=False,
     ) -> ToyTree:
-    """Return ToyTree with a selected Node rotated (children reversed).
+    """Return ToyTree with one Node rotated (children order reversed).
 
     Rotates only one Node per call. Internal Nodes are easiest selected
-    by idx label, or by selecting multiple Nodes names from which the
+    by idx label, or by entering multiple tip Node names from which the
     MRCA will be selected and rotated.
 
     Parameters
@@ -156,10 +159,13 @@ def rotate_node(
     >>> toytree.mod.rotate_node(tree, 'r[0-3]$', regex=True)
     """
     idx = tree.get_mrca_node(*query, regex=regex).idx
-    tree = tree if inplace else tree.copy()
+    if not inplace:
+        tree = tree.copy()
     tree[idx]._children = tree[idx]._children[::-1]
     tree._update()
     return tree
+
+# def extract_subtree(tree, root)
 
 def prune(
     tree,
@@ -203,20 +209,21 @@ def prune(
         If True then the original tree is changed in-place, and
         returned, rather than leaving original tree unchanged.
     """
-    # create a copy or operate in place
-    tree = tree if inplace else tree.copy()
-
-    # if nodes was entered as a single Node then make into a list
-    nodes = list(tree.get_nodes(*query, regex=regex))
+    # expand query into a set of Nodes
+    nodes = set(tree.get_nodes(*query, regex=regex))    
     nnodes = len(nodes)
 
-    # add mrca nodes for each pair
-    nodes += list(set(
-        tree.get_mrca_node(i, j) for i, j in itertools.permutations(nodes, 2)))
+    # add mrca Node for each pair and add the root Node
+    nodes = nodes.union(set(
+        tree.get_mrca_node(i, j) for i, j in 
+        itertools.permutations(nodes, 2))
+    )
+    nodes.add(tree.treenode)
 
-    # require that root is in the node list to start.
-    if tree.treenode not in nodes:
-        nodes.append(tree.treenode)
+    # create a copy or operate in place
+    if not inplace:
+        tree = tree.copy()
+        nodes = [tree[i.idx] for i in nodes]
 
     # keep track of ndescendants of each node after pruning to make
     # it easy to find the mrca later, and whether it is a mrca.
@@ -273,7 +280,14 @@ def prune(
     return tree
 
 def remove_unary_nodes(tree: ToyTree, inplace: bool=False):
-    """Return ToyTree with any unary Nodes removed."""
+    """Return ToyTree with any unary Nodes removed.
+
+    Parameters
+    ----------
+    inplace: bool
+        If True then the original tree is changed in-place, and
+        returned, rather than leaving original tree unchanged.
+    """
     tree = tree if inplace else tree.copy()
     tipset = set(tree[i] for i in range(tree.ntips))
     for node in tree.traverse("postorder"):
@@ -441,14 +455,18 @@ def add_internal_node(
     >>> tree = tree.mod.add_internal_node('r0', dist=0.25)
     >>> tree.draw(ts='n', node_sizes=10);
     """
-    tree = tree if inplace else tree.copy()
+    # expand query
+    node = tree.get_mrca_node(*query, regex=regex)
+    if not inplace:
+        tree = tree.copy()
+        node = tree[node.idx]
 
     # get insertion edge and dist of the new Node
-    node = tree.get_mrca_node(*query, regex=regex)
     parent = node.up
     dist = dist if dist is not None else node.dist / 2.
-    assert node.dist > dist > 0, (
-        f"the new Node dist must be > 0 and < dist of {node} (dist={node.dist}")
+    if not node.dist > dist > 0:
+        raise ValueError("the new Node dist must be > 0 and < dist "
+            f"of {node} (dist={node.dist})")
 
     # create the new Node and mend connections nearby
     new_node = Node(
@@ -531,7 +549,12 @@ def add_tip_node(
     >>>     idx=3, name="x", parent_dist=2e5, dist=3e5)
     >>> tree.ladderize().draw(ts='c', admixture_edges=(['r0', 'r1'], 'x'));
     """
-    tree = tree if inplace else tree.copy()
+    # get tree and mrca copy
+    sister_1 = tree.get_mrca_node(*query, regex=regex)
+    if not inplace:
+        tree = tree.copy()
+        sister_1 = tree[sister_1.idx]    
+
     # selected a Node whose edge will be split.
     sister_1 = tree.get_mrca_node(*query, regex=regex)
     # create a new Node that will become sister to selected Node and
@@ -870,4 +893,8 @@ def _resolve_nodes(
 
 
 if __name__ == "__main__":
-    pass
+    
+    import toytree
+    t = toytree.rtree.unittree(16, treeheight=10)
+    t.mod.prune(0, 1, 2, 3)
+    t.draw()
