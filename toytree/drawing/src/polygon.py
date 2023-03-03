@@ -27,7 +27,9 @@ import toyplot.html
 from toyplot.mark import Mark
 from toytree.color import ToyColor
 # from toytree.color.src.utils import style_to_string, split_rgba_style, concat_style_to_str
-from toytree.color.src.utils import concat_style_to_str
+# from toytree.color.src.utils import concat_style_to_str
+from toytree.style.src.utils import concat_style_to_str2
+
 
 class Polygon(Mark):
     def __init__(self, points: np.ndarray, **kwargs):
@@ -56,6 +58,7 @@ class Polygon(Mark):
 # Register multipledispatch to use the toyplot.html namespace
 dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 
+
 # register a _render function for ToyTreeMark objects
 @dispatch(toyplot.coordinates.Cartesian, Polygon, toyplot.html.RenderContext)
 def _render(axes, mark, context):
@@ -81,7 +84,7 @@ class RenderPolygon:
         xml.SubElement(
             self.mark_xml, "polygon",
             points=points,
-            style=concat_style_to_str({
+            style=concat_style_to_str2({
                 "fill": "red", 
                 "fill-opacity": 0.5,
                 "stroke": self.mark.stroke,
