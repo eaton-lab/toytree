@@ -117,7 +117,8 @@ class TreeStyleU(TreeStyle):
         self.use_edge_lengths = False
         self.node_style.stroke = None
         self.node_style.stroke_width = 1.5
-        self.node_style.fill = "white"
+        self.node_colors = "white"
+        # self.node_style.fill = "white" # do not set defaults that override
         self.node_sizes = 6
         self.node_labels = "idx"
 

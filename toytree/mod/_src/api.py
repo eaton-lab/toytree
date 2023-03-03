@@ -152,7 +152,7 @@ class TreeModAPI:
         """
         return edges_set_node_heights(self._tree, mapping=mapping, inplace=inplace)
 
-    def ladderize(self, direction: bool=True, inplace: bool=False) -> ToyTree:
+    def ladderize(self, direction: bool=False, inplace: bool=False) -> ToyTree:
         """Return a ladderized tree (ordered descendants)
 
         In a ladderized tree nodes are rotated so that the left/
@@ -161,7 +161,9 @@ class TreeModAPI:
         Parameters
         ----------
         direction: bool
-            Reverse the laddizered order.
+            If False then child Nodes are sorted (left to right) from 
+            smallest to largest number of descendants. If True they are
+            sorted in the reverse order.
         """
         return ladderize(self._tree, direction=direction, inplace=inplace)
 
@@ -181,18 +183,12 @@ class TreeModAPI:
         min_support=50 to collapse all nodes with support < 50, and/or
         select Node idx 10 to collapse Node 10.
 
-        Note
-        ----
-        Both query-selected Nodes and min_dist or min_support Nodes
-        will be collapsed. To only collapse query-selected Nodes set
-        the other values arbitrarily low. To only collapse on the
-        threshold values do not enter any args to query.
-
         Parameters
         ----------
         *query: str, int, or Node
             One or more Node selectors, which can be Node objects, names,
-            or int idx labels.
+            or int idx labels. To select internal Nodes use idx labels
+            or Node object from `tree.get_mrca_node('name1', 'name2')`.
         min_dist: float
             The minimum dist (edge length) value allowed.
         min_support: float
@@ -201,12 +197,21 @@ class TreeModAPI:
             If True then the original tree is changed in-place, and
             returned, rather than leaving original tree unchanged.
 
+        Note
+        ----
+        This cannot be used to remove the root Node. To collapse the root
+        into a polytomy use `toytree.mod.unroot`, or collapse the Node(s)
+        directly below the root Node.
+
         Examples
         --------
-        >>> tree = toytree.rtree.unittree(ntips=20)
+        >>> tree = toytree.rtree.unittree(ntips=12)
+        >>> tree.mod.collapse_nodes(14)
+        >>> tree.mod.collapse_nodes(tree.get_mrca_node('r1', 'r2'))
+        >>> tree.mod.collapse_nodes(tree.get_mrca_node('r[1-4]', regex=True))
         >>> tree = tree.set_node_data("dist", {22: 0.005, 23: 0.005})
         >>> tree = tree.set_node_data("support", {25: 50}, default=100)
-        >>> tree = tree.mod.collapse_nodes(min_dist=0.01, min_support=45)
+        >>> tree = tree.collapse_nodes(min_dist=0.01, min_support=45)
         """
         return collapse_nodes(
             self._tree, *query,
@@ -224,18 +229,18 @@ class TreeModAPI:
         return remove_unary_nodes(self._tree, inplace=inplace)
 
     def rotate_node(self, *query: Query, regex: bool=False, inplace: bool=False) -> ToyTree:
-        """Return ToyTree with a selected Node rotated (children reversed).
+        """Return ToyTree with one Node rotated (children order reversed).
 
-        Rotates only one Node per call. Internal Nodes can be easily
-        selected by idx label, or by selecting multiple Nodes names 
-        from which the MRCA will be selected.
+        Rotates only one Node per call. Internal Nodes are easiest selected
+        by idx label, or by entering multiple tip Node names from which the
+        MRCA will be selected and rotated.
 
         Parameters
         ----------
         *query: str, int, or Node
-            The Node to rotate can be selected by entering a Node,
-            or its idx label, or name str. If multiple Nodes are 
-            selected their MRCA Node will be found and rotated.
+            The Node to rotate can be selected by entering the Node object,
+            or its idx label, or name str. For internal Nodes, multiple
+            queries can be entered and their MRCA will be rotated.
         regex: bool
             If True then Node name strings are treated as regular
             expressions that can match to multiple Nodes.
@@ -264,8 +269,8 @@ class TreeModAPI:
 
         All nodes not included in the entered 'nodes' list will be
         removed from the topology, and the mininal spanning edges to
-        connect the remaining nodes are retained. The root node is
-        always preserved if 'require_root=True', otherwise the lowest
+        connect the remaining nodes are retained. The original root node
+        is preserved if 'require_root=True', otherwise the lowest
         mrca connecting the selected nodes will be kept as the new root.
 
                     4      prune([0,2])     4
@@ -306,20 +311,20 @@ class TreeModAPI:
         ) -> ToyTree:
         """Return a ToyTree with some tip Nodes removed.
 
-        The ToyTree with the selected tip Nodes (and any remaining 
-        internal nodes without children) are removed while retaining 
-        the original edge lengths between remaining nodes. This is 
-        effectively the inverse of `prune`. Tip names can be selected
-        using a Query method of Node instances, Node names, or Node
-        idx int labels. Only selected tip Nodes affect the result.
+        The ToyTree with the selected tip Nodes (and any remaining internal
+        nodes without children) are removed while retaining the original
+        edge lengths between remaining nodes. This is effectively the
+        inverse of `prune`. Tip names can be selected using a Query method
+        of Node instances, Node names, or Node idx int labels. Only
+        selected tip Nodes affect the result.
 
         Parameters
         ----------
         tree: ToyTree
             An input ToyTree to perform function on.
         *query: str, int, or Node
-            One or more Node selectors, which can be Node objects,
-            names, or int idx labels.
+            One or more Node selectors, which can be Node objects, names,
+            or int idx labels.
         regex: bool
             If True then Node name strings are treated as regular
             expressions that can match to multiple Nodes.
@@ -329,7 +334,7 @@ class TreeModAPI:
 
         See Also
         --------
-        prune: Extract subtree from tree. The inverse of this function.
+        prune: Extract a subtree from tree. The inverse of this function.
 
         Examples
         --------
@@ -588,11 +593,13 @@ class TreeModAPI:
             no dist value is set then the edge midpoint is used.
         name: Optional[str]
             A name string to apply to the new Node.
+        inplace: bool
+            Modify tree in place.    
 
         Examples
         --------
         >>> tree = toytree.rtree.unittree(ntips=5, seed=123)
-        >>> tree = tree.mod.topo_new_internal_node(0, dist=0.25)
+        >>> tree = tree.mod.add_internal_node('r0', dist=0.25)
         >>> tree.draw(ts='n', node_sizes=10);
         """
         return add_internal_node(
