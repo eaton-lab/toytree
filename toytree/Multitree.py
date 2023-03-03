@@ -650,7 +650,7 @@ class ConsensusTree:
         for node in self.best_tree.treenode.traverse("preorder"):
 
             # get byte string representing split
-            bits = np.zeros(self.best_tree.ntips, dtype=np.bool_)
+            bits = np.zeros(self.best_tree.ntips, dtype=bool)
             for child in node.iter_leaf_names():
                 bits[ndict[child]] = True
             bitstring = bits.tobytes()
@@ -665,7 +665,7 @@ class ConsensusTree:
             tre = self.treelist[tidx].unroot()
             # print(tidx)
             for node in tre.treenode.traverse("preorder"):
-                bits = np.zeros(tre.ntips, dtype=np.bool_)
+                bits = np.zeros(tre.ntips, dtype=bool)
                 for child in node.iter_leaf_names():
                     bits[ndict[child]] = True
                 bitstring = bits.tobytes()
@@ -701,7 +701,7 @@ class ConsensusTree:
 
             # traverse over tree
             for node in ttree.treenode.traverse('preorder'):
-                bits = np.zeros(len(ttree), dtype=np.bool_)
+                bits = np.zeros(len(ttree), dtype=bool)
                 for child in node.iter_leaf_names():
                     bits[ndict[child]] = True
 
@@ -771,7 +771,7 @@ class ConsensusTree:
         # create dict of clade counts and set keys
         countdict = defaultdict(int)
         for clade, count in self.fclade_counts:
-            mask = np.int_(list(clade)).astype(np.bool)
+            mask = np.int_(list(clade)).astype(bool)
             ccx = idxarr[mask]
             queue.append((len(ccx), frozenset(ccx)))
             countdict[frozenset(ccx)] = count
