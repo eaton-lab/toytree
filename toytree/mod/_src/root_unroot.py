@@ -47,8 +47,10 @@ Examples
 >>>
 >>> # draw the trees
 >>> kwargs = {
->>>     'layout': 'd', 'use_edge_lengths': False,
->>>     'node_sizes': 10, 'node_labels': 'name',
+>>>     'layout': 'd', 
+>>>     'use_edge_lengths': False,
+>>>     'node_sizes': 10, 
+>>>     'node_labels': 'name',
 >>>     'node_labels_style': {
 >>>         'font-size': 20,
 >>>         'baseline-shift': 10,
@@ -68,7 +70,7 @@ Examples
 >>>     **kwargs,
 >>> );
 """
-from typing import Optional, Sequence, TypeVar, Set
+from typing import Optional, Sequence, TypeVar, Set, Union
 from loguru import logger
 import numpy as np
 from toytree.core.node import Node
@@ -82,9 +84,10 @@ Query = TypeVar("Query", int, str, Node)
 
 
 class Rooter:
-    r"""Root ToyTree on Node query selection.
+    """Root ToyTree on Node query selection.
 
-    See `toytree.mod.root` docstring for details.
+    See `toytree.mod.root` docstring for details. This class is for
+    internal use, not user-facing.
     """
     def __init__(
         self,
@@ -93,15 +96,19 @@ class Rooter:
         regex: bool = False,
         root_dist: Optional[float] = None,
         edge_features: Optional[Sequence[str]] = None,
-        ):
-
+        inplace: bool = False,
+    ):
         self.tree = tree
+        self.query = query
+        self.regex = regex
         self.root_dist = root_dist
-        self.node: Node = self._get_edge_to_split(*query, regex=regex)
-        self.edge_features: Set = self._get_edge_features(edge_features)
+        self.inplace = inplace
+        self.node: Node = self._get_edge_to_split()
+        self.edge_features: Set[str] = self._get_edge_features(edge_features)
+
 
     @staticmethod
-    def _get_edge_features(edge_features):
+    def _get_edge_features(edge_features: Optional[Union[str, Sequence[str]]]) -> Set[str]:
         """Return the features associated with edges instead of nodes."""
         default = {'_dist', 'support'}
         disallowed = {"dist", "idx", "up", "children"}
@@ -111,53 +118,72 @@ class Rooter:
             return (default | {edge_features}) - disallowed
         return (default | set(edge_features)) - disallowed
 
-    def _get_edge_to_split(self, *query, regex) -> Node:
+
+    def _get_edge_to_split(self) -> Node:
         """Return the Node below new root edge from input query.
 
         Get MRCA Node of the input selection. If it is the root, then
         get the MRCA of the inverse selection. If that is also root,
         then raise exception for bad selection.
         """
-        nodes = self.tree.get_nodes(*query, regex=regex)
+        # get both the selected outgroup clade nodes and their mrca
+        nodes = self.tree.get_nodes(*self.query, regex=self.regex)
         mrca = self.tree.get_mrca_node(*nodes)
+        # logger.debug(f"rooting outgroup query={self.query} | {nodes}")
 
-        # if mrca is root, try to get mrca of reciprocal.
+        # if mrca is root, try to get mrca of the reciprocal Node set.
         if mrca.is_root():
-            nodes = set(self.tree.get_nodes()) - set(nodes) - set([mrca])
-            # orig = mrca
+            down = set.union(*[set(i.get_descendants()) for i in nodes])
+            upp = self.tree.get_ancestors(*down)
+            nodes = set(self.tree.get_nodes()) - down - upp
             mrca = self.tree.get_mrca_node(*nodes)
-            # if mrca.is_root():
-                # raise ToytreeError(
-                    # f"Bad selection to `root()`, cannot root on {orig}")
-        # experimental: skip hybrid nodes from networks up to next node.
-        # if self.node2.up and len(self.node2.children) == 1:
-            # self.node2 = self.node2.up
-            # self.node1 = self.node1.up
-        logger.debug(f"rooting on mrca of nodes={nodes}")
-        logger.debug(f"mrca={mrca}")
+            # logger.debug(f"rooting on reciprocal node set={nodes}")
+
+        # query is not monophyletic
+        if not self.tree.is_monophyletic(*nodes):
+            logger.error(f"Cannot root on non-monophyletic outgroup: {self.query}.")
+            raise ToytreeError(f"Cannot root on non-monophyletic outgroup: {self.query}.")
+
+        # logging for debugging
+        # logger.debug(f"rooting outgroup clade={mrca.get_leaf_names()}")
+        # logger.debug(f"new root edge will be above={mrca}")
         return mrca
+
 
     def run(self):
         """Return ToyTree rooted on the input selection."""
-        # if rooting on root of already rooted tree.
+        # get tree and node copies
+        if not self.inplace:
+            self.tree = self.tree.copy()
+            self.node = self.tree[self.node.idx]
+
+        # tree is currently rooted, return it or unroot it.
         if self.tree.is_rooted():
+            # return same if rooting on current rooting.
             if self.tree.treenode in [self.node, self.node.up]:
+                logger.debug("tree is already rooted this way.")
                 return self.tree
             self.tree.unroot(inplace=True)
+
+        # tree is currently unrooted, raise exception if no outgroup.
+        else:
+            if self.node.is_root():
+                msg = (
+                    "Cannot root unrooted tree on ALL tips, you must select "
+                    "a valid outgroup clade."
+                )
+                logger.error(msg)
+                raise ToytreeError(msg)
+
         self._insert_root_node()
         self.tree._update()
         return self.tree
 
-    def _infer_max_support(self):
-        """Get max support as 1.0 or 100 based on other Node values."""
-        if max(i.support for i in self.tree.traverse()) > 1:
-            return 100
-        return 1.0
 
     def _insert_root_node(self):
         r"""Insert a new node to break an edge to create root.
 
-        When inserting a new Node it is given the max support value.
+        When inserting a new Node it is given nan support value.
 
         Important Nodes are:
             - oldroot: o
@@ -182,6 +208,10 @@ class Rooter:
         # self.node.support = np.nan
         newroot = Node(name="root", support=np.nan, dist=0)
         edge = (self.node, self.node.up)
+        odist = float(edge[0]._dist)
+        # odist = sum([i._dist for i in self.node.up.children if i != self.node])
+        # sumdist = sum([ndist, odist])
+        # logger.warning(f"edge={edge}, ndist={ndist} odist={odist}")
 
         # nodes on path from node to the original root.
         path = (self.node,) + self.node.get_ancestors() # [n, u, 2, o]
@@ -223,16 +253,20 @@ class Rooter:
 
         # position of newroot on edge, None=midpoint, ...
         if self.root_dist is None:
-            edge[0]._dist /= 2.
-            edge[1]._dist /= 2.
+            edge[0]._dist = odist / 2.
+            edge[1]._dist = odist / 2.
+            # edge[0]._dist /= 2.
+            # edge[1]._dist /= 2.
         else:
-            sumdist = sum(i.dist for i in edge)
-            if self.root_dist > sumdist:
+            logger.warning(f"sumdist={odist}, root_dist={self.root_dist}")
+            if self.root_dist > odist:
                 raise ValueError(
                     "`root_dist` arg (placement of root node on existing edge) "
-                    f"cannot be greater than length of the edge: {sumdist}.")
+                    f"cannot be greater than length of the edge: {odist}.")
             edge[0]._dist = self.root_dist
-            edge[1]._dist = sumdist - self.root_dist
+            edge[1]._dist = odist - self.root_dist
+            # logger.warning(f"sumdist={sumdist}, root_dist={self.root_dist}")
+            # logger.warning(f"0={edge[0]._dist}, 1={edge[1]._dist}")
 
         # update as ToyTree
         self.tree.treenode = newroot
@@ -305,9 +339,8 @@ def root(
     >>> t2 = tree.root("r8", "r9", root_dist=0.3)
     >>> toytree.mtree([t1, t2]).draw();
     """
-    tree = tree if inplace else tree.copy()
     return Rooter(
-        tree, *query,
+        tree, *query, inplace=inplace,
         regex=regex, root_dist=root_dist, edge_features=edge_features,
         ).run()
 
@@ -380,7 +413,9 @@ if __name__ == "__main__":
     TREE = toytree.rtree.baltree(ntips=10)
 
     c, a, m = unroot(TREE).draw()
-    _, a, m = root(TREE, 'r2')._draw_browser()
+    # _, a, m = root(TREE, 'r2')._draw_browser()
+
+    T0 = root(TREE, 'r2', root_dist=1)
 
     # c2, a, m = unroot(TREE)._draw_browser(axes=a)
     # print(unroot(TREE))
