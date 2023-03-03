@@ -771,7 +771,7 @@ class ConsensusTree:
         # create dict of clade counts and set keys
         countdict = defaultdict(int)
         for clade, count in self.fclade_counts:
-            mask = np.int_(list(clade)).astype(np.bool)
+            mask = np.int_(list(clade)).astype(bool)
             ccx = idxarr[mask]
             queue.append((len(ccx), frozenset(ccx)))
             countdict[frozenset(ccx)] = count
