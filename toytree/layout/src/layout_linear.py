@@ -26,7 +26,17 @@ logger = logger.bind(name="toytree")
 
 class LinearLayout(BaseLayout):
     """Layout for linear drawing styles: "r", "l", "u", "d"
+
+    The interior_node_layout string is optionally entered as a
+    number after the linear style, e.g., "r0", "r1", "u2", etc.
+    The options implement 'intermediate', 'centered', or 'weighted',
+    positioning of internal nodes relative to their descendants or 
+    tips.
     """
+    # TODO perhaps.
+    # def __init__(self, interior_node_pos: int = 0):
+    # self.interior_node_pos = interior_node_pos
+
     def run(self):
         """Fills the .coords array with x, y coordinates."""
 
@@ -117,7 +127,10 @@ class LinearLayout(BaseLayout):
         return np.array(coords)
 
 
-
-
 if __name__ == "__main__":
-    pass
+    
+    import toytree
+    tre = toytree.rtree.unittree(30)
+    lay = LinearLayout(tre, tre.style, None, None)
+
+
