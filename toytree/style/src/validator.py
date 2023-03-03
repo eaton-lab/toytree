@@ -4,18 +4,35 @@
 
 """
 
-from typing import TypeVar, Sequence, Any
+from typing import TypeVar, Sequence, Any, Union, Tuple
 from loguru import logger
 import numpy as np
-
 import toyplot
 from toytree.style import TreeStyle
 from toytree.color import ToyColor, color_cycler
-from toytree.utils import ToytreeError
 from toytree.data import normalize_values
+from toytree.utils import (
+    ToytreeError,
+    StyleSizeMismatchError,
+    StyleTypeMismatchError,
+    StyleColorMappingTupleError,
+)
 
 logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
+ColorMap = Union[str, toyplot.color.Map]
+
+CMAP_ERROR = """
+To find a list of valid colormap names supported by toyplot use:
+>>> print(toyplot.color.brewer.names())
+
+You can map feature values to colors by entering (feature, colormap):
+>>> tree.draw('c', node_colors=('dist', 'Spectral'))
+
+or, load a colormap as a Map object for finer control:
+>>> cmap = toyplot.color.brewer.map('BlueRed', domain_min=0, domain_max=1)
+>>> tree.draw('c', node_colors=('dist', cmap))\
+"""
 
 
 def check_arr(values: Sequence[Any], label: str, size: int, ctype: type) -> np.ndarray:
@@ -26,30 +43,39 @@ def check_arr(values: Sequence[Any], label: str, size: int, ctype: type) -> np.n
     """
     arr = np.array(values)
     if not arr.size == size:
-        raise ToytreeError(
-            f"'{label}' shape mismatch error: len={arr.size} should be len={size}.")
+        raise StyleSizeMismatchError(
+            f"'{label}' len mismatch error: len={arr.size} should be "
+            f"len={size}.")
     if not isinstance(arr[0], ctype):
-        raise ToytreeError(
-            f"'{label}' type not supported. You entered {type(arr[0])}, should be len={ctype}.")
+        raise StyleTypeMismatchError(
+            f"'{label}' type not supported. You entered {type(arr[0])}, "
+            f"should be len={ctype}.")
     return arr
 
-def get_color_mapped_feature(values, cmap) -> np.ndarray:
+
+def get_color_mapped_feature(values: np.ndarray, cmap: ColorMap) -> np.ndarray:
     """Return feature mapped to a continuous or discrete color map.
+
+    Raises helpful error messages if user entered the special tuple
+    argument incorrectly, or by accident.
     """
     # select map from str name and check that Map is valid.
     if isinstance(cmap, str):
-        cmap = toyplot.color.brewer.map(cmap)
+        try:
+            cmap = toyplot.color.brewer.map(cmap)
+        except KeyError as inst:
+            raise StyleColorMappingTupleError(
+                f"'{cmap}' is an invalid colormap argument for the "
+                "special color mapping syntax entered as a tuple, e.g., "
+                "(feature, colormap).\n" + CMAP_ERROR
+            ) from inst
     if not isinstance(cmap, toyplot.color.Map):
-        raise TypeError(
-            f"colormap ({cmap}) entered as (feature, cmap) is not a "
-            "valid toyplot.color.Map.\n"
-            "You can find many options here:\n"
-            ">>> toyplot.color.brewer.maps\n"
-            "# For example:\n"
-            ">>> toyplot.color.brewer.maps('Spectral')"
+        raise StyleColorMappingTupleError(
+            f"'{cmap}' is invalid for the special tuple arg type "
+            "(feature, colormap)." + CMAP_ERROR
         )
 
-    # auto-set domains to min and max values if not set.
+    # auto-set domains to min and max values if not set on cmap.
     if cmap.domain.min is None:
         cmap.domain.min = np.nanmin(values)
     if cmap.domain.max is None:
@@ -59,12 +85,14 @@ def get_color_mapped_feature(values, cmap) -> np.ndarray:
     colors = cmap.colors(values)
 
     # set colors for nan values to "transparent"
-    colors[np.isnan(values)] = ToyColor("transparent")
+    colors[np.isnan(values)] = ToyColor((0, 0, 0, 0))
     return colors
 
-def validate_style(tree, style) -> TreeStyle:
+
+def validate_style(tree: ToyTree, style: TreeStyle) -> TreeStyle:
     """Return a TreeStyle with values expanded and validated."""
     Validator(tree, style).run()
+
 
 class Validator(TreeStyle):
     def __init__(self, tree: ToyTree, style: TreeStyle):
@@ -79,10 +107,10 @@ class Validator(TreeStyle):
         self.validate_node_sizes()
         self.validate_node_markers()
         self.validate_node_hover()
-        self.validate_node_style()        
+        self.validate_node_style()
 
         self.validate_node_labels()
-        self.validate_node_labels_style()        
+        self.validate_node_labels_style()
 
         self.validate_edge_colors()
         self.validate_edge_widths()
@@ -92,7 +120,7 @@ class Validator(TreeStyle):
         self.validate_tip_labels()
         self.validate_tip_labels_colors()
         self.validate_tip_labels_angles()
-        self.validate_tip_labels_style()        
+        self.validate_tip_labels_style()
 
     def validate_node_colors(self) -> None:
         """Set .node_colors to type=ndarray size=nnodes or None.
@@ -100,18 +128,26 @@ class Validator(TreeStyle):
         If only one color was entered then store as node_style.fill.
         Only expand .node_colors into an array of size nnodes if there
         is variation among nodes.
+
+        Args
+        ----
+        None
+        ToyColor, str (css)
+
         """
-        # use node_style
+        # if no node_colors then nodes will be colored by node_style.fill
         if self.node_colors is None:
             return
 
-        # special (feature, cmap) tuple.
+        # special (feature, cmap) tuple. This must captures special
+        # tuple colormappings but not colors entered as a tuple, e.g.,
+        # (0, 1, 0, 1).
         if isinstance(self.node_colors, tuple) and len(self.node_colors) == 2:
             feat, cmap = self.node_colors
             values = self.tree.get_node_data(feat).values
             self.node_colors = get_color_mapped_feature(values, cmap)
 
-        # user entered ToyColor or List[ToyColor]
+        # user entered ToyColor or List[ToyColor], pd.Series[ToyColor]
         colors = ToyColor.color_expander(self.node_colors)
 
         if isinstance(colors, ToyColor):
@@ -137,6 +173,7 @@ class Validator(TreeStyle):
         True: mask all nodes
         False: show all nodes
         Iterable: custom boolean mask
+        Tuple: (bool, bool, bool) for show (tips, internal, root).
         """
         if self.node_mask is True:
             self.node_mask = np.repeat(True, self.tree.nnodes)
@@ -145,6 +182,12 @@ class Validator(TreeStyle):
         elif self.node_mask is None:
             self.node_mask = np.zeros(self.tree.nnodes, dtype=bool)
             self.node_mask[:self.tree.ntips] = True
+        elif isinstance(self.node_mask, tuple):
+            self.node_mask = self.tree.get_node_mask(
+                mask_tips=self.node_mask[0],
+                mask_internal=self.node_mask[1],
+                mask_root=self.node_mask[2],
+            )
         self.node_mask = check_arr(
             self.node_mask, "node_mask", self.tree.nnodes, np.bool_)
 
@@ -533,11 +576,15 @@ class Validator(TreeStyle):
         self.admixture_edges = admix_tuples
 
 
-
 if __name__ == "__main__":
 
     import toytree
     import toyplot
+
+    tre = toytree.rtree.unittree(6)
+    tre.draw(node_colors='red')
+
+    raise SystemExit(0)
 
     tre = toytree.rtree.unittree(6)
     tre.set_node_data("test", default=['hi', 3], inplace=True)
