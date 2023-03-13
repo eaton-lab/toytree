@@ -303,27 +303,27 @@ class ToyTree:
         self.nnodes = idx
 
     #####################################################
-    ## TREE MODIFICATION FUNCTIONS (See ToyTree.mod)
-    ## - root, unroot, rotate_node, ladderize,
-    ## - set_node_heights, collapse_nodes, prune,
-    ## - drop_tips, resolve_polytomy,
+    # TREE MODIFICATION FUNCTIONS (See ToyTree.mod)
+    # - root, unroot, rotate_node, ladderize,
+    # - set_node_heights, collapse_nodes, prune,
+    # - drop_tips, resolve_polytomy,
     #####################################################
 
     def root(
         self,
         *query: Query,
-        regex: bool=False,
+        regex: bool = False,
         root_dist: Optional[float] = None,
         edge_features: Optional[Sequence[str]] = None,
-        inplace: bool=False,
-        ) -> ToyTree:
+        inplace: bool = False,
+    ) -> ToyTree:
         r"""Return a ToyTree rooted on the edge above selected Node query.
 
-        Rooting a tree involves splitting and edge to insert a new Node.
-        (It helps to think of it as pinching an edge and pulling it back
-        to create a new root). This adds a Node to an unrooted tree,
-        or keeps the number of Nodes the same for an already rooted
-        tree, where the former root Node is discarded.
+        Rooting a tree involves splitting an edge to insert a new Node.
+        (think of it as pinching an edge and pulling it back to create
+        a new root). This adds a Node to an unrooted tree, or keeps
+        the same number of Nodes in an already rooted tree, where the
+        former root Node is discarded.
 
         Example of rooting an unrooted tree:
                                                     x
@@ -345,8 +345,6 @@ class ToyTree:
 
         Parameters
         ----------
-        tree: ToyTree
-            A rooted or unrooted ToyTree to (re-)root.
         *query: str, int, or Node
             One or more Node selectors, which can be Node objects, names,
             or int idx labels. If multiple are entered the MRCA node will
@@ -368,7 +366,7 @@ class ToyTree:
         inplace: bool
             If True the original tree is modified and returned, otherwise
             a modified copy is returned.
-t
+
         Examples
         --------
         >>> tree = toytree.rtree.unittree(ntips=10, seed=123)
@@ -376,12 +374,12 @@ t
         >>> t2 = tree.root("r8", "r9", root_dist=0.3)
         >>> toytree.mtree([t1, t2]).draw();
         """
-        return toytree.mod.root(self,
-            *query, regex=regex, root_dist=root_dist,
+        return toytree.mod.root(
+            self, *query, regex=regex, root_dist=root_dist,
             edge_features=edge_features, inplace=inplace
         )
 
-    def unroot(self, inplace: bool=False) -> ToyTree:
+    def unroot(self, inplace: bool = False) -> ToyTree:
         """Return an unrooted ToyTree by collapsing the root Node.
 
         This will convert a binary split into a multifurcation.
@@ -402,12 +400,11 @@ t
         return self.mod.unroot(inplace=inplace)
 
     #################################################
-    ## NODES SEARCH/MATCH BY FLEXIBLE INPUTS
-    ## Matching Nodes by name can be used to color nodes/edges...
+    # NODES SEARCH/MATCH BY FLEXIBLE INPUTS
+    # Matching Nodes by name can be used to color nodes/edges...
     #################################################
 
-    def _iter_nodes_by_name_match(
-        self, *query: str, regex: bool = False) -> Iterator[Node]:
+    def _iter_nodes_by_name_match(self, *query: str, regex: bool = False) -> Iterator[Node]:
         """Return Iterator over Nodes in idxorder matched by leaf names."""
         # get matching function
         if regex:
@@ -512,10 +509,10 @@ t
     def get_ancestors(
         self,
         *query: Query,
-        include_query: bool=True,
-        include_top: bool=True,
-        stop_at_mrca: bool=False,
-        ) -> Set[Node]:
+        include_query: bool = True,
+        include_top: bool = True,
+        stop_at_mrca: bool = False,
+    ) -> Set[Node]:
         """Return a set of Nodes that are ancestors of the query samples.
 
         The returned set can include or exclude the sample query; it
@@ -559,8 +556,7 @@ t
             return query.union(ancestors)
         return ancestors
 
-    def get_mrca_node(
-        self, *query: Query, regex: bool = False) -> Node:
+    def get_mrca_node(self, *query: Query, regex: bool = False) -> Node:
         """Return the MRCA Node from Nodes matching a flexible query.
 
         Find and return the most-recent-common-ancestor Node instance
@@ -622,10 +618,10 @@ t
     def get_node_mask(
         self,
         *unmask: Query,
-        mask_tips: bool=True,
-        mask_internal: bool=False,
-        mask_root: bool=False,
-        ) -> Sequence[bool]:
+        mask_tips: bool = True,
+        mask_internal: bool = False,
+        mask_root: bool = False,
+    ) -> Sequence[bool]:
         """Return a boolean array to mask certain Nodes when drawing.
 
         Creates a boolean mask to hide a set of selected Nodes.
@@ -651,7 +647,7 @@ t
         Examples
         --------
         >>> tree = toytree.rtree.unittree(10, seed=123)
-        >>> mask = tree.get_node_mask(15, 16, internal=True, root=True)
+        >>> mask = tree.get_node_mask(15, 16, mask_internal=True, mask_root=True)
         >>> tree.draw(ts='s', node_mask=mask);
         """
         arr = np.zeros(self.nnodes, dtype=bool)
@@ -661,7 +657,7 @@ t
             arr[self.ntips:-1] = 1
         if mask_root:
             arr[-1] = 1
-        if unmask:# != ():
+        if unmask:  # != ():
             for node in self.get_nodes(*unmask):
                 arr[node.idx] = 0
         return arr
@@ -670,8 +666,8 @@ t
         self,
         *query: Query,
         regex: bool = False,
-        # unrooted: bool=False,
-        ) -> bool:
+        unrooted: bool = False,
+    ) -> bool:
         """Return True if leaf Nodes form a monophyletic clade.
 
         If any other leaf Nodes are members of this clade, but not
@@ -689,7 +685,8 @@ t
             expressions that can match multiple Node names.
         unrooted: bool
             If True then the selected Nodes are tested for monophyly
-            without reference to the placement of the root Node.
+            without reference to the placement of the root Node. The
+            query is then "is it possible for them to be monophyletic".
 
         Examples
         --------
@@ -698,8 +695,8 @@ t
         >>> print(tree.is_monophyletic(0, 1, 2))
         >>> print(tree.is_monophyletic(0, 4, 8))
         """
-        # if unrooted:
-            # raise NotImplementedError("TODO")
+        if unrooted:
+            raise NotImplementedError("TODO: make a request to developers")
         nodes = self.get_nodes(*query, regex=regex)
         mrca = self.get_mrca_node(*nodes)
         for node in mrca._iter_leaves():
@@ -708,13 +705,13 @@ t
         return True
 
     ##################################################
-    ## TREE DISTANCE (ToyTree.distance)
-    ## get distances between nodes, trees, or data points
+    # TREE DISTANCE (ToyTree.distance)
+    # get distances between nodes, trees, or data points
     ##################################################
 
     ###################################################
-    ## I/O FORMATTING (toytree.io)
-    ## read and write trees to newick, nexus, nhx
+    # I/O FORMATTING (toytree.io)
+    # read and write trees to newick, nexus, nhx
     ###################################################
 
     def write(
@@ -728,7 +725,7 @@ t
         features_delim: str = ",",
         features_assignment: str = "=",
         **kwargs,
-        ) -> Optional[str]:
+    ) -> Optional[str]:
         """Write tree to newick string and return or write to filepath.
 
         The newick string can be formatted in several ways. The default
@@ -782,17 +779,20 @@ t
 
         Examples
         --------
+        >>> # parse newick to tree using general or specific parser
         >>> nwk = "((a:3[&state=1],b:3[&state=1])D:1[&state=1],c:4[&state=2])E:1[&state=1];"
-        >>> tree = toytree.io.parse_newick(nwk, features_prefix="&")
+        >>> tree = toytree.tree(nwk)
+        >>> tree = toytree.io.parse_newick_string(nwk, features_prefix="&")
+        >>> # write tree with or without feature data
         >>> tree.write()
         >>> # ((a:3,b:3)100:1,c:4)100:1
         >>> tree.write(dist_formatter=None)
         >>> # ((a,b)100,c)100
-        >>> tree.write(internal_label=None)
+        >>> tree.write(internal_labels=None)
         >>> # ((a:3,b:3):1,c:4):1
         >>> tree.write(internal_labels="name")
         >>> # ((a:3,b:3)D:1,c:4)E:1
-        >>> tree.write(features=["size"])
+        >>> tree.write(features=["state"])
         >>> # ((a:3[&state=1],b:3[&state=1])100:1[&state=1],c:4[&state=2])100:1[&state=1]
         """
         if kwargs:
@@ -805,13 +805,13 @@ t
         )
 
     ###################################################
-    ## TOPOLOGY OR LEAF ANALYSIS FUNCTIONS
-    ## access nodes or features ...
+    # TOPOLOGY OR LEAF ANALYSIS FUNCTIONS
+    # access nodes or features ...
     ###################################################
 
     def get_tip_labels(self) -> List[str]:
         """Return a list of tip labels in Node idx order."""
-        return [self[i].name for i in range(self.ntips)] # .treenode.get_leaf_names()
+        return [self[i].name for i in range(self.ntips)]  # .treenode.get_leaf_names()
 
     def _get_edges(self) -> np.ndarray:
         """Return numpy array of child,parent relationships."""
@@ -828,11 +828,11 @@ t
 
     def iter_bipartitions(
         self,
-        feature: str="name",
-        exclude_root: bool=True,
-        exclude_singletons: bool=True,
-        exclude_internal_nodes: bool=True,
-        ) -> Iterator[Tuple[Tuple[str],Tuple[str]]]:
+        feature: str = "name",
+        exclude_root: bool = True,
+        exclude_singletons: bool = True,
+        exclude_internal_nodes: bool = True,
+    ) -> Iterator[Tuple[Tuple[str], Tuple[str]]]:
         """Generator to yield bipartitions (info about splits in a tree).
 
         Bipartitions are yielded in random order, but splits and labels
@@ -891,9 +891,9 @@ t
 
     def iter_quartets(
         self,
-        feature: str="name",
-        collapse: bool=False,
-        ) -> Iterator[Tuple]:
+        feature: str = "name",
+        collapse: bool = False,
+    ) -> Iterator[Tuple]:
         """Generator to yield quartets induced by edges on a tree.
 
         This yields all quartets (4-sample subtrees) that exist within
@@ -944,9 +944,9 @@ t
     def get_bipartitions(
         self,
         feature: str = "name",
-        exclude_internal_labels: bool=True,
-        exclude_singleton_splits: bool=True,
-        ) -> pd.DataFrame:
+        exclude_internal_labels: bool = True,
+        exclude_singleton_splits: bool = True,
+    ) -> pd.DataFrame:
         """Return a DataFrame with partitions from tree in idx order.
 
         Partitions represent splits that separate sets of Nodes in a
@@ -997,10 +997,10 @@ t
 
     def _get_bipartitions_table(
         self,
-        exclude_internal_labels: bool=True,
-        exclude_singleton_splits: bool=False,
-        dtype: type=int,
-        ) -> pd.DataFrame:
+        exclude_internal_labels: bool = True,
+        exclude_singleton_splits: bool = False,
+        dtype: type = int,
+    ) -> pd.DataFrame:
         """Return a DataFrame with partitions in binary format."""
         bits = list(self.iter_bipartitions(
             "idx", exclude_internal_labels, exclude_singleton_splits))
@@ -1014,7 +1014,7 @@ t
             index = None
         return pd.DataFrame(arr, columns=self.get_tip_labels(), index=index)
 
-    def get_topology_id(self, feature="name", exclude_root: bool=True) -> str:
+    def get_topology_id(self, feature="name", exclude_root: bool = True) -> str:
         """Return a unique ID representing this topology.
 
         Two trees with the same topology and tip names will produce
@@ -1053,8 +1053,8 @@ t
         return md5(str(biparts).encode('utf-8')).hexdigest()
 
     ###################################################
-    ## COORDINATE LAYOUT FUNCTIONS
-    ## push to .layout subpackage
+    # COORDINATE LAYOUT FUNCTIONS
+    # push to .layout subpackage
     ###################################################
 
     def _get_node_coordinates(self) -> np.ndarray:
@@ -1102,8 +1102,8 @@ t
         return self.get_node_coordinates(**kwargs).iloc[:self.ntips]
 
     ###################################################
-    ## FULL TREE DATA GET/SET
-    ## functions to modify features of all connected Nodes
+    # FULL TREE DATA GET/SET
+    # functions to modify features of all connected Nodes
     ###################################################
 
     def get_feature_dict(self, keys: str = None, values: str = None) -> Dict[str, Any]:
@@ -1163,27 +1163,26 @@ t
                 "same value cannot be represented as keys in the dict.")
         return ndict
 
-    def _set_node_data_dtype(
-        self, feature: str, dtype: Optional[Callable] = None) -> None:
-        """Set the type/dtype (or infer) of a Node feature in-place.
+    # def _set_node_data_dtype(self, feature: str, dtype: Optional[Callable] = None) -> None:
+    #     """Set the type/dtype (or infer) of a Node feature in-place.
 
-        This is used internally when data is parsed from strings
-        and may be a str, float, int, or complex type, and we want
-        to be able to *try* to infer the proper type. Also, if the
-        user knows the type then it can be set. This will raise a
-        TypeError if the data cannot be cast to the entered dtype.
+    #     This is used internally when data is parsed from strings
+    #     and may be a str, float, int, or complex type, and we want
+    #     to be able to *try* to infer the proper type. Also, if the
+    #     user knows the type then it can be set. This will raise a
+    #     TypeError if the data cannot be cast to the entered dtype.
 
-        Parameters
-        ----------
-        ...
-        """
-        raise NotImplementedError("TODO")
+    #     Parameters
+    #     ----------
+    #     ...
+    #     """
+    #     raise NotImplementedError("TODO")
 
     def set_node_data_from_dataframe(
         self,
         table: pd.DataFrame,
         inplace: bool = False,
-        ) -> ToyTree:
+    ) -> ToyTree:
         """Set new features on Nodes of a ToyTree from a DataFrame.
 
         The DataFrame should have column names corresponding to features
@@ -1238,7 +1237,7 @@ t
         default: Any = None,
         inherit: bool = False,
         inplace: bool = False,
-        ) -> ToyTree:
+    ) -> ToyTree:
         """Create or modify features (data) set to nodes in a ToyTree.
 
         Features can be set on all or only some nodes. In the latter
@@ -1372,7 +1371,7 @@ t
         self,
         feature: Union[str, Sequence[str], None] = None,
         missing: Union[Any, Sequence[Any], None] = None,
-        ) -> Union[pd.DataFrame, pd.Series]:  # noqa: E123,E125
+    ) -> Union[pd.DataFrame, pd.Series]:
         """Return a pandas Series or DataFrame with values for one or
         more selected features in the tree.
 
@@ -1524,7 +1523,7 @@ t
         self,
         feature: Union[str, Sequence[str], None] = None,
         missing: Optional[Any] = None,
-        ) -> pd.DataFrame:
+    ) -> pd.DataFrame:
         """Return a DataFrame with values for one or more selected
         features from every leaf node in the tree.
 
@@ -1577,12 +1576,9 @@ t
     # DRAWING
     ###################################################
 
-    # --------------------------------------------------------------------
+    # ------------------------------------------------------------------
     # Draw functions imported, but docstring here...
-    # TODO:
-    #    - expand node_hover=True to a table of all features
-    #    - fix admixture_edges
-    # --------------------------------------------------------------------
+    # ------------------------------------------------------------------
     def _draw_browser(self, *args, new: bool = False, **kwargs):
         """Open and display tree drawing in default web browser.
 
@@ -1598,40 +1594,40 @@ t
 
     def draw(
         self,
-        tree_style: Optional[str]=None,
-        height: int=None,
-        width: int=None,
-        axes: Cartesian=None,
-        layout: str=None,
-        tip_labels: Union[bool,Sequence]=None,
-        tip_labels_colors: Union[str,Sequence]=None,
-        tip_labels_angles: Union[float,Sequence[float]]=None,
-        tip_labels_style: Dict[str,Any]=None,
-        tip_labels_align: bool=None,
-        node_mask: Union[bool,Sequence[bool]]=None,
-        node_labels: Union[bool,Sequence[str]]=None,
-        node_labels_style: Dict[str,Any]=None,
-        node_sizes: Union[int,Sequence[int]]=None,
-        node_colors: Union[str,Sequence[str]]=None,
-        node_style: Dict[str,Any]=None,
-        node_hover: bool=None,
-        node_markers: Sequence[str]=None,
-        edge_colors: Union[str,Sequence[str]]=None,
-        edge_widths: float=None,
-        edge_type: str=None,
-        edge_style: Dict[str,Any]=None,
-        edge_align_style: Dict[str,Any]=None,
-        use_edge_lengths: bool=None,
-        scale_bar: bool=None,
-        padding: float=None,
-        xbaseline: float=None,
-        ybaseline: float=None,
-        admixture_edges: List[Tuple[int,int]]=None,
-        shrink: float=None,
-        fixed_order: Sequence[str]=None,
-        fixed_position: Sequence[float]=None,
+        tree_style: Optional[str] = None,
+        height: int = None,
+        width: int = None,
+        axes: Cartesian = None,
+        layout: str = None,
+        tip_labels: Union[bool, Sequence] = None,
+        tip_labels_colors: Union[str, Sequence] = None,
+        tip_labels_angles: Union[float, Sequence[float]] = None,
+        tip_labels_style: Dict[str, Any] = None,
+        tip_labels_align: bool = None,
+        node_mask: Union[bool, Sequence[bool]] = None,
+        node_labels: Union[bool, Sequence[str]] = None,
+        node_labels_style: Dict[str, Any] = None,
+        node_sizes: Union[int, Sequence[int]] = None,
+        node_colors: Union[str, Sequence[str]] = None,
+        node_style: Dict[str, Any] = None,
+        node_hover: bool = None,
+        node_markers: Sequence[str] = None,
+        edge_colors: Union[str, Sequence[str]] = None,
+        edge_widths: float = None,
+        edge_type: str = None,
+        edge_style: Dict[str, Any] = None,
+        edge_align_style: Dict[str, Any] = None,
+        use_edge_lengths: bool = None,
+        scale_bar: bool = None,
+        padding: float = None,
+        xbaseline: float = None,
+        ybaseline: float = None,
+        admixture_edges: List[Tuple[int, int]] = None,
+        shrink: float = None,
+        fixed_order: Sequence[str] = None,
+        fixed_position: Sequence[float] = None,
         **kwargs,
-        ) -> Tuple[Canvas, Cartesian, ToytreeMark]:
+    ) -> Tuple[Canvas, Cartesian, ToytreeMark]:
         """Return a drawing of the tree as a Toyplot figure.
 
         Drawings are returned as Tuple[Canvas, Cartesian, ToytreeMark]
