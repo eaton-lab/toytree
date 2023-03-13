@@ -22,13 +22,13 @@ import toytree
 class TestModLadderize(unittest.TestCase):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
-        self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)        
+        self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)
         self.trees = [self.itree, self.btree]
 
     def test_ladderize_docs_match(self):
         """API and submodule documentations updated to match."""
         adoc = [i.strip() for i in self.itree.mod.ladderize.__doc__.split("\n")]
-        sdoc = [i.strip() for i in toytree.mod.ladderize.__doc__.split("\n")]        
+        sdoc = [i.strip() for i in toytree.mod.ladderize.__doc__.split("\n")]
         self.assertEqual(adoc, sdoc)
 
     def test_ladderize_api_defaults(self):
@@ -67,7 +67,7 @@ class TestModCollapseNodes(unittest.TestCase):
         self.trees = [self.itree, self.btree]
         for tre in self.trees:
             tre.set_node_data(
-                "support", 
+                "support",
                 {i: 100. / (i + 10) for i in range(tre.nnodes)})
 
     def test_collapse_nodes_docs_match(self):
@@ -94,7 +94,7 @@ class TestModCollapseNodes(unittest.TestCase):
     def test_collapse_nodes_custom(self):
         """Collapse nodes by custom selection."""
         self.assertEqual(
-            self.itree.nnodes - 3, 
+            self.itree.nnodes - 3,
             self.itree.mod.collapse_nodes(13, 14, 15).nnodes,
         )
 
@@ -109,7 +109,7 @@ class TestModCollapseNodes(unittest.TestCase):
 class TestModRotateNode(unittest.TestCase):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
-        self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)        
+        self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)
         self.trees = [self.itree, self.btree]
 
     def test_rotate_node_docs_match(self):
@@ -132,11 +132,11 @@ class TestModRotateNode(unittest.TestCase):
         for tre in self.trees:
             new = tre.mod.rotate_node(*select)
             new_cset = [
-                set(i.get_leaf_names()) for i 
+                set(i.get_leaf_names()) for i
                 in new.get_mrca_node(*select).children
             ]
             old_cset = [
-                set(i.get_leaf_names()) for i 
+                set(i.get_leaf_names()) for i
                 in tre.get_mrca_node(*select).children
             ]
             self.assertEqual(new_cset, old_cset[::-1])
@@ -145,7 +145,7 @@ class TestModRotateNode(unittest.TestCase):
 class TestModPrune(unittest.TestCase):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
-        self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)        
+        self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)
         self.trees = [self.itree, self.btree]
 
     def test_prune_docs_match(self):
@@ -165,7 +165,7 @@ class TestModPrune(unittest.TestCase):
         """Prune to new MRCA as root node with its orig height."""
         select = [0, 1, 2, 3, 4]
         for tre in self.trees:
-            mrca_height_on_orig_tree = tre.get_mrca_node(*select).height            
+            mrca_height_on_orig_tree = tre.get_mrca_node(*select).height
             new = tre.mod.prune(*select, require_root=False, preserve_branch_length=True)
             self.assertAlmostEqual(mrca_height_on_orig_tree, new.treenode.height)
 
@@ -179,7 +179,7 @@ class TestModPrune(unittest.TestCase):
         new = tre.mod.prune(*select, require_root=True, preserve_branch_length=True)
         self.assertAlmostEqual(tre.treenode.height, new.treenode.height)
         self.assertAlmostEqual(
-            tre.get_mrca_node(*tips_x).height, 
+            tre.get_mrca_node(*tips_x).height,
             new.get_mrca_node(*tips_x).height,
         )
         self.assertNotAlmostEqual(
@@ -226,7 +226,7 @@ class TestModPrune(unittest.TestCase):
 
     def test_prune_inplace(self):
         """Inplace pruning has same result as prune copy."""
-        select = ['r0', 'r1', 'r3', 'r4', 'r5']        
+        select = ['r0', 'r1', 'r3', 'r4', 'r5']
         new = self.itree.mod.prune(*select)
         ctre = self.itree.copy()
         ctre.mod.prune(*select, inplace=True)
@@ -247,7 +247,7 @@ class TestModPrune(unittest.TestCase):
     #     self.assertAlmostEqual(new.treenode.height, mrca_height_on_orig_tree)
 
     # def test_prune_2(self):
-    #     select = [0, 1, 2, 3, 4]        
+    #     select = [0, 1, 2, 3, 4]
     #     newtre = self.tree.mod.prune(*select)
     #     new_tips = sorted(newtre.get_tip_labels())
     #     select_tips = sorted([i.name for i in self.tree.get_nodes(*select)])
@@ -269,7 +269,7 @@ class TestModPrune(unittest.TestCase):
 class TestModRemoveUnaryNodes(unittest.TestCase):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
-        self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)        
+        self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)
         self.trees = [self.itree, self.btree]
 
     def test_remove_unary_nodes_docs_match(self):
@@ -289,7 +289,7 @@ class TestModRemoveUnaryNodes(unittest.TestCase):
 class TestModAddInternalNode(unittest.TestCase):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
-        self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)        
+        self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)
         self.trees = [self.itree, self.btree]
 
     def test_add_internal_node_docs_match(self):
@@ -328,7 +328,7 @@ class TestModAddInternalNode(unittest.TestCase):
 class TestModDropTips(unittest.TestCase):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
-        self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)        
+        self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)
         self.trees = [self.itree, self.btree]
 
     def test_drop_tips_docs_match(self):

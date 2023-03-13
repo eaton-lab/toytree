@@ -28,7 +28,7 @@ class TestRoot(unittest.TestCase):
         """: Example dataset with inner labels as edge data."""
         self.itree = toytree.rtree.imbtree(10, seed=123, treeheight=10)
         self.btree = toytree.rtree.baltree(10, seed=123, treeheight=10)
-        self.utree = toytree.rtree.unittree(10, seed=123, treeheight=10)        
+        self.utree = toytree.rtree.unittree(10, seed=123, treeheight=10)
         self.trees = [self.itree, self.btree, self.utree]
 
     def test_czech_2017_test_case(self):
@@ -39,12 +39,12 @@ class TestRoot(unittest.TestCase):
         tree = self.czech
         tree.set_node_data("ecolor", colors, inplace=True)
         tree.set_node_data("ncolor", colors, inplace=True)
-        
+
         # style to draw the tree (used in docs example)
         kwargs = {
-            'layout': 'd', 
+            'layout': 'd',
             'use_edge_lengths': False,
-            'node_sizes': 10, 
+            'node_sizes': 10,
             'node_labels': 'name',
             'node_labels_style': {
                 'font-size': 20,
@@ -59,7 +59,7 @@ class TestRoot(unittest.TestCase):
             **kwargs,
         )
 
-        # re-root, treating 'ecolor' but not 'ncolor' as an edge 
+        # re-root, treating 'ecolor' but not 'ncolor' as an edge
         # feature.
         rtree = tree.root("X", edge_features=["ecolor"])
         rtree.draw(
@@ -73,7 +73,6 @@ class TestRoot(unittest.TestCase):
         self.assertEqual(rtree.get_nodes("2")[0].ecolor, "orange")
         self.assertEqual(hasattr(rtree.get_nodes("3")[0], "ecolor"), False)
 
-
     def test_raise_exception_on_root_on_non_monophyletic_clade(self):
         """Raise ToytreeError on non-monophyletic outgroup."""
         for tre in self.trees:
@@ -84,13 +83,12 @@ class TestRoot(unittest.TestCase):
             with self.assertRaises(ToytreeError):
                 tre.root("r1", "r7", regex=True)
 
-
     # def test_root_unroot_transferrable(self):
     #     """..."""
     #     for tre in self.trees:
     #         new = tre.root("r0").unroot().root("r0")
     #         self.assertEqual(
-    #             tre.get_tip_labels(), 
+    #             tre.get_tip_labels(),
     #             new.get_tip_labels()
     #         )
     #         new = tre.root("r0", "r1").unroot().root("r0", "r1")
@@ -110,7 +108,6 @@ class TestRoot(unittest.TestCase):
             sum_child_dists = sum([i.dist for i in rtre.treenode.children])
             new_child_dist = utre.treenode.children[-1]._dist
             self.assertAlmostEqual(sum_child_dists, new_child_dist)
-
 
     def test_root_child_dist_data(self):
         """The dist between the two root children should be maintained."""
