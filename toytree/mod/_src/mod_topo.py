@@ -25,7 +25,7 @@ ToyTree = TypeVar("ToyTree")
 Query = TypeVar("Query", str, int, Node)
 
 
-def ladderize(tree, direction: bool=False, inplace: bool=False) -> ToyTree:
+def ladderize(tree, direction: bool = False, inplace: bool = False) -> ToyTree:
     """Return a ladderized tree (ordered descendants)
 
     In a ladderized tree nodes are rotated so that the left/
@@ -34,13 +34,13 @@ def ladderize(tree, direction: bool=False, inplace: bool=False) -> ToyTree:
     Parameters
     ----------
     direction: bool
-        If False then child Nodes are sorted (left to right) from 
+        If False then child Nodes are sorted (left to right) from
         smallest to largest number of descendants. If True they are
         sorted in the reverse order.
     """
     # get a copy of the tree to modify
     nself = tree if inplace else tree.copy()
-    direction = bool(direction) # needed to ensure invert below against int arg
+    direction = bool(direction)  # needed to ensure invert below against int arg
 
     # visit all nodes from tips to root recording size on the way
     sizes = {}
@@ -52,20 +52,24 @@ def ladderize(tree, direction: bool=False, inplace: bool=False) -> ToyTree:
             sizes[node.idx] = 1
         else:
             sizes[node.idx] = sum(sizes[child.idx] for child in node.children)
-            key = lambda x: sizes[x.idx]
-            node._children = tuple(sorted(node._children, key=key, reverse=direction))
+            node._children = tuple(sorted(
+                node._children,
+                key=lambda x: sizes[x.idx],
+                reverse=direction,
+            ))
 
     # update idx labels for new tree ladderization
     nself._update()
     return nself
 
+
 def collapse_nodes(
     tree: ToyTree,
     *query: Query,
-    min_dist: float=1e-6,
-    min_support: float=0,
-    inplace: bool=False,
-    ) -> ToyTree:
+    min_dist: float = 1e-6,
+    min_support: float = 0,
+    inplace: bool = False,
+) -> ToyTree:
     """Return ToyTree with some internal nodes collapsed.
 
     Nodes can be entered as Node instances, Node names strings,
@@ -126,12 +130,13 @@ def collapse_nodes(
     tree._update()
     return tree
 
+
 def rotate_node(
     tree: ToyTree,
     *query: Query,
-    regex: bool=False,
-    inplace: bool=False,
-    ) -> ToyTree:
+    regex: bool = False,
+    inplace: bool = False,
+) -> ToyTree:
     """Return ToyTree with one Node rotated (children order reversed).
 
     Rotates only one Node per call. Internal Nodes are easiest selected
@@ -167,15 +172,16 @@ def rotate_node(
 
 # def extract_subtree(tree, root)
 
+
 def prune(
     tree,
     *query: Query,
-    regex: bool=False,
-    preserve_branch_length: bool=True,
-    require_root: bool=False,
-    inplace: bool=False,
-    ) -> ToyTree:
-    r"""Return a ToyTree as a subtree extracted from an existing tree.
+    regex: bool = False,
+    preserve_branch_length: bool = True,
+    require_root: bool = False,
+    inplace: bool = False,
+) -> ToyTree:
+    r"""Return a ToyTree connecting a subset of Nodes in a tree.
 
     All nodes not included in the entered 'nodes' list will be
     removed from the topology, and the mininal spanning edges to
@@ -210,12 +216,12 @@ def prune(
         returned, rather than leaving original tree unchanged.
     """
     # expand query into a set of Nodes
-    nodes = set(tree.get_nodes(*query, regex=regex))    
+    nodes = set(tree.get_nodes(*query, regex=regex))
     nnodes = len(nodes)
 
     # add mrca Node for each pair and add the root Node
     nodes = nodes.union(set(
-        tree.get_mrca_node(i, j) for i, j in 
+        tree.get_mrca_node(i, j) for i, j in
         itertools.permutations(nodes, 2))
     )
     nodes.add(tree.treenode)
@@ -279,7 +285,8 @@ def prune(
     tree._update()
     return tree
 
-def remove_unary_nodes(tree: ToyTree, inplace: bool=False):
+
+def remove_unary_nodes(tree: ToyTree, inplace: bool = False) -> ToyTree:
     """Return ToyTree with any unary Nodes removed.
 
     Parameters
@@ -302,6 +309,7 @@ def remove_unary_nodes(tree: ToyTree, inplace: bool=False):
                 true_node._dist += node._dist
     tree._update()
     return tree
+
 
 def drop_tips(
     tree: ToyTree,
@@ -553,7 +561,7 @@ def add_tip_node(
     sister_1 = tree.get_mrca_node(*query, regex=regex)
     if not inplace:
         tree = tree.copy()
-        sister_1 = tree[sister_1.idx]    
+        sister_1 = tree[sister_1.idx]
 
     # selected a Node whose edge will be split.
     sister_1 = tree.get_mrca_node(*query, regex=regex)
@@ -600,11 +608,11 @@ def add_subtree(
 
     Splits a branch spanning from node (A) to its parent (C) to
     create a new ancestral node (Z) from which a subtree (Y) will
-    be inserted. The name of node (Z) and the stem dist of node (Y) 
+    be inserted. The name of node (Z) and the stem dist of node (Y)
     can be set. By default, if left as None, the stem dist will be
     set to half the distance to the farthest leaf, and the subtree
     will be scaled to fill the other half distance so that it aligns
-    as the farthest tip node distance. 
+    as the farthest tip node distance.
 
                  C                         C
                 /\                        Z \
@@ -626,7 +634,7 @@ def add_subtree(
         A subtree to insert into the target tree.
     parent_dist: float or None
         Edge length of the new inserted Node (Z). This is the length
-        from the top at which it will be inserted into an existing 
+        from the top at which it will be inserted into an existing
         edge (e.g., A). If None it will be automated half the dist
         to the farthest leaf.
     subtree_stem_dist: float or None
@@ -638,7 +646,7 @@ def add_subtree(
     rescale_subtree: bool
         If True all edges of the subtree will be rescaled to fit
         in the dist below where the subtree is inserted so that the
-        subtrees farthest tip will align with the 
+        subtrees farthest tip will align with the
     inplace: bool
         If False (default) a copy of the original tree is returned.
     """
@@ -667,7 +675,7 @@ def add_subtree(
             height = (parent.height - new_node._dist) - subtree_stem_dist
             subtree = subtree.mod.edges_scale_to_root_height(
                 height, include_stem=False)
-        subtree.treenode._dist = subtree_stem_dist            
+        subtree.treenode._dist = subtree_stem_dist
     else:
         height = parent.height - new_node._dist
         subtree = subtree.mod.edges_scale_to_root_height(
@@ -681,7 +689,7 @@ def add_subtree(
     # insert subtree as a child of new_node
     new_node._add_child(subtree.treenode)
     tree._update()
-    return tree    
+    return tree
 
 
 # NEEDS WORK, not yet exposed to API.
@@ -893,7 +901,7 @@ def _resolve_nodes(
 
 
 if __name__ == "__main__":
-    
+
     import toytree
     t = toytree.rtree.unittree(16, treeheight=10)
     t.mod.prune(0, 1, 2, 3)
