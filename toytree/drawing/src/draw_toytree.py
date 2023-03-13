@@ -140,7 +140,7 @@ def get_tree_style(tree: ToyTree, **kwargs) -> TreeStyle:
                     setattr(substyle, sub_key, sub_value)
                 else:
                     logger.warning(
-                        f"Unrecognized substyle drawing arg skipped: {sub_key}"
+                        f"Unrecognized substyle drawing arg skipped: {sub_key} ({substyle})."
                     )
     return style
 
@@ -177,4 +177,4 @@ if __name__ == "__main__":
     import toytree
     toytree.set_log_level("DEBUG")
     tre = toytree.rtree.unittree(10)
-    tre._draw_browser(edge_style={"stroke-width": 5})
+    tre._draw_browser(edge_style={"stroke-width": 5, "stroke-opacity": 0.7})
