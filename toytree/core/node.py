@@ -172,24 +172,27 @@ class Node:
 
         Node heights are calculated relative to a connected Node
         that is furthest from the root Node, defined as height 0.
+
+        `height` is an emergent property of a collection of Nodes, and
+        thus cannot be set for an individual Node. It can, however, be
+        set from a ToyTree (collection of Nodes), using `set_node_data`,
+        which will modify the `.dist` attributes of multiple Nodes to
+        set the height of one or more Nodes to the entered values. This
+        can also be set using `toytree.mod.set_node_heights()`.
         """
         return self._height
 
     @height.setter
-    def height(self, value) -> None:
-        """Height cannot be set, this raises a TreeNodeError exception.
-
-        Height is an emergent property of a collection of Nodes, and
-        so it cannot be set on an individual Node. It can however be
-        set on a ToyTree (collection of Nodes), using `set_node_data`,
-        which will modify the .dist attributes of multiple Nodes to
-        set the height of one or more Nodes to the entered values.
-        """
+    def height(self, value: float) -> None:
+        """height Node attribute cannot be set by user.        """
         raise TreeNodeError(
-            "Cannot set .height attribute of a Node. If you are an "
-            "advanced user then you can do so by setting ._height. "
-            "See the docs section on Modifying Nodes and Tree Topology,"
-            "and/or see function `toytree.mod.set_node_heights`."
+            "Cannot set .height attribute of a Node since it is an emergent "
+            "property of multiple Nodes. The prefered method of setting Node "
+            "heights is to use `set_node_data` from a ToyTree, or "
+            "`set_node_heights` from the `.mod` submodule. See the docs "
+            "section on Modifying Nodes and Tree Topology for more details. "
+            "Finally, if you know what you are doing you *can* force the "
+            "height of a Node by setting its `._height` attribute."
         )
 
     @property
@@ -235,7 +238,7 @@ class Node:
         )
 
     ################################################
-    ## IDENTITY
+    # IDENTITY
     ################################################
 
     def is_leaf(self) -> bool:
