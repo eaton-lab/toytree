@@ -1,6 +1,15 @@
 #!/usr/bin/env python
 
 """Data transformations for formatting node values nicely.
+
+
+# maybe consider supporting something like this...
+style_arg=(feature, 2, 10, 10)
+
+# but otherwise, more explicit version:
+style_arg=toytree.utils.discretize_values(tree.get_node_data("dist"), 2, 10, 10)
+
+TODO: ensure it plays nicely with nan values...
 """
 
 from typing import Sequence, Any
@@ -12,17 +21,17 @@ from toytree.utils import ToytreeError
 
 def normalize_values(
     values: Sequence[Any],
-    min_value: int=2,
-    max_value: int=12,
-    nbins: int=10,    
-    ) -> ArrayLike:
+    min_value: int = 2,
+    max_value: int = 12,
+    nbins: int = 10,
+) -> ArrayLike:
     """Distribute values into bins spaced at reasonable sizes for plotting.
 
     This is used in tree_style='p' to automatically scale Ne values
     to plot as edge widths. The input 'values' arg will usually be
     a pandas.Series.
 
-    TODO: get_node_data dtype setting..
+    TODO: get_node_data dtype setting.., rename as discretize values?
     """
     # missing values are not allowed
     if np.isnan(values).any():
@@ -55,7 +64,7 @@ def normalize_values(
 
 if __name__ == "__main__":
 
-    import ipcoal
+    # import ipcoal
     import toytree
 
     # generate a random species tree with 10 tips and a crown age of 10M generations

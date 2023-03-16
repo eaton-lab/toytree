@@ -64,6 +64,17 @@ def get_n_unlabeled_trees(ntips: int) -> int:
     """
 
 
+def get_unlabeled_trees(ntips: int) -> int:
+    r"""Return unlabaled tree and its probability.
+
+    Note
+    ----
+    In contrast to labeled trees, all unlabeled trees for ntips are 
+    *not* equiprobable, 
+
+    """
+
+
 def get_the_n_maximally_probable_tree(ntips: int) -> toytree.ToyTree:
     """Return the topology most probable under Yule model for ntips.
 

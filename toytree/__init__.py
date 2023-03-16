@@ -17,7 +17,7 @@ Examples
 >>> tree2.root("prz", regex=True).draw(tree_style='o')
 """
 
-__version__ = "3.0.dev2"
+__version__ = "3.0.dev3"
 __author__ = "Deren Eaton"
 
 # core class objects
@@ -36,7 +36,7 @@ import toytree.distance
 import toytree.io
 import toytree.mod
 import toytree.color
-import toytree.enumeration
+import toytree.enum
 import toytree.pcm
 import toytree.network
 # import toytree.annotate

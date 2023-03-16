@@ -31,90 +31,13 @@ import toytree
 
 
 ToyTree = TypeVar("ToyTree")
+Node = TypeVar("Node")
 
 
 ################################################################
-    # Enumerating all quartets - resolved and unresolved
+# Enumerating all quartets - resolved and unresolved
 ################################################################
 
-def get_all_quartets(tree: ToyTree) -> Iterator[Tuple[str]]:
-    """..."""
-    for qrt in itertools.combinations(sorted(tree.get_tip_labels()), 4):
-        yield qrt
-
-def get_n_quartets(tree: ToyTree) -> int:
-    """..."""
-    return sum(1 for i in get_all_quartets(tree))
-
-
-def get_resolved_sorted_quartets(tree: ToyTree) -> Iterator[Tuple[str]]:
-    """Yield quartets of tip names spanning each edge of a tree.
-    
-    FIXME: sort within and between tuples. remove self ref.
-    FIXME: yield as a single sorted Tuple of (0,1,2,3) assuming split in middle.
-
-    Examples
-    --------
-    >>> small_tree = toytree.rtree.unittree(6)
-    >>> print(list(small_tree._iter_quartets()))
-    >>>
-    >>> large_tree = toytree.rtree.unittree(100)
-    >>> nquartets = sum(1 for i in large_tree._iter_quartets())
-    >>> print(f'nquartets={nquartets}')
-    """
-    # mapping node idx to a set of node idx
-    cache = {i: {i} for i in range(tree.ntips)}
-    ridx = tree.treenode.idx
-    root_nodes = 1 if tree.is_rooted() else 0
-    all_nodes = range(tree.ntips, tree.nnodes - root_nodes)
-    node_set = set(range(tree.nnodes - root_nodes))
-    observed = set([])
-
-    for nidx in all_nodes[:-1]:
-        if tree[nidx].up:
-
-            # get nodes above and below this edge
-            below = {nidx}
-            for child in tree[nidx].children:
-                below |= cache[child.idx]
-            cache[nidx] = below
-            other = node_set - below
-
-            # remove ridx, and rm nidx if on same side
-            if ridx in below:
-                below.discard(ridx)
-                below.discard(nidx)
-            else:
-                other.discard(ridx)
-
-            # limit to the tip Nodes
-            below = (i for i in below if i < tree.ntips)
-            other = (i for i in other if i < tree.ntips)
-
-            # convert to requested type
-            below = (getattr(tree[i], "name") for i in below)
-            other = (getattr(tree[i], "name") for i in other)
-
-            # subsample 2 from each side of bipart.
-            # {0, 1, 2} -> {0, 1}, {0, 2}, and {1, 2}.
-            # Perhaps all {0, 1} quartets have already been done,
-            # we still need to visit all {0, 2} and {1, 2} so we
-            # check and skip redundant quartets below.
-            biquarts = itertools.product(
-                itertools.combinations(below, 2),
-                itertools.combinations(other, 2),
-            )
-
-            # iterate over quartets from this bipart and yield
-            # if it has not been visited yet.
-            for quart in biquarts:
-                if quart not in observed:
-                    observed.add(quart)
-                    yield tuple(itertools.chain(*quart))
-                    #pair1 = sorted(quart[0])
-                    #pair2 = sorted(quart[1])
-                    #yield tuple(itertools.chain(*sorted([pair1, pair2])))
-                    # yield quart    
 
 
 # To get all resolved quartets, see toytree.enumeration
@@ -163,7 +86,10 @@ def get_n_resolved_quartets(tree: ToyTree) -> int:
 ################################################################
 
 def get_sorting_order(qrt: Iterator[Set[str]]) -> int:
-    """
+    """Return the index on which to sort a quartet set.
+
+    Sorting quartets is used to speed up some operations. Here we find
+    the min idx (unique label) of each Node in a quartet
     Determine sorting order for each quartet by finding min value of quartet
     and then finding its respective pair's index number and tip name in the set.
     """
@@ -183,8 +109,10 @@ def get_sorting_order(qrt: Iterator[Set[str]]) -> int:
     out_val = qqq[out_order]
     return out_order, out_val
 
+
 def iter_quartet_resolutions(tree: ToyTree) -> Iterator[Tuple]:
-    """
+    """Yield a tuple with ...
+
     Get all resolved quartets, determine sorting order,
     then internally sort each resolved quartet to match
     order of the all possible quartets generated via
@@ -199,9 +127,12 @@ def iter_quartet_resolutions(tree: ToyTree) -> Iterator[Tuple]:
         # return tuple with sorted qrt and sorting order
         yield sorted_qrt, res
 
+
 def get_iter_quartet_df(tree: ToyTree) -> pd.DataFrame:
-    """
-    Create data frame to record:
+    """Return a pandas DataFrame with quartet information.
+
+    This dataframe contains the followed fields which can be used to
+    calculate a variety of quartet distance metrics (see ...):
     1) Quartet set - four taxon subtrees stored as a set
     2) Resolution - boolean (True or False)
     3) Sorting order - 0, 1, 2, or 3
@@ -218,7 +149,6 @@ def get_iter_quartet_df(tree: ToyTree) -> pd.DataFrame:
                                          columns=['quartet_set', 'resolved', 'sorting_order'])
     similarity_quartet_df['resolved'] = False
     similarity_quartet_df['sorting_order'] = None
-
 
     # fill quartet_set column with all possible quartets
     similarity_quartet_df['quartet_set'] = qrt1
@@ -252,10 +182,12 @@ def get_iter_quartet_df(tree: ToyTree) -> pd.DataFrame:
 
     return similarity_quartet_df
 
+
 def get_iter_quartet_metrics(
     tree1_df: pd.DataFrame,
     tree2_df: pd.DataFrame,
-    metric: str) -> int:
+    metric: str,
+) -> float:
     """
     Different ways to compute similarity metrics based on
     Quartet Methods according to Martin Smith's 'Quartets' (2020) package
@@ -356,16 +288,11 @@ def get_iter_quartet_metrics(
     return stat
 
 
-
 if __name__ == "__main__":
 
     TREE1 = toytree.rtree.unittree(7, seed=123)
     TREE2 = toytree.rtree.unittree(7, seed=321)
     TREE2 = TREE2.mod.collapse_nodes(3, 7, 6)
-
-    #TREE1 = toytree.rtree.unittree(20, seed=123)
-    #TREE2 = toytree.rtree.unittree(20, seed=321)
-    #TREE2 = TREE2.mod.collapse_nodes(13, 17, 16)
 
     treedf1 = get_iter_quartet_df(TREE1)
     treedf2 = get_iter_quartet_df(TREE2)
@@ -373,13 +300,15 @@ if __name__ == "__main__":
     print(treedf1)
     print(treedf2)
 
-    get_iter_quartet_metrics(treedf1, treedf2, "general")
-    get_iter_quartet_metrics(treedf1, treedf2, "do_not_conflict")
-    get_iter_quartet_metrics(treedf1, treedf2, "explicitly_agree")
-    get_iter_quartet_metrics(treedf1, treedf2, "strict_joint_assertions")
-    get_iter_quartet_metrics(treedf1, treedf2, "semistrict_joint_assertions")
-    get_iter_quartet_metrics(treedf1, treedf2, "symmetric_difference")
-    get_iter_quartet_metrics(treedf1, treedf2, "marczewski_steinhaus")
-    get_iter_quartet_metrics(treedf1, treedf2, "steel_and_penny")
-    get_iter_quartet_metrics(treedf1, treedf2, "symmetric_divergence")
-    get_iter_quartet_metrics(treedf1, treedf2, "similarity_to_reference")
+    # get_iter_quartet_metrics(treedf1, treedf2, "general")
+    # get_iter_quartet_metrics(treedf1, treedf2, "do_not_conflict")
+    # get_iter_quartet_metrics(treedf1, treedf2, "explicitly_agree")
+    # get_iter_quartet_metrics(treedf1, treedf2, "strict_joint_assertions")
+    # get_iter_quartet_metrics(treedf1, treedf2, "semistrict_joint_assertions")
+    # get_iter_quartet_metrics(treedf1, treedf2, "symmetric_difference")
+    # get_iter_quartet_metrics(treedf1, treedf2, "marczewski_steinhaus")
+    # get_iter_quartet_metrics(treedf1, treedf2, "steel_and_penny")
+    # get_iter_quartet_metrics(treedf1, treedf2, "symmetric_divergence")
+    # dfx = get_iter_quartet_metrics(treedf1, treedf2, "similarity_to_reference")
+
+    # print(dfx)
