@@ -9,9 +9,39 @@ editing TreeNodes directly, since it ensures that the TreeNodes
 have a valid ToyTree coordinate structure when returned.
 
 Most of these functions use a Query selector...
+
+Methods
+-------
+Return ToyTree with some internal nodes collapsed.
+>>> collapse_nodes(tree, ...)
+
+Return ToyTree with one Node rotated (._children tuple order reversed).
+>>> rotate_node(tree, ...)
+
+Return a ToyTree connecting a subset of Nodes in a tree.
+>>> prune(tree, ...)
+
+Return a ToyTree with some tip Nodes removed.
+>>> drop_tips(tree, ...)
+
+Return ToyTree with one or more polytomies randomly resolved.
+>>> resolve_polytomies(tree, ...)
+
+Add an internal node by splitting an edge to create new node.
+>>> add_internal_node(tree, ...)
+
+Add a tip node as a child of an existing Node.
+>>> add_child_node()
+
+Add a sister node as a child of the same existing parent Node (synonymous w/ add_child() called on parent)
+>>> add_sister_node(tree, ...)
+
+Add a parent-child pair to split an existing branch into two children (new child Node, old child clade)
+>>> add_internal_node_and_child()
+
 """
 
-from typing import Optional, TypeVar, Union
+from typing import Optional, TypeVar
 import itertools
 from loguru import logger
 import numpy as np
@@ -109,7 +139,7 @@ def collapse_nodes(
     >>> tree = tree.set_node_data("support", {25: 50}, default=100)
     >>> tree = tree.collapse_nodes(min_dist=0.01, min_support=45)
     """
-    if not query: # == (): # Node 0 is always a tip anyways.
+    if not query:  # == (): # Node 0 is always a tip anyways.
         selected = []
     else:
         selected = [i.idx for i in tree.get_nodes(*query)]
@@ -127,6 +157,31 @@ def collapse_nodes(
                     node._delete()
         # else:
             # logger.warning("Tip Nodes cannot be collapsed.")
+    tree._update()
+    return tree
+
+
+def remove_unary_nodes(tree: ToyTree, inplace: bool = False) -> ToyTree:
+    """Return ToyTree with any unary Nodes removed.
+
+    Parameters
+    ----------
+    inplace: bool
+        If True then the original tree is changed in-place, and
+        returned, rather than leaving original tree unchanged.
+    """
+    tree = tree if inplace else tree.copy()
+    tipset = set(tree[i] for i in range(tree.ntips))
+    for node in tree.traverse("postorder"):
+        if len(node.children) == 2:
+            tipset.add(node)
+        if not node in tipset:
+            new_parent = node._up
+            if new_parent:
+                true_node = node._children[0]
+                new_parent._add_child(true_node)
+                new_parent._remove_child(node)
+                true_node._dist += node._dist
     tree._update()
     return tree
 
@@ -170,7 +225,27 @@ def rotate_node(
     tree._update()
     return tree
 
-# def extract_subtree(tree, root)
+
+def extract_subtree(tree: ToyTree, *query: Query, regex: bool = False) -> ToyTree:
+    """Return a subtree extracted from a larger tree as a ToyTree.
+
+    Parameters
+    ----------
+    *query: str, int, or Node
+        One or more Node selectors, which can be Node objects, names,
+        or int idx labels from which the MRCA will be selected.
+    regex: bool
+        If True then Node name strings are treated as regular
+        expressions that can match to multiple Nodes.
+
+    Example
+    -------
+    >>> tree = toytree.rtree.unittree(5)
+    >>> subtree = tree.mod.extract_subtree("r0", "r1", "r2")
+    >>> toytree.mtree([tree, subtree]).draw('p')
+    """
+    node = tree.get_mrca_node(*query, regex=regex)
+    return ToyTree(node.copy(detach=True))
 
 
 def prune(
@@ -286,37 +361,12 @@ def prune(
     return tree
 
 
-def remove_unary_nodes(tree: ToyTree, inplace: bool = False) -> ToyTree:
-    """Return ToyTree with any unary Nodes removed.
-
-    Parameters
-    ----------
-    inplace: bool
-        If True then the original tree is changed in-place, and
-        returned, rather than leaving original tree unchanged.
-    """
-    tree = tree if inplace else tree.copy()
-    tipset = set(tree[i] for i in range(tree.ntips))
-    for node in tree.traverse("postorder"):
-        if len(node.children) == 2:
-            tipset.add(node)
-        if not node in tipset:
-            new_parent = node._up
-            if new_parent:
-                true_node = node._children[0]
-                new_parent._add_child(true_node)
-                new_parent._remove_child(node)
-                true_node._dist += node._dist
-    tree._update()
-    return tree
-
-
 def drop_tips(
     tree: ToyTree,
     *query: Query,
-    regex: bool=False,
-    inplace: bool=False,
-    ) -> ToyTree:
+    regex: bool = False,
+    inplace: bool = False,
+) -> ToyTree:
     """Return a ToyTree with some tip Nodes removed.
 
     The ToyTree with the selected tip Nodes (and any remaining internal
@@ -362,16 +412,17 @@ def drop_tips(
     tree.mod.prune(*keeptips, preserve_branch_length=True, inplace=True)
     return tree
 
+
 def resolve_polytomies(
     tree: ToyTree,
     *query: Query,
-    regex: bool=False,
-    dist: float=1.0,
-    support: float=100,
-    recursive: bool=True,
-    seed: Optional[int]=None,
-    inplace: bool=False,
-    ) -> ToyTree:
+    regex: bool = False,
+    dist: float = 1.0,
+    support: float = 100,
+    recursive: bool = True,
+    seed: Optional[int] = None,
+    inplace: bool = False,
+) -> ToyTree:
     """Return ToyTree with one or more polytomies randomly resolved.
 
     Parameters
@@ -385,7 +436,7 @@ def resolve_polytomies(
         expressions that can match to multiple Nodes.
     dist: float
         The dist value to set on newly created nodes.
-    support: float
+    support: float or np.nan
         The support value to set on newly created nodes.
     recursive: bool
         Recursively resolve nested polytomies (default=True); if False
@@ -412,30 +463,38 @@ def resolve_polytomies(
     tree._update()
     return tree
 
+
 def add_internal_node(
     tree: ToyTree,
     *query: Query,
-    regex: bool=False,
-    dist: Optional[float]=None,
-    name: Optional[str]=None,
-    inplace: bool=False,
-    ) -> ToyTree:
+    regex: bool = False,
+    dist: Optional[float] = None,
+    name: Optional[str] = None,
+    inplace: bool = False,
+) -> ToyTree:
     r"""Add an internal node by splitting an edge to create new node.
 
     Splits a branch spanning from node idx (A) to its parent (B)
     to create a new internal node (C). This is not an especially
     useful operation except for internal usage by toytree.
 
-                B                      B
-               / \                    / \
-              /   \      ---->       C   \
-             /     \                /     \
-            A       X              A       X
+                B                      B          Example
+               / \                    / \         -------
+              /   \      ---->       C   \        query="A"
+             /     \                /     \       name="C"
+            A       X              A       X      dist=None
 
     See Also
     --------
-    :func:`.add_tip_node`:
-        Similar to this function but adds a tip node descending from C.
+    :func:`.add_child_node`:
+        Add a new child Node. Useful to call after `add_internal_node`.
+    :func:`.add_internal_node_and_child`:
+        This combines `add_internal_node` with `add_child_node`.
+
+    Note
+    ----
+    If the query selects the root Node then a new Node will be inserted
+    above it which will become the new root Node.
 
     Parameters
     ----------
@@ -453,15 +512,15 @@ def add_internal_node(
         the descendants prior dist minus this dist value. If
         no dist value is set then the edge midpoint is used.
     name: Optional[str]
-        A name string to apply to the new Node.
+        A name string to apply to the new Node. Default="".
     inplace: bool
         Modify tree in place.
 
     Examples
     --------
     >>> tree = toytree.rtree.unittree(ntips=5, seed=123)
-    >>> tree = tree.mod.add_internal_node('r0', dist=0.25)
-    >>> tree.draw(ts='n', node_sizes=10);
+    >>> tree = tree.mod.add_internal_node('r0', name="x")
+    >>> tree.draw(ts='n', node_sizes=15, node_labels="name")
     """
     # expand query
     node = tree.get_mrca_node(*query, regex=regex)
@@ -471,16 +530,30 @@ def add_internal_node(
 
     # get insertion edge and dist of the new Node
     parent = node.up
+
+    # ROOT: if no parent (b/c node is root) then simply add new parent
+    if not parent:
+        new_node = Node(name=name if name is not None else "", dist=1.0)
+        new_node._add_child(node)
+        node._dist = dist if dist is not None else 1.0
+        tree.treenode = new_node
+        tree._update()
+        return tree
+
+    # NORMAL: parent is not root.
     dist = dist if dist is not None else node.dist / 2.
-    if not node.dist > dist > 0:
-        raise ValueError("the new Node dist must be > 0 and < dist "
-            f"of {node} (dist={node.dist})")
+    if not node.dist >= dist >= 0:
+        raise ValueError(
+            f"the new Node dist must be >= 0 and <= {node.dist:.12g} (dist "
+            f"of {node})")
 
     # create the new Node and mend connections nearby
     new_node = Node(
         name=name if name is not None else "",
         dist=node.dist - dist,
     )
+
+    # connect new_node to child (node) and grandparent (parent)
     node._dist = dist
     parent._remove_child(node)
     parent._add_child(new_node)
@@ -490,31 +563,136 @@ def add_internal_node(
     tree._update()
     return tree
 
-def add_tip_node(
+
+def add_child_node(
     tree: ToyTree,
     *query: Query,
-    regex: bool=False,
-    name: Optional[str]=None,
-    dist: Optional[float]=None,
-    parent_dist: Optional[float]=None,
-    parent_name: Optional[str]=None,
-    inplace: bool=False,
-    ) -> ToyTree:
-    r"""Add a tip node by splitting an edge to create a new parent
-    and descendant node pair.
+    regex: bool = False,
+    name: Optional[str] = None,
+    dist: Optional[float] = None,
+    inplace: bool = False,
+) -> ToyTree:
+    r"""Add a child Node to existing Node on a tree.
 
-    Splits a branch spanning from node idx (A) to its parent (B)
-    to create a new ancestral node (C) and descendant (D). The
-    new nodes can be given names and dist values. By default, if
-    only a dist is entered for the new sister (D) then the new
-    ancestor node (C) dist value will be automated to make node
-    D align at the same height as node A.
+    This function selects an existing Node to act as the parent, and
+    inserts a new Node as a child of that parent. The new child's name
+    and dist can be set. If no dist value is entered then the child's
+    dist is set to match that of its new sister Nodes, or 1.0.
 
-                B                      B
-               / \                    / \
-              /   \      ---->       C   \
-             /     \                / \   \
-            A       X              A   D   X
+                B                      B          Example
+               / \                    /|\         --------
+              /   \      ---->       / | \        query="B"
+             /     \                /  |  \       name="D"
+            A       X              A   D   X      dist=None
+
+    See Also
+    --------
+    :func:`.add_internal_node`:
+        Add a new internal Node. Useful as parent to a new child Node.
+    :func:`.add_internal_node_and_child`:
+        This combines `add_internal_node` with `add_child_node`.
+
+    Example
+    -------
+    >>> tree = toytree.rtree.imbtree(5)
+    >>> tree = tree.mod.add_child_node('r0', 'r1', 'r2', name="C")
+    >>> tree.draw("p", layout="r", node_labels="name");
+    """
+    # expand query
+    node = tree.get_mrca_node(*query, regex=regex)
+    if not inplace:
+        tree = tree.copy()
+        node = tree[node.idx]
+
+    # get dist for the new child Node
+    if dist is None:
+        if node.children:
+            dist = max(child.dist for child in node.children)
+        else:
+            dist = 1.0
+    dist = max(0, dist)
+
+    # create the new Node that will be a child.
+    new_node = Node(name=name if name is not None else "", dist=dist)
+
+    # add as a new child to end of parent's children
+    node._add_child(new_node)
+    tree._update()
+    return tree
+
+
+def add_sister_node(
+    tree: ToyTree,
+    *query: Query,
+    regex: bool = False,
+    name: Optional[str] = None,
+    dist: Optional[float] = None,
+    inplace: bool = False,
+) -> ToyTree:
+    r"""Add a sister Node to existing Node on a tree.
+
+    This function selects an existing Node to act as the sister, and
+    inserts a new Node as a child of the same parent. The new sister
+    Node's name and dist can be set. If no dist value is entered then
+    the its dist is set to match the max dist of its sister Nodes or 1.
+    This function is equivalent to :func:`.add_child_node` but the
+    query is used to select a sister rather than a parent.
+
+                B                      B          Example
+               / \                    /|\         --------
+              /   \      ---->       / | \        query="A"
+             /     \                /  |  \       name="D"
+            A       X              A   D   X      dist=None
+
+    See Also
+    --------
+    :func:`.add_internal_node`:
+        Add a new internal Node. Useful as parent to a new sister Node.
+    :func:`.add_internal_node_and_child`:
+        This combines `add_internal_node` with `add_child_node`.
+
+    Example
+    -------
+    >>> tree = toytree.rtree.imbtree(5)
+    >>> tree = tree.mod.add_sister_node('r0', 'r1', 'r2', name="C")
+    >>> tree.draw("p", layout="r", node_labels="name");
+    """
+    # expand query
+    node = tree.get_mrca_node(*query, regex=regex)
+    assert not node.is_root(), (
+        "Cannot add sister to root, it has no parent. See `add_child_node()`.")
+    # simply call add_child to the parent of the selected Node.
+    parent = node._up
+    return add_child_node(tree, parent, name=name, dist=dist, inplace=inplace)
+
+
+def add_internal_node_and_child(
+    tree: ToyTree,
+    *query: Query,
+    regex: bool = False,
+    name: Optional[str] = None,
+    dist: Optional[float] = None,
+    parent_dist: Optional[float] = None,
+    parent_name: Optional[str] = None,
+    inplace: bool = False,
+) -> ToyTree:
+    r"""Add a (parent, child) edge to split an existing branch.
+
+    Splits a branch spanning from query node (A) to its parent (B)
+    to create a new internal Node (C) and child Node (D). The new
+    parent and child Nodes can be given names and dist values. If
+    no value is entered for `parent_dist` then the parent Node is
+    inserted at the midpoint of the edge. If a parent_dist value is
+    entered then it must fit within the length of the query Node's
+    dist or an error is raised. The new child Node dist is not
+    constrained. If no value is entered then it will be automatically
+    set to match the dist of its sister Node.
+
+                B                      B          Example
+               / \                    / \         --------
+              /   \      ---->       C   \        query="A"
+             /     \                / \   \       name="D"
+            A       X              A   D   X      parent_name="C"
 
     Parameters
     ----------
@@ -526,85 +704,55 @@ def add_tip_node(
         If True then Node name strings are treated as regular
         expressions that can match to multiple Nodes.
     name: str
-        Optional name for the new sister node.
+        Optional name for the new sister node. Default="".
     dist: float
-        The dist (edge length) of the new sister node. If None
-        this will be set to 1/2 of the sister's original dist.
-        If parent_dist is None then the parent_dist will be set
-        automatically to make the new sister node height align
-        with its sister.
+        The dist (edge length) of the new child Node. If None this
+        will be set to match its sister Node's dist.
     parent_dist: float
-        The dist (edge length) of the new ancestral node. If left
-        at None then this value is automatically set to make node
-        D align with A. Changing this value does not affect the
-        height of node A, but does affect both nodes C and D.
-        By setting parent_dist and dist both you can explicitly
-        define any heights for the new nodes.
+        The dist (edge length) of the new internal parent Node. If
+        None it is set to the edge midpoint. If a value is entered it
+        must be >0 and < query Node dist.
     parent_name: str
-        Optional name for the new internal parent node.
+        Optional name for the new internal parent node. Default="".
     inplace: bool
         If False (default) a copy of the original tree is returned.
 
-    Examples
-    --------
-    >>> # add a new tip node
-    >>> tree = toytree.rtree.imbtree(5, treeheight=1e6)
-    >>> tree = tree.mod.add_tip_node(3).draw();
-    >>>
-    >>> # add a ghost lineage, and draw as introgressing taxon.
-    >>> tree = toytree.rtree.imbtree(5, treeheight=1e6)
-    >>> tree = tree.mod.add_tip_node(
-    >>>     idx=3, name="x", parent_dist=2e5, dist=3e5)
-    >>> tree.ladderize().draw(ts='c', admixture_edges=(['r0', 'r1'], 'x'));
+    Example
+    -------
+    >>> tree = toytree.rtree.imbtree(5)
+    >>> tree = tree.mod.add_internal_node_and_child(
+    >>>     'r3', name="C", parent_name="P")
+    >>> tree.draw(node_sizes=15, node_labels="name");
     """
-    # get tree and mrca copy
-    sister_1 = tree.get_mrca_node(*query, regex=regex)
+    # expand query
+    node = tree.get_mrca_node(*query, regex=regex)
     if not inplace:
         tree = tree.copy()
-        sister_1 = tree[sister_1.idx]
+        node = tree[node.idx]
 
-    # selected a Node whose edge will be split.
-    sister_1 = tree.get_mrca_node(*query, regex=regex)
-    # create a new Node that will become sister to selected Node and
-    # set its edge length to initially match the selected Node.
-    sister_2 = Node(name=name, dist=sister_1.height)
-    # store reference to selected Node's orig parent (later gparent)
-    orig_parent = sister_1.up
+    # set parent name to something unique
+    pname = "PARENT@@@@@"
+    add_internal_node(tree, node, name=pname, dist=parent_dist, inplace=True)
+    add_child_node(tree, parent_name, name=name, dist=dist, inplace=True)
 
-    # set the dist and height of sisters (insertion height)
-    if dist is None:
-        dist = sister_1.dist / 2.
-    if parent_dist is None:
-        parent_dist = orig_parent.height - dist
-        if parent_dist < 0:
-            logger.warning("`parent_dist` arg to `add_tip_node` causes negative branch lengths")
-    sister_2._dist += dist
-    sister_1._dist = dist
-
-    # The two sisters will be childen of the new internal Node.
-    new_parent = Node(name=parent_name, dist=parent_dist)
-    orig_parent._remove_child(sister_1)
-    orig_parent._add_child(new_parent)
-    sister_1._up = new_parent
-    sister_2._up = new_parent
-    new_parent._children = (sister_1, sister_2)
-    new_parent._up = orig_parent
-    tree._update()
+    # set parent name to user option
+    tree.get_nodes(pname)[0].name = parent_name if parent_name else ""
     return tree
 
-def add_subtree(
+
+def add_internal_node_and_subtree(
     tree: ToyTree,
     *query: Query,
-    subtree: Union[ToyTree, Node],
-    regex: bool=False,
-    subtree_stem_dist: Optional[float]=None,
-    subtree_rescale: bool=True,
-    parent_dist: Optional[float]=None,
-    parent_name: Optional[str]=None,
-    inplace: bool=False,
-    ) -> ToyTree:
+    regex: bool = False,
+    subtree: ToyTree,
+    subtree_stem_dist: Optional[float] = None,
+    subtree_rescale: bool = False,
+    parent_dist: Optional[float] = None,
+    parent_name: Optional[str] = None,
+    inplace: bool = False,
+) -> ToyTree:
     r"""Add a subtree by splitting an edge to create a new parent
-    Node and inserting the descendant subtree.
+    Node and inserting the subtree as a child (i.e., tree-grafting).
 
     Splits a branch spanning from node (A) to its parent (C) to
     create a new ancestral node (Z) from which a subtree (Y) will
@@ -614,12 +762,12 @@ def add_subtree(
     will be scaled to fill the other half distance so that it aligns
     as the farthest tip node distance.
 
-                 C                         C
-                /\                        Z \
-               /  \                      /\  \
-              /    \      ---->         /  Y  \
-             /      \                  /  / \  \
-            A        B                A  W   X  B
+            C                       C        Example
+           / \                     Z \       -------
+          /   \                   /\  \      query="A"
+         /     \      ---->      /  Y  \     subtree=tree('(W,X)Y;')
+        /       \               /  / \  \    parent_name="Z"
+       A         B             A  W   X  B
 
     Parameters
     ----------
@@ -630,66 +778,163 @@ def add_subtree(
     regex: bool
         If True then Node name strings are treated as regular
         expressions that can match to multiple Nodes.
-    subtree: ToyTree or Node
+    subtree: ToyTree
         A subtree to insert into the target tree.
-    parent_dist: float or None
-        Edge length of the new inserted Node (Z). This is the length
-        from the top at which it will be inserted into an existing
-        edge (e.g., A). If None it will be automated half the dist
-        to the farthest leaf.
     subtree_stem_dist: float or None
-        Edge length of the stem edge connecting the new inserted Node
-        (Z) to the inserted subtree (Y). If None it will be automated
-        to half the dist to the farthest leaf.
+        Edge length of the subtree stem dist (the subtree root Node
+        dist value is ignored). If None it is set to half the dist of
+        its sister clade.
+    subtree_rescale: bool
+        If True the subtree edges are rescaled to fit in the dist 
+        between the sister node height and stem.
+    parent_dist: float or None
+        Distance above the query Node at which the parent Node will be
+        inserted. This length is constrained by the dist of the query
+        Node. If None the midpoint of the edge is used.
     parent_name: str
         Optional name for the new internal parent node.
-    rescale_subtree: bool
-        If True all edges of the subtree will be rescaled to fit
-        in the dist below where the subtree is inserted so that the
-        subtrees farthest tip will align with the
     inplace: bool
         If False (default) a copy of the original tree is returned.
+
+    Examples
+    --------
+    >>> tree = toytree.rtree.unittree(10)
+    >>> subtree = tree.mod.extract_subtree("r0", "r1", "r2")
+    >>> new_tree = tree.mod.add_internal_node_and_subtree(
+    >>>     "r4", subtree=subtree, subtree_rescale=True)
+    >>> new_tree.draw(...)
     """
-    # get the selected Node and create a new sister
-    tree = tree if inplace else tree.copy()
-    sister = tree.get_mrca_node(*query, regex=regex)
-    parent = sister.up
-    new_node = Node(name=parent_name if parent_name else "", dist=0.)
+    # expand query
+    node = tree.get_mrca_node(*query, regex=regex)
+    if not inplace:
+        tree = tree.copy()
+        node = tree[node.idx]
 
-    # set dist of new_node (parent_dist param).
-    if parent_dist is not None:
-        assert 0 <= parent_dist <= sister.dist, (
-            "parent_dist (node insertion) must be within length of the "
-            f"query edge ({sister.dist})")
-        new_node._dist = parent_dist
-        sister._dist -= parent_dist
-    else:
-        new_node._dist = sister.dist / 2
-        sister._dist -= new_node._dist
+    # use a temporary parent name and set the proper name later
+    pname = "PARENT@@@@@"
+    add_internal_node(tree, node, name=pname, dist=parent_dist, inplace=True)
 
-    # scale the subtree to fit before connecting it.
-    if subtree_stem_dist is not None:
-        assert 0 <= subtree_stem_dist <= (parent.height - new_node._dist), (
-            "subtree_stem_dist arg will create a negative branch length.")
-        if subtree_rescale:
-            height = (parent.height - new_node._dist) - subtree_stem_dist
-            subtree = subtree.mod.edges_scale_to_root_height(
-                height, include_stem=False)
-        subtree.treenode._dist = subtree_stem_dist
-    else:
-        height = parent.height - new_node._dist
-        subtree = subtree.mod.edges_scale_to_root_height(
-            height, include_stem=True)
+    # get parent node
+    parent = tree.get_nodes(pname)[0]
+    parent.name = parent_name if parent_name else ""
 
-    # connect parent to (new_node, sister)
-    parent._add_child(new_node)
-    parent._remove_child(sister)
-    new_node._add_child(sister)
+    # get STEM dist for the subtree parent Node
+    if subtree_stem_dist is None:
+        subtree_stem_dist = max(i.dist for i in parent.children) / 2.
 
-    # insert subtree as a child of new_node
-    new_node._add_child(subtree.treenode)
+    # optional: scale subtree edges to fit in same dist as sister.
+    if subtree_rescale:
+        remaining_dist = subtree.treenode.height - subtree_stem_dist
+        subtree = subtree.mod.edges_scale_to_root_height(remaining_dist)
+
+    # add as a new child to end of parent's children
+    parent._add_child(subtree)
+
+    # set the subtree stem dist
+    subtree._dist = subtree_stem_dist
+
     tree._update()
     return tree
+
+
+# def add_subtree(
+#     tree: ToyTree,
+#     *query: Query,
+#     subtree: Union[ToyTree, Node],
+#     regex: bool = False,
+#     subtree_stem_dist: Optional[float] = None,
+#     subtree_rescale: bool = True,
+#     parent_dist: Optional[float] = None,
+#     parent_name: Optional[str] = None,
+#     inplace: bool = False,
+# ) -> ToyTree:
+#     r"""Add a subtree by splitting an edge to create a new parent
+#     Node and inserting the descendant subtree.
+
+#     Splits a branch spanning from node (A) to its parent (C) to
+#     create a new ancestral node (Z) from which a subtree (Y) will
+#     be inserted. The name of node (Z) and the stem dist of node (Y)
+#     can be set. By default, if left as None, the stem dist will be
+#     set to half the distance to the farthest leaf, and the subtree
+#     will be scaled to fill the other half distance so that it aligns
+#     as the farthest tip node distance.
+
+#                  C                         C          Example
+#                 /\      query="A"         Z \         -------
+#                /  \   parent_name="Z"    /\  \        query="A"
+#               /    \      ---->         /  Y  \       subtree=(ToyTree)
+#              /      \                  /  / \  \      parent_name="Z"
+#             A        B                A  W   X  B
+
+#     Parameters
+#     ----------
+#     *query: str, int, or Node
+#         One or more Node selectors, which can be Node objects, names,
+#         or int idx labels. If multiple are entered the MRCA node will
+#         be used as the base of the edge to split.
+#     regex: bool
+#         If True then Node name strings are treated as regular
+#         expressions that can match to multiple Nodes.
+#     subtree: ToyTree or Node
+#         A subtree to insert into the target tree.
+#     parent_dist: float or None
+#         Edge length of the new inserted Node (Z). This is the length
+#         from the top at which it will be inserted into an existing
+#         edge (e.g., A). If None it will be automated half the dist
+#         to the farthest leaf.
+#     subtree_stem_dist: float or None
+#         Edge length of the stem edge connecting the new inserted Node
+#         (Z) to the inserted subtree (Y). If None it will be automated
+#         to half the dist to the farthest leaf.
+#     parent_name: str
+#         Optional name for the new internal parent node.
+#     rescale_subtree: bool
+#         If True all edges of the subtree will be rescaled to fit
+#         in the dist below where the subtree is inserted so that the
+#         subtrees farthest tip will align with the
+#     inplace: bool
+#         If False (default) a copy of the original tree is returned.
+#     """
+#     # get the selected Node and create a new sister
+#     tree = tree if inplace else tree.copy()
+#     sister = tree.get_mrca_node(*query, regex=regex)
+#     parent = sister.up
+#     new_node = Node(name=parent_name if parent_name else "", dist=0.)
+
+#     # set dist of new_node (parent_dist param).
+#     if parent_dist is not None:
+#         assert 0 <= parent_dist <= sister.dist, (
+#             "parent_dist (node insertion) must be within length of the "
+#             f"query edge ({sister.dist})")
+#         new_node._dist = parent_dist
+#         sister._dist -= parent_dist
+#     else:
+#         new_node._dist = sister.dist / 2
+#         sister._dist -= new_node._dist
+
+#     # scale the subtree to fit before connecting it.
+#     if subtree_stem_dist is not None:
+#         assert 0 <= subtree_stem_dist <= (parent.height - new_node._dist), (
+#             "subtree_stem_dist arg will create a negative branch length.")
+#         if subtree_rescale:
+#             height = (parent.height - new_node._dist) - subtree_stem_dist
+#             subtree = subtree.mod.edges_scale_to_root_height(
+#                 height, include_stem=False)
+#         subtree.treenode._dist = subtree_stem_dist
+#     else:
+#         height = parent.height - new_node._dist
+#         subtree = subtree.mod.edges_scale_to_root_height(
+#             height, include_stem=True)
+
+#     # connect parent to (new_node, sister)
+#     parent._add_child(new_node)
+#     parent._remove_child(sister)
+#     new_node._add_child(sister)
+
+#     # insert subtree as a child of new_node
+#     new_node._add_child(subtree.treenode)
+#     tree._update()
+#     return tree
 
 
 # NEEDS WORK, not yet exposed to API.
@@ -701,7 +946,7 @@ def move_clade(
     name: str="",
     shrink: bool=False,
     inplace: bool=False,
-    ):
+):
     r"""Move a clade from one part of the tree to another (SPR).
 
     Splits a branch spanning from node idx1 (Y) to its parent (Z)
@@ -765,6 +1010,7 @@ def move_clade(
     ToyTree
         A modified copy of the original tree is returned.
     """
+    # TODO: check tree_move SPR code and use that?
     # create a copy
     tree = tree if inplace else tree.copy()
 
@@ -859,14 +1105,15 @@ def move_clade(
     # for idx in tree.get_node_descendant_idxs(src)
     return tree
 
+
 def _resolve_nodes(
     node: Node,
     dist: float,
     support: float,
     rng: np.random.Generator,
     recursive: bool,
-    ) -> Node:
-    """Resolve multifurcating Nodes.
+) -> Node:
+    """Resolve multifurcating Nodes. Used in `resolve_polytomies`.
 
     Randomly choose left/right split among children.
     """
@@ -897,7 +1144,6 @@ def _resolve_nodes(
         right._children = _resolve_nodes(
             right, dist, support, rng, recursive)
     return left, right
-
 
 
 if __name__ == "__main__":
