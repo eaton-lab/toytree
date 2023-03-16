@@ -106,7 +106,6 @@ class Rooter:
         self.node: Node = self._get_edge_to_split()
         self.edge_features: Set[str] = self._get_edge_features(edge_features)
 
-
     @staticmethod
     def _get_edge_features(edge_features: Optional[Union[str, Sequence[str]]]) -> Set[str]:
         """Return the features associated with edges instead of nodes."""
@@ -118,37 +117,42 @@ class Rooter:
             return (default | {edge_features}) - disallowed
         return (default | set(edge_features)) - disallowed
 
-
     def _get_edge_to_split(self) -> Node:
         """Return the Node below new root edge from input query.
 
         Get MRCA Node of the input selection. If it is the root, then
-        get the MRCA of the inverse selection. If that is also root,
-        then raise exception for bad selection.
+        get the MRCA of the inverse selection. If that group is not
+        monophyletic then raise exception for bad selection.
         """
-        # get both the selected outgroup clade nodes and their mrca
-        nodes = self.tree.get_nodes(*self.query, regex=self.regex)
+        nodes = set(self.tree.get_nodes(*self.query, regex=self.regex))
+        nodes -= {self.tree.treenode}
+        if not nodes:
+            return self.tree.treenode
+        tips = set.union(*(set(i.get_leaves()) for i in nodes))
         mrca = self.tree.get_mrca_node(*nodes)
-        # logger.debug(f"rooting outgroup query={self.query} | {nodes}")
 
-        # if mrca is root, try to get mrca of the reciprocal Node set.
-        if mrca.is_root():
-            down = set.union(*[set(i.get_descendants()) for i in nodes])
-            upp = self.tree.get_ancestors(*down)
-            nodes = set(self.tree.get_nodes()) - down - upp
-            mrca = self.tree.get_mrca_node(*nodes)
-            # logger.debug(f"rooting on reciprocal node set={nodes}")
+        # check monophyly of user query, else try reciprocal tip set.
+        error = False
+        if not mrca.is_root():
+            if any(node not in tips for node in mrca._iter_leaves()):
+                error = True
+        else:
+            tips = set(self.tree[:self.tree.ntips]) - tips
+            mrca = self.tree.get_mrca_node(*tips)
+            if not self.tree.is_monophyletic(*tips):
+                error = True
 
-        # query is not monophyletic
-        if not self.tree.is_monophyletic(*nodes):
-            logger.error(f"Cannot root on non-monophyletic outgroup: {self.query}.")
-            raise ToytreeError(f"Cannot root on non-monophyletic outgroup: {self.query}.")
-
-        # logging for debugging
-        # logger.debug(f"rooting outgroup clade={mrca.get_leaf_names()}")
-        # logger.debug(f"new root edge will be above={mrca}")
+        # raise a helpful error message
+        if error:
+            msg = (
+                f"Cannot root on non-monophyletic outgroup: {self.query}.\n"
+                f"If you want to root on the MRCA of these nodes try: \n"
+                f">>> mrca = tree.get_mrca_node(*{[i.idx for i in nodes]})\n"
+                f">>> tree.root(mrca)"
+            )
+            logger.error(msg)
+            raise ToytreeError(msg)
         return mrca
-
 
     def run(self):
         """Return ToyTree rooted on the input selection."""
@@ -178,7 +182,6 @@ class Rooter:
         self._insert_root_node()
         self.tree._update()
         return self.tree
-
 
     def _insert_root_node(self):
         r"""Insert a new node to break an edge to create root.
@@ -277,16 +280,17 @@ class Rooter:
 def root(
     tree: ToyTree,
     *query: Query,
-    regex: bool=False,
+    regex: bool = False,
     root_dist: Optional[float] = None,
     edge_features: Optional[Sequence[str]] = None,
-    inplace: bool=False) -> ToyTree:
+    inplace: bool = False,
+) -> ToyTree:
     r"""Return a ToyTree rooted on the edge above selected Node query.
 
-    Rooting a tree involves splitting and edge to insert a new Node.
-    (It helps to think of it as pinching an edge and pulling it back
-    to create a new root). The root Node is named "root" and has
-    support of 100 (or 1.0, depending on support values) and dist=0.
+    Rooting a tree involves splitting an edge to insert a new Node.
+    (Think of it as pinching an edge and pulling it back to create a
+    new root). The root Node is named "root" and has np.nan support
+    value and dist=0 unless otherwise set.
 
     Example of rooting an unrooted tree:
                                                 x
@@ -342,23 +346,22 @@ def root(
     return Rooter(
         tree, *query, inplace=inplace,
         regex=regex, root_dist=root_dist, edge_features=edge_features,
-        ).run()
+    ).run()
 
 
 def unroot(tree: ToyTree, inplace: bool = False) -> ToyTree:
-    """Return an unrooted ToyTree by collapsing the root Node.
+    """Return an unrooted tree by collapsing the root split.
 
-    This will convert a binary split into a multifurcation.
-    The Node idx values change on unrooting because the number of
-    Nodes has changed.
+    This will convert a binary split into a multifurcation with three
+    or more children. This decreases the number of Nodes by one.
 
     Note
     ----
     The unrooting process is not destructive of information, you can
     re-root a tree on the same edge position as before to recover the
-    same tree. The new root Node will have dist=0 and support=100
-    (or 1.0), and the Node on the other side of root will inherit the
-    dist which retains the dist information.
+    same tree, and all edge lengths (dist values) are retained. Only
+    the position of the root Node along the rooted edge is lost, which
+    can be re-set when rooting using the root_dist argument.
 
     Parameters
     ----------
@@ -415,7 +418,7 @@ if __name__ == "__main__":
     c, a, m = unroot(TREE).draw()
     # _, a, m = root(TREE, 'r2')._draw_browser()
 
-    T0 = root(TREE, 'r2', root_dist=1)
+    T0 = root(TREE, 'r2', root_dist=0.3)
 
     # c2, a, m = unroot(TREE)._draw_browser(axes=a)
     # print(unroot(TREE))
