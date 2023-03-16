@@ -41,7 +41,7 @@ def _find_closing(
     string: str,
     start: int = 1,
     pair: Sequence[str] = '()',
-    ) -> int:
+) -> int:
     """Find index of next unmatched closing parenth from start position.
 
     Examples
@@ -81,7 +81,7 @@ def _find_closing(
     return _find_closing(string, skip + 1, pair)
 
 
-def _find_parts_of_subtree(newick: str, delim: str=",") -> Tuple[str,str,str,str]:
+def _find_parts_of_subtree(newick: str, delim: str = ",") -> Tuple[str, str, str, str]:
     """Extract information for a subtree Node from newick.
 
     The newick must already be formatted so that any extra metadata
@@ -236,7 +236,11 @@ def distance_parser(dist: str) -> Optional[float]:
 
 
 def feature_parser(
-    feats: str, prefix="", delim=",", assignment="=") -> Dict[str, str]:
+    feats: str,
+    prefix="",
+    delim=",",
+    assignment="=",
+) -> Dict[str, str]:
     """Return a dict with auto-formatted features.
 
     When using this 'auto' function the dtype of features will be 
@@ -295,8 +299,8 @@ def node_aggregator(
     label: str,
     children: List[Node],
     distance: float,
-    features: Dict[str,Any],
-    ) -> Node:
+    features: Dict[str, Any],
+) -> Node:
     """Aggregator function to connect Nodes and add features.
 
     Example of expected newick format: ((a:10,b:10)100:20, c:30);
@@ -352,7 +356,9 @@ def _parse_newick_subtree(
 
 
 def _check_internal_label_for_name_or_support(
-    tree: ToyTree, internal_labels: Optional[str]) -> ToyTree:
+    tree: ToyTree,
+    internal_labels: Optional[str],
+) -> ToyTree:
     """Return a ToyTree with Node 'name' and 'support' updated.
 
     Check type of 'name' labels on internal Nodes. If all are numeric
@@ -383,9 +389,9 @@ def _check_internal_label_for_name_or_support(
             # check all node values except root if root is absent ("")
             inodes = range(tree.ntips, tree.nnodes - (1 if not rootval else 0))
 
-            # get all internal node 'name' values 
+            # get all internal node 'name' values
             supports = (tree[i].name for i in inodes)
-                
+
             # try to convert all to floats (raises an error if str)
             supports = [float(i) for i in supports]
 
@@ -414,11 +420,11 @@ def _check_internal_label_for_name_or_support(
 
 def parse_newick_string_custom(
     newick: str,
-    dist_formatter = None, #: Callable[str, float] = None, # FIXME
-    feat_formatter = None, #: Callable[str, Dict[str,Any]] = None,
-    aggregator = None, #: Callable[[str, List[Node], float, Any], Node] = None,
+    dist_formatter = None,  #: Callable[str, float] = None, # FIXME
+    feat_formatter = None,  #: Callable[str, Dict[str,Any]] = None,
+    aggregator = None,  #: Callable[[str, List[Node], float, Any], Node] = None,
     internal_labels: Optional[str] = None,
-    ) -> ToyTree:
+) -> ToyTree:
     """Return a ToyTree from a newick string.
 
     Recursive function to build connected Nodes from nested data in 
@@ -492,10 +498,10 @@ def parse_newick_string_custom(
 def parse_newick_string(
     newick: str,
     feature_prefix: str = "&",
-    feature_delim: str = ",", 
+    feature_delim: str = ",",
     feature_assignment: str = "=",
     internal_labels: Optional[str] = None,
-    ) -> ToyTree:
+) -> ToyTree:
     """Return a ToyTree from a newick string.
 
     Recursive function to build connected Nodes from nested data in 
@@ -537,14 +543,14 @@ def parse_newick_string(
     --------
     >>> nwk1 = "((A,B),(C,D));"
     >>> tree1 = parse_newick_string(nwk1)
-    >>> print(tree1.get_node_data())    
-    >>> 
+    >>> print(tree1.get_node_data())
+    >>>
     >>> nwk2 = "((a:1,b:2)0.99:3,(c:1,d:1)0.90:3)0.66:1;"
     >>> tree2 = parse_newick_string(nwk2)
     >>> print(tree2.get_node_data())
     """
     feat_formatter = partial(
-        feature_parser, 
+        feature_parser,
         prefix=feature_prefix,
         delim=feature_delim,
         assignment=feature_assignment,

@@ -48,7 +48,7 @@ class TreeIOParser:
         or nexus str, or a file or URL containing newick or nexus
         strings.
     """
-    def __init__(self, data: Union[str, Url, Path], tdict: Optional[Dict[str,str]]=None, **kwargs):
+    def __init__(self, data: Union[str, Url, Path], tdict: Optional[Dict[str, str]] = None, **kwargs):
         self.data = data
         """: The input data object."""
         self.tdict: Dict[str, str] = tdict if tdict else {}
@@ -110,7 +110,7 @@ class TreeIOParser:
         # not str or Path then raise TypeError
         raise TypeError(f"Error parsing unrecognized tree data input type: {self.data}.")
 
-    def _convert_nwk_or_nex_to_tree(self, data: str, multi: bool=False) -> str:
+    def _convert_nwk_or_nex_to_tree(self, data: str, multi: bool = False) -> str:
         """Return a Node given unknown string data format. """
         if data[:6].upper() == "#NEXUS":
             # splits into: List[str], Dict[str,str]
