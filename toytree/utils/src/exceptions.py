@@ -62,4 +62,5 @@ if __name__ == "__main__":
     # raise ToytreeError("HELLO WORLD")
     import toytree
     tree = toytree.rtree.unittree(10)
-    tree.draw(node_colors=['red', 'blue'])
+    # tree.draw(node_colors=['red', 'blue'])
+    raise ToytreeError("error ")

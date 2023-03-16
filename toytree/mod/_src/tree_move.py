@@ -233,7 +233,7 @@ def move_nni(
     seed: Optional[int]=None,
     inplace: bool=False,
     highlight: bool=False,
-    ) -> ToyTree:
+) -> ToyTree:
     """Return a tree one nearest-neighbor-interchange from current tree.
 
     An edge is selected and a subtree from either side is randomly
@@ -337,7 +337,7 @@ def move_spr(
     seed: Optional[int]=None,
     inplace: bool=False,
     highlight: bool=False,
-    ) -> ToyTree:
+) -> ToyTree:
     """Return a rooted ToyTree one SPR move from the current tree.
 
     The returned tree will have a different topology from the starting
@@ -680,7 +680,6 @@ def style_tree(tree: ToyTree) -> ToyTree:
 #         neighbor_trees.append(one_nni(tree, force=(f_idx, available_node), highlight=highlight, quiet=True, seed=seed))
 
 #     return neighbor_trees
-
 
 
 if __name__ == "__main__":

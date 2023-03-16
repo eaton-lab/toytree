@@ -10,14 +10,14 @@ Methods
 -------
 toytree_sequence(Union[tree_sequence, str])
     Return a ToyTreeSequence object for extracting and drawing trees
-    from a tree sequence file produced by msprime or SliM3.
+    from a tree sequence object produced by msprime or SliM3.
 parse_network(str)
     Return a ToyTree and admixture dictionary representing the major
     topology (highest gamma branches) and admixture edges (src, dest
     tuples representing lower gamma branches) from a network file
     produced by SNaQ.
 normalize_values(np.ndarray)
-    Return an array of values that have been binned into fewer 
+    Return an array of values that have been binned into fewer
     discrete integer values. This is useful for plotting edge widths
     (e.g., values look nice in range 2-10) from data in some other
     range (e.g., Ne values in range 1e5 to 1e7).
@@ -54,3 +54,7 @@ from toytree.utils.src.exceptions import *
 from toytree.utils.src.scrollable_canvas import ScrollableCanvas
 from toytree.utils.src.browser import show
 from toytree.utils.src.toytree_sequence import ToyTreeSequence as toytree_sequence
+from toytree.utils.src.style_axes import (
+    set_axes_ticks_external,
+    set_axes_box_outline,
+)

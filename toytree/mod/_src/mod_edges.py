@@ -13,27 +13,43 @@ are ready to be plotted. This means they update the cached heights
 so idx values and x positions do not need to be updated.
 """
 
-from typing import Dict, TypeVar
+from typing import Dict, TypeVar, Optional
 from loguru import logger
 import numpy as np
+from toytree import Node
 
 logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
+Query = TypeVar("Query", str, int, Node)
 
 
 def edges_scale_to_root_height(
-    tree,
-    treeheight: float = 1, 
-    include_stem: bool = False, 
+    tree: ToyTree,
+    treeheight: float = 1.,
+    include_stem: bool = False,
     inplace: bool = False,
-    ) -> ToyTree:
-    """Return a ToyTree with root height set.
+) -> ToyTree:
+    """Return ToyTree rescaled to a specific total tree height.
 
-    Returns a toytree copy with all nodes multiplied by a constant 
-    so that the root node height equals the value entered for 
-    treeheight. The argument include_stem=True can be used to scale 
-    the tree so that the root + root.dist is equal to treeheight. 
-    This effectively sets the stem height.
+    Edge lengths (Node dist values) are all multiplied by a constant
+    factor to make the root Node height align at treeheight. By
+    default tree is scaled to the root crown height, but stem height
+    can also be specified.
+
+    Parameters
+    ----------
+    treeheight: float
+        Total tree height to scale tree to.
+    include_stem: bool
+        If True then the stem height is set instead of crown height.
+    inplace: bool
+        If True the tree is modified, else a copy is returned.
+
+    Example
+    -------
+    >>> tree = toytree.rtree.unittree(10, seed=123)
+    >>> tree = tree.mod.edges_scale_to_root_height(1000)
+    >>> tree.draw(scale_bar=True);
     """
     tree = tree if inplace else tree.copy()
 
@@ -45,26 +61,36 @@ def edges_scale_to_root_height(
     # get multiplier
     ratio = treeheight / height
 
-    # scale Nodes using cached Nodes.
+    # scale Nodes using cached Nodes, no ._update call necessary.
     for idx in range(tree.nnodes):
         tree[idx]._height *= ratio
         tree[idx]._dist *= ratio
     return tree
 
-def edges_slider(
-    tree, 
-    prop=0.999, 
-    seed=None, 
-    inplace: bool = False,
-    ) -> ToyTree:
-    """Return a ToyTree with internal Node heights randomly jittered.
 
-    Internal Node heights slide up or down while retaining the same
-    topology as well as root and tip heights. The order of traversal
-    is randomly chosen, and then Node heights are uniformly sampled
-    in the interval between their parent and highest child.
+def edges_slider(
+    tree: ToyTree,
+    prop: float = 0.999,
+    seed: Optional[int] = None,
+    inplace: bool = False,
+) -> ToyTree:
+    """Return a ToyTree with node heights randomly shifted within bounds.
+
+    Node heights are moved up or down uniformly between their parent
+    and highest child node heights in 'levelorder' (from root to tips).
+    Root and tip heights are fixed, only internal node heights change.
+
+    Parameters
+    ----------
+    prop: float
+        The proportion or percentile of the edge bounds from which
+        to sample new heights from.
+    seed: int
+        Random number generator seed used to sample new heights.
+    inplace: bool
+        Transform tree in place and return it, or return a copy.
     """
-    tree = tree if inplace else tree.copy()    
+    tree = tree if inplace else tree.copy()
     rng = np.random.default_rng(seed)
 
     # smaller value means less jitter
@@ -103,7 +129,12 @@ def edges_slider(
             node._height = newheight
     return tree
 
-def edges_multiplier(tree, multiplier: float=1.0, inplace: bool = False) -> ToyTree:
+
+def edges_multiplier(
+    tree: ToyTree,
+    multiplier: float = 1.0,
+    inplace: bool = False,
+) -> ToyTree:
     """Return ToyTree w/ all Nodes multiplied by a random constant.
 
     Parameters
@@ -111,25 +142,61 @@ def edges_multiplier(tree, multiplier: float=1.0, inplace: bool = False) -> ToyT
     multiplier: float
         The multiplier will be sampled uniformly in (multiplier, 1/multiplier).
     """
-    tree = tree if inplace else tree.copy()    
+    tree = tree if inplace else tree.copy()
     for idx in range(tree.nnodes):
         tree[idx]._dist = tree[idx].dist * multiplier
         tree[idx]._height = tree[idx]._height * multiplier
     return tree
 
-def edges_extend_tips_to_align(tree, inplace: bool = False) -> ToyTree:
-    """Return ToyTree with tip Nodes extended to align at height=0."""
+
+def edges_extend_tips_to_align(
+    tree: ToyTree,
+    inplace: bool = False,
+) -> ToyTree:
+    """Return a ToyTree with tips Node dists extended to align.
+
+    Tip Node dists are extended to align with the Node that is farthest
+    from the root (defined as height=0). This is a simple way to make
+    a tree appear ultrametric.
+
+    See Also
+    --------
+    ... TODO: [alternative ultrametric scaling methods]
+
+    Parameters
+    ----------
+    inplace: bool
+        If True tree is modified in place, else a copy is
+    """
     tree = tree if inplace else tree.copy()
     for idx in range(tree.ntips):
         tree[idx]._dist += tree[idx]._height
         tree[idx]._height = 0
     return tree
 
-def edges_set_node_heights(tree, mapping: Dict[int,float], inplace: bool = False) -> ToyTree:
+
+def edges_set_node_heights(
+    tree: ToyTree,
+    mapping: Dict[Query, float],
+    inplace: bool = False,
+) -> ToyTree:
     """Return a ToyTree with one or more Node heights set explicitly.
-    
-    Enter a dictionary mapping node idx to heights. Node idxs that 
-    are not included as keys will remain at there existing height. 
+
+    Enter a dictionary mapping node idx to heights. Node idxs that
+    are not included as keys will remain at there existing height, but
+    their dist values may be changed to modify the heights of other
+    Nodes, since height is an emergent property of the dist values of
+    many connected Nodes.
+
+    Parameters
+    ----------
+    mapping: Dict[Query, float]
+        A dictionary mapping a Node query (Node, Node idx label, or Node
+        name) to a float value for the new height of that Node. Note
+        that not all Nodes usually have unique name labels, so int idx
+        labels can be a safer query type to use.
+    inplace: bool
+        Tree is modified in place or returned as a copy.
 
     Examples
     --------
@@ -139,13 +206,19 @@ def edges_set_node_heights(tree, mapping: Dict[int,float], inplace: bool = False
     # set node heights on a new tree copy
     tree = tree if inplace else tree.copy()
 
+    # convert {query: float} to {idx: float} using Node int idx labels
+    mapping = {
+        tree.get_nodes(i, regex=False)[0].idx: j
+        for (i, j) in mapping.items()
+    }
+
     # set node height to current value for those not in hdict
     for idx in range(tree.nnodes):
         if idx not in mapping:
             mapping[idx] = tree[idx]._height
 
     # iterate over nodes from tips to root
-    for node in tree.traverse("postorder"):        
+    for node in tree:  # .traverse("postorder"):
         # shorten or elongate child stems to reach node's new height
         node._height = mapping[node.idx]
         if node.up:
@@ -172,5 +245,5 @@ if __name__ == "__main__":
     print(edges_scale_to_root_height(TREE, 100, False, False).get_node_data())
     print(edges_slider(TREE, 0.5).get_node_data())
     print(edges_multiplier(TREE, 0.5).get_node_data())
-    print(edges_extend_tips_to_align(TREE).get_node_data())        
+    print(edges_extend_tips_to_align(TREE).get_node_data())
     print(edges_set_node_heights(TREE, NEW_HEIGHTS).get_node_data())

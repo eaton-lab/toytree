@@ -131,6 +131,18 @@ class TreeStyleU(TreeStyle):
 #         self.tree_style = "b"
 
 
+class TreeStyleR(TreeStyle):
+    """Node name style. Mask tip Nodes and increase font size."""
+    def __init__(self):
+        super().__init__()
+        self.tree_style = "x"
+        self.node_mask = (0, 1, 1)
+        self.node_labels = "name"
+        self.node_sizes = 16
+        self.node_markers = "r2x1"
+        self.node_colors = "lightgrey"
+
+
 def get_base_tree_style_by_name(tree_style: str = "n") -> TreeStyle:
     """Return a base TreeStyle indexed by unique str name prefix"""
     tree_style = tree_style.lower()[0]

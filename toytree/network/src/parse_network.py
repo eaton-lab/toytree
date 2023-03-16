@@ -12,16 +12,16 @@ Extended newick network format
 ------------------------------
 Basic network, e.g., used by dendroscope.
 >>> ((r3,(r2,(r1, #HX)),(r0)#HX);
-This indicates an admix edges from r1 -> r0. The #HX node is the 
+This indicates an admix edges from r1 -> r0. The #HX node is the
 source, and the #HX node label is the destination. This example shows
-only the edge, but not its proportions, or edge lengths indicating 
+only the edge, but not its proportions, or edge lengths indicating
 where the admix edge starts or stops at each end.
 
 With admixture magnitudes (termed gamma values under some models).
 >>> ((r3,(r2, (r1, #HX:::0.1)),(r0)#HX);
 
 With admixture magnitudes and edge lengths.
->>> 
+>>>
 
 This is what it looks like when more than one admix from a node:
 >>> ((A,#H1),B)
@@ -49,7 +49,7 @@ logger = logger.bind(name="toytree")
 
 class NetworkToMajorTree:
     """Class with functions to parse (ToyTree, admix_edges) from net.
-    
+
     Parameters
     ----------
     disconnect: bool
@@ -84,15 +84,15 @@ class NetworkToMajorTree:
 
     def _set_tree_with_admix_as_node_labels(self) -> toytree.ToyTree:
         """Return a ToyTree parsed from network newick with gamma nodes.
-        
+
         Admix nodes are indicated by #[name]:[dist]::[gamma] where dist
         will be absent for tip nodes but present for internal nodes. We
         modify this to be #[name-with-gamma]:dist so we can still use
-        the same tree parser and then modify the tree afterwards to 
+        the same tree parser and then modify the tree afterwards to
         extract the major tree and minor admix edges.
         """
         string = self.net
-        # tip nodes replace L:::G -> L-G 
+        # tip nodes replace L:::G -> L-G
         re0 = re.compile(r"(#\w+):::([\d.]+)")
         # internal nodes replace L:D::G -> L-G:D
         re1 = re.compile(r"(#\w+):([\d.]+)::([\d.]+)")
@@ -102,9 +102,9 @@ class NetworkToMajorTree:
 
     def _pseudo_unroot(self) -> toytree.ToyTree:
         """Return unrooted tree re-ordered for display purposes.
-        
-        Tree is rooted tree on an edge that is not a descendant of a 
-        hybrid destination node (#H node label) in the starting 
+
+        Tree is rooted tree on an edge that is not a descendant of a
+        hybrid destination node (#H node label) in the starting
         unrooted tree.
         """
         # store a list of all nodes the tree *could* be rooted on.
@@ -120,7 +120,7 @@ class NetworkToMajorTree:
     def get_major_tree_and_admix_edges(self) -> Tuple:
         """..."""
         self._set_tree_with_admix_as_node_labels()
-        self.tree._draw_browser(ts='s', layout='unr', width=700, node_labels="name", node_colors="pink")        
+        self.tree._draw_browser(ts='s', layout='unr', width=700, node_labels="name", node_colors="pink")
         self.tree = self._pseudo_unroot()
         self.tree._draw_browser(ts='s', width=500, node_labels="idx", node_colors="pink")
 
@@ -145,7 +145,7 @@ class NetworkToMajorTree:
 
             # remove the tip node representing a src
             logger.debug(f"deleting minor node: {hnodes[1].name} {hnodes[1].idx}")
-            hnodes[1]._delete()        
+            hnodes[1]._delete()
             desc1 = tuple(hnodes[1]._up.get_leaf_names())
             desc1 = [i for i in desc1 if not i.startswith("#H")]
             logger.trace(f"desc1: {desc1}")
@@ -156,14 +156,15 @@ class NetworkToMajorTree:
             desc0 = [i for i in desc0 if not i.startswith("#H")]
             hnodes[0]._delete()
             logger.trace(f"desc0: {desc0}")
-            
+
             self.tree._update()
             self.admix.append((desc0, desc1, 0.5, {}, f"{float(prop):.3g}"))
-        
+
 
 # USER FUNCTION
 def parse_network_to_tree_and_admix(
-    net: Union[str, Path]) -> Tuple[toytree.ToyTree, List[Tuple]]:
+    net: Union[str, Path],
+) -> Tuple[toytree.ToyTree, List[Tuple]]:
     """..."""
     parse = NetworkToMajorTree(net)
     tree, admix = parse.get_major_tree_and_admix_edges()
@@ -188,7 +189,7 @@ def test3B():
     # net = "(((r0,r1),#HX),(((r2,r3))#HX,r4),r5);"
     # net = "(C,D,((O,(E,#H7:::0.196):0.314):0.664,(((A1,A2))#H7:::0.804,B):10.0):10.0);"
     # net = "(C,D,((O,(E,#H7)),(B,(A)#H7)));"
-    # net = "(C,D,((O,(E,#H7:::0.49)),(B,(A)#H7:::0.51)));"    
+    # net = "(C,D,((O,(E,#H7:::0.49)),(B,(A)#H7:::0.51)));"
     net = "(C,D,((O,(E,#H7:::0.51)),(B,(A)#H7:::0.49)));"
     # net = "((r5,(r4,(r3,((r2,(r0,r1):4.268188213461936):2.9023407392778653)#H9:10.0::0.7093477022612464):3.2038798063864555):10.0):10.0,r6,(r7,#H9:0.0::0.2906522977387535):10.0);"
     # net = "(C,D,((O,(E,#H7:::0.195):0.313):0.664,(B,(A)#H7:::0.804):10.0):10.0);"
@@ -232,7 +233,7 @@ if __name__ == "__main__":
     # t0, a0 = test3B()
     # t0, a0 = test_am_2()
     t0._draw_browser(
-        ts='s', 
+        ts='s',
         # width=500, height=800,
         node_labels="idx",
         # use_edge_lengths=True,
