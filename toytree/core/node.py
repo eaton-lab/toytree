@@ -280,7 +280,7 @@ class Node:
         raise TreeNodeError("copy failed, tree structure is broken.")
 
     #################################################
-    ## DUNDERS
+    # DUNDERS
     #################################################
 
     def __repr__(self) -> str:
@@ -629,7 +629,7 @@ class Node:
         traversal can be stopped before reaching the true root by
         entering another Node instance as the 'root' argument. The
         iteration will stop when either this root, or the true root
-        (None) is reached.
+        parent (None) is reached.
         """
         node = self
         while 1:
