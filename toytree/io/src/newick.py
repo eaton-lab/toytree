@@ -359,7 +359,10 @@ def _check_internal_label_for_name_or_support(
     if internal_labels == "support":
         for idx in range(tree.ntips, tree.nnodes):
             node = tree[idx]
-            node.support = float(node.name)
+            if node.name:
+                node.support = float(node.name)
+            else:  # could not convert '' to float in nodes without support
+                node.support = 0.
             node.name = ""
 
     # NOTE: first written to not check the root b/c root might not 
