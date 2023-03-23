@@ -380,9 +380,6 @@ def _check_internal_label_for_name_or_support(
     # infer types, any errors cause internal labels to be str names.
     elif internal_labels is None:
         try:
-            # record whether we convert to int or float
-            dtype = str
-
             # is root value present?
             rootval = tree.treenode.name != ""
 
@@ -398,9 +395,6 @@ def _check_internal_label_for_name_or_support(
             # try to convert floats to ints if no floating points
             if all(i.is_integer() for i in supports):
                 supports = [int(i) for i in supports]
-                dtype = int
-            else:
-                dtype = float
 
             # convert 'name' features to 'support' for internal nodes.
             for idx, nidx in enumerate(inodes):
@@ -410,10 +404,13 @@ def _check_internal_label_for_name_or_support(
             # if rootval is absent then set to a default value, using
             # either 100 or 1.0 as default support based on others.
             if not rootval:
-                default = 100 if max(supports) > 1 else 1.0
-                tree.treenode.support = dtype(default)
+                # default = 100 if max(supports) > 1 else 1.0
+                # tree.treenode.support = dtype(default)
+                tree.treenode.support = np.nan
                 tree.treenode.name = ""
         except ValueError:
+            logger.warning(
+                "ambiguous newick annotations. Use toytree.io.read_newick()")
             pass
     return tree
 
