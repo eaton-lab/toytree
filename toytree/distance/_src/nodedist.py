@@ -1,4 +1,4 @@
-#/usr/bin/env python
+#!/usr/bin/env python
 
 """Node distance functions.
 
@@ -29,6 +29,7 @@ __all__ = [
     "get_farthest_node_distance"
 ]
 
+
 def get_mrca_from_idxs(tree: ToyTree, *idxs: int) -> Node:
     """Return Node that is MRCA common ancestor to a set of Nodes.
 
@@ -51,7 +52,7 @@ def get_mrca_from_idxs(tree: ToyTree, *idxs: int) -> Node:
 
     See Also
     --------
-    `ToyTree.get_mrca`
+    `ToyTree.get_mrca_node`
 
     Examples
     --------
@@ -131,6 +132,7 @@ def get_node_distance(
                 dist += node.dist + sum(i.dist for i in node._iter_ancestors(mrca))
     return dist
 
+
 def get_internal_node_distance_matrix(
     tree: ToyTree,
     topology_only: bool=False,
@@ -169,10 +171,11 @@ def get_internal_node_distance_matrix(
         dists.loc[jdx, idx] = dist
     return dists
 
+
 def get_node_distance_matrix(
     tree: ToyTree,
     topology_only: bool=False,
-    ) -> pd.DataFrame:
+) -> pd.DataFrame:
     """Return patristic distances between all Nodes in a ToyTree.
 
     Parameters
@@ -208,10 +211,11 @@ def get_node_distance_matrix(
         dists.loc[jdx, idx] = dist
     return dists
 
+
 def get_tip_distance_matrix(
     tre: ToyTree,
-    topology_only: bool=False,
-    ) -> pd.DataFrame:
+    topology_only: bool = False,
+) -> pd.DataFrame:
     """Return patristic distances between tip Nodes in a ToyTree.
 
     Parameters
@@ -246,11 +250,12 @@ def get_tip_distance_matrix(
         dists.loc[jdx, idx] = dist
     return dists
 
+
 def _get_dist_to_descendants_dict(
     tree: ToyTree,
     idx: int,
     topology_only: bool = False,
-    ) -> Node:
+) -> Node:
     """Return all descendant Nodes at farthest distance from a selected Node.
 
     Distance is measured by the sum of edge lengths separating them,
@@ -271,12 +276,13 @@ def _get_dist_to_descendants_dict(
                 ndists[tnode.idx] += ndists[tnode.up.idx]
     return ndists
 
+
 def get_farthest_node(
     tree: ToyTree,
     idx: Optional[int] = None,
     topology_only: bool = False,
     descendants_only: bool = False,
-    ) -> Node:
+) -> Node:
     """Return the farthest Node from a selected Node.
 
     Parameters
@@ -292,7 +298,7 @@ def get_farthest_node(
     descendants_only: bool
         If True then the farthest descendant Node is returned, rather
         than the farthest Node spanning any path on the tree.
-    
+
     Note
     ----
     If >1 Nodes are equally distance the one w/ lowest idx is returned.
@@ -306,6 +312,7 @@ def get_farthest_node(
         ndists = get_node_distance_matrix(tree, topology_only)
         nidx = ndists[node.idx].argmax()
     return tree[nidx]
+
 
 def get_farthest_node_distance(
     tree: ToyTree,
@@ -329,13 +336,12 @@ def get_farthest_node_distance(
         If True then the farthest descendant Node is returned, rather
         than the farthest Node spanning any path on the tree.
     """
-    node = tree.treenode if idx is None else tree[idx]    
+    node = tree.treenode if idx is None else tree[idx]
     if descendants_only:
         ndists = _get_dist_to_descendants_dict(tree, node.idx, topology_only)
         return max(ndists.values())
     ndists = get_node_distance_matrix(tree, topology_only)
     return max(ndists[node.idx])
-
 
 
 if __name__ == "__main__":
@@ -345,5 +351,5 @@ if __name__ == "__main__":
     # print(TREE.draw())
     # print(get_node_distance_matrix(TREE, True))
 
-    TREE = toytree.rtree.unittree(5, seed=123)    
+    TREE = toytree.rtree.unittree(5, seed=123)
     print(TREE.distance.get_farthest_node(5))
