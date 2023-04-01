@@ -15,11 +15,13 @@ References
 
 from typing import Optional, Tuple, Sequence, TypeVar
 import numpy as np
+from loguru import logger
 from toytree.utils import ToytreeError
 
 Node = TypeVar("Node")
 ToyTree = TypeVar("ToyTree")
 DISALLOWED_FEATURES = set(['idx', 'dist', 'support', 'up', 'children', 'height'])
+logger = logger.bind(name="toytree")
 
 
 def get_feature_string(
@@ -29,7 +31,7 @@ def get_feature_string(
     features_delim: str,
     features_assignment: str,
     internal_labels_formatter: str,
-    ) -> str:
+) -> str:
     """Return a string of commented features inside square brackets.
 
     Intended to handle formatting/serializeation of flexible object
@@ -53,6 +55,7 @@ def get_feature_string(
     feature_str = features_delim.join(pairs)
     return f"[{features_prefix}{feature_str}]"
 
+
 def node_to_newick(
     node: Node,
     children: Tuple[Node],
@@ -63,7 +66,7 @@ def node_to_newick(
     features_prefix: str = "&",
     features_delim: str = ",",
     features_assignment: str = "=",
-    ):
+) -> str:
     """Reduce function used in tree_reduce"""
     # format the comment feature string for extra features
     feature_str = get_feature_string(
@@ -92,7 +95,11 @@ def node_to_newick(
     # return the node formatted as newick
     if node.is_leaf():
         return f"{node.name}{dist}{feature_str}"
+    # do not write dist value for the root, it is not really part of the data.
+    elif node.is_root():
+        return f"({','.join(children)}){internal}{feature_str}"
     return f"({','.join(children)}){internal}{dist}{feature_str}"
+
 
 def tree_reduce(
     node: Node,
@@ -103,7 +110,7 @@ def tree_reduce(
     features_prefix: str = "&",
     features_delim: str = ",",
     features_assignment: str = "=",
-    ) -> str:
+) -> str:
     """Return newick string of ToyTree.
 
     Recursive function to get formatted newick string of tree data.
@@ -115,7 +122,9 @@ def tree_reduce(
     ]
     reduced_children = [tree_reduce(child, *args) for child in node.children]
     newick = node_to_newick(node, reduced_children, *args)
+    # logger.warning([node, newick])
     return newick
+
 
 def write_newick(
     tree: ToyTree,
@@ -127,7 +136,7 @@ def write_newick(
     features_prefix: str = "&",
     features_delim: str = ",",
     features_assignment: str = "=",
-    ) -> Optional[str]:
+) -> Optional[str]:
     """Write tree to newick string and return or write to filepath.
 
     The newick string can be formatted in several ways. The default
@@ -216,6 +225,7 @@ def write_newick(
             out.write(newick)
             return None
     return newick
+
 
 def write_nexus(tree: ToyTree, path: Optional[str] = None, **kwargs):
     """Write tree newick string to NEXUS file format.
