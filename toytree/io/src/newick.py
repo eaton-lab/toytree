@@ -330,10 +330,10 @@ def _dict_aggregator(label, children, distance, features):
 
 def _parse_newick_subtree(
     newick: str,
-    aggregator = None, #: Callable[[str, List[Node], float, Any], Node] = None,  # This one works.
-    dist_formatter = None, #: Callable[str, float] = None,
-    feat_formatter = None, #: Callable[str, Any] = None  # FIXME: error on py3.8 'args must be a list.'
-    ) -> Node:
+    aggregator=None,  #: Callable[[str, List[Node], float, Any], Node] = None,  # This one works.
+    dist_formatter=None,  #: Callable[str, float] = None,
+    feat_formatter=None,  #: Callable[str, Any] = None  # FIXME: error on py3.8 'args must be a list.'
+) -> Node:
     """Recursive func (private) for building Nodes from newick subtrees.
 
     See parse_newick
@@ -355,7 +355,7 @@ def _parse_newick_subtree(
     return aggregator(label, child_nodes, distance, features)
 
 
-def _check_internal_label_for_name_or_support(
+def _infer_internal_label_type(
     tree: ToyTree,
     internal_labels: Optional[str],
 ) -> ToyTree:
@@ -374,52 +374,50 @@ def _check_internal_label_for_name_or_support(
                 node.support = np.nan
             node.name = ""
 
-    # NOTE: first written to not check the root b/c root might not 
-    # have support values, but strange example makes me question this...
-
     # infer types, any errors cause internal labels to be str names.
+    # To save support values there must be a numeric label for every
+    # internal non-root Node.
     elif internal_labels is None:
         try:
-            # is root value present?
-            rootval = tree.treenode.name != ""
-
-            # check all node values except root if root is absent ("")
-            inodes = range(tree.ntips, tree.nnodes - (1 if not rootval else 0))
-
-            # get all internal node 'name' values
-            supports = (tree[i].name for i in inodes)
-
-            # try to convert all to floats (raises an error if str)
-            supports = [float(i) for i in supports]
+            # try to convert all internal node 'names' to floats (raises ValueError if str)
+            supports = [float(i.name) for i in tree[tree.ntips:-1]]
 
             # try to convert floats to ints if no floating points
             if all(i.is_integer() for i in supports):
                 supports = [int(i) for i in supports]
 
-            # convert 'name' features to 'support' for internal nodes.
-            for idx, nidx in enumerate(inodes):
-                tree[nidx].support = supports[idx]
-                tree[nidx].name = ""
+            # store internal node values as 'support' and set 'name' to empty.
+            for idx, inode in enumerate(tree[tree.ntips:-1]):
+                inode.support = supports[idx]
+                inode.name = ""
 
-            # if rootval is absent then set to a default value, using
-            # either 100 or 1.0 as default support based on others.
-            if not rootval:
-                # default = 100 if max(supports) > 1 else 1.0
-                # tree.treenode.support = dtype(default)
-                tree.treenode.support = np.nan
+            # root Node is likely empty, but may have a name or even support
+            # value. If so, we will try to store it numeric first, then string.
+            tree.treenode.support = np.nan
+            if not tree.treenode.name:
                 tree.treenode.name = ""
+            else:
+                try:
+                    tree.treenode.support = float(tree.treenode.name)
+                    if tree.treenode.support.is_integer():
+                        tree.treenode.support = int(tree.treenode.support)
+                    tree.treenode.name = ""
+                except ValueError:
+                    pass
+
+        # internal Node labels are inferred to be string name labels or other.
         except ValueError:
-            logger.warning(
-                "ambiguous newick annotations. Use toytree.io.read_newick()")
-            pass
+            logger.info(
+                "empty or non-numeric node labels detected and set "
+                "as 'name' feature, not 'support'")
     return tree
 
 
 def parse_newick_string_custom(
     newick: str,
-    dist_formatter = None,  #: Callable[str, float] = None, # FIXME
-    feat_formatter = None,  #: Callable[str, Dict[str,Any]] = None,
-    aggregator = None,  #: Callable[[str, List[Node], float, Any], Node] = None,
+    dist_formatter=None,  #: Callable[str, float] = None, # FIXME
+    feat_formatter=None,  #: Callable[str, Dict[str,Any]] = None,
+    aggregator=None,  #: Callable[[str, List[Node], float, Any], Node] = None,
     internal_labels: Optional[str] = None,
 ) -> ToyTree:
     """Return a ToyTree from a newick string.
@@ -486,7 +484,7 @@ def parse_newick_string_custom(
     tree = ToyTree(treenode)
 
     # check whether labels on internal nodes are names or supports
-    tree = _check_internal_label_for_name_or_support(tree, internal_labels)
+    tree = _infer_internal_label_type(tree, internal_labels)
 
     # return the final tree
     return tree
