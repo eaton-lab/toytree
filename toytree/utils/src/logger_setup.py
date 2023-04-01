@@ -53,7 +53,7 @@ def set_log_level(log_level="INFO"):
         sink=sys.stderr,
         level=log_level,
         colorize=colorize(),
-        format="{level.icon} toytree | {module}:{function}:{line} | {message}",
+        format="{level.icon} toytree | {module}:{function} | {message}",
         filter=lambda x: x['extra'].get("name") == "toytree",
     )
     LOGGERS.append(idx)
