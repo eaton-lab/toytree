@@ -43,9 +43,9 @@ def tree(data: Union[str, Path, Url]) -> ToyTree:
     See Also
     --------
     - `toytree.io.parse_tree_from_newick_file`
-    - `toytree.io.parse_tree_from_nexus_file`    
+    - `toytree.io.parse_tree_from_nexus_file`
     - `toytree.io.parse_newick`
-    - `toytree.io.parse_newick_custom`    
+    - `toytree.io.parse_newick_custom`
 
     Examples
     --------

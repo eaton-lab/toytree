@@ -24,7 +24,7 @@ from typing import List, Tuple, Dict
 
 def get_newicks_and_translation_from_nexus(
     data: str
-    ) -> Tuple[List[str], Dict[int, str]]:
+) -> Tuple[List[str], Dict[int, str]]:
     """Extract newick data and translation dict from a NEXUS file.
 
     This can parse generic NEXUS formats, and has also been tested
@@ -77,7 +77,6 @@ def get_newicks_and_translation_from_nexus(
         elif sub[0].lower() == "end;":
             break
     return newicks, trans_dict
-
 
 
 if __name__ == "__main__":
