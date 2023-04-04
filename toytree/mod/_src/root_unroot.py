@@ -244,7 +244,8 @@ class Rooter:
                 if value is not None:
                     setattr(node, feature, value)
                 else:
-                    delattr(node, feature)
+                    if hasattr(node, feature):
+                        delattr(node, feature)
 
         # set support of mirror root child to nan
         # self.node.support = np.nan
@@ -261,7 +262,7 @@ class Rooter:
             # edge[0]._dist /= 2.
             # edge[1]._dist /= 2.
         else:
-            logger.warning(f"sumdist={odist}, root_dist={self.root_dist}")
+            logger.debug(f"sumdist={odist}, root_dist={self.root_dist}")
             if self.root_dist > odist:
                 raise ValueError(
                     "`root_dist` arg (placement of root node on existing edge) "

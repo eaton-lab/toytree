@@ -24,7 +24,7 @@ from toytree.utils import ToytreeError
 
 class TestRoot(unittest.TestCase):
     def setUp(self):
-        self.czech = toytree.tree("((C,D)1,(A,(B,X)3)2,E)R;")
+        self.czech = toytree.io.parse_newick_string("((C,D)1,(A,(B,X)3)2,E)R;", internal_labels="name")
         """: Example dataset with inner labels as edge data."""
         self.itree = toytree.rtree.imbtree(10, seed=123, treeheight=10)
         self.btree = toytree.rtree.baltree(10, seed=123, treeheight=10)
