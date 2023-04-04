@@ -31,13 +31,15 @@ def _assign_names(tree: ToyTree, random: bool, rng: np.random.Generator) -> ToyT
 def rtree(ntips: int, random_names: bool = False, seed: Optional[int] = None) -> ToyTree:
     """Return a random topology (fastest method).
 
-    Default values are set on node support (0) and dist (1.0)
-    features and can be modified after tree generation.
+    The default settings for Node support (np.nan) and dist (1.0) can
+    be further modified after generating the tree.
 
     Parameters
     ----------
     ntips: int
         The number of tips in the tree.
+    random_names: bool
+        If True then tip names are randomized rather than ordered.
     seed: Optional[int]
         An integer seed for the numpy random number generator.
 
@@ -56,8 +58,8 @@ def rtree(ntips: int, random_names: bool = False, seed: Optional[int] = None) ->
     for _ in range(ntips - 1):
         tip = rng.choice(current_tips)
         current_tips.remove(tip)
-        child0 = Node()
-        child1 = Node()
+        child0 = Node(dist=1.)
+        child1 = Node(dist=1.)
         tip._add_child(child0)
         tip._add_child(child1)
         current_tips.extend([child0, child1])
@@ -145,8 +147,8 @@ def imbtree(
 
     # add children n-1 times
     for _ in range(ntips - 1):
-        child0 = Node()
-        child1 = Node()
+        child0 = Node(dist=1.)
+        child1 = Node(dist=1.)
         tip._add_child(child0)
         tip._add_child(child1)
         tip = child0
@@ -203,8 +205,8 @@ def baltree(
         parent = _get_small_child(root)
 
         # add children to the selected node and store
-        child0 = Node()
-        child1 = Node()
+        child0 = Node(dist=1.)
+        child1 = Node(dist=1.)
 
         # remove parent from dict
         parent._add_child(child0)
@@ -406,21 +408,28 @@ def bdtree(
     return tree
 
 
-def coaltree(k: int, N: int, seed: Optional[int] = None) -> ToyTree:
+def coaltree(k: int, N: int = 100, seed: Optional[int] = None) -> ToyTree:
     """Return a random ToyTree generated under the n-coalescent.
 
-    Waiting times between coal events under the n-coalescent are 
-    exponentially distributed with rate 4N / (k * k-1). A tree is 
-    constructed by randomly samples waiting times from an exponential 
-    for each value of k from k to 1, and randomly joining Nodes at 
-    each coalescent interval.
+    Waiting times between coal events under the n-coalescent are
+    exponentially distributed with rate 4N / (k * k-1). A tree is
+    constructed by randomly sampling waiting times from an exponential
+    distribution at each value of k from k to 1, and randomly joining
+    Nodes at each coalescent interval.
+
+    Note
+    ----
+    The E[Tmrca] (expected root height) is 4N.
 
     Parameters
     ----------
     k: int
-        The number of gene copies sampled at the present.
+        The number of tips (e.g., gene copies) sampled at the present.
     N: int
-        The effective population size (Ne).
+        The effective population size (Ne). This acts only as a scale
+        multiplier of the branch lengths, but does not change their
+        relative distribution, which is determined by the number of
+        nodes between each coalescent event (i.e., the coalescent).
     seed: int or None
         A seed for the numpy random number generator.
     """
