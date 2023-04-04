@@ -46,6 +46,10 @@ from toytree.mod._src.mod_topo import (
 )
 
 from toytree.mod._src.root_unroot import unroot, root
+from toytree.mod._src.root_funcs import (
+    root_on_midpoint,
+    root_on_minimal_ancestor_deviation,
+)
 
 # from toytree.mod._src.tree_move import (
 #     move_spr,

@@ -119,7 +119,7 @@ class CanvasSetup:
 
         # get the longest name for dimension fitting
         self.lname = 0
-        if not self.style.tip_labels is None:
+        if self.style.tip_labels is not None:
             self.lname = max([len(str(i)) for i in self.style.tip_labels])
 
         # ntips and shape to fit with provided args
