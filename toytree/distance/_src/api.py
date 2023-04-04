@@ -5,218 +5,73 @@
 Distance functions take Node int idx labels as selectors.
 """
 
-from typing import List, Optional, TypeVar
+from typing import List, TypeVar, Union
+import inspect
+import numpy as np
 import pandas as pd
+
+import toytree.distance
 from toytree.distance._src.nodedist import (
-    get_mrca_from_idxs,
+    get_node_path,
     get_node_distance,
-    get_internal_node_distance_matrix,
     get_node_distance_matrix,
+    get_internal_node_distance_matrix,
     get_tip_distance_matrix,
     get_farthest_node,
     get_farthest_node_distance,
 )
 from toytree.distance._src.treedist import (
     get_treedist_rf,
-    get_treedist_rfi,    
+    get_treedist_rfi,
 )
 
 Node = TypeVar("Node")
 ToyTree = TypeVar("ToyTree")
+Query = TypeVar("Query", str, int, Node, None)
 
 
 class DistanceAPI:
     def __init__(self, tree):
         self._tree = tree
 
-    def get_mrca_from_idxs(self, *idxs:int) -> Node:
-        """Return Node that is MRCA common ancestor to a set of Nodes.
+    def get_node_path(self, node0: Query, node1: Query) -> List[Node]:
+        """Docstring inherited"""
+        return get_node_path(self._tree, node0=node0, node1=node1)
 
-        Nodes are selected by their int idx labels. This function is
-        analagous to `ToyTree.get_mrca` but is slightly faster by
-        allowing only ints as selectors rather than flexible input types.
+    def get_node_distance(self, node0: Query, node1: Query, topology_only: bool = False) -> float:
+        """Docstring inherited"""
+        return get_node_distance(self._tree, node0=node0, node1=node1, topology_only=topology_only)
 
-        Parameters
-        ----------
-        tree: toytree.ToyTree
-            An input ToyTree instance.
-        *idxs: int
-            Two or more Node int idx labels to select Nodes for which
-            to find the most recent common ancestor of.
+    def get_node_distance_matrix(self, topology_only: bool = False, df: bool = False) -> Union[np.array, pd.DataFrame]:
+        """Docstring inherited"""
+        return get_node_distance_matrix(self._tree, topology_only=topology_only, df=df)
 
-        Returns
-        -------
-        mrca: toytree.Node
-            A Node object that is common ancestor of the selected nodes.
+    def get_internal_node_distance_matrix(self, topology_only: bool = False, df: bool = False) -> Union[np.array, pd.DataFrame]:
+        """Docstring inherited"""
+        return get_internal_node_distance_matrix(self._tree, topology_only=topology_only, df=df)
 
-        See Also
-        --------
-        `ToyTree.get_mrca`
+    def get_tip_distance_matrix(self, topology_only: bool = False, df: bool = False) -> Union[np.array, pd.DataFrame]:
+        """Docstring inherited"""
+        return get_tip_distance_matrix(self._tree, topology_only=topology_only, df=df)
 
-        Examples
-        --------
-        >>> tree = toytree.rtree.unittree(ntips=10)
-        >>> tree.distance.get_mrca_from_idxs(tree, 1, 2, 3)
-        """
-        return get_mrca_from_idxs(self._tree, *idxs)
+    def get_farthest_node(self, node: Query = None, topology_only: bool = False, descendants_only: bool = False) -> Node:
+        """Docstring inherited"""
+        return get_farthest_node(self._tree, node=node, topology_only=topology_only, descendants_only=descendants_only)
 
-    def get_node_distance(self, idx0:int, idx1:int, topology_only:bool=False) -> float:
-        """Return patristic distance between two nodes on a ToyTree.
+    def get_farthest_node_distance(self, node: Query = None, topology_only: bool = False, descendants_only: bool = False) -> Node:
+        """Docstring inherited"""
+        return get_farthest_node_distance(self._tree, node=node, topology_only=topology_only, descendants_only=descendants_only)
 
-        Parameters
-        ----------
-        tree: toytree.ToyTree
-            A ToyTree instance.
-        idx0: int
-            The node idx label of the first node.
-        idx1: int
-            The node idx label of the second node.
-        topology_only: bool
-            If True then all edge lengths are set 1 so that the returned
-            distance represents the number of nodes between nodes.
-
-        Returns
-        -------
-        distance: float
-            The patristic distance between two nodes (the minimum
-            distance along edges connecting them that passes through
-            their common ancestor).
-
-        Example
-        -------
-        >>> tree = toytree.rtree.unittree(10, seed=123)
-        >>> toytree.distance.get_node_distance(tree, 0, 1)
-        """
-        return get_node_distance(self._tree, idx0, idx1, topology_only)
-
-    def get_internal_node_distance_matrix(self, topology_only:bool=False) -> pd.DataFrame:
-        """Return patristic distances between all internal nodes in a ToyTree.
-
-        Parameters
-        ----------
-        tree: toytree.ToyTree
-            The input ToyTree instance.
-        topology_only: bool
-            If True then all edges lengths are set to 1.
-
-        Returns
-        -------
-        node_distance_matrix: pd.DataFrame
-            A DataFrame with node idx labels as the rows and columns
-            and float values indicating the patristic distances between
-            each pair of nodes.
-
-        Examples
-        --------
-        >>> tree = toytree.rtree.unittree(10, seed=123)
-        >>> toytree.distance.get_internal_node_distance_matrix(tree)
-        """
-        return get_internal_node_distance_matrix(self._tree, topology_only)
-
-    def get_node_distance_matrix(self, topology_only:bool=False) -> pd.DataFrame:
-        """Return patristic distances between all nodes in a ToyTree.
-
-        Parameters
-        ----------
-        tree: toytree.ToyTree
-            The input ToyTree instance.
-        topology_only: bool
-            If True then all edges lengths are set to 1.
-
-        Returns
-        -------
-        node_distance_matrix: pd.DataFrame
-            A DataFrame with node idx labels as the rows and columns
-            and float values indicating the patristic distances between
-            each pair of nodes.
-
-        Examples
-        --------
-        >>> tree = toytree.rtree.unittree(10, seed=123)
-        >>> toytree.distance.get_node_distance_matrix(tree)
-        """
-        return get_node_distance_matrix(self._tree, topology_only)
-
-    def get_tip_distance_matrix(self, topology_only:bool=False) -> pd.DataFrame:
-        """Return patristic distances between tip Nodes in a ToyTree.
-
-        Parameters
-        ----------
-        tree: toytree.ToyTree
-            The input ToyTree instance.
-        topology_only: bool
-            If True then all edges lengths are set to 1.
-
-        Returns
-        -------
-        node_distance_matrix: pd.DataFrame
-            A DataFrame with node idx labels as the rows and columns
-            and float values indicating the patristic distances between
-            each pair of nodes.
-
-        Examples
-        --------
-        >>> tree = toytree.rtree.unittree(10, seed=123)
-        >>> toytree.distance.get_tip_distance_matrix(tree)
-        """
-        return get_tip_distance_matrix(self._tree, topology_only)
-
-    def get_farthest_node(
-        self,
-        idx: Optional[int] = None,
-        topology_only: bool = False,
-        descendants_only: bool = False,
-        ) -> Node:
-        """Return the farthest descendant Node from a selected Node.
-
-        Parameters
-        ----------
-        idx: int
-            The int idx label of a Node from which to measure distances
-            from. Default is None, which uses the root Node.
-        topology_only: bool
-            If True distances are measured as number of edges between
-            two Nodes, rather than the sum of edge distances.
-        descendants_only: bool
-            If True then the farthest descendant Node is returned, rather
-            than the farthest Node spanning any path on the tree.
-        
-        Note
-        ----
-        If >1 Nodes are equally distance the one w/ lowest idx is returned.
-        """
-        return get_farthest_node(
-            self._tree, idx, topology_only, descendants_only)
-
-    def get_farthest_node_distance(
-        self,
-        idx: Optional[int] = None,
-        topology_only: bool = False,
-        descendants_only: bool = False,
-        ) -> Node:
-        """Return distance to the farthest descendant Node from a selected Node.
-
-        Parameters
-        ----------
-        idx: int
-            The int idx label of a Node from which to measure distances
-            from. Default is None, which uses the root Node.
-        topology_only: bool
-            If True distances are measured as number of edges between
-            two Nodes, rather than the sum of edge distances.
-        descendants_only: bool
-            If True then the farthest descendant Node is returned, rather
-            than the farthest Node spanning any path on the tree.
-        """
-        return get_farthest_node_distance(
-            self._tree, idx, topology_only, descendants_only)
+    ####################################################################
+    #
+    ####################################################################
 
     def get_treedist_rf(self, tree, normalize):
-        """..."""
+        """Docstring inherited"""
         return get_treedist_rf(self._tree, tree, normalize)
 
     def get_treedist_rfi(self, tree, normalize):
-        """..."""
+        """Docstring inherited"""
         return get_treedist_rfi(self._tree, tree, normalize)
 
     def get_treedist_qrt(self, *args):
@@ -225,7 +80,7 @@ class DistanceAPI:
     def get_treedist_other(self, *args):
         raise NotImplementedError("coming soon.")
 
-    def treedist_table(self, treelist:List, metric:str="rf"):
+    def treedist_table(self, treelist: List, metric: str = "rf"):
         """
         Returns a DataFrame with pairwise tree distances between
         this tree and a list of other trees calculated using the
@@ -234,14 +89,17 @@ class DistanceAPI:
         raise NotImplementedError("coming soon.")
 
 
+########################################################################
+# COPY DOCUMENTATION STRINGS TO API FUNCS FROM THE MODULE-LEVEL FUNCS
+########################################################################
+for name, module_func in inspect.getmembers(toytree.distance):
+    if inspect.isfunction(module_func):
 
-# class NodeDistances:
-#     pass
+        api_func = getattr(DistanceAPI, name)
+        api_func.__doc__ = module_func.__doc__
+########################################################################
+########################################################################
+########################################################################
 
-
-# class SequenceDistances:
-#     pass
-
-
-# class TreeDistances:
-#     pass
+if __name__ == "__main__":
+    help(DistanceAPI.root)
