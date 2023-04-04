@@ -44,6 +44,10 @@ from toytree.mod._src.root_unroot import (
     unroot,
     root,
 )
+from toytree.mod._src.root_funcs import (
+    root_on_midpoint,
+    root_on_minimal_ancestor_deviation,
+)
 # from toytree import Node
 # from toytree.mod.penalized_likelihood import Chronos
 
@@ -239,9 +243,17 @@ class TreeModAPI:
             edge_features=edge_features, inplace=inplace
         )
 
-    def unroot(self, *query: Query, inplace: bool = False) -> ToyTree:
+    def unroot(self, inplace: bool = False) -> ToyTree:
         """Docstring is inherited from toytree.mod._src.root_unroot.py"""
-        return unroot(self._tree, *query, inplace=inplace)
+        return unroot(self._tree, inplace=inplace)
+
+    def root_on_midpoint(self, inplace: bool = False) -> ToyTree:
+        """Docstring is inherited from toytree.mod._src.root_unroot.py"""
+        return root_on_midpoint(self._tree, inplace=inplace)
+
+    def root_on_minimal_ancestor_deviation(self, *query: Query, inplace: bool = False, return_stats: bool = False) -> ToyTree:
+        """Docstring is inherited"""
+        return root_on_minimal_ancestor_deviation(self._tree, *query, inplace=inplace, return_stats=return_stats)
 
 
 ########################################################################
