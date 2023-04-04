@@ -108,7 +108,7 @@ class Node:
     >>> node.dist = 10  # raises a TreeNodeError
     """
 
-    def __init__(self, name: str = "", dist: float = 1.0, support: float = np.nan):
+    def __init__(self, name: str = "", dist: float = 0.0, support: float = np.nan):
         self._name = str(name)
         """: name string assigned to Node."""
         self._dist = dist
@@ -392,7 +392,7 @@ class Node:
         return self
 
     #################################################
-    ## TRAVERSAL                                   ##
+    # TRAVERSAL                                    ##
     #################################################
 
     def traverse(self, strategy: str = "levelorder") -> Iterator[Node]:
@@ -571,8 +571,8 @@ class Node:
                     node = None
 
     #################################################
-    ## LEAF AND LEAF NAME RETRIEVAL                ##
-    ## Defaults to returning in 'idxorder'         ##
+    # LEAF AND LEAF NAME RETRIEVAL                 ##
+    # Defaults to returning in 'idxorder'          ##
     #################################################
 
     def _iter_leaves(self) -> Iterator[Node]:
@@ -599,7 +599,7 @@ class Node:
         return list(self._iter_leaf_names())
 
     #################################################
-    ## NODE RELATIVE RETRIEVAL / TRAVERSAL
+    # NODE RELATIVE RETRIEVAL / TRAVERSAL
     #################################################
 
     def _iter_sisters(self) -> Iterator[Node]:
@@ -614,12 +614,12 @@ class Node:
         return tuple(self._iter_sisters())
 
     def _iter_descendants(self, strategy: str = "levelorder") -> Iterator[Node]:
-        """Return a Generator of descendant Nodes (not including self)."""
+        """A generator of descendant Nodes (including self)."""
         for node in self.traverse(strategy=strategy):
             yield node
 
     def get_descendants(self, strategy: str = "levelorder") -> Tuple[Node]:
-        """Return a list of descendant Nodes (not including self)."""
+        """Return a list of descendant Nodes (including self)."""
         return tuple(self._iter_descendants(strategy=strategy))
 
     def _iter_ancestors(self, root: Optional[Node] = None) -> Iterator[Node]:
@@ -639,13 +639,13 @@ class Node:
             else:
                 break
 
-    def get_ancestors(self) -> Tuple[Node]:
+    def get_ancestors(self, root: Optional[Node] = None) -> Tuple[Node]:
         """Return a list of Nodes on path from this node to root."""
         return tuple(self._iter_ancestors())
 
     #####################################################
-    ## TO TOYTREE
-    ## return a ToyTree with this Node as root treenode.
+    # TO TOYTREE                                        #
+    # return a ToyTree with this Node as root treenode. #
     #####################################################
     # def to_toytree(self):
     #     """Return this Node as root treenode of a ToyTree class object."""
