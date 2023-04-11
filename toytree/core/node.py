@@ -627,16 +627,23 @@ class Node:
         """Return a list of descendant Nodes (including self)."""
         return tuple(self._iter_descendants(strategy=strategy))
 
-    def _iter_ancestors(self, root: Optional[Node] = None) -> Iterator[Node]:
+    def _iter_ancestors(self, root: Optional[Node] = None, include_self: bool = False) -> Iterator[Node]:
         """Return a Generator of Nodes on path from this node to root.
 
-        The current node is not included, but the root node is. The
-        traversal can be stopped before reaching the true root by
-        entering another Node instance as the 'root' argument. The
-        iteration will stop when either this root, or the true root
-        parent (None) is reached.
+        Parameters
+        ----------
+        root: Node or None
+            By default this will return all Nodes between this Node and
+            the total tree root, but an alternative Node can be entered
+            here which, when reached, will be returned as the root and
+            stop the iteration.
+        include_self: bool
+            If True then this Node will be returned as its own first
+            ancestor, else its parent (.up) will be the first ancestor.
         """
         node = self
+        if include_self:
+            yield self
         while 1:
             node = node.up
             if node not in (root, None):
