@@ -2,12 +2,12 @@
 
 """Newick parsing functions.
 
-The core functions here are `parse_newick_string` and 
+The core functions here are `parse_newick_string` and
 `parse_newick_string_custom`. The latter can can take custom parsing
-functions as input, making it very powerful and flexible, but a bit 
-complex for the average user; the `parse_newick_string` function 
-offers a simpler interface that should be sufficient for parsing 
-most newicks. These funcs are used internally in the generic 
+functions as input, making it very powerful and flexible, but a bit
+complex for the average user; the `parse_newick_string` function
+offers a simpler interface that should be sufficient for parsing
+most newicks. These funcs are used internally in the generic
 parsing function `toytree.tree`.
 
 Supported formats
@@ -222,19 +222,21 @@ def _split_subtree(nodes_str: str) -> List[str]:
 
     # or, find node ending and split to return (subtree, rest)
     next_node_end = _find_next_node_end(nodes_str)
-    node = nodes_str[:next_node_end+1]
-    rest = nodes_str[next_node_end+1:].lstrip()
+    node = nodes_str[:next_node_end + 1]
+    rest = nodes_str[next_node_end + 1:].lstrip()
     if rest.startswith(','):
         rest = rest[1:]
     return [node] + _split_subtree(rest)
 
 
+# default distance_parser in `parse_newick_string_custom`
 def distance_parser(dist: str) -> Optional[float]:
     """Default float distance parser and formatter.
     """
     return float(dist) if dist else 1.0
 
 
+# default feature_parser in `parse_newick_string_custom`
 def feature_parser(
     feats: str,
     prefix="",
@@ -243,9 +245,9 @@ def feature_parser(
 ) -> Dict[str, str]:
     """Return a dict with auto-formatted features.
 
-    When using this 'auto' function the dtype of features will be 
+    When using this 'auto' function the dtype of features will be
     inferred later by toytree inside of the 'parse_newick' function,
-    based on the str values for each feature across all Nodes. For 
+    based on the str values for each feature across all Nodes. For
     example, if all can converted to floats or ints they will be.
 
     This will return {} if no features present.
@@ -259,7 +261,7 @@ def feature_parser(
     Parameters
     ----------
     feats: str
-        A feature string extracted from the newick data. 
+        A feature string extracted from the newick data.
     prefix: str
         A string prefix in feats, often starting with '&'.
     delim: str
@@ -288,13 +290,14 @@ def feature_parser(
                 "Failed to parse newick format.\n"
                 "Try using `toytree.io.parse_newick` with different "
                 "options."
-            ) 
+            )
             logger.error(msg)
             raise NewickError(msg) from inst
         features[key] = str(value)
     return features
 
 
+# default aggregator in `parse_newick_string_custom`
 def node_aggregator(
     label: str,
     children: List[Node],
@@ -380,6 +383,7 @@ def _infer_internal_label_type(
     elif internal_labels is None:
         try:
             # try to convert all internal node 'names' to floats (raises ValueError if str)
+            names = [i.name for i in tree[tree.ntips:-1]]
             supports = [float(i.name) for i in tree[tree.ntips:-1]]
 
             # try to convert floats to ints if no floating points
@@ -407,9 +411,10 @@ def _infer_internal_label_type(
 
         # internal Node labels are inferred to be string name labels or other.
         except ValueError:
-            logger.info(
-                "empty or non-numeric node labels detected and set "
-                "as 'name' feature, not 'support'")
+            if any(names):
+                logger.info(
+                    "empty or non-numeric node labels detected and set "
+                    "as 'name' feature, not 'support'")
     return tree
 
 
@@ -422,14 +427,14 @@ def parse_newick_string_custom(
 ) -> ToyTree:
     """Return a ToyTree from a newick string.
 
-    Recursive function to build connected Nodes from nested data in 
+    Recursive function to build connected Nodes from nested data in
     newick format, and return as a ToyTree. Features parsed from the
     newick can be formatted with a custom formatter function, or using
     the default auto-formatting, which aims to infer the proper dtype
     based on the data.
 
     For high-level usage of this function users must write their own
-    custom parsing functions. However, to provide a simpler option, 
+    custom parsing functions. However, to provide a simpler option,
     most popular formats can be parsed using a builtin option from
     the toytree function `toytree.tree`.
 
@@ -442,23 +447,23 @@ def parse_newick_string_custom(
     dist_formatter: Callable
         A custom function for converting edge length data into a float
         or int value to be stored as the .dist attribute of Nodes.
-        e.g., `dist_formatter=lambda x: round(x / 100, 2)` to store 
+        e.g., `dist_formatter=lambda x: round(x / 100, 2)` to store
         as a rounded float with two floating points.
     feat_formatter: Callable
-        A custom function for parsing newick string metadata to Node 
-        feature data. An example is NHX (extended newick) format, or 
+        A custom function for parsing newick string metadata to Node
+        feature data. An example is NHX (extended newick) format, or
         similar formats like used by mrbayes. If no function here then
         the entire metadata is stored as a string as feature "feature".
-        The function should return a Dict[str,Any]. 
+        The function should return a Dict[str,Any].
         >>> def feat_parser(feats, prefix='&NHX:, delim=',', assign='='):
         >>>     feats = feats[len(prefix)]
         >>>     items = feats.split(delim)
         >>>     return dict(zip(items.split(assign)))
-        See docs for more examples. The default feat_formatter is 
+        See docs for more examples. The default feat_formatter is
         similar to above but tries to infer value types.
     aggregator: Callable
         A custom function that takes (name, children, dist, features)
-        and returns a Node object. This is used to recursively build 
+        and returns a Node object. This is used to recursively build
         the Node objects from tuples of extracted newick data.
     internal_labels: str or None
         Feature type of internal labels. If None it is inferred to be
@@ -480,7 +485,10 @@ def parse_newick_string_custom(
     # build the connected Nodes from newick w/ features saved.
     treenode = _parse_newick_subtree(newick, aggregator, dist_formatter, feat_formatter)
 
-    # convert to a tree
+    # set default treenode (root) dist to 0.
+    treenode._dist = 0.
+
+    # convert connected Nodes to a ToyTree
     tree = ToyTree(treenode)
 
     # check whether labels on internal nodes are names or supports
@@ -499,14 +507,14 @@ def parse_newick_string(
 ) -> ToyTree:
     """Return a ToyTree from a newick string.
 
-    Recursive function to build connected Nodes from nested data in 
+    Recursive function to build connected Nodes from nested data in
     newick format, and return as a ToyTree. Features parsed from the
     newick can be formatted with a custom formatter function, or with
     the default auto-formatting, which aims to infer the proper dtype
     based on the data.
 
     For high-level usage of this function users must write their own
-    custom parsing functions. However, to provide a simpler option, 
+    custom parsing functions. However, to provide a simpler option,
     most popular formats can be parsed using a builtin option from
     the toytree function `toytree.tree`.
 
@@ -523,15 +531,15 @@ def parse_newick_string(
         your file if you are unsure.
     feature_delim: str
         The character used to delimit features inside of a comment
-        block. This is usually "," or ":". 
+        block. This is usually "," or ":".
     feature_assignment: str
         The character separating feature names and values in a comment
-        block used for assignment. This is usually "=" or ":". 
+        block used for assignment. This is usually "=" or ":".
     internal_labels: str or None
         The feature that is present on internal node labels. If None
         then it will be inferred from the values present. Internal
-        labels are usually either 'support' or 'name'. If only numeric 
-        values are present then it is parsed as 'support' floats, 
+        labels are usually either 'support' or 'name'. If only numeric
+        values are present then it is parsed as 'support' floats,
         but this can overridden here if set `internal_labels='name'`.
 
     Examples
@@ -566,12 +574,12 @@ if __name__ == "__main__":
     # import json
     # NWK = "((a,b)Name[x=3]:30[length=3],c);"
     # TREE = _parse_newick_subtree(
-    #     NWK, 
+    #     NWK,
     #     aggregator=_dict_aggregator,
     #     dist_formatter=distance_parser,
     #     feat_formatter=feature_parser,
     # )
-    # print(json.dumps(TREE, indent=2))    
+    # print(json.dumps(TREE, indent=2))
 
     # COMPLEX newick with two comment brackets
     NWK = "((a,b)Name[x=3]:30[length=3],c);"
