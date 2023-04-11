@@ -5,9 +5,7 @@
 
 """
 
-from toytree.enum.src.partitions import (
-    iter_bipartitions,
-    iter_quartets,
-    # iter_edge_sets,
-    # iter_edge_quartets,
-)
+from toytree.enum.src.edges import *
+from toytree.enum.src.bipartitions import *
+from toytree.enum.src.quadripartitions import *
+from toytree.enum.src.quartets import *
