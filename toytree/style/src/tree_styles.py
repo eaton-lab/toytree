@@ -135,12 +135,13 @@ class TreeStyleR(TreeStyle):
     """Node name style. Mask tip Nodes and increase font size."""
     def __init__(self):
         super().__init__()
-        self.tree_style = "x"
-        self.node_mask = (0, 1, 1)
+        self.tree_style = "r"
+        self.node_mask = (1, 0, 0)
         self.node_labels = "name"
         self.node_sizes = 16
         self.node_markers = "r2x1"
         self.node_colors = "lightgrey"
+        self.tip_labels_style.font_size = 14
 
 
 def get_base_tree_style_by_name(tree_style: str = "n") -> TreeStyle:
@@ -158,6 +159,7 @@ STYLE_DICTS = {
     "c": TreeStyleC,
     "d": TreeStyleD,
     "u": TreeStyleU,
+    "r": TreeStyleR,
 }
 
 if __name__ == "__main__":
