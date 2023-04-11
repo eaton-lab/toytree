@@ -82,9 +82,9 @@ def draw_toytree(**kwargs) -> Tuple["Canvas", "Cartesian", "Mark"]:
     canvas = csetup.canvas
     axes = csetup.axes
 
-    # generate toyplot Mark. Style is already validated.
+    # generate toyplot Mark. Style is already validated. tables of int idx labels
     mark = ToytreeMark(
-        ntable=layout.coords, etable=tree._get_edges(), **style.dict(serialize=False)
+        ntable=layout.coords, etable=tree.get_edges('idx'), **style.dict(serialize=False)
     )
 
     # add mark to axes
@@ -152,7 +152,7 @@ def get_layout(tree: ToyTree, style: TreeStyle, **kwargs) -> BaseLayout:
     # return a linear layout
     if style.layout in "rlud":
         return LinearLayout(
-            tree, style, 
+            tree, style,
             kwargs.get("fixed_order"), kwargs.get("fixed_position")
         )
 
