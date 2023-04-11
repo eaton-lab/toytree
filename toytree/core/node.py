@@ -17,8 +17,8 @@ respects. Most notably, the toytree.Node class is intended to be
 immutable, meaning users are not able to directly edit .dist, .up,
 .children, or other attributes of Node objects that affect the tree
 topology. Instead, ToyTree class objects have functions for modifying
-Nodes that do so in the context of updating the entire tree (i.e., 
-updating other Node's attributes if needed). Thus, toytree.Node is a 
+Nodes that do so in the context of updating the entire tree (i.e.,
+updating other Node's attributes if needed). Thus, toytree.Node is a
 more minimal object used mainly for traversal and to store Node data.
 
 References
@@ -384,6 +384,11 @@ class Node:
         attribute, and can be connected to another tree using the
         `add_child` function. However, see toytree.mod subpackage
         for better options for SPR type tree modifications.
+
+        Note
+        ----
+        This is destructive to the topology of the tree it is detached
+        from and so is usually used in combination with `.copy()`.
         """
         if self._up:
             my_sisters = tuple(i for i in self._up._children if i != self)
