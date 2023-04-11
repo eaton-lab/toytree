@@ -200,14 +200,49 @@ def iter_quartets(
 
     Example
     -------
-    >>> tree = toytree.rtree.unittree(5, seed=123)
+    >>> tree = toytree.tree("(a,b,((c,d)CD,(e,f)EF)X)AB;")
 
-    >>> sorted(tree.iter_quartets())
-    >>> # (('r0', 'r1'), ('r2', 'r3'))
-    >>> # (('r0', 'r1'), ('r2', 'r4'))
-    >>> # (('r0', 'r1'), ('r3', 'r4'))
-    >>> # (('r0', 'r2'), ('r3', 'r4'))
-    >>> # (('r1', 'r2'), ('r3', 'r4'))
+    >>> # get quartets for each (child, parent) edge in idx order
+    >>> list(tree.iter_quartets())
+    >>> # [({'c', 'd'}, {'e', 'f'}),
+    >>> #  ({'c', 'd'}, {'a', 'f'}),
+    >>> #  ({'c', 'd'}, {'b', 'f'}),
+    >>> #  ({'c', 'd'}, {'a', 'e'}),
+    >>> #  ({'c', 'd'}, {'b', 'e'}),
+    >>> #  ({'c', 'd'}, {'a', 'b'}),
+    >>> #  ({'e', 'f'}, {'a', 'd'}),
+    >>> #  ({'e', 'f'}, {'c', 'd'}),
+    >>> #  ({'e', 'f'}, {'b', 'd'}),
+    >>> #  ({'e', 'f'}, {'a', 'c'}),
+    >>> #  ({'e', 'f'}, {'a', 'b'}),
+    >>> #  ({'e', 'f'}, {'b', 'c'}),
+    >>> #  ({'d', 'e'}, {'a', 'b'}),
+    >>> #  ({'d', 'f'}, {'a', 'b'}),
+    >>> #  ({'c', 'd'}, {'a', 'b'}),
+    >>> #  ({'e', 'f'}, {'a', 'b'}),
+    >>> #  ({'c', 'e'}, {'a', 'b'}),
+    >>> #  ({'c', 'f'}, {'a', 'b'})]
+
+    >>> # get same quartets consistently ordered and in simpler format
+    >>> sorted(tree.iter_quartets(type=tuple, sort=True, collapse=True))
+    >>> # [('a', 'b', 'c', 'd'),
+    >>> #  ('a', 'b', 'c', 'd'),
+    >>> #  ('a', 'b', 'c', 'e'),
+    >>> #  ('a', 'b', 'c', 'f'),
+    >>> #  ('a', 'b', 'd', 'e'),
+    >>> #  ('a', 'b', 'd', 'f'),
+    >>> #  ('a', 'b', 'e', 'f'),
+    >>> #  ('a', 'b', 'e', 'f'),
+    >>> #  ('a', 'c', 'e', 'f'),
+    >>> #  ('a', 'd', 'e', 'f'),
+    >>> #  ('a', 'e', 'c', 'd'),
+    >>> #  ('a', 'f', 'c', 'd'),
+    >>> #  ('b', 'c', 'e', 'f'),
+    >>> #  ('b', 'd', 'e', 'f'),
+    >>> #  ('b', 'e', 'c', 'd'),
+    >>> #  ('b', 'f', 'c', 'd'),
+    >>> #  ('c', 'd', 'e', 'f'),
+    >>> #  ('c', 'd', 'e', 'f')]
     """
     # disallowed combination
     if (type == set) and (collapse is True):
@@ -233,7 +268,8 @@ def iter_quartets(
                 i, j, x, y = x, y, i, j
 
         # convert to feature
-        i, j, x, y = (getattr(z, feature) for z in (i, j, x, y))
+        if feature:
+            i, j, x, y = (getattr(z, feature) for z in (i, j, x, y))
 
         # return as collapsed or not.
         if collapse:
