@@ -86,6 +86,13 @@ by int idx label, str name label, Node object, or a mixture:
 >>> tree.get_nodes('name3', 0)        # [Node(idx=3), Node(idx=0)]
 """
 
+NON_MONOPHYLETIC_OUTGROUP = """\
+Cannot root on non-monophyletic outgroup ({})
+If you want to root on the MRCA of these nodes try:
+>>> mrca = tree.get_mrca_node(*query)
+>>> tree.root(mrca)
+"""
+
 if __name__ == "__main__":
 
     # raise ValueError("HELLO WORLD")
