@@ -9,4 +9,4 @@
 
 """
 
-from .src.wrightfisher import wright_fisher_simulation
+from toytree.learn.src.wrightfisher import wright_fisher_simulation
