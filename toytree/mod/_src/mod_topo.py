@@ -45,17 +45,19 @@ from typing import Optional, TypeVar
 import itertools
 from loguru import logger
 import numpy as np
-from toytree import Node
+from toytree.core.apis import TreeModAPI, add_subpackage_method, add_toytree_method
+from toytree.core.node import Node
+from toytree.core.tree import ToyTree
 from toytree.utils import ToytreeError
-
 # pylint: disable="too-many-branches"
 
 logger = logger.bind(name="toytree")
-ToyTree = TypeVar("ToyTree")
 Query = TypeVar("Query", str, int, Node)
 
 
-def ladderize(tree, direction: bool = False, inplace: bool = False) -> ToyTree:
+@add_toytree_method(ToyTree)
+@add_subpackage_method(TreeModAPI)
+def ladderize(tree: ToyTree, direction: bool = False, inplace: bool = False) -> ToyTree:
     """Return a ladderized tree (ordered descendants)
 
     In a ladderized tree nodes are rotated so that the left/
@@ -93,6 +95,7 @@ def ladderize(tree, direction: bool = False, inplace: bool = False) -> ToyTree:
     return nself
 
 
+@add_subpackage_method(TreeModAPI)
 def collapse_nodes(
     tree: ToyTree,
     *query: Query,
@@ -134,7 +137,7 @@ def collapse_nodes(
     >>> tree = toytree.rtree.unittree(ntips=12)
     >>> tree.mod.collapse_nodes(14)
     >>> tree.mod.collapse_nodes(tree.get_mrca_node('r1', 'r2'))
-    >>> tree.mod.collapse_nodes(tree.get_mrca_node('r[1-4]', regex=True))
+    >>> tree.mod.collapse_nodes(tree.get_mrca_node('~r[1-4]')
     >>> tree = tree.set_node_data("dist", {22: 0.005, 23: 0.005})
     >>> tree = tree.set_node_data("support", {25: 50}, default=100)
     >>> tree = tree.collapse_nodes(min_dist=0.01, min_support=45)
@@ -161,6 +164,7 @@ def collapse_nodes(
     return tree
 
 
+@add_subpackage_method(TreeModAPI)
 def remove_unary_nodes(tree: ToyTree, inplace: bool = False) -> ToyTree:
     """Return ToyTree with any unary Nodes removed.
 
@@ -175,7 +179,7 @@ def remove_unary_nodes(tree: ToyTree, inplace: bool = False) -> ToyTree:
     for node in tree.traverse("postorder"):
         if len(node.children) == 2:
             tipset.add(node)
-        if not node in tipset:
+        if node not in tipset:
             new_parent = node._up
             if new_parent:
                 true_node = node._children[0]
@@ -186,10 +190,10 @@ def remove_unary_nodes(tree: ToyTree, inplace: bool = False) -> ToyTree:
     return tree
 
 
+@add_subpackage_method(TreeModAPI)
 def rotate_node(
     tree: ToyTree,
     *query: Query,
-    regex: bool = False,
     inplace: bool = False,
 ) -> ToyTree:
     """Return ToyTree with one Node rotated (children order reversed).
@@ -204,9 +208,6 @@ def rotate_node(
         The Node to rotate can be selected by entering the Node object,
         or its idx label, or name str. For internal Nodes, multiple
         queries can be entered and their MRCA will be rotated.
-    regex: bool
-        If True then Node name strings are treated as regular
-        expressions that can match to multiple Nodes.
     inplace: bool
         If True then the original tree is changed in-place, and
         returned, rather than leaving original tree unchanged.
@@ -216,27 +217,29 @@ def rotate_node(
     >>> tree = toytree.rtree.unittree(10)
     >>> toytree.mod.rotate_node(tree, 12)
     >>> toytree.mod.rotate_node(tree, 'r0', 'r1')
-    >>> toytree.mod.rotate_node(tree, 'r[0-3]$', regex=True)
+    >>> toytree.mod.rotate_node(tree, '~r[0-3]$')
     """
-    idx = tree.get_mrca_node(*query, regex=regex).idx
-    if not inplace:
-        tree = tree.copy()
-    tree[idx]._children = tree[idx]._children[::-1]
+    node = tree.get_mrca_node(*query)
+    tree = tree if inplace else tree.copy()
+    node._children = node.children[::-1]
     tree._update()
     return tree
 
 
-def extract_subtree(tree: ToyTree, *query: Query, regex: bool = False) -> ToyTree:
-    """Return a subtree extracted from a larger tree as a ToyTree.
+@add_subpackage_method(TreeModAPI)
+def extract_subtree(tree: ToyTree, *query: Query) -> ToyTree:
+    """Return a subtree/clade extracted from a larger tree as a ToyTree.
 
     Parameters
     ----------
     *query: str, int, or Node
-        One or more Node selectors, which can be Node objects, names,
-        or int idx labels from which the MRCA will be selected.
-    regex: bool
-        If True then Node name strings are treated as regular
-        expressions that can match to multiple Nodes.
+        One or more Node selectors (Node object, names, or idx labels)
+        from which the MRCA is found. This will serve as the root Node
+        of the returned tree.
+
+    See Also
+    --------
+    `toytree.mod.prune`
 
     Example
     -------
@@ -244,19 +247,19 @@ def extract_subtree(tree: ToyTree, *query: Query, regex: bool = False) -> ToyTre
     >>> subtree = tree.mod.extract_subtree("r0", "r1", "r2")
     >>> toytree.mtree([tree, subtree]).draw('p')
     """
-    node = tree.get_mrca_node(*query, regex=regex)
+    node = tree.get_mrca_node(*query)
     return ToyTree(node.copy(detach=True))
 
 
+@add_subpackage_method(TreeModAPI)
 def prune(
     tree,
     *query: Query,
-    regex: bool = False,
     preserve_branch_length: bool = True,
     require_root: bool = False,
     inplace: bool = False,
 ) -> ToyTree:
-    r"""Return a ToyTree connecting a subset of Nodes in a tree.
+    r"""Return a tree w/ the minimal edges connecting a subset of Nodes.
 
     All nodes not included in the entered 'nodes' list will be
     removed from the topology, and the mininal spanning edges to
@@ -275,9 +278,6 @@ def prune(
     *query: str, int, or Node
         One or more Node selectors, which can be Node objects, names,
         or int idx labels.
-    regex: bool
-        If True then Node name strings are treated as regular
-        expressions that can match to multiple Nodes.
     preserve_branch_length: bool
         If True then the edge lengths of internal nodes that are
         removed are merged into the 'dist' attribute of their
@@ -291,7 +291,7 @@ def prune(
         returned, rather than leaving original tree unchanged.
     """
     # expand query into a set of Nodes
-    nodes = set(tree.get_nodes(*query, regex=regex))
+    nodes = set(tree.get_nodes(*query))
     nnodes = len(nodes)
 
     # add mrca Node for each pair and add the root Node
@@ -361,10 +361,10 @@ def prune(
     return tree
 
 
+@add_subpackage_method(TreeModAPI)
 def drop_tips(
     tree: ToyTree,
     *query: Query,
-    regex: bool = False,
     inplace: bool = False,
 ) -> ToyTree:
     """Return a ToyTree with some tip Nodes removed.
@@ -383,9 +383,6 @@ def drop_tips(
     *query: str, int, or Node
         One or more Node selectors, which can be Node objects, names,
         or int idx labels.
-    regex: bool
-        If True then Node name strings are treated as regular
-        expressions that can match to multiple Nodes.
     inplace: bool
         If True then the original tree is changed in-place, and
         returned, rather than leaving original tree unchanged.
@@ -398,11 +395,11 @@ def drop_tips(
     --------
     >>> tree = toytree.rtree.unittree(10)
     >>> tree.mod.drop_tips(1, 2, 3).draw()
-    >>> tree.mod.drop_tips('r[0-3]$', regex=True).draw()
+    >>> tree.mod.drop_tips('~r[0-3]$').draw()
     >>> tree.mod.drop_tips('r1', 'r2')
     """
     tree = tree if inplace else tree.copy()
-    nodes = tree.get_nodes(*query, regex=regex)
+    nodes = tree.get_nodes(*query)
     tipnames = [i.name for i in nodes if i.is_leaf()]
     if len(tipnames) == tree.ntips:
         raise ToytreeError("You cannot drop all tips from the tree.")
@@ -413,12 +410,12 @@ def drop_tips(
     return tree
 
 
+@add_subpackage_method(TreeModAPI)
 def resolve_polytomies(
     tree: ToyTree,
     *query: Query,
-    regex: bool = False,
-    dist: float = 1.0,
-    support: float = 100,
+    dist: float = 1e-6,
+    support: float = np.nan,
     recursive: bool = True,
     seed: Optional[int] = None,
     inplace: bool = False,
@@ -431,9 +428,6 @@ def resolve_polytomies(
         One or more Node selectors, which can be Node objects, names,
         or int idx labels. If no Nodes are selected then ALL nodes
         that are multifurcating will be resolved.
-    regex: bool
-        If True then Node name strings are treated as regular
-        expressions that can match to multiple Nodes.
     dist: float
         The dist value to set on newly created nodes.
     support: float or np.nan
@@ -453,7 +447,7 @@ def resolve_polytomies(
     >>> tree.resolve_polytomy().draw();
     """
     tree = tree if inplace else tree.copy()
-    nodes = tree.get_nodes(*query, regex=regex)
+    nodes = tree.get_nodes(*query)
     rng = np.random.default_rng(seed)
 
     for node in nodes:
@@ -464,10 +458,10 @@ def resolve_polytomies(
     return tree
 
 
+@add_subpackage_method(TreeModAPI)
 def add_internal_node(
     tree: ToyTree,
     *query: Query,
-    regex: bool = False,
     dist: Optional[float] = None,
     name: Optional[str] = None,
     inplace: bool = False,
@@ -502,9 +496,6 @@ def add_internal_node(
         One or more Node selectors, which can be Node objects, names,
         or int idx labels. If multiple are entered the MRCA node will
         be used as the base of the edge to split.
-    regex: bool
-        If True then Node name strings are treated as regular
-        expressions that can match to multiple Nodes.
     dist: float
         The distance from the selected Node at which to insert
         the new Node. This will be set as the dist of the
@@ -523,7 +514,7 @@ def add_internal_node(
     >>> tree.draw(ts='n', node_sizes=15, node_labels="name")
     """
     # expand query
-    node = tree.get_mrca_node(*query, regex=regex)
+    node = tree.get_mrca_node(*query)
     if not inplace:
         tree = tree.copy()
         node = tree[node.idx]
@@ -564,10 +555,10 @@ def add_internal_node(
     return tree
 
 
+@add_subpackage_method(TreeModAPI)
 def add_child_node(
     tree: ToyTree,
     *query: Query,
-    regex: bool = False,
     name: Optional[str] = None,
     dist: Optional[float] = None,
     inplace: bool = False,
@@ -585,6 +576,22 @@ def add_child_node(
              /     \                /  |  \       name="D"
             A       X              A   D   X      dist=None
 
+    Parameters
+    ----------
+    *query: Query
+        One or more Node queries (Node object, int idx label or str
+        name) from which the MRCA is found. The new Node will be added
+        as a child of the MRCA Node.
+    name: str or None
+        Name of the new child Node.
+    dist: float or None
+        Edge length (dist) of the new child Node. If None it will be
+        set to the same length as its longest sister, unless no sisters
+        exist, then it is set to 1.
+    inplace: bool
+        If True the tree is modified inplace and returned, else a copy
+        is returned.
+
     See Also
     --------
     :func:`.add_internal_node`:
@@ -599,12 +606,12 @@ def add_child_node(
     >>> tree.draw("p", layout="r", node_labels="name");
     """
     # expand query
-    node = tree.get_mrca_node(*query, regex=regex)
+    node = tree.get_mrca_node(*query)
     if not inplace:
         tree = tree.copy()
         node = tree[node.idx]
 
-    # get dist for the new child Node
+    # set dist to user value else to max sister's dist, else to 1.
     if dist is None:
         if node.children:
             dist = max(child.dist for child in node.children)
@@ -621,10 +628,10 @@ def add_child_node(
     return tree
 
 
+@add_subpackage_method(TreeModAPI)
 def add_sister_node(
     tree: ToyTree,
     *query: Query,
-    regex: bool = False,
     name: Optional[str] = None,
     dist: Optional[float] = None,
     inplace: bool = False,
@@ -658,7 +665,7 @@ def add_sister_node(
     >>> tree.draw("p", layout="r", node_labels="name");
     """
     # expand query
-    node = tree.get_mrca_node(*query, regex=regex)
+    node = tree.get_mrca_node(*query)
     assert not node.is_root(), (
         "Cannot add sister to root, it has no parent. See `add_child_node()`.")
     # simply call add_child to the parent of the selected Node.
@@ -666,10 +673,10 @@ def add_sister_node(
     return add_child_node(tree, parent, name=name, dist=dist, inplace=inplace)
 
 
+@add_subpackage_method(TreeModAPI)
 def add_internal_node_and_child(
     tree: ToyTree,
     *query: Query,
-    regex: bool = False,
     name: Optional[str] = None,
     dist: Optional[float] = None,
     parent_dist: Optional[float] = None,
@@ -700,14 +707,11 @@ def add_internal_node_and_child(
         One or more Node selectors, which can be Node objects, names,
         or int idx labels. If multiple are entered the MRCA node will
         be used as the base of the edge to split.
-    regex: bool
-        If True then Node name strings are treated as regular
-        expressions that can match to multiple Nodes.
     name: str
-        Optional name for the new sister node. Default="".
+        Optional name for the new child node. Default="".
     dist: float
-        The dist (edge length) of the new child Node. If None this
-        will be set to match its sister Node's dist.
+        The dist (edge length) of the new child Node. If None this will
+        be set to match its max sister's dist, if present, else 1.
     parent_dist: float
         The dist (edge length) of the new internal parent Node. If
         None it is set to the edge midpoint. If a value is entered it
@@ -725,7 +729,7 @@ def add_internal_node_and_child(
     >>> tree.draw(node_sizes=15, node_labels="name");
     """
     # expand query
-    node = tree.get_mrca_node(*query, regex=regex)
+    node = tree.get_mrca_node(*query)
     if not inplace:
         tree = tree.copy()
         node = tree[node.idx]
@@ -733,17 +737,17 @@ def add_internal_node_and_child(
     # set parent name to something unique
     pname = "PARENT@@@@@"
     add_internal_node(tree, node, name=pname, dist=parent_dist, inplace=True)
-    add_child_node(tree, parent_name, name=name, dist=dist, inplace=True)
+    add_child_node(tree, pname, name=name, dist=dist, inplace=True)
 
-    # set parent name to user option
+    # set parent name to user option or ''
     tree.get_nodes(pname)[0].name = parent_name if parent_name else ""
     return tree
 
 
+@add_subpackage_method(TreeModAPI)
 def add_internal_node_and_subtree(
     tree: ToyTree,
     *query: Query,
-    regex: bool = False,
     subtree: ToyTree,
     subtree_stem_dist: Optional[float] = None,
     subtree_rescale: bool = False,
@@ -775,17 +779,14 @@ def add_internal_node_and_subtree(
         One or more Node selectors, which can be Node objects, names,
         or int idx labels. If multiple are entered the MRCA node will
         be used as the base of the edge to split.
-    regex: bool
-        If True then Node name strings are treated as regular
-        expressions that can match to multiple Nodes.
-    subtree: ToyTree
+    subtree: ToyTree or Node
         A subtree to insert into the target tree.
     subtree_stem_dist: float or None
         Edge length of the subtree stem dist (the subtree root Node
         dist value is ignored). If None it is set to half the dist of
         its sister clade.
     subtree_rescale: bool
-        If True the subtree edges are rescaled to fit in the dist 
+        If True the subtree edges are rescaled to fit in the dist
         between the sister node height and stem.
     parent_dist: float or None
         Distance above the query Node at which the parent Node will be
@@ -805,10 +806,18 @@ def add_internal_node_and_subtree(
     >>> new_tree.draw(...)
     """
     # expand query
-    node = tree.get_mrca_node(*query, regex=regex)
+    node = tree.get_mrca_node(*query)
     if not inplace:
         tree = tree.copy()
         node = tree[node.idx]
+
+    # always copy the subtree and get as a detached Node.
+    if isinstance(subtree, ToyTree):
+        subtree = subtree.treenode.copy()
+    elif isinstance(subtree, Node):
+        subtree = subtree.copy(detach=True)
+    else:
+        raise TypeError("subtree arg must be a ToyTree or Node instance.")
 
     # use a temporary parent name and set the proper name later
     pname = "PARENT@@@@@"
@@ -837,273 +846,174 @@ def add_internal_node_and_subtree(
     return tree
 
 
-# def add_subtree(
+# NEEDS WORK, not yet exposed to API.
+# JUST USE ONE OF THE TREE MOVE METHODS, right?
+# def move_clade(
 #     tree: ToyTree,
-#     *query: Query,
-#     subtree: Union[ToyTree, Node],
-#     regex: bool = False,
-#     subtree_stem_dist: Optional[float] = None,
-#     subtree_rescale: bool = True,
-#     parent_dist: Optional[float] = None,
-#     parent_name: Optional[str] = None,
-#     inplace: bool = False,
-# ) -> ToyTree:
-#     r"""Add a subtree by splitting an edge to create a new parent
-#     Node and inserting the descendant subtree.
+#     idx0: int,
+#     idx1: int,
+#     height: Optional[float]=None,
+#     name: str="",
+#     shrink: bool=False,
+#     inplace: bool=False,
+# ):
+#     r"""Move a clade from one part of the tree to another (SPR).
 
-#     Splits a branch spanning from node (A) to its parent (C) to
-#     create a new ancestral node (Z) from which a subtree (Y) will
-#     be inserted. The name of node (Z) and the stem dist of node (Y)
-#     can be set. By default, if left as None, the stem dist will be
-#     set to half the distance to the farthest leaf, and the subtree
-#     will be scaled to fill the other half distance so that it aligns
-#     as the farthest tip node distance.
+#     Splits a branch spanning from node idx1 (Y) to its parent (Z)
+#     to create a new ancestral node (X). The idx0 clade is detached
+#     from the tree (D) and its parent is removed if it leaves only
+#     one child (E). The detached clade is reattached to the new
+#     ancestral node (D -> X) while maintaining the edge lengths of
+#     the subtree. The length of the edge connecting idx0 to the new
+#     node (D, X) is automatically set to maintain ultrametricity,
+#     unless the subclade height is greater than the dist arg. This
+#     will raise an error unless shrink=True, in which case the
+#     subtree is scaled to half the dist height to fit.
 
-#                  C                         C          Example
-#                 /\      query="A"         Z \         -------
-#                /  \   parent_name="Z"    /\  \        query="A"
-#               /    \      ---->         /  Y  \       subtree=(ToyTree)
-#              /      \                  /  / \  \      parent_name="Z"
-#             A        B                A  W   X  B
+#                           Z
+#           Z              / \              Z
+#          / \            E   \            / \
+#         E   \          /     \          /   X --- auto-set dist
+#        / \   \        C       Y        /   / \
+#       D   \   \  -->            -->   /   /   D --- auto-set dist
+#      / \   \   \          D          /   /   / \
+#     A   B   C   Y        / \        A   Y   A   B --- maintained dist
+#                         A   B
+
+#     Note
+#     ----
+#     This operation is synonymous with a rooted subprune regrafting
+#     (SPR) move. Internal nodes that leave no descendants (e.g., E)
+#     from above are removed from the tree.
+
+#     See Also
+#     --------
+#     `toytree.mod.move_spr`: Faster SPR move function, but without
+#     arguments to modify edge lengths like in this function.
 
 #     Parameters
 #     ----------
-#     *query: str, int, or Node
-#         One or more Node selectors, which can be Node objects, names,
-#         or int idx labels. If multiple are entered the MRCA node will
-#         be used as the base of the edge to split.
-#     regex: bool
-#         If True then Node name strings are treated as regular
-#         expressions that can match to multiple Nodes.
-#     subtree: ToyTree or Node
-#         A subtree to insert into the target tree.
-#     parent_dist: float or None
-#         Edge length of the new inserted Node (Z). This is the length
-#         from the top at which it will be inserted into an existing
-#         edge (e.g., A). If None it will be automated half the dist
-#         to the farthest leaf.
-#     subtree_stem_dist: float or None
-#         Edge length of the stem edge connecting the new inserted Node
-#         (Z) to the inserted subtree (Y). If None it will be automated
-#         to half the dist to the farthest leaf.
-#     parent_name: str
-#         Optional name for the new internal parent node.
-#     rescale_subtree: bool
-#         If True all edges of the subtree will be rescaled to fit
-#         in the dist below where the subtree is inserted so that the
-#         subtrees farthest tip will align with the
-#     inplace: bool
-#         If False (default) a copy of the original tree is returned.
+#     tree: ToyTree
+#         A tree object.
+#     idx0: int
+#         The idx label of the Node at the top of the clade that
+#         will be pruned from the tree and re-attached elsewhere.
+#     idx1: int
+#         The idx label of the Node whose branch will be split to
+#         create a new parent node of the re-attached clade.
+#     height: float or None
+#         The height at which to insert node idx0 above node idx1.
+#         This value must be in the interval between the height of
+#         idx1 and its parent (node.height, node.height + node.dist).
+#         If None then the node will be inserted at the midpoint
+#         along node idx1's edge.
+#     name: str
+#         A name string to apply to the newly created internal node.
+#     shrink: bool
+#         If shrink is True then the subtree edge lengths (dists)
+#         will be scaled to allow the clade to be inserted anywhere
+#         in the tree. If False a ToyTreeError is raised if the
+#         subclade cannot be inserted below the dist value.
+
+#     Returns
+#     -------
+#     ToyTree
+#         A modified copy of the original tree is returned.
 #     """
-#     # get the selected Node and create a new sister
+#     # TODO: check tree_move SPR code and use that?
+#     # create a copy
 #     tree = tree if inplace else tree.copy()
-#     sister = tree.get_mrca_node(*query, regex=regex)
-#     parent = sister.up
-#     new_node = Node(name=parent_name if parent_name else "", dist=0.)
 
-#     # set dist of new_node (parent_dist param).
-#     if parent_dist is not None:
-#         assert 0 <= parent_dist <= sister.dist, (
-#             "parent_dist (node insertion) must be within length of the "
-#             f"query edge ({sister.dist})")
-#         new_node._dist = parent_dist
-#         sister._dist -= parent_dist
+#     # get selected nodes (FIXME: use nas to allow names selections)
+#     src = tree[idx0]
+#     dest = tree[idx1]
+
+#     # cannot move a clade to its own children in rooted move
+#     assert idx0 != idx1, "idx0 must be different from idx1"
+#     assert idx0 != tree.treenode, "src node cannot be root."
+#     assert idx1 != tree.treenode, "dest node cannot be root."
+#     assert dest not in src.get_descendants(), (
+#         "dest node cannot be a descendant of src in a rooted SPR move."
+#     )
+
+#     # check the height arg
+#     if height is not None:
+#         assert dest.up.height >= height >= dest.height, (
+#             f"height {height} does occur on the node {idx1}'s edge: "
+#             f"({dest.height}-{dest.up.height})")
+
+#     # get dist arg from height
+#     if height is None:
+#         dist = dest.dist / 2.
 #     else:
-#         new_node._dist = sister.dist / 2
-#         sister._dist -= new_node._dist
+#         dist = height - dest.height
 
-#     # scale the subtree to fit before connecting it.
-#     if subtree_stem_dist is not None:
-#         assert 0 <= subtree_stem_dist <= (parent.height - new_node._dist), (
-#             "subtree_stem_dist arg will create a negative branch length.")
-#         if subtree_rescale:
-#             height = (parent.height - new_node._dist) - subtree_stem_dist
-#             subtree = subtree.mod.edges_scale_to_root_height(
-#                 height, include_stem=False)
-#         subtree.treenode._dist = subtree_stem_dist
+#     # if the dest is the src's parent, then we only need to modify the
+#     # dist of dest and return the tree.
+#     if dest == src.up:
+#         diff = dest.dist - dist
+#         dest.dist = dist
+#         for child in dest.children:
+#             child.dist += diff
+#         return tree
+
+#     # create new internal node.
+#     newnode = Node(name=str(name), dist=dest.dist - dist)
+
+#     # detach the source clade.
+#     ancestor = src.up
+#     src = src.detach()
+
+#     # remove the null node (preserving bls) and in case the null node
+#     # is the root, reset the tree variable to a new TreeNode root.
+#     if ancestor.is_root():
+#         if dest.up == tree.treenode:
+#             root = newnode
+#         else:
+#             root = [i for i in tree.treenode.children if i != ancestor][0]
+#         tree.treenode.delete(True, True)
 #     else:
-#         height = parent.height - new_node._dist
-#         subtree = subtree.mod.edges_scale_to_root_height(
-#             height, include_stem=True)
+#         root = tree.treenode
+#     ancestor.delete(True, True)
 
-#     # connect parent to (new_node, sister)
-#     parent._add_child(new_node)
-#     parent._remove_child(sister)
-#     new_node._add_child(sister)
+#     # set src dist (optional allowing shrink to fit)
+#     if src.height > dest.height + dist:
+#         if not shrink:
+#             raise ValueError(
+#                 f"Clade {idx0} does not fit below clade {idx1}. "
+#                 "Use shrink=True.\n"
+#                 f"Details: node {idx0} height={src.height}; "
+#                 f"node {idx1} height={dest.height + dist}; "
+#                 f"dist={dist}; "
+#                 f"Error b/c {src.height} > {dest.height} + {dist}")
+#         orig = src.height + src.dist
+#         scale = orig / (dest.height + dist)
+#         for node in src.traverse():
+#             node.dist /= scale
+#     else:
+#         src.dist = dest.height + dist - src.height
 
-#     # insert subtree as a child of new_node
-#     new_node._add_child(subtree.treenode)
-#     tree._update()
+#     # set dest dist
+#     dest.dist = dist
+
+#     # connect newnode to its parent
+#     dest_parent = dest.up
+#     dest_parent.children.append(newnode)
+#     dest_parent.children.remove(dest)
+
+#     # connect newnode to its children
+#     newnode.up = dest_parent
+#     newnode.children = [src, dest]
+#     src.up = newnode
+#     dest.up = newnode
+
+#     # re-toytree it from the root
+#     tree = toytree.tree(root)
+
+#     # TODO: add highlight boolean arg and color moved clade.
+#     # tree.style.edge_colors = ['black'] * tree.nnodes
+#     # for idx in tree.get_node_descendant_idxs(src)
 #     return tree
-
-
-# NEEDS WORK, not yet exposed to API.
-def move_clade(
-    tree: ToyTree,
-    idx0: int,
-    idx1: int,
-    height: Optional[float]=None,
-    name: str="",
-    shrink: bool=False,
-    inplace: bool=False,
-):
-    r"""Move a clade from one part of the tree to another (SPR).
-
-    Splits a branch spanning from node idx1 (Y) to its parent (Z)
-    to create a new ancestral node (X). The idx0 clade is detached
-    from the tree (D) and its parent is removed if it leaves only
-    one child (E). The detached clade is reattached to the new
-    ancestral node (D -> X) while maintaining the edge lengths of
-    the subtree. The length of the edge connecting idx0 to the new
-    node (D, X) is automatically set to maintain ultrametricity,
-    unless the subclade height is greater than the dist arg. This
-    will raise an error unless shrink=True, in which case the
-    subtree is scaled to half the dist height to fit.
-
-                          Z
-          Z              / \              Z
-         / \            E   \            / \
-        E   \          /     \          /   X --- auto-set dist
-       / \   \        C       Y        /   / \
-      D   \   \  -->            -->   /   /   D --- auto-set dist
-     / \   \   \          D          /   /   / \
-    A   B   C   Y        / \        A   Y   A   B --- maintained dist
-                        A   B
-
-    Note
-    ----
-    This operation is synonymous with a rooted subprune regrafting
-    (SPR) move. Internal nodes that leave no descendants (e.g., E)
-    from above are removed from the tree.
-
-    See Also
-    --------
-    `toytree.mod.move_spr`: Faster SPR move function, but without
-    arguments to modify edge lengths like in this function.
-
-    Parameters
-    ----------
-    tree: ToyTree
-        A tree object.
-    idx0: int
-        The idx label of the Node at the top of the clade that
-        will be pruned from the tree and re-attached elsewhere.
-    idx1: int
-        The idx label of the Node whose branch will be split to
-        create a new parent node of the re-attached clade.
-    height: float or None
-        The height at which to insert node idx0 above node idx1.
-        This value must be in the interval between the height of
-        idx1 and its parent (node.height, node.height + node.dist).
-        If None then the node will be inserted at the midpoint
-        along node idx1's edge.
-    name: str
-        A name string to apply to the newly created internal node.
-    shrink: bool
-        If shrink is True then the subtree edge lengths (dists)
-        will be scaled to allow the clade to be inserted anywhere
-        in the tree. If False a ToyTreeError is raised if the
-        subclade cannot be inserted below the dist value.
-
-    Returns
-    -------
-    ToyTree
-        A modified copy of the original tree is returned.
-    """
-    # TODO: check tree_move SPR code and use that?
-    # create a copy
-    tree = tree if inplace else tree.copy()
-
-    # get selected nodes (FIXME: use nas to allow names selections)
-    src = tree[idx0]
-    dest = tree[idx1]
-
-    # cannot move a clade to its own children in rooted move
-    assert idx0 != idx1, "idx0 must be different from idx1"
-    assert idx0 != tree.treenode, "src node cannot be root."
-    assert idx1 != tree.treenode, "dest node cannot be root."
-    assert dest not in src.get_descendants(), (
-        "dest node cannot be a descendant of src in a rooted SPR move."
-    )
-
-    # check the height arg
-    if height is not None:
-        assert dest.up.height >= height >= dest.height, (
-            f"height {height} does occur on the node {idx1}'s edge: "
-            f"({dest.height}-{dest.up.height})")
-
-    # get dist arg from height
-    if height is None:
-        dist = dest.dist / 2.
-    else:
-        dist = height - dest.height
-
-    # if the dest is the src's parent, then we only need to modify the
-    # dist of dest and return the tree.
-    if dest == src.up:
-        diff = dest.dist - dist
-        dest.dist = dist
-        for child in dest.children:
-            child.dist += diff
-        return tree
-
-    # create new internal node.
-    newnode = Node(name=str(name), dist=dest.dist - dist)
-
-    # detach the source clade.
-    ancestor = src.up
-    src = src.detach()
-
-    # remove the null node (preserving bls) and in case the null node
-    # is the root, reset the tree variable to a new TreeNode root.
-    if ancestor.is_root():
-        if dest.up == tree.treenode:
-            root = newnode
-        else:
-            root = [i for i in tree.treenode.children if i != ancestor][0]
-        tree.treenode.delete(True, True)
-    else:
-        root = tree.treenode
-    ancestor.delete(True, True)
-
-    # set src dist (optional allowing shrink to fit)
-    if src.height > dest.height + dist:
-        if not shrink:
-            raise ValueError(
-                f"Clade {idx0} does not fit below clade {idx1}. "
-                "Use shrink=True.\n"
-                f"Details: node {idx0} height={src.height}; "
-                f"node {idx1} height={dest.height + dist}; "
-                f"dist={dist}; "
-                f"Error b/c {src.height} > {dest.height} + {dist}")
-        orig = src.height + src.dist
-        scale = orig / (dest.height + dist)
-        for node in src.traverse():
-            node.dist /= scale
-    else:
-        src.dist = dest.height + dist - src.height
-
-    # set dest dist
-    dest.dist = dist
-
-    # connect newnode to its parent
-    dest_parent = dest.up
-    dest_parent.children.append(newnode)
-    dest_parent.children.remove(dest)
-
-    # connect newnode to its children
-    newnode.up = dest_parent
-    newnode.children = [src, dest]
-    src.up = newnode
-    dest.up = newnode
-
-    # re-toytree it from the root
-    tree = toytree.tree(root)
-
-    # TODO: add highlight boolean arg and color moved clade.
-    # tree.style.edge_colors = ['black'] * tree.nnodes
-    # for idx in tree.get_node_descendant_idxs(src)
-    return tree
 
 
 def _resolve_nodes(
