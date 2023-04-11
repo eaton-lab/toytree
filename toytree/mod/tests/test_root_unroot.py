@@ -17,6 +17,7 @@ Uses get_mrca_node(*query) to get new root edge.
 """
 
 import unittest
+import numpy as np
 import toytree
 from toytree.utils import ToytreeError
 
@@ -25,6 +26,8 @@ class TestRoot(unittest.TestCase):
     def setUp(self):
         self.czech = toytree.io.parse_newick_string("((C,D)1,(A,(B,X)3)2,E)R;", internal_labels="name")
         """: Example dataset with inner labels as edge data."""
+        self.supp = toytree.tree("(a,b,((c,d)CD[&support=100],(e,f)EF[&support=80])X[&support=90])AB;")
+        """: Tree w/ internal names and supports"""
         self.itree = toytree.rtree.imbtree(10, seed=123, treeheight=10)
         self.btree = toytree.rtree.baltree(10, seed=123, treeheight=10)
         self.utree = toytree.rtree.unittree(10, seed=123, treeheight=10)
@@ -82,22 +85,48 @@ class TestRoot(unittest.TestCase):
             with self.assertRaises(ToytreeError):
                 tre.root("~r[1,7]")
 
-    # def test_root_unroot_transferrable(self):
-    #     """..."""
-    #     for tre in self.trees:
-    #         new = tre.root("r0").unroot().root("r0")
-    #         self.assertEqual(
-    #             tre.get_tip_labels(),
-    #             new.get_tip_labels()
-    #         )
-    #         new = tre.root("r0", "r1").unroot().root("r0", "r1")
-    #         self.assertEqual(tre.get_tip_labels(), new.get_tip_labels())
+    def test_root_on_internal_node(self):
+        """Raise ToytreeError on non-monophyletic outgroup."""
+        for tre in self.trees:
+            mrca = tre.get_mrca_node("r1", "r2")
+            tre.root(mrca)
 
-    def test_support_value_of_root_node(self):
+    def test_root_unroot_transferrable(self):
+        """Default edge features such as 'support' are properly transferable
+        among edges during rooting, unrooting, and re-rooting.
+        """
+        s1 = self.supp
+        s2 = s1.root("EF")  # unroot -> root
+        s3 = s2.unroot()    # root -> unroot
+        s4 = s3.root("AB")  # diff unroot to diff root
+        s5 = s4.root("EF")  # root -> diff root
+
+        # for each internal Node in the original tree
+        for inode in s1[s1.ntips:-1]:
+
+            # get the descendants
+            tips = inode.get_leaf_names()
+            # print(f"tips={tips}")
+
+            # for each unrooted or re-rooted tree
+            for tree in (s1, s2, s3, s4, s5):
+
+                # get tips mrca on the new tree
+                mrca = tree.get_mrca_node(*tips)
+
+                # check that node has same support value still
+                if mrca.is_root():
+                    clade = tree.get_ancestors(*tips)
+                    other = tree.get_mrca_node(*set(tree[:tree.ntips]) - set(clade))
+                    # print(f"mrca={mrca} root {other}")
+                    self.assertEqual(inode.support, other.support)
+                else:
+                    # print(f"mrca={mrca}")
+                    self.assertEqual(inode.support, mrca.support)
+
+    def test_support_value_of_root_node_is_nan(self):
         """The root Node support value should be nan by default."""
-
-    def test_support_value_of_root_node_changing(self):
-        """The root Node support value should be maintained if set by user."""
+        self.assertTrue(np.isnan(self.itree.root("r0").treenode.support))
 
     def test_unroot_child_dist_data(self):
         """Unrooting removes treeNode while maintaining all other dist info."""
@@ -108,17 +137,42 @@ class TestRoot(unittest.TestCase):
             new_child_dist = utre.treenode.children[-1]._dist
             self.assertAlmostEqual(sum_child_dists, new_child_dist)
 
+    def test_root_on_current_root_on_rooted_tree(self):
+        """Rooting on the root Node is allowed for rooted trees, which
+        simply returns the same tree, but not for unrooted trees, since
+        no edge exists to create a new root on.
+        """
+        rtre = self.itree.root("r0")
+        rtre.root("r0")
+
+    def test_raise_exception_on_current_root_on_unrooted_tree(self):
+        """Rooting on the root Node is allowed for rooted trees, which
+        simply returns the same tree, but not for unrooted trees, since
+        no edge exists to create a new root on.
+        """
+        utre = self.itree.unroot()
+        with self.assertRaises(ToytreeError):
+            utre.root(utre.treenode)
+
     def test_root_child_dist_data(self):
         """The dist between the two root children should be maintained."""
         for tree in self.trees:
             rtre = tree
-            children = tree.treenode.children[0].get_leaf_names()
-            retre = tree.unroot().root(*children)
-            sum_child_dists = sum([i.dist for i in rtre.treenode.children])
-            new_child_dist = sum([i.dist for i in retre.treenode.children])
-            self.assertAlmostEqual(sum_child_dists, new_child_dist)
+            c1, c2 = [i.get_leaf_names() for i in rtre.treenode.children]
 
-        # what if we root elsewhere...
+            utre = tree.unroot()
+            retre = utre.root(*c1)
+
+            m1 = rtre.get_mrca_node(*c1)
+            m2 = rtre.get_mrca_node(*c2)
+            odist = rtre.distance.get_node_distance(m1, m2)
+
+            for tre in (utre, retre):
+                m1 = tre.get_mrca_node(*c1)
+                m2 = tre.get_mrca_node(*c2)
+                tre.get_mrca_node(m1.idx, m2.idx)
+                dist = tre.distance.get_node_distance(m1, m2)
+                self.assertAlmostEqual(odist, dist)
 
     def test_root_dist_midpoint_default(self):
         """The root_dist arg uses midpoint as default."""

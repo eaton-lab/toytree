@@ -6,14 +6,11 @@
 
 import unittest
 import toytree
-from toytree.utils import ToytreeError
-from toytree.enum.src.partitions import (
-    iter_quadripartitions,
-    iter_edge_quadripartition_sets,
-)
+# from toytree.utils import ToytreeError
+from toytree.enum import iter_quadripartitions, _iter_quadripartition_sets
 
 
-class TestBipartitions(unittest.TestCase):
+class TestQuadripartitions(unittest.TestCase):
     def setUp(self):
         """Six tip tree three clades of two."""
         self.tree1 = toytree.tree("(a,b,((c,d)CD,(e,f)EF)X)AB;")
@@ -28,7 +25,7 @@ class TestBipartitions(unittest.TestCase):
             (({'e'}, {'f'}), ({'c', 'd'}, {'a', 'b'})),
             (({'c', 'd'}, {'e', 'f'}), ({'a'}, {'b'})),
         ]
-        parts = sorted(iter_edge_quadripartition_sets(self.tree1))
+        parts = sorted(_iter_quadripartition_sets(self.tree1))
         self.assertEqual(parts, PARTS)
 
         PARTS = [
@@ -36,7 +33,7 @@ class TestBipartitions(unittest.TestCase):
             (({'e'}, {'f'}), ({'c', 'd', 'CD'}, {'AB', 'b', 'a'})),
             (({'c', 'd', 'CD'}, {'EF', 'f', 'e'}), ({'a'}, {'b'})),
         ]
-        parts = sorted(iter_edge_quadripartition_sets(self.tree1, include_internal_nodes=True))
+        parts = sorted(_iter_quadripartition_sets(self.tree1, include_internal_nodes=True))
         self.assertEqual(parts, PARTS)
 
         PARTS = [
