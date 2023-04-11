@@ -16,8 +16,9 @@ References
 
 from __future__ import annotations
 from typing import (
-    Sequence, Dict, List, Optional, Iterator, Any, Set,
-    Union, Tuple, TypeVar, Callable)
+    Sequence, Dict, List, Optional, Iterator, Any, Union, Tuple,
+    TypeVar,  # Callable,
+)
 import re
 from copy import deepcopy
 from hashlib import md5
@@ -29,15 +30,17 @@ from toyplot import Canvas
 from toyplot.coordinates import Cartesian
 
 # subpackage object APIs
-from toytree.style import TreeStyle
-from toytree.mod._src.api import TreeModAPI
-from toytree.distance._src.api import DistanceAPI
+from toytree.core.apis import (
+    TreeModAPI, TreeDistanceAPI, PhyloCompAPI, TreeEnumAPI)
 from toytree.core.node import Node
+from toytree.style import TreeStyle
 from toytree.drawing import ToytreeMark, draw_toytree, get_layout, get_tree_style
-from toytree.utils import ToytreeError
+from toytree.utils.src.exceptions import (
+    ToytreeError, NODE_NOT_IN_TREE_ERROR, NODE_INDEXING_ERROR)
 import toytree
 # from toytree.io.src.writer import write_newick
 # from toytree.pcm.api import PhyloCompAPI
+# from toytree.distance._src.api import DistanceAPI
 
 # pylint: disable=too-many-branches, too-many-lines, too-many-public-methods
 
@@ -45,7 +48,8 @@ import toytree
 logger = logger.bind(name="toytree")
 
 # Type alias for Node selection
-Query = TypeVar("Query", str, int, Node, None)
+Query = TypeVar("Query", str, int, Node)
+# NodeQuery, NodeMrcaQuery
 
 
 class ToyTree:
@@ -78,10 +82,12 @@ class ToyTree:
         # toytree subpackage library API (mod, pcm, distance, layout)"""
         self.mod = TreeModAPI(self)
         """: API to apply :mod:`toytree.mod` tree modification funcs to this tree."""
+        self.distance = TreeDistanceAPI(self)
+        """: API to apply :mod:`toytree.distance` comparison funcs to this tree."""
         self.pcm = None
         """: API to apply :mod:`toytree.pcm` phylogenetic comparative methods funcs to this tree."""
-        self.distance = DistanceAPI(self)
-        """: API to apply :mod:`toytree.distance` comparison funcs to this tree."""
+        self.enum = TreeEnumAPI(self)
+        """: API to apply :mod:`toytree.enum` phylogenetic comparative methods funcs to this tree."""
 
         # update Node idxs, _idx_dict, nnodes, ntips, and Node heights
         self._update()
@@ -120,16 +126,8 @@ class ToyTree:
             if isinstance(idx, int) and idx < 0:
                 return self[self.nnodes - idx]
         # raise a helpful error message.
-        except Exception as inst:
-            raise ToytreeError(
-                "Error indexing from ToyTree object. You likely entered a invalid\n"
-                "Node selector. Note: Nodes can be selected by index, slicing, or a list.\n"
-                "See the `.get_nodes` function for more options:\n"
-                ">>> tree[3]                           # Node(idx=3) \n"
-                ">>> tree[3:4]                         # [Node(idx=3), Node(idx=4)] \n"
-                ">>> tree[[3,10,2]                     # [Node(idx=3), Node(idx=10), Node(idx=2)]\n"
-                ">>> tree.get_nodes('name3', 'name4')  # [Node(idx=3), Node(idx=4)] \n"
-            ) from inst
+        except Exception as exc:
+            raise ToytreeError(NODE_INDEXING_ERROR) from exc
 
     def __repr__(self) -> str:
         """Short object representation for toytree.core.tree.ToyTree"""
@@ -196,7 +194,7 @@ class ToyTree:
             If False then the state of the root node is ignored when
             checking for polytomies.
         """
-        tris = [len(j.children) <= 2 for i, j in enumerate(self)]
+        tris = [len(node.children) <= 2 for node in self]
         if include_root:
             return all(tris)
         return all(tris[:-1])
@@ -223,13 +221,16 @@ class ToyTree:
             Children are visited before parents. The left subtree is
             visited, then right, then the parent.
         levelorder:
-            Nodes the same distance from root are visited left to
-            right, before descending to next level.
+            Nodes the same distance (number of edges) from root are
+            visited left to right, before descending to next level.
         idxorder:
-            Leaf nodes are visited left to right, followed by internal
-            nodes in postorder traversal order. But, Nodes can be
-            accessed in idxorder faster by indexing from the ToyTree
-            directly as `[self[i] for i in range(self.nnodes)]`.
+            Leaf nodes are visited first from left to right, followed
+            by internal nodes in postorder traversal. Note: this
+            traversal order is already cached on any ToyTree and can
+            thus be accessed much faster by indexing directly, e.g.,
+            >>> nodes_in_idx_order = list(tree)
+            >>> nodes_in_idx_order_except_root = tree[:-1]
+            >>> tip_nodes_in_idx_order = tree[:tree.ntips]
         inorder:
             Nodes are visited in non-descreasing order if they are
             a binary search tree: left child, parent, right child.
@@ -245,12 +246,13 @@ class ToyTree:
         --------
         >>> tree = toytree.rtree.unittree(10, seed=123)
         >>> ords = ['postorder', 'preorder', 'levelorder', 'idxorder']
-        >>> for ord in ords:
-        >>>     for idx, node in enumerate(tree.treenode.traverse(ord)):
+        >>> for trav in ords:
+        >>>     for idx, node in enumerate(tree.traverse(trav)):
         >>>         node.traverse_order = str(idx)
-        >>>     tree.draw(
+        >>>     _, a, _ = tree.draw(
         >>>         node_labels="traverse_order",
         >>>         node_sizes=16, node_mask=False);
+        >>>     a.label.text = trav
         """
         for node in self.treenode.traverse(strategy=strategy):
             yield node
@@ -288,7 +290,7 @@ class ToyTree:
             node = queue.pop()
 
             # set depth of this node from the root
-            depths[node] = depths[node.up] + node._dist
+            depths[node] = depths[node._up] + node._dist
 
             # if leaf add to output stack and update farthest depth
             if node.is_leaf():
@@ -331,138 +333,64 @@ class ToyTree:
     # - root, unroot, rotate_node, ladderize,
     # - set_node_heights, collapse_nodes, prune,
     # - drop_tips, resolve_polytomy,
+    # - root, unroot
     #####################################################
-
-    def root(
-        self,
-        *query: Query,
-        regex: bool = False,
-        root_dist: Optional[float] = None,
-        edge_features: Optional[Sequence[str]] = None,
-        inplace: bool = False,
-    ) -> ToyTree:
-        r"""Return a ToyTree rooted on the edge above selected Node query.
-
-        Rooting a tree involves splitting an edge to insert a new Node.
-        (think of it as pinching an edge and pulling it back to create
-        a new root). This adds a Node to an unrooted tree, or keeps
-        the same number of Nodes in an already rooted tree, where the
-        former root Node is discarded.
-
-        Example of rooting an unrooted tree:
-                                                    x
-                                                   / \
-                        2          root('n')      n   u
-                      / | \          -->             / \
-                     1  .  u                        2   .
-                          / \                      / \
-                         .   n                    1   .
-
-        Example of re-rooting a rooted tree:
-                       o                            x
-                      / \                          / \
-                     1   2         root('n')      n   u
-                        / \          -->             / \
-                       .   u                        2   .
-                          / \                      / \
-                         .   n                    1   .
-
-        Parameters
-        ----------
-        *query: str, int, or Node
-            One or more Node selectors, which can be Node objects, names,
-            or int idx labels. If multiple are entered the MRCA node will
-            be used as the base of the edge to split.
-        regex: bool
-            If True then Node name strings are treated as regular
-            expressions that can match to multiple Nodes.
-        root_dist: None or float
-            The length (dist) along the root edge above the Node query
-            where the new root edge should be placed. Default is None
-            which will place root at the midpoint of the edge. A float
-            can be entered, but will raise ToyTreeError if > len of edge.
-        edge_features: Sequence[str]
-            One or more Node features that should be treated as a feature
-            of its edge, not the Node itself. On rooting, edge features
-            are re-polarized, to apply to the correct Node. The 'dist'
-            and 'support' features are always treated as edge features.
-            Add additional edge features here. See docs for example.
-        inplace: bool
-            If True the original tree is modified and returned, otherwise
-            a modified copy is returned.
-
-        Examples
-        --------
-        >>> tree = toytree.rtree.unittree(ntips=10, seed=123)
-        >>> t1 = tree.root("r8", "r9")
-        >>> t2 = tree.root("r8", "r9", root_dist=0.3)
-        >>> toytree.mtree([t1, t2]).draw();
-        """
-        return toytree.mod.root(
-            self, *query, regex=regex, root_dist=root_dist,
-            edge_features=edge_features, inplace=inplace
-        )
-
-    def unroot(self, inplace: bool = False) -> ToyTree:
-        """Return an unrooted ToyTree by collapsing the root Node.
-
-        This will convert a binary split into a multifurcation.
-        The Node idx values can change on unrooting because the number of
-        Nodes has changed.
-
-        Note
-        ----
-        The unrooting process is not destructive of information, you can
-        re-root a tree on the same edge position as before to recover the
-        same tree.
-
-        Parameters
-        ----------
-        inplace: bool
-            If True modify and return original tree, else return a copy.
-        """
-        return self.mod.unroot(inplace=inplace)
 
     #################################################
     # NODES SEARCH/MATCH BY FLEXIBLE INPUTS
     # Matching Nodes by name can be used to color nodes/edges...
     #################################################
 
-    def _iter_nodes_by_name_match(self, *query: str, regex: bool = False) -> Iterator[Node]:
-        """Return Iterator over Nodes in idxorder matched by leaf names."""
-        # get matching function
-        if regex:
-            try:
-                comp = [re.compile(q) for q in query]
-            except re.error as inst:
-                msg = f"invalid regex query {query} raised a re.error: {inst}"
-                logger.error(msg)
-                raise ToytreeError(msg) from inst
-            match = lambda x: any(q.search(x) for q in comp)
-        else:
-            match = lambda x: x in query
+    def _iter_nodes_by_name_match(self, *query: str) -> Iterator[Node]:
+        """Return Iterator over Nodes in idxorder matched by leaf names
+        while allowing for regular expression matched of names.
+        """
+        # compile regex strings
+        comps = []
+        for que in query:
+            if not que.startswith("~"):
+                comps.append((que, None))
+            else:
+                try:
+                    comps.append((que, re.compile(que[1:])))
+                except re.error as exc:
+                    msg = f"invalid regex query {query} raised re.error:\n{exc}"
+                    logger.error(msg)
+                    raise ToytreeError(msg) from exc
 
-        # yield matching nodes
-        for node in self.traverse("idxorder"):
-            if match(node.name):
-                yield node
+        # traverse tree in idxorder checking each Node for a name match
+        matched = set()
+        for node in self:
+            for que, regex in comps:
+                if regex:
+                    if regex.match(node.name):
+                        matched.add(que)
+                        yield node
+                else:
+                    if que == node.name:
+                        yield node
+                        matched.add(que)
 
-    def get_nodes(self, *query: Query, regex: bool = False) -> List[Node]:
+        # raise exception for non-matched queries
+        not_matched = set(query) - set(matched)
+        if not_matched:
+            raise ValueError(f"No Node names match query: {not_matched}")
+
+    def get_nodes(self, *query: Query) -> List[Node]:
         """Return a list of Nodes matching a flexible query.
 
         Node instances can be selected by entering Node name strings,
         Node int idx labels, and/or Node objects. Input types are
         detected automatically, and even mixed input types can be
         entered. Node name strings can also be entered as regular
-        expressions (e.g., 'r[0-3]') to match multiple names, which
-        will be expanded if `regex=True`. If no query is entered then
-        all Nodes are returned (this is fast, uses cached data.)
+        expressions by prefixing a name query with '~', (e.g.,
+        '~r[0-3]') to match multiple names. If no query is entered then
+        all Nodes are returned.
 
         This function is used inside many other toytree functions that
-        similarly take `*Query` as an argument; any place users may
-        want to use a flexible query method to select  a set of Nodes,
-        or their common ancestor. The order of returned Nodes is
-        similar random.
+        similarly take `NodeQuery` as an argument; any place users may
+        want to use a flexible query method to select a set of Nodes,
+        or their common ancestor.
 
         Parameters
         ----------
@@ -470,64 +398,92 @@ class ToyTree:
             Flexible query selector can search for Nodes by name, idx
             label, or by entering a Node directly. Multiple values can
             be entered to return a list of matching Nodes.
-        regex: bool
-            If True then string queries are treated as regular
-            expressions. If a regular expression fails to match
-            anything it will raise an exception.
 
         Notes
         -----
         You can `practice your regex here: <https://pythex.org/>`_
+        The order in which Nodes are returned may be different than the
+        order of queries.
 
         Examples
         --------
         >>> tree = toytree.rtree.unittree(16, seed=123)
-        >>> tree.get_nodes()                      # all Nodes returned
-        >>> tree.get_nodes("r1")                  # [Node(1)]
-        >>> tree.get_nodes("r1", "r2")            # [Node(1), Node(2)]
-        >>> tree.get_nodes("r[1-2]$", regex=True) # [Node(1), Node(2)]
-        >>> tree.get_nodes(5, 6)                  # [Node(5), Node(6)]
-        >>> tree.get_nodes(tree[5], "r1")         # [Node(5), Node(1)]
-        >>> tree.get_nodes(*[2,3])                # [Node(2), Node(3)]
+        >>> tree.get_nodes()                    # all Nodes returned
+        >>> tree.get_nodes("r1")                # [Node(1)]
+        >>> tree.get_nodes("r1", "r2")          # [Node(1), Node(2)]
+        >>> tree.get_nodes("~r[1-2]$")          # [Node(1), Node(2)]
+        >>> tree.get_nodes(5, 6)                # [Node(5), Node(6)]
+        >>> tree.get_nodes(tree[5], "r1")       # [Node(5), Node(1)]
+        >>> tree.get_nodes(*[2,3])              # [Node(2), Node(3)]
         """
-        # fastest return, all cached Nodes
-        if query == ():  # ignore b/c query can be 0
-            return list(self)
-
         nodes = set()
+        names = set()
         for que in query:
             if isinstance(que, int):
                 nodes.add(self[que])
-            # odd case: query a ToyTree with Nodes from a diff tree.
             elif isinstance(que, toytree.Node):
-                if que in self:
-                    nodes.add(que)
-                else:
-                    raise ValueError(
-                        f"query {que} is not in *this* tree. Perhaps you are "
-                        "tring to query with a Node\nfrom a different ToyTree. "
-                        "To avoid this warning, which is trying to save you "
-                        "from potential \nerrors, please do the following:\n"
-                        "1. Make sure you actually want to query with this Node.\n"
-                        "2. Because this tree may not be the same as the tree "
-                        "from which the input Node is connected,\nyou should "
-                        "instead find the Node in this tree that is equivalent, "
-                        "e.g.,\n"
-                        ">>> node = tree.get_mrca_node(*other_node.get_tip_labels())\n"
-                        ">>> tree.get_nodes(node) \n"
-                    )
-                    # nodes.add(self[que.idx])
+                if que not in self:
+                    raise ValueError(NODE_NOT_IN_TREE_ERROR)
+                nodes.add(que)
             elif isinstance(que, str):
-                matched = set(self._iter_nodes_by_name_match(que, regex=regex))
-                nodes.update(matched)
-                if not matched:
-                    raise ValueError(
-                        f"No Node names match '{que}' using regex={regex}.")
+                names.add(que)  # names are expanded to Nodes below.
             elif isinstance(que, np.integer):
                 nodes.add(self[que])
             else:
                 raise TypeError(f"query type {type(que)} not supported.")
+
+        # match Node names as a group so we only need to perform one
+        # tree traversal. Each query can return multiple regex hits.
+        matched = set(self._iter_nodes_by_name_match(*names))
+        nodes.update(matched)
+
+        # if not query then return all Nodes
+        if not nodes:
+            return list(self)
         return list(nodes)
+
+    def get_mrca_node(self, *query: Query) -> Node:
+        """Return the MRCA Node from Nodes matching a flexible query.
+
+        Find and return the most-recent-common-ancestor Node instance
+        based on input selectors that can be either Node names, Node
+        int idx labels, or Node objects. Input types are detected
+        automatically and handled, so that even mixed input types can
+        be entered (e.g., `get_mrca_node('a', 2, 3)`). If the selected
+        Nodes do not share a common ancestor this will raise a
+        ToytreeError. This function is useful for selecting and
+        annotating clades on a tree drawing. Node names can also be
+        entered as regular expressions to match multiple names by
+        prefixing the name with "~" (e.g., .get_mrca_node("~r[0-3]$"))
+
+        Parameters
+        ----------
+        *query: str, int, Node
+            One or more Node objects, Node str names, or Node int idx
+            labels, any of which can be used to select Nodes.
+
+        Notes
+        -----
+        If the tree is unrooted then the mrca will be found relative
+        to the 'pseudo-root' (the Node that exists as parent to the
+        basal trichotomy, but has no parent associated with it).
+
+        Examples
+        --------
+        >>> tree = toytree.rtree.unittree(12)
+        >>> mrca = tree.get_mrca_node('r1', 'r2', 'r3')
+        >>> mrca = tree.get_mrca_node('r[1-3]$')
+        >>> mrca = tree.get_mrca_node(12)
+        >>> mrca = tree.get_mrca_node(12, 13, 14, 15)
+        >>> mrca = tree.get_mrca_node(*(tree[i] for i in (12, 13)))
+        >>> print(mrca.idx, mrca.get_descendants())
+        """
+        # get flexible input as Node instances
+        nodes = self.get_nodes(*query)
+        if len(nodes) == 1:
+            return nodes[0]
+        nset = set.intersection(*(set(i._iter_ancestors()) for i in nodes))
+        return min(nset)
 
     def get_ancestors(
         self,
@@ -535,7 +491,7 @@ class ToyTree:
         include_query: bool = True,
         include_top: bool = True,
         stop_at_mrca: bool = False,
-    ) -> Set[Node]:
+    ) -> List[Node]:
         """Return a set of Nodes that are ancestors of the query samples.
 
         The returned set can include or exclude the sample query; it
@@ -559,14 +515,25 @@ class ToyTree:
             of the tree. If True, ancestors only trace back to MRCA
             of the sample query.
 
+        Note
+        ----
+        This function is used...
+
         Examples
         --------
-        ...
+        >>> ...
         """
-        # TODO: Note where this func is used internally...
+        # TODO: rewrite with default False args and simpler.
+        # nodes = self.get_nodes(*query)
+        # nset = set.union(*(set(i._iter_ancestors()) for i in nodes))
+
+        # expand query into a set of Nodes
         query = set(self.get_nodes(*query))
+
+        # get union of the ancestors of each queried Node
         ancestors = set.union(*[
-            set(self[i.idx].get_ancestors()) for i in query])
+            set(i.get_ancestors()) for i in query
+        ])
         if stop_at_mrca:
             mrca = self.get_mrca_node(*query)
             for anc in mrca.get_ancestors():
@@ -580,73 +547,14 @@ class ToyTree:
             return query.union(ancestors)
         return ancestors
 
-    def get_mrca_node(self, *query: Query, regex: bool = False) -> Node:
-        """Return the MRCA Node from Nodes matching a flexible query.
-
-        Find and return the most-recent-common-ancestor Node instance
-        based on input selectors that can be either Node names, Node
-        int idx labels, or Node objects. Input types are detected
-        automatically and handled, so that even mixed input types can
-        be entered (e.g., `get_mrca_node('a', 2, 3)`). If the selected
-        Nodes do not share a common ancestor this will raise a
-        ToytreeError. This function is useful for selecting and
-        annotating clades on a tree drawing. Node names can also be
-        entered as regular expressions to match multiple names, which
-        will be detected and expanded if `regex=True`.
-
-        Parameters
-        ----------
-        *query: str, int, Node
-            One or more Node objects, Node str names, or Node int idx
-            labels, any of which can be used to select Nodes.
-        regex: bool
-            If True then input node name strings are treated as
-            regular expressions that can match one or more Nodes.
-
-        Notes
-        -----
-        If the tree is unrooted then the mrca will be found relative
-        to the 'psuedo-root' (the Node that exists as parent to the
-        basal trichotomy, but has no features associated with it).
-
-        Examples
-        --------
-        >>> tree = toytree.rtree.unittree(12)
-        >>> mrca = tree.get_mrca_node('r1', 'r2', 'r3')
-        >>> mrca = tree.get_mrca_node('r[1-3]$', regex=True)
-        >>> mrca = tree.get_mrca_node(12)
-        >>> mrca = tree.get_mrca_node(12, 13, 14, 15)
-        >>> mrca = tree.get_mrca_node(*(tree[i] for i in (12, 13, 14)))
-        >>> print(mrca.idx, mrca.get_descendants())
-        """
-        # get flexible input as Node instances
-        nodes = self.get_nodes(*query, regex=regex)
-
-        # store observed Node idxs to check for disconnected Node inputs
-        idx_sets = []
-
-        # find every idx on way up to the root, and add the nidx itself
-        for node in nodes:
-            nset = set(i.idx for i in node._iter_ancestors())
-            nset.add(node.idx)
-            idx_sets.append(nset)
-
-        # bad set of node idxs
-        if not idx_sets:
-            raise ToytreeError(f"No common ancestor of {nodes}")
-
-        # get the lowest idx shared
-        mrca_idx = min(set.intersection(*idx_sets))
-        return self[mrca_idx]
-
     def get_node_mask(
         self,
         *unmask: Query,
         mask_tips: bool = True,
         mask_internal: bool = False,
         mask_root: bool = False,
-    ) -> Sequence[bool]:
-        """Return a boolean array to mask certain Nodes when drawing.
+    ) -> np.ndarray:
+        """Return a boolean array to show/mask Nodes when drawing.
 
         Creates a boolean mask to hide a set of selected Nodes.
         The array is in Node idxorder (from 0-nnodes) where boolean
@@ -657,7 +565,7 @@ class ToyTree:
 
         Parameters
         ----------
-        *unmask: int or str
+        *unmask: int, str or Node
             Any Nodes selected by int or str labels will be unmasked
             (shown). If selected, this overrides their inclusion in
             mask_tips, mask_internal, or mask_root.
@@ -689,7 +597,6 @@ class ToyTree:
     def is_monophyletic(
         self,
         *query: Query,
-        regex: bool = False,
         unrooted: bool = False,
     ) -> bool:
         """Return True if leaf Nodes form a monophyletic clade.
@@ -704,9 +611,6 @@ class ToyTree:
         *query: Node, str, or int
             One or more Node objects, Node name str, or Node idx int
             labels to check for monophyly.
-        regex: bool
-            If True then string queries are treated as regular
-            expressions that can match multiple Node names.
         unrooted: bool
             If True then the selected Nodes are tested for monophyly
             without reference to the placement of the root Node. The
@@ -720,8 +624,8 @@ class ToyTree:
         >>> print(tree.is_monophyletic(0, 4, 8))
         """
         if unrooted:
-            raise NotImplementedError("TODO: make a request to developers")
-        nodes = self.get_nodes(*query, regex=regex)
+            raise ToytreeError("The tree must be rooted to test monophyly")
+        nodes = self.get_nodes(*query)
         mrca = self.get_mrca_node(*nodes)
         for node in mrca._iter_leaves():
             if node not in nodes:
@@ -832,225 +736,30 @@ class ToyTree:
     # TOPOLOGY OR LEAF ANALYSIS FUNCTIONS
     # access nodes or features ...
     ###################################################
+    def iter_tip_labels(self) -> Iterator[str]:
+        """Generator of tip labels in idx order."""
+        for node in self[:self.ntips]:
+            yield node._name
 
     def get_tip_labels(self) -> List[str]:
         """Return a list of tip labels in Node idx order."""
-        return [self[i].name for i in range(self.ntips)]  # .treenode.get_leaf_names()
+        return list(self.iter_tip_labels())
 
-    def _get_edges(self) -> np.ndarray:
-        """Return numpy array of child,parent relationships."""
-        data = np.array([(i.idx, i.up.idx) for i in self if i.up])
-        return data
+    ###################################################
+    # TOPOLOGY ENUMERATION
+    # access info about splits, bipartitions, quartets, etc.
+    # from toytree.enum subpackage:
+    # - iter_edges
+    # - iter_bipartitions
+    # - iter_quartets
+    ###################################################
 
-    def get_edges(self) -> pd.DataFrame:
-        """Return a DataFrame with child -> parent idx labels.
-
-        To return as a numpy array instead of DataFrame you can use
-        tree._get_edges().
-        """
-        return pd.DataFrame(self._get_edges(), columns=["child", "parent"])
-
-    def iter_bipartitions(
-        self,
-        feature: Optional[str] = "name",
-        include_singleton_partitions: bool = False,
-        include_internal_nodes: bool = False,
-        indicate_root: bool = False,
-    ) -> Iterator[Tuple[Tuple[str], Tuple[str]]]:
-        """Generator of ordered bipartitions (info about splits in a tree).
-
-        The order in which bipartitions are yielded depends on the tree
-        topology and rooting, but the order of nodes within each partition
-        is consistently sorted by Node names which allows for comparing
-        bipartitions between trees. Here, each bipartition is a tuple of
-        two tuples representing (either all or only the tip) Nodes on
-        either side of an edge (split) in the tree. For example, the tuple
-        `(('r0', 'r1'), ('r2', 'r3'))` indicates a split in the tree
-        separating tip Nodes 'r0' and 'r1' from 'r2' and 'r3'.
-
-        Bipartitions are used to in many tree distance metrics (see
-        `toytree.distance`) and also to generate a unique hash of tree
-        topologies in `get_topology_id`.
-
-        Parameters
-        ----------
-        feature: str
-            Feature to return to represent Nodes on either side of a
-            bipartition. Default is "name". None will return Node objects.
-            Any other Node feature, such as "idx" can also be used, but
-            note that idx labels change depending on topology. Regardless
-            of this argument the Nodes are always ordered by names.
-        include_singleton_partitions: bool
-            If True then singleton splits (e.g., (A | B,C,D)) are included
-            in the result. By default these are excluded since it is
-            implicit that one exists for every tip Node in a tree.
-        include_internal_nodes: bool
-            Default is to only show tip Nodes on either side of a
-            bipartition, but internal Nodes can be included as well. In
-            this case the results are easier to interpret if internal Nodes
-            have names assigned, else you can set the 'feature' arg to
-            None, or 'idx', to return Node objects, or a unique feature.
-        indicate_root: bool
-            If True an *extra* bipartition is returned to indicate the
-            location of the root Node. This bipartition will be a repeat of
-            an existing bipart, since the root is not an actual split, but
-            this is still useful for comparing entire collections of 
-            bipartitions since the each will be unique to a rooted topology.
-            Note that if True the root split will be returned even if it is
-            a singleton split and include_singletons is set to False.
-
-        Examples
-        --------
-        >>> tree = toytree.tree("(a,b,((c,d)CD,(e,f)EF)X)AB;")
-        >>> sorted(tree.iter_bipartitions())
-        >>> # [(('a', 'b'), ('c', 'd', 'e', 'f')),
-        >>> #  (('c', 'd'), ('a', 'b', 'e', 'f')),
-        >>> #  (('e', 'f'), ('a', 'b', 'c', 'd'))]
-        """
-        return toytree.enum.iter_bipartitions(
-            tree=self,
-            feature=feature,
-            include_singleton_partitions=include_singleton_partitions,
-            include_internal_nodes=include_internal_nodes,
-            indicate_root=indicate_root)
-
-    def iter_quartets(
-        self,
-        feature: str = "name",
-        collapse: bool = False,
-    ) -> Iterator[Tuple]:
-        """Generator to yield quartets induced by edges in a tree.
-
-        This yields all quartets (4-sample subtrees) that exist within
-        a larger tree. The set of possible quartets is not affected
-        by tree rooting, but is affected by collapsed edges (polytomies),
-        which reduce the number of quartets.
-
-        Quartets are returned as tuples of tuples, where e.g.,
-        (('a', 'b'), ('c', 'd')) implies a `ab|cd` quartet. The order
-        in which quartets are yielded depends on the topology and rooting,
-        and can be re-sorted after, but the order of Nodes within each
-        tuple is sorted consistently by Node names. The arg collapse=True
-        can be used to simplify the returned format to a single tuple.
-
-        Parameters
-        ----------
-        feature: str
-            Feature used to represent Nodes on either side of bipartitions.
-            Default is "name". None will return Node objects. Other Node
-            features can be used but be aware if using quartets to compare
-            among trees that 'idx' changes depending on topology, and other
-            features may not be unique among Nodes.
-        collapse: bool
-            If True then quartets are returned as a single tuple, e.g.,
-            (0, 1, 2, 3), else they are returned as a tuple of tuples,
-            e.g., ((0, 1), (2, 3)). In either case, the induced split is
-            implied to occur in the middle, e.g., 0,1 vs 2,3.
-
-        Example
-        -------
-        >>> tree = toytree.rtree.unittree(5, seed=123)
-        >>> sorted(tree.iter_quartets())
-        >>> # (('r0', 'r1'), ('r2', 'r3'))
-        >>> # (('r0', 'r1'), ('r2', 'r4'))
-        >>> # (('r0', 'r1'), ('r3', 'r4'))
-        >>> # (('r0', 'r2'), ('r3', 'r4'))
-        >>> # (('r1', 'r2'), ('r3', 'r4'))
-        """
-        return toytree.enum.iter_quartets(
-            tree=self, feature=feature, collapse=collapse)
-
-    def get_bipartitions(
-        self,
-        feature: str = "name",
-        include_internal_nodes: bool = True,
-        include_singleton_partitions: bool = True,
-    ) -> pd.DataFrame:
-        """Return a DataFrame with partitions from tree in idx order.
-
-        Partitions represent splits that separate sets of Nodes in a
-        tree, and can be represented by the tips descended from each
-        side of the split, e.g., [['a', 'b'], ['c', 'd']]. Options are
-        available to return all Nodes on either side of a partition,
-        instead of just the tips, but tips are generally of interest.
-        The index of the returned DataFrame corresponds to the Node
-        idx label below the edge of each partition.
-
-        Note
-        ----
-        The root Node is ignored, and so rooting has no effect on
-        the partitions. This is because the root separates None from
-        all, e.g., [[], ['a', 'b', 'c', 'd']], and the nodes on
-        either side of the root have the same partition, [['a', 'b'],
-        ['c', 'd']], only one of which is returned.
-
-        Parameters
-        ----------
-        feature: str
-            The Node feature to return for every Node on each side of
-            a split. Default is "name".
-        exclude_internal_labels: bool
-            Default is to only show tip Nodes on either side of a
-            bipartition, but internal Nodes can be included as well.
-        exclude_singleton_splits: bool
-            Default is to exclude singleton splits (e.g., {A | B,C,D})
-            since it is implicit that one exists for every tip Node,
-            but these can be included if requested.
-
-        See Also
-        --------
-        `ToyTree.iter_bipartitions`, `ToyTree._get_bipartitions_table`
-
-        Examples
-        --------
-        >>> tree = toytree.rtree.unittree(4)
-        >>> print(tree.get_bipartitions())
-        """
-        biparts = list(
-            toytree.enum.iter_bipartitions(
-                tree=self,
-                feature=feature,
-                include_internal_nodes=include_internal_nodes,
-                include_singleton_partitions=include_singleton_partitions,
-            )
-        )
-        if include_singleton_partitions:
-            index = None
-        else:
-            index = range(self.ntips, self.ntips + len(biparts))
-        return pd.DataFrame(biparts, index=index)
-
-    def _get_bipartitions_table(
-        self,
-        include_internal_nodes: bool = False,
-        include_singleton_partitions: bool = False,
-        dtype: type = int,
-    ) -> pd.DataFrame:
-        """Return a DataFrame with partitions in binary format."""
-        bits = list(
-            toytree.enum.iter_bipartitions(
-                self,
-                feature="idx", 
-                include_internal_nodes=include_internal_nodes, 
-                include_singleton_partitions=include_singleton_partitions,
-            )
-        )
-        cols = self.nnodes - 1 if include_internal_nodes else self.ntips
-        arr = np.zeros(shape=(len(bits), cols), dtype=dtype)
-        for idx, bit in enumerate(bits):
-            arr[idx, bit[0]] = 1
-        if include_singleton_partitions:
-            index = range(self.ntips, self.ntips + len(bits))
-        else:
-            index = None
-        return pd.DataFrame(arr, columns=self.get_tip_labels(), index=index)
-
-    def get_topology_id(self, feature="name", exclude_root: bool = True) -> str:
+    def get_topology_id(self, feature="name", include_root: bool = False) -> str:
         """Return a unique ID representing this topology.
 
         Two trees with the same topology and tip names will produce
         the same id, i.e., the rotation of Nodes does not affect the
-        geneated ID. Rooting/Unrooting does affect it. The ID string
+        generated ID. Rooting/Unrooting does affect it. The ID string
         is useful for identifying unique topologies among a set of
         trees without requiring distance comparisons. This method
         uses an md5 hash of a string of ordered Node names with
@@ -1065,11 +774,11 @@ class ToyTree:
             you plan to compare using topology id strings. Careful
             changing this option from 'name' unless you are familiar
             with the consequences.
-        exclude_root: bool
+        include_root: bool
             By default the root Node is excluded (if tree is rooted)
             such that all unrooted trees with the same toplogy return
             the same topology_id. To distinguish among differently
-            rooted versions of the same tree set `exclude_root=False`.
+            rooted versions of the same tree set `include_root=True`.
 
         Examples
         --------
@@ -1079,8 +788,19 @@ class ToyTree:
         --------
         - iter_bipartitions
         """
-        biparts = sorted(toytree.enum.iter_bipartitions(
-            feature=feature, indicate_root=1 - int(exclude_root)))
+        # bipartitions are ordered by edge idx order, and names within
+        # bipartitions are consistently ordered by alphanumeric names.
+        # so we sort so that trees with the same topology but rotated
+        # nodes will have the same bipartitions.
+        biparts = sorted(self.iter_bipartitions(
+            feature=feature, sort=True, type=tuple))
+
+        # optional: duplicate last bipart to indicate rooting
+        if include_root and self.is_rooted():
+            biparts += [
+                tuple(sorted(i.get_leaf_names()))
+                for i in self.treenode.children
+            ]
         return md5(str(biparts).encode('utf-8')).hexdigest()
 
     ###################################################
@@ -1088,9 +808,10 @@ class ToyTree:
     # push to .layout subpackage
     ###################################################
 
-    def _get_node_coordinates(self) -> np.ndarray:
-        """Return numpy array of 'unstyled' cached node coordinates."""
-        return np.array([(i._x, i._height) for i in self])
+    def _iter_node_coordinates(self) -> Iterator[Tuple[float, float]]:
+        """Generator of 'unstyled' cached node coordinates."""
+        for node in self:
+            yield node._x, node._height
 
     def get_node_coordinates(self, **kwargs) -> pd.DataFrame:
         """Return a DataFrame with xy coordinates for plotting nodes.
@@ -1193,21 +914,6 @@ class ToyTree:
                 "does not have unique values, and thus Nodes with the "
                 "same value cannot be represented as keys in the dict.")
         return ndict
-
-    # def _set_node_data_dtype(self, feature: str, dtype: Optional[Callable] = None) -> None:
-    #     """Set the type/dtype (or infer) of a Node feature in-place.
-
-    #     This is used internally when data is parsed from strings
-    #     and may be a str, float, int, or complex type, and we want
-    #     to be able to *try* to infer the proper type. Also, if the
-    #     user knows the type then it can be set. This will raise a
-    #     TypeError if the data cannot be cast to the entered dtype.
-
-    #     Parameters
-    #     ----------
-    #     ...
-    #     """
-    #     raise NotImplementedError("TODO")
 
     def set_node_data_from_dataframe(
         self,
@@ -1343,8 +1049,7 @@ class ToyTree:
         # get {idx: values} for all mapping entries. The func get_nodes
         # raises an exception if any query is not in the tree.
         mapping = {
-            self.get_nodes(i, regex=False)[0].idx: j
-            for (i, j) in mapping.items()
+            self.get_nodes(i)[0].idx: j for (i, j) in mapping.items()
         }
 
         # make a copy of ToyTree to return
