@@ -43,7 +43,7 @@ class LinearLayout(BaseLayout):
         # get coordinates from current x,y attributes unless fixed args,
         # in which case a new traversal is required to get coords.
         if (self.fixed_order is None) and (self.fixed_position is None):
-            self.coords = self.tree._get_node_coordinates()
+            self.coords = np.array(list(self.tree._iter_node_coordinates()))
         else:
             self.coords = self._get_fixed_order_and_position_coords()
 
@@ -117,7 +117,7 @@ class LinearLayout(BaseLayout):
 
         # return coordinates using the new fixed_order
         coords = []
-        for node in self.tree.traverse("idxorder"):
+        for node in self.tree:  # .traverse("idxorder"):
             if node.is_leaf():
                 newx = positions[idxorder[node.idx]]
                 coords.append((newx, node._height))
