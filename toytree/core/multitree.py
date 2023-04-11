@@ -127,11 +127,11 @@ class MultiTree:
         first = set(self.treelist[0].get_tip_labels())
         return all(set(i.get_tip_labels()) == first for i in self)
 
-    def all_tree_topologies_same(self) -> bool:
+    def all_tree_topologies_same(self, include_root: bool = False) -> bool:
         """Return True if all topologies in treelist are identical."""
-        return len(set(i.get_topology_id() for i in self)) == 1
+        return len(set(i.get_topology_id(include_root=include_root) for i in self)) == 1
 
-    def get_unique_topologies(self, exclude_root: bool=True) -> List[Tuple[ToyTree, int]]:
+    def get_unique_topologies(self, include_root: bool = False) -> List[Tuple[ToyTree, int]]:
         """Return a list of (ToyTree, count) for each unique tree.
 
         This can be useful for calculating statistics only on the
@@ -140,8 +140,8 @@ class MultiTree:
 
         Parameters
         ----------
-        exclude_root: 
-            If True then all unique rooted trees are counted and 
+        include_root:
+            If False then all unique rooted trees are counted and
             returned rather than all unique unrooted trees.
 
         Examples
@@ -153,7 +153,7 @@ class MultiTree:
         """
         trees_dict = {}
         for tree in self:
-            hashed = tree.get_topology_id(exclude_root=exclude_root)
+            hashed = tree.get_topology_id(include_root=include_root)
             if hashed in trees_dict:
                 trees_dict[hashed][1] += 1
             else:
