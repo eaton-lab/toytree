@@ -10,7 +10,7 @@ Examples
 --------
 >>> tree = toytree.rtree.bdtree(10, seed=123)
 >>> c, a, m = tree.draw(layout='d')
->>> toytree.annotate.node_pie_charts(axes=a, **kwargs)
+>>> toytree.annotate.node_pie_charts(axes=a, tree=m, **kwargs)
 
 >>> tree = toytree.rtree.bdtree(10, seed=123)
 >>> c, a, m = tree.draw(layout='d', xbaseline=10)
