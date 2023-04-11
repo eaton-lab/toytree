@@ -78,7 +78,7 @@ from toytree.core.tree import ToyTree
 from toytree.core.apis import (
     TreeModAPI, add_subpackage_method, add_toytree_method
 )
-from toytree.utils import ToytreeError
+from toytree.utils import ToytreeError, NON_MONOPHYLETIC_OUTGROUP
 
 logger = logger.bind(name="toytree")
 
@@ -105,7 +105,9 @@ class Rooter:
         self.root_dist = root_dist
         self.inplace = inplace
         self.node: Node = self._get_edge_to_split()
+        """: The Node below the edge that will be split. Found from query."""
         self.edge_features: Set[str] = self._get_edge_features(edge_features)
+        """: Features that should be re-polarized on rooting (e.g., support)"""
 
     @staticmethod
     def _get_edge_features(edge_features: Optional[Union[str, Sequence[str]]]) -> Set[str]:
@@ -125,34 +127,37 @@ class Rooter:
         get the MRCA of the inverse selection. If that group is not
         monophyletic then raise exception for bad selection.
         """
+        # get the query as Set[Node]; remove root if present; return if None
         nodes = set(self.tree.get_nodes(*self.query))
         nodes -= {self.tree.treenode}
         if not nodes:
             return self.tree.treenode
+
+        # get only tips and get their mrca
         tips = set.union(*(set(i.get_leaves()) for i in nodes))
         mrca = self.tree.get_mrca_node(*nodes)
 
-        # check monophyly of user query, else try reciprocal tip set.
-        error = False
-        if not mrca.is_root():
-            if any(node not in tips for node in mrca._iter_leaves()):
-                error = True
-        else:
-            tips = set(self.tree[:self.tree.ntips]) - tips
-            mrca = self.tree.get_mrca_node(*tips)
-            if not self.tree.is_monophyletic(*tips):
-                error = True
+        # check monophyly of user query; try reciprocal tip set; then raise
+        try:
+            # the mrca clade may be non-monophyletic
+            if not mrca.is_root():
+                if any(node not in tips for node in mrca._iter_leaves()):
+                    tips = str(sorted(i.name for i in tips))
+                    raise ToytreeError(NON_MONOPHYLETIC_OUTGROUP.format(tips))
 
-        # raise a helpful error message
-        if error:
-            msg = (
-                f"Cannot root on non-monophyletic outgroup: {self.query}.\n"
-                f"If you want to root on the MRCA of these nodes try: \n"
-                f">>> mrca = tree.get_mrca_node(*{[i.idx for i in nodes]})\n"
-                f">>> tree.root(mrca)"
-            )
-            logger.error(msg)
-            raise ToytreeError(msg)
+            # root mrca. Reciprocal tip set may be monophyletic, all tips, or non-monophyletic
+            else:
+                all_tips = set(self.tree[:self.tree.ntips])
+                tips = all_tips - tips
+                if not tips:
+                    tips = all_tips
+                mrca = self.tree.get_mrca_node(*tips)
+                if any(node not in tips for node in mrca._iter_leaves()):
+                    tips = str(sorted(i.name for i in tips))
+                    raise ToytreeError(NON_MONOPHYLETIC_OUTGROUP.format(tips))
+        except ToytreeError as exc:
+            logger.error(exc)
+            raise exc
         return mrca
 
     def run(self):
@@ -174,9 +179,8 @@ class Rooter:
         else:
             if self.node.is_root():
                 msg = (
-                    "Cannot root unrooted tree on ALL tips, you must select "
-                    "a valid outgroup clade."
-                )
+                    "Cannot root unrooted tree on the pseudo-root, it has no "
+                    "edge. Select a valid outgroup")
                 logger.error(msg)
                 raise ToytreeError(msg)
 
@@ -218,7 +222,7 @@ class Rooter:
         # logger.warning(f"edge={edge}, ndist={ndist} odist={odist}")
 
         # nodes on path from node to the original root.
-        path = (self.node,) + self.node.get_ancestors() # [n, u, 2, o]
+        path = (self.node,) + self.node.get_ancestors()  # [n, u, 2, o]
 
         # store edge features for re-polarizing edges in path.
         feats = {
@@ -347,10 +351,8 @@ def root(
     >>> t2 = tree.root("r8", "r9", root_dist=0.3)
     >>> toytree.mtree([t1, t2]).draw();
     """
-    return Rooter(
-        tree, *query, inplace=inplace,
-        root_dist=root_dist, edge_features=edge_features,
-    ).run()
+    kwargs = dict(inplace=inplace, root_dist=root_dist, edge_features=edge_features)
+    return Rooter(tree, *query, **kwargs).run()
 
 
 @add_toytree_method(ToyTree)
@@ -423,12 +425,15 @@ if __name__ == "__main__":
 
     # Example test: start with a simple balanced tree.
     import toytree
-    TREE = toytree.rtree.baltree(ntips=10)
+    toytree.set_log_level("WARNING")
+    TREE = toytree.rtree.imbtree(ntips=10)
 
-    c, a, m = unroot(TREE).draw()
+    TREE.unroot().root(*TREE.treenode.children[0].get_leaf_names())
+    TREE.unroot().root("r8", "r9", "r0")
+    # c, a, m = unroot(TREE).draw()
     # _, a, m = root(TREE, 'r2')._draw_browser()
 
-    T0 = root(TREE, 'r2', root_dist=0.3)
+    # T0 = root(TREE, 'r2', root_dist=0.3)
 
     # c2, a, m = unroot(TREE)._draw_browser(axes=a)
     # print(unroot(TREE))
