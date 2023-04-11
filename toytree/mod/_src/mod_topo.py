@@ -54,6 +54,22 @@ from toytree.utils import ToytreeError
 logger = logger.bind(name="toytree")
 Query = TypeVar("Query", str, int, Node)
 
+__all__ = [
+    "ladderize",
+    "collapse_nodes",
+    "remove_unary_nodes",
+    "rotate_node",
+    "extract_subtree",
+    "prune",
+    "drop_tips",
+    "resolve_polytomies",
+    "add_internal_node",
+    "add_child_node",
+    "add_sister_node",
+    "add_internal_node_and_child",
+    "add_internal_node_and_subtree",
+]
+
 
 @add_toytree_method(ToyTree)
 @add_subpackage_method(TreeModAPI)

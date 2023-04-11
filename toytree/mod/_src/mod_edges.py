@@ -24,6 +24,15 @@ ToyTree = TypeVar("ToyTree")
 Query = TypeVar("Query", str, int, Node)
 
 
+__all__ = [
+    "edges_scale_to_root_height",
+    "edges_slider",
+    "edges_multiplier",
+    "edges_extend_tips_to_align",
+    "edges_set_node_heights",
+]
+
+
 @add_subpackage_method(TreeModAPI)
 def edges_scale_to_root_height(
     tree: ToyTree,

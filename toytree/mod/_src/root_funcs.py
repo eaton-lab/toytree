@@ -30,6 +30,12 @@ Query = TypeVar("Query", str, int, Node)
 logger = logger.bind(name="toytree")
 
 
+__all__ = [
+    "root_on_midpoint",
+    "root_on_minimal_ancestor_deviation",
+]
+
+
 @add_subpackage_method(TreeModAPI)
 def root_on_midpoint(tree: ToyTree, inplace: bool = False) -> ToyTree:
     """Return ToyTree rooted on midpoint of longest edge.

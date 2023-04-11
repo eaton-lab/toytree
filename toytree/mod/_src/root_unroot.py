@@ -81,9 +81,9 @@ from toytree.core.apis import (
 from toytree.utils import ToytreeError, NON_MONOPHYLETIC_OUTGROUP
 
 logger = logger.bind(name="toytree")
-
-# type aliases
 Query = TypeVar("Query", int, str, Node)
+
+__all__ = ["root", "unroot"]
 
 
 class Rooter:
