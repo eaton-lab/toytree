@@ -18,7 +18,7 @@ import toyplot.text
 logger = logger.bind(name="toytree")
 
 
-class ToytreeMark(Mark):
+class ToyTreeMark(Mark):
     """Custom mark for tree edges, nodes, and node_labels.
 
     This is a super class of toyplot.mark.Mark. All styles that affect

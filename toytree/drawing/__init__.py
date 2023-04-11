@@ -4,16 +4,16 @@
 
 """
 
-from toytree.drawing.src.toytree_mark import ToytreeMark
+from toytree.drawing.src.toytree_mark import ToyTreeMark
 from toytree.drawing.src.canvas_setup import (
-	CanvasSetup, 
-	GridSetup, 
-	set_axes_ticks_style,
+    CanvasSetup,
+    GridSetup,
+    set_axes_ticks_style,
 )
 from toytree.drawing.src.draw_toytree import (
-	draw_toytree, 
-	get_layout, 
-	get_tree_style,
+    draw_toytree,
+    get_layout,
+    get_tree_style,
 )
 from toytree.drawing.src.render_text import render_text
 import toytree.drawing.src.render_tree

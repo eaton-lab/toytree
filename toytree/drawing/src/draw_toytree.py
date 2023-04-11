@@ -12,8 +12,10 @@ The `draw_toytree` func does the following:
 from typing import Tuple, TypeVar
 from copy import deepcopy
 from loguru import logger
+from toyplot.canvas import Canvas
+from toyplot.coordinates import Cartesian
 from toytree.layout import BaseLayout, LinearLayout, CircularLayout, UnrootedLayout
-from toytree.drawing import ToytreeMark, CanvasSetup
+from toytree.drawing import ToyTreeMark, CanvasSetup
 from toytree.style import (
     TreeStyle, SubStyle, get_base_tree_style_by_name, validate_style
 )
@@ -24,7 +26,7 @@ ToyTree = TypeVar("ToyTree")
 logger = logger.bind(name="toytree")
 
 
-def draw_toytree(**kwargs) -> Tuple["Canvas", "Cartesian", "Mark"]:
+def draw_toytree(**kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMark]:
     """Parse arguements to draw function and return drawing objects.
 
     The drawing style arguments can be entered in two ways, either
@@ -83,7 +85,7 @@ def draw_toytree(**kwargs) -> Tuple["Canvas", "Cartesian", "Mark"]:
     axes = csetup.axes
 
     # generate toyplot Mark. Style is already validated. tables of int idx labels
-    mark = ToytreeMark(
+    mark = ToyTreeMark(
         ntable=layout.coords, etable=tree.get_edges('idx'), **style.dict(serialize=False)
     )
 

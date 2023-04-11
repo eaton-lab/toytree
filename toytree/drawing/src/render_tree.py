@@ -16,7 +16,7 @@ from multipledispatch import dispatch
 from loguru import logger
 import numpy as np
 import toyplot
-from toytree.drawing import ToytreeMark, render_text
+from toytree.drawing import ToyTreeMark, render_text
 from toytree.drawing.src.render_marker import render_marker
 from toytree.color.src.concat import concat_style_fix_color
 from toytree.utils.src.globals import PATH_FORMAT
@@ -30,7 +30,7 @@ dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 
 
 # register a _render function for ToyTreeMark objects
-@dispatch(toyplot.coordinates.Cartesian, ToytreeMark, toyplot.html.RenderContext)
+@dispatch(toyplot.coordinates.Cartesian, ToyTreeMark, toyplot.html.RenderContext)
 def _render(axes, mark, context):
     RenderToytree(axes, mark, context)
 # ---------------------------------------------------------------------

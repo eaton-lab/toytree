@@ -34,7 +34,7 @@ from toytree.core.apis import (
     TreeModAPI, TreeDistanceAPI, PhyloCompAPI, TreeEnumAPI)
 from toytree.core.node import Node
 from toytree.style import TreeStyle
-from toytree.drawing import ToytreeMark, draw_toytree, get_layout, get_tree_style
+from toytree.drawing import ToyTreeMark, draw_toytree, get_layout, get_tree_style
 from toytree.utils.src.exceptions import (
     ToytreeError, NODE_NOT_IN_TREE_ERROR, NODE_INDEXING_ERROR)
 import toytree
@@ -1357,7 +1357,7 @@ class ToyTree:
         fixed_order: Sequence[str] = None,
         fixed_position: Sequence[float] = None,
         **kwargs,
-    ) -> Tuple[Canvas, Cartesian, ToytreeMark]:
+    ) -> Tuple[Canvas, Cartesian, ToyTreeMark]:
         """Return a drawing of the tree as a Toyplot figure.
 
         Drawings are returned as Tuple[Canvas, Cartesian, ToytreeMark]

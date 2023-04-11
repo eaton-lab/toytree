@@ -150,7 +150,7 @@ def draw_node_pie_charts(
         Percentage data of dimensions (ncategories, nmarks)
     ...
     rotate: int
-        Angle of rotation of pie chart.
+        Angle of rotation of pie chart origin.
 
     Returns
     -------
