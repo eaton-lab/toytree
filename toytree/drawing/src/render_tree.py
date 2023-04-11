@@ -157,7 +157,6 @@ class RenderToytree:
         paths = []
         keys = []
         for idx in range(self.mark.nnodes - 1):
-            #pidx, cidx = self.mark.etable[idx]
             cidx, pidx = self.mark.etable[idx]
             child_x, child_y = self.nodes_x[cidx], self.nodes_y[cidx]
             parent_x, parent_y = self.nodes_x[pidx], self.nodes_y[pidx]

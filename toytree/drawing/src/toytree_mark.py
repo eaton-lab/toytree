@@ -2,7 +2,7 @@
 
 """A custom toyplot mark Class built from the toyplot Mark constructor.
 
-The purpose of a Mark is to set the `domain` and `extents` of an 
+The purpose of a Mark is to set the `domain` and `extents` of an
 mark, so that it can be fit on coordinate axes. This object stores
 this info along with the input Node coordinates and style args that
 have already been checked for validity.
@@ -17,11 +17,12 @@ import toyplot.text
 
 logger = logger.bind(name="toytree")
 
+
 class ToytreeMark(Mark):
     """Custom mark for tree edges, nodes, and node_labels.
 
     This is a super class of toyplot.mark.Mark. All styles that affect
-    the Node coordinates have already been applied (e.g., xbaseline), 
+    the Node coordinates have already been applied (e.g., xbaseline),
     however, layout is still useful for setting tip extents.
     """
     def __init__(
@@ -52,7 +53,7 @@ class ToytreeMark(Mark):
         admixture_edges,
         shrink,
         **kwargs,
-        ):
+    ):
 
         # inherit type: Tree marks should always be part of the
         # data domain, whereas tip-labels are not.
@@ -175,7 +176,7 @@ class ToytreeMark(Mark):
             angles = self.tip_labels_angles - 180
 
         # set empty strings for all internal nodes for now b/c they
-        # have their own separate style dict but we want this to 
+        # have their own separate style dict but we want this to
         # still be of length nnodes.
         tip_extents = list(toyplot.text.extents(
             text=list(self.tip_labels) + [""] * (self.nnodes - len(self.tip_labels)),
@@ -229,7 +230,7 @@ class ToytreeMark(Mark):
 
     def _get_marker_extents(self) -> List[np.ndarray]:
         """Return extent of marker objects given size, etc.
-        
+
         Usually equal width x height except for rectangle markers.
         """
         marker_heights = np.zeros(self.node_markers.size)
@@ -250,15 +251,15 @@ class ToytreeMark(Mark):
 
 
 if __name__ == "__main__":
-    
-    import toytree   
+
+    import toytree
     toytree.set_log_level("DEBUG")
     tree = toytree.rtree.unittree(5)
     tree._draw_browser(
-        edge_widths=np.arange(9), 
+        edge_widths=np.arange(9),
         node_markers="r2x1",
         node_labels=None,
-    );
+    )
     # tree.style._validate()
     # mark_ = ToytreeMark(
     #     ntable=tree.get_node_coordinates(),
