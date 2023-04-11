@@ -124,7 +124,7 @@ class ToyTree:
         # if a negative number then get positive and reindex
         try:
             if isinstance(idx, int) and idx < 0:
-                return self[self.nnodes - idx]
+                return self._idx_dict[self.nnodes + idx]  # idx is negative
         # raise a helpful error message.
         except Exception as exc:
             raise ToytreeError(NODE_INDEXING_ERROR) from exc
@@ -482,7 +482,10 @@ class ToyTree:
         nodes = self.get_nodes(*query)
         if len(nodes) == 1:
             return nodes[0]
-        nset = set.intersection(*(set(i._iter_ancestors()) for i in nodes))
+        # include_self necessary to find ancestor between tip ^ parent
+        nset = set.intersection(*(
+            set(i._iter_ancestors(include_self=True)) for i in nodes)
+        )
         return min(nset)
 
     def get_ancestors(
@@ -519,34 +522,30 @@ class ToyTree:
         ----
         See also `Node.get_ancestors` which can fetch the ancestors of
         an individual Node. By contrast, this function returns the set
-        of Nodes that are ancestors of any in a group of queried Nodes.
+        of Nodes that are ancestors of any in a group of queried Nodes,
+        and has additional start,stop criteria.
 
         Examples
         --------
         >>> ...
         """
-        # TODO: rewrite with default False args and simpler.
-        # nodes = self.get_nodes(*query)
-        # nset = set.union(*(set(i._iter_ancestors()) for i in nodes))
-
         # expand query into a set of Nodes
         query = set(self.get_nodes(*query))
 
         # get union of the ancestors of each queried Node
         ancestors = set.union(*[
-            set(i.get_ancestors()) for i in query
+            set(i.get_ancestors(include_self=include_query)) for i in query
         ])
+
+        # 
         if stop_at_mrca:
             mrca = self.get_mrca_node(*query)
-            for anc in mrca.get_ancestors():
-                ancestors.discard(anc)
-            if include_top is False:
+            ancestors = {i for i in ancestors if i._idx <= mrca._idx}
+            if not include_top:
                 ancestors.discard(mrca)
         else:
-            if include_top is False:
+            if not include_top:
                 ancestors.discard(self.treenode)
-        if include_query:
-            return query.union(ancestors)
         return ancestors
 
     def get_node_mask(
@@ -1363,11 +1362,11 @@ class ToyTree:
 
         Drawings are returned as Tuple[Canvas, Cartesian, ToytreeMark]
         following the style of the toyplot plotting library and will
-        render as html figures automatically in jupyter notebook. 
-        The Canvas can be saved to file in a number of formats using 
-        toyplot. The Cartesian axes object can be used to position 
-        multiple Marks onto the same cartesian coordinates, and to 
-        style axes ticks and labels (see docs). The Mark object can 
+        render as html figures automatically in jupyter notebook.
+        The Canvas can be saved to file in a number of formats using
+        toyplot. The Cartesian axes object can be used to position
+        multiple Marks onto the same cartesian coordinates, and to
+        style axes ticks and labels (see docs). The Mark object can
         be further modified to edit or access style args.
 
         Parameters
