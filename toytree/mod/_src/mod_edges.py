@@ -17,12 +17,14 @@ from typing import Dict, TypeVar, Optional
 from loguru import logger
 import numpy as np
 from toytree import Node
+from toytree.core.apis import TreeModAPI, add_subpackage_method
 
 logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
 Query = TypeVar("Query", str, int, Node)
 
 
+@add_subpackage_method(TreeModAPI)
 def edges_scale_to_root_height(
     tree: ToyTree,
     treeheight: float = 1.,
@@ -68,6 +70,7 @@ def edges_scale_to_root_height(
     return tree
 
 
+@add_subpackage_method(TreeModAPI)
 def edges_slider(
     tree: ToyTree,
     prop: float = 0.999,
@@ -130,6 +133,7 @@ def edges_slider(
     return tree
 
 
+@add_subpackage_method(TreeModAPI)
 def edges_multiplier(
     tree: ToyTree,
     multiplier: float = 1.0,
@@ -143,12 +147,14 @@ def edges_multiplier(
         The multiplier will be sampled uniformly in (multiplier, 1/multiplier).
     """
     tree = tree if inplace else tree.copy()
-    for idx in range(tree.nnodes):
-        tree[idx]._dist = tree[idx].dist * multiplier
-        tree[idx]._height = tree[idx]._height * multiplier
+    for node in tree:
+        node._dist = node._dist * multiplier
+        node._height = node._height * multiplier
+    # Note: ToyTree._update call is not needed here.
     return tree
 
 
+@add_subpackage_method(TreeModAPI)
 def edges_extend_tips_to_align(
     tree: ToyTree,
     inplace: bool = False,
@@ -169,12 +175,13 @@ def edges_extend_tips_to_align(
         If True tree is modified in place, else a copy is
     """
     tree = tree if inplace else tree.copy()
-    for idx in range(tree.ntips):
-        tree[idx]._dist += tree[idx]._height
-        tree[idx]._height = 0
+    for node in tree[:tree.ntips]:
+        node._dist += node._height
+        node._height = 0
     return tree
 
 
+@add_subpackage_method(TreeModAPI)
 def edges_set_node_heights(
     tree: ToyTree,
     mapping: Dict[Query, float],
@@ -208,8 +215,7 @@ def edges_set_node_heights(
 
     # convert {query: float} to {idx: float} using Node int idx labels
     mapping = {
-        tree.get_nodes(i, regex=False)[0].idx: j
-        for (i, j) in mapping.items()
+        tree.get_nodes(i)[0].idx: j for (i, j) in mapping.items()
     }
 
     # set node height to current value for those not in hdict
