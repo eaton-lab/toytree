@@ -25,22 +25,27 @@ preferred to use this.
                                        move to center of circle.
 """
 
-from typing import List, Union
+from typing import List, Union, Dict
 import functools
 import xml.etree.ElementTree as xml
 from multipledispatch import dispatch
 import toyplot
 import numpy as np
-from toytree.core.drawing.render import style_to_string, split_rgba_style
-from toytree.annotate.pie_chart_mark import PieChartMark
-from toytree.color.src.color import ToyColor
+# from toytree.core.drawing.render import style_to_string, split_rgba_style
+from toytree.color import ToyColor, ColorType
+from toytree.color.src.concat import concat_style_fix_color
+from toytree.annotate.src.pie_chart_mark import PieChartMark
+
 
 # Register multipledispatch to use the toyplot.html namespace
 dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 
+
+#######################################################################
 @dispatch(toyplot.coordinates.Cartesian, PieChartMark, toyplot.html.RenderContext)
 def _render(axes, mark, context):
     RenderPieChart(axes, mark, context)
+#######################################################################
 
 
 class RenderPieChart:
@@ -48,7 +53,7 @@ class RenderPieChart:
 
     The PieChartMark object is self.mark and contains the data,
     coordinates, and styles. The colors are checked here during
-    rendering. 
+    rendering.
     """
     def __init__(self, axes, mark, context):
         self.axes = axes
@@ -59,12 +64,6 @@ class RenderPieChart:
         self.nodes_x = self.axes.project('x', self.mark.coordinates[:, 0])
         self.nodes_y = self.axes.project('y', self.mark.coordinates[:, 1])
 
-        # check color styles
-        colors = {}
-        for cidx, color in enumerate(self.mark.colors):
-            fill = ToyColor(color).css
-            colors[cidx] = split_rgba_style({'fill': fill})
-
         # create a group for pie node markers
         self.mark_xml = xml.SubElement(
             self.context.parent, "g",
@@ -72,21 +71,24 @@ class RenderPieChart:
             attrib={"class": "toytree-mark-PieCharts"},
         )
 
+        # fill dict w/ dicts {idx: {fill: ..., fill-opacity: ...}, ...}
+        colors = {}
+        for cidx, color in enumerate(self.mark.colors):
+            colors[cidx] = {'fill': ToyColor(color)}
+
         # get shared inner stroke styles
         shared_style = {
             "stroke-linecap": "round",
             "stroke-width": self.mark.istroke_width,
         }
-        shared_style.update(
-            split_rgba_style({"stroke": ToyColor(self.mark.istroke).css})
-        )
+        shared_style.update({"stroke": ToyColor(self.mark.istroke).css})
 
         # render the pies as a group of path elements.
         for nidx in range(self.mark.coordinates.shape[0]):
             group = xml.SubElement(
                 self.mark_xml, "g",
                 attrib={'id': f'pie-{nidx}'},
-                style=style_to_string(shared_style),
+                style=concat_style_fix_color(shared_style),
             )
             transform = (
                 f"translate({self.nodes_x[nidx]:.3f},{self.nodes_y[nidx]:.3f}) "
@@ -109,36 +111,35 @@ class RenderPieChart:
                 xml.SubElement(
                     group, "path",
                     d=path,
-                    style=style_to_string(colors[cidx])
+                    style=concat_style_fix_color(colors[cidx])
                 )
 
-            # add a circle to outline the node and 
+            # add a circle to outline the node and
             # TODO: provide optional title hover
             ostyle = {
-                "fill": "none", 
-                "stroke-width": self.mark.ostroke_width,           
+                "fill": (0, 0, 0, 0),
+                "stroke-width": self.mark.ostroke_width,
             }
-            ostyle.update(split_rgba_style(
-                {"stroke": ToyColor(self.mark.ostroke).css},
-            ))
+            ostyle.update({"stroke": ToyColor(self.mark.ostroke)})
             xml.SubElement(
                 group, "circle",
                 r=str(self.mark.sizes[nidx]),
-                style=style_to_string(ostyle),
+                style=concat_style_fix_color(ostyle),
             )
+
 
 def draw_node_pie_charts(
     axes,
     coordinates,
     data,
-    sizes: Union[int,List[int]]=10,
-    colors: Union[List[str], 'color']=None,
-    ostroke: 'color'="#262626",
-    ostroke_width: float=1.5,
-    istroke: 'color'="#262626",
-    istroke_width: float=0.,
-    rotate: int=-45,
-    ):
+    sizes: Union[int, List[int]] = 10,
+    colors: Union[List[str], ColorType] = None,
+    ostroke: ColorType = "#262626",
+    ostroke_width: float = 1.5,
+    istroke: ColorType = "#262626",
+    istroke_width: float = 0.,
+    rotate: int = -45,
+):
     """Return a Mark representing pie chart xml
 
     Parameters
@@ -161,11 +162,11 @@ def draw_node_pie_charts(
     >>> canvas, axes, mark = tree.draw()
     >>> data = np.array([[0.5, 0.3, 0.2]] * tree.nnodes)
     >>> mark = toytree.annotate.draw_node_pie_chart(
-    >>>     axes=axes, 
+    >>>     axes=axes,
     >>>     coordinates=tree.get_node_coordinates('r'),
     >>>     data=data,
-    >>>     sizes=12, 
-    >>>     colors=toytree.COLORS2, 
+    >>>     sizes=12,
+    >>>     colors=toytree.COLORS2,
     >>> )
     """
     # generate toyplot Mark. todo: Style is already validated?
@@ -185,6 +186,7 @@ def draw_node_pie_charts(
     axes.add_mark(mark)
     return mark
 
+
 def get_pie_path(percent_start, percent_end, radius):
     """Return a SVG path for a circle arc.
     <path d='M end_x end_y A r r 0 flag 1 end_x end_y L 0 0'></path>
@@ -197,6 +199,7 @@ def get_pie_path(percent_start, percent_end, radius):
         f"A {radius} {radius} 0 {flag} 1 {radius * end[0]} {radius * end[1]} "
         f"L 0 0"
     )
+
 
 def get_radial_coordinates_for_percents(percent):
     """Return the coordinates on a circle of a percentage."""
@@ -213,15 +216,15 @@ if __name__ == "__main__":
     TREE = toytree.rtree.bdtree(100, seed=123)
     c, a, m = TREE.draw(width=400, height=600, node_sizes=5)
     DATA = np.array([[0.5, 0.3, 0.2]] * (TREE.nnodes - TREE.ntips))
-    COLORS = toytree.color.COLORS1 #
+    COLORS = toytree.color.COLORS1  #
 
     MARK = draw_node_pie_charts(
-        axes=a, 
+        axes=a,
         coordinates=TREE.get_node_coordinates(layout='r')[TREE.ntips:],
         data=DATA,
         sizes=10,
-        colors=COLORS, 
-        istroke="black", 
+        colors=COLORS,
+        istroke="black",
         istroke_width=0.5,
         ostroke="black",
         ostroke_width=1.5,

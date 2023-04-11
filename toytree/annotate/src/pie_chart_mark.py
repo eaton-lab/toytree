@@ -11,20 +11,20 @@ import toytree
 
 class PieChartMark(Mark):
     """Return a custom Mark as a scatterplot-like with Pie markers.
-    
+
     To create PieChart instances a user should use the standard
     :meth:`draw` function of ToyTree instances entering an ndarray
     with (ncategories, nnodes) dimension; or, enter the same data
     as an argument to the :meth:tree.annotate.pie_charts() function.
 
-	Parameters
-	----------
-	ntable: numpy.ndarray
-		Coordinates of markers
-	data: numpy.ndarray
-		Percentages.	
-	annotation: bool
-		Mark is an 'annotation' not affecting data domain.
+    Parameters
+    ----------
+    ntable: numpy.ndarray
+        Coordinates of markers
+    data: numpy.ndarray
+        Percentages.
+    annotation: bool
+        Mark is an 'annotation' not affecting data domain.
 
     Examples
     --------
@@ -37,17 +37,17 @@ class PieChartMark(Mark):
     >>> tree.annotate.pie_charts(axes, mark, ...)
     """
     def __init__(
-        self, 
-        coordinates, 
-        data, 
-        sizes, 
-        colors, 
-        istroke, 
-        istroke_width, 
-        ostroke, 
+        self,
+        coordinates,
+        data,
+        sizes,
+        colors,
+        istroke,
+        istroke_width,
+        ostroke,
         ostroke_width,
         rotate,
-        ):
+    ):
         Mark.__init__(self, annotation=True)
         self._coordinate_axes = ['x', 'y']
         self.coordinates = np.array(coordinates)
@@ -67,7 +67,7 @@ class PieChartMark(Mark):
         """The domain of data to fit on Canvas."""
         index = self._coordinate_axes.index(axis)
         domain = toyplot.data.minimax(self.coordinates[:, index])
-        return domain        
+        return domain
 
     def extents(self, axes):
         """..."""
@@ -79,3 +79,12 @@ class PieChartMark(Mark):
             self.coordinates[:, 1],
         )
         return coords, node_extents
+
+
+if __name__ == "__main__":
+
+    pass
+    # import toyplot
+    # c = toyplot.Canvas()
+    # a = c.cartesian()
+    # mark = PieChartMark()
