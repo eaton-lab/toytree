@@ -4,7 +4,7 @@
 
 Many tools do not support color as (r,g,b,a) but instead take (r,g,b)
 and opacity as a separate style arg. This function is used to split
-ToyColor objects to separate the opacity. 
+ToyColor objects to separate the opacity.
 """
 
 from typing import Dict
@@ -81,49 +81,49 @@ def concat_style_fix_color(style: Dict[str, str], extra: str = None) -> str:
 
 if __name__ == "__main__":
 
-    # print("result", concat_style_to_str_color_split({"fill": (0, 0, 0, 0)}))
-    # print("result", concat_style_to_str_color_split({"fill": (0., 0., 0., 0.)}))
+    # print("result", concat_style_fix_color({"fill": (0, 0, 0, 0)}))
+    # print("result", concat_style_fix_color({"fill": (0., 0., 0., 0.)}))
     sty1 = {
         "fill": ToyColor((0., 0., 0., 0.5)),
         "fill-opacity": False,
     }
-    print(f"result: '{concat_style_to_str_color_split(sty1)}'")
+    print(f"result: '{concat_style_fix_color(sty1)}'")
 
     sty2 = {
         "fill": ToyColor((0., 0., 0., 0.5)),
         "fill-opacity": None,
     }
-    print(f"result: '{concat_style_to_str_color_split(sty2)}'")
+    print(f"result: '{concat_style_fix_color(sty2)}'")
 
     sty3 = {
         "fill": ToyColor((0., 0., 0., 0.5)),
         "fill-opacity": 1.0,
     }
-    print(f"result: '{concat_style_to_str_color_split(sty3)}'")
+    print(f"result: '{concat_style_fix_color(sty3)}'")
 
     sty4 = {
         "stroke": ToyColor((0., 0., 0., 0.5)),
         "stroke-opacity": 0.1,
     }
-    print(f"result: '{concat_style_to_str_color_split(sty4)}'")
+    print(f"result: '{concat_style_fix_color(sty4)}'")
 
     sty5 = {
         "stroke": ToyColor((0., 0., 0., 0.5)),
         "stroke-opacity": False,
     }
-    print(f"result: '{concat_style_to_str_color_split(sty5)}'")
+    print(f"result: '{concat_style_fix_color(sty5)}'")
 
     sty6 = {
         "stroke": ToyColor((0., 0., 0., 0.5)),
         "stroke-opacity": None,
     }
-    print(f"result: '{concat_style_to_str_color_split(sty6)}'")
+    print(f"result: '{concat_style_fix_color(sty6)}'")
 
     sty7 = {
         "stroke": ToyColor((0., 0., 0., 0.5)),
         "stroke-opacity": 1.0,
     }
-    print(f"result: '{concat_style_to_str_color_split(sty7)}'")
+    print(f"result: '{concat_style_fix_color(sty7)}'")
 
     sty8 = {
         "fill": ToyColor((0., 0., 0., 0.5)),
@@ -131,7 +131,7 @@ if __name__ == "__main__":
         "stroke": ToyColor((0., 0., 0., 0.5)),
         "stroke-opacity": 1.0,
     }
-    print(f"result: '{concat_style_to_str_color_split(sty8)}'")
+    print(f"result: '{concat_style_fix_color(sty8)}'")
 
     sty9 = {
         "fill": ToyColor((0., 0., 0., 0.5)),
@@ -140,4 +140,4 @@ if __name__ == "__main__":
         "stroke-opacity": 1.0,
         "stroke-width": 3.0,
     }
-    print(f"result: '{concat_style_to_str_color_split(sty9)}'")
+    print(f"result: '{concat_style_fix_color(sty9)}'")
