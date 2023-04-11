@@ -15,22 +15,22 @@ References
 - Tria, F., Landan, G. & Dagan, T. Phylogenetic rooting using
   minimal ancestor deviation. Nat Ecol Evol 1, 0193 (2017).
   https://doi.org/10.1038/s41559-017-0193
+- ...
 """
 
-from typing import TypeVar, Tuple, Dict, Union, List
+from typing import TypeVar, Dict, Union
 import itertools
-from functools import cache
 import numpy as np
 from loguru import logger
+from toytree import ToyTree, Node
+from toytree.core.apis import TreeModAPI, add_subpackage_method
 from toytree.utils import ToytreeError
-from toytree.distance import get_node_path, get_node_distance_matrix
 
-ToyTree = TypeVar("ToyTree")
-Node = TypeVar("Node")
 Query = TypeVar("Query", str, int, Node)
 logger = logger.bind(name="toytree")
 
 
+@add_subpackage_method(TreeModAPI)
 def root_on_midpoint(tree: ToyTree, inplace: bool = False) -> ToyTree:
     """Return ToyTree rooted on midpoint of longest edge.
 
@@ -55,7 +55,8 @@ def root_on_midpoint(tree: ToyTree, inplace: bool = False) -> ToyTree:
 
     Example
     -------
-    >>> ...
+    >>> tree = toytree.rtree.unittree(10).unroot()
+    >>> rtree = tree.mod.root_by_midpoint()
     """
     # get matrix of pairwise tip distances
     dmat = tree.distance.get_tip_distance_matrix()
@@ -92,13 +93,14 @@ def root_on_midpoint(tree: ToyTree, inplace: bool = False) -> ToyTree:
     return tree.root(root_node.idx, root_dist=root_node_dist)
 
 
+@add_subpackage_method(TreeModAPI)
 def root_on_minimal_ancestor_deviation(
     tree: ToyTree,
     *query: Query,
     inplace: bool = False,
     return_stats: bool = False,
     min_dist: float = 1e-12,
-) -> Union[ToyTree, Tuple[ToyTree, Dict[str, float]]]:
+) -> Union[ToyTree, Dict[ToyTree, Dict[str, float]]]:
     """Return ToyTree rooted on edge that minimizes ancestor deviations.
 
     The minimal ancestor deviation (MAD) rooting method attempts to
@@ -130,6 +132,9 @@ def root_on_minimal_ancestor_deviation(
         a ToyTree and the Dict contains the 'root_ambiguity_index' and
         the coefficient of variation in MAD. Note: edge features MAD
         and MAD_root_prob are always set to Nodes of the returned tree.
+    min_dist: float
+        Zero length edges use a min_dist value of default=1e-12 to
+        prevent division by zero errors.
 
     Note
     ----
@@ -138,14 +143,18 @@ def root_on_minimal_ancestor_deviation(
     deviations if the tree is rooted on each edge, and the relative
     probability that each is the correct root. If rooting is unknown
     then downstream analysis can integrate over alternative root
-    hypotheses in a 'root neighborhood' approach sensu Tria et al 2017).
+    hypotheses weighted by their probability.
+
+    Compared to Tria et al's mad.py script this function yields
+    identical results when edges are non-zero, but varies *slightly* in
+    how zero-length branches affect results.
 
     Examples
     --------
     >>> tree = toytree.rtree.unittree(4, seed=123).unroot()
     >>> tree.set_node_data('name', dict(zip(range(tree.nnodes), list("abcdCA"))), inplace=True)
     >>> tree.set_node_data('dist', {'b': 1, 'd': 4, 'C': 1}, default=3, inplace=True)
-    >>> rtree, stats = root_on_minimal_ancestor_deviation(tree)
+    >>> rtree, stats = root_on_minimal_ancestor_deviation(tree, return_stats=True)
     >>> rtree.draw('p', node_sizes=18, node_labels="MAD")
     >>> print(stats)
 
@@ -155,224 +164,167 @@ def root_on_minimal_ancestor_deviation(
     minimal ancestor deviation. Nat Ecol Evol 1, 0193 (2017).
     https://doi.org/10.1038/s41559-017-0193
     """
-    # do not allow polytomies.
+    # tell user to resolve polytomies.
     assert tree.is_bifurcating(include_root=False), (
         "tree contains polytomies, first resolve manually or with "
         "`tree.mod.resolve_polytomies()`.")
 
-    # do not allow zero length branches, set to 1e-9 and warn.
-    dist_set_to_min = 0
-    for node in tree[:-1]:
-        if not node._dist:
-            node._dist = min_dist
-            dist_set_to_min += 1
-    if dist_set_to_min:
+    # get a copy of the tree and translatable query
+    if query:
+        query = tree.get_mrca_node(*query).get_leaf_names()
+    tree = tree.unroot(inplace=inplace)
+
+    # warn user about zero len edges
+    zero_len_edges = sum(1 for i in tree[:-1] if i._dist < min_dist)
+    if zero_len_edges:
         logger.warning(
-            f"Zero length edges not allowed. Set {dist_set_to_min} edges to dist=1e-9")
+            f"Using min_dist {min_dist} for {zero_len_edges} zero len edges in tree.")
 
-    # get matrix of pairwise tip distances on the current tree
-    dmat = get_node_distance_matrix(tree)
-    npairs = int((tree.ntips * (tree.ntips - 1)) / 2)
+    # get pairwise dist matrix w/ min_dist for zero len edges
+    dmat = tree.distance.get_node_distance_matrix()
+    dmat[dmat < min_dist] = min_dist
+    dmat[np.diag_indices_from(dmat)] = 0.
 
-    # store paths between pairs of tips
+    # store paths between pairs of tips, {(0, 2): [1, 5, 2]... }
     paths = {}
     for path in itertools.combinations(range(tree.ntips), 2):
-        # paths[path] = get_node_path(tree, *path)[1:-1]
-        node_path = get_node_path(tree, *path)
-        paths[path] = [i.idx for i in node_path]
-    # logger.debug(f"paths between tips: {paths}")
+        node_path = tree.distance.get_node_path(*path)
+        paths[path] = [i.idx for i in node_path][1:-1]
+        paths[path[::-1]] = paths[path][::-1]
 
-    # store rij values
+    # get npairs and a dict to store the Rbranch statistics
+    npairs = int((tree.ntips * (tree.ntips - 1)) / 2)
     rij_dict = {}
 
-    # iterate over all possible placements of the root as bipartions/edges
-    for seti, setj in tree.iter_bipartitions(feature='idx', include_singleton_partitions=True):
+    # iterate over (idx, jdx) edges separating (seti, setj) tip sets.
+    inodes = tree.iter_edges()
+    ibiparts = tree.enum._iter_bipartition_sets(feature="idx", include_singleton_partitions=True)
+    for (node_i, node_j), (seti, setj) in zip(inodes, ibiparts):
 
-        # get the Node idx of the nodes on either side of this edge
-        node_i = tree.get_mrca_node(*seti)
-        if node_i.up:
-            node_j = node_i.up
-        else:
-            node_i = tree.get_mrca_node(*setj)
-            node_j = node_j.up
-            # order seti, setj so that (node_i, node_j) are always sorted by idx
-            seti, setj = setj, seti
-        idx = node_i.idx
-        jdx = node_j.idx
-        # logger.debug(f"seti={[tree[i].name for i in seti]}, setj={[tree[i].name for i in setj]}")
+        # get .idx label of nodes idx,jdx representing the edge
+        idx = node_i._idx
+        jdx = node_j._idx
+        dij = dmat[idx, jdx]
 
         # iterate over tips descended from the two clades split by the new root
         # and calculate rho as the relative position of root node on the edge.
         rho_top = 0
         rho_bot = 0
-        for bdx in seti:
-            for cdx in setj:
-                dbc = dmat[bdx, cdx]
-                dbi = dmat[bdx, idx]
-                dij = dmat[idx, jdx]
+        for tipb in seti:
+            for tipc in setj:
+                dbc = dmat[tipb, tipc]
+                dbi = dmat[tipb, idx]
                 rho_top += (dbc - (2 * dbi)) * (dbc ** -2)
                 rho_bot += (2 * dij) * (dbc ** -2)
-                # logger.debug(
-                #     f"i={tree[idx].name}, j={tree[jdx].name}, "
-                #     f"b={tree[bdx].name}, c={tree[cdx].name}, "
-                #     f"dbc={dbc:.1f}, dbi={dbi:.1f}, dij={dij:.1f}"
-                # )
 
-        # the relative position of root on edge (i, j)
+        # the relative position of root on edge (idx, jdx) constrained in [0, 1]
         rho = rho_top / rho_bot
         rho_i = min(max(0, rho), 1)
 
         # distance from i or j to ancestor
         dio = dmat[idx, jdx] * rho_i
-        djo = dmat[idx, jdx] * (1 - rho_i)
-        # logger.debug(
-        #     f"root on {tree[idx].name, tree[jdx].name}, "
-        #     f"rho=({rho_i:.2f}, dio={dio:.2f}, djo={djo:.2f})"
-        # )
+        # logger.debug(f"ij={idx, jdx}, dio={dio:.3g}, rho={rho:.3f} rho_i={rho_i} dij={dmat[idx, jdx]}")
 
-        # calculate the rij for this branch as the root-mean-square of
-        # the relative deviations over all tip pairs.
-        # deviations = np.zeros(npairs)
-        iter_pairs = itertools.combinations(range(tree.ntips), 2)
-        sum_sq_dev = 0.
-        # iterate over all pairs of tips given this rooting
-        for pidx, (tidx1, tidx2) in enumerate(iter_pairs):
+        # get sum sq rel deviation for this rooting over all tip pairs
+        relative_deviations = np.zeros(npairs)
+        pidx = 0
 
-            # pairwise path distance between these 2 tips
-            dij = dmat[tidx1, tidx2]
+        # iterate over pairs of tips both in seti
+        for tipb, tipc in itertools.combinations(seti, 2):
+            dbc = dmat[tipb, tipc]
+            aidx = max(paths[(tipb, tipc)])
+            dab = dmat[tipb, aidx]
+            relative_deviations[pidx] = abs(((2 * dab) / dbc) - 1)
+            pidx += 1
 
-            # dai and daj: distance from putative ancestor (a) to each tip
-            # alpha is the new root for tip pairs in different sets, else
-            # it is an internal Node.
-            if tidx1 in seti:
-                # in diff sets
-                if tidx2 in setj:
-                    dai = dmat[tidx1, idx] + dio
-                    # daj = dmat[tidx2, jdx] + djo
-                    # alpha = 'r'
-                # both are in seti
-                else:
-                    # get Node closest to i on path between a, b
-                    # dists_to_i = [dmat[i, idx] for i in path]
-                    # min_idx = np.argmin(dists_to_i)
-                    # aidx = path[min_idx]
+        # iterate over pairs of tips both in setj above jdx
+        above_j = setj - set(i._idx for i in node_j._iter_descendants())
+        for tipb, tipc in itertools.combinations(above_j, 2):
+            dbc = dmat[tipb, tipc]
+            aidx = min(paths[(tipb, tipc)], key=lambda x: dmat[jdx, x])
+            dab = dmat[tipb, aidx]
+            relative_deviations[pidx] = abs(((2 * dab) / dbc) - 1)
+            pidx += 1
 
-                    # path = paths[(tidx1, tidx2)][1:-1]
-                    # aidx = min(((i, dmat[j, idx]) for i, j in enumerate(path)), key=lambda x: x[1])[0]
-                    # aidx = path[aidx]
-                    # aidx
-                    # dai = dmat[tidx1, aidx]
-                    # logger.info(list(paths.keys()))
+        # iterate over pairs of tips both in setj below jdx
+        below_j = setj - above_j
+        for tipb, tipc in itertools.combinations(below_j, 2):
+            dbc = dmat[tipb, tipc]
+            aidx = max(paths[(tipb, tipc)])
+            dab = dmat[tipb, aidx]
+            relative_deviations[pidx] = abs(((2 * dab) / dbc) - 1)
+            pidx += 1
 
-                    # set(path).intersection()
-                    # path = paths[(tidx1, tidx2)]
-                    # anode = _get_ancestor_node(path, idx, dmat)
-                    # dai = dmat[tidx1, anode.idx]
+        # iterate over pairs of tips both in setj but split above and below jdx
+        for tipb, tipc in itertools.product(below_j, above_j):
+            dbc = dmat[tipb, tipc]
+            aidx = jdx
+            dab = dmat[tipb, aidx]
+            relative_deviations[pidx] = abs(((2 * dab) / dbc) - 1)
+            pidx += 1
 
-                    aidx = max(paths[(tidx1, tidx2)])
-                    dai = dmat[tidx1, aidx]
+        # iterate over pairs spanning the root (idx, jdx) split
+        for tipb, tipc in itertools.product(seti, setj):
+            dbc = dmat[tipb, tipc]
+            aidx = idx
+            dab = dmat[tipb, aidx] + dio
+            relative_deviations[pidx] = abs(((2 * dab) / dbc) - 1)
+            pidx += 1
 
-                    # logger.warning(f"{x}, {anode}")
+        # make sum-squares into root-mean-square and save to rij_dict
+        rbranch = np.sqrt(np.mean(relative_deviations ** 2))
 
-                    # daj = dmat[tidx2, aidx]
-                    # alpha = tree[aidx].name
-            else:
-                # both are in setj
-                if tidx2 in setj:
-                    # get Node closest to j on path between a, b. This can be
-                    # found by the Node idx label on the path closest to jidx.
-                    if tidx1 < jdx:
-                        # both are below, mrca is max idx
-                        if tidx2 < jdx:
-                            aidx = max(paths[(tidx1, tidx2)])
-                        # tidx1 is below but tidx2 is above, mrca is jdx
-                        else:
-                            aidx = jdx
-                    # both are above, get idx on path closets to jidx
-                    else:
-                        aidx = min(paths[(tidx1, tidx2)], key=lambda x: jdx - x)
-                        aidx = jdx
-
-                    dai = dmat[tidx2, aidx]
-                    # logger.warning(f"{tidx1} {tidx2} {idx}-{jdx}| path={[i.idx for i in paths[(tidx1, tidx2)]]} | correct={anode.idx}")
-
-                else:
-                    # in diff sets
-                    dai = dmat[tidx1, jdx] + djo
-                    # daj = dmat[tidx2, idx] + dio
-                    # alpha = 'r'
-
-            # measure the relative deviation. Note, zero-length branches
-            # will cause a division by zero here.
-            r_ij_a = abs(((2 * dai) / dij) - 1)
-            # r_ji_a = abs(((2 * daj) / dij) - 1)
-            dev = r_ij_a  # + r_ji_a
-            sum_sq_dev += dev ** 2
-            # logger.debug(
-            #     f"tips={tree[tidx1].name, tree[tidx2].name, alpha}    "
-            #     f"dij={dij:.1f}    "
-            #     f"dai={dai:.1f}    "
-            #     f"daj={daj:.1f}    "
-            #     f"ria={r_ij_a:.1f}    "
-            #     f"rja={r_ji_a:.1f}    "
-            #     f"dev={dev:.3f}"
-            # )
-
-        rbranch = np.sqrt((sum_sq_dev) / npairs)
+        # warn user if rbranch exceeds 1.
+        if rbranch > 1:
+            constrained_rbranch = min(max(0, rbranch), 1)
+            logger.warning(f"edge {idx, jdx} MAD={rbranch:.2f} outlier constrained to {constrained_rbranch:.0f}))")
+            rbranch = constrained_rbranch
+        # logger.info(f"edge {idx, jdx} rho={rho_i:.3f} R={rbranch:.4f}")
         rij_dict[(idx, jdx, rho_i)] = rbranch
-        # logger.info(f"rbranch {idx, jdx} {tree[idx].name, tree[jdx].name} = {rbranch:.3f}")
-
-    # summarize
-    # for key, val in rij_dict.items():
-        # logger.debug(f"{key}: {val:.4f}")
 
     # root ambiguity index is ratio of best to second best
-    edges_sort = sorted(rij_dict, key=lambda x: rij_dict[x])
-    root_ambiguity_index = rij_dict[edges_sort[0]] / rij_dict[edges_sort[1]]
+    r_sorted = sorted(rij_dict, key=lambda x: rij_dict[x])
+    root_ambiguity_index = rij_dict[r_sorted[0]] / rij_dict[r_sorted[1]]
+
+    # warn user if equally likely rootings
+    if root_ambiguity_index == 1:
+        logger.warning(
+            ">1 optimal rootings exist. Check the 'MAD' and 'MAD_root_prob' "
+            "features on the returned tree to examine alternative rootings.")
 
     # select node to root the tree on. Choose the optimal MAD edge.
     if not query:
-        left, right, rho_i = edges_sort[0]
-        root_node = min(left, right)
-        logger.info(f"rooting on optimal MAD Node ({root_node}) w/ rho={rho_i:.2f}")
+        ridx, uidx, rho_i = r_sorted[0]
+        logger.info(f"rooting on MAD edge {ridx, uidx} w/ optimized rho={rho_i:.2f}")
+
     # or, root on user-selected edge which may not be the optimal
     else:
-        root_node = tree.get_mrca_node(*query).idx
+        root_node = tree.get_mrca_node(*query)
         if root_node.is_root():
             raise ToytreeError(f"Cannot root on current root {root_node}, select another Node.")
-        for edge in edges_sort:
-            if edge[0] == root_node:
-                _, _, rho_i = edge
-        logger.info(f"rooting on user-selected Node ({root_node}) w/ rho={rho_i:.2f}")
+        ridx = root_node._idx
 
-    # set values on nodes
+        # find the rho value for this edge rooting
+        for edge in r_sorted:
+            if edge[0] == ridx:
+                _, _, rho_i = edge
+        logger.info(f"rooting on user-selected edge {ridx, root_node._up._idx} w/ optimized rho={rho_i:.2f}")
+
+    # set values to Nodes
     root_probs = {}
     mads = {}
     summed = sum(1 - i for i in rij_dict.values())
     for edge, value in rij_dict.items():
-        left, right, _ = edge
-        if left > right:
-            node = right
-        else:
-            node = left
-        mads[node] = value
-        if value > 1:
-            logger.warning(f"Node {node} MAD > 1 ({value}))")
-        # logger.debug(f"Node {node} MAD = ({value}) ({left}, {right})")
-        root_probs[node] = (1 - value) / summed
+        nidx, _, _ = edge
+        mads[nidx] = value
+        root_probs[nidx] = (1 - value) / summed
     tree.set_node_data("MAD", mads, inplace=True)
     tree.set_node_data("MAD_root_prob", root_probs, inplace=True)
 
-    # print(tree.features)
-    # logger.info(f"\n{tree.get_node_data()}")
-
-    # get a tree copy that will be modified by min-dist and 
-    tree = tree if inplace else tree.copy()
-
-    # re-root the tree
+    # root the tree
     tree.root(
-        root_node,
-        root_dist=tree[root_node]._dist * rho_i,
+        ridx,
+        root_dist=tree[ridx]._dist * rho_i,
         edge_features=["MAD", "MAD_root_prob"],
         inplace=True,
     )
@@ -384,7 +336,7 @@ def root_on_minimal_ancestor_deviation(
     dists = np.array([dmat[i, tree.treenode._idx] for i in range(tree.ntips)])
     root_clock_coefficient_of_variation = 100 * (dists.std(ddof=1) / dists.mean())
     stats = dict(
-        minimal_ancestor_deviation=min(rij_dict.values()),
+        minimal_ancestor_deviation=rij_dict[r_sorted[0]],
         root_ambiguity_index=root_ambiguity_index,
         root_clock_coefficient_of_variation=root_clock_coefficient_of_variation,
     )
@@ -394,67 +346,65 @@ def root_on_minimal_ancestor_deviation(
     return tree
 
 
-# @cache
-def _get_ancestor_node(path: Tuple[Node], ridx: int, dist_matrix: np.ndarray) -> Node:
-    """Return the mrca of two Nodes given a new tree rooting.
-
-    This uses a distance matrix to find the common ancestor of two
-    Nodes given a new root Node idx (ridx) is specified. This is used
-    in MAD rooting for a speed boost.
-    """
-    dist = 1e15
-    last = None
-    for node in path:
-        newdist = dist_matrix[node.idx, ridx]
-        if newdist > dist:
-            # logger.warning(f"---{[i.idx for i in path]} {ridx}")
-            return last
-        dist = newdist
-        last = node
-    # logger.warning(f"{[i.idx for i in path]} {ridx}")
-    # never got better, first node was best.
-    return path[0]
-
-
 if __name__ == "__main__":
 
     import toytree
     toytree.set_log_level("INFO")
+    import numpy as np
 
     # tree = toytree.rtree.unittree(6, seed=123).unroot()
-    # tree = toytree.rtree.rtree(5, seed=123).mod.ladderize().unroot()
+    # tree = toytree.rtree.rtree(5, seed=123).mod.ladderize()#.unroot()
     # tree.set_node_data('dist', {4: 5, 7: 3}, inplace=True)
     # tree.set_node_data('name', {5: "X", 6: "Y", 7: "Z"}, inplace=True)
     # tree.treenode.draw_ascii()
+    # tree.write("/tmp/test.tree")
 
-    # tree = toytree.rtree.rtree(5, seed=123).mod.ladderize().unroot()
-    # tree.set_node_data('name', dict(zip(range(tree.nnodes), list("abcdeXYR"))), inplace=True)
+    # test1 rtree 5-tips variable edgelens
+    # tree = toytree.rtree.rtree(5, seed=123).unroot()
+    # tree.set_node_data('name', {i: j for (i, j) in enumerate("abcdeXYR")}, inplace=True)
     # tree.set_node_data('dist', {'e': 5, 'Y': 3}, inplace=True)
-    # tree.treenode.draw_ascii()
-    # tree = tree.root("r0")
-    # tree.treenode.draw_ascii()
-    # print(root_on_midpoint(tree).get_node_data())
-    # root_on_midpoint(tree)._draw_browser()
-
-    # tree = toytree.rtree.rtree(10, seed=123).unroot()
-    # tree._draw_browser(ts='p', layout='r', node_hover=True)
-    # rtree = tree.root(12, root_dist =tree[12]._dist * 0.89)
-    # rtree._draw_browser(ts='p', layout='r', node_hover=True)
-    tree = toytree.tree("/home/deren/Desktop/KOG0007.faa.aln.nwk").unroot()
-    rtree = root_on_minimal_ancestor_deviation(tree)
+    # tree.write("/tmp/test1.tree")
+    # c1, a, m = tree.draw(ts='p', layout='r', node_hover=True)
+    # rtree, stats = root_on_minimal_ancestor_deviation(tree, return_stats=True)
+    # c2, a, m = rtree.draw(ts='p', layout='r', node_hover=True)
     # print(stats)
-    canvas, *x = toytree.mtree([tree, rtree]).draw(
-        # ts='r', layout='r', scale_bar=True, node_labels="name",
-        ts='s', height=700,
-        node_sizes=18,
-        # edge_colors=("MAD", "BlueRed"),
-    )
-    toytree.utils.show(canvas)
-    print(rtree.get_node_data())
-    # rtree._draw_browser(ts='s', layout='r')
     # print(rtree.get_node_data())
+    # toytree.utils.show([c1, c2])
 
-    # handle root Node (some problem is causing R > 1.)
-    # ktree = toytree.tree("/home/deren/Desktop/KOG0007.faa.aln.nwk").unroot()
-    # tre = toytree.mod.root_on_minimal_ancestor_deviation(ktree)
-    # print(tre.get_node_data())
+    # test1 alt-rooting rtree 5-tips variable edgelens
+    # tree = toytree.rtree.rtree(5, seed=123).unroot()
+    # tree.set_node_data('name', {i: j for (i, j) in enumerate("abcdeXYR")}, inplace=True)
+    # tree.set_node_data('dist', {'e': 5, 'Y': 3}, inplace=True)
+    # tree.write("/tmp/test1.tree")
+    # c1, a, m = tree.draw(ts='p', layout='r', node_hover=True)
+    # rtree, stats = root_on_minimal_ancestor_deviation(tree, 'a', return_stats=True)
+    # c2, a, m = rtree.draw(ts='p', layout='r', node_hover=True)
+    # print(stats)
+    # print(rtree.get_node_data())
+    # toytree.utils.show([c1, c2])
+
+    # test2
+    # tree = toytree.rtree.rtree(5, seed=123).unroot()
+    # tree.set_node_data('name', {i: j for (i, j) in enumerate("abcdeXYR")}, inplace=True)
+    # tree.set_node_data('dist', {'e': 5, 'Y': 3, 'X': 10}, inplace=True)
+    # tree.write("/tmp/test2.tree")
+    # c1, a, m = tree.draw(ts='p', layout='r', node_hover=True)
+    # rtree, stats = root_on_minimal_ancestor_deviation(tree, return_stats=True)
+    # c2, a, m = rtree.draw(ts='p', layout='r', node_hover=True)
+    # print(stats)
+    # print(rtree.get_node_data())
+    # toytree.utils.show([c1, c2])
+
+    # test w/ polytomies
+    tree = toytree.rtree.rtree(10, seed=123).unroot()
+    tree.mod.collapse_nodes(1, 2, 12, 15, inplace=True)
+    tree.set_node_data('dist', {2: 5, 12: 3, 13: 10}, inplace=True)
+    tree.write("/tmp/test3.tree")
+    c1, a, m = tree.draw(ts='p', layout='r', node_hover=True)
+
+    tree = tree.mod.resolve_polytomies()
+    rtree, stats = root_on_minimal_ancestor_deviation(tree, return_stats=True)
+    c2, a, m = rtree.draw(ts='p', layout='r', node_hover=True)
+    print(stats)
+    print(rtree.get_node_data())
+    toytree.utils.show([c1, c2])
