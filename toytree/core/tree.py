@@ -496,7 +496,7 @@ class ToyTree:
 
         The returned set can include or exclude the sample query; it
         can trace back all ancestors to the root of the tree, or only
-        to the MRCA of the sample query; and it include or exclude
+        to the MRCA of the sample query; and it can include or exclude
         the top node (root or MRCA depending on arguments).
 
         Parameters
@@ -517,7 +517,9 @@ class ToyTree:
 
         Note
         ----
-        This function is used...
+        See also `Node.get_ancestors` which can fetch the ancestors of
+        an individual Node. By contrast, this function returns the set
+        of Nodes that are ancestors of any in a group of queried Nodes.
 
         Examples
         --------
@@ -594,11 +596,7 @@ class ToyTree:
                 arr[node.idx] = 0
         return arr
 
-    def is_monophyletic(
-        self,
-        *query: Query,
-        unrooted: bool = False,
-    ) -> bool:
+    def is_monophyletic(self, *query: Query) -> bool:
         """Return True if leaf Nodes form a monophyletic clade.
 
         If any other leaf Nodes are members of this clade, but not
@@ -610,11 +608,8 @@ class ToyTree:
         ----------
         *query: Node, str, or int
             One or more Node objects, Node name str, or Node idx int
-            labels to check for monophyly.
-        unrooted: bool
-            If True then the selected Nodes are tested for monophyly
-            without reference to the placement of the root Node. The
-            query is then "is it possible for them to be monophyletic".
+            labels to check for monophyly. If None then all Nodes are
+            used as the query (returns True).
 
         Examples
         --------
@@ -623,7 +618,7 @@ class ToyTree:
         >>> print(tree.is_monophyletic(0, 1, 2))
         >>> print(tree.is_monophyletic(0, 4, 8))
         """
-        if unrooted:
+        if not self.is_rooted():
             raise ToytreeError("The tree must be rooted to test monophyly")
         nodes = self.get_nodes(*query)
         mrca = self.get_mrca_node(*nodes)
