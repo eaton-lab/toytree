@@ -6,7 +6,6 @@ Function
 --------
 tree.root(
     *query: 'Query',
-    regex: 'bool' = False,
     root_dist: 'Optional[float]' = None,
     edge_features: 'Optional[Sequence[str]]' = None,
     inplace: 'bool' = False,
@@ -81,7 +80,7 @@ class TestRoot(unittest.TestCase):
 
         for tre in self.trees:
             with self.assertRaises(ToytreeError):
-                tre.root("r1", "r7", regex=True)
+                tre.root("~r[1,7]")
 
     # def test_root_unroot_transferrable(self):
     #     """..."""
