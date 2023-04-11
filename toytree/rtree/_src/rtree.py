@@ -404,11 +404,16 @@ def bdtree(
     # update coords and return
     # tre = tre.mod.ladderize()
     tree = ToyTree(root)
-    _assign_names(tree, random_names, np.random.default_rng(seed))
+    _assign_names(tree, random_names, rng)
     return tree
 
 
-def coaltree(k: int, N: int = 100, seed: Optional[int] = None) -> ToyTree:
+def coaltree(
+    k: int,
+    N: int = 100,
+    seed: Optional[int] = None,
+    random_names: bool = False,
+) -> ToyTree:
     """Return a random ToyTree generated under the n-coalescent.
 
     Waiting times between coal events under the n-coalescent are
@@ -426,10 +431,11 @@ def coaltree(k: int, N: int = 100, seed: Optional[int] = None) -> ToyTree:
     k: int
         The number of tips (e.g., gene copies) sampled at the present.
     N: int
-        The effective population size (Ne). This acts only as a scale
-        multiplier of the branch lengths, but does not change their
-        relative distribution, which is determined by the number of
-        nodes between each coalescent event (i.e., the coalescent).
+        The diploid effective population size (Ne). Here this only
+        acts only as a scalar multiplier of the branch lengths, but
+        does not change their relative distribution, which is
+        determined solely by the number of nodes between each
+        coalescent event (i.e., the coalescent).
     seed: int or None
         A seed for the numpy random number generator.
     """
@@ -459,7 +465,9 @@ def coaltree(k: int, N: int = 100, seed: Optional[int] = None) -> ToyTree:
         # advance name counter and update tips dict
         k = k + 1
         nodes[k] = new_node
-    return ToyTree(new_node)
+    tree = ToyTree(new_node)
+    _assign_names(tree, random_names, rng)
+    return tree
 
 
 def _get_small_child(node):
