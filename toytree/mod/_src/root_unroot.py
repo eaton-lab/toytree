@@ -74,12 +74,15 @@ from typing import Optional, Sequence, TypeVar, Set, Union
 from loguru import logger
 import numpy as np
 from toytree.core.node import Node
+from toytree.core.tree import ToyTree
+from toytree.core.apis import (
+    TreeModAPI, add_subpackage_method, add_toytree_method
+)
 from toytree.utils import ToytreeError
 
 logger = logger.bind(name="toytree")
 
 # type aliases
-ToyTree = TypeVar("ToyTree")
 Query = TypeVar("Query", int, str, Node)
 
 
@@ -93,14 +96,12 @@ class Rooter:
         self,
         tree: ToyTree,
         *query: Query,
-        regex: bool = False,
         root_dist: Optional[float] = None,
         edge_features: Optional[Sequence[str]] = None,
         inplace: bool = False,
     ):
         self.tree = tree
         self.query = query
-        self.regex = regex
         self.root_dist = root_dist
         self.inplace = inplace
         self.node: Node = self._get_edge_to_split()
@@ -109,7 +110,7 @@ class Rooter:
     @staticmethod
     def _get_edge_features(edge_features: Optional[Union[str, Sequence[str]]]) -> Set[str]:
         """Return the features associated with edges instead of nodes."""
-        default = {'_dist', 'support'}
+        default = {"_dist", "support"}
         disallowed = {"dist", "idx", "up", "children"}
         if edge_features is None:
             return default - disallowed
@@ -124,7 +125,7 @@ class Rooter:
         get the MRCA of the inverse selection. If that group is not
         monophyletic then raise exception for bad selection.
         """
-        nodes = set(self.tree.get_nodes(*self.query, regex=self.regex))
+        nodes = set(self.tree.get_nodes(*self.query))
         nodes -= {self.tree.treenode}
         if not nodes:
             return self.tree.treenode
@@ -278,20 +279,20 @@ class Rooter:
         return self.tree
 
 
+@add_toytree_method(ToyTree)
+@add_subpackage_method(TreeModAPI)
 def root(
     tree: ToyTree,
     *query: Query,
-    regex: bool = False,
     root_dist: Optional[float] = None,
     edge_features: Optional[Sequence[str]] = None,
     inplace: bool = False,
 ) -> ToyTree:
     r"""Return a ToyTree rooted on the edge above selected Node query.
 
-    Rooting a tree involves splitting an edge to insert a new Node.
-    (Think of it as pinching an edge and pulling it back to create a
-    new root). The root Node is named "root" and has np.nan support
-    value and dist=0 unless otherwise set.
+    Manually root a tree on an outgrup by splitting an edge to insert
+    a new root Node. The root Node is named "root" and has a np.nan
+    support value and dist=0 unless otherwise set.
 
     Example of rooting an unrooted tree:
                                                 x
@@ -303,7 +304,7 @@ def root(
                      .   n                    1   .
 
     Example of re-rooting a rooted tree:
-                   o                            x
+                   x                            x
                   / \                          / \
                  1   2         root('n')      n   u
                     / \          -->             / \
@@ -319,9 +320,6 @@ def root(
         One or more Node selectors, which can be Node objects, names,
         or int idx labels. If multiple are entered the MRCA node will
         be used as the base of the edge to split.
-    regex: bool
-        If True then Node name strings are treated as regular
-        expressions that can match to multiple Nodes.
     root_dist: None or float
         The length (dist) along the root edge above the Node query
         where the new root edge should be placed. Default is None
@@ -337,6 +335,11 @@ def root(
         If True the original tree is modified and returned, otherwise
         a modified copy is returned.
 
+    See Also
+    --------
+    - toytree.mod.root_on_midpoint
+    - toytree.mod.root_on_minimal_ancestor_deviation
+
     Examples
     --------
     >>> tree = toytree.rtree.unittree(ntips=10, seed=123)
@@ -346,10 +349,12 @@ def root(
     """
     return Rooter(
         tree, *query, inplace=inplace,
-        regex=regex, root_dist=root_dist, edge_features=edge_features,
+        root_dist=root_dist, edge_features=edge_features,
     ).run()
 
 
+@add_toytree_method(ToyTree)
+@add_subpackage_method(TreeModAPI)
 def unroot(tree: ToyTree, inplace: bool = False) -> ToyTree:
     """Return an unrooted tree by collapsing the root split.
 
@@ -369,8 +374,12 @@ def unroot(tree: ToyTree, inplace: bool = False) -> ToyTree:
     inplace: bool
         If True modify and return original tree, else return a copy.
     """
+    # fast: return current tree if already unrooted
+    if not tree.is_rooted():
+        return tree
+
+    # get tree or copy to return
     tree = tree if inplace else tree.copy()
-    inplace = bool(inplace)
     rootnode = tree.treenode
 
     # just return current tree if the rootnode node is not binary
@@ -393,15 +402,15 @@ def unroot(tree: ToyTree, inplace: bool = False) -> ToyTree:
 
     # other child's dist extends to include child->oldrootnode dist
     ochild._dist += newroot.dist
+    newroot._dist = 0.
 
     # ochild->child edge inherits features from child->oldrootnode edge
     ochild.support = newroot.support
+    newroot.support = np.nan
 
     # make child the new rootnode and remove old rootnode
     newroot._up = None
-    newroot.support = np.nan
-    # rootnode.support = np.nan
-    # (100 if max(i.support for i in newroot.children) > 1 else 1.0)
+
     tree.treenode = newroot
     del rootnode
 
