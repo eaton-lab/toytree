@@ -6,6 +6,8 @@
 
 from typing import Optional, Union
 from enum import Enum
+import json
+from copy import deepcopy
 from toytree.color import ColorType
 from toytree.utils import ToytreeError
 
@@ -31,6 +33,17 @@ class SubStyle:
     def __delattr__(self, key) -> None:
         raise ToytreeError("TreeStyle dict keys cannot be deleted.")
 
+    def json(self) -> str:
+        """Return a string with tree style serialized as JSON."""
+        return json.dumps(self.__dict__, indent=4)
+
+    def __repr__(self):
+        """Return a serialized JSON formatted style dict."""
+        return self.json()
+
+    def copy(self) -> "SubStyle":
+        """Return a deepcopy."""
+        return deepcopy(self)
     # TOO SLOW TO CHECK EVERY STYLE AS IT IS SET. CHECKED ONLY ON VALIDATION.
     # def __setattr__(self, key: str, value) -> None:
     #     """ColorTypes are always converted to XXX"""
@@ -52,6 +65,7 @@ class NodeStyle(SubStyle):
 class NodeLabelStyle(SubStyle):
     def __init__(self):
         self.fill: ColorType = "rgba(16.1%,15.3%,14.1%,1.000)"
+        self.fill_opacity: float = 1.0
         self.font_size: Union[int, str] = 9
         self.font_weight: int = 300
         self.font_family: str = "Helvetica"

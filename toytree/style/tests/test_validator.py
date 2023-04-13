@@ -10,7 +10,7 @@ import numpy as np
 import toyplot
 import toytree
 from toytree.style import TreeStyle, validate_style
-from toytree.style.src.validator import get_color_mapped_feature
+from toytree.style.src.color_mapper import get_color_mapped_feature
 from toytree.utils import ToytreeError
 
 

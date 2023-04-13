@@ -47,6 +47,7 @@ SUBSTYLES = [
     "edge_style", "edge_align_style",
 ]
 
+
 class TreeStyle:
     def __init__(self):
         self.tree_style: str = None
@@ -73,8 +74,8 @@ class TreeStyle:
         self.tip_labels: Union[bool, Sequence[str]] = True
         self.tip_labels_colors: Union[str, Sequence[str], None] = None
         self.tip_labels_align: bool = None
-        self.tip_labels_style: TipLabelsStyle = TipLabelsStyle()
         self.tip_labels_angles: Union[float, Sequence[float], None] = None
+        self.tip_labels_style: TipLabelsStyle = TipLabelsStyle()
 
         # self.show_root_edge: bool = None
         self.use_edge_lengths: bool = True
@@ -84,7 +85,6 @@ class TreeStyle:
         self.ybaseline: float = 0.0
         self.admixture_edges: Sequence[Tuple] = None
         self.shrink: float = 0.0
-
 
     def dict(self, serialize: bool = True) -> Dict[str, Any]:
         """Return current style arguments as a SERIALIZED dict."""
@@ -121,7 +121,6 @@ class TreeStyle:
                     newkey = skey.replace("_", "-")
                     sdict[key][newkey] = value
         return sdict
-
 
     def json(self) -> str:
         """Return a string with tree style serialized as JSON."""

@@ -28,6 +28,7 @@ from typing import TypeVar
 from functools import wraps
 
 ToyTree = TypeVar("ToyTree")
+Cartesian = TypeVar("Cartesian")
 
 
 class TreeModAPI:
@@ -50,6 +51,12 @@ class TreeEnumAPI:
 
 class PhyloCompAPI:
     """API to acess methods from `toytree.pcm` as `tree.pcm.{function}`"""
+    def __init__(self, tree: ToyTree):
+        self._tree = tree
+
+
+class AnnotationAPI:
+    """API to acess methods from `toytree.annotate` as `tree.annotate.{function}`"""
     def __init__(self, tree: ToyTree):
         self._tree = tree
 
