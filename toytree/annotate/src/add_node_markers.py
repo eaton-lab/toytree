@@ -33,7 +33,6 @@ Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = [
     "add_node_labels",
     "add_node_markers",
-    # "add_edge_pie_charts",
     # "add_node_pie_charts",
     # "add_node_bars",
     # "add_node_histograms",
@@ -55,7 +54,8 @@ def add_node_markers(
     """Return a toyplot Mark of node markers added to a tree plot.
 
     This adds node markers to the last tree drawn on the Cartesian
-    axes. The shape, size, color, and style of markers can be modified.
+    axes using the coordinates of plotted Nodes. The shape, size,
+    color, and style of markers can be modified.
 
     Parameters
     ----------
