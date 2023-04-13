@@ -10,7 +10,6 @@ Examples
 
 References
 ----------
-- ete3
 - toytree
 """
 
@@ -31,7 +30,7 @@ from toyplot.coordinates import Cartesian
 
 # subpackage object APIs
 from toytree.core.apis import (
-    TreeModAPI, TreeDistanceAPI, PhyloCompAPI, TreeEnumAPI)
+    TreeModAPI, TreeDistanceAPI, TreeEnumAPI, PhyloCompAPI, AnnotationAPI)
 from toytree.core.node import Node
 from toytree.style import TreeStyle
 from toytree.drawing import ToyTreeMark, draw_toytree, get_layout, get_tree_style
@@ -39,8 +38,6 @@ from toytree.utils.src.exceptions import (
     ToytreeError, NODE_NOT_IN_TREE_ERROR, NODE_INDEXING_ERROR)
 import toytree
 # from toytree.io.src.writer import write_newick
-# from toytree.pcm.api import PhyloCompAPI
-# from toytree.distance._src.api import DistanceAPI
 
 # pylint: disable=too-many-branches, too-many-lines, too-many-public-methods
 
@@ -85,9 +82,11 @@ class ToyTree:
         self.distance = TreeDistanceAPI(self)
         """: API to apply :mod:`toytree.distance` comparison funcs to this tree."""
         self.pcm = None
-        """: API to apply :mod:`toytree.pcm` phylogenetic comparative methods funcs to this tree."""
+        """: API to apply :mod:`toytree.pcm` phylogenetic comparative methods to this tree."""
         self.enum = TreeEnumAPI(self)
-        """: API to apply :mod:`toytree.enum` phylogenetic comparative methods funcs to this tree."""
+        """: API to apply :mod:`toytree.enum` enumeration methods to this tree."""
+        self.annotate = AnnotationAPI(self)
+        # """: API to apply :mod:`toytree.annotate` drawing methods to this tree."""
 
         # update Node idxs, _idx_dict, nnodes, ntips, and Node heights
         self._update()
@@ -421,7 +420,7 @@ class ToyTree:
         for que in query:
             if isinstance(que, int):
                 nodes.add(self[que])
-            elif isinstance(que, toytree.Node):
+            elif isinstance(que, Node):
                 if que not in self:
                     raise ValueError(NODE_NOT_IN_TREE_ERROR)
                 nodes.add(que)
@@ -484,7 +483,7 @@ class ToyTree:
             return nodes[0]
         # include_self necessary to find ancestor between tip ^ parent
         nset = set.intersection(*(
-            set(i._iter_ancestors(include_self=True)) for i in nodes)
+            set(i.iter_ancestors(include_self=True)) for i in nodes)
         )
         return min(nset)
 
@@ -537,7 +536,7 @@ class ToyTree:
             set(i.get_ancestors(include_self=include_query)) for i in query
         ])
 
-        # 
+        # stopping criterion (global root or sample mrca)
         if stop_at_mrca:
             mrca = self.get_mrca_node(*query)
             ancestors = {i for i in ancestors if i._idx <= mrca._idx}
@@ -621,7 +620,7 @@ class ToyTree:
             raise ToytreeError("The tree must be rooted to test monophyly")
         nodes = self.get_nodes(*query)
         mrca = self.get_mrca_node(*nodes)
-        for node in mrca._iter_leaves():
+        for node in mrca.iter_leaves():
             if node not in nodes:
                 return False
         return True
@@ -1065,7 +1064,7 @@ class ToyTree:
 
             # optionally map Node's descendants to value as well.
             if inherit:
-                for desc in node._iter_descendants():
+                for desc in node.iter_descendants():
                     ndict[desc] = value
 
         # map {Node: default} for Nodes not in ndict

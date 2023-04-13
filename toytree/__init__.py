@@ -39,7 +39,7 @@ import toytree.color
 import toytree.enum
 import toytree.pcm
 import toytree.network
-# import toytree.annotate
+import toytree.annotate
 
 # container trees... container
 
