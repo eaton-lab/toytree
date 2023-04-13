@@ -244,7 +244,7 @@ def root_on_minimal_ancestor_deviation(
             pidx += 1
 
         # iterate over pairs of tips both in setj above jdx
-        above_j = setj - set(i._idx for i in node_j._iter_descendants())
+        above_j = setj - set(i._idx for i in node_j.iter_descendants())
         for tipb, tipc in itertools.combinations(above_j, 2):
             dbc = dmat[tipb, tipc]
             aidx = min(paths[(tipb, tipc)], key=lambda x: dmat[jdx, x])

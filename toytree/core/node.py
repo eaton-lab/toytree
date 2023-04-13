@@ -296,7 +296,7 @@ class Node:
 
     def __len__(self) -> int:
         """Return length of Node as number of descendant leaf Nodes"""
-        return sum(1 for i in self._iter_leaves())
+        return sum(1 for i in self.iter_leaves())
 
     @total_ordering  # auto-creates all other ordering operations
     def __gt__(self, other: Node) -> bool:
@@ -580,7 +580,7 @@ class Node:
     # Defaults to returning in 'idxorder'          ##
     #################################################
 
-    def _iter_leaves(self) -> Iterator[Node]:
+    def iter_leaves(self) -> Iterator[Node]:
         """Return a Generator of leaves descended from this node in
         idxorder."""
         for node in self.traverse(strategy="idxorder"):
@@ -590,24 +590,24 @@ class Node:
     def get_leaves(self) -> List[Node]:
         """Return a list of leaf nodes descended from this node in
         idxorder."""
-        return list(self._iter_leaves())
+        return list(self.iter_leaves())
 
-    def _iter_leaf_names(self) -> Iterator[str]:
+    def iter_leaf_names(self) -> Iterator[str]:
         """Return a Generator of names of Nodes descended from this
         node in idxorder."""
-        for node in self._iter_leaves():
+        for node in self.iter_leaves():
             yield node.name
 
     def get_leaf_names(self) -> List[str]:
         """Return a list of names of Nodes descended from this node
         in idxorder."""
-        return list(self._iter_leaf_names())
+        return list(self.iter_leaf_names())
 
     #################################################
     # NODE RELATIVE RETRIEVAL / TRAVERSAL
     #################################################
 
-    def _iter_sisters(self) -> Iterator[Node]:
+    def iter_sisters(self) -> Iterator[Node]:
         """Return a Generator to iterate over sister nodes."""
         if self.up:
             for child in self.up.children:
@@ -616,18 +616,18 @@ class Node:
 
     def get_sisters(self) -> Tuple[Node]:
         """Return list of other Nodes that are children of same parent."""
-        return tuple(self._iter_sisters())
+        return tuple(self.iter_sisters())
 
-    def _iter_descendants(self, strategy: str = "levelorder") -> Iterator[Node]:
+    def iter_descendants(self, strategy: str = "levelorder") -> Iterator[Node]:
         """A generator of descendant Nodes (including self)."""
         for node in self.traverse(strategy=strategy):
             yield node
 
     def get_descendants(self, strategy: str = "levelorder") -> Tuple[Node]:
         """Return a list of descendant Nodes (including self)."""
-        return tuple(self._iter_descendants(strategy=strategy))
+        return tuple(self.iter_descendants(strategy=strategy))
 
-    def _iter_ancestors(self, root: Optional[Node] = None, include_self: bool = False) -> Iterator[Node]:
+    def iter_ancestors(self, root: Optional[Node] = None, include_self: bool = False) -> Iterator[Node]:
         """Return a Generator of Nodes on path from this node to root.
 
         Parameters
@@ -653,7 +653,7 @@ class Node:
 
     def get_ancestors(self, root: Optional[Node] = None) -> Tuple[Node]:
         """Return a list of Nodes on path from this node to root."""
-        return tuple(self._iter_ancestors())
+        return tuple(self.iter_ancestors())
 
     #####################################################
     # TO TOYTREE                                        #

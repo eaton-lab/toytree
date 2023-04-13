@@ -141,7 +141,7 @@ class Rooter:
         try:
             # the mrca clade may be non-monophyletic
             if not mrca.is_root():
-                if any(node not in tips for node in mrca._iter_leaves()):
+                if any(node not in tips for node in mrca.iter_leaves()):
                     tips = str(sorted(i.name for i in tips))
                     raise ToytreeError(NON_MONOPHYLETIC_OUTGROUP.format(tips))
 
@@ -152,7 +152,7 @@ class Rooter:
                 if not tips:
                     tips = all_tips
                 mrca = self.tree.get_mrca_node(*tips)
-                if any(node not in tips for node in mrca._iter_leaves()):
+                if any(node not in tips for node in mrca.iter_leaves()):
                     tips = str(sorted(i.name for i in tips))
                     raise ToytreeError(NON_MONOPHYLETIC_OUTGROUP.format(tips))
         except ToytreeError as exc:
