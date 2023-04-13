@@ -103,7 +103,7 @@ class RenderPieChart:
                 end_sum = self.mark.data[nidx][:cidx + 1].sum()
 
                 # only set radius on circle since placement uses transform
-                path = get_pie_path(
+                path = _get_pie_path(
                     percent_start=start_sum,
                     percent_end=end_sum,
                     radius=self.mark.sizes[nidx],
@@ -187,12 +187,12 @@ def draw_node_pie_charts(
     return mark
 
 
-def get_pie_path(percent_start, percent_end, radius):
+def _get_pie_path(percent_start: float, percent_end: float, radius: float) -> str:
     """Return a SVG path for a circle arc.
     <path d='M end_x end_y A r r 0 flag 1 end_x end_y L 0 0'></path>
     """
-    start = get_radial_coordinates_for_percents(percent_start)
-    end = get_radial_coordinates_for_percents(percent_end)
+    start = _get_radial_coordinates_for_percents(percent_start)
+    end = _get_radial_coordinates_for_percents(percent_end)
     flag = int((percent_end - percent_start) > 0.5)
     return (
         f"M 0 0 L {radius * start[0]} {radius * start[1]} "
@@ -201,7 +201,7 @@ def get_pie_path(percent_start, percent_end, radius):
     )
 
 
-def get_radial_coordinates_for_percents(percent):
+def _get_radial_coordinates_for_percents(percent):
     """Return the coordinates on a circle of a percentage."""
     xpos = round(np.cos(2 * np.pi * percent), 7)
     ypos = round(np.sin(2 * np.pi * percent), 7)
@@ -213,7 +213,7 @@ if __name__ == "__main__":
     import toytree
     import toyplot
 
-    TREE = toytree.rtree.bdtree(100, seed=123)
+    TREE = toytree.rtree.bdtree(30, seed=123)
     c, a, m = TREE.draw(width=400, height=600, node_sizes=5)
     DATA = np.array([[0.5, 0.3, 0.2]] * (TREE.nnodes - TREE.ntips))
     COLORS = toytree.color.COLORS1  #

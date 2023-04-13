@@ -10,7 +10,7 @@ Examples
 --------
 >>> tree = toytree.rtree.bdtree(10, seed=123)
 >>> c, a, m = tree.draw(layout='d')
->>> toytree.annotate.node_pie_charts(axes=a, tree=m, **kwargs)
+>>> toytree.annotate.add_node_pie_charts(axes=a, **kwargs)
 
 >>> tree = toytree.rtree.bdtree(10, seed=123)
 >>> c, a, m = tree.draw(layout='d', xbaseline=10)
@@ -44,6 +44,8 @@ Functions
 """
 
 from toytree.annotate.src.node_pie_charts import draw_node_pie_charts
+from toytree.annotate.src.add_edge_markers import *
+from toytree.annotate.src.add_node_markers import *
 # ... edge_labels
 # ... node_labels
 # from .confidence_intervals import draw_node_confidence_intervals
