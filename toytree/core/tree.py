@@ -550,48 +550,51 @@ class ToyTree:
     def get_node_mask(
         self,
         *unmask: Query,
-        mask_tips: bool = True,
-        mask_internal: bool = False,
-        mask_root: bool = False,
+        show_tips: bool = False,
+        show_internal: bool = False,
+        show_root: bool = False,
     ) -> np.ndarray:
-        """Return a boolean array to show/mask Nodes when drawing.
+        """Return a boolean array masking all Nodes except selected.
 
         Creates a boolean mask to hide a set of selected Nodes.
         The array is in Node idxorder (from 0-nnodes) where boolean
         True will *mask* Nodes, and False will *show* Nodes. Additional
-        Nodes can be selected to be unmasked by entering Node int idx
-        labels or name strings. By default, the tip Nodes are masked
-        and all internal Nodes are unmasked.
+        Nodes can be selected to be *unmasked* by entering Node int idx
+        labels or name strings. The default mask is an array that
+        masks tip Nodes but unmasks all internal Nodes.
 
         Parameters
         ----------
         *unmask: int, str or Node
-            Any Nodes selected by int or str labels will be unmasked
-            (shown). If selected, this overrides their inclusion in
-            mask_tips, mask_internal, or mask_root.
-        mask_tips: bool
+            Select Nodes using a Query (int or str labels, including
+            regular expressions) that will be unmasked (shown).
+        show_tips: bool
             If True all tip Nodes will be masked.
-        mask_internal: bool
+        show_internal: bool
             If True all internal Nodes will be masked.
-        mask_root: bool
+        show_root: bool
             If True the root Node will be masked.
 
         Examples
         --------
         >>> tree = toytree.rtree.unittree(10, seed=123)
-        >>> mask = tree.get_node_mask(15, 16, mask_internal=True, mask_root=True)
+        >>> # create a mask that only shows tips & Nodes 15 and 16
+        >>> mask = tree.get_node_mask(15, 16, show_tips=True)
         >>> tree.draw(ts='s', node_mask=mask);
         """
-        arr = np.zeros(self.nnodes, dtype=bool)
-        if mask_tips:
-            arr[:self.ntips] = 1
-        if mask_internal:
-            arr[self.ntips:-1] = 1
-        if mask_root:
-            arr[-1] = 1
-        if unmask:  # != ():
+        # default is all False (mask all)
+        arr = np.zeros(self.nnodes, dtype=np.bool_)
+        if show_tips:
+            arr[:self.ntips] = True
+        if show_internal:
+            arr[self.ntips:-1] = True
+        if show_root:
+            arr[-1] = True
+        # check unmask this way because 0 matches a Node.
+        if unmask != ():
+            # supports regex expansion
             for node in self.get_nodes(*unmask):
-                arr[node.idx] = 0
+                arr[node.idx] = True
         return arr
 
     def is_monophyletic(self, *query: Query) -> bool:

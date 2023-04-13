@@ -136,7 +136,7 @@ class TreeStyleR(TreeStyle):
     def __init__(self):
         super().__init__()
         self.tree_style = "r"
-        self.node_mask = (1, 0, 0)
+        self.node_mask = (0, 1, 1)
         self.node_labels = "name"
         self.node_sizes = 16
         self.node_markers = "r2x1"

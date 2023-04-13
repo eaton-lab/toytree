@@ -268,7 +268,7 @@ class RenderToytree:
         # skip drawing any nodes if node_mask=True or all node_sizes=0
         if (self.mark.node_sizes == 0).all():
             return
-        if self.mark.node_mask.all():
+        if not self.mark.node_mask.any():
             return
 
         # get dict with only styles not shared by all Nodes. This sets
@@ -280,7 +280,7 @@ class RenderToytree:
         for nidx in range(self.mark.nnodes):
 
             # skip if node is masked
-            if self.mark.node_mask[nidx]:
+            if not self.mark.node_mask[nidx]:
                 continue
 
             # create marker with shape and size, e.g., <marker='o' size=12>
@@ -343,7 +343,7 @@ class RenderToytree:
         # apply unique styles to each node label
         for idx in range(self.mark.nnodes):
             # masked label
-            if self.mark.node_mask[idx]:
+            if not self.mark.node_mask[idx]:
                 continue
 
             # get the label

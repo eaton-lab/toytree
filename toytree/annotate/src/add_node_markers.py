@@ -25,6 +25,7 @@ from toytree.style.src.validate_nodes import (
     validate_node_sizes,
     validate_node_style,
     validate_node_markers,
+    validate_node_mask,
 )
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -47,7 +48,8 @@ def add_node_markers(
     marker: Union[str, Sequence[str]] = "o",
     size: Union[int, Sequence[int]] = 8,
     color: Union[Color, Sequence[Color]] = None,
-    opacity: Union[float, Sequence[float]] = None,
+    opacity: Union[float, Sequence[float]] = 1.0,
+    mask: Union[np.ndarray, Tuple[int, int, int], bool, None] = None,
     style: Mapping[str, Any] = None,
 ) -> Mark:
     """Return a toyplot Mark of node markers added to a tree plot.
@@ -66,9 +68,14 @@ def add_node_markers(
     color: str, tuple, or array, or Sequence
         Color of markers as single color or Sequence of colors.
     opacity: float or Sequence[float]
-        Opacity of markers (fill & stroke) as a single float or Sequence
-        of floats. Note that fill and stroke opacity can be set
+        Opacity of markers (fill & stroke) as a float or Sequence
+        of floats. Note: fill and stroke opacities can be set
         separately using the style dict, but only as single values.
+    mask: np.array or None
+        A boolean array of len nnodes or nnodes - 1 where True masks
+        an node from being shown and False shows the edge. None shows
+        all nodes. A tuple of 3 booleans can be entered as a shortcut
+        to (show_tips, show_internal, show_root).
     style: dict
         Marker style dict. See `tree.style.node_style` for options.
 
@@ -76,6 +83,7 @@ def add_node_markers(
     -------
     >>> tree = toytree.rtree.unittree(6, seed=123)
     >>> canvas, axes, m0 = tree.draw()
+    >>> # add markers to all Nodes
     >>> m1 = tree.annotate.add_node_markers(
     >>>     axes,
     >>>     marker='s',
@@ -83,15 +91,16 @@ def add_node_markers(
     >>>     color='red',
     >>>     style={'stroke': 'white', 'stroke-width': 2.5}
     >>> )
+    >>>
+    >>> # add markers to only a few Nodes
+    >>> m2 = tree.annotate.add_node_markers(
+    >>>     axes, marker=">", size=20, mask=tree.get_node_mask(9)
+    >>> )
     """
     # get mark for coordinates on plotted tree.
     mark = get_last_toytree_mark_from_cartesian(axes)
     assert_tree_matches_mark(tree, mark)
     coords = mark.ntable
-
-    # check length and type of labels
-    marker = validate_node_markers(tree, marker)
-    size = validate_node_sizes(tree, size)
 
     # set styles on top of defaults. Must run before node_colors.
     style = validate_node_style(tree, style, serialize=True)
@@ -104,13 +113,20 @@ def add_node_markers(
     else:
         style.pop("fill")
 
+    # mask some edges
+    mask = validate_node_mask(tree, mask, default=False)
+    coords = coords[mask, :]
+    markers = validate_node_markers(tree, marker)[mask]
+    sizes = validate_node_sizes(tree, size)[mask]
+    opacity = validate_node_sizes(tree, opacity)[mask]
+
     # plot edge markers as scatterplot markers
     mark = axes.scatterplot(
         coords[:, 0],
         coords[:, 1],
         color=node_colors,
-        size=size,
-        marker=marker,
+        size=sizes,
+        marker=markers,
         mstyle=style,
         opacity=opacity,
         # annotation=True,
@@ -124,9 +140,10 @@ def add_node_labels(
     axes: Cartesian,
     labels: Union[str, Sequence[str]] = "idx",
     color: Union[Color, Sequence[Color]] = None,
-    opacity: Union[float, Sequence[float]] = None,
-    font_size: Union[int, None] = None,
+    opacity: Union[float, Sequence[float]] = 1.0,
+    font_size: Union[int, None] = 12,
     angle: Union[int, Sequence[int]] = 0,
+    mask: Union[np.ndarray, Tuple[int, int, int], None] = None,
     style: Mapping[str, Any] = None,
 ) -> Mark:
     """Return a toyplot Mark of node labels added to a tree drawing.
@@ -142,7 +159,7 @@ def add_node_labels(
         The length must be equal to nnodes or nnodes - 1. Use '' to
         not add a label to some edges. You can also enter a single str
         as the name of a feature on the tree to extract data as labels,
-        e.g., "idx" will show int idx labels for nodes. 
+        e.g., "idx" will show int idx labels for nodes.
     color: str, tuple, array or Sequence
         A single color or Sequence of colors for node labels.
     opacity: float or Sequence[float]
@@ -151,6 +168,11 @@ def add_node_labels(
         Font size in px. Overrides 'font-size' setting in style dict.
     angle: int or Sequence[int]
         A single angle applied to all labels, or Sequence of angles.
+    mask: np.array or None
+        A boolean array of len nnodes or nnodes - 1 where True masks
+        an node from being shown and False shows the node. None or False
+        shows all nodes. A tuple of 3 booleans can be entered as a
+        shortcut to (show_tips, show_internal, show_root).
     style: dict
         Style dict. See `tree.style.node_labels_style` for options.
 
@@ -187,6 +209,15 @@ def add_node_labels(
             style["fill"] = color
     else:
         style.pop("fill")
+
+    # mask some edges
+    mask = validate_node_mask(tree, mask, default=False)
+    coords = coords[mask, :]
+    labels = labels[mask]
+    if label_colors is not None:
+        label_colors = label_colors[mask]
+    opacity = validate_node_sizes(tree, opacity)[mask]
+    angle = validate_node_sizes(tree, angle)[mask]
 
     # add text at Node positions + half length of dists.
     mark = axes.text(

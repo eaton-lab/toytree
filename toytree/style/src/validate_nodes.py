@@ -13,7 +13,7 @@ Problem
 [ ] all substyles as dicts w/ keys converted to css style: (fill-opacity, -toyplot-anchor-shift)
 """
 
-from typing import Union, Sequence, Mapping, Any, Dict, TypeVar
+from typing import Union, Sequence, Mapping, Any, Dict, TypeVar, Tuple
 import numpy as np
 import toyplot
 from toytree import ToyTree
@@ -36,6 +36,7 @@ def style_to_css_dict(style: Mapping[str, Any]) -> Dict[str, Any]:
 def validate_node_mask(
     tree: ToyTree,
     node_mask: Union[None, bool, Sequence[str]],
+    default: Any = (1, 0, 0),
 ) -> np.ndarray:
     """Sets node_mask to ndarray[bool] size=nnodes.
 
@@ -51,19 +52,22 @@ def validate_node_mask(
     """
     # default None masks tip Nodes and shows internal + root
     if node_mask is None:
-        node_mask = np.zeros(tree.nnodes, dtype=bool)
-        node_mask[:tree.ntips] = True
-    # True or False mask all or none.
-    elif node_mask is True:
-        node_mask = np.repeat(True, tree.nnodes)
-    elif node_mask is False:
+        node_mask = default
+        # node_mask = np.zeros(tree.nnodes, dtype=bool)
+        # node_mask[:tree.ntips] = True
+
+    # mask=True means mask all Nodes, so return all False.
+    if node_mask is True:
         node_mask = np.repeat(False, tree.nnodes)
-    # special tuple arg
+    # mask=False means show all Nodes, so return all True
+    elif node_mask is False:
+        node_mask = np.repeat(True, tree.nnodes)
+    # special tuple arg (show_tips, show_internal, show_root)
     elif isinstance(node_mask, tuple):
         node_mask = tree.get_node_mask(
-            mask_tips=node_mask[0],
-            mask_internal=node_mask[1],
-            mask_root=node_mask[2],
+            show_tips=node_mask[0],
+            show_internal=node_mask[1],
+            show_root=node_mask[2],
         )
     # else it is a custom sequence.
     # Check size and type and return as an array.
@@ -158,6 +162,8 @@ def validate_node_sizes(
     node_sizes: Union[float, Sequence[float]],
 ) -> np.ndarray:
     """Sets node_sizes to ndarray[float]."""
+    if node_sizes is None:
+        node_sizes = 0
     if isinstance(node_sizes, (int, float)):
         node_sizes = np.repeat(node_sizes, tree.nnodes)
     node_sizes = check_arr(

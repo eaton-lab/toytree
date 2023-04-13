@@ -23,6 +23,7 @@ from toytree.style.src.validate_nodes import (
     validate_node_sizes,
     validate_node_style,
     validate_node_markers,
+    validate_node_mask,
 )
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -40,7 +41,6 @@ __all__ = [
 
 def _get_edge_midpoints(
     tree: ToyTree,
-    nedges: int,
     coords: np.ndarray,
     layout: str,
     edge_type: str,
@@ -49,11 +49,12 @@ def _get_edge_midpoints(
 
     Finding midpoints requires information about the layout and edge_type
     """
-    midpoints = np.zeros((nedges, 2))
-    for node in tree[:nedges]:
+    midpoints = np.zeros((tree.nnodes, 2))
+    for node in tree[:tree.nnodes - 1]:
         cx, cy = coords[node._idx]
         px, py = coords[node._up._idx]
 
+        # unrooted layout is always edge_type='c'
         if edge_type == "c":
             midx = (px + cx) / 2.
             midy = (py + cy) / 2.
@@ -65,9 +66,9 @@ def _get_edge_midpoints(
                 midx = (cx + px) / 2.
                 midy = cy
             elif layout == "c":
-                raise NotImplementedError("TODO")
-            elif layout == "unrooted":
-                raise NotImplementedError("TODO")
+                raise NotImplementedError("TODO. For now, use edge_type='c'.")
+            else:  # "unrooted":
+                raise NotImplementedError("TODO. For now, use edge_type='c'.")
         midpoints[node._idx] = (midx, midy)
     return midpoints
 
@@ -79,7 +80,8 @@ def add_edge_markers(
     marker: Union[str, Sequence[str]] = "o",
     size: int = 8,
     color: Union[Color, Sequence[Color]] = None,
-    opacity: Union[float, Sequence[float]] = None,
+    opacity: Union[float, Sequence[float]] = 1.0,
+    mask: Union[np.ndarray, Tuple[int, int, int], None] = None,
     style: Mapping[str, Any] = None,
 ) -> Mark:
     """Return a toyplot Mark of edge markers added to a tree plot.
@@ -101,6 +103,11 @@ def add_edge_markers(
         Opacity of markers (fill & stroke) as a single float or Sequence
         of floats. Note that fill and stroke opacity can be set
         separately using the style dict, but only as single values.
+    mask: np.array or None
+        A boolean array of len nnodes or nnodes - 1 where True masks
+        an edge from being shown and False shows the edge. None shows
+        all edges. A tuple of 3 booleans can be entered as a shortcut
+        to build an array of (mask_tips, mask_internal, mask_root).
     style: dict
         Marker style dict. See `tree.style.node_style` for options.
 
@@ -122,11 +129,7 @@ def add_edge_markers(
 
     # get coordinates of all real edges
     nedges = tree.nnodes - 2 if tree.is_rooted() else tree.nnodes - 1
-    coords = _get_edge_midpoints(tree, nedges, mark.ntable, mark.layout, mark.edge_type)
-
-    # check length and type of labels
-    marker = validate_node_markers(tree, marker)[:nedges]
-    size = validate_node_sizes(tree, size)[:nedges]
+    coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)[:nedges]
 
     # set styles on top of defaults. Must run before node_colors.
     style = validate_node_style(tree, style, serialize=True)
@@ -140,13 +143,22 @@ def add_edge_markers(
         style.pop("fill")
         node_colors = validate_node_colors(tree, color)[:nedges]
 
+    # mask some edges
+    mask = validate_node_mask(tree, mask, default=False)[:nedges]
+    coords = coords[mask, :]
+    markers = validate_node_markers(tree, marker)[:nedges][mask]
+    sizes = validate_node_sizes(tree, size)[:nedges][mask]
+    opacity = validate_node_sizes(tree, opacity)[:nedges][mask]
+    if node_colors is not None:
+        node_colors = node_colors[mask]
+
     # plot edge markers as scatterplot markers
     mark = axes.scatterplot(
         coords[:, 0],
         coords[:, 1],
         color=node_colors,
-        size=size,
-        marker=marker,
+        size=sizes,
+        marker=markers,
         mstyle=style,
         opacity=opacity,
         # annotation=True,
@@ -160,9 +172,10 @@ def add_edge_labels(
     axes: Cartesian,
     labels: Union[str, Sequence[str]] = "idx",
     color: Union[Color, Sequence[Color]] = None,
-    opacity: Union[float, Sequence[float]] = None,
-    font_size: Union[int, None] = None,
+    opacity: Union[float, Sequence[float]] = 1.0,
+    font_size: Union[int, None] = 12,
     angle: Union[int, Sequence[int]] = 0,
+    mask: Union[np.ndarray, Tuple[int, int, int], None] = None,
     style: Mapping[str, Any] = None,
 ) -> Mark:
     """Return a toyplot Mark of edge labels added to a tree drawing.
@@ -187,6 +200,11 @@ def add_edge_labels(
         Font size in px. Overrides 'font-size' setting in style dict.
     angle: int or Sequence[int]
         A single angle applied to all labels, or Sequence of angles.
+    mask: np.array or None
+        A boolean array of len nnodes or nnodes - 1 where True masks
+        an edge from being shown and False shows the edge. None shows
+        all edges. A tuple of 3 booleans can be entered as a shortcut
+        to build an array of (mask_tips, mask_internal, mask_root).
     style: dict
         Style dict. See `tree.style.node_labels_style` for options.
 
@@ -207,10 +225,7 @@ def add_edge_labels(
 
     # get coordinates of all real edges
     nedges = tree.nnodes - 2 if tree.is_rooted() else tree.nnodes - 1
-    coords = _get_edge_midpoints(tree, nedges, mark.ntable, mark.layout, mark.edge_type)
-
-    # check length and type of labels
-    labels = validate_node_labels(tree, labels)[:nedges]
+    coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)[:nedges]
 
     # set styles on top of defaults
     style = validate_node_labels_style(tree, style)
@@ -227,6 +242,15 @@ def add_edge_labels(
     else:
         label_colors = label_colors[:nedges]
         style.pop("fill")
+
+    # mask some nodes
+    mask = validate_node_mask(tree, mask, default=False)[:nedges]
+    coords = coords[mask, :]
+    labels = validate_node_labels(tree, labels)[:nedges][mask]
+    opacity = validate_node_sizes(tree, opacity)[:nedges][mask]
+    angle = validate_node_sizes(tree, angle)[:nedges][mask]
+    if label_colors is not None:
+        label_colors = label_colors[mask]
 
     # add text at Node positions + half length of dists.
     mark = axes.text(

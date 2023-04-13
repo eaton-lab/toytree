@@ -125,18 +125,18 @@ class Validator(TreeStyle):
         Iterable: custom boolean mask
         Tuple: (bool, bool, bool) for show (tips, internal, root).
         """
-        if self.node_mask is True:
-            self.node_mask = np.repeat(True, self.tree.nnodes)
+        if self.node_mask is None:
+            self.node_mask = (0, 1, 1)
         elif self.node_mask is False:
+            self.node_mask = np.repeat(True, self.tree.nnodes)
+        elif self.node_mask is True:
             self.node_mask = np.repeat(False, self.tree.nnodes)
-        elif self.node_mask is None:
-            self.node_mask = np.zeros(self.tree.nnodes, dtype=bool)
-            self.node_mask[:self.tree.ntips] = True
-        elif isinstance(self.node_mask, tuple):
+
+        if isinstance(self.node_mask, tuple):
             self.node_mask = self.tree.get_node_mask(
-                mask_tips=self.node_mask[0],
-                mask_internal=self.node_mask[1],
-                mask_root=self.node_mask[2],
+                show_tips=self.node_mask[0],
+                show_internal=self.node_mask[1],
+                show_root=self.node_mask[2],
             )
         self.node_mask = check_arr(
             self.node_mask, "node_mask", self.tree.nnodes, np.bool_)
