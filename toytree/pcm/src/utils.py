@@ -4,7 +4,7 @@
 
 Note
 ----
-Some of these functions may move to other modules as they are 
+Some of these functions may move to other modules as they are
 further developed.
 
 References
@@ -72,6 +72,7 @@ def get_vcv_matrix_from_tree(tree: ToyTree) -> pd.DataFrame:
     # convert to correlation
     return pd.DataFrame(vcv, columns=tlabels, index=tlabels)
 
+
 def get_corr_matrix_from_tree(tree: ToyTree) -> pd.DataFrame:
     r"""Return a correlation matrix (DataFrame) from a ToyTree.
 
@@ -103,6 +104,7 @@ def get_corr_matrix_from_tree(tree: ToyTree) -> pd.DataFrame:
     corr[vcv == 0] = 0
     return corr
 
+
 def get_tree_from_vcv(vcv: ArrayLike) -> ToyTree:
     """Return tree reconstructed from a variance-covariance matrix.
 
@@ -120,12 +122,13 @@ def get_tree_from_vcv(vcv: ArrayLike) -> ToyTree:
     max_value = np.array(vcv).max()
     return toytree.infer.infer_neighbor_joining_tree(max_value - vcv)
 
+
 def calculate_posterior(
     function: Callable,
     trees: Union[str, 'toytree.MultiTree', 'toytree.ToyTree'], 
-    njobs: int=1,
+    njobs: int = 1,
     **kwargs,
-    ):
+):
     """Return a DataFrame with posterior of (metric) from a tree set.
 
     Calculations are parallelized and tree(s) can be loaded from a 
@@ -197,7 +200,7 @@ def calculate_posterior(
         while 1:
             # get finished jobs
             finished = [i for i in rasyncs if rasyncs[i].done()]
-    
+
             # store results and append new job to the engine
             for job in finished:
 
