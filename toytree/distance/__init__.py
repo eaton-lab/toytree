@@ -34,21 +34,5 @@ Examples
 # Note
 # -----
 
-from toytree.distance._src.nodedist import (
-    get_node_path,
-    get_node_distance,
-    get_node_distance_matrix,
-    get_internal_node_distance_matrix,
-    get_tip_distance_matrix,
-    get_farthest_node,
-    get_farthest_node_distance,
-)
-
-# TODO: Kune-Felsenstein distance (topo and bls)?
-# from toytree.distance._src.treedist import (
-#     get_treedist_rf,
-#     get_treedist_rfi,
-#     get_treedist_rfg_spi,
-#     get_treedist_rfg_mci,
-#     get_treedist_matrix,
-# )
+from toytree.distance._src.nodedist import *
+from toytree.distance._src.treedist import *

@@ -39,23 +39,110 @@ Node = TypeVar("Node")
 ################################################################
 
 
+##########################
+# Quartet sets...
+##########################
 
-# To get all resolved quartets, see toytree.enumeration
-# e.g. tree = toytree.rtree.unittree(7, seed=123)
-#      qrt_resolved = tree.iter_quartets(collapse=True)
+
+# @add_subpackage_method(TreeDistanceAPI)
+# def get_treedist_qrt(
+#     tree1: ToyTree,
+#     tree2: ToyTree,
+#     # normalize: Union[str, Callable]
+# ) -> float:
+#     """Return the Quartet Divergence between two trees.
+
+#     Quartet divergence is the proportion of quartets present in both
+#     trees, divided by the number of quartets in the first tree. This
+#     returns the quartet distance as 1 - quartet_divergence.
+
+#     Parameters
+#     ----------
+
+#     normalize: str or Callable
+#         Normalize quartet divergence metric by an expectation for the
+#         divergence between two trees. The default method is "len" (see
+#         below for other builtin options) but any function can be
+#         entered here that takes two sets as input and returns a float.
+
+#     Normalization
+#     -------------
+#     len1: normalize by the number of quartets in tree1
+#     len2: normalize by the number of quartets in tree2
+#     union: normalize by the number of quartets in union(tree1, tree2)
+
+#     Example
+#     -------
+#     >>> tree1 = toytree.rtree.unittree()
+
+#     Reference
+#     ---------
+#     - 
+#     """
+#     assert set(tree1.get_tip_labels()) == set(tree2.get_tip_labels()), TIPS_IDENTICAL
+#     set1 = set(tree1.iter_quartets())
+#     set2 = set(tree2.iter_quartets())
+#     if normalize == "len1":
+#         return 1 - _get_prop_intersect_over_set1(set1, set2)
+#     elif normalize == "len2":
+#         return 1 - _get_prop_intersect_over_set1(set2, set1)
 
 
-def get_simple_quartets(tree):
-    """TODO..."""
-    tips = set(tree.get_tip_labels())
-    cache = {}
-    for node in tree.traverse("idxorder"):
-        if node.is_leaf():
-            cache[node] = {node.idx}
-        else:
-            cache[node] = set.union(*(cache[i] for i in node.children))
+# def _get_prop_intersect_over_union(set1: Set, set2: Set) -> float:
+#     """Return the proportion of intersecting sets among two trees.
 
-        sisters = set.union(*(cache[i] for i in node.get_sisters()))
+#     The proportion intersecting is measured as the len of the
+#     intersection of sets 1 and 2 divided by the len of their union.
+#     The sets can be different sizes if the trees do not share the
+#     same tips, or have different number of internal Nodes resolved.
+
+#     `dist = len(s1 & s2) / len(s1 | s2)`
+
+#     Example
+#     -------
+#     >>> set1 = set(tree1.iter_quartets())
+#     >>> set2 = set(tree2.iter_quartets())
+#     >>> print(_get_prop_intersect_over_union(set1, set2))
+#     """
+#     return len(set1 & set2) / len(set1 | set2)
+
+
+# def _get_prop_intersect_over_set1(set1: Set, set2: Set) -> float:
+#     """Return the proportion of intersecting sets among two trees.
+
+#     The proportion intersecting is measured as the len of the
+#     intersection of sets 1 and 2 divided by the len of set 1. The
+#     sets can be different sizes if the trees do not share the same
+#     tips, or have different number of internal Nodes resolved.
+
+#     `dist = len(s1 & s2) / len(s1)`
+
+#     Example
+#     -------
+#     >>> set1 = set(tree1.iter_quartets())
+#     >>> set2 = set(tree2.iter_quartets())
+#     >>> print(_get_prop_intersect_over_set1(set1, set2))
+#     """
+#     return len(set1 & set2) / len(set1)
+
+
+
+# # To get all resolved quartets, see toytree.enumeration
+# # e.g. tree = toytree.rtree.unittree(7, seed=123)
+# #      qrt_resolved = tree.iter_quartets(collapse=True)
+
+
+# def get_simple_quartets(tree):
+#     """TODO..."""
+#     tips = set(tree.get_tip_labels())
+#     cache = {}
+#     for node in tree.traverse("idxorder"):
+#         if node.is_leaf():
+#             cache[node] = {node.idx}
+#         else:
+#             cache[node] = set.union(*(cache[i] for i in node.children))
+
+#         sisters = set.union(*(cache[i] for i in node.get_sisters()))
 
 
 

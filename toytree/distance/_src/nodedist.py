@@ -10,27 +10,29 @@ from typing import TypeVar, Tuple, Union, Dict, Iterator
 import itertools
 import numpy as np
 import pandas as pd
-from toytree.utils import ToytreeError
-
+from toytree import Node, ToyTree
+from toytree.core.apis import TreeDistanceAPI, add_subpackage_method
+# from toytree.utils import ToytreeError
 
 # type aliases
-ToyTree = TypeVar("ToyTree")
-Node = TypeVar("Node")
 Query = TypeVar("Query", str, int, Node, None)
 
-# put functions here to have then exposed to Toytree API
+# put functions here to have then exposed to 'distance' subpackage API
 __all__ = [
     "get_node_path",
+    "iter_node_path",
     "get_node_distance",
-    "get_internal_node_distance_matrix",
     "get_node_distance_matrix",
+    "get_internal_node_distance_matrix",
     "get_tip_distance_matrix",
+    "get_descendant_dists",
+    "iter_descendant_dists",
     "get_farthest_node",
     "get_farthest_node_distance",
-    "get_node_path",
 ]
 
 
+@add_subpackage_method(TreeDistanceAPI)
 def get_node_path(tree: ToyTree, node0: Query, node1: Query) -> Tuple[Node]:
     """Return a list of Nodes on the path between two Nodes.
 
@@ -53,16 +55,17 @@ def get_node_path(tree: ToyTree, node0: Query, node1: Query) -> Tuple[Node]:
     return tuple(iter_node_path(tree, node0, node1))
 
 
+@add_subpackage_method(TreeDistanceAPI)
 def iter_node_path(tree: ToyTree, node0: Query, node1: Query) -> Iterator[Node]:
     """Generator of the path between two Nodes."""
     node0 = tree.get_nodes(node0)[0]
     yield node0
     node1 = tree.get_nodes(node1)[0]
     mrca = tree.get_mrca_node(node0.idx, node1.idx)
-    for node in node0._iter_ancestors(mrca):
+    for node in node0.iter_ancestors(mrca):
         yield node
     yield mrca
-    for node in list(node1._iter_ancestors(mrca))[::-1]:
+    for node in list(node1.iter_ancestors(mrca))[::-1]:
         yield node
     yield node1
 
@@ -70,6 +73,7 @@ def iter_node_path(tree: ToyTree, node0: Query, node1: Query) -> Iterator[Node]:
 # >3X faster than older TreeNode.get_distance(), and scales better.
 # If the tree is ultrametric we could calculate 2X faster by just
 # doubling the distance to mrca...
+@add_subpackage_method(TreeDistanceAPI)
 def get_node_distance(
     tree: ToyTree,
     node0: Query,
@@ -106,7 +110,10 @@ def get_node_distance(
     if node0 == node1:
         return 0
 
-    # get the common
+    # get query as Nodes (order not maintained, but not needed)
+    node0, node1 = tree.get_nodes(node0, node1)
+
+    # get mrca of the query
     mrca = tree.get_mrca_node(node0, node1)
 
     # store total distance
@@ -118,12 +125,13 @@ def get_node_distance(
         if node != mrca:
             # get 1 or dist for every node up to the mrca
             if topology_only:
-                dist += 1 + sum(1 for i in node._iter_ancestors(mrca))
+                dist += 1 + sum(1 for i in node.iter_ancestors(mrca))
             else:
-                dist += node._dist + sum(i._dist for i in node._iter_ancestors(mrca))
+                dist += node._dist + sum(i._dist for i in node.iter_ancestors(mrca))
     return dist
 
 
+@add_subpackage_method(TreeDistanceAPI)
 def get_node_distance_matrix(
     tree: ToyTree,
     topology_only: bool = False,
@@ -204,6 +212,7 @@ def get_node_distance_matrix(
         arr[idxorder][:, idxorder], columns=index, index=index)
 
 
+@add_subpackage_method(TreeDistanceAPI)
 def get_internal_node_distance_matrix(
     tree: ToyTree,
     topology_only: bool = False,
@@ -237,6 +246,7 @@ def get_internal_node_distance_matrix(
     return arr.iloc[tree.ntips:, tree.ntips:]
 
 
+@add_subpackage_method(TreeDistanceAPI)
 def get_tip_distance_matrix(
     tree: ToyTree,
     topology_only: bool = False,
@@ -272,45 +282,81 @@ def get_tip_distance_matrix(
     return arr.iloc[:tree.ntips, :tree.ntips]
 
 
-def _get_dist_to_descendants_dict(
+@add_subpackage_method(TreeDistanceAPI)
+def get_descendant_dists(
     tree: ToyTree,
     node: Query = None,
     topology_only: bool = False,
 ) -> Dict[Node, float]:
-    """Return a dict {Node: distance} for Nodes at farthest distance from a selected Node.
+    """Return a dict {Node: distance} for Nodes descended from a
+    selected Node (default=root).
 
     Distance is measured by the sum of edge lengths separating them,
     unless `topology_only` is True, in which case it is the number of
     edges separating them.
 
-    This is used internally by other node_dist functions and is a bit
-    faster than calculating the full node dist matrix when less info
-    is needed.
+    This is function is a bit faster than calculating the full distance
+    matrix when you only need distances to descendants of a Node. Values
+    are generated in "preorder" traversal order (left then right).
 
     Example
     -------
     >>> tree = toytree.rtree.unittree(5, seed=123)
     >>> ndict = _get_dist_to_descendants_dict(tree)
-    >>> # {}
+    >>> # {Node(idx=0): 1.0, Node(idx=1): 2.0, ...}
+    """
+    # get distances among descendant nodes by traversal
+    return dict(iter_descendant_dists(tree, node, topology_only))
+
+
+@add_subpackage_method(TreeDistanceAPI)
+def iter_descendant_dists(
+    tree: ToyTree,
+    node: Query = None,
+    topology_only: bool = False,
+) -> Iterator[Tuple[Node, float]]:
+    """Generator of (Node, dist) tuples of descendant Nodes from a
+    selected Node (default=root).
+
+    Distance is measured as the sum of edge lengths between Nodes,
+    unless `topology_only` is True, in which case it is the number of
+    edges separating them.
+
+    This is function is a bit faster than calculating the full distance
+    matrix when you only need distances to descendants of a Node. Values
+    are generated in "preorder" traversal order (left then right).
+
+    Example
+    -------
+    >>> tree = toytree.rtree.unittree(5, seed=123)
+    >>> list(tree.distance.iter_descendants_dists())
+    >>> # [(Node(idx=0), 1.0), (Node(idx=1, 2.0), ...]
     """
     # get distances among descendant nodes by traversal
     node = tree.treenode if node is None else tree.get_nodes(node)[0]
-    ndists = {}
+    ndists = {i._idx: 0 for i in tree}
     for desc in node.traverse("preorder"):
         if desc != node:
-            ndists[desc._idx] = 1 if topology_only else desc.dist
+            ndists[desc._idx] += 1 if topology_only else desc.dist
             if desc._up._idx in ndists:
                 ndists[desc._idx] += ndists[desc._up._idx]
-    return ndists
+        yield desc, ndists[desc._idx]
 
 
+@add_subpackage_method(TreeDistanceAPI)
 def get_farthest_node(
     tree: ToyTree,
-    node: Query = None,
+    node: Query,
     topology_only: bool = False,
     descendants_only: bool = False,
 ) -> Node:
     """Return the farthest Node from a selected Node.
+
+    Note
+    ----
+    If >1 Nodes are equally distant the one w/ lowest idx is returned.
+    See `get_node_distance_matrix` or `iter_descendant_dists` for other
+    options to visit multiple equally distant Nodes.
 
     Parameters
     ----------
@@ -326,22 +372,19 @@ def get_farthest_node(
         descendants of the 'node' query, or the root is no Node was
         selected. If False then the farthest Node is searched across
         the entire tree using `get_node_distance_matrix()`.
-
-    Note
-    ----
-    If >1 Nodes are equally distance the one w/ lowest idx is returned.
     """
     # get distances to all, or only descendants
     node = tree.treenode if node is None else tree.get_nodes(node)[0]
     if descendants_only:
-        ndists = _get_dist_to_descendants_dict(tree, node, topology_only)
-        nidx = np.argmax(ndists.values())
+        ndists = get_descendant_dists(tree, node, topology_only)
+        return max(ndists, key=lambda x: ndists[x])
     else:
         ndists = get_node_distance_matrix(tree, topology_only)
         nidx = ndists[node.idx].argmax()
-    return tree[nidx]
+        return tree[nidx]
 
 
+@add_subpackage_method(TreeDistanceAPI)
 def get_farthest_node_distance(
     tree: ToyTree,
     node: Query = None,
@@ -366,9 +409,8 @@ def get_farthest_node_distance(
     """
     node = tree.treenode if node is None else tree.get_nodes(node)[0]
     if descendants_only:
-        ndists = _get_dist_to_descendants_dict(tree, node, topology_only)
-        return max(ndists.values())
-    return max(get_node_distance_matrix(tree, topology_only))
+        return max(i[1] for i in iter_descendant_dists(tree, node, topology_only))
+    return max(get_node_distance_matrix(tree, topology_only)[node._idx])
 
 
 if __name__ == "__main__":
@@ -385,7 +427,3 @@ if __name__ == "__main__":
 
     print(get_node_distance_matrix(TREE, df=True))
     print(get_tip_distance_matrix(TREE, df=True))
-
-    tree = toytree.rtree.unittree(8, seed=123)
-    ndict = _get_dist_to_descendants_dict(tree, 6)
-    print(ndict)
