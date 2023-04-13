@@ -15,11 +15,12 @@ Node = TypeVar("Node")
 
 def set_ng_labels(gtree: ToyTree) -> None:
     """Sets a feature 'ng' to each internal node in a tree."""
-    for node in gtree.traverse("idxorder"):
+    for node in gtree:
         if node.children:
             node.ng = set.union(*(i.ng for i in node.children))
         else:
             node.ng = {node.name}
+
 
 def set_ns_labels(gtrees: Collection[ToyTree], sptree: ToyTree) -> None:
     """Sets a feature 'ns' as MRCA sptree node containing 'ng' set."""
@@ -27,13 +28,14 @@ def set_ns_labels(gtrees: Collection[ToyTree], sptree: ToyTree) -> None:
         for node in gtree:
             node.ns = sptree.get_mrca_node(*node.ng)
 
+
 def count_duplications(gtree: ToyTree) -> int:
     """Return duplication and speciation events on a tree.
-    
+
     Nodes in the gene tree are said to be duplication nodes when they
     map to the same species tree node as at least one of their
     descendants.
-    
+
     Adds a feature 'dup' to Nodes with True or False.
     """
     ndups = 0
@@ -46,20 +48,22 @@ def count_duplications(gtree: ToyTree) -> int:
             node.dup = False
     return ndups
 
+
 def depth(sptree: ToyTree, node: Node) -> int:
     """return distance from root in sptree"""
     return sptree.distance.get_node_distance(
         sptree.treenode.idx, node.idx, topology_only=True)
 
+
 def count_losses(gtree: ToyTree, sptree: ToyTree) -> int:
     """Return ...
-        
+
     Adds feature 'loss' as an int to each Node.
     """
     loss = 0
     for node in gtree.traverse():
         node.depth = depth(sptree, node.ns) + 1
-        
+
     for node in gtree.traverse():
         if node.is_root():
             continue
@@ -68,12 +72,13 @@ def count_losses(gtree: ToyTree, sptree: ToyTree) -> int:
             loss += 1
     return loss
 
+
 def get_multree_reconciliation_score(
     gtrees: Collection[ToyTree],
     sptrees: Collection[ToyTree],
-    ) -> pd.DataFrame:
+) -> pd.DataFrame:
     """
-    
+
     [sptree, gtree, dtg, ltg, score]
     """
     # check that gtrees and sptrees are iterable (lists)
@@ -94,7 +99,7 @@ def get_multree_reconciliation_score(
         set_ns_labels(gtrees, sptree)
         chunks = []
         for gidx, gtree in enumerate(gtrees):
-            newick_g = gtree.write(None, None, None)            
+            newick_g = gtree.write(None, None, None)
             dtg = count_duplications(gtree)
             ltg = count_losses(gtree, sptree)
             score = dtg + ltg
@@ -103,7 +108,7 @@ def get_multree_reconciliation_score(
         # fill result of all gene trees
         sub_data.append(
             pd.DataFrame(
-                chunks, 
+                chunks,
                 columns=['sidx', 'gidx', 'sptree', 'gtree', 'dups', 'losses', 'score'],
             ))
         full_data.append([sidx, newick_s, sub_data[-1].score.sum()])
@@ -111,8 +116,6 @@ def get_multree_reconciliation_score(
     full_data = pd.DataFrame(full_data, columns=["sidx", "sptree", "score"])
     full_data = full_data.sort_values("sidx")
     return full_data, sub_data
-
-
 
 
 if __name__ == "__main__":
@@ -129,12 +132,12 @@ if __name__ == "__main__":
 
     # insert an allo-polyploid genome dup event to make a mul-tree
     subtree = toytree.tree("((X:1,Y:1):1,Z:2):1;")
-    sptree_mul = toytree.mod.add_subtree(sptree_single, 'A', subtree=subtree)
-    sptree_mul = toytree.mod.add_subtree(sptree_mul, 'E', subtree=subtree)
+    sptree_mul = toytree.mod.add_internal_node_and_subtree(sptree_single, 'A', subtree=subtree)
+    sptree_mul = toytree.mod.add_internal_node_and_subtree(sptree_mul, 'E', subtree=subtree)
 
     # generate a different mul-tree to compare against
-    sptree_mul2 = toytree.mod.add_subtree(sptree_single, 'B', subtree=subtree)
-    sptree_mul2 = toytree.mod.add_subtree(sptree_mul2, 'F', subtree=subtree)
+    sptree_mul2 = toytree.mod.add_internal_node_and_subtree(sptree_single, 'B', subtree=subtree)
+    sptree_mul2 = toytree.mod.add_internal_node_and_subtree(sptree_mul2, 'F', subtree=subtree)
 
     # draw species trees
     c, _, _ = toytree.mtree([sptree_mul, sptree_mul2]).draw()
