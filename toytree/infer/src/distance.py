@@ -84,5 +84,4 @@ def get_distance_K2P(ntransitions: int, ntransversions: int, length: int) -> flo
 
 
 if __name__ == "__main__":
-
-
+    pass

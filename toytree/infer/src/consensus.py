@@ -43,7 +43,7 @@ class ConsensusTree:
         mtree: MultiTree,
         best_tree: Optional[ToyTree] = None,
         majority_rule_min: float = 0.0,
-        ):
+    ):
 
         # creates an unrooted copy of the original tree
         self.mtree = mtree

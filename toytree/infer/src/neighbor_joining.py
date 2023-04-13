@@ -13,7 +13,7 @@ import toytree
 
 def infer_neighbor_joining_tree(data: pd.DataFrame) -> toytree.ToyTree:
     """Return a ToyTree inferred by neighbor-joining from a distance matrix.
-    
+
     Neighbor-joining is a clustering algorithm for building trees from
     a distance matrix. It does not assume a clock, and is guaranteed
     to recover the true tree if the distances reflect the distances
@@ -70,9 +70,9 @@ def iter_nj_algorithm(arr: ArrayLike) -> Iterator[Tuple[int, int, float, float]]
     """Generator function to yield node indices and branch lengths.
 
     Each iteration of the neighbor-joining algorithm finds the pair
-    of samples with the shortest average distance to all other 
+    of samples with the shortest average distance to all other
     samples. This generator yields the indices (i, j) of the pair given
-    an input 2-D distance array, and the branch lengths (v_i, v_j) of 
+    an input 2-D distance array, and the branch lengths (v_i, v_j) of
     each of these to their parent node.
     """
     # iterate and reduce matrix until all Nodes are joined
@@ -81,7 +81,7 @@ def iter_nj_algorithm(arr: ArrayLike) -> Iterator[Tuple[int, int, float, float]]
         # get neighbor values (u_i)
         uvals = arr.sum(axis=0) / (arr.shape[0] - 2)
 
-        # get c_arr as d_ij - u_i - u_j 
+        # get c_arr as d_ij - u_i - u_j
         c_arr = arr - uvals - np.expand_dims(uvals, 1)
 
         # mask diagonal and get (i,j) index of min off-diagonal value
@@ -135,16 +135,20 @@ if __name__ == "__main__":
     TREE = infer_neighbor_joining_tree(DATA)
 
     # root on 'monkey' at ~1/3 of length.
-    TREE = TREE.root("monkey", root_dist=130)
+    # TREE = TREE.root("monkey", root_dist=30)
+    TREE = TREE.mod.root_on_midpoint()  # ("monkey", root_dist=30)
 
     # plot with .dist values shown
     DISTS = [f"{i:.2f}" for i in TREE.get_node_data('dist')]
     TREE._draw_browser(
-        scale_bar=True, 
+        scale_bar=True,
         node_labels=DISTS,
         node_labels_style={"-toyplot-anchor-shift": -12, "baseline-shift": -10},
-        node_mask=False,
-        node_markers="r2x1",
-        tip_labels_style={"-toyplot-anchor-shift": 20, },
-        width=400, height=400,        
+        node_mask=(0, 1, 1),
+        node_sizes=5,
+        # node_markers="r2x1",
+        tip_labels_style={"-toyplot-anchor-shift": 10},
+        tip_labels_align=True,
+        width=400,
+        height=400,
     )
