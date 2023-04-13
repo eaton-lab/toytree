@@ -32,7 +32,7 @@ Not supported:
 
 """
 
-from typing import TypeVar, Iterator, Tuple, Optional, Set, Callable, Sequence
+from typing import TypeVar, Iterator, Tuple, Optional, Set, Callable
 import itertools
 from loguru import logger
 from toytree import Node, ToyTree
