@@ -6,11 +6,18 @@
 
 from typing import Tuple, Sequence, Mapping, Any, Union, TypeVar
 import numpy as np
+from numpy.typing import ArrayLike
 # import toyplot
 from toyplot.mark import Mark
 from toyplot.coordinates import Cartesian
 
 from toytree import ToyTree
+from toytree.style.src.validator import check_arr
+from toytree.color import get_color_mapped_feature
+from toytree.annotate.src.node_pie_charts import (
+    PieChartMark,
+    validate_pie_data,
+)
 from toytree.annotate.src.annotation_mark import (
     get_last_toytree_mark_from_cartesian,
     assert_tree_matches_mark,
@@ -31,11 +38,7 @@ Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = [
     "add_edge_markers",
     "add_edge_labels",
-    # "add_edge_pie_charts",
-    # "add_node_pie_charts",
-    # "add_node_bars",
-    # "add_node_histograms",
-    # "add_node_densigrams",
+    "add_edge_pie_charts",
 ]
 
 
@@ -234,13 +237,12 @@ def add_edge_labels(
     if font_size:
         style["font-size"] = font_size
 
-    # check length of colors
-    label_colors = validate_node_colors(tree, color, serialize=True)
+    # check colors
+    label_colors = validate_node_colors(tree, color)[:nedges]
     if label_colors is None:
         if color:
             style["fill"] = color
     else:
-        label_colors = label_colors[:nedges]
         style.pop("fill")
 
     # mask some nodes
@@ -266,16 +268,140 @@ def add_edge_labels(
     return mark
 
 
+@add_subpackage_method(AnnotationAPI)
+def add_edge_pie_charts(
+    tree: ToyTree,
+    axes: Cartesian,
+    data: ArrayLike,
+    size: Union[int, Sequence[int]] = 10,
+    colors: Union[Sequence[Color], Color] = None,
+    ostroke: Color = "#262626",
+    ostroke_width: float = 1.5,
+    istroke: Color = "#262626",
+    istroke_width: float = 0.,
+    rotate: int = -45,
+    mask: Union[bool, np.ndarray, tuple] = False,
+) -> Mark:
+    """Return a toyplot Mark of edge pie charts added to a tree plot.
+
+    This adds edge pie chart markers to the last tree drawn on the
+    Cartesian axes.
+
+    Parameters
+    ----------
+    axes: Cartesian
+        A toyplot Cartesian axes object containing a tree drawing.
+    data: numpy.ndarray
+        Array of shape(ncategories, nnodes) with rows summing to 1. 
+    size: int or Sequence[int]
+        Size of markers as single int or Sequence of ints, in px units.
+    colors: None, str, tuple, or array, or Sequence
+        Color for each category/trait or the name of a colormap.
+    ostroke: Color
+        Color of the stroke on the outside of the Mark.
+    ostroke_width: float
+        Width of the stroke on the outside of the Mark
+    istroke: Color
+        Color of the stroke on the inside of the Mark between wedges.
+    istroke_width: float
+        Width of the stroke on the inside of the Mark between wedges.
+    rotate: int
+        Rotate the starting point of the wedges.
+    mask: bool, np.ndarray, or tuple
+        Node mask to hide/show some or all Nodes.
+    ...
+    opacity: float or Sequence[float]
+        Opacity of markers (fill & stroke) as a single float or Sequence
+        of floats. Note that fill and stroke opacity can be set
+        separately using the style dict, but only as single values.
+
+    Example
+    -------
+    >>> tree = toytree.rtree.unittree(6, seed=123)
+    >>> canvas, axes, m0 = tree.draw()
+
+    >>> # generate random pie-like (proportion) data array
+    >>> import numpy as np
+    >>> ncategories = 3
+    >>> arr = np.random.random(size=(tree.nnodes, ncategories))
+    >>> arr = (arr.T / arr.sum(axis=1)).T
+
+    >>> # add pie charts to all internal Nodes
+    >>> tree.annotate.add_edge_pie_charts(
+    >>>     axes=axes, data=arr, size=20, mask=(0, 1, 1),
+    >>>     istroke_width=0.75, istroke="black", rotate=-45,
+    >>> )
+
+    """
+    # get mark for coordinates on plotted tree.
+    mark = get_last_toytree_mark_from_cartesian(axes)
+    assert_tree_matches_mark(tree, mark)
+
+    # get coordinates of all real edges
+    nedges = tree.nnodes - 2 if tree.is_rooted() else tree.nnodes - 1
+    coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)[:nedges]
+
+    # validate data.
+    # TODO: option to collapse categories below a minimum percentage
+    data = validate_pie_data(tree, data)
+
+    # expand colormap to an array of colors
+    if colors is None:
+        colors = "Set2"
+    if isinstance(colors, (tuple, list, np.ndarray)):
+        pass
+    else:
+        colors = get_color_mapped_feature(range(data.shape[1]), colors)
+
+    # ensure conversion of colors to array type and size=ncategories
+    colors = check_arr(
+        values=colors,
+        label="colors (pie chart category colors)",
+        size=data.shape[1],
+        ctype=np.void,
+    )
+
+    # mask some Nodes
+    mask = validate_node_mask(tree, mask, default=False)[:nedges]
+    coords = coords[:nedges][mask, :]
+    data = data[:nedges][mask, :]
+    sizes = validate_node_sizes(tree, size)[:nedges][mask]
+
+    # plot edge markers as scatterplot markers
+    mark = PieChartMark(
+        coordinates=coords,
+        data=data,
+        sizes=sizes,
+        colors=colors,
+        ostroke=ostroke,
+        ostroke_width=ostroke_width,
+        istroke=istroke,
+        istroke_width=istroke_width,
+        rotate=rotate,
+    )
+    axes.add_mark(mark)
+    return mark
+
+
 if __name__ == "__main__":
 
     import toytree
 
     # base tree drawing
-    tree = toytree.rtree.unittree(6)#.unroot()
-    c, a, m = tree.draw(layout='d')#r')
+    tree = toytree.rtree.unittree(6)  # .unroot()
+    c, a, m = tree.draw(layout='d')  # r')
 
     # annotate with edge labels
     # add_edge_labels(tree, axes=a, labels=tree.get_node_data("idx"))
-    add_edge_markers(tree, axes=a, size=10, marker='r1x2')
+    # add_edge_markers(tree, axes=a, size=10, marker='r1x2')
+    # add_edge_labels(
+    #     tree, axes=a, labels="idx", color=("idx", "BlueRed"),
+    # )
+
+    data = np.array([[0.5, 0.3, 0.2]] * tree.nnodes)
+    tree.annotate.add_edge_pie_charts(
+        a, data, size=18, istroke="white", istroke_width=0, rotate=90,
+        colors="Greys",
+    )
 
     toytree.utils.show(c)

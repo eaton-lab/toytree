@@ -16,3 +16,4 @@ Examples
 from toytree.color.src.utils import COLORS1, COLORS2, color_cycler
 from toytree.color.src.toycolor import ToyColor
 from toytree.color.src.colorkit import ColorType
+from toytree.color.src.color_mapper import get_color_mapped_feature

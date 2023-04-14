@@ -17,8 +17,7 @@ from typing import Union, Sequence, Mapping, Any, Dict, TypeVar, Tuple
 import numpy as np
 import toyplot
 from toytree import ToyTree
-from toytree.color import ToyColor
-from toytree.style.src.color_mapper import get_color_mapped_feature
+from toytree.color import ToyColor, get_color_mapped_feature
 from toytree.style.src.validator import check_arr
 
 Color = TypeVar("Color", str, tuple, np.ndarray)

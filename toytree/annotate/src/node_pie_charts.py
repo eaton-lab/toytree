@@ -31,8 +31,8 @@ import xml.etree.ElementTree as xml
 from multipledispatch import dispatch
 import toyplot
 import numpy as np
-# from toytree.core.drawing.render import style_to_string, split_rgba_style
-from toytree.color import ToyColor, ColorType
+from toytree import ToyTree
+from toytree.color import ToyColor
 from toytree.color.src.concat import concat_style_fix_color
 from toytree.annotate.src.pie_chart_mark import PieChartMark
 
@@ -51,7 +51,7 @@ def _render(axes, mark, context):
 class RenderPieChart:
     """Multidispatch registered render function for PieChartMarks.
 
-    The PieChartMark object is self.mark and contains the data,
+    The PieChartMark object is a custom Mark and contains the data,
     coordinates, and styles. The colors are checked here during
     rendering.
     """
@@ -128,63 +128,38 @@ class RenderPieChart:
             )
 
 
-def draw_node_pie_charts(
-    axes,
-    coordinates,
-    data,
-    sizes: Union[int, List[int]] = 10,
-    colors: Union[List[str], ColorType] = None,
-    ostroke: ColorType = "#262626",
-    ostroke_width: float = 1.5,
-    istroke: ColorType = "#262626",
-    istroke_width: float = 0.,
-    rotate: int = -45,
-):
-    """Return a Mark representing pie chart xml
+def validate_pie_data(
+    tree: ToyTree,
+    data: np.ndarray,
+    # min_size: float = 1e-9,
+    mask: np.ndarray = None,
+) -> np.ndarray:
+    """Return cleaned pie chart data.
 
-    Parameters
-    ----------
-    ntable: numpy.ndarray
-        x and y coordinate positions of the pie charts.
-    data: numpy.ndarray
-        Percentage data of dimensions (ncategories, nmarks)
-    ...
-    rotate: int
-        Angle of rotation of pie chart origin.
+    Checks pie chart data for correct shape and type, and that the row
+    values sum to 1.
 
-    Returns
+    Formats
     -------
-    toyplot.Mark
-
-    Examples
-    --------
-    >>> tree = toytree.rtree.unittree(10, seed=123)
-    >>> canvas, axes, mark = tree.draw()
-    >>> data = np.array([[0.5, 0.3, 0.2]] * tree.nnodes)
-    >>> mark = toytree.annotate.draw_node_pie_chart(
-    >>>     axes=axes,
-    >>>     coordinates=tree.get_node_coordinates('r'),
-    >>>     data=data,
-    >>>     sizes=12,
-    >>>     colors=toytree.COLORS2,
-    >>> )
+    - 1-D array -> 2-D array
+    - 2-D array -> 2-D array sums to 1
     """
-    # generate toyplot Mark. todo: Style is already validated?
-    mark = PieChartMark(
-        coordinates=coordinates,
-        data=data,
-        sizes=sizes,
-        colors=colors,
-        ostroke=ostroke,
-        ostroke_width=ostroke_width,
-        istroke=istroke,
-        istroke_width=istroke_width,
-        rotate=rotate,
-    )
+    assert data.min() >= 0, "negative values are not allowed in pie chart data."
+    assert data.shape[0] in (tree.nnodes, tree.nnodes - 1), (
+        f"pie chart data must be shape (nnodes, nvalues), your data is {data.shape}.")
 
-    # add mark to axes
-    axes.add_mark(mark)
-    return mark
+    # allow single value arrays in [0, 1] to represent two categories
+    if data.ndim == 1:
+        if data.max() > 1:
+            raise ValueError(
+                "1 dimensional array data for pie charts must be < 1 to "
+                "be expanded to 2 categories: (value, 1 - value).")
+        return np.column_stack([data, 1 - data])
+
+    # 2D arrays represent (ntips, ntraits) data.
+    else:
+        assert np.allclose(data.sum(axis=1), 1), "pie chart data row values must sum to 1."
+    return data
 
 
 def _get_pie_path(percent_start: float, percent_end: float, radius: float) -> str:
@@ -215,20 +190,9 @@ if __name__ == "__main__":
 
     TREE = toytree.rtree.bdtree(30, seed=123)
     c, a, m = TREE.draw(width=400, height=600, node_sizes=5)
-    DATA = np.array([[0.5, 0.3, 0.2]] * (TREE.nnodes - TREE.ntips))
-    COLORS = toytree.color.COLORS1  #
-
-    MARK = draw_node_pie_charts(
-        axes=a,
-        coordinates=TREE.get_node_coordinates(layout='r')[TREE.ntips:],
-        data=DATA,
-        sizes=10,
-        colors=COLORS,
-        istroke="black",
-        istroke_width=0.5,
-        ostroke="black",
-        ostroke_width=1.5,
-    )
+    DATA = np.array([[0.5, 0.3, 0.2]] * (TREE.nnodes))
+    COLORS = toytree.color.COLORS1
+    TREE.annotate.add_node_pie_charts(axes=a, data=DATA, colors="Greys", mask=False)
 
     import toyplot.browser
     toyplot.browser.show(c)
