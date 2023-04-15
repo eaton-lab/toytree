@@ -40,6 +40,7 @@ import toytree.enum
 import toytree.pcm
 import toytree.network
 import toytree.annotate
+import toytree.data
 
 # container trees... container
 
