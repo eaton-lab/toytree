@@ -46,6 +46,7 @@ logger = logger.bind(name="toytree")
 
 # Type alias for Node selection
 Query = TypeVar("Query", str, int, Node)
+Color = TypeVar("Color", str, np.ndarray, tuple)  # toyplot.ColorMap, ...
 # NodeQuery, NodeMrcaQuery
 
 
@@ -852,6 +853,9 @@ class ToyTree:
     ###################################################
     # FULL TREE DATA GET/SET
     # functions to modify features of all connected Nodes
+    # see source in toytree/data/
+    # - set_node_data
+    # - get_node_data
     ###################################################
 
     def get_feature_dict(self, keys: str = None, values: str = None) -> Dict[str, Any]:
@@ -963,294 +967,6 @@ class ToyTree:
             tree.set_node_data(feature=key, mapping=mapping, inplace=True)
         return tree
 
-    def set_node_data(
-        self,
-        feature: str,
-        mapping: Dict = None,
-        default: Any = None,
-        inherit: bool = False,
-        inplace: bool = False,
-    ) -> ToyTree:
-        """Create or modify features (data) set to nodes in a ToyTree.
-
-        Features can be set on all or only some nodes. In the latter
-        case a value for nodes with missing features can be imputed
-        when you call the function :meth:`~toytree.core.tree.ToyTree.get_node_data`.
-        Some features used internally are protected from modification
-        (e.g., idx, up, children), but other base features such as
-        name, dist, height, and support can be modified, and any new
-        feature name can be created.
-
-        Values are set by providing a 'mapping' dictionary mapping node
-        idx labels (int type) or names (str type) as keys and the
-        associated values as dict values. The 'default' option can be
-        used to set a value for the feature to all nodes not specified
-        in the mapping.
-
-        Parameters
-        -----------
-        feature: str
-            The name of the node attribute to modify (cannot be 'idx').
-        mapping: Dict
-            A dictionary of {int: value} or {str: value}, where int
-            keys will be interpreted as node idx labels, and str keys
-            will be interpreted as node name labels.
-            Note: use tree.draw(node_labels='idx') to see idx labels.
-        default: Any
-            You can use a default value to be filled for all other
-            nodes not listed in the 'mapping' dictionary.
-        inherit: bool
-            If inherit is True then feature values are mapped to the
-            selected nodes as well as to all of their descendant
-            nodes. Note that the order of entries in mapping can
-            affect the values applied if multiple selected nodes
-            overlap in their descendants.
-
-        Returns
-        -------
-        A copy of the original ToyTree with node features modified.
-
-        See Also
-        --------
-        :meth:`~toytree.core.tree.ToyTree.get_node_data`.
-
-        Examples
-        --------
-        >>> tree = toytree.rtree.unittree(ntips=10)
-        >>> new_tree = tree.set_node_data(feature="Ne", default=5000)
-        >>> new_tree = tree.set_node_data(feature="Ne", mapping={0:1e5, 1:1e6, 2:1e3})
-        >>> new_tree = tree.set_node_data(feature="Ne", mapping={0:1e5, 1:1e6}, default=5000)
-        >>> new_tree = tree.set_node_data(feature="Ne", mapping={'r0':1e5, 'r1':1e6})
-        >>> new_tree = tree.set_node_data(
-        >>>     feature="state",
-        >>>     mapping={10: "A", 11: "B"},
-        >>>     inherit=True,
-        >>> )
-        """
-        # immutable; do not allow modifying topology attributes
-        if feature in ["idx", "up", "children"]:
-            raise ToytreeError(
-                f"cannot modify '{feature}' feature because it affects the "
-                "tree topology. To modify topology see `toytree.mod` "
-                "subpackage functions.")
-
-        # ensure mapping is proper type. TODO: support pd.Series?
-        if not isinstance(mapping, dict):
-            if not mapping:
-                mapping = {}
-            else:
-                raise TypeError(
-                    "'mapping' arg should be a Dict, Dict-like, or None")
-
-        # get {idx: values} for all mapping entries. The func get_nodes
-        # raises an exception if any query is not in the tree.
-        mapping = {
-            self.get_nodes(i)[0].idx: j for (i, j) in mapping.items()
-        }
-
-        # make a copy of ToyTree to return
-        tree = self if inplace else self.copy()
-
-        # sorted key nodes to map oldest (root) to youngest (tips)
-        key_nodes = sorted(mapping, reverse=True)
-
-        # make a dict {Node: newvalue} by expanding the entered mapping.
-        ndict = {}
-
-        # iterate over nodes sorted by oldest first.
-        for nidx in key_nodes:
-            node = tree[nidx]
-            value = mapping[nidx]
-
-            # map selected Node to value.
-            ndict[node] = value
-
-            # optionally map Node's descendants to value as well.
-            if inherit:
-                for desc in node.iter_descendants():
-                    ndict[desc] = value
-
-        # map {Node: default} for Nodes not in ndict
-        if default is not None:
-            for node in tree:
-                if node not in ndict:
-                    ndict[node] = default
-
-        # special mod submodule method for height modifications
-        if feature == "height":
-            height_map = {i.idx: j for (i, j) in ndict.items() if j is not None}
-            return tree.mod.edges_set_node_heights(height_map, inplace=inplace)
-
-        # dist is immutable, but allow it here, and do an update.
-        if feature == "dist":
-            feature = "_dist"
-
-        # add value to Nodes as a feature. If the value can be copied,
-        # e.g., a dict, array, etc., then assign copies, otherwise if
-        # this object is changed it affects the value of multiple Nodes
-        for node, value in ndict.items():
-            if hasattr(value, 'copy'):
-                setattr(node, feature, value.copy())
-            else:
-                setattr(node, feature, value)
-
-        # if dist was mod'd then must call update
-        if feature == "_dist":
-            tree._update()
-        return tree
-
-    def get_node_data(
-        self,
-        feature: Union[str, Sequence[str], None] = None,
-        missing: Union[Any, Sequence[Any], None] = None,
-    ) -> Union[pd.DataFrame, pd.Series]:
-        """Return a pandas Series or DataFrame with values for one or
-        more selected features in the tree.
-
-        Parameters
-        ----------
-        feature: str, Iterable[str], or None
-            One or more features of Nodes to get data for. Features
-            include the default Node features (idx, name, height, dist,
-            support) as well as any attribute that has been set to
-            a Node (except attrs with names that start with an '_'.)
-        missing: Any, Iterable[Any], or None
-            A value to use for missing data (nodes that do not have
-            the feature). Default arg is None which will automatically
-            set missing data to `np.nan`. Example: you can set the
-            missing values to a default value like 0 for an int feature
-            or by entering 0, or you can enter a list of values to
-            set default missing for all features.
-
-        Returns
-        -------
-        pd.DataFrame or pd.Series
-            If a single feature is selected then a pd.Series will be
-            returned with tip node 'idx' attributes as the index.
-            If multiple features are selected (or None, which selects
-            all features) then a pd.DataFrame is returned with tip
-            node 'idx' attributes as the index and feature names as
-            the column labels.
-
-        Examples
-        --------
-        Add a new feature to some nodes and fetch data for all nodes.
-        >>> tree = toytree.rtree.unittree(10)
-        >>> tree = tree.set_node_data("trait1", {0: "A", 1: "B"})
-        >>> tree = tree.set_node_data("trait2", {2: 3.5, 3: 5.0})
-        >>> data1 = tree.get_tip_data(feature="trait1", missing="C")
-        >>> data2 = tree.get_tip_data(feature="trait2")
-
-        See Also
-        --------
-        get_feature_dict
-            Get a dict mapping any node feature to another.
-        set_node_data
-            Set a feature value to one or more Nodes in a ToyTree.
-        get_tip_data
-            Return DataFrame with feature data for only the tip Nodes.
-
-        Note
-        ----
-        This function is convenient for accessing data in tabular
-        format, but is slower than accessing data directly from Nodes,
-        for example during a traversal, because it spends time checking
-        for Nodes with missing data, and type-checks missing values.
-
-        Setting complex objects to Node data, such as lists or sets,
-        rather than float, int, or str, should generally work fine,
-        but take care that toytree will not attempt to automatically
-        check or fill missing values for these data.
-        """
-        # Storing missing as pd.NA allows not having to convert the
-        # dtype of other values from e.g., int to float. However, if
-        # <NA> gets converted to a string for plottig it will cause
-        # havoc on the HTML. And it looks weird to have a mix of NaN
-        # and <NA> in the data table. So should we use just one, or
-        # both? Also pd.NA is very slow compared to np.nan.
-
-        # TODO: AVOID FORMATTING FOR COMPLEX FEATURE TYPES (E.G., DICT, SET, ETC).
-        # select one or more features to fetch values for
-        if feature is None:
-            features = self.features
-        elif isinstance(feature, (list, tuple)):
-            features = feature
-        else:
-            features = [feature]
-
-        # create a list of missing values for subs
-        if missing is None:
-            missing = [np.nan] * len(features)
-            # missing = [None] * len(features)
-        elif isinstance(missing, (list, tuple)):
-            assert len(missing) == len(features), (
-                "when entering multiple missing values it must be the same "
-                "length as the number of features")
-        else:
-            missing = [missing] * len(features)
-
-        # check for bad user features
-        for feat in features:
-            if feat not in self.features:
-                raise ValueError(f"feature '{feature}' not in tree.features.")
-
-        # init a dataframe for all selected features
-        # data = pd.DataFrame(
-        #     index=range(self.nnodes),
-        #     columns=features,
-        # )
-
-        # # get remaining features
-        # for feat in features:
-        #     for nidx in range(self.nnodes):
-        #         data.loc[nidx, feat] = getattr(self[nidx], feat, pd.NA)
-
-        #     # fill in appropriate missing data value for each Series
-        #     if missing is not None:
-        #         data[feat] = data[feat].where(data[feat].notnull(), missing)
-        #     else:
-        #         if data[feat].dtype == "O":
-        #             data[feat] = data[feat].where(data[feat].notnull(), "")
-        #         else:
-        #             data[feat] = data[feat].where(data[feat].notnull(), pd.NA)
-
-        # store as ordered lists, and let pd.Series convert to dtype
-        data = {}
-        for fidx, feat in enumerate(features):
-
-            # fill ordered list with Node value or missing value
-            ofeat = []
-            miss = missing[fidx]
-
-            # if miss is None then find auto-filling type. This is
-            # quite slow (milliseconds) making this not the recommended
-            # method for quick data fetching, as explained in docs.
-            # if miss is None:
-            #     values = [getattr(self[nidx], feat, None) for nidx in range(self.nnodes)]
-            #     types = [type(i) for i in values if i is not None]
-
-            # get value or set to missing
-            for nidx in range(self.nnodes):
-                value = getattr(self[nidx], feat, miss)
-                # if the actual value is nan then replace with miss
-                try:
-                    if np.isnan(value):
-                        value = miss
-                except (TypeError, ValueError):
-                    pass
-                ofeat.append(value)
-
-            # allow pandas to infer dtype
-            series = pd.Series(ofeat)
-
-            # modify dtype ...
-            data[feat] = series
-
-        # if a single feature was selected return as a Series else DataFrame
-        if len(features) == 1:
-            return series
-        return pd.DataFrame(data)
-
     def get_tip_data(
         self,
         feature: Union[str, Sequence[str], None] = None,
@@ -1332,7 +1048,7 @@ class ToyTree:
         axes: Cartesian = None,
         layout: str = None,
         tip_labels: Union[bool, Sequence] = None,
-        tip_labels_colors: Union[str, Sequence] = None,
+        tip_labels_colors: Union[Color, Sequence[Color]] = None,
         tip_labels_angles: Union[float, Sequence[float]] = None,
         tip_labels_style: Dict[str, Any] = None,
         tip_labels_align: bool = None,
@@ -1373,37 +1089,43 @@ class ToyTree:
 
         Parameters
         ----------
-        tree_style: str
-            One of several builtin styles for tree plotting. The
-            default is 'n' (normal), others include "c", "d", "o",
-            "m", and you can crate your own TreeStyles (see docs).
-            TreeStyle sets a base style on top of which other style
-            args override.
-        ts: str
-            A shorter alias name for tree_style.
-        height: int
-            If None the plot height is autosized. If 'axes' arg is
+        tree_style: str or None
+            Select a builtin base TreeStyle on top of which to add other
+            style modifications. Options include "n", "c", "p", "o",
+            "r", "m", "d"; you can alo create your own (see docs).
+            Using a tree_style overrides any `ToyTree.style` dict.
+        ts: str or None
+            A shorter alias that can be used for `tree_style`.
+        height: int or None
+            If None the plot height is auto-sized. If 'axes' arg is
             used tree is drawn on an existing Axes and this arg is
-            ignored. Else it is height of the Canvas in px units.
+            ignored. Else, this sets height of the Canvas in px units.
         width: int
-            If None the plot height is autosized. If 'axes' arg is
+            If None the plot width is auto-sized. If 'axes' arg is
             used tree is drawn on an existing Axes and this arg is
-            ignored. Else it is width of the Canvas in px units.
-        axes: Toyplot.coordinates.Cartesian
-            A toyplot cartesian axes object. If provided tree is drawn
+            ignored. Else, this sets width of the Canvas in px units.
+        axes: toyplot.coordinates.Cartesian
+            A toyplot Cartesian axes object. If provided, tree is drawn
             on it. If not provided then a new Canvas and Cartesian
-            axes are created and returned with the tree plot added to
-            it. See documentation for examples of how this option is
+            axes are created and returned with the tree Mark added to
+            it. See documentation for details on how this option is
             used to create composite drawings combining tree plots
-            with other data plots.
+            with other data plots (e.g., scatterplots, barplots).
+        layout: str or None
+            Layout defines the direction parent-child relationships are
+            drawn. Options are 'r' 'l', 'u', 'd' for 'right', 'left',
+            'up', or 'down' respectively. 'c' draws circular trees from
+            angle 0-360 degrees, or cX-Y draws circular trees on an arc
+            from X degrees to Y degrees. Finally, any other entry, such
+            as None, draws an 'unrooted' layout. Default='r'.
         tip_labels: bool or Sequence[str]
-            If True tip labels ('name' features on tip nodes) are
-            added to the plot; if False no tip labels are added. If a
+            If True, tip labels ('name' features on tip Nodes) are
+            added to the plot; if False, no tip labels are added. If a
             list of tip labels is provided it must be the same len as
-            ntips and is applied in order to nodes by idx 0-ntips.
+            ntips and is applied in Node idx order (0-ntips).
         tip_labels_colors: Color or Sequence[Color]
-            Any valid toyplot Color or Sequence of Colors to apply to
-            tip labels in node idx order.
+            A valid toyplot Color, Sequence[Color] w/ len=ntips, or
+            tuple of (feature, colormap) to map colors to tip labels.
         tip_labels_style: Dict[str, str]
             A dictionary of CSS style arguments to apply to text
             tip labels. See tree.style for options.
@@ -1475,10 +1197,9 @@ class ToyTree:
             of the axes can be further modified from the axes object
             after the draw function is called.
         padding: float
-            Padding space between the drawing and the visible axes.
-            Default is 20px.
-        margin:
-            ...
+            Padding space between the drawing and the visible axes. This
+            is a setting of the Cartesian axes and can be modified more
+            after plotting. Default=20 (px).
         xbaseline: float
             Shift the position of the tree along x-axis.
         ybaseline: float
@@ -1487,7 +1208,7 @@ class ToyTree:
             Admixture edges add colored edges to the plot in the
             style of the 'edge_align_style'. These will be drawn
             from (source, dest, height, width, color). Example:
-            [(4, 3, 50000, 3, 'red')].
+            >>> [(4, 3, 50000, 3, 'red')].
         fixed_order: Sequence[str]
             An Iterable of tip labels in the order they should be
             plotted. The default is the node names in idx order
@@ -1551,12 +1272,12 @@ class ToyTree:
         )
         try:
             return draw_toytree(**kwargs)
-        except ToytreeError as inst:
-            logger.error(inst)
-            raise inst
-        except Exception as inst:
-            # Unexpected error type
-            raise inst
+        except ToytreeError as exc:
+            logger.error(exc)
+            raise exc
+        except Exception as exc:
+            logger.error(exc)
+            raise exc
 
 
 if __name__ == "__main__":
