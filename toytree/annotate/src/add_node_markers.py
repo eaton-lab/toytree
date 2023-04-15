@@ -338,6 +338,39 @@ def add_node_pie_charts(
     return mark
 
 
+def add_node_bars(
+    tree: ToyTree,
+    axes: Cartesian,
+    # bars: Mapping[Query, Tuple[float, float]],
+    color: Union[Color, Sequence[Color]],
+    opacity: Union[float, Sequence[float]],
+):
+    """
+
+    Example
+    -------
+    >>> tree = toytree.rtree.unittree(10, treeheight=1e5)
+    >>> ages_ci = {
+    >>>     nidx: (node.dist - 1000, node.dist + 1000)
+    >>>     for nidx, node in enumerate(tree)
+    >>> }
+    >>> canvas, axes, mark0 = tree.draw()
+    >>> tree.annotate.node_height_confidence_intervals(axes, ages_ci)
+    >>> 
+    >>> mark = toytree.annotate.node_height_confidence_intervals(
+    >>>     tree=tree, axes=axes, mapping=ages_ci)
+    """
+    pass
+
+
+# def add_clade_box(
+#     tree: ToyTree,
+#     axes: Cartesian,
+# ):
+#     pass
+
+
+
 if __name__ == "__main__":
 
     import toytree
@@ -349,11 +382,11 @@ if __name__ == "__main__":
     # annotate with edge labels
     # add_edge_labels(tree, axes=a, labels=tree.get_node_data("idx"))
     # add_node_markers(
-        # tree, axes=a, size=10, marker='s', color=("idx", "BlueRed"))
+    #     tree, axes=a, size=10, marker='s', color=("idx", "BlueRed"))
     # add_node_labels(tree, axes=a, labels='idx')
     data = np.array([[0.5, 0.3, 0.2]] * tree.nnodes)
     tree.annotate.add_node_pie_charts(
         a, data, size=18, istroke="white", istroke_width=0, rotate=90,
         colors="Greys",
-        )
+    )
     toytree.utils.show(c)

@@ -328,10 +328,9 @@ def add_edge_pie_charts(
 
     >>> # add pie charts to all internal Nodes
     >>> tree.annotate.add_edge_pie_charts(
-    >>>     axes=axes, data=arr, size=20, mask=(0, 1, 1),
+    >>>     axes=axes, data=arr, size=20, mask=False,
     >>>     istroke_width=0.75, istroke="black", rotate=-45,
     >>> )
-
     """
     # get mark for coordinates on plotted tree.
     mark = get_last_toytree_mark_from_cartesian(axes)

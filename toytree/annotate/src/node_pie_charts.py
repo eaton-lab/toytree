@@ -25,7 +25,6 @@ preferred to use this.
                                        move to center of circle.
 """
 
-from typing import List, Union, Dict
 import functools
 import xml.etree.ElementTree as xml
 from multipledispatch import dispatch

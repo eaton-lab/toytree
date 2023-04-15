@@ -6,7 +6,6 @@
 import numpy as np
 import toyplot
 from toyplot.mark import Mark
-import toytree
 
 
 class PieChartMark(Mark):

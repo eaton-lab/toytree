@@ -38,7 +38,7 @@ def add_node_bars(
     >>> }
     >>> canvas, axes, mark0 = tree.draw()
     >>> tree.annotate.node_height_confidence_intervals(axes, ages_ci)
-    >>> 
+    >>>
     >>> mark = toytree.annotate.node_height_confidence_intervals(
     >>>     tree=tree, axes=axes, mapping=ages_ci)
     """
