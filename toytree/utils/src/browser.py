@@ -9,7 +9,11 @@ from pathlib import Path
 Canvas = TypeVar("Canvas")
 
 
-def show(canvases: Union[Canvas, Sequence[Canvas]], title="toytree", new: bool=False) -> None:
+def show(
+    canvases: Union[Canvas, Sequence[Canvas]],
+    title: str = "toytree",
+    new: bool = False,
+) -> None:
     """Display one or more canvases in a web browser.
 
     Uses Toyplot's preferred HTML+SVG+Javascript backend to display
@@ -30,6 +34,7 @@ def show(canvases: Union[Canvas, Sequence[Canvas]], title="toytree", new: bool=F
     import toyplot.canvas
     import toyplot.html
 
+    # require Canvas or Sequence[Canvas] and make into Sequence[Canvas]
     if isinstance(canvases, toyplot.canvas.Canvas):
         canvases = [canvases]
     elif all(isinstance(i, toyplot.canvas.Canvas) for i in canvases):
@@ -38,7 +43,7 @@ def show(canvases: Union[Canvas, Sequence[Canvas]], title="toytree", new: bool=F
         raise ValueError(
             f"Expected toyplot.Canvas or List[toyplot.Canvas], not {canvases}")
 
-    # wrap the html/svg element
+    # wrap the toytree as a html/svg element
     html = xml.Element("html")
     head = xml.SubElement(html, "head")
     xml.SubElement(head, "title").text = title
@@ -51,7 +56,9 @@ def show(canvases: Union[Canvas, Sequence[Canvas]], title="toytree", new: bool=F
     with open(path, "wb") as stream:
         stream.write(xml.tostring(html, method="html"))
 
-    # open a window or tab in browser
+    # open tmp html file in a window or tab in browser
+    # autoraise=False tells it not to raise the window to the top,
+    # but in some browsers this is not suppressable.
     webbrowser.open(str(path), new=new, autoraise=False)
 
 

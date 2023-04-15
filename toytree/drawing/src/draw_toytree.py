@@ -14,11 +14,13 @@ from copy import deepcopy
 from loguru import logger
 from toyplot.canvas import Canvas
 from toyplot.coordinates import Cartesian
-from toytree.layout import BaseLayout, LinearLayout, CircularLayout, UnrootedLayout
+from toytree.layout import (
+    BaseLayout, LinearLayout, CircularLayout, UnrootedLayout)
 from toytree.drawing import ToyTreeMark, CanvasSetup
 from toytree.style import (
-    TreeStyle, SubStyle, get_base_tree_style_by_name, validate_style
-)
+    TreeStyle, SubStyle, get_base_tree_style_by_name)
+from toytree.style.src.validator import validate_style
+
 
 # from toytree.utils import ToytreeError
 
