@@ -97,7 +97,7 @@ class TipLabelsStyle(SubStyle):
     def __init__(self):
         self.fill: ColorType = "rgba(16.1%,15.3%,14.1%,1.000)"
         self.fill_opacity: Optional[float] = None
-        self.font_size: Union[str, float] = 11
+        self.font_size: Union[str, float] = 12
         self._toyplot_anchor_shift: Union[str, float] = 15
         self.baseline_shift: Union[str, int] = 0
         self.text_anchor: str = "start"

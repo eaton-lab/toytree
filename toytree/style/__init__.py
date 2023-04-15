@@ -5,6 +5,7 @@
 from toytree.style.src.tree_style_base import TreeStyle
 from toytree.style.src.sub_styles import SubStyle
 from toytree.style.src.tree_styles import get_base_tree_style_by_name
+from toytree.style.src.normalize_values import normalize_values
 from toytree.style.src.validator import validate_style
 
 if __name__ == "__main__":
@@ -17,5 +18,5 @@ if __name__ == "__main__":
     sty.tip_labels_colors = toytree.color.COLORS1[0]
     sty.node_markers = "o"
 
-    validate_style(tre, sty)    
+    # validate_style(tre, sty)
     print(sty)

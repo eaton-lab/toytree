@@ -8,10 +8,8 @@ from typing import TypeVar, Sequence, Any, Union, Tuple
 from loguru import logger
 import numpy as np
 import toyplot
-from toytree.style import TreeStyle
-from toytree.color import ToyColor, color_cycler
-from toytree.data import normalize_values
-from toytree.style.src.color_mapper import get_color_mapped_feature
+from toytree.style import TreeStyle, normalize_values
+from toytree.color import ToyColor, color_cycler, get_color_mapped_feature
 from toytree.utils import (
     ToytreeError,
     StyleSizeMismatchError,

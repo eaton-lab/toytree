@@ -2,7 +2,6 @@
 
 """Data transformations for formatting node values nicely.
 
-
 # maybe consider supporting something like this...
 style_arg=(feature, 2, 10, 10)
 
