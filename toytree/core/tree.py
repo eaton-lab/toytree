@@ -33,7 +33,7 @@ from toytree.core.apis import (
     TreeModAPI, TreeDistanceAPI, TreeEnumAPI, PhyloCompAPI, AnnotationAPI)
 from toytree.core.node import Node
 from toytree.style import TreeStyle
-from toytree.drawing import ToyTreeMark, draw_toytree, get_layout, get_tree_style
+from toytree.drawing import ToyTreeMark, draw_toytree, get_layout, get_tree_style_base
 from toytree.utils.src.exceptions import (
     ToytreeError, NODE_NOT_IN_TREE_ERROR, NODE_INDEXING_ERROR)
 import toytree
@@ -105,7 +105,7 @@ class ToyTree:
         return (self[i] for i in range(self.nnodes))
 
     def __getitem__(self, idx: int) -> Node:
-        """ToyTree is indexable by idx label to access Nodes."""
+        """Nodes can be accessed by indexing or slicing by idx label"""
         # allow indexing by int, e.g., [3]
         try:
             return self._idx_dict[idx]
@@ -133,6 +133,10 @@ class ToyTree:
         """Short object representation for toytree.core.tree.ToyTree"""
         return f"<toytree.ToyTree at {hex(id(self))}>"
 
+    def __str__(self) -> str:
+        """Return ascii representation of tree."""
+        return "\n".join(self.treenode._get_ascii()[0])
+
     #####################################################
     # FEATURES
     #####################################################
@@ -155,7 +159,7 @@ class ToyTree:
         >>> tree.get_node_data("color", missing="blue")
         """
         feats = set()
-        for node in self.traverse():
+        for node in self:
             feats.update(node.__dict__)
         feats = (i for i in feats if not i.startswith("_"))
         defaults = ("idx", "name", "height", "dist", "support")
@@ -834,7 +838,8 @@ class ToyTree:
         >>> node_coords = tree.get_node_coordinates(**style)
         >>> axes.scatterplot(coords.x, coords.y, size=10);
         """
-        style = get_tree_style(self, **kwargs)
+        style = get_tree_style_base(self, **kwargs)
+        style = validate_style(self, style, **kwargs)
         coords = get_layout(self, style).coords
         data = pd.DataFrame(
             columns=('x', 'y'),
@@ -1123,12 +1128,14 @@ class ToyTree:
             added to the plot; if False, no tip labels are added. If a
             list of tip labels is provided it must be the same len as
             ntips and is applied in Node idx order (0-ntips).
-        tip_labels_colors: Color or Sequence[Color]
-            A valid toyplot Color, Sequence[Color] w/ len=ntips, or
+        tip_labels_colors: Color or Sequence[Color] or (feature, colormap)
+            A valid toyplot Color, Sequence[Color] of len=ntips, or
             tuple of (feature, colormap) to map colors to tip labels.
         tip_labels_style: Dict[str, str]
             A dictionary of CSS style arguments to apply to text
             tip labels. See tree.style for options.
+        tip_labels_angles: int, Sequence[int], or None
+            None will set angles based on layout method.
         tip_labels_align: bool
             If True tip names will be aligned and dashed edges will
             drawn to extend from tree edges to the tip names.
@@ -1235,7 +1242,7 @@ class ToyTree:
         >>> toyplot.svg.render(canvas, "saved-plot.svg")
         """
         kwargs = dict(
-            toytree=self,
+            # toytree=self,
             tree_style=tree_style,
             axes=axes,
             height=height,
@@ -1270,8 +1277,14 @@ class ToyTree:
             fixed_position=fixed_position,
             kwargs=kwargs,
         )
+        # private debugging mode returns just the kwargs
+        if kwargs.get("kwargs").get("debug"):
+            return kwargs
+
+        # draw the ToyTree
         try:
-            return draw_toytree(**kwargs)
+            canvas, axes, mark = draw_toytree(tree=self, **kwargs)
+            return canvas, axes, mark
         except ToytreeError as exc:
             logger.error(exc)
             raise exc
@@ -1282,12 +1295,14 @@ class ToyTree:
 
 if __name__ == "__main__":
 
-    import toytree
+    # import toytree
     tree_ = toytree.rtree.unittree(12, treeheight=1232344, seed=123)
     # tree = tree_.mod.edges_slider(0.5)
     # c, a, m = tree_._draw_browser(tree_style='s', layout='d', new=False)
     print(tree_.write(dist_formatter="%.12g"))
     print(tree_.get_node_data())
+
+    print(tree_.root)
 
     # print(tree.get_tip_labels())
 

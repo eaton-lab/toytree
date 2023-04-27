@@ -28,7 +28,7 @@ from typing import TypeVar
 from functools import wraps
 
 ToyTree = TypeVar("ToyTree")
-Cartesian = TypeVar("Cartesian")
+# Cartesian = TypeVar("Cartesian")
 
 
 class TreeModAPI:
