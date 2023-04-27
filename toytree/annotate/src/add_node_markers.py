@@ -1,19 +1,25 @@
 #!/usr/bin/env python
 
-"""...
+"""Annotation methods for adding node markers to tree drawings.
 
+Examples
+--------
+...
 """
 
 from typing import Tuple, Sequence, Mapping, Any, Union, TypeVar
 import numpy as np
 from numpy.typing import ArrayLike
-# import toyplot
 from toyplot.mark import Mark
 from toyplot.coordinates import Cartesian
 
 from toytree import ToyTree
-from toytree.style.src.validator import check_arr
-from toytree.color import get_color_mapped_feature
+from toytree.color import ToyColor
+from toytree.style import (
+    check_arr,
+    # get_color_mapped_feature,
+    get_color_mapped_values,
+)
 from toytree.annotate.src.node_pie_charts import (
     PieChartMark,
     validate_pie_data,
@@ -23,14 +29,18 @@ from toytree.annotate.src.annotation_mark import (
     assert_tree_matches_mark,
 )
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
-from toytree.style.src.validate_nodes import (
+from toytree.style.src.validate_node_labels import (
     validate_node_labels,
     validate_node_labels_style,
+)
+from toytree.style.src.validate_utils import substyle_dict_to_css_dict
+from toytree.style.src.validate_nodes import (
     validate_node_colors,
     validate_node_sizes,
     validate_node_style,
     validate_node_markers,
     validate_node_mask,
+    validate_node_numeric,
 )
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -38,7 +48,7 @@ Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = [
     "add_node_labels",
     "add_node_markers",
-    # "add_node_pie_charts",
+    "add_node_pie_charts",
     # "add_node_bars",
     # "add_node_histograms",
     # "add_node_densigrams",
@@ -54,6 +64,8 @@ def add_node_markers(
     color: Union[Color, Sequence[Color]] = None,
     opacity: Union[float, Sequence[float]] = 1.0,
     mask: Union[np.ndarray, Tuple[int, int, int], bool, None] = None,
+    xshift: int = 0,
+    yshift: int = 0,
     style: Mapping[str, Any] = None,
 ) -> Mark:
     """Return a toyplot Mark of node markers added to a tree plot.
@@ -83,6 +95,10 @@ def add_node_markers(
         to (show_tips, show_internal, show_root).
     style: dict
         Marker style dict. See `tree.style.node_style` for options.
+    xshift: int
+        Shift marker horizontally by px units (+=right, -=left).
+    yshift: int
+        Shift marker vertically by px units (+=down, -=up).
 
     Example
     -------
@@ -107,23 +123,48 @@ def add_node_markers(
     assert_tree_matches_mark(tree, mark)
     coords = mark.ntable
 
-    # set styles on top of defaults. Must run before node_colors.
-    style = validate_node_style(tree, style, serialize=True)
+    # get mask and apply to all other styles below
+    mask = validate_node_mask(tree, style=None, node_mask=mask)
 
-    # check length of colors
-    node_colors = validate_node_colors(tree, color)
+    # update node_style setting
+    style = {} if style is None else style
+    style = validate_node_style(tree, style=None, **style)
+    style = substyle_dict_to_css_dict(style.__dict__)
+
+    # update node colors setting; sets to None if only one color.
+    node_colors, fill_color = validate_node_colors(
+        tree, style=None, node_colors=color)
+
+    # if fill_color then set to node_style.fill since node_colors = None
     if node_colors is None:
-        if color:
-            style["fill"] = color
+        if fill_color:
+            style["fill"] = ToyColor(fill_color)  # overrides node_style.fill
+        else:
+            pass  # node_style.fill overrides
     else:
+        node_colors = node_colors[mask]
         style.pop("fill")
 
-    # mask some edges
-    mask = validate_node_mask(tree, mask, default=False)
+    # validate others and trim to mask
+    markers = validate_node_markers(tree, style=None, node_markers=marker)[mask]
+    sizes = validate_node_sizes(tree, style=None, node_sizes=size)[mask]
+    opacity = validate_node_numeric(
+        tree, style=None, key="node_opacity", node_opacity=opacity)[mask]
+
+    # apply mask to Node coordinates
     coords = coords[mask, :]
-    markers = validate_node_markers(tree, marker)[mask]
-    sizes = validate_node_sizes(tree, size)[mask]
-    opacity = validate_node_sizes(tree, opacity)[mask]
+    if xshift or yshift:
+        # Note: if later annotations change the projection this will be off
+        axes._finalize()
+        if xshift:
+            origin, xshifted = axes._x_projection.inverse([0, xshift])
+            x_shift_projected = xshifted - origin
+            coords[:, 0] += x_shift_projected
+        if yshift:
+            origin, yshifted = axes._y_projection.inverse([0, yshift])
+            y_shift_projected = yshifted - origin
+            coords[:, 1] += y_shift_projected
+        axes._finalized = None    
 
     # plot edge markers as scatterplot markers
     mark = axes.scatterplot(
@@ -134,7 +175,6 @@ def add_node_markers(
         marker=markers,
         mstyle=style,
         opacity=opacity,
-        # annotation=True,
     )
     return mark
 
@@ -149,6 +189,8 @@ def add_node_labels(
     font_size: Union[int, None] = 12,
     angle: Union[int, Sequence[int]] = 0,
     mask: Union[np.ndarray, Tuple[int, int, int], None] = None,
+    xshift: int = 0,
+    yshift: int = 0,
     style: Mapping[str, Any] = None,
 ) -> Mark:
     """Return a toyplot Mark of node labels added to a tree drawing.
@@ -178,6 +220,10 @@ def add_node_labels(
         an node from being shown and False shows the node. None or False
         shows all nodes. A tuple of 3 booleans can be entered as a
         shortcut to (show_tips, show_internal, show_root).
+    xshift: int
+        Shift label horizontally by px units (+=right, -=left).
+    yshift: int
+        Shift label vertically by px units (+=down, -=up).
     style: dict
         Style dict. See `tree.style.node_labels_style` for options.
 
@@ -197,39 +243,58 @@ def add_node_labels(
     assert_tree_matches_mark(tree, mark)
     coords = mark.ntable
 
+    # mask some edges
+    mask = validate_node_mask(tree, style=None, node_mask=mask)
+
     # check length and type of labels
-    labels = validate_node_labels(tree, labels)
+    labels = validate_node_labels(tree, style=None, node_labels=labels)[mask]
 
     # set styles on top of defaults
-    style = validate_node_labels_style(tree, style)
+    style = {} if style is None else style
+    style = validate_node_labels_style(tree, style=style, **style)
+    style = substyle_dict_to_css_dict(style.__dict__)
 
     # override font size
     if font_size:
         style["font-size"] = font_size
 
-    # check length of colors
-    label_colors = validate_node_colors(tree, color, serialize=True)
-    if label_colors is None:
-        if color:
-            style["fill"] = color
+    # update node colors setting; sets to None if only one color.
+    node_colors, fill_color = validate_node_colors(
+        tree, style=None, node_colors=color)
+
+    # if fill_color then set to node_style.fill since node_colors = None
+    if node_colors is None:
+        if fill_color:
+            style["fill"] = ToyColor(fill_color)  # overrides node_style.fill
+        else:
+            pass  # node_style.fill overrides
     else:
+        node_colors = node_colors[mask]
         style.pop("fill")
 
-    # mask some edges
-    mask = validate_node_mask(tree, mask, default=False)
+    opacity = validate_node_numeric(tree, style=None, key="opacity", opacity=opacity)[mask]
+    angle = validate_node_numeric(tree, style=None, key="angle", angle=angle)[mask]
+
     coords = coords[mask, :]
-    labels = labels[mask]
-    if label_colors is not None:
-        label_colors = label_colors[mask]
-    opacity = validate_node_sizes(tree, opacity)[mask]
-    angle = validate_node_sizes(tree, angle)[mask]
+    if xshift or yshift:
+        # Note: if later annotations change the projection this will be off
+        axes._finalize()
+        if xshift:
+            origin, xshifted = axes._x_projection.inverse([0, xshift])
+            x_shift_projected = xshifted - origin
+            coords[:, 0] += x_shift_projected
+        if yshift:
+            origin, yshifted = axes._y_projection.inverse([0, yshift])
+            y_shift_projected = yshifted - origin
+            coords[:, 1] += y_shift_projected
+        axes._finalized = None
 
     # add text at Node positions + half length of dists.
     mark = axes.text(
         coords[:, 0],
         coords[:, 1],
         labels,
-        color=label_colors,
+        color=node_colors,
         opacity=opacity,
         angle=angle,
         style=style,
@@ -242,7 +307,7 @@ def add_node_labels(
 def add_node_pie_charts(
     tree: ToyTree,
     axes: Cartesian,
-    data: ArrayLike,
+    data: np.ndarray,
     size: Union[int, Sequence[int]] = 10,
     colors: Union[Sequence[Color], Color] = None,
     ostroke: Color = "#262626",
@@ -251,6 +316,8 @@ def add_node_pie_charts(
     istroke_width: float = 0.,
     rotate: int = -45,
     mask: Union[bool, np.ndarray, tuple] = False,
+    xshift: int = 0,
+    yshift: int = 0,
 ) -> Mark:
     """Return a toyplot Mark of node markers added to a tree plot.
 
@@ -265,13 +332,24 @@ def add_node_pie_charts(
         Array of shape(ncategories, nnodes) with rows summing to 1. 
     size: int or Sequence[int]
         Size of markers as single int or Sequence of ints, in px units.
-    color: str, tuple, or array, or Sequence
-        Color of markers as single color or Sequence of colors.
-    opacity: float or Sequence[float]
-        Opacity of markers (fill & stroke) as a single float or Sequence
-        of floats. Note that fill and stroke opacity can be set
-        separately using the style dict, but only as single values.
-    ...
+    colors: None, str, tuple, or array, or Sequence
+        Color for each category/trait or the name of a colormap.
+    ostroke: Color
+        Color of the stroke on the outside of the Mark.
+    ostroke_width: float
+        Width of the stroke on the outside of the Mark
+    istroke: Color
+        Color of the stroke on the inside of the Mark between wedges.
+    istroke_width: float
+        Width of the stroke on the inside of the Mark between wedges.
+    rotate: int
+        Rotate the starting point of the wedges.
+    mask: bool, np.ndarray, or tuple
+        Node mask to hide/show some or all Nodes.
+    xshift: int
+        Shift marker horizontally by px units (+=right, -=left).
+    yshift: int
+        Shift marker vertically by px units (+=down, -=up).
 
     Example
     -------
@@ -289,12 +367,13 @@ def add_node_pie_charts(
     >>>     axes=axes, data=arr, size=20, mask=(0, 1, 1),
     >>>     istroke_width=0.75, istroke="black", rotate=-45,
     >>> )
-
     """
     # get mark for coordinates on plotted tree.
     mark = get_last_toytree_mark_from_cartesian(axes)
     assert_tree_matches_mark(tree, mark)
-    coords = mark.ntable
+
+    # get mask
+    mask = validate_node_mask(tree, style=None, node_mask=mask)
 
     # check and cleanup data input.
     # TODO: option to collapse categories below a minimum percentage
@@ -306,7 +385,7 @@ def add_node_pie_charts(
     if isinstance(colors, (tuple, list, np.ndarray)):
         pass
     else:
-        colors = get_color_mapped_feature(range(data.shape[1]), colors)
+        colors = get_color_mapped_values(range(data.shape[1]), colors)
 
     # ensure conversion of colors to array type and size=ncategories
     colors = check_arr(
@@ -315,12 +394,23 @@ def add_node_pie_charts(
         size=data.shape[1],
         ctype=np.void,
     )
+    sizes = validate_node_sizes(tree, style=None, node_sizes=size)[mask]
 
     # mask some Nodes
-    mask = validate_node_mask(tree, mask, default=False)
-    coords = coords[mask, :]
     data = data[mask, :]
-    sizes = validate_node_sizes(tree, size)[mask]
+    coords = mark.ntable[mask, :]
+    if xshift or yshift:
+        # Note: if later annotations change the projection this will be off
+        axes._finalize()
+        if xshift:
+            origin, xshifted = axes._x_projection.inverse([0, xshift])
+            x_shift_projected = xshifted - origin
+            coords[:, 0] += x_shift_projected
+        if yshift:
+            origin, yshifted = axes._y_projection.inverse([0, yshift])
+            y_shift_projected = yshifted - origin
+            coords[:, 1] += y_shift_projected
+        axes._finalized = None
 
     # plot edge markers as scatterplot markers
     mark = PieChartMark(

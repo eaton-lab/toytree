@@ -12,8 +12,12 @@ from toyplot.mark import Mark
 from toyplot.coordinates import Cartesian
 
 from toytree import ToyTree
-from toytree.style.src.validator import check_arr
-from toytree.color import get_color_mapped_feature
+from toytree.color import ToyColor
+from toytree.style import (
+    check_arr,
+    # get_color_mapped_feature,
+    get_color_mapped_values,
+)
 from toytree.annotate.src.node_pie_charts import (
     PieChartMark,
     validate_pie_data,
@@ -24,13 +28,16 @@ from toytree.annotate.src.annotation_mark import (
 )
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
 from toytree.style.src.validate_nodes import (
-    validate_node_labels,
-    validate_node_labels_style,
     validate_node_colors,
-    validate_node_sizes,
+    validate_node_numeric,
     validate_node_style,
     validate_node_markers,
     validate_node_mask,
+)
+from toytree.style.src.validate_utils import substyle_dict_to_css_dict
+from toytree.style.src.validate_node_labels import (
+    validate_node_labels,
+    validate_node_labels_style,
 )
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -85,6 +92,8 @@ def add_edge_markers(
     color: Union[Color, Sequence[Color]] = None,
     opacity: Union[float, Sequence[float]] = 1.0,
     mask: Union[np.ndarray, Tuple[int, int, int], None] = None,
+    xshift: int = 0,
+    yshift: int = 0,
     style: Mapping[str, Any] = None,
 ) -> Mark:
     """Return a toyplot Mark of edge markers added to a tree plot.
@@ -113,6 +122,10 @@ def add_edge_markers(
         to build an array of (mask_tips, mask_internal, mask_root).
     style: dict
         Marker style dict. See `tree.style.node_style` for options.
+    xshift: int
+        Shift marker horizontally by px units (+=right, -=left).
+    yshift: int
+        Shift marker vertically by px units (+=down, -=up).
 
     Example
     -------
@@ -134,26 +147,48 @@ def add_edge_markers(
     nedges = tree.nnodes - 2 if tree.is_rooted() else tree.nnodes - 1
     coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)[:nedges]
 
-    # set styles on top of defaults. Must run before node_colors.
-    style = validate_node_style(tree, style, serialize=True)
-
-    # check length of colors
-    node_colors = validate_node_colors(tree, color)
-    if node_colors is None:
-        if color:
-            style["fill"] = color
-    else:
-        style.pop("fill")
-        node_colors = validate_node_colors(tree, color)[:nedges]
-
     # mask some edges
-    mask = validate_node_mask(tree, mask, default=False)[:nedges]
-    coords = coords[mask, :]
-    markers = validate_node_markers(tree, marker)[:nedges][mask]
-    sizes = validate_node_sizes(tree, size)[:nedges][mask]
-    opacity = validate_node_sizes(tree, opacity)[:nedges][mask]
+    mask = validate_node_mask(tree, style=None, node_mask=mask)[:nedges]
+
+    # set styles on top of defaults. Must run before node_colors.
+    style = {} if style is None else style
+    style = validate_node_style(tree, style=style, **style)
+    style = substyle_dict_to_css_dict(style.__dict__)
+
+    # update node colors setting; sets to None if only one color.
+    node_colors, fill_color = validate_node_colors(
+        tree, style=None, node_colors=color)
+
+    # if fill_color then set to node_style.fill since node_colors = None
+    if node_colors is None:
+        if fill_color:
+            style["fill"] = ToyColor(fill_color)  # overrides node_style.fill
+        else:
+            pass  # node_style.fill overrides
+    else:
+        node_colors = node_colors[:nedges][mask]
+        style.pop("fill")
+
+    # ...
+    markers = validate_node_markers(tree, style=None, node_markers=marker)[:nedges][mask]
+    sizes = validate_node_numeric(tree, style=None, key="size", size=size)[:nedges][mask]
+    opacity = validate_node_numeric(tree, style=None, key="opacity", opacity=opacity)[:nedges][mask]
     if node_colors is not None:
         node_colors = node_colors[mask]
+
+    coords = coords[mask, :]
+    if xshift or yshift:
+        # Note: if later annotations change the projection this will be off
+        axes._finalize()
+        if xshift:
+            origin, xshifted = axes._x_projection.inverse([0, xshift])
+            x_shift_projected = xshifted - origin
+            coords[:, 0] += x_shift_projected
+        if yshift:
+            origin, yshifted = axes._y_projection.inverse([0, yshift])
+            y_shift_projected = yshifted - origin
+            coords[:, 1] += y_shift_projected
+        axes._finalized = None
 
     # plot edge markers as scatterplot markers
     mark = axes.scatterplot(
@@ -179,6 +214,8 @@ def add_edge_labels(
     font_size: Union[int, None] = 12,
     angle: Union[int, Sequence[int]] = 0,
     mask: Union[np.ndarray, Tuple[int, int, int], None] = None,
+    xshift: int = 0,
+    yshift: int = 0,
     style: Mapping[str, Any] = None,
 ) -> Mark:
     """Return a toyplot Mark of edge labels added to a tree drawing.
@@ -208,6 +245,10 @@ def add_edge_labels(
         an edge from being shown and False shows the edge. None shows
         all edges. A tuple of 3 booleans can be entered as a shortcut
         to build an array of (mask_tips, mask_internal, mask_root).
+    xshift: int
+        Shift label horizontally by px units (+=right, -=left).
+    yshift: int
+        Shift label vertically by px units (+=down, -=up).
     style: dict
         Style dict. See `tree.style.node_labels_style` for options.
 
@@ -230,29 +271,47 @@ def add_edge_labels(
     nedges = tree.nnodes - 2 if tree.is_rooted() else tree.nnodes - 1
     coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)[:nedges]
 
+    # mask some edges
+    mask = validate_node_mask(tree, style=None, node_mask=mask)[:nedges]
+    labels = validate_node_labels(tree, style=None, node_labels=labels)[:nedges][mask]
+
     # set styles on top of defaults
-    style = validate_node_labels_style(tree, style)
+    style = {} if style is None else style
+    style = validate_node_labels_style(tree, style=None, **style)
+    style = substyle_dict_to_css_dict(style.__dict__)
 
     # override font size
     if font_size:
         style["font-size"] = font_size
 
     # check colors
-    label_colors = validate_node_colors(tree, color)[:nedges]
+    label_colors, stroke_color = validate_node_colors(tree, style=None, node_colors=color)[:nedges]
     if label_colors is None:
-        if color:
-            style["fill"] = color
+        if stroke_color:
+            style["stroke"] = ToyColor(stroke_color)  # overrides ..._style.fill
+        else:
+            pass  # node_style.fill overrides
     else:
-        style.pop("fill")
+        label_colors = label_colors[mask]
+        style.pop("stroke")
 
     # mask some nodes
-    mask = validate_node_mask(tree, mask, default=False)[:nedges]
+    opacity = validate_node_numeric(tree, style=None, key="opacity", opacity=opacity)[:nedges][mask]
+    angle = validate_node_numeric(tree, style=None, key="angle", angle=angle)[:nedges][mask]
+
     coords = coords[mask, :]
-    labels = validate_node_labels(tree, labels)[:nedges][mask]
-    opacity = validate_node_sizes(tree, opacity)[:nedges][mask]
-    angle = validate_node_sizes(tree, angle)[:nedges][mask]
-    if label_colors is not None:
-        label_colors = label_colors[mask]
+    if xshift or yshift:
+        # Note: if later annotations change the projection this will be off
+        axes._finalize()
+        if xshift:
+            origin, xshifted = axes._x_projection.inverse([0, xshift])
+            x_shift_projected = xshifted - origin
+            coords[:, 0] += x_shift_projected
+        if yshift:
+            origin, yshifted = axes._y_projection.inverse([0, yshift])
+            y_shift_projected = yshifted - origin
+            coords[:, 1] += y_shift_projected
+        axes._finalized = None
 
     # add text at Node positions + half length of dists.
     mark = axes.text(
@@ -281,6 +340,8 @@ def add_edge_pie_charts(
     istroke_width: float = 0.,
     rotate: int = -45,
     mask: Union[bool, np.ndarray, tuple] = False,
+    xshift: int = 0,
+    yshift: int = 0,
 ) -> Mark:
     """Return a toyplot Mark of edge pie charts added to a tree plot.
 
@@ -309,11 +370,10 @@ def add_edge_pie_charts(
         Rotate the starting point of the wedges.
     mask: bool, np.ndarray, or tuple
         Node mask to hide/show some or all Nodes.
-    ...
-    opacity: float or Sequence[float]
-        Opacity of markers (fill & stroke) as a single float or Sequence
-        of floats. Note that fill and stroke opacity can be set
-        separately using the style dict, but only as single values.
+    xshift: int
+        Shift marker horizontally by px units (+=right, -=left).
+    yshift: int
+        Shift marker vertically by px units (+=down, -=up).
 
     Example
     -------
@@ -338,19 +398,21 @@ def add_edge_pie_charts(
 
     # get coordinates of all real edges
     nedges = tree.nnodes - 2 if tree.is_rooted() else tree.nnodes - 1
-    coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)[:nedges]
+    coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)
+
+    mask = validate_node_mask(tree, style=None, node_mask=mask)[:nedges]
 
     # validate data.
     # TODO: option to collapse categories below a minimum percentage
     data = validate_pie_data(tree, data)
 
-    # expand colormap to an array of colors
+    # expand colormap to ncolor (note: not nedges)
     if colors is None:
         colors = "Set2"
     if isinstance(colors, (tuple, list, np.ndarray)):
         pass
     else:
-        colors = get_color_mapped_feature(range(data.shape[1]), colors)
+        colors = get_color_mapped_values(range(data.shape[1]), colors)
 
     # ensure conversion of colors to array type and size=ncategories
     colors = check_arr(
@@ -361,10 +423,22 @@ def add_edge_pie_charts(
     )
 
     # mask some Nodes
-    mask = validate_node_mask(tree, mask, default=False)[:nedges]
-    coords = coords[:nedges][mask, :]
     data = data[:nedges][mask, :]
-    sizes = validate_node_sizes(tree, size)[:nedges][mask]
+    sizes = validate_node_numeric(tree, style=None, key="size", size=size)[:nedges][mask]
+
+    coords = coords[:nedges][mask, :]
+    if xshift or yshift:
+        # Note: if later annotations change the projection this will be off
+        axes._finalize()
+        if xshift:
+            origin, xshifted = axes._x_projection.inverse([0, xshift])
+            x_shift_projected = xshifted - origin
+            coords[:, 0] += x_shift_projected
+        if yshift:
+            origin, yshifted = axes._y_projection.inverse([0, yshift])
+            y_shift_projected = yshifted - origin
+            coords[:, 1] += y_shift_projected
+        axes._finalized = None
 
     # plot edge markers as scatterplot markers
     mark = PieChartMark(

@@ -16,9 +16,9 @@ preferred to use this.
 <g class='pie-0'b style='stroke: black; stroke-width: 1'>
     <path d="M 1 0 A 1 1 0 0 1 0.8 0.5 L 0 0" style='fill:red'><path>
     <path d="M 1 0 A 0 1 0 0 1 0.8 0.5 L 0 0" style='fill:pink'><path>
-               |    |                  |
+</g>           |    |                  |
                move to start position on arc.
-</g>                |                  |
+                    |                  |
                     arc: rx ry x-axis-rotation large-arc-floag sweep-flag x y
                          radius    always 0        %>50 or no    always 1  end
                                        |
@@ -131,7 +131,7 @@ def validate_pie_data(
     tree: ToyTree,
     data: np.ndarray,
     # min_size: float = 1e-9,
-    mask: np.ndarray = None,
+    # mask: np.ndarray = None,
 ) -> np.ndarray:
     """Return cleaned pie chart data.
 
@@ -163,6 +163,7 @@ def validate_pie_data(
 
 def _get_pie_path(percent_start: float, percent_end: float, radius: float) -> str:
     """Return a SVG path for a circle arc.
+
     <path d='M end_x end_y A r r 0 flag 1 end_x end_y L 0 0'></path>
     """
     start = _get_radial_coordinates_for_percents(percent_start)

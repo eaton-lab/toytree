@@ -2,6 +2,12 @@
 
 """Annotate trees to add node height confidence intervals.
 
+Support multiple input types
+- Dict[Query, Tuple]
+- DataFrame
+- List[Tuple]
+- List[...]
+
 """
 
 from typing import Dict, Tuple, TypeVar
@@ -13,7 +19,7 @@ ToyTree = TypeVar("ToyTree")
 
 def add_node_bars(
     tree: ToyTree,
-    axes: toyplot.coordinates.Cartesian, 
+    axes: toyplot.coordinates.Cartesian,
     mapping: Dict[int, Tuple[float, float]],
     # edge_color: Union[Color, Sequence[Color]],
     edge_width: float = 1.0,
