@@ -37,32 +37,33 @@ class UnrootedLayout(BaseLayout):
         self.style.edge_type = 'c'
 
 
+#####################################################
+# UNROOTED LAYOUT UTILITIES
+#####################################################
 
-#####################################################
-## UNROOTED LAYOUT UTILITIES
-#####################################################
 
 def rotate_arr(
     points: np.ndarray,
-    origin: Tuple[float,float]=(0, 0),
-    degrees: float=0,
-    ) -> np.ndarray:
+    origin: Tuple[float, float] = (0, 0),
+    degrees: float = 0,
+) -> np.ndarray:
     """Return an array of rotated Node coordinates."""
     angle = np.deg2rad(degrees)
     rotation_matrix = np.array([
         [np.cos(angle), -np.sin(angle)],
-        [np.sin(angle),  np.cos(angle)],
+        [np.sin(angle), np.cos(angle)],
     ])
     origin = np.atleast_2d(origin)
     point = np.atleast_2d(points)
     return np.squeeze((rotation_matrix @ (point.T - origin.T) + origin.T).T)
 
+
 def equal_daylight_algorithm(
     tree: ToyTree,
-    max_iter: int=1,
-    min_delta: float=1,
-    use_edge_lengths: bool=True,
-    ) -> float:
+    max_iter: int = 1,
+    min_delta: float = 1,
+    use_edge_lengths: bool = True,
+) -> float:
     """Return coordinates for unrooted layout under the eda algorithm.
 
     This algorithm equalizes the sizes of angular gaps between
@@ -105,13 +106,13 @@ def equal_daylight_algorithm(
     n_internal = tree.nnodes - tree.ntips - 1
     min_angles = n_internal * 3
     avg_change = 30
-    max_change = (min_angles * avg_change) / 3#.5
+    max_change = (min_angles * avg_change) / 3  # .5
 
     # Perform multiple passes through the tree stopping when either
     # the improvement falls below a threshold, max_iters is reached,
     # or the iteration results in more changes than a previous one.
-    sum_deltas = [] # list of sum change in angles each iter
-    full_circle = None # record whether full circle encountered.
+    sum_deltas = []  # list of sum change in angles each iter
+    full_circle = None  # record whether full circle encountered.
     niter = 0
     while 1:
         # create a copy of coords to modify
@@ -252,7 +253,11 @@ def equal_daylight_algorithm(
 
     return coords
 
-def equal_angle_algorithm(tree: ToyTree, use_edge_lengths: bool=True) -> float:
+
+def equal_angle_algorithm(
+    tree: ToyTree,
+    use_edge_lengths: bool = True,
+) -> float:
     """Return coordinates for unrooted layout under the 'eaa' algorithm.
 
     Assign the root node a sector from 0-360 degrees, and divide each
@@ -307,6 +312,7 @@ def equal_angle_algorithm(tree: ToyTree, use_edge_lengths: bool=True) -> float:
             coords[node.idx] = (newx, newy)
     return coords
 
+
 # NOT CURRENTLY USED
 # def get_subtrees(tree: ToyTree, node: Node) -> Sequence[Set[Node]]:
 #     """Return subtrees connected to a Node.
@@ -340,7 +346,7 @@ if __name__ == "__main__":
     canvas1 = toyplot.Canvas(400, 400)
     axes = canvas1.cartesian()
     axes.graph(
-        TRE.get_edges().values,
+        TRE.get_edges(),#.values,
         vcoordinates=coords1,
         # vsize=16,
         estyle={"stroke-width": 2},
@@ -348,7 +354,7 @@ if __name__ == "__main__":
     canvas2 = toyplot.Canvas(500, 400)
     axes = canvas2.cartesian()
     axes.graph(
-        TRE.get_edges().values,
+        TRE.get_edges(),#.values,
         vcoordinates=coords2,
         #vsize=16,
         estyle={"stroke-width": 2},

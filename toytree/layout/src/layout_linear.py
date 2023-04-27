@@ -128,9 +128,10 @@ class LinearLayout(BaseLayout):
 
 
 if __name__ == "__main__":
-    
-    import toytree
-    tre = toytree.rtree.unittree(30)
-    lay = LinearLayout(tre, tre.style, None, None)
 
+    import toytree
+    tre = toytree.rtree.rtree(5)
+    tre.style.tip_labels_align = True
+    lay = LinearLayout(tre, tre.style, None, None)
+    print(lay.coords)
 
