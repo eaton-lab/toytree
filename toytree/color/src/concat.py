@@ -27,6 +27,61 @@ from toytree.color.src.toycolor import ToyColor
 #     return ";".join(strs)
 
 
+# def color_style_split(style: Dict[str, Any]) -> Dict[str, Any]:
+#     """
+
+#     This is used in annotation functions to fix up colors in style
+#     dicts before passing to toyplot drawing functions.
+
+#     Examples
+#     --------
+#     >>> d = {'fill': ToyColor("red"), fill-opacity: 0.5}
+#     >>> color_style_split(d)
+#     >>> # {'fill': (1, 0, 0), 'fill-opacity': 0.5}
+
+#     >>> d = {'fill': ToyColor((1, 0, 0, 0.5))}
+#     >>> color_style_split(d)
+#     >>> # {'fill': (1, 0, 0), 'fill-opacity': 0.5}
+#     """
+#     if not style:
+#         return {}
+
+#     fill = style.pop("fill", None)
+#     fillo = style.pop("fill-opacity", None)
+#     stroke = style.pop("stroke", None)
+#     strokeo = style.pop("stroke-opacity", None)
+
+#     # get fill or stroke style string with opacity separated and optinally
+#     # overwritten if provided as an argument. The 'if not X' arg here
+#     # will return False for transparent color (0,0,0,0) which we use up
+#     # until this point for missing data (np.nan) colors.
+#     styles = []
+
+#     # if None then use parent value
+#     if fill is not None:
+#         # if (0,0,0,0) then suppress style
+#         if not fill:
+#             styles.append("fill:none")
+#         else:
+#             styles.append(ToyColor(fill).get_style_str(opacity=fillo))
+
+#     # if None then use parent value
+#     if stroke is not None:
+#         # if (0,0,0,0) then suppress style
+#         if not stroke:
+#             styles.append("stroke:none")
+#         else:
+#             styles.append(ToyColor(stroke).get_style_str(stroke=True, opacity=strokeo))
+
+#     # keep any other styles in style dict in the style string
+#     for key, value in sorted(style.items()):
+#         if value is not None:
+#             styles.append(f"{key}:{value}")
+
+
+
+
+
 def concat_style_fix_color(style: Dict[str, str], extra: str = None) -> str:
     """Return a style dict concatenated to string w/ color fixes.
 
