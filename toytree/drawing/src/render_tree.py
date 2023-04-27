@@ -71,7 +71,7 @@ class RenderToytree:
         self.mark_toytree()
         self.mark_edges()
         self.mark_align_edges()
-        self.mark_admixture_edges()
+        # self.mark_admixture_edges()
         self.mark_nodes()
         self.mark_node_labels()
 
