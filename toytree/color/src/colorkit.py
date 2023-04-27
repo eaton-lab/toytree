@@ -97,11 +97,16 @@ class ColorKit:
 
         # logger.error(color)
         if isinstance(color, str):
-            self._array = toyplot.color.css(color)
-            if self._array is None:
-                raise ToyColorError(f"CSS color '{color}' not recognized")
-            self._css = toyplot.color.to_css(self._array)
-            self._rgba = tuple(float(self._array[i]) for i in 'rgba')
+            if color == "none":
+                self._rgba = (0, 0, 0, 0)
+                self._array = toyplot.color.rgba(*self._rgba)
+                self._css = toyplot.color.to_css(self._array)
+            else:
+                self._array = toyplot.color.css(color)
+                if self._array is None:
+                    raise ToyColorError(f"CSS color '{color}' not recognized")
+                self._css = toyplot.color.to_css(self._array)
+                self._rgba = tuple(float(self._array[i]) for i in 'rgba')
 
         # input is an ndarray (e.g., toyplot.color ndarray, 1-d 4 floats)
         elif isinstance(color, np.ndarray) and color.dtype == toyplot.color.dtype:
@@ -145,6 +150,12 @@ class ColorKit:
             else:
                 raise ToyColorError(
                     f"Color arg '{color}' not recognized as a valid color input.")
+
+        elif color is None:
+            self._rgba = (0, 0, 0, 0)
+            self._array = toyplot.color.rgba(*self._rgba)
+            self._css = toyplot.color.to_css(self._array)
+
         else:
             raise ToyColorError(
                 f"Color arg '{color}' not recognized as a valid color input.")
