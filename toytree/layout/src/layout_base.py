@@ -53,10 +53,13 @@ class BaseLayout(ABC):
         # ----------- results to be generated ------------------
         self.coords: np.ndarray = None
         """: Node coordinates in the projected layout."""
+        self.tcoords: np.ndarray = None
+        """: Tip node coordinates in the projected layout. Note: these
+        can be different from those in coords when tip_labels_align=True."""
         self.angles: np.ndarray = None
         """: Tip label angles in the projected layout."""
 
-        # subclasses have a run function that fill `self.coords.`
+        # subclasses have a run function that fill .coords and .tcoords
         self.run()
 
     def run(self):
