@@ -47,6 +47,7 @@ Functions
 from toytree.annotate.src.add_edge_markers import *
 from toytree.annotate.src.add_node_markers import *
 from toytree.annotate.src.add_axes_box_outline import *
+from toytree.annotate.src.add_scale_bar import *
 # ... edge_labels
 # ... node_labels
 # from .confidence_intervals import draw_node_confidence_intervals

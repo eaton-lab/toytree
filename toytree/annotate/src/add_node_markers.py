@@ -9,31 +9,21 @@ Examples
 
 from typing import Tuple, Sequence, Mapping, Any, Union, TypeVar
 import numpy as np
-from numpy.typing import ArrayLike
 from toyplot.mark import Mark
 from toyplot.coordinates import Cartesian
 
 from toytree import ToyTree
 from toytree.color import ToyColor
-from toytree.style import (
-    check_arr,
-    # get_color_mapped_feature,
-    get_color_mapped_values,
-)
-from toytree.annotate.src.node_pie_charts import (
-    PieChartMark,
-    validate_pie_data,
-)
+from toytree.style import check_arr, get_color_mapped_values
+from toytree.annotate.src.node_pie_charts import PieChartMark, validate_pie_data
 from toytree.annotate.src.annotation_mark import (
     get_last_toytree_mark_from_cartesian,
-    assert_tree_matches_mark,
-)
+    assert_tree_matches_mark)
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
+from toytree.style.src.validate_utils import substyle_dict_to_css_dict
 from toytree.style.src.validate_node_labels import (
     validate_node_labels,
-    validate_node_labels_style,
-)
-from toytree.style.src.validate_utils import substyle_dict_to_css_dict
+    validate_node_labels_style)
 from toytree.style.src.validate_nodes import (
     validate_node_colors,
     validate_node_sizes,
