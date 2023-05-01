@@ -104,11 +104,15 @@ def validate_edge_widths(
         sizes = np.repeat(sizes, tree.nnodes)
     elif isinstance(sizes, tuple) and isinstance(sizes[0], str):
         feature, *args = sizes
+        # special handling for ts='p' if 'Ne' not in features
+        if feature == "Ne" and "Ne" not in tree.features:
+            return np.repeat(2, tree.nnodes)
+
         # defaults selected for edge widths
         kwargs = dict(zip(("min_value", "max_value", "nan_value"), args))
-        kwargs["min_value"] = kwargs.get("min_value", 1.5)
-        kwargs["max_value"] = kwargs.get("max_value", 5.0)
-        kwargs["nan_value"] = kwargs.get("nan_value", 1.)
+        kwargs["min_value"] = kwargs.get("min_value", 2.)
+        kwargs["max_value"] = kwargs.get("max_value", 6.0)
+        kwargs["nan_value"] = kwargs.get("nan_value", 0.5)
         return get_range_mapped_feature(tree, feature, **kwargs)
 
     # validate and return as ndarray
