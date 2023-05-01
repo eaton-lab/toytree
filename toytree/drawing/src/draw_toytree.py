@@ -11,6 +11,7 @@ The `draw_toytree` func does the following:
 
 from typing import Tuple, TypeVar
 from loguru import logger
+import numpy as np
 from toyplot.canvas import Canvas
 from toyplot.coordinates import Cartesian
 
@@ -66,24 +67,23 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
             "\nCheck the docs, argument names may have changed."
         )
 
-    # get a TreeStyle copy from tree.style or new ts TreeStyle()
+    # get a TreeStyle COPY from tree.style or new ts TreeStyle()
     style = get_tree_style_base(tree, tree_style=kwargs.pop('tree_style'))
 
     # check and expand user-kwargs if provided else base style value
     style = validate_style(tree, style, **kwargs)
 
     # get a Layout with coordinates projected based on style
-    # also sets tip_labels_angles for circular and unrooted layouts.
-    # if no user value to tip-labels-angles then get layout generated val.
-    # TODO: move to validation.
-    # if style.tip_labels_angles is None:
-    #     style.tip_labels_angles = layout.angles
     layout = get_layout(
         tree=tree,
         style=style,
         fixed_order=kwargs.pop("fixed_order"),
         fixed_position=kwargs.pop("fixed_position"),
     )
+
+    # set tip angles on 'c' or unrooted layouts
+    if style.layout not in "rlud":
+        style.tip_labels_angles = layout.angles
 
     # generate toyplot Mark. Style is already validated. tables of int idx labels
     mark = ToyTreeMark(
@@ -93,16 +93,6 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
         **tree_style_to_css_dict(style),
     )
 
-    # use existing canvas and axes or create new ones. If created, the
-    # size is built from (extents, ntips, height, margin, padding)
-    # TODO: update. requires validated tip labels; sets height, width, ...
-    # logger.warning(mark.extents('x')[0])
-    # left = mark.extents('x')[1][0].min()
-    # right = mark.extents('x')[1][1].max()
-    # width = 100 + (right - left)
-    # logger.warning(width)
-    # style.width = width
-
     # create Canvas and Cartesian if they don't yet exist.
     canvas, axes = get_canvas_and_axes(
         axes,
@@ -110,6 +100,10 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
         kwargs.get('width'),
         kwargs.get('height')
     )
+
+    # make range symmetric for circular trees
+    if style.layout == "c":
+        axes.aspect = "fit-range"
 
     # add ToyTreeMark to Cartesian axes.
     axes.add_mark(mark)
@@ -175,6 +169,9 @@ def get_layout(tree: ToyTree, style: TreeStyle, **kwargs) -> BaseLayout:
 
     # return circular or unrooted layout
     if style.layout[0] == "c":
+        # require tip_labels_align=True for 'c' unless no variation
+        if not np.allclose(tree.get_tip_data("height"), 0):
+            style.tip_labels_align = True
         return CircularLayout(tree, style)
 
     # anything else is unrooted (None, etc.)
@@ -190,6 +187,8 @@ if __name__ == "__main__":
     tre = toytree.rtree.unittree(10)
     tre._draw_browser(
         ts='s',
+        layout='c',
+        edge_type='c',
         height=400,
         width=400,
         node_mask=tre.get_node_mask(1, 5, 9),
