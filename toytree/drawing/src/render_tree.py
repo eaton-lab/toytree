@@ -19,8 +19,16 @@ import toyplot
 from toytree.drawing import ToyTreeMark, render_text
 from toytree.drawing.src.render_marker import render_marker
 from toytree.color.src.concat import concat_style_fix_color
-from toytree.utils.src.globals import PATH_FORMAT
 
+# SVG path formats for creating edges in tree drawings
+PATH_FORMAT = {
+    'c': "M {px:.1f} {py:.1f} L {cx:.1f} {cy:.1f}",  # angular /\ format, good for any layout
+    'b1': "M {px:.1f} {py:.1f} C {px:.1f} {cy:.1f}, {px:.1f} {cy:.1f}, {cx:.1f} {cy:.3f}",  # bezier 1 format
+    'b2': "M {px:.1f} {py:.1f} C {cx:.1f} {py:.1f}, {cx:.1f} {py:.1f}, {cx:.1f} {cy:.3f}",  # bezier 2 format
+    'p1': "M {px:.1f} {py:.1f} L {px:.1f} {cy:.1f} L {cx:.1f} {cy:.1f}",  # |_| phylo/angular format 1
+    'p2': "M {px:.1f} {py:.1f} L {cx:.1f} {py:.1f} L {cx:.1f} {cy:.1f}",  # |_| phylo/angular format 2
+    'pc': "M {cx:.1f} {cy:.1f} L {dx:.1f} {dy:.1f} A {rr:.1f} {rr:.1f} 0 0 {flag} {px:.1f} {py:.1f}",  # phylo for circular
+}
 
 logger = logger.bind(name="toytree")
 
@@ -66,18 +74,6 @@ class RenderToytree:
         self.project_coordinates()
         self.build_dom()
 
-    def build_dom(self):
-        """Creates DOM of xml.SubElements in self.context."""
-        self.mark_toytree()
-        self.mark_edges()
-        self.mark_align_edges()
-        # self.mark_admixture_edges()
-        self.mark_nodes()
-        self.mark_node_labels()
-
-        # for multitrees tips are sometimes not drawn.
-        self.mark_tip_labels()
-
     def project_coordinates(self):
         """Store node coordinates (data units) projected to pixel units.
 
@@ -87,43 +83,56 @@ class RenderToytree:
         # project data coordinates into pixels
         self.nodes_x = self.axes.project('x', self.mark.ntable[:, 0])
         self.nodes_y = self.axes.project('y', self.mark.ntable[:, 1])
+        self.tips_x = self.axes.project('x', self.mark.ttable[:, 0])
+        self.tips_y = self.axes.project('y', self.mark.ttable[:, 1])
 
         # if circular layout then also get radius
-        if self.mark.layout[0] == 'c':
-            self.radii = self.axes.project('x', self.mark.radii)
-            self.maxr = max(self.radii)  # used to tips-labels-align
-            logger.debug(
-                f"maxr: {self.maxr:.2f}"
-                f"\nself.mark.radii: {self.mark.radii}\nmark.radii: {self.radii}")
+        # if self.mark.layout[0] == 'c':
+        #     self.radii = self.axes.project('x', self.mark.radii)
+        #     self.maxr = max(self.radii)  # used to tips-labels-align
+        #     logger.debug(
+        #         f"maxr: {self.maxr:.2f}"
+        #         f"\nself.mark.radii: {self.mark.radii}\nmark.radii: {self.radii}")
 
         # if tip labels align then store tips projected coords
-        if self.mark.tip_labels_align:
+        # if self.mark.tip_labels_align:
 
-            # coords of aligned tips across fixed x axis 0
-            ntips = self.mark.tip_labels_angles.size
-            if self.mark.layout == 'r':
-                self.tips_x = np.repeat(self.nodes_x.max(), ntips)
-                self.tips_y = self.nodes_y[:ntips]
-            elif self.mark.layout == 'l':
-                self.tips_x = np.repeat(self.nodes_x.min(), ntips)
-                self.tips_y = self.nodes_y[:ntips]
-            elif self.mark.layout == 'u':
-                self.tips_y = np.repeat(self.nodes_y.min(), ntips)
-                self.tips_x = self.nodes_x[:ntips]
-            elif self.mark.layout == 'd':
-                self.tips_y = np.repeat(self.nodes_y.max(), ntips)
-                self.tips_x = self.nodes_x[:ntips]
+        #     # coords of aligned tips across fixed x axis 0
+        #     ntips = self.mark.tip_labels_angles.size
+        #     if self.mark.layout == 'r':
+        #         self.tips_x = np.repeat(self.nodes_x.max(), ntips)
+        #         self.tips_y = self.nodes_y[:ntips]
+        #     elif self.mark.layout == 'l':
+        #         self.tips_x = np.repeat(self.nodes_x.min(), ntips)
+        #         self.tips_y = self.nodes_y[:ntips]
+        #     elif self.mark.layout == 'u':
+        #         self.tips_y = np.repeat(self.nodes_y.min(), ntips)
+        #         self.tips_x = self.nodes_x[:ntips]
+        #     elif self.mark.layout == 'd':
+        #         self.tips_y = np.repeat(self.nodes_y.max(), ntips)
+        #         self.tips_x = self.nodes_x[:ntips]
 
-            # coords of tips around a circumference
-            elif self.mark.layout[0] == 'c':
-                self.tips_x = np.zeros(ntips)
-                self.tips_y = np.zeros(ntips)
-                for idx, angle in enumerate(self.mark.tip_labels_angles):
-                    radian = np.deg2rad(angle)
-                    cordx = 0 + max(self.mark.radii) * np.cos(radian)
-                    cordy = 0 + max(self.mark.radii) * np.sin(radian)
-                    self.tips_x[idx] = self.axes.project('x', cordx)
-                    self.tips_y[idx] = self.axes.project('y', cordy)
+        #     # coords of tips around a circumference
+        #     elif self.mark.layout[0] == 'c':
+        #         self.tips_x = np.zeros(ntips)
+        #         self.tips_y = np.zeros(ntips)
+        #         for idx, angle in enumerate(self.mark.tip_labels_angles):
+        #             radian = np.deg2rad(angle)
+        #             cordx = 0 + max(self.mark.radii) * np.cos(radian)
+        #             cordy = 0 + max(self.mark.radii) * np.sin(radian)
+        #             self.tips_x[idx] = self.axes.project('x', cordx)
+        #             self.tips_y[idx] = self.axes.project('y', cordy)
+
+    def build_dom(self):
+        """Creates DOM of xml.SubElements in self.context."""
+        self.mark_edges()
+        self.mark_align_edges()
+        # self.mark_admixture_edges()
+        self.mark_nodes()
+        self.mark_node_labels()
+
+        # for multitrees tips are sometimes not drawn.
+        self.mark_tip_labels()
 
     def get_paths(self) -> Tuple[List[str], List[str]]:
         """Return paths and keys in idx order.
@@ -134,7 +143,8 @@ class RenderToytree:
         """
         # modify order of x or y shift of edges for p,b types.
         if self.mark.edge_type in ('p', 'b'):
-            # selects pc
+
+            # phylo |_| edge type for cirular trees:
             if self.mark.layout[0] == 'c':
                 path_format = PATH_FORMAT["pc"]
                 # logger.warning(
@@ -144,18 +154,20 @@ class RenderToytree:
                 # )
                 # path_format = PATH_FORMAT['c']
 
-            # selects p1, p2, or b1, b2
+            # phylo or bezier type for non-circular trees. Select the
+            # appropriate type given orientation: p1, p2, or b1, b2
             elif self.mark.layout in ('u', 'd'):
                 path_format = PATH_FORMAT[f"{self.mark.edge_type}2"]
             else:
                 path_format = PATH_FORMAT[f"{self.mark.edge_type}1"]
+        # cladogram (\/) style, simplest for any layout
         else:
-            # select c (simplest)
             path_format = PATH_FORMAT[self.mark.edge_type]
 
         # store paths here
         paths = []
         keys = []
+        # TODO: change here if you want to show the root edge...
         for idx in range(self.mark.nnodes - 1):
             cidx, pidx = self.mark.etable[idx]
             child_x, child_y = self.nodes_x[cidx], self.nodes_y[cidx]
@@ -164,6 +176,7 @@ class RenderToytree:
             # circle 'p' format each line is towards root, then across arc
             # if self.mark.layout[0] == 'c':
 
+            # only relevant to 'pc' phylo-circular format
             if "A" in path_format:
 
                 # get angle from node to the root
@@ -221,9 +234,6 @@ class RenderToytree:
                     })
                 )
         return paths, keys
-
-    def mark_toytree(self):
-        """TODO: Creates the top-level Toytree mark. Not required."""
 
     def mark_edges(self) -> None:
         """Create SVG paths for each tree edge as class toytree-Edges"""
@@ -308,12 +318,12 @@ class RenderToytree:
                         self.mark.node_hover[nidx])
 
             # project marker in coordinate space
-            transform = "translate({:.3f},{:.3f})".format(
+            transform = "translate({:.6g},{:.6g})".format(
                 self.nodes_x[nidx],
                 self.nodes_y[nidx],
             )
             if marker.angle:
-                transform += " rotate({:.2f})".format(-marker.angle)
+                transform += " rotate({:.3f})".format(-marker.angle)
             marker_xml.set("transform", transform)
 
             # get shape type
@@ -439,7 +449,7 @@ class RenderToytree:
             )
 
     def mark_align_edges(self):
-        """Create SVG paths for each tip to 0 or radius. 
+        """Create SVG paths for each tip to 0 or radius.
 
         Currently only group styles are suppored for aligned edges.
         """
@@ -757,16 +767,18 @@ def test1():
     )
     tree._draw_browser(**kwargs)
 
+
 def test2():
     # generate a random species tree with 10 tips and a crown age of 10M generations
     tree = toytree.rtree.unittree(10, treeheight=1e6, seed=123)
     # create a new tree copy with Ne values mapped to nodes
     vtree = tree.set_node_data(
         feature="Ne",
-        mapping={i: 2e5 for i in (6, 7, 8, 9, 12, 15, 17)},
+        data={i: 2e5 for i in (6, 7, 8, 9, 12, 15, 17)},
         default=1e4,
     )
     vtree._draw_browser(ts='p', )#admixture_edges=[(0, 12, 0.5, {}, "word")]);
+
 
 if __name__ == "__main__":
 
