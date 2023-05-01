@@ -53,6 +53,11 @@ def get_linear_width_and_height(mark: Mark) -> Tuple[int, int]:
     return width, height
 
 
+def get_circular_width_and_height(mark: Mark) -> Tuple[int, int]:
+    """TODO."""
+    return 500, 500
+
+
 def get_canvas_and_axes(
     axes: Optional[Cartesian],
     mark: Mark,
@@ -73,7 +78,11 @@ def get_canvas_and_axes(
             if height is None:
                 height = _height
         else:
-            raise NotImplementedError('x')
+            _width, _height = get_circular_width_and_height(mark)
+            if width is None:
+                width = _width
+            if height is None:
+                height = _height
 
         # create canvas and axes
         canvas = Canvas(height=height, width=width)
@@ -82,7 +91,6 @@ def get_canvas_and_axes(
     # tree is being plotted on an existing set of axes
     else:
         canvas = None
-
     return canvas, axes
 
 
