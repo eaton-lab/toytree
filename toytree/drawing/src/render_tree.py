@@ -7,6 +7,19 @@ TODO
   - fixed-order extension to tip positions for missing labels..?
   - container tree to Mark
   - Cirlce tree does not project y-axis...
+
+
+<g class='pie-0'b style='stroke: black; stroke-width: 1'>
+    <path d="M 1 0 A 1 1 0 0 1 0.8 0.5 L 0 0" style='fill:red'><path>
+    <path d="M 1 0 A 0 1 0 0 1 0.8 0.5 L 0 0" style='fill:pink'><path>
+                     r r x l s  x   y
+</g>           |    |                  |
+               move to start position on arc.
+                    |                  |
+                    arc: rx ry x-axis-rotation large-arc-floag sweep-flag x y
+                         radius    always 0        %>50 or no    always 1  end
+                                       |
+                                       move to center of circle. 
 """
 
 from typing import List, Dict, Tuple
@@ -27,7 +40,7 @@ PATH_FORMAT = {
     'b2': "M {px:.1f} {py:.1f} C {cx:.1f} {py:.1f}, {cx:.1f} {py:.1f}, {cx:.1f} {cy:.3f}",  # bezier 2 format
     'p1': "M {px:.1f} {py:.1f} L {px:.1f} {cy:.1f} L {cx:.1f} {cy:.1f}",  # |_| phylo/angular format 1
     'p2': "M {px:.1f} {py:.1f} L {cx:.1f} {py:.1f} L {cx:.1f} {cy:.1f}",  # |_| phylo/angular format 2
-    'pc': "M {cx:.1f} {cy:.1f} L {dx:.1f} {dy:.1f} A {rr:.1f} {rr:.1f} 0 0 {flag} {px:.1f} {py:.1f}",  # phylo for circular
+    'pc': "M {cx:.1f} {cy:.1f} L {dx:.1f} {dy:.1f} A {rr:.1f} {rr:.1f} 0 0 {sweep} {px:.1f} {py:.1f}",  # phylo for circular
 }
 
 logger = logger.bind(name="toytree")
@@ -70,6 +83,13 @@ class RenderToytree:
         self.admix_xml: xml.SubElement = None
         self.align_xml: xml.SubElement = None
 
+        # data...
+        self.nodes_x: np.ndarray = None
+        self.nodes_y: np.ndarray = None
+        self.tips_x: np.ndarray = None
+        self.tips_y: np.ndarray = None
+        self.radii: np.ndarray = None
+
         # construction funcs
         self.project_coordinates()
         self.build_dom()
@@ -85,42 +105,6 @@ class RenderToytree:
         self.nodes_y = self.axes.project('y', self.mark.ntable[:, 1])
         self.tips_x = self.axes.project('x', self.mark.ttable[:, 0])
         self.tips_y = self.axes.project('y', self.mark.ttable[:, 1])
-        # if circular layout then also get radius
-        # if self.mark.layout[0] == 'c':
-        #     self.radii = self.axes.project('x', self.mark.radii)
-        #     self.maxr = max(self.radii)  # used to tips-labels-align
-        #     logger.debug(
-        #         f"maxr: {self.maxr:.2f}"
-        #         f"\nself.mark.radii: {self.mark.radii}\nmark.radii: {self.radii}")
-
-        # if tip labels align then store tips projected coords
-        # if self.mark.tip_labels_align:
-
-        #     # coords of aligned tips across fixed x axis 0
-        #     ntips = self.mark.tip_labels_angles.size
-        #     if self.mark.layout == 'r':
-        #         self.tips_x = np.repeat(self.nodes_x.max(), ntips)
-        #         self.tips_y = self.nodes_y[:ntips]
-        #     elif self.mark.layout == 'l':
-        #         self.tips_x = np.repeat(self.nodes_x.min(), ntips)
-        #         self.tips_y = self.nodes_y[:ntips]
-        #     elif self.mark.layout == 'u':
-        #         self.tips_y = np.repeat(self.nodes_y.min(), ntips)
-        #         self.tips_x = self.nodes_x[:ntips]
-        #     elif self.mark.layout == 'd':
-        #         self.tips_y = np.repeat(self.nodes_y.max(), ntips)
-        #         self.tips_x = self.nodes_x[:ntips]
-
-        #     # coords of tips around a circumference
-        #     elif self.mark.layout[0] == 'c':
-        #         self.tips_x = np.zeros(ntips)
-        #         self.tips_y = np.zeros(ntips)
-        #         for idx, angle in enumerate(self.mark.tip_labels_angles):
-        #             radian = np.deg2rad(angle)
-        #             cordx = 0 + max(self.mark.radii) * np.cos(radian)
-        #             cordy = 0 + max(self.mark.radii) * np.sin(radian)
-        #             self.tips_x[idx] = self.axes.project('x', cordx)
-        #             self.tips_y[idx] = self.axes.project('y', cordy)
 
     def build_dom(self):
         """Creates DOM of xml.SubElements in self.context."""
@@ -146,12 +130,16 @@ class RenderToytree:
             # phylo |_| edge type for cirular trees:
             if self.mark.layout[0] == 'c':
                 path_format = PATH_FORMAT["pc"]
-                # logger.warning(
-                #     "edge_type='p' w/ layout='c' not currently supported. "
-                #     "Contact developers to make a request. Changing "
-                #     "edge_type to 'c' for now."
-                # )
-                # path_format = PATH_FORMAT['c']
+
+                # get differences of nodes relative to root. Note: this is
+                # b/c origin is not at (0, 0) if [x,y]baseline was used.
+                xdiffs = self.mark.ntable[:, 0] - self.mark.ntable[-1, 0]
+                ydiffs = self.mark.ntable[:, 1] - self.mark.ntable[-1, 1]
+                radii = np.sqrt(xdiffs ** 2 + ydiffs ** 2)
+
+                # get angles of nodes relative to root in radians (0, 2pi)
+                radians = np.arctan2(ydiffs, xdiffs)
+                radians[radians < 0] = (2 * np.pi) + radians[radians < 0]
 
             # phylo or bezier type for non-circular trees. Select the
             # appropriate type given orientation: p1, p2, or b1, b2
@@ -159,6 +147,7 @@ class RenderToytree:
                 path_format = PATH_FORMAT[f"{self.mark.edge_type}2"]
             else:
                 path_format = PATH_FORMAT[f"{self.mark.edge_type}1"]
+
         # cladogram (\/) style, simplest for any layout
         else:
             path_format = PATH_FORMAT[self.mark.edge_type]
@@ -166,74 +155,52 @@ class RenderToytree:
         # store paths here
         paths = []
         keys = []
+
         # TODO: change here if you want to show the root edge...
         for idx in range(self.mark.nnodes - 1):
             cidx, pidx = self.mark.etable[idx]
             child_x, child_y = self.nodes_x[cidx], self.nodes_y[cidx]
             parent_x, parent_y = self.nodes_x[pidx], self.nodes_y[pidx]
 
-            # circle 'p' format each line is towards root, then across arc
-            # if self.mark.layout[0] == 'c':
+            # ...
+            if "A" not in path_format:
+                keys.append(f"{pidx},{cidx}")
+                paths.append(
+                    path_format.format(**{
+                        'cx': child_x, 'cy': child_y,
+                        'px': parent_x, 'py': parent_y,
+                    })
+                )
 
             # only relevant to 'pc' phylo-circular format
-            if "A" in path_format:
-                raise NotImplementedError("TODO")
-
-                # get angle from node to the root
-                dy = (self.nodes_y[-1] - child_y)
-                dx = (child_x - self.nodes_x[-1])
-                theta = 0 if dx == 0 else np.arctan(dy / dx) 
-                logger.info(f"dx={dx:.2f} dy={dy:.2f}")
-
-                # get length of edge
-                # dist = 
-                dist = self.radii[idx] - self.radii[pidx]
-
-                # get length of radius to new fake node.
-                rdist = self.radii[idx] - dist
-
-                # get x, y positions of the fake node
-                logger.info(f"theta={theta:.2f}, rdist={rdist:.2f} {self.radii[idx]:.2f} {self.radii[pidx]:.2f} {dist:.2f}")
-
-                # get length of adjacent ( change in x relative to O )
-                x = (dist * np.cos(theta)) #- self.nodes_x[-1]
-                logger.info(f"o={self.nodes_x[-1]:.2f}, x={(rdist * np.cos(theta)):.2f}")
-
-                y = (dist * np.sin(theta)) #+ self.nodes_y[-1] 
-                logger.info(f"o={self.nodes_y[-1]:.2f}, y={(rdist * np.sin(theta)):.2f}")
-                logger.warning("")
-                # logger.info(f"{idx} theta={theta:.2f} r={dist:.1f} "
-                    # f"rd={rdist:.2f} "
-                    # f"x={ + x:.2f} " 
-                    # f"y={self.nodes_y[-1] + y:.2f}")
-                # dy = dist * np.sin(theta)
-
-                # get start position
-                # "M {cx:.1f} {cy:.1f}
-                # move towards center of circle (y)
-                # L {dx:.1f} {dy:.1f}
-                # arc: rx ry x-axis-rotation large-arc-flag sweeep flag x y
-                # A {rr:.1f} {rr:.1f} 0 0 {flag} {px:.1f} {py:.1f}",
-                # logger.info(f"idx={idx}, mark={self.mark.ntable[idx]}, x={child_x:.2f}, y={child_y:.2f}, px={parent_x:.2f}, py={parent_y:.2f}, angle: {angle:.2f}")
-                keys.append(f"{pidx},{cidx}")
-                paths.append(
-                    path_format.format(**{
-                        'cx': child_x, 'cy': child_y,
-                        'px': parent_x, 'py': parent_y,
-                        'dx': child_x - x, 'dy': child_y + y,
-                        'rr': dist, 'flag': 0,
-                    })
-                )
-
-            # build path string for simple types
             else:
+                # get radius at parent's level
+                xdiff = parent_x - self.nodes_x[-1]
+                ydiff = parent_y - self.nodes_y[-1]
+                parent_radius = np.sqrt(xdiff ** 2 + ydiff ** 2)
+
+                mid_x = radii[pidx] * np.cos(radians[cidx])
+                mid_y = radii[pidx] * np.sin(radians[cidx])
+
+                # project mid points into coordinate space
+                px_mid_x = self.axes.project('x', mid_x)
+                px_mid_y = self.axes.project('y', mid_y)
+
+                # logger.warning(f"{cidx} {radians[pidx]:.2f} {radians[cidx]:.2f} sweep={int(radians[pidx] < radians[cidx])}")
                 keys.append(f"{pidx},{cidx}")
                 paths.append(
                     path_format.format(**{
-                        'cx': child_x, 'cy': child_y,
-                        'px': parent_x, 'py': parent_y,
+                        'cx': child_x,
+                        'cy': child_y,
+                        'px': parent_x,
+                        'py': parent_y,
+                        'dx': px_mid_x,
+                        'dy': px_mid_y,
+                        'rr': parent_radius,
+                        'sweep': int(radians[pidx] < radians[cidx]),  # 1=counter-clockwise, 0=clockwise
                     })
                 )
+
         return paths, keys
 
     def mark_edges(self) -> None:
