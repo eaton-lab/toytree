@@ -53,28 +53,45 @@ class LinearLayout(BaseLayout):
     def _update_coordinates(self) -> None:
         """Set starting values that will be updated by style args.
 
-        For a linear layout this represents the the xbaseline coords
-        of the tips if they were aligned, and similarly for a circular
-        layout it is the aligned tip radial positions, with the radial
-        start and end points default to 0-360, or less if specified.
-        TODO: For unrooted layout this is ...
+        For a linear layout this sets the Node and Tip coordinates. It
+        starts with layout='d' and then reorients to any linear: 'rlud'
         """
-        # override all coordinates. Sets all edge lengths to 1.
+        # Sets internal dists to 1 and extends leaf edges to align at 0.
         if not self.style.use_edge_lengths:
             self._assign_unit_length_edges()
 
-        # change baseline
-        self.coords[:, 0] += self.style.xbaseline
-        self.coords[:, 1] += self.style.ybaseline
+        # re-orient for layout direction: right, left or down.
+        if self.style.layout == "d":
+            self.coords[:, 0] += self.style.xbaseline
+            self.coords[:, 1] += self.style.ybaseline
+            self.tcoords = self.coords[:self.tree.ntips, :].copy()
+            if self.style.tip_labels_align:
+                self.tcoords[:, 1] = self.style.ybaseline
 
-        # re-orient to right, left or down.
-        if self.style.layout == "u":
+        elif self.style.layout == "u":
             self.coords[:, 1] *= -1
-        if self.style.layout == "l":
+            self.coords[:, 0] += self.style.xbaseline
+            self.coords[:, 1] += self.style.ybaseline
+            self.tcoords = self.coords[:self.tree.ntips, :].copy()
+            if self.style.tip_labels_align:
+                self.tcoords[:, 1] = self.style.ybaseline
+
+        elif self.style.layout == "l":
             self.coords = self.coords[:, [1, 0]]
-        if self.style.layout == "r":
+            self.coords[:, 0] += self.style.xbaseline
+            self.coords[:, 1] += self.style.ybaseline
+            self.tcoords = self.coords[:self.tree.ntips, :].copy()
+            if self.style.tip_labels_align:
+                self.tcoords[:, 0] = self.style.xbaseline
+
+        else:
             self.coords = self.coords[:, [1, 0]]
             self.coords[:, 0] *= -1
+            self.coords[:, 0] += self.style.xbaseline
+            self.coords[:, 1] += self.style.ybaseline
+            self.tcoords = self.coords[:self.tree.ntips, :].copy()
+            if self.style.tip_labels_align:
+                self.tcoords[:, 0] = self.style.xbaseline
 
     def _assign_unit_length_edges(self) -> None:
         """When use_edge_length=False this sets all dists to unit 1"""
@@ -132,6 +149,9 @@ if __name__ == "__main__":
     import toytree
     tre = toytree.rtree.rtree(5)
     tre.style.tip_labels_align = True
+    tre.style.xbaseline = 5
+    tre.style.ybaseline = 2.5
+    tre.style.layout = 'u'
     lay = LinearLayout(tre, tre.style, None, None)
     print(lay.coords)
-
+    print(lay.tcoords)
