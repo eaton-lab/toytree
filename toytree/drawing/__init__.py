@@ -6,11 +6,7 @@
 
 from toytree.drawing.src.toytree_mark import ToyTreeMark
 from toytree.drawing.src.setup_grid import GridSetup
-from toytree.drawing.src.setup_canvas import (
-    get_canvas_and_axes,
-    set_axes_ticks_style,
-    CanvasSetup,
-)
+from toytree.drawing.src.setup_canvas import get_canvas_and_axes
 from toytree.drawing.src.draw_toytree import (
     draw_toytree,
     get_layout,
