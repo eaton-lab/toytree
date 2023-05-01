@@ -9,7 +9,10 @@ from typing import Union, Sequence
 import toyplot
 from toytree import ToyTree
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
-
+# from toytree.annotate.src.annotation_mark import (
+#     get_last_toytree_mark_from_cartesian,
+#     assert_tree_matches_mark,
+# )
 
 __all__ = ["add_axes_box_outline"]
 
@@ -40,6 +43,9 @@ def add_axes_box_outline(
     axes can be separated from the box outline (i.e., this func uses
     the current padding value to align the two).
     """
+    # mark = get_last_toytree_mark_from_cartesian(axes)
+    # assert_tree_matches_mark(tree, mark)
+
     # get padding and margin from axes, or override with new values
     padding = padding if padding is not None else axes._padding
     margin = margin if margin is not None else axes._xmin_range
