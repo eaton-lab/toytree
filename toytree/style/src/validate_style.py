@@ -64,11 +64,6 @@ NON_VALIDATED = [
 ]
 
 
-# def get_value(kwargs: Mapping[str, Any], style: TreeStyle, name: str) -> Any:
-#     """Return user value is provided (not None) else BaseStyle value"""
-#     return kwargs[name] if kwargs.get(name) is not None else getattr(style, name)
-
-
 def get_dict(kwargs: Mapping[str, Any], name: str) -> Any:
     """Return user value is provided (not None) else BaseStyle value"""
     return kwargs[name] if kwargs.get(name) is not None else {}
@@ -79,7 +74,13 @@ def validate_style(
     style: TreeStyle,
     **kwargs,
 ) -> TreeStyle:
-    """..."""
+    """Validate style arguments to ToyTree.draw() before creating Mark.
+
+    The TreeStyle is a copy from the ToyTree and kwargs arguments are
+    user args to the .draw() function which override the TreeStyle
+    defaults. This expands arguments into values and checks the size
+    and type. Many of the functions within are also used in annotations.
+    """
     style.node_mask = validate_node_mask(tree, style, **kwargs)
     style.node_sizes = validate_node_sizes(tree, style, **kwargs)
     style.node_markers = validate_node_markers(tree, style, **kwargs)
