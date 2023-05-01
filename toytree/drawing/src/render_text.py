@@ -68,9 +68,9 @@ def render_text(
     # apply a transform to the group
     transform = ""
     if xpos or ypos:
-        transform += f"translate({xpos:.3g},{ypos:.3g})"  # %r,%r)" % (x, y)        
+        transform += f"translate({xpos:.6g},{ypos:.6g})"  # %r,%r)" % (x, y)
     if angle:
-        transform += f"rotate({-angle:.3g})"  # %r)" % (-angle) # pylint: disable=invalid-unary-operand-type
+        transform += f"rotate({-angle:.6g})"  # %r)" % (-angle) # pylint: disable=invalid-unary-operand-type
     if transform:
         group.set("transform", transform)
 
@@ -80,7 +80,7 @@ def render_text(
 
     # only fill and stroke can differ on an individual text element
     sty = {
-        i: style.get(i, None) for i in 
+        i: style.get(i, None) for i in
         ["fill", "fill-opacity", "stroke", "stroke-opacity"]
     }
 
