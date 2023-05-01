@@ -93,7 +93,7 @@ def render_text(
             if isinstance(box, toyplot.text.TextBox):
                 xml.SubElement(
                     group, "text",
-                    x=str(box.left), 
+                    x=str(box.left),
                     y=str(box.baseline),
                     # style=toyplot.style.to_css(box.style),
                     # style=concat_style_to_str2(sty)

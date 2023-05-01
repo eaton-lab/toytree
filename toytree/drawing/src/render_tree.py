@@ -85,7 +85,6 @@ class RenderToytree:
         self.nodes_y = self.axes.project('y', self.mark.ntable[:, 1])
         self.tips_x = self.axes.project('x', self.mark.ttable[:, 0])
         self.tips_y = self.axes.project('y', self.mark.ttable[:, 1])
-
         # if circular layout then also get radius
         # if self.mark.layout[0] == 'c':
         #     self.radii = self.axes.project('x', self.mark.radii)
@@ -178,6 +177,7 @@ class RenderToytree:
 
             # only relevant to 'pc' phylo-circular format
             if "A" in path_format:
+                raise NotImplementedError("TODO")
 
                 # get angle from node to the root
                 dy = (self.nodes_y[-1] - child_y)
@@ -186,6 +186,7 @@ class RenderToytree:
                 logger.info(f"dx={dx:.2f} dy={dy:.2f}")
 
                 # get length of edge
+                # dist = 
                 dist = self.radii[idx] - self.radii[pidx]
 
                 # get length of radius to new fake node.
@@ -427,15 +428,23 @@ class RenderToytree:
             offset = toyplot.units.convert(
                 tstyle["-toyplot-anchor-shift"], "px", "px",
             )
-            angles = self.mark.tip_labels_angles[idx]
 
-            # modify angles and shifts for different layouts
-            if self.mark.layout in ['l', 'u']:
-                angles = self.mark.tip_labels_angles[idx]
+            if self.mark.layout in 'rd':
+                angle = self.mark.tip_labels_angles[idx]
+
+            # reverse labels
+            elif self.mark.layout in 'lu':
+                angle = self.mark.tip_labels_angles[idx]
                 tstyle['-toyplot-anchor-shift'] = -offset
                 tstyle['text-anchor'] = "end"
-            if self.mark.layout[0] == 'c':
-                angles = self.mark.tip_labels_angles[idx]
+
+            # 'c' or unrooted
+            else:
+                angle = self.mark.tip_labels_angles[idx]
+                if 90 < angle < 270:
+                    tstyle['text-anchor'] = "end"
+                    tstyle['-toyplot-anchor-shift'] = -offset
+                    angle -= 180
 
             # add text
             render_text(
@@ -443,7 +452,7 @@ class RenderToytree:
                 text=tip,
                 xpos=cxx,
                 ypos=cyy,
-                angle=angles,
+                angle=angle,
                 attributes={"class": "toytree-TipLabel"},
                 style=tstyle,
             )
