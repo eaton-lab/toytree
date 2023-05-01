@@ -21,12 +21,12 @@ class TreeStyleS(TreeStyle):
     tree_style: str = "s"
     node_labels: bool = True
     node_mask: bool = False
-    node_sizes: int = 18
+    node_sizes: int = 16
     tip_labels: bool = True
     use_edge_lengths: bool = False
 
     def __post_init__(self):
-        self.node_style.fill = (0.66, 0.66, 0.66, 1)
+        self.node_style.fill = (0.8274509803921568, 0.8274509803921568, 0.8274509803921568, 1.0)
         self.node_style.stroke = (0.145, 0.145, 0.145, 1.0)
         self.node_style.stroke_width = 1.5
 
