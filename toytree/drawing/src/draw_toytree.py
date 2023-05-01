@@ -9,12 +9,13 @@ The `draw_toytree` func does the following:
     - ToyTreeMark to generate and return the tree drawing.
 """
 
-from typing import Tuple, TypeVar, Optional
+from typing import Tuple, TypeVar
 from loguru import logger
 from toyplot.canvas import Canvas
 from toyplot.coordinates import Cartesian
 
-from toytree.drawing import ToyTreeMark, get_canvas_and_axes, CanvasSetup
+# from toytree.annotate.src.add_scale_bar import add_axis_scale_bar_to_mark
+from toytree.drawing import ToyTreeMark, get_canvas_and_axes
 from toytree.layout import BaseLayout, LinearLayout, CircularLayout, UnrootedLayout
 from toytree.style import (
     TreeStyle,
@@ -87,6 +88,7 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
     # generate toyplot Mark. Style is already validated. tables of int idx labels
     mark = ToyTreeMark(
         ntable=layout.coords,
+        ttable=layout.tcoords,
         etable=tree.get_edges('idx'),
         **tree_style_to_css_dict(style),
     )
@@ -94,14 +96,34 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
     # use existing canvas and axes or create new ones. If created, the
     # size is built from (extents, ntips, height, margin, padding)
     # TODO: update. requires validated tip labels; sets height, width, ...
-    logger.warning(style.height)
-    # canvas, axes = get_canvas_and_axes(tree, axes, style)
-    csetup = CanvasSetup(tree, axes, style)
-    canvas = csetup.canvas
-    axes = csetup.axes
+    # logger.warning(mark.extents('x')[0])
+    # left = mark.extents('x')[1][0].min()
+    # right = mark.extents('x')[1][1].max()
+    # width = 100 + (right - left)
+    # logger.warning(width)
+    # style.width = width
 
-    # add mark to axes
+    # create Canvas and Cartesian if they don't yet exist.
+    canvas, axes = get_canvas_and_axes(
+        axes,
+        mark,
+        kwargs.get('width'),
+        kwargs.get('height')
+    )
+
+    # add ToyTreeMark to Cartesian axes.
     axes.add_mark(mark)
+
+    # Hide axes if Cartesian is new and scale bar not added.
+    if mark.scale_bar is False:
+        if canvas is not None:
+            axes.x.show = False
+            axes.y.show = False
+
+    # Show axes with a scale bar if requested.
+    else:
+        tree.annotate.add_axes_scale_bar(axes)
+
     return canvas, axes, mark
 
 
@@ -167,6 +189,8 @@ if __name__ == "__main__":
     toytree.set_log_level("DEBUG")
     tre = toytree.rtree.unittree(10)
     tre._draw_browser(
-        height=400, width=400,
-        edge_style={"stroke-width": 5, "stroke-opacity": 0.7},
+        ts='s',
+        height=400,
+        width=400,
+        node_mask=tre.get_node_mask(1, 5, 9),
     )
