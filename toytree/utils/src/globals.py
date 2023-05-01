@@ -4,15 +4,6 @@
 
 """
 
-# Used for edges in tree drawings.
-PATH_FORMAT = {
-    'c': "M {px:.1f} {py:.1f} L {cx:.1f} {cy:.1f}",
-    'b1': "M {px:.1f} {py:.1f} C {px:.1f} {cy:.1f}, {px:.1f} {cy:.1f}, {cx:.1f} {cy:.3f}",
-    'b2': "M {px:.1f} {py:.1f} C {cx:.1f} {py:.1f}, {cx:.1f} {py:.1f}, {cx:.1f} {cy:.3f}",    
-    'p1': "M {px:.1f} {py:.1f} L {px:.1f} {cy:.1f} L {cx:.1f} {cy:.1f}",
-    'p2': "M {px:.1f} {py:.1f} L {cx:.1f} {py:.1f} L {cx:.1f} {cy:.1f}",
-    'pc': "M {cx:.1f} {cy:.1f} L {dx:.1f} {dy:.1f} A {rr:.1f} {rr:.1f} 0 0 {flag} {px:.1f} {py:.1f}",
-}
 
 
 # TREE FORMATS

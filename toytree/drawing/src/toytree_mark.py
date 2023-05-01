@@ -77,8 +77,9 @@ class ToyTreeMark(Mark):
         Each ndarray is len=nnodes.
         """
         # this array can be modified during rendering so grab a copy.
-        # TODO: if tip_labels_align then make sure tip Nodes are at 0.
-        coords = (self.ntable[:, 0].copy(), self.ntable[:, 1])
+        coords = self.ntable.copy()
+        coords[:self.ttable.shape[0]] = self.ttable.copy()
+        coords = (coords[:, 0], coords[:, 1])
 
         # get marker/label extents and update minmax for each feature
         extents = [np.zeros(self.nnodes)] * 4
@@ -376,7 +377,7 @@ def set_edge_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndarray]:
     if mark.edge_widths is None:
         widths = np.repeat(mark.edge_style["stroke-width"] / 2., mark.nnodes)
     else:
-        widths = mark.node_widths / 2.
+        widths = mark.edge_widths / 2.
 
     extents[0] = np.min([extents[0], -widths], axis=0)
     extents[1] = np.max([extents[1], widths], axis=0)
@@ -401,8 +402,8 @@ def set_tip_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndar
 
     # add layout-based angles and styles.
     angles = mark.tip_labels_angles
-    # if mark.layout in ['u', 'l']:
-    #     angles = mark.tip_labels_angles - 180
+    if mark.layout in ['u', 'l']:
+        angles = mark.tip_labels_angles - 180
 
     # else return the calculated text extents
     ext = toyplot.text.extents(
