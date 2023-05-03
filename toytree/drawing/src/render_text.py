@@ -53,7 +53,7 @@ def render_text(
     #  'font-weight': 'normal',
     #  'stroke': 'none',
     #  'vertical-align': 'baseline',
-    #  'white-space': 'pre'}    
+    #  'white-space': 'pre'}
 
     # a layout has left, right, bottom, height, 
     # layout = (

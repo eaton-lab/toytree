@@ -8,7 +8,7 @@ from toyplot.html import (_draw_bar, _draw_triangle, _draw_circle, _draw_rect)
 
 
 def render_marker(marker_xml, marker) -> None:
-    """..."""
+    """Call the toyplot render function for the selected marker."""
     if marker.shape == "|":
         _draw_bar(marker_xml, marker.size)
     elif marker.shape == "/":

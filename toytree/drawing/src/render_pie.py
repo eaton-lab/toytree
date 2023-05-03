@@ -30,7 +30,9 @@ import xml.etree.ElementTree as xml
 from multipledispatch import dispatch
 import toyplot
 import numpy as np
-from toytree import ToyTree
+import toyplot.html
+from toyplot.coordinates import Cartesian
+from toyplot.mark import Mark
 from toytree.color import ToyColor
 from toytree.color.src.concat import concat_style_fix_color
 from toytree.annotate.src.pie_chart_mark import PieChartMark
@@ -41,71 +43,66 @@ dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 
 
 #######################################################################
-@dispatch(toyplot.coordinates.Cartesian, PieChartMark, toyplot.html.RenderContext)
+@dispatch(Cartesian, PieChartMark, toyplot.html.RenderContext)
 def _render(axes, mark, context):
-    RenderPieChart(axes, mark, context)
+    render_pie_chart(axes, mark, context)
 #######################################################################
 
 
-class RenderPieChart:
+def render_pie_chart(axes: Cartesian, mark: Mark, context: toyplot.html.RenderContext) -> None:
     """Multidispatch registered render function for PieChartMarks.
 
     The PieChartMark object is a custom Mark and contains the data,
     coordinates, and styles. The colors are checked here during
     rendering.
     """
-    def __init__(self, axes, mark, context):
-        self.axes = axes
-        self.mark = mark
-        self.context = context
+    # project coordinates to axes
+    nodes_x = axes.project('x', mark.coordinates[:, 0])
+    nodes_y = axes.project('y', mark.coordinates[:, 1])
 
-        # project coordinates to axes
-        self.nodes_x = self.axes.project('x', self.mark.coordinates[:, 0])
-        self.nodes_y = self.axes.project('y', self.mark.coordinates[:, 1])
+    # create a group for pie node markers
+    mark_xml = xml.SubElement(
+        context.parent, "g",
+        id=context.get_id(mark),
+        attrib={"class": "toytree-mark-PieCharts"},
+    )
 
-        # create a group for pie node markers
-        self.mark_xml = xml.SubElement(
-            self.context.parent, "g",
-            id=self.context.get_id(self.mark),
-            attrib={"class": "toytree-mark-PieCharts"},
-        )
-
-        # fill dict w/ dicts {idx: {fill: ..., fill-opacity: ...}, ...}
-        colors = {}
-        for cidx, color in enumerate(self.mark.colors):
-            colors[cidx] = {'fill': ToyColor(color)}
+    # fill dict w/ dicts {idx: {fill: ..., fill-opacity: ...}, ...}
+    colors = {}
+    for cidx, color in enumerate(mark.colors):
+        colors[cidx] = {'fill': ToyColor(color)}
 
         # get shared inner stroke styles
         shared_style = {
             "stroke-linecap": "round",
-            "stroke-width": self.mark.istroke_width,
+            "stroke-width": mark.istroke_width,
         }
-        shared_style.update({"stroke": ToyColor(self.mark.istroke).css})
+        shared_style.update({"stroke": ToyColor(mark.istroke).css})
 
         # render the pies as a group of path elements.
-        for nidx in range(self.mark.coordinates.shape[0]):
+        for nidx in range(mark.coordinates.shape[0]):
             group = xml.SubElement(
-                self.mark_xml, "g",
+                mark_xml, "g",
                 attrib={'id': f'pie-{nidx}'},
                 style=concat_style_fix_color(shared_style),
             )
             transform = (
-                f"translate({self.nodes_x[nidx]:.3f},{self.nodes_y[nidx]:.3f}) "
-                f"rotate({self.mark.rotate})"
+                f"translate({nodes_x[nidx]:.3f},{nodes_y[nidx]:.3f}) "
+                f"rotate({mark.rotate})"
             )
             group.set("transform", transform)
 
             # iterate over slices: e.g., [0.3, 0.5, 0.2]
             # sums = [0, 0.3, 0.8, 1.0]
-            for cidx in range(self.mark.data[0].size):
-                start_sum = self.mark.data[nidx][:cidx].sum()
-                end_sum = self.mark.data[nidx][:cidx + 1].sum()
+            for cidx in range(mark.data[0].size):
+                start_sum = mark.data[nidx][:cidx].sum()
+                end_sum = mark.data[nidx][:cidx + 1].sum()
 
                 # only set radius on circle since placement uses transform
                 path = _get_pie_path(
                     percent_start=start_sum,
                     percent_end=end_sum,
-                    radius=self.mark.sizes[nidx],
+                    radius=mark.sizes[nidx],
                 )
                 xml.SubElement(
                     group, "path",
@@ -117,48 +114,14 @@ class RenderPieChart:
             # TODO: provide optional title hover
             ostyle = {
                 "fill": (0, 0, 0, 0),
-                "stroke-width": self.mark.ostroke_width,
+                "stroke-width": mark.ostroke_width,
             }
-            ostyle.update({"stroke": ToyColor(self.mark.ostroke)})
+            ostyle.update({"stroke": ToyColor(mark.ostroke)})
             xml.SubElement(
                 group, "circle",
-                r=str(self.mark.sizes[nidx]),
+                r=str(mark.sizes[nidx]),
                 style=concat_style_fix_color(ostyle),
             )
-
-
-def validate_pie_data(
-    tree: ToyTree,
-    data: np.ndarray,
-    # min_size: float = 1e-9,
-    # mask: np.ndarray = None,
-) -> np.ndarray:
-    """Return cleaned pie chart data.
-
-    Checks pie chart data for correct shape and type, and that the row
-    values sum to 1.
-
-    Formats
-    -------
-    - 1-D array -> 2-D array
-    - 2-D array -> 2-D array sums to 1
-    """
-    assert data.min() >= 0, "negative values are not allowed in pie chart data."
-    assert data.shape[0] in (tree.nnodes, tree.nnodes - 1), (
-        f"pie chart data must be shape (nnodes, nvalues), your data is {data.shape}.")
-
-    # allow single value arrays in [0, 1] to represent two categories
-    if data.ndim == 1:
-        if data.max() > 1:
-            raise ValueError(
-                "1 dimensional array data for pie charts must be < 1 to "
-                "be expanded to 2 categories: (value, 1 - value).")
-        return np.column_stack([data, 1 - data])
-
-    # 2D arrays represent (ntips, ntraits) data.
-    else:
-        assert np.allclose(data.sum(axis=1), 1), "pie chart data row values must sum to 1."
-    return data
 
 
 def _get_pie_path(percent_start: float, percent_end: float, radius: float) -> str:

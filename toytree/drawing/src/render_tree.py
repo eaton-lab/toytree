@@ -120,7 +120,7 @@ class RenderToytree:
     def get_paths(self) -> Tuple[List[str], List[str]]:
         """Return paths and keys in idx order.
 
-        This will build the d="..." path string for the SVG lines 
+        This will build the d="..." path string for the SVG lines
         for edges of the tree. Depending on the edge_type this can be
         relatively simple or more complex.
         """
@@ -200,7 +200,6 @@ class RenderToytree:
                         'sweep': int(radians[pidx] < radians[cidx]),  # 1=counter-clockwise, 0=clockwise
                     })
                 )
-
         return paths, keys
 
     def mark_edges(self) -> None:
