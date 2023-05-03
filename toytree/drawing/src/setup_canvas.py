@@ -22,7 +22,7 @@ def get_linear_width_and_height(mark: Mark) -> Tuple[int, int]:
         exts = ext[3] - ext[2]
     else:
         exts = ext[1] - ext[0]
-    name_vspace = sum(exts[:mark.ttable.shape[0]])
+    name_vspace = sum(exts[:mark.ttable.shape[0]]) * 1.15
 
     # get space needed for tip labels to fit on canvas
     ext = mark.extents(['x', 'y'])[1]
@@ -30,7 +30,7 @@ def get_linear_width_and_height(mark: Mark) -> Tuple[int, int]:
         exts = ext[1] - ext[0]
     else:
         exts = ext[3] - ext[2]
-    name_hspace = max(exts[:mark.ttable.shape[0]]) / 2
+    name_hspace = max(exts[:mark.ttable.shape[0]])# 2
 
     # get depth of tree to show edge, nodes, etc.
     tree_depth = max(100, 5 * mark.ttable.shape[0])
@@ -44,7 +44,7 @@ def get_linear_width_and_height(mark: Mark) -> Tuple[int, int]:
     if mark.layout in "ud":
         width, height = height, width
         height = max(300, min(600, height))
-        width = max(350, min(800, width))
+        width = max(300, min(800, width))
 
     # ... min: (350, 1000)
     else:
@@ -251,4 +251,15 @@ def get_canvas_and_axes(
 
 if __name__ == "__main__":
 
-    pass
+    import toytree
+    t0 = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
+    t0 = t0.root("~.*prz*")
+    c0, _, _ = t0.draw()
+    print(c0.width, c0.height)
+
+    t1 = toytree.rtree.unittree(26)
+    c1, _, _ = t1.draw()
+    print(c1.width, c1.height)
+
+    toytree.utils.show([c0, c1])
+
