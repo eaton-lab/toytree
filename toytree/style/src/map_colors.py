@@ -55,10 +55,29 @@ def get_color_mapped_feature(
     cmap: Union[str, toyplot.color.Map] = None,
     domain_min: Optional[float] = None,
     domain_max: Optional[float] = None,
+    tips_only: bool = False,
 ) -> np.ndarray:
     """Return an array of colors mapped to feature data in a tree.
 
+    Parameters
+    ----------
+    tree: ToyTree
+        A ToyTree to extract feature data from.
+    feature: str
+        Name of a feature to extract from one or more Nodes in the tree.
+    cmap: str or toyplot.color.Map
+        A toyplot colormap object or a str name of a colormap.
+    domain_min: float or None
+        If None the domain will be automatically fit to the data min.
+    domain_max: float or None
+        If None the domain will be automatically fit to the data max.
+    tips_only: bool
+        If True then data is only projected and returned for tip Nodes.
     """
+    if tips_only:
+        values = tree.get_tip_data(feature).values
+    else:
+        values = tree.get_node_data(feature).values
     values = tree.get_node_data(feature).values
     return get_color_mapped_values(values, cmap, domain_min, domain_max)
 

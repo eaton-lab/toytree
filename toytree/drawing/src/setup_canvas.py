@@ -40,11 +40,11 @@ def get_linear_width_and_height(mark: Mark) -> Tuple[int, int]:
     width = tree_depth + name_hspace + 100
     height = name_vspace + 100
 
-    # ... min: (300, 275)
+    # ... min: (350, 300)
     if mark.layout in "ud":
         width, height = height, width
-        height = max(275, min(600, height))
-        width = max(300, min(800, width))
+        height = max(300, min(600, height))
+        width = max(350, min(800, width))
 
     # ... min: (350, 1000)
     else:
