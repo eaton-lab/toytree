@@ -24,7 +24,8 @@ def get_range_mapped_feature(
     feature: str,
     min_value: float = 5,
     max_value: float = 15,
-    nan_value: Optional[float] = 0.
+    nan_value: Optional[float] = 0.,
+    tips_only: bool = False
 ) -> np.ndarray:
     """Return an array of float values mapped to feature data in a tree.
 
@@ -41,9 +42,13 @@ def get_range_mapped_feature(
     nan_value: float or None
         A value to return for nan values. If None then nan values will
         raise a ValueError.
-
+    tips_only: bool
+        If True then data is only projected and returned for tip Nodes.
     """
-    values = tree.get_node_data(feature).values
+    if tips_only:
+        values = tree.get_tip_data(feature).values
+    else:
+        values = tree.get_node_data(feature).values
     if not is_numeric_dtype(values):
         raise ToytreeError(ONLY_NUMERIC_ALLOWED)
     return get_range_mapped_values(values, min_value, max_value, nan_value)
@@ -181,5 +186,4 @@ if __name__ == "__main__":
     )
 
     print(vtree.get_node_data())
-    print(normalize_values(vtree.get_node_data("Ne")))
     # vtree._draw_browser(ts='p', admixture_edges=[(0, 12, 0.5, {'stroke': 'red'}, "hello")]);
