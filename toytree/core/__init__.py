@@ -22,4 +22,10 @@ Generate a MultiTree object
 
 """
 
-# from . import tree
+from toytree.core.tree import ToyTree
+from toytree.core.node import Node
+
+# easier acces to the main toyplot types
+from toyplot.canvas import Canvas
+from toyplot.coordinates import Cartesian
+from toyplot.mark import Mark
