@@ -57,7 +57,7 @@ class ToyTreeMark(Mark):
         domain = toyplot.data.minimax(self.ntable[:, index])
         return domain
 
-    def extents(self, axis: str) -> Tuple[Tuple[np.ndarray], Tuple[np.ndarray]] :
+    def extents(self, axis: str) -> Tuple[Tuple[np.ndarray], Tuple[np.ndarray]]:
         """The tip labels and Node markers define the extents of the data.
 
         This is extra padding to ensure node markers, e.g., circle doesn't
