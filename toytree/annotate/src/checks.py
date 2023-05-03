@@ -11,9 +11,10 @@ from toytree.drawing import ToyTreeMark
 from toytree.utils import ToytreeError
 
 
-def get_last_toytree_mark_from_cartesian(axes: Cartesian) -> ToyTreeMark:
-    """Return the last ToyTreeMark rendered on the Cartesian axes."""
-    # get last plotted toytree Mark from the axes
+def get_last_toytree_mark(axes: Cartesian) -> ToyTreeMark:
+    """Return the last ToyTreeMark rendered on the Cartesian axes.
+
+    """
     targets = axes._scenegraph.targets(axes, "render")
     tree_marks = [i for i in targets if isinstance(i, ToyTreeMark)]
     if not tree_marks:
@@ -24,6 +25,8 @@ def get_last_toytree_mark_from_cartesian(axes: Cartesian) -> ToyTreeMark:
 
 
 def assert_tree_matches_mark(tree: ToyTree, mark: Mark) -> None:
+    """Raise exception if mark does not match up with tree data.
+    """
     nnodes_in_mark = mark.ntable.shape[0]
     assert tree.nnodes == nnodes_in_mark, (
         f"Cannot annotate a tree drawing containing {tree.nnodes} nodes "

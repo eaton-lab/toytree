@@ -10,9 +10,7 @@ import toyplot
 from toyplot.coordinates import Cartesian
 
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
-from toytree.annotate.src.annotation_mark import (
-    get_last_toytree_mark_from_cartesian,
-    assert_tree_matches_mark)
+from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
 
 __all__ = [
     "add_axes_scale_bar",
@@ -47,7 +45,7 @@ def add_axes_scale_bar(
         Option used by toyplot.locator.Extended to automatically find
         tick marks given the data range.
     """
-    mark = get_last_toytree_mark_from_cartesian(axes)
+    mark = get_last_toytree_mark(axes)
     assert_tree_matches_mark(tree, mark)
 
     # the axes is either new or passed as an arg, and the scale_bar
@@ -77,18 +75,26 @@ def add_axes_scale_bar(
     else:
         # nticks = max((4, np.floor(style.height / 75).astype(int)))
         nticks = 5
-        axes.x.show = False
+        axes.show = True
+        axes.x.show = True
         axes.y.show = False
-        raise NotImplementedError("get tree_height")
+
+        # TODO: could choose x or y here based on start angle...
+        axes.x.ticks.show = True
+        left, right = mark.domain('x')
+        tree_height = (right - left) / 2
 
     # get tick locator
     # lct = toyplot.locator.Extended(count=nticks, only_inside=only_inside)
     lct = toyplot.locator.Extended(count=nticks, only_inside=False)
 
     # get root tree height
-    if mark.layout in ("r", "u"):
+    if mark.layout in "ru":
         locs = lct.ticks(-tree_height, -0)[0]
         locs = locs[locs >= -tree_height]
+    elif mark.layout in "ld":
+        locs = lct.ticks(0, tree_height)[0]
+        locs = locs[locs <= tree_height]
     else:
         locs = lct.ticks(0, tree_height)[0]
         locs = locs[locs <= tree_height]
@@ -103,16 +109,22 @@ def add_axes_scale_bar(
     labels = [np.format_float_positional(i, precision=6, trim="-") for i in labels]
 
     # set the ticks locator
-    if mark.layout in ("r", "l"):
+    if mark.layout in "rl":
         axes.x.ticks.locator = toyplot.locator.Explicit(
             locations=locs + mark.xbaseline,
             labels=labels,
         )
-    elif mark.layout in ("u", "d"):
+    elif mark.layout in "ud":
         axes.y.ticks.locator = toyplot.locator.Explicit(
             locations=locs + mark.ybaseline,
             labels=labels,
         )
+    else:
+        axes.x.ticks.locator = toyplot.locator.Explicit(
+            locations=locs + mark.xbaseline,
+            labels=labels,
+        )
+        axes.x.domain_min = 0
     # print(locs, labels)
     return axes
 
