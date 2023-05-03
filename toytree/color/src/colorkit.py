@@ -66,6 +66,13 @@ class ColorKit:
         """Return tuple with float for (r,g,b) percentages, no a."""
         return tuple(float(self.array[i]) for i in 'rgb')
 
+    def set_opacity(self, value: float) -> None:
+        """Set opacity to a new value."""
+        rgba = list(self._rgba)
+        rgba[3] = value
+        self._parse_color(tuple(rgba))
+        return self
+
     def get_style_str(self, stroke: bool = False, opacity: float = None) -> str:
         """Return SVG style string with fill/stroke and opacity separate.
 
@@ -198,3 +205,8 @@ if __name__ == "__main__":
     for i in COLORS:
         c = ColorKit(i)
         print(c.css, c.rgba, c.array, c.get_style_str(), "\t | original =", i)
+
+    # set opacity
+    print(c.rgba)
+    c.set_opacity(0.5)
+    print(c.rgba)
