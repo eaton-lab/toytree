@@ -2,6 +2,22 @@
 
 """...
 
+
+Priority in color/opacity
+-------------------------
+1. color settings can take a single or multiple colors. If multiple
+colors are entered then individual colors are assigned to each item,
+but if only one then the color is set to None and a value will be set
+to fill/stroke instead.
+>>> color = [a, b, c, ...]
+
+2. 
+>>> fill/stroke = x
+
+
+3. Color rgba value is the default opacity value used. But if user sets
+teh 
+
 """
 
 from __future__ import annotations
@@ -32,6 +48,7 @@ class SubStyle:
         return "\n".join(block)
 
     def __getitem__(self, key):
+        """Get item using Python name, fetch from dict as CSS name."""
         if "-" in key:
             if key == "-toyplot-anchor-shift":
                 key = "anchor_shift"
@@ -40,6 +57,7 @@ class SubStyle:
         return self.__dict__[key]
 
     def __setitem__(self, key, value):
+        """Set item using Python name, set to dict as CSS name."""
         if "-" in key:
             if key == "-toyplot-anchor-shift":
                 key = "anchor_shift"

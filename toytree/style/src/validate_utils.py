@@ -20,10 +20,11 @@ def check_arr(values: Sequence[Any], label: str, size: int, ctype: type) -> np.n
     not of the supported type.
     """
     arr = np.array(values)
-    if not arr.size == size:
+    sizes = [size] if isinstance(size, int) else size
+    if arr.size not in sizes:
         raise ToytreeError(
             f"'{label}' len mismatch error: len={arr.size} should be "
-            f"len={size}.")
+            f"in {sizes}.")
     if not isinstance(arr[0], ctype):
         raise ToytreeError(
             f"'{label}' type not supported. You entered {type(arr[0])}, "

@@ -51,6 +51,7 @@ NON_VALIDATED = [
     "height",
     "width",
     "layout",
+    "edge_type",
     "tip_labels_align",
     "use_edge_lengths",
     "scale_bar",
@@ -65,7 +66,11 @@ NON_VALIDATED = [
 
 
 def get_dict(kwargs: Mapping[str, Any], name: str) -> Any:
-    """Return user value is provided (not None) else BaseStyle value"""
+    """Return user value if provided (not None) else BaseStyle value.
+
+    This is necessary because the key is usually present and mapped to
+    a value of None, but we want {} returned if the value is None.
+    """
     return kwargs[name] if kwargs.get(name) is not None else {}
 
 
@@ -81,6 +86,7 @@ def validate_style(
     defaults. This expands arguments into values and checks the size
     and type. Many of the functions within are also used in annotations.
     """
+    # validate node settings
     style.node_mask = validate_node_mask(tree, style, **kwargs)
     style.node_sizes = validate_node_sizes(tree, style, **kwargs)
     style.node_markers = validate_node_markers(tree, style, **kwargs)
@@ -90,93 +96,36 @@ def validate_style(
     if node_fill_color is not None:
         style.node_style.fill = node_fill_color
 
+    # validate edge settings
     style.edge_widths = validate_edge_widths(tree, style, **kwargs)
     style.edge_colors, edge_stroke = validate_edge_colors(tree, style, **kwargs)
     if edge_stroke is not None:
         style.edge_style.stroke = edge_stroke
 
+    # validate tip settings
     style.tip_labels = validate_tip_labels(tree, style, **kwargs)
     style.tip_labels_angles = validate_tip_labels_angles(tree, style, **kwargs)
     style.tip_labels_colors, tip_fill_color = validate_tip_labels_colors(tree, style, **kwargs)
     if tip_fill_color is not None:
         style.tip_labels_style.fill = tip_fill_color
 
+    # validate style dictionaries
     style.node_style = validate_node_style(tree, style.node_style, **get_dict(kwargs, "node_style"))
     style.edge_style = validate_edge_style(tree, style.edge_style, **get_dict(kwargs, "edge_style"))
     style.node_labels_style = validate_node_labels_style(tree, style.node_labels_style, **get_dict(kwargs, "node_labels_style"))
     style.edge_align_style = validate_edge_align_style(tree, style.edge_align_style, **get_dict(kwargs, "edge_align_style"))
     style.tip_labels_style = validate_tip_labels_style(tree, style.tip_labels_style, **get_dict(kwargs, "tip_labels_style"))
 
-    for key, val in kwargs.items():
-        if key in NON_VALIDATED:
-            if val is not None:
-                setattr(style, key, val)
+    # set remaining key:val that do not have validators
+    for key in NON_VALIDATED:
+        val = kwargs.get(key, None)
+        if val is not None:
+            setattr(style, key, val)
+    # for key, val in kwargs.items():
+    #     if key in NON_VALIDATED:
+    #         if val is not None:
+    #             setattr(style, key, val)
     return style
-
-
-# def old_validate_style(
-#     tree: ToyTree,
-#     style: TreeStyle,
-#     **kw,
-# ) -> Dict[str, Any]:
-#     """Return TreeStyle
-
-#     Parameters
-#     ----------
-#     tree: ToyTree
-#         The tree that will be drawn.
-#     style: TreeStyle
-#         A TreeStyle copy from get_tree_style() during draw_toytree
-#     style: Mapping[str, Any]
-#         User style arguments.
-#     """
-
-#     # check/update
-#     style.node_mask = validate_node_mask(tree, get_value(kw, style, "node_mask"))
-#     style.node_sizes = validate_node_sizes(tree, get_value(kw, style, "node_sizes"))
-#     style.node_markers = validate_node_markers(tree, get_value(kw, style, "node_markers"))
-#     style.node_hover = validate_node_hover(tree, get_value(kw, style, "node_hover"))
-#     style.node_labels = validate_node_labels(tree, get_value(kw, style, "node_labels"))
-#     style.node_colors, node_fill_color = validate_node_colors(tree, get_value(kw, style, "node_colors"))
-#     if node_fill_color is not None:
-#         style.node_style['fill'] = node_fill_color
-
-#     style.edge_widths = validate_edge_widths(tree, get_value(kw, style, "edge_widths"))
-#     style.edge_colors, edge_stroke = validate_edge_colors(tree, get_value(kw, style, "edge_colors"))
-#     if edge_stroke is not None:
-#         style.edge_style['stroke'] = edge_stroke
-
-#     style.tip_labels = validate_tip_labels(tree, get_value(kw, style, "tip_labels"))
-#     style.tip_labels_angles = validate_tip_labels_angles(tree, get_value(kw, style, "tip_labels_angles"), style.layout)
-#     style.tip_labels_colors, tip_fill_color = validate_tip_labels_colors(tree, get_value(kw, style, "tip_labels_colors"))
-#     if tip_fill_color is not None:
-#         style.tip_labels_style['fill'] = tip_fill_color
-
-#     style.tip_labels_style = validate_tip_labels_style(
-#         tree, style.tip_labels_style, get_dict(kw, "tip_labels_style"))
-#     style.node_style = validate_node_style(
-#         tree, style.node_style, get_dict(kw, "node_style"))
-#     style.edge_style = validate_edge_style(
-#         tree, style.edge_style, get_dict(kw, "edge_style"))
-#     style.node_labels_style = validate_node_labels_style(
-#         tree, style.node_labels_style, get_dict(kw, "node_labels_style"))
-#     style.edge_align_style = validate_edge_align_style(
-#         tree, style.edge_align_style, get_dict(kw, "edge_align_style"))
-
-#     # # set any remaining styles
-#     # for key, val in style._items():
-
-#     #     # get user value or style base value
-#     #     if key in kw:
-#     #         value = kw.get(key)
-#     #     else:
-#     #         value = getattr(style, key)
-
-#     #     if key == "node_mask":
-#     #         style.node_mask = validate_node_mask(tree, value)
-#     #     elif key == "node_sizes":
-#     #         style.node_sizes = validate_node_mask(tree, value)
-#     return style
 
 
 if __name__ == "__main__":

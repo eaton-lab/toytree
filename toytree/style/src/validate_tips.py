@@ -101,7 +101,12 @@ def validate_tip_labels_colors(
     # get user value or style base value
     colors = kwargs.get("tip_labels_colors")
     if colors is None:
-        colors = getattr(style, "tip_labels_colors")
+        if isinstance(style, TreeStyle):
+            colors = getattr(style, "tip_labels_colors")
+
+    # if None then Nodes will be colored by style.fill during render
+    if colors is None:
+        return None, None
 
     # if None then Nodes will be colored by style.fill during render
     if colors is None:
@@ -211,11 +216,6 @@ def validate_tip_labels_style(
 
     # convert fill to a ToyColor
     style.fill = ToyColor(style.fill)
-
-    # convert colors to only 'fill' css string: "fill:{rgb};fill-opacity:{o}"
-    # if serialize:
-    #     style['fill'] = style['fill'].get_style_str(stroke=False, opacity=style['fill-opacity'])
-    #     style.pop('fill-opacity')
     return style
 
 
