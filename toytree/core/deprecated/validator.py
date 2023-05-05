@@ -8,7 +8,7 @@ from typing import TypeVar, Sequence, Any, Union, Tuple
 from loguru import logger
 import numpy as np
 import toyplot
-from toytree.style import TreeStyle, normalize_values
+from toytree.style import TreeStyle#, normalize_values
 from toytree.color import ToyColor, color_cycler, get_color_mapped_feature
 from toytree.utils import (
     ToytreeError,
@@ -21,7 +21,7 @@ ToyTree = TypeVar("ToyTree")
 
 
 def check_arr(values: Sequence[Any], label: str, size: int, ctype: type) -> np.ndarray:
-    """project a value to an array of size with dtype.
+    """Return a Sequence as an ndarray checked for expected dtype and size.
 
     Raises an exception if values is 1 > len(values) > size, or it is
     not of the supported type.
@@ -314,6 +314,10 @@ class Validator(TreeStyle):
         # use tip_labels_style
         if self.tip_labels_colors is None:
             return
+
+        # special feature str
+        if isinstance(self.tip_labels_colors, str) and self.tip_labels_colors in self.tree.features:
+            self.tip_labels_colors = (self.tip_labels_colors, "Spectral")
 
         # special (feature, colormap) tuple.
         if isinstance(self.tip_labels_colors, tuple) and len(self.tip_labels_colors) == 2:

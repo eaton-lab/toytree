@@ -4,6 +4,7 @@
 
 """
 
+from __future__ import annotations
 from typing import Optional, Union
 from enum import Enum
 import json
@@ -33,24 +34,27 @@ class SubStyle:
     def __delattr__(self, key) -> None:
         raise ToytreeError("TreeStyle dict keys cannot be deleted.")
 
-    def json(self) -> str:
-        """Return a string with tree style serialized as JSON."""
-        return json.dumps(self.__dict__, indent=4)
+    # def json(self) -> str:
+    #     """Return a string with tree style serialized as JSON."""
+    #     return json.dumps(self.__dict__, indent=4)
 
     def __repr__(self):
         """Return a serialized JSON formatted style dict."""
-        return self.json()
+        block = ["{"]
+        for key, val in self.__dict__.items():
+            block.append(f"    {key}: {val!r},")
+        block.append("}")
+        return "\n".join(block)
 
-    def copy(self) -> "SubStyle":
+    def copy(self) -> SubStyle:
         """Return a deepcopy."""
         return deepcopy(self)
-    # TOO SLOW TO CHECK EVERY STYLE AS IT IS SET. CHECKED ONLY ON VALIDATION.
-    # def __setattr__(self, key: str, value) -> None:
-    #     """ColorTypes are always converted to XXX"""
-    #     if key in ["fill", "stroke"]:
-    #         self.__dict__[key] = ColorType(value).css
-    #     else:
-    #         self.__dict__[key] = value
+
+    def __getitem__(self, key):
+        return getattr(self, key)
+
+    def __setitem__(self, key, value):
+        return setattr(self, key, value)
 
 
 class NodeStyle(SubStyle):
@@ -93,7 +97,7 @@ class EdgeAlignStyle(SubStyle):
         self.stroke_dasharray: str = "2,4"
 
 
-class TipLabelsStyle(SubStyle):
+class TipLabelStyle(SubStyle):
     def __init__(self):
         self.fill: ColorType = "rgba(16.1%,15.3%,14.1%,1.000)"
         self.fill_opacity: Optional[float] = None
@@ -112,4 +116,4 @@ if __name__ == "__main__":
     ns.fill = (0.3, 0.3, 0.3, 0.5)
     ns.stroke = "blue"
     ns.fill_opacity = 1.5
-    print(ns.__dict__)
+    print(ns)

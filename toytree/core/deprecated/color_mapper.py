@@ -4,14 +4,13 @@
 
 """
 
-from typing import Union
+from typing import Union, Optional
 from loguru import logger
 import numpy as np
 import toyplot
 from toytree.color import ToyColor
 from toytree.utils.src.exceptions import ToytreeError
 
-ColorMap = Union[str, toyplot.color.Map]
 logger = logger.bind(name="toytree")
 
 
@@ -44,19 +43,42 @@ Consider selecting a LinearMap instead, such as 'Spectral'.
 """
 
 
-def get_color_mapped_feature(values: np.ndarray, cmap: ColorMap) -> np.ndarray:
+def get_color_mapped_feature(
+    values: np.ndarray,
+    cmap: Union[str, toyplot.color.Map] = None,
+    domain_min: Optional[float] = None,
+    domain_max: Optional[float] = None,
+) -> np.ndarray:
     """Return feature mapped to a continuous or discrete color map.
 
     Raises helpful error messages if user entered the special tuple
     argument incorrectly, or by accident.
+
+    Parameters
+    ----------
+
+
+    Examples
+    --------
+    >>> ...
     """
+    # Use Spectral as default map if None provided.
+    if cmap is None:
+        cmap = "Spectral"
+
     # if colormap is str then expand to a color.Map
     if isinstance(cmap, str):
         try:
-            cmap = toyplot.color.brewer.map(cmap)
-        except KeyError as exc:
-            msg = "Invalid colormap arg for (feature, colormap) input.\n" + CMAP_ERROR
-            raise ToytreeError(msg) from exc
+            cmap = toyplot.color.brewer.map(cmap, domain_min=domain_min, domain_max=domain_max)
+        except KeyError:
+            try:
+                cmap = toyplot.color.linear.map(cmap, domain_min=domain_min, domain_max=domain_max)
+            except KeyError:
+                try:
+                    cmap = toyplot.color.diverging.map(cmap, domain_min=domain_min, domain_max=domain_max)
+                except KeyError:
+                    msg = "Invalid colormap arg for (feature, colormap) input.\n" + CMAP_ERROR
+                    raise ToytreeError(msg)
 
     # if colormap is not Map or Palette (good) then check for messier formats
     if not isinstance(cmap, (toyplot.color.Map, toyplot.color.Palette)):

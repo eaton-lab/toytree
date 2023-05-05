@@ -30,22 +30,21 @@ Set/Get attributes
 
 from typing import Union, Sequence, TypeVar, Tuple, Dict, Any
 import json
+from dataclasses import dataclass
 from copy import deepcopy
 from loguru import logger
 import numpy as np
 from toytree.color import ToyColor
 from toytree.utils import ToytreeError
 from toytree.style.src.sub_styles import (
-    NodeStyle, NodeLabelStyle, EdgeStyle, EdgeAlignStyle, TipLabelsStyle
+    SubStyle, NodeStyle, NodeLabelStyle, EdgeStyle, 
+    EdgeAlignStyle, TipLabelStyle
 )
 
 logger = logger.bind(name="toytree")
 Color = TypeVar("Color")
 ToyTree = TypeVar("ToyTree")
-SUBSTYLES = [
-    "node_style", "node_labels_style", "tip_labels_style",
-    "edge_style", "edge_align_style",
-]
+
 
 
 class TreeStyle:
@@ -75,7 +74,7 @@ class TreeStyle:
         self.tip_labels_colors: Union[str, Sequence[str], None] = None
         self.tip_labels_align: bool = None
         self.tip_labels_angles: Union[float, Sequence[float], None] = None
-        self.tip_labels_style: TipLabelsStyle = TipLabelsStyle()
+        self.tip_labels_style: TipLabelStyle = TipLabelStyle()
 
         # self.show_root_edge: bool = None
         self.use_edge_lengths: bool = True
@@ -129,6 +128,14 @@ class TreeStyle:
     def __repr__(self):
         """Return a serialized JSON formatted style dict."""
         return self.json()
+        # block = ["{"]
+        # for key, val in self.__dict__.items():
+        #     if isinstance(val, SubStyle):
+        #         block.append(f"{key}: {val!r},")
+        #     else:
+        #         block.append(f"{key}: {val!r},")
+        # block.append("}")
+        # return "\n".join(block)
 
     def copy(self) -> "TreeStyle":
         """Return a deepcopy."""
