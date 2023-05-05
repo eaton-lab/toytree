@@ -37,8 +37,7 @@ TODO:
 """
 
 from __future__ import annotations
-from typing import (
-    Union, List, Sequence, Optional, Tuple, TypeVar, Iterator)
+from typing import Union, List, Sequence, Optional, Tuple, TypeVar, Iterator
 from copy import deepcopy
 import numpy as np
 # import pandas as pd
@@ -46,7 +45,8 @@ from loguru import logger
 from toytree.core.tree import ToyTree
 from toytree.core.tree import Node
 from toytree.style import TreeStyle, get_base_tree_style_by_name
-from toytree.drawing import CanvasSetup, GridSetup, set_axes_ticks_style
+from toytree.drawing import get_canvas_and_axes
+# from toytree.drawing import CanvasSetup, GridSetup, set_axes_ticks_style
 # from toytree.core.drawing.render import ToytreeMark
 from toytree.infer.src.consensus import ConsensusTree
 # from toytree.utils import ToytreeError
@@ -165,18 +165,19 @@ class MultiTree:
         """Return a deepcopy of the MultiTree."""
         return deepcopy(self)
 
+    # todo: use wrap
     def write(
         self,
         path: Optional[str] = None,
-        dist_formatter: str = "%.6g",
+        dist_formatter: str = "%.12g",
         internal_labels: Optional[str] = "support",
-        internal_labels_formatter: Optional[str] = "%.6g",
+        internal_labels_formatter: Optional[str] = "%.12g",
         features: Optional[Sequence[str]] = None,
         features_prefix: str = "&",
         features_delim: str = ",",
         features_assignment: str = "=",
         **kwargs,
-        ) -> Optional[str]:
+    ) -> Optional[str]:
         """Write tree to newick string and return or write to filepath.
 
         The newick string can be formatted in several ways. The default
@@ -199,8 +200,8 @@ class MultiTree:
             or None to not write dist values. Default is "%.6g".
         internal_labels: str or None
             A feature to write as internal node labels. None suppresses
-            internal labels. The 'support' feature is default, and 
-            often used here, but 'name' or any other feature can be 
+            internal labels. The 'support' feature is default, and
+            often used here, but 'name' or any other feature can be
             used as well.
         internal_labels_formatter: str or None
             A formatting string to format internal labels. If an internal
@@ -230,11 +231,11 @@ class MultiTree:
         """
         if kwargs:
             logger.warning(
-                f"Deprecated args to write(): {list(kwargs.values())}. See docs.")        
+                f"Deprecated args to write(): {list(kwargs.values())}. See docs.")
         newicks = []
         for tree in self:
             newicks.append(tree.write(
-                path=None, dist_formatter=dist_formatter, 
+                path=None, dist_formatter=dist_formatter,
                 internal_labels=internal_labels,
                 internal_labels_formatter=internal_labels_formatter,
                 features=features,
@@ -251,9 +252,9 @@ class MultiTree:
 
     def get_consensus_tree(
         self,
-        best_tree: ToyTree=None,
-        majority_rule_min: float=0.0,
-        ) -> ToyTree:
+        best_tree: ToyTree = None,
+        majority_rule_min: float = 0.0,
+    ) -> ToyTree:
         """Return an extended majority rule consensus Toytree.
 
         Consensus tree Node 'support' features record the frequency of
@@ -303,11 +304,10 @@ class MultiTree:
     def root(
         self,
         *query: Query,
-        regex: bool=False,
         root_dist: Optional[float] = None,
         edge_features: Optional[Sequence[str]] = None,
-        inplace: bool=False,
-        ) -> MultiTree:
+        inplace: bool = False,
+    ) -> MultiTree:
         """Return a MultiTree with all ToyTrees in treelist rooted.
 
         If a tree cannot be rooted on the selected position this
@@ -339,12 +339,15 @@ class MultiTree:
         """
         mtree = self if inplace else self.copy()
         for tree in mtree:
-            tree.root(*query,
-                regex=regex, root_dist=root_dist,
-                edge_features=edge_features, inplace=True)
+            tree.root(
+                *query,
+                root_dist=root_dist,
+                edge_features=edge_features,
+                inplace=True,
+            )
         return mtree
 
-    def unroot(self, inplace: bool=False) -> MultiTree:
+    def unroot(self, inplace: bool = False) -> MultiTree:
         """Return a MultiTree with all ToyTrees in treelist unrooted"""
         mtree = self if inplace else self.copy()
         for tree in mtree:
@@ -404,7 +407,6 @@ class MultiTree:
     #     >>> ...
     #     """
 
-
     ################################################################
     # Drawing functions
     #
@@ -412,14 +414,14 @@ class MultiTree:
 
     def draw(
         self,
-        shape: Tuple[int,int]=(1, 4),
-        shared_axes: bool=False,
-        idxs: Optional[Sequence[int]]=None,
-        width: Optional[int]=None,
-        height: Optional[int]=None,
-        margin: Union[float, Tuple[int,int,int,int]]=None,
+        shape: Tuple[int, int] = (1, 4),
+        shared_axes: bool = False,
+        idxs: Optional[Sequence[int]] = None,
+        width: Optional[int] = None,
+        height: Optional[int] = None,
+        margin: Union[float, Tuple[int, int, int, int]] = None,
         **kwargs,
-        ) -> Tuple[Canvas, Cartesian, List[Mark]]:
+    ) -> Tuple[Canvas, Cartesian, List[Mark]]:
         """Return a toyplot drawing of a grid of ToyTrees.
 
         The grid spacing can be controlled with shape and margin
@@ -589,11 +591,11 @@ class MultiTree:
 
     def draw_cloud_tree(
         self,
-        axes: 'toyplot.coordinates.Cartesian'=None,
-        fixed_order: Sequence[str]=None,
-        jitter: float=0.0,
+        axes: Cartesian = None,
+        fixed_order: Sequence[str] = None,
+        jitter: float = 0.0,
         **kwargs,
-        ):
+    ):
         """
         Draw multiple trees overlapping in coordinate space. The
         order of tip_labels is fixed in cloud trees so that trees
@@ -640,7 +642,7 @@ class MultiTree:
         fstyle.ybaseline = kwargs.get("ybaseline", 0)
 
         # get canvas and axes
-        setup = CanvasSetup(self, axes, fstyle)
+        setup = get_canvas_and_axes(self, axes, fstyle)
         canvas = setup.canvas
         axes = setup.axes
 
@@ -727,3 +729,10 @@ class MultiTree:
             raise Exception(
                 "All trees in treelist do not share the same set of tips")
         return self.treelist[0].get_tip_labels()
+
+
+if __name__ == "__main__":
+
+    import toytree
+    mtree = toytree.mtree([toytree.rtree.unittree(10) for i in range(10)])
+    print(mtree)

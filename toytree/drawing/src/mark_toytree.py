@@ -19,7 +19,7 @@ logger = logger.bind(name="toytree")
 
 
 class ToyTreeMark(Mark):
-    """
+    """Tree Mark optionally including Node markers and tip labels.
 
     """
     def __init__(self, **kwargs):
