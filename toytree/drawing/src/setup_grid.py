@@ -3,25 +3,25 @@
 """Canvas setup functions for single or grids of trees."""
 
 
-from typing import Tuple
+# from typing import Tuple
 import numpy as np
-# from toytree.core import 
+# from toytree.core import
 
 
-def get_linear_width_and_height(mark: MultiTreeMark) -> Tuple[int, int]:
-    """Return height and width for tree grid if not set by user."""
-    if mark.layout in "du":
-        minx = 225
-        miny = 250
-        width = mark.width if mark.width else min(750, minx * mark.ncols)
-        height = mark.height if mark.height else min(750, miny * mark.nrows)
-        return width, height
+# def get_linear_width_and_height(mark: MultiTreeMark) -> Tuple[int, int]:
+#     """Return height and width for tree grid if not set by user."""
+#     if mark.layout in "du":
+#         minx = 225
+#         miny = 250
+#         width = mark.width if mark.width else min(750, minx * mark.ncols)
+#         height = mark.height if mark.height else min(750, miny * mark.nrows)
+#         return width, height
 
-    minx = 250
-    miny = 225
-    height = mark.height if mark.height else min(750, minx * mark.nrows)
-    width = mark.width if mark.width else min(750, miny * mark.ncols)
-    return width, height
+#     minx = 250
+#     miny = 225
+#     height = mark.height if mark.height else min(750, minx * mark.nrows)
+#     width = mark.width if mark.width else min(750, miny * mark.ncols)
+#     return width, height
 
 
 # @dataclass
