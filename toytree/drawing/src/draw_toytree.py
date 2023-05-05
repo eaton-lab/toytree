@@ -32,7 +32,7 @@ logger = logger.bind(name="toytree")
 
 
 def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMark]:
-    """Parse arguements to draw function and return drawing objects.
+    """Parse arguments to draw function and return drawing objects.
 
     The drawing style arguments can be entered in two ways, either
     by modifying attributes of the `.style` dict-like object linked

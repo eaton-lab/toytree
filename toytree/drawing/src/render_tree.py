@@ -210,7 +210,8 @@ class RenderToytree:
         # !always pop 'fill' to set it to 'fill:none' below (no fill btwn edges).
         _ = self.mark.edge_style.pop('fill', None)
 
-        # render the edge group
+        # render the edge group.
+        # TODO: consider adding stroke-linejoin:round
         self.edges_xml = xml.SubElement(
             self.mark_xml, "g",
             attrib={"class": "toytree-Edges"},
