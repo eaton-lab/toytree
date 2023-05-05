@@ -14,7 +14,7 @@ This class is inspired by the ete3.TreeNode class object, and retains
 similarities in syntax to make it easy to learn for ete users. However,
 it is greatly simplified, and differs in several other important
 respects. Most notably, the toytree.Node class is intended to be
-immutable, meaning users are not able to directly edit .dist, .up,
+_immutable_, meaning users are not able to directly edit .dist, .up,
 .children, or other attributes of Node objects that affect the tree
 topology. Instead, ToyTree class objects have functions for modifying
 Nodes that do so in the context of updating the entire tree (i.e.,
@@ -34,7 +34,7 @@ References
 
 
 from __future__ import annotations
-from typing import List, Optional, Union, Iterator, Tuple  # , Set, Any
+from typing import List, Optional, Union, Iterator, Tuple  # Set, Any
 from functools import total_ordering
 from copy import deepcopy
 from collections import deque
