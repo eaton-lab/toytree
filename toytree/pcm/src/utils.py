@@ -17,128 +17,31 @@ References
 """
 
 import os
-from typing import Union, Callable, TypeVar
+from typing import Union, Callable
 from concurrent.futures import ProcessPoolExecutor
-import itertools
 import numpy as np
-from numpy.typing import ArrayLike
 import pandas as pd
 import toytree
-
-
-ToyTree = TypeVar("ToyTree")
-# MultiTree = TypeVar("MultiTree")
-
-
-def get_vcv_matrix_from_tree(tree: ToyTree) -> pd.DataFrame:
-    """Return a variance-covariance matrix (DataFrame) from a ToyTree.
-
-    The VCV represents the sum lengths of shared edges between 
-    pairs of samples as covariances (off-diagonals) and sum 
-    root-to-tip edge lengths of each sample as variances (diagonals)
-    This matrix is often useful as it provides the expected variances
-    and covariances of a continuous trait evolving on a tree under 
-    Brownian motion.
-
-    Parameters
-    ----------
-    tree: toytree.ToyTree
-        A tree on which to compute the VCV.
-
-    Example
-    -------
-    >>> tree = toytree.rtree.unittree(ntips=5, seed=123, treeheight=3)
-    >>> print(get_vcv_from_tree(tree))
-    >>> #      r0     r1      r2      r3      r4
-    >>> # r0  3.0     2.0     1.0     0.0     0.0
-    >>> # r1  2.0     3.0     1.0     0.0     0.0
-    >>> # r2  1.0     1.0     3.0     0.0     0.0
-    >>> # r3  0.0     0.0     0.0     3.0     1.0
-    >>> # r4  0.0     0.0     0.0     1.0     3.0
-    """
-    theight = tree.treenode.height
-    vcv = np.zeros((tree.ntips,tree.ntips))
-    for tip1, tip2 in itertools.combinations(range(tree.ntips), 2):
-        node = tree.get_mrca_node(tip1, tip2)
-        vcv[tip1, tip2] = theight - node.height
-        vcv[tip2, tip1] = theight - node.height
-    # fill diagonal with variances (tip-to-root distances)
-    vcv[np.diag_indices_from(vcv)] = [
-        tree.distance.get_node_distance(i, tree.treenode.idx) 
-        for i in range(tree.ntips)
-    ]
-    tlabels = tree.get_tip_labels()
-
-    # convert to correlation
-    return pd.DataFrame(vcv, columns=tlabels, index=tlabels)
-
-
-def get_corr_matrix_from_tree(tree: ToyTree) -> pd.DataFrame:
-    r"""Return a correlation matrix (DataFrame) from a ToyTree.
-
-    The correlation matrix is computed from the variance-covariance
-    matrix. The relationship between the VCV (C) and the correlation
-    matrix (R) is: 
-    $$ R_{ij} = \frac{C_{ij}}{\sqrt{C_{ii} * C_{jj}}} $$
-
-    Parameters
-    ----------
-    tree: toytree.ToyTree
-        A tree on which to compute the correlation matrix.
-
-    Example
-    -------
-    >>> tree = toytree.rtree.unittree(ntips=5, seed=123, treeheight=3)
-    >>> print(get_vcv_from_tree(tree))
-    >>> #      r0     r1      r2      r3      r4
-    >>> # r0  3.0     2.0     1.0     0.0     0.0
-    >>> # r1  2.0     3.0     1.0     0.0     0.0
-    >>> # r2  1.0     1.0     3.0     0.0     0.0
-    >>> # r3  0.0     0.0     0.0     3.0     1.0
-    >>> # r4  0.0     0.0     0.0     1.0     3.0
-    """
-    vcv = get_vcv_matrix_from_tree(tree)
-    diag_std = np.sqrt(np.diag(vcv))
-    outer = np.outer(diag_std, diag_std)
-    corr = vcv / outer
-    corr[vcv == 0] = 0
-    return corr
-
-
-def get_tree_from_vcv(vcv: ArrayLike) -> ToyTree:
-    """Return tree reconstructed from a variance-covariance matrix.
-
-    This first converts the VCV, which represents unique and shared
-    edge lengths, into a distance matrix by subtracting each element
-    in the matrix by the max value in the matrix. Then neighbor
-    joining is applied to the distance matrix. The returned tree
-    is unrooted.
-
-    Parameters
-    ----------
-    vcv: ArrayLike
-        A variance-covariance matrix as a np.ndarray or pd.DataFrame.
-    """
-    max_value = np.array(vcv).max()
-    return toytree.infer.infer_neighbor_joining_tree(max_value - vcv)
+from toytree import ToyTree, MultiTree
+from toytree.core.apis import add_subpackage_method, PhyloCompAPI
 
 
 def calculate_posterior(
     function: Callable,
-    trees: Union[str, 'toytree.MultiTree', 'toytree.ToyTree'], 
+    trees: Union[str, ToyTree, MultiTree],
     njobs: int = 1,
     **kwargs,
-):
+) -> pd.DataFrame:
     """Return a DataFrame with posterior of (metric) from a tree set.
 
-    Calculations are parallelized and tree(s) can be loaded from a 
+    Calculations are parallelized and tree(s) can be loaded from a
     flexible set of options. For super large files reading from a
     multi-line newick file is most memory-efficient.
 
     Parameters
     ----------
     function: Callable
-        A function that takes a tree as input and returns a float 
+        A function that takes a tree as input and returns a float
         metric as a pandas.Series.
     trees: ToyTree, MultiTree, or newick file
         Flexible options to input/parse one or multiple trees.
@@ -174,7 +77,7 @@ def calculate_posterior(
     else:
         raise IOError(f"problem with input: {trees}")
 
-    # array to store results 
+    # array to store results
     tarr = np.zeros((ntips, ntrees))
 
     # run non-parallel calculations
@@ -244,5 +147,4 @@ def calculate_posterior(
 
 if __name__ == "__main__":
 
-    tre = toytree.rtree.unittree(10, seed=123)
-    print(get_vcv_matrix_from_tree(tre))
+    pass
