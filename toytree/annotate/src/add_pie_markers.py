@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""...
+"""Add Pie Chart Marks at nodes or edges.
 
 """
 
@@ -12,10 +12,19 @@ from toytree.core import ToyTree, Cartesian, Mark
 from toytree.style import check_arr, get_color_mapped_values
 from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
+from toytree.annotate.src.add_edge_markers import _get_edge_midpoints
 from toytree.drawing.src.mark_pie import PieChartMark
+from toytree.style.src.validate_data import (
+    validate_numeric,
+    validate_mask,
+)
 
 logger = logger.bind(name="toytree")
 Color = TypeVar("Color", str, tuple, np.ndarray)
+__all__ = [
+    "add_node_pie_charts",
+    "add_edge_pie_charts",
+]
 
 
 def validate_pie_data(
@@ -122,7 +131,7 @@ def add_node_pie_charts(
     assert_tree_matches_mark(tree, mark)
 
     # get mask
-    mask = validate_node_mask(tree, style=None, node_mask=mask)
+    mask = validate_mask(tree, style={"node_mask": mask})
 
     # check and cleanup data input.
     # TODO: option to collapse categories below a minimum percentage
@@ -143,23 +152,12 @@ def add_node_pie_charts(
         size=data.shape[1],
         ctype=np.void,
     )
-    sizes = validate_node_sizes(tree, style=None, node_sizes=size)[mask]
+    sizes = validate_numeric(
+        tree, key="size", size=tree.nnodes, style={"size": size})[mask]
 
     # mask some Nodes
     data = data[mask, :]
     coords = mark.ntable[mask, :]
-    if xshift or yshift:
-        # Note: if later annotations change the projection this will be off
-        axes._finalize()
-        if xshift:
-            origin, xshifted = axes._x_projection.inverse([0, xshift])
-            x_shift_projected = xshifted - origin
-            coords[:, 0] += x_shift_projected
-        if yshift:
-            origin, yshifted = axes._y_projection.inverse([0, yshift])
-            y_shift_projected = yshifted - origin
-            coords[:, 1] += y_shift_projected
-        axes._finalized = None
 
     # plot edge markers as scatterplot markers
     mark = PieChartMark(
@@ -172,9 +170,12 @@ def add_node_pie_charts(
         istroke=istroke,
         istroke_width=istroke_width,
         rotate=rotate,
+        xshift=xshift,
+        yshift=yshift,
     )
     axes.add_mark(mark)
     return mark
+
 
 @add_subpackage_method(AnnotationAPI)
 def add_edge_pie_charts(
@@ -249,7 +250,7 @@ def add_edge_pie_charts(
     nedges = tree.nnodes - 2 if tree.is_rooted() else tree.nnodes - 1
     coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)
 
-    mask = validate_node_mask(tree, style=None, node_mask=mask)[:nedges]
+    mask = validate_mask(tree, style={"node_mask": mask})[:nedges]
 
     # validate data.
     # TODO: option to collapse categories below a minimum percentage
@@ -273,21 +274,10 @@ def add_edge_pie_charts(
 
     # mask some Nodes
     data = data[:nedges][mask, :]
-    sizes = validate_node_numeric(tree, style=None, key="size", size=size)[:nedges][mask]
+    sizes = validate_numeric(
+        tree, key="size", size=tree.nnodes, style={"size": size})[:nedges][mask]
 
     coords = coords[:nedges][mask, :]
-    if xshift or yshift:
-        # Note: if later annotations change the projection this will be off
-        axes._finalize()
-        if xshift:
-            origin, xshifted = axes._x_projection.inverse([0, xshift])
-            x_shift_projected = xshifted - origin
-            coords[:, 0] += x_shift_projected
-        if yshift:
-            origin, yshifted = axes._y_projection.inverse([0, yshift])
-            y_shift_projected = yshifted - origin
-            coords[:, 1] += y_shift_projected
-        axes._finalized = None
 
     # plot edge markers as scatterplot markers
     mark = PieChartMark(
@@ -300,10 +290,34 @@ def add_edge_pie_charts(
         istroke=istroke,
         istroke_width=istroke_width,
         rotate=rotate,
+        xshift=xshift,
+        yshift=yshift,
     )
     axes.add_mark(mark)
     return mark
 
 
 if __name__ == "__main__":
-    pass
+
+    import toytree
+    tree = toytree.rtree.unittree(6, seed=123)
+    canvas, axes, m0 = tree.draw()
+
+    # generate random pie-like (proportion) data array
+    import numpy as np
+    ncategories = 3
+    arr = np.random.random(size=(tree.nnodes, ncategories))
+    arr = (arr.T / arr.sum(axis=1)).T
+
+    # add pie charts to all internal Nodes
+    tree.annotate.add_edge_pie_charts(
+        axes=axes,
+        data=arr,
+        size=20,
+        mask=False,
+        istroke_width=0.75,
+        istroke="black",
+        rotate=0,
+        colors="Greys"
+    )
+    toytree.utils.show(canvas)

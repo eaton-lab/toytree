@@ -350,6 +350,8 @@ class RenderToytree:
         if self.mark.tip_labels is None:
             return
 
+        # if angles are None then compute them now given the layout.
+
         # TipLabels style keys are popped from TipLabel styles, but
         # do not include positioning styles, which must be passed on.
         # shared_style = self.mark.tip_labels_style.copy()

@@ -46,6 +46,8 @@ class PieChartMark(Mark):
         ostroke,
         ostroke_width,
         rotate,
+        xshift,
+        yshift,
     ):
         Mark.__init__(self, annotation=True)
         self._coordinate_axes = ['x', 'y']
@@ -58,6 +60,8 @@ class PieChartMark(Mark):
         self.istroke_width = istroke_width
         self.rotate = rotate
         self.colors = colors
+        self.xshift = xshift
+        self.yshift = yshift
 
         # radius is half the size
         self.sizes /= 2.
@@ -73,6 +77,10 @@ class PieChartMark(Mark):
         node_extents = [self.sizes / 2. for i in range(4)]
         node_extents[0] *= -1
         node_extents[2] *= -1
+        node_extents[0] += self.xshift
+        node_extents[1] += self.xshift
+        node_extents[2] += self.yshift
+        node_extents[3] += self.yshift
         coords = (
             self.coordinates[:, 0].copy(),
             self.coordinates[:, 1],

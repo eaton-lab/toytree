@@ -31,42 +31,41 @@ ToyTree = TypeVar("ToyTree")
 # Cartesian = TypeVar("Cartesian")
 
 
-class TreeModAPI:
+class SubPackageAPI:
     """API to acess methods from `toytree.mod` as `tree.mod.{function}`"""
     def __init__(self, tree: ToyTree):
         self._tree = tree
 
 
-class TreeDistanceAPI:
+class TreeModAPI(SubPackageAPI):
+    """API to acess methods from `toytree.mod` as `tree.mod.{function}`"""
+
+
+class TreeDistanceAPI(SubPackageAPI):
     """API to acess methods from `toytree.distance` as `tree.distance.{function}`"""
-    def __init__(self, tree: ToyTree):
-        self._tree = tree
 
 
-class TreeEnumAPI:
+class TreeEnumAPI(SubPackageAPI):
     """API to acess methods from `toytree.pcm` as `tree.enum.{function}`"""
-    def __init__(self, tree: ToyTree):
-        self._tree = tree
 
 
-class PhyloCompAPI:
+class PhyloCompAPI(SubPackageAPI):
     """API to acess methods from `toytree.pcm` as `tree.pcm.{function}`"""
-    def __init__(self, tree: ToyTree):
-        self._tree = tree
 
 
-class AnnotationAPI:
+class AnnotationAPI(SubPackageAPI):
     """API to acess methods from `toytree.annotate` as `tree.annotate.{function}`"""
-    def __init__(self, tree: ToyTree):
-        self._tree = tree
 
 
 def add_subpackage_method(cls):
     """Clever approach to copy docstring and signature from func to API.
 
-    Reference
-    ---------
-    https://mgarod.medium.com/dynamically-add-a-method-to-a-class-in-python-c49204b85bd6
+    Add this decorator to a function to make it accessible from an API
+
+    Example
+    -------
+    >>> @add_subpackage_method(TreeModAPI)
+    >>> def method(...):
     """
     def decorator(func):
 
@@ -90,9 +89,12 @@ def add_subpackage_method(cls):
 def add_toytree_method(cls):
     """Clever approach to copy docstring and signature from func to API.
 
-    Reference
-    ---------
-    https://mgarod.medium.com/dynamically-add-a-method-to-a-class-in-python-c49204b85bd6
+    Add this decorator to a function to make it accessible from ToyTree
+
+    Example
+    -------
+    >>> @add_toytree_method(ToyTree)
+    >>> def method(...):
     """
     def decorator(func):
 

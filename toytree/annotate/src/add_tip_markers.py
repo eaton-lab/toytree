@@ -19,7 +19,7 @@ from toytree.style.src.validate_utils import substyle_dict_to_css_dict
 from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
 
 # WORK IN PROGRESS...
-from toytree.drawing.src.mark_annotation import AnnotationTipMark
+from toytree.drawing.src.mark_annotation import AnnotationMarker
 from toytree.style.src.validate_data import (
     validate_colors,
     validate_markers,
@@ -35,12 +35,7 @@ from toytree.style.src.validate_node_labels import (
     validate_node_labels,
     validate_node_labels_style)
 from toytree.style.src.validate_nodes import (
-    validate_node_colors,
-    validate_node_sizes,
     validate_node_style,
-    validate_node_markers,
-    validate_node_mask,
-    validate_node_numeric,
 )
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -71,7 +66,7 @@ def add_tip_markers(
     # label: Optional[str] = None,
     # label_angle: int = 45,
 ) -> Mark:
-    """Return a toyplot Mark of node markers added to a tree plot.
+    """Return toyplot Mark of markers aligned with tips of tree plot.
 
     This adds node markers to the last tree drawn on the Cartesian
     axes using the coordinates of plotted Nodes. The shape, size,
@@ -148,7 +143,7 @@ def add_tip_markers(
 
     # update node colors setting; sets to None if only one color.
     colors, fill_color = validate_colors(
-        tree, None, "colors", size=tree.ntips, colors=color
+        tree, key="colors", size=tree.ntips, style={"colors": color},
     )
 
     # if fill_color then set to node_style.fill since node_colors = None
@@ -163,16 +158,14 @@ def add_tip_markers(
 
     # validate others and trim to mask
     markers = validate_markers(
-        tree, None, "node_markers", tree.ntips, node_markers=marker
-    )
+        tree, key="node_markers", size=tree.ntips, style={"node_markers": marker})
     sizes = validate_numeric(
-        tree, None, "node_sizes", tree.ntips, node_sizes=size,
-    )
+        tree, key="size", size=tree.ntips, style={"size": size})
     opacity = validate_numeric(
-        tree, None, "node_opacity", tree.ntips, node_opacity=opacity)
+        tree, key="opacity", size=tree.ntips, style={"opacity": opacity})
 
     # create custom Mark that allows for [xy]shift
-    mark = AnnotationTipMark(
+    mark = AnnotationMarker(
         ntable=coords,
         xshift=xshift,
         yshift=yshift,
@@ -457,7 +450,6 @@ def add_tip_markers(
 #     pass
 
 
-
 if __name__ == "__main__":
 
     import toytree
@@ -472,5 +464,5 @@ if __name__ == "__main__":
     #     tree, axes=a, size=10, marker='s', color=("idx", "BlueRed"))
     # add_node_labels(tree, axes=a, labels='idx')
     data = np.array([[0.5, 0.3, 0.2]] * tree.nnodes)
-    tree.annotate.add_tip_markers(a)
+    tree.annotate.add_tip_markers(a, color="dist", xshift=0, yshift=10)
     toytree.utils.show(c)

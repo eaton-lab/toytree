@@ -4,11 +4,12 @@
 
 """
 
-from typing import Union, Sequence, Mapping, Any, Dict, TypeVar, Tuple
+from typing import Union, Sequence, Mapping, Any, Dict, TypeVar, Tuple, Optional
 import numpy as np
 import toyplot
-from toytree.color import ToyColor
+from loguru import logger
 
+from toytree.color import ToyColor
 from toytree.utils import ToytreeError
 from toytree.style.src.validate_utils import check_arr
 from toytree.style.src.style_base import NodeStyle, NodeLabelStyle, TreeStyle
@@ -16,6 +17,7 @@ from toytree.style import get_range_mapped_feature, get_color_mapped_feature
 
 ToyTree = TypeVar("ToyTree")
 Color = TypeVar("Color", str, tuple, np.ndarray)
+logger = logger.bind(name="toytree")
 
 __all__ = [
     "validate_mask",
@@ -33,8 +35,8 @@ __all__ = [
 
 def validate_mask(
     tree: ToyTree,
-    style: TreeStyle = None,
-    **kwargs,
+    tree_style: Optional[TreeStyle] = None,
+    style: Optional[Mapping[str, Any]] = None
 ) -> np.ndarray:
     """Sets node_mask to ndarray[bool] size=nnodes.
 
@@ -49,10 +51,10 @@ def validate_mask(
     Tuple: (bool, bool, bool) for show (tips, internal, root).
     """
     # get user value or, if None, use style base value
-    mask = kwargs.get("node_mask")
+    mask = style.get("node_mask")
     if mask is None:
-        if isinstance(style, TreeStyle):
-            mask = getattr(style, "node_mask")
+        if isinstance(tree_style, TreeStyle):
+            mask = getattr(tree_style, "node_mask")
 
     # default None masks tip Nodes and shows internal + root
     if mask is None:
@@ -67,7 +69,7 @@ def validate_mask(
         mask = np.repeat(True, tree.nnodes)
 
     # special tuple arg (show_tips, show_internal, show_root)
-    elif isinstance(node_mask, tuple):
+    elif isinstance(mask, tuple):
         mask = tree.get_node_mask(
             show_tips=mask[0],
             show_internal=mask[1],
@@ -81,10 +83,10 @@ def validate_mask(
 
 def validate_numeric(
     tree: ToyTree,
-    style: TreeStyle,
     key: str,
-    size: Union[int, Sequence[int]],
-    **kwargs,
+    size: int,
+    tree_style: Optional[TreeStyle] = None,
+    style: Optional[Mapping[str, Any]] = None,
 ) -> np.ndarray:
     """Sets node_sizes to ndarray[float].
 
@@ -95,24 +97,42 @@ def validate_numeric(
     Sequence[int] = sizes in Node idx order.
     tuple[str, Tuple] = sizes mapped to range by feature value
     """
-    # get user value, TreeStyle value, or None if annotation.
-    values = kwargs.get(key)
+    # get values from user values
+    values = style.get(key)
+
+    # or, get values from TreeStyle
     if values is None:
-        if isinstance(style, TreeStyle):
-            values = getattr(style, key)
+        if isinstance(tree_style, TreeStyle):
+            values = getattr(tree_style, key)
+
     # expand value to a Series of sizes
     if values is None:
+        # some return None to allow style args to override, others set
+        # to zero so that zero is expanded as the value.
+        if key in ["edge_widths", "tip_labels_angles"]:  # 'edge_opacity'
+            return None
         values = 0
     if isinstance(values, (int, float)):
         values = np.repeat(values, size)
-    elif isinstance(values, tuple) and len(values) <= 4:
+
+    # expand str feature name to a tuple of (feature,) or (feature, min, max)
+    elif isinstance(values, str):
+        if values == "node_sizes":
+            values = (values, 5., 20.)
+        elif values == "edge_widths":
+            values = (values, 2., 5.)
+        else:
+            values = (values, )
+
+    # expand as value mapped
+    if isinstance(values, tuple) and isinstance(values[0], str):  # len(values) <= 4:
         feature, *args = values
         # defaults selected for marker sizes
         kwargs = dict(zip(("min_value", "max_value", "nan_value"), args))
         kwargs["min_value"] = kwargs.get("min_value", 5.0)
         kwargs["max_value"] = kwargs.get("max_value", 20.0)
         kwargs["nan_value"] = kwargs.get("nan_value", 0.0)
-        kwargs["tip_only"] = True if size == tree.ntips else False
+        kwargs["tips_only"] = True if size == tree.ntips else False
         return get_range_mapped_feature(tree, feature, **kwargs)
 
     # validate and return as ndarray
@@ -121,20 +141,22 @@ def validate_numeric(
 
 def validate_markers(
     tree: ToyTree,
-    style: TreeStyle,
     key: str,
-    size: Union[int, Sequence[int]],
-    **kwargs,
+    size: int,
+    tree_style: Optional[TreeStyle] = None,
+    style: Optional[Mapping[str, Union[int, Sequence[int]]]] = None,
 ) -> np.ndarray:
     """Sets node_markers to ndarray[str] or ndarray[Marker].
 
     node_markers: Union[str, Sequence[str], toyplot.marker.Marker],
     """
     # get user value or style base value
-    markers = kwargs.get(key)
+    markers = style.get(key)
+
+    # or tree_style
     if markers is None:
-        if isinstance(style, TreeStyle):
-            markers = getattr(style, key)
+        if isinstance(tree_style, TreeStyle):
+            markers = getattr(tree_style, key)
 
     if markers is None:
         markers = "o"
@@ -146,10 +168,10 @@ def validate_markers(
 
 def validate_colors(
     tree: ToyTree,
-    style: TreeStyle,
     key: str,
-    size: Union[int, Sequence[int]],
-    **kwargs,
+    size: int,
+    tree_style: Optional[TreeStyle] = None,
+    style: Optional[Mapping[str, Any]] = None,
 ) -> Tuple[Union[np.ndarray, None], Union[None, Color]]:
     """Set .node_colors to type=ndarray size=nnodes or None.
 
@@ -169,7 +191,9 @@ def validate_colors(
     colormap: not supported. Use (feature, colormap)
     """
     # get node_colors value, else get from TreeStyle, else None.
-    colors = kwargs.get(key)
+    colors = style.get(key)
+
+    # if None then try to get from TreeSTyle
     if colors is None:
         if isinstance(style, TreeStyle):
             colors = getattr(style, key, None)
@@ -177,6 +201,10 @@ def validate_colors(
     # if None then Nodes will be colored by style.fill during render
     if colors is None:
         return None, None
+
+    # do colormapping if colors is a str feature name
+    if isinstance(colors, str) and colors in tree.features:
+        colors = (colors, )
 
     # special (feature, cmap), but not single color as tuple (0, 0, 1, 1).
     if isinstance(colors, tuple) and isinstance(colors[0], str):
@@ -204,9 +232,11 @@ def validate_colors(
 
 def validate_hover(
     tree: ToyTree,
-    style: TreeStyle,
+    key: str,
+    size: int,
     float_format: str = "{:.12g}",
-    **kwargs,
+    tree_style: Optional[TreeStyle] = None,
+    style: Optional[Mapping[str, Any]] = None,
 ) -> np.ndarray:
     """Return node_hover as an ndarray of dtype str w/ float formatted vals.
 
@@ -219,9 +249,12 @@ def validate_hover(
     Series[str]: hover w/ just these features
     """
     # get user value or style base value
-    node_hover = kwargs.get("node_hover")
+    node_hover = style.get(key)
+
+    # or from treestyle
     if node_hover is None:
-        node_hover = getattr(style, "node_hover")
+        if isinstance(tree_style, TreeStyle):
+            node_hover = getattr(tree_style, key)
 
     # None will not add hover (title) during rendering
     if node_hover is None:
@@ -249,7 +282,7 @@ def validate_hover(
             features.append(feature)
 
     # build a multi-line string with feature {key: value} formatted.
-    node_hover = {i: [] for i in tree.nnodes}
+    node_hover = {i: [] for i in size}
     for node in tree:
         for feature in features:
             val = getattr(node, feature, np.nan)
@@ -262,16 +295,16 @@ def validate_hover(
     node_hover = ["\n".join(node_hover[i]) for i in tree]
 
     # validate and return as an array
-    return check_arr(node_hover, "node_hover", tree.nnodes, str)
+    return check_arr(node_hover, key, size, str)
 
 
 def validate_labels(
     tree: ToyTree,
-    style: TreeStyle,
     key: str,
     size: int,
     float_format: str = "{:.4g}",
-    **kwargs,
+    tree_style: Optional[TreeStyle] = None,
+    style: Optional[Mapping[str, Any]] = None,
 ) -> Union[None, np.ndarray]:
     """Sets labels to np.ndarray[str] or None.
 
@@ -289,24 +322,57 @@ def validate_labels(
     Series[Any: custom collection of the proper size.
     """
     # get user value or style base value
-    labels = kwargs.get(key)
-    if labels is None:
-        if isinstance(style, TreeStyle):
-            labels = getattr(style, key)
+    labels = style.get(key)
 
-    # Don't use 'is in' to support pd.Series
+    # or get from treestyle
+    if labels is None:
+        if isinstance(tree_style, TreeStyle):
+            labels = getattr(tree_style, key)
+
+    # Note: don't use 'is in' otherwise error w/ pd.Series type
     if labels is False:
         return None
+
+    # Default None is OK for Node labels, but is "name" for tip labels
     if labels is None:
         return None
 
     # True: use idxs as labels
     if labels is True:
-        labels = range(size)
+        if key == "tip_labels":
+            labels = "name"
+        else:
+            labels = "idx"
 
     # str: extract feature as labels as an np.array
-    elif isinstance(labels, str):
+    if isinstance(labels, str):
         labels = tree.get_node_data(labels).values[:size]
+
+    # tuple (feature, str or Callable)
+    if isinstance(labels, tuple) and isinstance(labels[0], str):
+
+        # get feature data
+        feature, *formatter = labels
+        labels = tree.get_node_data(feature).values[:size]
+
+        # optionally apply func or str formatting to it
+        if formatter:
+            formatter, *args = formatter
+            if isinstance(formatter, str):
+                float_format = formatter
+            elif callable(formatter):
+                # TODO: allow for nan without causing formatter exception
+                labels = np.array([formatter(i, *args) for i in labels])
+            else:
+                raise ToytreeError(
+                    "Tuple type label arg must be (feature, Callable, *args) or (feature, formatter).\n"
+                    "Examples with Callable:\n"
+                    ">>> node_labels=('dist', lambda x: round(x, 2)) \n"
+                    ">>> node_labels=('dist', round, 2)\n"
+                    ">>> tip_labels=('name', lambda x: f'<i>{x}</i>')"
+                    "Examples with format string:\n"
+                    ">>> node_labels=('dist', '{:.4g}')"
+                )
 
     # or, user entered a list, tuple, Series, array, etc.
     # which is checked and handled below.
@@ -411,7 +477,7 @@ if __name__ == "__main__":
     # node_labels = validate_node_labels(tree, "idx")
     # print(node_labels)
 
-    node_mask = validate_mask(tree, tree.style, node_mask=False)
+    node_mask = validate_mask(tree, tree.style, {"node_mask": False})
     print(node_mask)
 
     # node_sizes = validate_node_sizes(tree, False)

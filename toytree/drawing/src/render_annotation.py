@@ -12,7 +12,7 @@ from loguru import logger
 from toytree.drawing.src.render_marker import render_marker
 from toytree.color.src.concat import concat_style_fix_color
 from toytree.drawing.src.mark_annotation import (
-    AnnotationTipMark, AnnotationRect)
+    AnnotationMarker, AnnotationRect)
 
 logger = logger.bind(name="toytree")
 
@@ -22,20 +22,20 @@ dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 
 
 # noqa: F811: multidispatch allows reuse the _render() function name
-@dispatch(toyplot.coordinates.Cartesian, AnnotationTipMark, toyplot.html.RenderContext)
+@dispatch(toyplot.coordinates.Cartesian, AnnotationMarker, toyplot.html.RenderContext)
 def _render(axes, mark, context):
-    render_tip_markers(axes, mark, context)
+    render_markers(axes, mark, context)
 
 
 @dispatch(toyplot.coordinates.Cartesian, AnnotationRect, toyplot.html.RenderContext)
 def _render(axes, mark, context):
-    render_rect_markers(axes, mark, context)
+    render_rect(axes, mark, context)
 # ---------------------------------------------------------------------
 
 
-def render_tip_markers(
+def render_markers(
     axes: Cartesian,
-    mark: AnnotationTipMark,
+    mark: AnnotationMarker,
     context: toyplot.html.RenderContext,
 ) -> None:
     """...
@@ -45,7 +45,7 @@ def render_tip_markers(
     axml = xml.SubElement(
         context.parent, "g",
         id=context.get_id(mark),
-        attrib={"class": "toytree-Annotation-tipMark"},
+        attrib={"class": "toytree-Annotation-Markers"},
         style=concat_style_fix_color(mark.style),
     )
 
@@ -87,13 +87,15 @@ def render_tip_markers(
         render_marker(marker_xml, marker)
 
 
-def render_rect_markers(
+def render_rect(
     axes: Cartesian,
-    mark: AnnotationTipMark,
+    mark: AnnotationRect,
     context: toyplot.html.RenderContext,
 ) -> None:
     """Render rectangle Mark and append to HTML.
 
+    custom rect render function to allow transform in px units and
+    curved edge styling.
     """
     # create a <g ..> to group markers into.
     axml = xml.SubElement(
@@ -110,7 +112,7 @@ def render_rect_markers(
     bot_y = axes.project('y', mark.ytable[:, 1])
 
     widths = right_x - left_x
-    heights = top_y - bot_y
+    heights = abs(top_y - bot_y)
 
     # create a marker for each point and add to axml group
     for nidx in range(mark.ntable.shape[0]):
@@ -130,7 +132,9 @@ def render_rect_markers(
             )
 
         # position marker in coordinate space
-        transform = f"translate({left_x[nidx]:.8g},{bot_y[nidx]:.8g})"
+        xpos = left_x[nidx] + mark.xshift
+        ypos = bot_y[nidx] - mark.yshift
+        transform = f"translate({xpos:.8g},{ypos:.8g})"
         marker_xml.set("transform", transform)
 
         # add rect to marker: <rect width=x height=y rx=[0-50] ry=[0-50] />
@@ -149,19 +153,15 @@ if __name__ == "__main__":
 
     # base tree drawing
     tree = toytree.rtree.unittree(15)
-    c, a, m = tree.draw(layout='r', scale_bar=True, node_sizes=5, node_colors='black')
+    c, a, m = tree.draw(layout='d', scale_bar=True, node_sizes=5, node_colors='black')
 
     m1 = tree.annotate.add_node_bars(
         a,
         bar_min=tree.get_node_data("height").values * 0.8,
-        bar_max=tree.get_node_data("height").values * 1.5,
-        size=0.25,
-        # style={"fill-opacity": 0.4, "stroke": None},
+        bar_max=tree.get_node_data("height").values * 1.25,
+        size=0.3,
+        style={"fill-opacity": 0.4, "stroke": None},
         z_index=-1,
         color='red',
     )
-
-    # logger.warning(f"table = {m1.ntable}")
-    # logger.warning(f"widths = {m1.widths}")
-    # logger.warning(f"heights = {m1.heights}")
     toytree.utils.show(c)

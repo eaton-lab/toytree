@@ -6,6 +6,7 @@
 
 from typing import Union, Mapping, Sequence, Any, TypeVar
 from loguru import logger
+import pandas as pd
 from toytree import ToyTree, Node
 from toytree.core.apis import add_toytree_method
 from toytree.data._src.expand_node_mapping import expand_node_mapping
@@ -173,6 +174,60 @@ def set_node_data(
     # if dist was mod'd then must call update
     if feature == "_dist":
         tree._update()
+    return tree
+
+
+@add_toytree_method(ToyTree)
+def set_node_data_from_dataframe(
+    tree: ToyTree,
+    table: pd.DataFrame,
+    inplace: bool = False,
+) -> ToyTree:
+    """Set new features on Nodes of a ToyTree from a DataFrame.
+
+    The DataFrame should have column names corresponding to features
+    that you wish to apply to Nodes of the ToyTree. The index can
+    be composed of either strings that match to .name attributes
+    of Nodes in the ToyTree, or can be integers, which match to the
+    .idx labels of Nodes. Note: to set data to internal Nodes that
+    usually do not have unique name labels you will likely need to
+    use the numeric idx labels. Be aware that idx labels are
+    unique to each topology, and will change if the tree topology
+    is modified.
+
+    This function parses the DataFrame and applies the function
+    `set_node_data()` for each column.
+
+    Parameters
+    ----------
+    table: pd.DataFrame
+        A DataFrame with data to be applied to Nodes of a ToyTree.
+    inplace: bool
+
+    Returns
+    -------
+    A copy of the original ToyTree with node features modified.
+
+    See Also
+    --------
+    :meth:`~toytree.core.tree.ToyTree.get_node_data`,
+    :meth:`~toytree.core.tree.ToyTree.set_node_data`.
+
+    Examples
+    --------
+    >>> tree = toytree.rtree.unittree(ntips=10)
+    >>> data = pd.DataFrame({
+    >>>    'trait1': np.arange(tree.nnodes),
+    >>>    'trait2': np.random.randint(0, 100, tree.nnodes),
+    >>> })
+    >>> tree = tree.set_node_data_from_dataframe(data)
+    >>> tree.get_node_data()
+    """
+    # make a copy of ToyTree to return
+    tree = tree if inplace else tree.copy()
+    for key in table.columns:
+        mapping = table[key].to_dict()
+        tree.set_node_data(feature=key, data=mapping, inplace=True)
     return tree
 
 

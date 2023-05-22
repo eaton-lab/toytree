@@ -72,6 +72,7 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
 
     # check and expand user-kwargs if provided else base style value
     style = validate_style(tree, style, **kwargs)
+    logger.info(style.tip_labels)
 
     # get a Layout with coordinates projected based on style
     layout = get_layout(
@@ -82,7 +83,7 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
     )
 
     # set tip angles on 'c' or unrooted layouts
-    if style.layout not in "rlud":
+    if style.tip_labels_angles is None:
         style.tip_labels_angles = layout.angles
 
     # generate toyplot Mark. Style is already validated. tables of int idx labels
@@ -185,6 +186,7 @@ if __name__ == "__main__":
     import toytree
     toytree.set_log_level("DEBUG")
     tre = toytree.rtree.unittree(10)
+    tre[0].name = "HELLO"
     tre._draw_browser(
         ts='s',
         layout='c',
@@ -192,4 +194,5 @@ if __name__ == "__main__":
         height=400,
         width=400,
         node_mask=tre.get_node_mask(1, 5, 9),
+        # tip_labels="name",
     )

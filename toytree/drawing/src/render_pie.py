@@ -33,9 +33,10 @@ import numpy as np
 import toyplot.html
 from toyplot.coordinates import Cartesian
 from toyplot.mark import Mark
+
 from toytree.color import ToyColor
 from toytree.color.src.concat import concat_style_fix_color
-from toytree.annotate.src.pie_chart_mark import PieChartMark
+from toytree.drawing.src.mark_pie import PieChartMark
 
 
 # Register multipledispatch to use the toyplot.html namespace
@@ -79,49 +80,51 @@ def render_pie_chart(axes: Cartesian, mark: Mark, context: toyplot.html.RenderCo
         }
         shared_style.update({"stroke": ToyColor(mark.istroke).css})
 
-        # render the pies as a group of path elements.
-        for nidx in range(mark.coordinates.shape[0]):
-            group = xml.SubElement(
-                mark_xml, "g",
-                attrib={'id': f'pie-{nidx}'},
-                style=concat_style_fix_color(shared_style),
+    # render the pies as a group of path elements.
+    for nidx in range(mark.coordinates.shape[0]):
+        group = xml.SubElement(
+            mark_xml, "g",
+            attrib={'id': f'pie-{nidx}'},
+            style=concat_style_fix_color(shared_style),
+        )
+        xpos = nodes_x[nidx] + mark.xshift
+        ypos = nodes_y[nidx] + mark.yshift
+        transform = (
+            f"translate({xpos:.4f},{ypos:.4f}) "
+            f"rotate({mark.rotate})"
+        )
+        group.set("transform", transform)
+
+        # iterate over slices: e.g., [0.3, 0.5, 0.2]
+        # sums = [0, 0.3, 0.8, 1.0]
+        for cidx in range(mark.data[0].size):
+            start_sum = mark.data[nidx][:cidx].sum()
+            end_sum = mark.data[nidx][:cidx + 1].sum()
+
+            # only set radius on circle since placement uses transform
+            path = _get_pie_path(
+                percent_start=start_sum,
+                percent_end=end_sum,
+                radius=mark.sizes[nidx],
             )
-            transform = (
-                f"translate({nodes_x[nidx]:.3f},{nodes_y[nidx]:.3f}) "
-                f"rotate({mark.rotate})"
-            )
-            group.set("transform", transform)
-
-            # iterate over slices: e.g., [0.3, 0.5, 0.2]
-            # sums = [0, 0.3, 0.8, 1.0]
-            for cidx in range(mark.data[0].size):
-                start_sum = mark.data[nidx][:cidx].sum()
-                end_sum = mark.data[nidx][:cidx + 1].sum()
-
-                # only set radius on circle since placement uses transform
-                path = _get_pie_path(
-                    percent_start=start_sum,
-                    percent_end=end_sum,
-                    radius=mark.sizes[nidx],
-                )
-                xml.SubElement(
-                    group, "path",
-                    d=path,
-                    style=concat_style_fix_color(colors[cidx])
-                )
-
-            # add a circle to outline the node and
-            # TODO: provide optional title hover
-            ostyle = {
-                "fill": (0, 0, 0, 0),
-                "stroke-width": mark.ostroke_width,
-            }
-            ostyle.update({"stroke": ToyColor(mark.ostroke)})
             xml.SubElement(
-                group, "circle",
-                r=str(mark.sizes[nidx]),
-                style=concat_style_fix_color(ostyle),
+                group, "path",
+                d=path,
+                style=concat_style_fix_color(colors[cidx])
             )
+
+        # add a circle to outline the node and
+        # TODO: provide optional title hover
+        ostyle = {
+            "fill": (0, 0, 0, 0),
+            "stroke-width": mark.ostroke_width,
+        }
+        ostyle.update({"stroke": ToyColor(mark.ostroke)})
+        xml.SubElement(
+            group, "circle",
+            r=str(mark.sizes[nidx]),
+            style=concat_style_fix_color(ostyle),
+        )
 
 
 def _get_pie_path(percent_start: float, percent_end: float, radius: float) -> str:

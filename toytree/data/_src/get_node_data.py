@@ -7,14 +7,13 @@ for missing values for Nodes that do not have assigned data for a
 feature.
 """
 
-from typing import Union, Sequence, Any, TypeVar
+from typing import Union, Sequence, Any, TypeVar, Optional
 from loguru import logger
 import pandas as pd
 import numpy as np
 from toytree import ToyTree, Node
 from toytree.core.apis import add_toytree_method
 # from toytree.utils import ToytreeError
-
 
 Query = TypeVar("Query", int, str, Node)
 logger = logger.bind(name="toytree")
@@ -153,6 +152,61 @@ def get_node_data(
     if len(features) == 1:
         return series
     return pd.DataFrame(data)
+
+
+@add_toytree_method(ToyTree)
+def get_tip_data(
+    tree: ToyTree,
+    feature: Union[str, Sequence[str], None] = None,
+    missing: Optional[Any] = None,
+) -> pd.DataFrame:
+    """Return a DataFrame with values for one or more selected
+    features from every leaf node in the tree.
+
+    Parameters
+    ----------
+    feature: str, Iterable[str], or None
+        One or more features of Nodes to get data for.
+    missing: Any
+        A value to use for missing data (nodes that do not have
+        the feature). Default arg is None which will automatically
+        select a missing value based on the data type. Example:
+        "" for str type, np.nan for numeric or complex types.
+        Any value can be entered here to replace missing data.
+
+    Returns
+    -------
+    data: pd.DataFrame or pd.Series
+        If a single feature is selected then a pd.Series will be
+        returned with tip node 'idx' attributes as the index.
+        If multiple features are selected (or None, which selects
+        all features) then a pd.DataFrame is returned with tip
+        node 'idx' attributes as the index and feature names as
+        the column labels.
+
+    Examples
+    --------
+    Add a new feature to some nodes and fetch data for all nodes.
+    >>> tree = toytree.rtree.unittree(10)
+    >>> tree = tree.set_node_data("trait1", {0: "A", 1: "B"})
+    >>> tree = tree.set_node_data("trait2", {2: 3.5, 3: 5.0})
+    >>> data1 = tree.get_tip_data(feature="trait1", missing="C")
+    >>> data2 = tree.get_tip_data(feature="trait2")
+
+    See Also
+    --------
+    get_feature_dict
+        Get a dict mapping any node feature to another.
+    set_node_data
+        Set a feature value to one or more Nodes in a ToyTree.
+
+    Note
+    ----
+    This function is convenient for accessing data in tabular
+    format, but is slightly slower than accessing data directly
+    from Nodes because it spends time type-checking missing data.
+    """
+    return tree.get_node_data(feature, missing).iloc[:tree.ntips]
 
 
 if __name__ == "__main__":

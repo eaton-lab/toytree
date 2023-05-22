@@ -10,7 +10,7 @@ import toyplot
 from toyplot.mark import Mark
 
 
-class AnnotationTipMark(Mark):
+class AnnotationMarker(Mark):
     """TipMarkers are Point markers with a custom render function that
     allows for adding a transform to shift position by px units.
     """
@@ -78,7 +78,7 @@ class AnnotationRect(Mark):
         Mark.__init__(self, annotation=True)
         self._coordinate_axes = ['x', 'y']
         self.ntable = ntable
-        """: array of (nmarks, 2) w/ rect widths and heights."""
+        """: array of (nmarks, 2) ..."""
         self.xtable = xtable
         self.ytable = ytable
 
@@ -123,7 +123,7 @@ def set_marker_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndarray
     xext = xext / 2. + width
     yext = yext / 2. + width
 
-    # set extents (impelemtn shift)
+    # set extents (implement shift)
     extents[0] = np.min([extents[0], -xext + mark.xshift], axis=0)
     extents[1] = np.max([extents[1], xext + mark.xshift], axis=0)
     extents[2] = np.min([extents[2], -yext + mark.yshift], axis=0)

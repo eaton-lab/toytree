@@ -2,7 +2,6 @@
 
 """Phylogenetic independent contrasts for continuous traits.
 
-
 References
 ----------
 - Felsenstein 1985
@@ -50,6 +49,7 @@ def get_phylogenetic_independent_contrasts(tree, feature):
 
     # return dictionary mapping nodes to (mean, var, contrast, cvar)
     return results
+
 
 ### NEEDS MORE...
 

@@ -14,10 +14,13 @@ import toytree
 # from toytree.utils import ToytreeError
 
 
+LOGGERS = [0]
+
+
 def colorize():
     """colorize the logger if stderr is IPython/Jupyter or a terminal (TTY)"""
     try:
-        import IPython        
+        import IPython
         tty1 = bool(IPython.get_ipython())
     except ImportError:
         tty1 = False
@@ -27,18 +30,17 @@ def colorize():
     return False
 
 
-LOGGERS = [0]
 def set_log_level(log_level="INFO"):
     """Set the log level for loguru logger bound to toytree.
 
-    This removes default loguru handler, but leaves any others in place, 
-    and adds a new one that will filter to only print logs from 
+    This removes default loguru handler, but leaves any others in place,
+    and adds a new one that will filter to only print logs from
     toytree modules, which should use `logger.bind(name='toytree')`.
 
     Examples
     --------
     >>> # suppress toytree logs below INFO level
-    >>> toytree.set_log_level("INFO") 
+    >>> toytree.set_log_level("INFO")
     >>>
     >>> # write a log message from the toytree logger
     >>> from loguru import logger

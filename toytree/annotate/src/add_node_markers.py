@@ -16,25 +16,26 @@ from toytree.color import ToyColor
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
 from toytree.style.src.validate_utils import substyle_dict_to_css_dict
 from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
-from toytree.drawing.src.mark_annotation import AnnotationRect
+from toytree.drawing.src.mark_annotation import AnnotationRect, AnnotationMarker
 
+from toytree.style.src.validate_data import (
+    validate_colors,
+    validate_numeric,
+    validate_markers,
+    validate_mask,
+    validate_labels,
+)
 from toytree.style.src.validate_node_labels import (
-    validate_node_labels,
     validate_node_labels_style)
 from toytree.style.src.validate_nodes import (
-    validate_node_colors,
-    validate_node_sizes,
     validate_node_style,
-    validate_node_markers,
-    validate_node_mask,
-    validate_node_numeric,
 )
 
 logger = logger.bind(name="toytree")
 Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = [
-    "add_node_labels",
     "add_node_markers",
+    "add_node_labels",
     "add_node_bars",
     # "add_node_histograms",
     # "add_node_densigrams",
@@ -111,7 +112,7 @@ def add_node_markers(
     coords = mark.ntable
 
     # get mask and apply to all other styles below
-    mask = validate_node_mask(tree, style=None, node_mask=mask)
+    mask = validate_mask(tree, style={"node_mask": mask})
 
     # update node_style setting
     style = {} if style is None else style
@@ -119,51 +120,67 @@ def add_node_markers(
     style = substyle_dict_to_css_dict(style.__dict__)
 
     # update node colors setting; sets to None if only one color.
-    node_colors, fill_color = validate_node_colors(
-        tree, style=None, node_colors=color)
+    colors, fill_color = validate_colors(
+        tree, key="color", size=tree.nnodes, style={"color": color})
 
-    # if fill_color then set to node_style.fill since node_colors = None
-    if node_colors is None:
+    # if fill_color then set to node_style.fill since colors = None
+    if colors is None:
         if fill_color:
             style["fill"] = ToyColor(fill_color)  # overrides node_style.fill
         else:
             pass  # node_style.fill overrides
     else:
-        node_colors = node_colors[mask]
+        colors = colors[mask]
         style.pop("fill")
 
     # validate others and trim to mask
-    markers = validate_node_markers(tree, style=None, node_markers=marker)[mask]
-    sizes = validate_node_sizes(tree, style=None, node_sizes=size)[mask]
-    opacity = validate_node_numeric(
-        tree, style=None, key="node_opacity", node_opacity=opacity)[mask]
+    markers = validate_markers(
+        tree, key="marker", size=tree.nnodes, style={"marker": marker})[mask]
+    sizes = validate_numeric(
+        tree, key="size", size=tree.nnodes, style={"size": size})[mask]
+    opacity = validate_numeric(
+        tree, key="opacity", size=tree.nnodes, style={"opacity": opacity})[mask]
 
-    # apply mask to Node coordinates
-    coords = coords[mask, :]
-    if xshift or yshift:
-        # Note: if later annotations change the projection this will be off
-        axes._finalize()
-        if xshift:
-            origin, xshifted = axes._x_projection.inverse([0, xshift])
-            x_shift_projected = xshifted - origin
-            coords[:, 0] += x_shift_projected
-        if yshift:
-            origin, yshifted = axes._y_projection.inverse([0, yshift])
-            y_shift_projected = yshifted - origin
-            coords[:, 1] += y_shift_projected
-        axes._finalized = None
-
-    # plot edge markers as scatterplot markers
-    mark = axes.scatterplot(
-        coords[:, 0],
-        coords[:, 1],
-        color=node_colors,
-        size=sizes,
-        marker=markers,
-        mstyle=style,
+    mark = AnnotationMarker(
+        ntable=coords[mask],
+        xshift=xshift,
+        yshift=yshift,
+        sizes=sizes,
+        colors=colors,
         opacity=opacity,
+        shapes=markers,
+        style=style,
     )
+    axes.add_mark(mark)
     return mark
+
+    # # apply mask to Node coordinates
+    # # TODO: alternative strategy here
+    # coords = coords[mask, :]
+    # if xshift or yshift:
+    #     # Note: if later annotations change the projection this will be off
+    #     axes._finalize()
+    #     if xshift:
+    #         origin, xshifted = axes._x_projection.inverse([0, xshift])
+    #         x_shift_projected = xshifted - origin
+    #         coords[:, 0] += x_shift_projected
+    #     if yshift:
+    #         origin, yshifted = axes._y_projection.inverse([0, yshift])
+    #         y_shift_projected = yshifted - origin
+    #         coords[:, 1] += y_shift_projected
+    #     axes._finalized = None
+
+    # # plot edge markers as scatterplot markers
+    # mark = axes.scatterplot(
+    #     coords[:, 0],
+    #     coords[:, 1],
+    #     color=node_colors,
+    #     size=sizes,
+    #     marker=markers,
+    #     mstyle=style,
+    #     opacity=opacity,
+    # )
+    # return mark
 
 
 @add_subpackage_method(AnnotationAPI)
@@ -228,13 +245,14 @@ def add_node_labels(
     # get mark for coordinates on plotted tree.
     mark = get_last_toytree_mark(axes)
     assert_tree_matches_mark(tree, mark)
-    coords = mark.ntable
 
     # mask some edges
-    mask = validate_node_mask(tree, style=None, node_mask=mask)
+    mask = validate_mask(tree, style={"node_mask": mask})
+    coords = mark.ntable[mask]
 
     # check length and type of labels
-    labels = validate_node_labels(tree, style=None, node_labels=labels)[mask]
+    labels = validate_labels(
+        tree, key="labels", size=tree.nnodes, style={"labels": labels})[mask]
 
     # set styles on top of defaults
     style = {} if style is None else style
@@ -246,8 +264,8 @@ def add_node_labels(
         style["font-size"] = font_size
 
     # update node colors setting; sets to None if only one color.
-    node_colors, fill_color = validate_node_colors(
-        tree, style=None, node_colors=color)
+    node_colors, fill_color = validate_colors(
+        tree, key="color", size=tree.nnodes, style={"color": color})
 
     # if fill_color then set to node_style.fill since node_colors = None
     if node_colors is None:
@@ -259,22 +277,15 @@ def add_node_labels(
         node_colors = node_colors[mask]
         style.pop("fill")
 
-    opacity = validate_node_numeric(tree, style=None, key="opacity", opacity=opacity)[mask]
-    angle = validate_node_numeric(tree, style=None, key="angle", angle=angle)[mask]
+    # ...
+    opacity = validate_numeric(
+        tree, key="opacity", size=tree.nnodes, style={"opacity": opacity})[mask]
+    angle = validate_numeric(
+        tree, key="angle", size=tree.nnodes, style={"angle": angle})[mask]
 
-    coords = coords[mask, :]
-    if xshift or yshift:
-        # Note: if later annotations change the projection this will be off
-        axes._finalize()
-        if xshift:
-            origin, xshifted = axes._x_projection.inverse([0, xshift])
-            x_shift_projected = xshifted - origin
-            coords[:, 0] += x_shift_projected
-        if yshift:
-            origin, yshifted = axes._y_projection.inverse([0, yshift])
-            y_shift_projected = yshifted - origin
-            coords[:, 1] += y_shift_projected
-        axes._finalized = None
+    # expand xshift,yshift args as anchor_shift,baseline_shift
+    style['-toyplot-anchor-shift'] += xshift
+    style['baseline-shift'] -= yshift
 
     # add text at Node positions + half length of dists.
     mark = axes.text(
@@ -300,7 +311,7 @@ def add_node_bars(
     color: Union[Color, Sequence[Color]] = None,
     mask: Union[np.ndarray, bool, Tuple, None] = (0, 1, 1),
     size: Union[float, Sequence[float]] = 0.5,
-    # opacity: Union[float, Sequence[float]] = 0.7,
+    opacity: Union[float, Sequence[float]] = 0.7,
     xshift: int = 0,
     yshift: int = 0,
     style: Mapping[str, Any] = None,
@@ -315,9 +326,9 @@ def add_node_bars(
     axes: Cartesian
         A toyplot Cartesian axes object containing a tree drawing.
     bar_min: float, Series of float, or str
-        ...
+        Minimum height of the bar.
     bar_max: float, Series of float, or str
-        Same as bar_min, but for the max position of the bar.
+        Maximum height of the bar.
     color: str, tuple, array or Sequence
         A single color or Sequence of colors for node labels.
     mask: np.array or None
@@ -332,21 +343,27 @@ def add_node_bars(
     style: dict
         Style dict. See `tree.style.node_labels_style` for options.
     z_index: int
-        ...
+        Index of annotation (default=0). Lower index makes the bars
+        appears behind other marks (e.g., tree or other annotations).
 
     Example
     -------
     >>> tree = toytree.rtree.unittree(10, treeheight=1e5)
-    >>> ...
+    >>> c, a, m = tree.draw()
+    >>> node_height = tree.get_node_data("height").values
+    >>> tree.annotate.add_node_bars(
+    >>>     axes=a,
+    >>>     bar_min=node_height * 0.5,
+    >>>     bar_max=node_height * 1.5,
+    >>>     size=0.33, z_index=-1, color='purple', opacity=0.4,
+    >>> )
     """
-    # TODO: [x,y]shift, opacity.
-
     # get mark for coordinates of Nodes on plotted tree.
     mark = get_last_toytree_mark(axes)
     assert_tree_matches_mark(tree, mark)
 
     # mask some edges
-    mask = validate_node_mask(tree, style=None, node_mask=mask)
+    mask = validate_mask(tree, style={"node_mask": mask})
 
     # get Node coordinates
     coords = mark.ntable.copy()[mask]
@@ -359,11 +376,10 @@ def add_node_bars(
     style = substyle_dict_to_css_dict(style.__dict__)
 
     # update node colors setting; sets to None if only one color.
-    opacity = 1.0
-    opacity = validate_node_numeric(
-        tree, style=None, key="opacity", opacity=opacity)[mask]
-    colors, fill_color = validate_node_colors(
-        tree, style=None, node_colors=color)
+    opacity = validate_numeric(
+        tree, key="opacity", size=tree.nnodes, style={"opacity": opacity})[mask]
+    colors, fill_color = validate_colors(
+        tree, key="color", size=tree.nnodes, style={"color": color})
 
     # if fill_color then set to node_style.fill since node_colors = None
     if colors is None:
@@ -376,9 +392,12 @@ def add_node_bars(
         style.pop("fill")
 
     # check values for positions
-    bar_min = validate_node_numeric(tree, style=None, key="bar_min", bar_min=bar_min)[mask]
-    bar_max = validate_node_numeric(tree, style=None, key="bar_max", bar_max=bar_max)[mask]
-    sizes = validate_node_numeric(tree, style=None, key="size", size=size)[mask]
+    bar_min = validate_numeric(
+        tree, key="bar_min", size=tree.nnodes, style={"bar_min": bar_min})[mask]
+    bar_max = validate_numeric(
+        tree, key="bar_max", size=tree.nnodes, style={"bar_max": bar_max})[mask]
+    sizes = validate_numeric(
+        tree, key="size", size=tree.nnodes, style={"size": size})[mask]
 
     # orient rectangles for the tree layout
     if mark.layout == "r":
@@ -417,17 +436,6 @@ def add_node_bars(
     axes._scenegraph._relationships['map']._targets[axes.y].insert(z_index, mark)
     return mark
 
-    # draw the graph and return the mark
-    # kwargs["vlabel"] = kwargs.get("vlabel", False)
-    # kwargs["vsize"] = kwargs.get("vsize", 0)
-    # kwargs["ewidth"] = kwargs.get("edge_width", 7)
-    # kwargs["eopacity"] = kwargs.get("edge_opacity", 7)  # fill/stroke/opacity?????
-    # mark = axes.graph(
-    #     edges,
-    #     vcoordinates=vertices,
-    #     **kwargs,
-    # )
-    # return mark
 
 
 # def add_clade_box(
@@ -443,15 +451,20 @@ if __name__ == "__main__":
 
     # base tree drawing
     tree = toytree.rtree.unittree(26)
-    c, a, m = tree.draw(layout='d', scale_bar=True, node_sizes=5)
+    c, a, m = tree.draw(layout='r', scale_bar=True, node_sizes=5)
 
-    m1 = tree.annotate.add_node_bars(
+    m0 = tree.annotate.add_node_markers(a, color="idx", yshift=-15)
+    m1 = tree.annotate.add_node_labels(a, font_size=20, yshift=-15)
+    m2 = tree.annotate.add_node_bars(
         a,
         bar_min=tree.get_node_data("height").values * 0.8,
-        bar_max=tree.get_node_data("height").values * 1.2,
+        bar_max=tree.get_node_data("height").values * 2,
         size=0.33,
         z_index=-1,
-        color='red',
-        # style={"fill-opacity": 0.4, "stroke": None},
+        color='purple',
+        # opacity=1.0,
+        style={"fill-opacity": 0.3, "stroke": None},
+        yshift=15,
+        xshift=15,
     )
     toytree.utils.show(c)

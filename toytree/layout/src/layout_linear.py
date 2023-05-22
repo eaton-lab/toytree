@@ -62,6 +62,7 @@ class LinearLayout(BaseLayout):
 
         # re-orient for layout direction: right, left or down.
         if self.style.layout == "d":
+            self.angles = np.repeat(-90, self.tree.ntips)
             self.coords[:, 0] += self.style.xbaseline
             self.coords[:, 1] += self.style.ybaseline
             self.tcoords = self.coords[:self.tree.ntips, :].copy()
@@ -69,6 +70,7 @@ class LinearLayout(BaseLayout):
                 self.tcoords[:, 1] = self.style.ybaseline
 
         elif self.style.layout == "u":
+            self.angles = np.repeat(-90, self.tree.ntips)
             self.coords[:, 1] *= -1
             self.coords[:, 0] += self.style.xbaseline
             self.coords[:, 1] += self.style.ybaseline
@@ -77,6 +79,7 @@ class LinearLayout(BaseLayout):
                 self.tcoords[:, 1] = self.style.ybaseline
 
         elif self.style.layout == "l":
+            self.angles = np.zeros(self.tree.ntips)
             self.coords = self.coords[:, [1, 0]]
             self.coords[:, 0] += self.style.xbaseline
             self.coords[:, 1] += self.style.ybaseline
@@ -85,6 +88,7 @@ class LinearLayout(BaseLayout):
                 self.tcoords[:, 0] = self.style.xbaseline
 
         else:
+            self.angles = np.zeros(self.tree.ntips)
             self.coords = self.coords[:, [1, 0]]
             self.coords[:, 0] *= -1
             self.coords[:, 0] += self.style.xbaseline

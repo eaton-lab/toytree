@@ -79,9 +79,6 @@ from toytree.color.src.toycolor import ToyColor
 #             styles.append(f"{key}:{value}")
 
 
-
-
-
 def concat_style_fix_color(style: Dict[str, str], extra: str = None) -> str:
     """Return a style dict concatenated to string w/ color fixes.
 

@@ -11,17 +11,19 @@ from toytree.core import ToyTree, Cartesian, Mark
 from toytree.color import ToyColor
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
 from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
-
-from toytree.style.src.validate_nodes import (
-    validate_node_colors,
-    validate_node_numeric,
-    validate_node_style,
-    validate_node_markers,
-    validate_node_mask,
-)
+from toytree.drawing.src.mark_annotation import AnnotationMarker
 from toytree.style.src.validate_utils import substyle_dict_to_css_dict
+from toytree.style.src.validate_data import (
+    validate_colors,
+    validate_numeric,
+    validate_markers,
+    validate_mask,
+    validate_labels,
+)
+from toytree.style.src.validate_nodes import (
+    validate_node_style,
+)
 from toytree.style.src.validate_node_labels import (
-    validate_node_labels,
     validate_node_labels_style,
 )
 
@@ -135,7 +137,7 @@ def add_edge_markers(
     coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)[:nedges]
 
     # mask some edges
-    mask = validate_node_mask(tree, style=None, node_mask=mask)[:nedges]
+    mask = validate_mask(tree, style={"node_mask": mask})[:nedges]
 
     # set styles on top of defaults. Must run before node_colors.
     style = {} if style is None else style
@@ -143,49 +145,38 @@ def add_edge_markers(
     style = substyle_dict_to_css_dict(style.__dict__)
 
     # update node colors setting; sets to None if only one color.
-    node_colors, fill_color = validate_node_colors(
-        tree, style=None, node_colors=color)
+    colors, fill_color = validate_colors(
+        tree, key="color", size=tree.nnodes, style={"color": color})
 
     # if fill_color then set to node_style.fill since node_colors = None
-    if node_colors is None:
+    if colors is None:
         if fill_color:
             style["fill"] = ToyColor(fill_color)  # overrides node_style.fill
         else:
             pass  # node_style.fill overrides
     else:
-        node_colors = node_colors[:nedges][mask]
+        colors = colors[:nedges][mask]
         style.pop("fill")
 
     # ...
-    markers = validate_node_markers(tree, style=None, node_markers=marker)[:nedges][mask]
-    sizes = validate_node_numeric(tree, style=None, key="size", size=size)[:nedges][mask]
-    opacity = validate_node_numeric(tree, style=None, key="opacity", opacity=opacity)[:nedges][mask]
+    markers = validate_markers(tree, key="edge_markers", size=tree.nnodes, style={"edge_markers": marker})[:nedges][mask]
+    sizes = validate_numeric(tree, key="size", size=tree.nnodes, style={"size": size})[:nedges][mask]
+    opacity = validate_numeric(tree, key="opacity", size=tree.nnodes, style={"opacity": opacity})[:nedges][mask]
 
     coords = coords[mask, :]
-    if xshift or yshift:
-        # Note: if later annotations change the projection this will be off
-        axes._finalize()
-        if xshift:
-            origin, xshifted = axes._x_projection.inverse([0, xshift])
-            x_shift_projected = xshifted - origin
-            coords[:, 0] += x_shift_projected
-        if yshift:
-            origin, yshifted = axes._y_projection.inverse([0, yshift])
-            y_shift_projected = yshifted - origin
-            coords[:, 1] += y_shift_projected
-        axes._finalized = None
 
     # plot edge markers as scatterplot markers
-    mark = axes.scatterplot(
-        coords[:, 0],
-        coords[:, 1],
-        color=node_colors,
-        size=sizes,
-        marker=markers,
-        mstyle=style,
+    mark = AnnotationMarker(
+        ntable=coords[mask],
+        xshift=xshift,
+        yshift=yshift,
+        sizes=sizes,
+        colors=colors,
         opacity=opacity,
-        # annotation=True,
+        shapes=markers,
+        style=style,
     )
+    axes.add_mark(mark)
     return mark
 
 
@@ -257,8 +248,9 @@ def add_edge_labels(
     coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)[:nedges]
 
     # mask some edges
-    mask = validate_node_mask(tree, style=None, node_mask=mask)[:nedges]
-    labels = validate_node_labels(tree, style=None, node_labels=labels)[:nedges][mask]
+    mask = validate_mask(tree, style={"node_mask": mask})[:nedges]
+    labels = validate_labels(
+        tree, key="labels", size=tree.nnodes, style={"labels": labels})[:nedges][mask]
 
     # set styles on top of defaults
     style = {} if style is None else style
@@ -270,7 +262,8 @@ def add_edge_labels(
         style["font-size"] = font_size
 
     # check colors
-    label_colors, stroke_color = validate_node_colors(tree, style=None, node_colors=color)[:nedges]
+    label_colors, stroke_color = validate_colors(
+        tree, key="color", size=tree.nnodes, style={"color": color})[:nedges]
     if label_colors is None:
         if stroke_color:
             style["stroke"] = ToyColor(stroke_color)  # overrides ..._style.fill
@@ -281,24 +274,16 @@ def add_edge_labels(
         style.pop("stroke")
 
     # mask some nodes
-    opacity = validate_node_numeric(tree, style=None, key="opacity", opacity=opacity)[:nedges][mask]
-    angle = validate_node_numeric(tree, style=None, key="angle", angle=angle)[:nedges][mask]
-
-    coords = coords[mask, :]
-    if xshift or yshift:
-        # Note: if later annotations change the projection this will be off
-        axes._finalize()
-        if xshift:
-            origin, xshifted = axes._x_projection.inverse([0, xshift])
-            x_shift_projected = xshifted - origin
-            coords[:, 0] += x_shift_projected
-        if yshift:
-            origin, yshifted = axes._y_projection.inverse([0, yshift])
-            y_shift_projected = yshifted - origin
-            coords[:, 1] += y_shift_projected
-        axes._finalized = None
+    opacity = validate_numeric(
+        tree, key="opacity", size=tree.nnodes, style={"opacity": opacity})[:nedges][mask]
+    angle = validate_numeric(
+        tree, key="angle", size=tree.nnodes, style={"angle": angle})[:nedges][mask]
+    # expand xshift,yshift args as anchor_shift,baseline_shift
+    style['-toyplot-anchor-shift'] += xshift
+    style['baseline-shift'] -= yshift
 
     # add text at Node positions + half length of dists.
+    coords = coords[mask, :]
     mark = axes.text(
         coords[:, 0],
         coords[:, 1],
@@ -312,22 +297,19 @@ def add_edge_labels(
     return mark
 
 
-
 if __name__ == "__main__":
 
     import toytree
 
     # base tree drawing
     tree = toytree.rtree.unittree(6)  # .unroot()
+    tree[0].name = "amdodfl"
+    tree[1]._name = "HI"
     c, a, m = tree.draw(layout='d')  # r')
 
     # annotate with edge labels
-    # add_edge_labels(tree, axes=a, labels=tree.get_node_data("idx"))
-    # add_edge_markers(tree, axes=a, size=10, marker='r1x2')
-    # add_edge_labels(
-    #     tree, axes=a, labels="idx", color=("idx", "BlueRed"),
-    # )
+    add_edge_markers(tree, axes=a, size=10, marker='r1x2', color="height")
+    add_edge_labels(tree, axes=a, labels="idx", font_size=15)
 
     data = np.array([[0.5, 0.3, 0.2]] * tree.nnodes)
-    tree.annotate.add_edge_markers(a)
     toytree.utils.show(c)
