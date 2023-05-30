@@ -90,5 +90,4 @@ if __name__ == "__main__":
     tree = toytree.rtree.unittree(10, seed=123)
     edges = list(tree.iter_edges())
     print(edges)
-
     print(tree.get_edges('idx', df=True))

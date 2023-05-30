@@ -8,9 +8,9 @@ SVG
 
 Python
 ------
-In toytree this code is used only to setup container tree (e.g., 
+In toytree this code is used only to setup container tree (e.g.,
 species trees) drawings. But, in the future this could be ported
-to toyplot as a more general polygon shape object for complex 
+to toyplot as a more general polygon shape object for complex
 shapes such as maps, etc.
 
 >>> toytree.container(...)

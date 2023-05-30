@@ -24,7 +24,6 @@ from hashlib import md5
 
 from loguru import logger
 import numpy as np
-import pandas as pd
 from toyplot import Canvas
 from toyplot.coordinates import Cartesian
 
@@ -33,7 +32,7 @@ from toytree.core.apis import (
     TreeModAPI, TreeDistanceAPI, TreeEnumAPI, PhyloCompAPI, AnnotationAPI)
 from toytree.core.node import Node
 from toytree.style import TreeStyle
-from toytree.drawing import draw_toytree, get_layout, get_tree_style_base, ToyTreeMark
+from toytree.drawing import draw_toytree, ToyTreeMark
 from toytree.utils.src.exceptions import (
     ToytreeError, NODE_NOT_IN_TREE_ERROR, NODE_INDEXING_ERROR)
 import toytree
@@ -814,46 +813,46 @@ class ToyTree:
         for node in self:
             yield node._x, node._height
 
-    def get_node_coordinates(self, **kwargs) -> pd.DataFrame:
-        """Return a DataFrame with xy coordinates for plotting nodes.
+    # def get_node_coordinates(self, **kwargs) -> pd.DataFrame:
+    #     """Return a DataFrame with xy coordinates for plotting nodes.
 
-        This returns coordinates that could be used when adding
-        additional annotations to plots, such as scatterplot points,
-        or error bars on top of nodes. By default Node idx=0 will be
-        located at coordinate position (0, 0), which can be modified
-        using the `xbaseline` and `ybaseline` args.
+    #     This returns coordinates that could be used when adding
+    #     additional annotations to plots, such as scatterplot points,
+    #     or error bars on top of nodes. By default Node idx=0 will be
+    #     located at coordinate position (0, 0), which can be modified
+    #     using the `xbaseline` and `ybaseline` args.
 
-        Take care when calling this function that the coordinates
-        will be different depending on the *style* arguments applied.
-        The style args come from the `.style` dict-like object of the
-        ToyTree, and can be overriden by additional args to this func,
-        the same as in the `.draw()` function. For example, layout
-        facing down ('d') will yield different coordinates than layout
-        facing up ('u').
+    #     Take care when calling this function that the coordinates
+    #     will be different depending on the *style* arguments applied.
+    #     The style args come from the `.style` dict-like object of the
+    #     ToyTree, and can be overriden by additional args to this func,
+    #     the same as in the `.draw()` function. For example, layout
+    #     facing down ('d') will yield different coordinates than layout
+    #     facing up ('u').
 
-        Examples
-        --------
-        >>> style = {'layout': 'd', 'xbaseline': 10}
-        >>> canvas, axes, mark = tree.draw(**style)
-        >>> node_coords = tree.get_node_coordinates(**style)
-        >>> axes.scatterplot(coords.x, coords.y, size=10);
-        """
-        style = get_tree_style_base(self, **kwargs)
-        style = validate_style(self, style, **kwargs)
-        coords = get_layout(self, style).coords
-        data = pd.DataFrame(
-            columns=('x', 'y'),
-            index=range(self.nnodes),
-            data=coords,
-        )
-        return data
+    #     Examples
+    #     --------
+    #     >>> style = {'layout': 'd', 'xbaseline': 10}
+    #     >>> canvas, axes, mark = tree.draw(**style)
+    #     >>> node_coords = tree.get_node_coordinates(**style)
+    #     >>> axes.scatterplot(coords.x, coords.y, size=10);
+    #     """
+    #     style = get_tree_style_base(self, **kwargs)
+    #     style = validate_style(self, style, **kwargs)
+    #     coords = get_layout(self, style).coords
+    #     data = pd.DataFrame(
+    #         columns=('x', 'y'),
+    #         index=range(self.nnodes),
+    #         data=coords,
+    #     )
+    #     return data
 
-    def get_tip_coordinates(self, **kwargs) -> pd.DataFrame:
-        """Return a DataFrame with xy coordinates for tip nodes.
+    # def get_tip_coordinates(self, **kwargs) -> pd.DataFrame:
+    #     """Return a DataFrame with xy coordinates for tip nodes.
 
-        See `ToyTree.get_node_coordinates` for details.
-        """
-        return self.get_node_coordinates(**kwargs).iloc[:self.ntips]
+    #     See `ToyTree.get_node_coordinates` for details.
+    #     """
+    #     return self.get_node_coordinates(**kwargs).iloc[:self.ntips]
 
     ###################################################
     # FULL TREE DATA GET/SET
