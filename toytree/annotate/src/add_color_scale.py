@@ -6,6 +6,7 @@
 
 import toyplot
 from toyplot.coordinates import Cartesian
+from toytree import ToyTree
 
 
 def add_marker_legend(

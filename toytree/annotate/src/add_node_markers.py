@@ -450,8 +450,8 @@ if __name__ == "__main__":
     import toytree
 
     # base tree drawing
-    tree = toytree.rtree.unittree(26)
-    c, a, m = tree.draw(layout='r', scale_bar=True, node_sizes=5)
+    tree = toytree.rtree.unittree(12)
+    c, a, m = tree.draw(layout='r', scale_bar=True, node_sizes=5, width=400)
 
     m0 = tree.annotate.add_node_markers(a, color="idx", yshift=-15)
     m1 = tree.annotate.add_node_labels(a, font_size=20, yshift=-15)
@@ -464,7 +464,7 @@ if __name__ == "__main__":
         color='purple',
         # opacity=1.0,
         style={"fill-opacity": 0.3, "stroke": None},
-        yshift=15,
-        xshift=15,
+        # yshift=15,
+        # xshift=15,
     )
     toytree.utils.show(c)

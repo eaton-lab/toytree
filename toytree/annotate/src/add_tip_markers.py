@@ -26,11 +26,6 @@ from toytree.style.src.validate_data import (
     validate_numeric,
     validate_labels,
 )
-from toytree.style.src.validate_tips import (
-    validate_tip_labels,
-    validate_tip_labels_style,
-    validate_tip_labels_angles,
-    validate_tip_labels_colors)
 from toytree.style.src.validate_node_labels import (
     validate_node_labels,
     validate_node_labels_style)
@@ -187,7 +182,6 @@ def add_tip_markers(
     #         angle=label_angle,
     #         style={'text-anchor': 'start', 'fill': "#252525"},
     #     )
-
 
 
 # TODO: auto-angles for different layouts...
@@ -464,5 +458,6 @@ if __name__ == "__main__":
     #     tree, axes=a, size=10, marker='s', color=("idx", "BlueRed"))
     # add_node_labels(tree, axes=a, labels='idx')
     data = np.array([[0.5, 0.3, 0.2]] * tree.nnodes)
-    tree.annotate.add_tip_markers(a, color="dist", xshift=0, yshift=10)
+    m = tree.annotate.add_tip_markers(a, color=("name"), xshift=0, yshift=50)
+    print(m.extents(['x', 'y']))
     toytree.utils.show(c)
