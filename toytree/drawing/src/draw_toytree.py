@@ -16,13 +16,15 @@ from toyplot.canvas import Canvas
 from toyplot.coordinates import Cartesian
 
 # from toytree.annotate.src.add_scale_bar import add_axis_scale_bar_to_mark
-from toytree.drawing import ToyTreeMark, get_canvas_and_axes
+from toytree.drawing import ToyTreeMark
+from toytree.drawing.src.setup_canvas import get_canvas_and_axes
 from toytree.layout import BaseLayout, LinearLayout, CircularLayout, UnrootedLayout
 from toytree.style import (
     TreeStyle,
     validate_style,
     get_base_tree_style_by_name,
     tree_style_to_css_dict,
+    get_range_mapped_feature,
 )
 
 
@@ -70,9 +72,12 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
     # get a TreeStyle COPY from tree.style or new ts TreeStyle()
     style = get_tree_style_base(tree, tree_style=kwargs.pop('tree_style'))
 
+    # special handling of tree_style='p' in case Ne is not a feature.
+    if style.tree_style == "p" and "Ne" not in tree.features:
+        style.edge_widths = None
+
     # check and expand user-kwargs if provided else base style value
     style = validate_style(tree, style, **kwargs)
-    logger.info(style.tip_labels)
 
     # get a Layout with coordinates projected based on style
     layout = get_layout(
@@ -187,8 +192,11 @@ if __name__ == "__main__":
     toytree.set_log_level("DEBUG")
     tre = toytree.rtree.unittree(10)
     tre[0].name = "HELLO"
+    tre[4].name = "HELLO"
+    tre[6].name = "HELLO WORLD"
+    tre[-1]._dist = 10
     tre._draw_browser(
-        ts='s',
+        ts='p',
         layout='c',
         edge_type='c',
         height=400,
