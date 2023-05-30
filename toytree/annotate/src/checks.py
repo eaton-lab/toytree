@@ -10,11 +10,22 @@ from toytree import ToyTree
 from toytree.drawing import ToyTreeMark
 from toytree.utils import ToytreeError
 
+CARTESIAN_TYPE_ERROR = """\
+'axes' argument to annotation func must be a Cartesian object
+containing a ToyTree Mark (drawing). For example:
+
+>>> # get Cartesian axes from a toytree drawing
+>>> canvas, axes, mark = tree.draw()
+>>> tree.annotate.add_tip_markers(axes, size=9, color='red', xshift=20)
+"""
+
 
 def get_last_toytree_mark(axes: Cartesian) -> ToyTreeMark:
     """Return the last ToyTreeMark rendered on the Cartesian axes.
 
     """
+    if not isinstance(axes, Cartesian):
+        raise TypeError(CARTESIAN_TYPE_ERROR)
     targets = axes._scenegraph.targets(axes, "render")
     tree_marks = [i for i in targets if isinstance(i, ToyTreeMark)]
     if not tree_marks:
