@@ -144,8 +144,9 @@ def set_node_data(
     for node in nkeys:
         value = mapping[node]
         ndict[node._idx] = value
-        for desc in node.iter_descendants():
-            ndict[desc._idx] = value
+        if inherit is True:
+            for desc in node.iter_descendants():
+                ndict[desc._idx] = value
 
     # map {Node: default} for Nodes not in ndict
     if default is not None:
@@ -249,11 +250,16 @@ if __name__ == "__main__":
     new_tree = set_node_data(tree, "Ne", {11: "red"}, default="blue", inherit=True)
     new_tree = set_node_data(tree, "Ne", {5: 5, 6: 6})
 
-    # typeerror,valuerrror
-    new_tree = set_node_data(tree, "Ne", ['a', 'b'] + [np.nan] * (tree.nnodes - 2))
+    # # typeerror,valuerrror
+    # new_tree = set_node_data(tree, "Ne", ['a', 'b'] + [np.nan] * (tree.nnodes - 2))
     # new_tree = tree.set_node_data(
     #     feature="state",
     #     mapping={10: "A", 11: "B"},
     #     inherit=True,
     # )
-    print(new_tree.get_node_data("Ne"))
+    # print(new_tree.get_node_data("Ne"))
+
+    tre = toytree.rtree.unittree(8, seed=123)
+    anc = tre.get_ancestors(1, 2, 3)
+    tre = tre.set_node_data("color", {i.idx: "red" for i in anc}, default="blue")
+    print(tre.get_node_data())
