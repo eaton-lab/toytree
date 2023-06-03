@@ -4,84 +4,20 @@
 
 """
 
-from typing import Union, Sequence, Mapping, Any, Dict, TypeVar
+from typing import TypeVar
 import numpy as np
 import toyplot
 # from toytree.utils import ToytreeError
 from toytree.color import ToyColor
 from toytree.style.src.style_base import NodeLabelStyle, TreeStyle
-from toytree.style.src.validate_utils import check_arr
 
 
 ToyTree = TypeVar("ToyTree")
 Color = TypeVar("Color", str, tuple, np.ndarray)
 
 __all__ = [
-    "validate_node_labels",
     "validate_node_labels_style",
 ]
-
-
-def validate_node_labels(
-    tree: ToyTree,
-    style: TreeStyle,
-    float_format: str = "{:.4g}",
-    **kwargs,
-) -> Union[None, np.ndarray]:
-    """Sets node_labels to np.ndarray[str] or None.
-
-    Also applies floating point string formatting on node_labels. If
-    set to None then no labels are added during rendering.
-
-    node_labels: Union[None, bool, str, Sequence[str]],
-
-    Args
-    ----
-    None: None
-    False: None
-    True: 'idx' int labels
-    str: extract feature
-    Series[Any: custom collection of the proper size.
-    """
-    # get user value or style base value
-    node_labels = kwargs.get("node_labels")
-    if node_labels is None:
-        if isinstance(style, TreeStyle):
-            node_labels = getattr(style, "node_labels")
-
-    # Don't use 'is in' to support pd.Series
-    if node_labels is False:
-        return None
-    if node_labels is None:
-        return None
-
-    # True: use idxs as labels
-    if node_labels is True:
-        node_labels = range(tree.nnodes)
-
-    # str: extract feature as labels as an np.array
-    elif isinstance(node_labels, str):
-        node_labels = tree.get_node_data(node_labels).values
-
-    # or, user entered a list, tuple, Series, array, etc.
-    # which is checked and handled below.
-
-    # float format numeric values, and convert to strings
-    flabels = []
-    for label in node_labels:
-        try:
-            flabel = float_format.format(label)
-            flabels.append(str(flabel))
-        except (ValueError, TypeError):
-            slabel = str(label)
-            if slabel == "nan":
-                flabels.append("")
-            else:
-                flabels.append(slabel)
-
-    # validate len and type and convert to an array
-    node_labels = check_arr(flabels, "node_labels", tree.nnodes, str)
-    return node_labels
 
 
 def validate_node_labels_style(

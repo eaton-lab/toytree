@@ -15,7 +15,7 @@ of TreeStyle objects because this allows for re-using these more
 easily in annotation functions.
 """
 
-from typing import Mapping, Any, Dict, TypeVar
+from typing import Mapping, Any, TypeVar
 from loguru import logger
 
 from toytree.style import TreeStyle
@@ -28,27 +28,10 @@ from toytree.style.src.validate_data import (
     validate_hover,
     validate_labels,
 )
-from toytree.style.src.validate_nodes import (
-    # validate_node_mask,
-    # validate_node_sizes,
-    # validate_node_markers,
-    # validate_node_hover,
-    # validate_node_colors,
-    validate_node_style,
-)
-from toytree.style.src.validate_node_labels import (
-    validate_node_labels,
-    validate_node_labels_style,
-)
-from toytree.style.src.validate_tips import (
-    # validate_tip_labels,
-    # validate_tip_labels_angles,
-    # validate_tip_labels_colors,
-    validate_tip_labels_style,
-)
+from toytree.style.src.validate_nodes import validate_node_style
+from toytree.style.src.validate_node_labels import validate_node_labels_style
+from toytree.style.src.validate_tips import validate_tip_labels_style
 from toytree.style.src.validate_edges import (
-    # validate_edge_widths,
-    # validate_edge_colors,
     validate_edge_style,
     validate_edge_align_style,
 )
