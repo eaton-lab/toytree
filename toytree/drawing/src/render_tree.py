@@ -29,7 +29,8 @@ from multipledispatch import dispatch
 from loguru import logger
 import numpy as np
 import toyplot
-from toytree.drawing import ToyTreeMark, render_text
+from toytree.drawing import ToyTreeMark
+from toytree.drawing.src.render_text import render_text
 from toytree.drawing.src.render_marker import render_marker
 from toytree.color.src.concat import concat_style_fix_color
 
@@ -95,12 +96,7 @@ class RenderToytree:
         self.build_dom()
 
     def project_coordinates(self):
-        """Store node coordinates (data units) projected to pixel units.
-
-        TODO: this could be mostly replaced by improvements to
-        ToyTree.get_node_coordinates()
-        """
-        # project data coordinates into pixels
+        """Store node coordinates (data units) projected to px units."""
         self.nodes_x = self.axes.project('x', self.mark.ntable[:, 0])
         self.nodes_y = self.axes.project('y', self.mark.ntable[:, 1])
         self.tips_x = self.axes.project('x', self.mark.ttable[:, 0])
@@ -162,7 +158,7 @@ class RenderToytree:
             child_x, child_y = self.nodes_x[cidx], self.nodes_y[cidx]
             parent_x, parent_y = self.nodes_x[pidx], self.nodes_y[pidx]
 
-            # ...
+            # for simple edge format (e.g., 'c', 'b')
             if "A" not in path_format:
                 keys.append(f"{pidx},{cidx}")
                 paths.append(
@@ -172,7 +168,7 @@ class RenderToytree:
                     })
                 )
 
-            # only relevant to 'pc' phylo-circular format
+            # for 'p' edge format
             else:
                 # get radius at parent's level
                 xdiff = parent_x - self.nodes_x[-1]
@@ -200,6 +196,15 @@ class RenderToytree:
                         'sweep': int(radians[pidx] < radians[cidx]),  # 1=counter-clockwise, 0=clockwise
                     })
                 )
+            # keys.append('root-edge')
+            # paths.append(
+            #     path_format.format(**{
+            #         'cx': self.nodes_x[-1],
+            #         'cy': self.nodes_y[-1],
+            #         'px': self.nodes_x[-1],
+            #         'py': self.nodes_y[-1] + self.mark.root_dist,
+            #     })
+            # )
         return paths, keys
 
     def mark_edges(self) -> None:
@@ -220,6 +225,8 @@ class RenderToytree:
 
         # get shared versus unique styles (EdgeStyles)
         unique_styles = get_unique_edge_styles(self.mark)
+        # unique_styles.append({"stroke-width": 1.0})
+        # logger.info(unique_styles)
 
         # render the edge paths
         for idx, path in enumerate(paths):

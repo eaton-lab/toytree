@@ -212,8 +212,9 @@ def set_tip_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndar
         ext[2][:ntips] *= 1.5
         ext[3][:ntips] *= 1.5
         ext[0][:ntips] -= mark.shrink
-    elif mark.layout[:3] == "unr":
-        logger.debug("unrooted layout needs custom tip ext!")
+
+    # elif mark.layout[:3] == "unr":
+        # logger.debug("unrooted layout needs custom tip ext!")
 
     # only allow increasing extents
     extents[0][:ntips] = np.min([extents[0][:ntips], ext[0]], axis=0)

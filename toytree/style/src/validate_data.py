@@ -212,7 +212,7 @@ def validate_colors(
         kw = dict(cmap=None if len(colors) < 2 else colors[1])
         kw["domain_min"] = None if len(colors) < 3 else colors[2]
         kw["domain_max"] = None if len(colors) < 4 else colors[3]
-        kw["nan_value"] = None if len(colors) < 4 else colors[4]
+        kw["nan_value"] = None if len(colors) < 5 else colors[4]
         kw["tips_only"] = size == tree.ntips
         return get_color_mapped_feature(tree, feat, **kw), None
 

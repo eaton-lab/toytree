@@ -45,7 +45,8 @@ from loguru import logger
 from toytree.core.tree import ToyTree
 from toytree.core.tree import Node
 from toytree.style import TreeStyle, get_base_tree_style_by_name
-from toytree.drawing import get_canvas_and_axes
+from toytree.drawing.src.setup_canvas import get_canvas_and_axes
+from toytree.drawing.src.setup_grid import Grid
 # from toytree.drawing import CanvasSetup, GridSetup, set_axes_ticks_style
 # from toytree.core.drawing.render import ToytreeMark
 from toytree.infer.src.consensus import ConsensusTree
@@ -83,6 +84,7 @@ class MultiTree:
 
         # self.data: pd.DataFrame = self._init_data(treelist, data)
         # """DataFrame with tree metadata (e.g., ipcoal.Model.df)."""
+
     # def _init_data(self, treelist, data: Optional[pd.DataFrame]):
     #     if data is None:
     #         data = pd.DataFrame(
@@ -96,8 +98,9 @@ class MultiTree:
         return len(self.treelist)
 
     def __iter__(self) -> Iterator[ToyTree]:
-        """ToyTree is iterable, returning leaf Nodes in idx order."""
-        return self._iter_trees()
+        """Generator to yield ToyTrees from MultiTree.treelist."""
+        for tree in self.treelist:
+            yield tree
 
     def __getitem__(self, idx: int) -> ToyTree:
         """Return ToyTree by indexing from MultiTree.treelist."""
@@ -107,14 +110,9 @@ class MultiTree:
         """string representation shows ntrees and type"""
         return f"<toytree.MultiTree ntrees={len(self)}>"
 
-    def _iter_trees(self) -> Iterator[ToyTree]:
-        """Return a generator of ToyTrees in treelist."""
-        for tree in self.treelist:
-            yield tree
-
     @property
     def ntips(self):
-        """Return number of tips (all the same) in each tree."""
+        """Return number of tips in the FIRST tree in treelist."""
         return self.treelist[0].ntips
 
     @property
@@ -131,6 +129,15 @@ class MultiTree:
         """Return True if all topologies in treelist are identical."""
         return len(set(i.get_topology_id(include_root=include_root) for i in self)) == 1
 
+    # def iter_unique_topologies(self, include_root: bool = False) -> Iterator[ToyTree]:
+    #     """Generator to yield unique tree topologies in treelist."""
+    #     counter = Counter()
+    #     for tree in self:
+    #         hashed = tree.get_topology_id(include_root=include_root)
+    #         counter[hashed] += 1
+    #     return counter
+
+    # better name?
     def get_unique_topologies(self, include_root: bool = False) -> List[Tuple[ToyTree, int]]:
         """Return a list of (ToyTree, count) for each unique tree.
 
@@ -457,7 +464,7 @@ class MultiTree:
         Examples
         --------
         >>> mtre = toytree.mtree([toytree.rtree.unittree(10) for i in range(10)])
-        >>> mtre.draw(shape=(2,3), width=800, edge_widths=4)
+        >>> mtre.draw(shape=(2, 3), width=800, edge_widths=4)
         """
         # legacy support
         if kwargs.get("nrows") or kwargs.get("ncols"):
@@ -504,8 +511,8 @@ class MultiTree:
         # get the canvas and axes that can fit the requested trees.
         padding = kwargs.get("padding", 10)
         scale_bar = kwargs.get("scale_bar", False)
-        grid = GridSetup(
-            nrows, ncols, width, height, layout, margin, padding, scale_bar)
+        grid = Grid(nrows, ncols, width, height, layout, margin, padding, scale_bar)
+        # GridSetup(nrows, ncols, width, height, layout, margin, padding, scale_bar)
         canvas = grid.canvas
         axes = grid.axes
 
@@ -736,3 +743,8 @@ if __name__ == "__main__":
     import toytree
     mtree = toytree.mtree([toytree.rtree.unittree(10) for i in range(10)])
     print(mtree)
+    # c, a, m = mtree.draw(ts='c', shape=(2, 3))
+    # toytree.utils.show(c)
+    for tree in mtree:
+        print(repr(tree))
+    print(mtree.get_unique_topologies())
