@@ -16,7 +16,7 @@ References
 from __future__ import annotations
 from typing import (
     Sequence, Dict, List, Optional, Iterator, Any, Union, Tuple,
-    TypeVar,  # Callable,
+    TypeVar, Set,  # Callable,
 )
 import re
 from copy import deepcopy
@@ -75,6 +75,8 @@ class ToyTree:
         """: dict-like class for setting base drawing styles."""
         self._idx_dict: Dict[int, Node] = {}
         """: dict mapping Node idx labels to Node instance. (private)."""
+        self.edge_features: Set = set(("dist", "support"))
+        """: set of edge feature names."""
 
         # toytree subpackage library API (mod, pcm, distance, layout)"""
         self.mod = TreeModAPI(self)
@@ -142,12 +144,25 @@ class ToyTree:
 
     @property
     def features(self) -> Tuple[str]:
-        """Return a set of all Node data feature names.
+        """Return a tuple of all Node data feature names.
 
         The basic 'features' present on all Nodes include 'dist',
         'name', 'support', 'height', and 'idx'. These features will
         all be shown if you call `ToyTree.get_node_data()`. To add
-        additional features to all Nodes use `ToyTree.set_node_data`.
+        additional features to use `ToyTree.set_node_data`, or add as
+        attributes to Node objects.
+
+        Note
+        ----
+        This function finds node features dynamically by visiting every
+        Node in the tree. It is thus not performant for speed sensitive
+        code.
+
+        Note
+        ----
+        Tree.edge_features is a subset of items in features which
+        indicate that these features should be treated as edge data,
+        and thus re-polarized during a tree re-rooting.
 
         Examples
         --------
@@ -523,22 +538,30 @@ class ToyTree:
 
         Note
         ----
-        See also `Node.get_ancestors` which can fetch the ancestors of
+        See also `Node.get_ancestors` which will fetch the ancestors of
         an individual Node. By contrast, this function returns the set
-        of Nodes that are ancestors of any in a group of queried Nodes,
-        and has additional start,stop criteria.
+        of Nodes ancestral to a group of one or more queried Nodes,
+        and has additional start,stop criteria arguments. To get a
+        single Node's ancestors this method is slightly slower, but is
+        faster for finding shared ancestors.
 
         Examples
         --------
-        >>> ...
+        >>> Draw a tree and color ancestors of Nodes 1, 2, 3
+        >>> tree = toytree.rtree.unittree(ntips=8, seed=123)
+        >>> ancs = tree.get_ancestors(1,2,3)
+        >>> tree.set_node_data("path", {i: 1 for i in ancs}, inplace=True)
+        >>> tree.draw(ts='p', node_colors=("path", "Set2"));
         """
         # expand query into a set of Nodes
         query = set(self.get_nodes(*query))
 
-        # get union of the ancestors of each queried Node
-        ancestors = set.union(*[
-            set(i.get_ancestors(include_self=include_query)) for i in query
-        ])
+        # get union of the ancestors of each query Node, not including the Node
+        ancestors = set.union(*[set(i.get_ancestors()) for i in query])
+
+        # optionally include query nodes in ancestor set.
+        if include_query:
+            ancestors |= query
 
         # stopping criterion (global root or sample mrca)
         if stop_at_mrca:
