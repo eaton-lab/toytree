@@ -25,6 +25,7 @@ from toytree.pcm.src.discrete_markov_model_sim import MarkovModel
 
 ToyTree = TypeVar("ToyTree")
 
+
 @dataclass
 class FitMarkovModelResult:
     """Result object of a Markov model fit by Maximum Likelihood."""
@@ -36,6 +37,7 @@ class FitMarkovModelResult:
     log_likelihood: float = None
     fixed_rates: np.ndarray = None
     nparams: int = None
+
 
 @dataclass
 class FitMarkovModelBase:

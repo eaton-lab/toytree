@@ -303,8 +303,8 @@ def prune(
         then the root is only preserved if is it the mrca of the
         selected nodes, otherwise the mrca Node is returned.
     inplace: bool
-        If True then the original tree is changed in-place, and
-        returned, rather than leaving original tree unchanged.
+        If True then the original tree is changed in-place, and also
+        returned, else a copy is returned and original is unchanged.
     """
     # expand query into a set of Nodes
     nodes = set(tree.get_nodes(*query))
@@ -316,6 +316,8 @@ def prune(
         itertools.permutations(nodes, 2))
     )
     nodes.add(tree.treenode)
+
+    # TODO: this func could be simplified using tree.get_ancestors.
 
     # create a copy or operate in place
     if not inplace:
