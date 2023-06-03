@@ -55,6 +55,7 @@ def get_color_mapped_feature(
     cmap: Union[str, toyplot.color.Map] = None,
     domain_min: Optional[float] = None,
     domain_max: Optional[float] = None,
+    nan_value: Optional[float] = None,
     tips_only: bool = False,
 ) -> np.ndarray:
     """Return an array of colors mapped to feature data in a tree.
@@ -71,6 +72,9 @@ def get_color_mapped_feature(
         If None the domain will be automatically fit to the data min.
     domain_max: float or None
         If None the domain will be automatically fit to the data max.
+    nan_value: float or None
+        A value to substitute for any missing (NaN) values. If None
+        then NaN values will be mapped to 'transparent'.
     tips_only: bool
         If True then data is only projected and returned for tip Nodes.
     """
@@ -79,7 +83,7 @@ def get_color_mapped_feature(
     else:
         values = tree.get_node_data(feature).values
     values = tree.get_node_data(feature).values
-    return get_color_mapped_values(values, cmap, domain_min, domain_max)
+    return get_color_mapped_values(values, cmap, domain_min, domain_max, nan_value)
 
 
 def get_color_mapped_values(
@@ -87,6 +91,7 @@ def get_color_mapped_values(
     cmap: Union[str, toyplot.color.Map] = None,
     domain_min: Optional[float] = None,
     domain_max: Optional[float] = None,
+    nan_value: Optional[float] = None,
 ) -> np.ndarray:
     """Return feature mapped to a continuous or discrete color map.
 
@@ -103,6 +108,9 @@ def get_color_mapped_values(
         If None the domain will be automatically fit to the data min.
     domain_max: float or None
         If None the domain will be automatically fit to the data max.
+    nan_value: float or None
+        A value to substitute for any missing (NaN) values. If None
+        then NaN values will be mapped to 'transparent'.
 
     Examples
     --------
@@ -199,7 +207,11 @@ def get_color_mapped_values(
     for idx, value in enumerate(values):
         try:
             if np.isnan(value):
-                colors[idx] = ToyColor((0, 0, 0, 0))
+                if nan_value is None:
+                    colors[idx] = ToyColor((0, 0, 0, 0))
+                else:
+                    colors[idx] = cmap.color(nan_value)
+                logger.warning(f"NAN color: {colors[idx]}")
         # skip if type=str or other that cannot be checked for nan.
         except TypeError:
             pass
