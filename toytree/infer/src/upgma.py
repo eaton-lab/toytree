@@ -11,7 +11,7 @@ import toytree
 
 def infer_upgma_tree(data: pd.DataFrame) -> toytree.ToyTree:
     """Return a ToyTree inferred by UPGMA from a distance matrix.
-    
+
     Parameters
     ----------
     ...
@@ -68,7 +68,7 @@ def infer_upgma_tree(data: pd.DataFrame) -> toytree.ToyTree:
         nidxs = [i for i in range(arr.shape[0]) if i not in idxs]
 
         # # fill kept rows into the new_arr
-        new_arr[:new_dim - 1, :][:, :new_dim-1] = arr[nidxs, :][:, nidxs]
+        new_arr[:new_dim - 1, :][:, :new_dim - 1] = arr[nidxs, :][:, nidxs]
 
         # remove i,j from nodes, and get ntips of each.
         nti = nodes.pop(names[idxs[0]])._ntips
@@ -88,7 +88,6 @@ def infer_upgma_tree(data: pd.DataFrame) -> toytree.ToyTree:
 
     # return the top-level Node as a ToyTree
     return toytree.ToyTree(nodes[new_name])
-
 
 
 if __name__ == "__main__":
