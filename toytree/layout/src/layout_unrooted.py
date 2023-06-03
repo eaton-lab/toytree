@@ -24,6 +24,7 @@ class UnrootedLayout(BaseLayout):
             tree=self.tree,
             max_iter=50,
             use_edge_lengths=self.style.use_edge_lengths)
+        self.tcoords = self.coords[:self.tree.ntips, :].copy()
         self.angles = get_tip_labels_angles(self.tree, self.coords)
         self.style_overwrite()
 
@@ -182,10 +183,10 @@ def equal_daylight_algorithm(
                 light[gap] = np.rad2deg(this - last)
 
                 # debugging daylight for each gap
-                logger.debug(
-                    f"{fnode.idx} daylight: {gap}: size={light[gap]:.1f} "
-                    f"-- last={np.rad2deg(last):.1f}, this={np.rad2deg(this):.1f}"
-                )
+                # logger.debug(
+                #     f"{fnode.idx} daylight: {gap}: size={light[gap]:.1f} "
+                #     f"-- last={np.rad2deg(last):.1f}, this={np.rad2deg(this):.1f}"
+                # )
 
             # if subtree angles sum to more than a full circle it is
             # impossible to find a positive angle between subtrees and
@@ -213,30 +214,30 @@ def equal_daylight_algorithm(
                     degrees=-angle_to_rotate,
                 )
                 # debugging rotation applied to each Node
-                logger.debug(
-                    f"node {fnode.idx} rotating {len(nodes_to_rotate)} nodes by "
-                    f"{angle_to_rotate:.2f} deg to get optimal daylight {optimal:.1f} deg.")
+                # logger.debug(
+                #     f"node {fnode.idx} rotating {len(nodes_to_rotate)} nodes by "
+                #     f"{angle_to_rotate:.2f} deg to get optimal daylight {optimal:.1f} deg.")
 
             # record how much change has happened
             avg_delta = np.mean([abs(i) for i in rotated[1:]])
             sum_delta += avg_delta
 
         # iteration finished. Should we accept this change to coordinates?
-        logger.debug(
-            f"sum angles change={sum(sum_deltas):.1f}, "
-            f"angles_change_this_iter={sum_delta:.1f}")
+        # logger.debug(
+        #     f"sum angles change={sum(sum_deltas):.1f}, "
+        #     f"angles_change_this_iter={sum_delta:.1f}")
 
         # causes to not accept the proposed coordinate change.
         if full_circle is not None:
-            logger.debug(f"stopping at {niter} iters because subtree angles sum to > full circle @ node {full_circle}")
+            # logger.debug(f"stopping at {niter} iters because subtree angles sum to > full circle @ node {full_circle}")
             break
         if sum_delta > max_change:
-            logger.debug(f"stopping at {niter} iters because bad solution ({sum_delta} > {max_change}).")
+            # logger.debug(f"stopping at {niter} iters because bad solution ({sum_delta} > {max_change}).")
             break
         if sum_deltas:
             last = sum_deltas[-1]
             if sum_delta > (last + last * .1):
-                logger.debug(f"stopping at {niter} iters because encountered a worse solution.")
+                # logger.debug(f"stopping at {niter} iters because encountered a worse solution.")
                 break
 
         # accept the coordinates change
@@ -245,10 +246,10 @@ def equal_daylight_algorithm(
         coords = icoords
 
         if niter == max_iter:
-            logger.debug(f"stopping after {niter} iters because max_iter reached.")
+            # logger.debug(f"stopping after {niter} iters because max_iter reached.")
             break
         if sum_delta < min_delta:
-            logger.debug(f"stopping after {niter} iters because delta <= min_delta.")
+            # logger.debug(f"stopping after {niter} iters because delta <= min_delta.")
             break
 
     return coords
@@ -281,28 +282,34 @@ def equal_angle_algorithm(
     ntips = tree.ntips
     radians_per_tip = 2 * np.pi / ntips
 
+    # store {Node: value}
+    radian_sums = {}
+    sectors = {}
+
     # record the sum of sector area for each Node as its N
     # descendants * the radians per tip.
     for node in tree.traverse("postorder"):
         if node.is_leaf():
-            node.radian_sum = radians_per_tip
+            # node.radian_sum = radians_per_tip
+            radian_sums[node] = radians_per_tip
         else:
-            node.radian_sum = sum(i.radian_sum for i in node.children)
+            # node.radian_sum = sum(i.radian_sum for i in node.children)
+            radian_sums[node] = sum(radian_sums[i] for i in node.children)
 
     # assign radian sectors in levelorder.
     for node in tree.traverse("levelorder"):
         if node.is_root():
             coords[node.idx] = (0, 0)
-            node.sector = [0, 2 * np.pi]
+            sectors[node] = [0, 2 * np.pi]
         else:
             cohort = node.up.children
             idx = cohort.index(node)
             if not idx:
-                start = node.up.sector[0]
+                start = sectors[node.up][0]
             else:
-                start = cohort[idx - 1].sector[1]
-            node.sector = [start, start + node.radian_sum]
-            mid = sum(node.sector) / 2.
+                start = sectors[cohort[idx - 1]][1]
+            sectors[node] = [start, start + radian_sums[node]]
+            mid = sum(sectors[node]) / 2.
 
             # geometry relative to parent position and angle
             parent_pos = coords[node.up.idx]
