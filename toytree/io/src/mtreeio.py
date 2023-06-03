@@ -9,16 +9,16 @@ from pathlib import Path
 import pandas as pd
 from toytree.core.tree import ToyTree
 from toytree.core.multitree import MultiTree
-from toytree.io.src.parse import TreeIOParser
+from toytree.io.src.parse import parse_multitree, parse_tree
 from toytree.utils import ToytreeError
 
 
-def mtree(data: Union[str, Path, Collection[Union[ToyTree, str, Path]]], **kwargs) -> MultiTree:
+def mtree(data: Union[str, Path, Collection[ToyTree]], **kwargs) -> MultiTree:
     """General class constructor to parse and return a MultiTree.
 
-    Input arguments as a multi-newick string, filepath, Url, or 
+    Input arguments as a multi-newick string, filepath, Url, or
     Collection of Toytree objects.
-    
+
     Parameters
     ----------
     data: str, Path, or Collection
@@ -34,28 +34,28 @@ def mtree(data: Union[str, Path, Collection[Union[ToyTree, str, Path]]], **kwarg
     # parse the newick object into a list of Toytrees
     treelist = []
 
-    ##### Individual inputs #####
     # a single file path containing multline newicks or nexus.
     if isinstance(data, (Path, str)):
-        treelist = TreeIOParser(data, **kwargs).parse_multitree_auto()
-        return MultiTree(treelist)
+        return parse_multitree(data, **kwargs)
 
-    ##### Collections of inputs #####
+    # --- Collections of inputs --- #
     assert len(set(type(i) for i in data)) == 1, "input data cannot be multiple types."
 
+    # handle ipcoal sim series
     if isinstance(data, pd.Series):
         data = data.to_list()
 
+    # collection of ToyTrees
     if isinstance(data[0], ToyTree):
         data = [i.copy() for i in data]
         treelist = data
 
     elif isinstance(data[0], (str, Path)):
-        data = [TreeIOParser(i, **kwargs).parse_tree_auto() for i in data]
-        treelist = data
+        treelist = [parse_tree(i) for i in data]
 
     else:
-        raise ToytreeError("mtree input format unrecognized.")
+        raise ToytreeError("mtree input format not recognized.")
+
     mtre = MultiTree(treelist)
     assert len(mtre.treelist), "MultiTree is empty, parsing failed."
     return mtre
@@ -72,6 +72,8 @@ if __name__ == "__main__":
     PATHNEX3 = Path("~/Downloads/densitree.nex").expanduser()
     STRP3 = "~/Downloads/densitree.nex"
 
+    print(mtree(TEST3))
+
     # parse a newick file with many trees
     print(mtree(PATHNWK3))
 
@@ -81,19 +83,18 @@ if __name__ == "__main__":
     # parse a URL to a file with many trees
     print(mtree(URL3))
 
-    
     TEST3 = "https://eaton-lab.org/data/densitree.nex"
     TEST4 = """\
 #NEXUS
 begin trees;
-    translate;
-           1       apple,
-           2       blueberry,
-           3       cantaloupe,
-           4       durian,
-           ;
+    translate
+           1 apple,
+           2 blueberry,
+           3 cantaloupe,
+           4 durian,
+        ;
     tree tree0 = [&U] ((1,2),(3,4));
-    tree tree1 = [&U] ((1,2),(3,4));    
+    tree tree1 = [&U] ((1,2),(3,4));
 end;
 """
 
@@ -123,7 +124,7 @@ end;
     # # simulate sequence data
     # model = ipcoal.Model(tree=None, Ne=Ne, nsamples=nsamples, mut=mut)
     # model.sim_loci(nloci=nloci, nsites=20)
-    # model.seqs = np.concatenate(model.seqs, 1)    
+    # model.seqs = np.concatenate(model.seqs, 1)
 
     # # show some of the genealogies that were produced
     # c, a, m = model.draw_genealogies(height=200, shared_axes=True);
