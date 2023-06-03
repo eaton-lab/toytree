@@ -26,9 +26,7 @@ from toytree.style.src.validate_data import (
     validate_numeric,
     validate_labels,
 )
-from toytree.style.src.validate_node_labels import (
-    validate_node_labels,
-    validate_node_labels_style)
+from toytree.style.src.validate_node_labels import validate_node_labels_style
 from toytree.style.src.validate_nodes import (
     validate_node_style,
 )
