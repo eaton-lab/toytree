@@ -18,30 +18,41 @@ Supported formats
 - ((a:3,b:3)D:4,c:1)E;                 # w/ internal names
 - ((a:3,b:3)D:4[&prob=100],c:1);       # w/ comment metadata on edges
 - ((a:3,b:3)D[&prob=1]:4[&len=4],c:1); # w/ comments on edges and nodes!
+- (str)str[Any]:float[Any]             # most complex
 
 References
 ----------
 - https://gist.github.com/Ad115/34dfc6560b64779a40c1a929f560511b
 """
 
-from typing import Optional, List, Any, Sequence, Tuple, Callable, Dict
+from typing import (
+    Optional, List, Any, Sequence, Tuple, Callable, Dict, Iterator, Set)
+import re
 from functools import partial
 from loguru import logger
 import numpy as np
 from toytree.core.node import Node
 from toytree.core.tree import ToyTree
-from toytree.utils import NewickError
+from toytree.utils import ToytreeError
 
 
 logger = logger.bind(name="toytree")
-PAIRS = {'(': '()', '[': '[]'}
+PAIRS = {'(': '()', '[': '[]', '{': "{}"}
+COLON_OUTSIDE_SQUARE_BRACKETS = re.compile(r'(?<!\[):|:(?!\])')
+NHX_ERROR = """\
+Error parsing NHX (extended New Hampshire format) newick meta data.
+  NHX format = "...[{{prefix}}{{key}}{{assign}}{{value}}{{delim}}{{key}}{{assign}}{{value}}...]"
+  Your data snippet = "[{}]"
+  parse args               your values           common entries
+  -----------------------------------------------------------------
+  feature_prefix           {:<8}              "", "&", "&&NXH:"
+  feature_assignment       {:<8}              "=", ":"
+  feature_delim            {:<8}              ",", ":"
+Try modifying the parse args to match with your NHX meta data format.
+"""
 
 
-def _find_closing(
-    string: str,
-    start: int = 1,
-    pair: Sequence[str] = '()',
-) -> int:
+def _find_closing(string: str, start: int = 1, pair: Sequence[str] = '()') -> int:
     """Find index of next unmatched closing parenth from start position.
 
     Examples
@@ -81,167 +92,150 @@ def _find_closing(
     return _find_closing(string, skip + 1, pair)
 
 
-def _find_parts_of_subtree(newick: str, delim: str = ",") -> Tuple[str, str, str, str]:
-    """Extract information for a subtree Node from newick.
+def _iter_split_non_nested(node_str: str, delim: str = ",") -> Iterator[str]:
+    """Generator of substrings between delimiter in a string.
 
-    The newick must already be formatted so that any extra metadata
-    is stored only in square-brackets, not in curly brackets or other
-    unexpected character formats.
-
-    Parameters
-    ----------
-    newick: str
-        The input newick substring representing part of the tree.
-    delim: str
-        If comment blocks are embedded at both edges and nodes, this
-        will combine them into one block, and delimit them using the
-        selected character.
-
-    Example
-    -------
-    >>> nwk = "((a:1,b:2)0.99:3[a=3,b=(a-b)],(c:1,d:1)0.90:3)0.66:1;"
-    >>> children, *x = _find_parts_of_subtree(nwk)
-    >>> print(children, '->', x)
-    >>> # (a:1,b:2)0.99:3[a=3,b=(a-b)],(c:1,d:1)0.90:3 -> ['0.66', '1;', '']
+    The delimiter does not split string if it occurs within a nested
+    set: (), [], {}. This is used to parse node children, and also to
+    parse NHX meta data, while avoiding really poorly formatted meta
+    data (e.g., includes the delimiter) from messing things up.
     """
-    children = ""
+    final = len(node_str)
+    start = 0
+    end = 0
+    while 1:
 
-    # if Node has children split children off to get just this node
-    if newick.startswith("("):
-        children_end = _find_closing(newick)
-        children = newick[1: children_end]
-        remaining = newick[children_end + 1:]
-    else:
-        remaining = newick
+        # end and yield last chunk if at end of string
+        if end == final:
+            child = node_str[start:end]
+            if child:
+                yield child
+            break
 
-    # extract all comment data inside of square brackets
-    comment = ""
-    if "[" in remaining:
+        # select the next character
+        char = node_str[end]
 
-        # if only one comment bracket is present
-        bracket_count = remaining.count("[")
-        if bracket_count == 1:
-            remaining, comment = remaining.split("[", maxsplit=1)
-            comment = comment[:-1]
-
-            # extract label and length (dist) from before/after ':'
-            if ":" in remaining:
-                label, length = remaining.split(":", maxsplit=1)
-            else:
-                label, length = remaining, '1.0'
-
-        # if two comment brackets are present then ":" must be present.
-        # "Label[&comment1=3]:100[&comment2=3]"
-        # FIXME: but mb format is "Label[&comment1=3][&comment2=3]"
-        elif bracket_count == 2:
-            label_and, length_and = remaining.split(":", maxsplit=1)
-            label, comment1 = label_and.split("[", maxsplit=1)
-            comment1 = comment1[:-1]
-            length, comment2 = length_and.split("[", maxsplit=1)
-            comment2 = comment2[:-1]
-            comment = comment1 + delim + comment2
-        else:
-            raise NewickError("Comment bracket format not recognized.")
-
-    # no comments, just get label and length
-    else:
-        if ":" in remaining:
-            label, length = remaining.split(":", maxsplit=1)
-        else:
-            label, length = remaining, '1.0'
-
-    # return as a tuple
-    return children, label.strip(), length, comment
-
-
-def _find_next_node_end(nodes_str: str) -> int:
-    """Return index of the final position of the first node in newick.
-
-    Examples
-    --------
-    >>> node1 = '(A:1,(C[x],D))name:1.[c], (X,Y),,[xxx]'
-    >>> node2 = '(X,Y),,[xxx]'
-    >>> node3 = '[xxx'
-    >>> _find_next_node_end(node1)  # 23
-    >>> _find_next_node_end(node2)  # 5
-    >>> _find_next_node_end(node3)  # 4
-    """
-    # e.g., '(A:1,(C[x],D))name:1.[c], (X,Y),,[xxx]'
-    nodes_str = nodes_str.strip()
-
-    # get closing index, skipping children
-    current_end = 0
-    if nodes_str.startswith('('):
-        current_end = _find_closing(nodes_str)
-
-    # skip label, dist, and comments (!commas can be in comments!)
-    # find the next comma that is not surrounded by brackets or
-    # parentheses or the end of the string
-    while current_end < len(nodes_str):
-
-        # get character at current index
-        char = nodes_str[current_end]
-
-        # advance current_end to after next ")" or "]"
+        # if char is in "([{" then skip to next ")]}" respectively
         if char in PAIRS:
-            current_end = _find_closing(nodes_str, current_end + 1, PAIRS[char])
-            continue
+            pair = PAIRS[char]
+            end = _find_closing(node_str, end + 1, pair)
 
-        # found a comma, return its position
-        if char == ',':
-            return current_end - 1
+        # split on delimiter not inside of nest and yield previous chunk
+        elif char == delim:
+            child = node_str[start:end]
+            yield child
+            start = end = end + 1
+            # end += 1
 
-        # found nothing, advance
-        current_end += 1
-
-    # reached the end
-    return len(nodes_str) - 1
+        # advance if a data char
+        else:
+            end += 1
 
 
-def _split_subtree(nodes_str: str) -> List[str]:
-    """Separate a subtree from a newick string.
+def _walk_newick_subtrees(
+    newick: str,
+    aggregator: Callable[[str, Any, float, Any], Any] = None,
+    dist_formatter: Callable[[str], float] = None,
+    feat_formatter: Callable[[str], Any] = None
+) -> Tuple[Any, Set[str]]:
+    """Recursive func (private) for extracting nested newick subtrees.
 
-    Examples
-    --------
-    >>> nodes = '(a,b), , :12, c[xxx]'
-    >>> split_nodes(nodes)  # ['(a,b)', '', ':12', 'c[xxx]']
+    The return type depends on the aggregator function.
     """
-    nodes_str = nodes_str.strip()
+    # split first node from the newick string (inner)root[x]:dist[y];
+    # leaving 'inner' which contains this Node's children.
+    inner, label, dist, nmeta, emeta = _node_str_to_data(newick)
 
-    # if simple, return empties, or (subtree, rest), or recurse.
-    if nodes_str == '':
-        return []
-    if nodes_str == ',':
-        return ['', '']
-    if nodes_str.startswith(','):
-        rest = nodes_str[1:]
-        return [''] + _split_subtree(rest)
-    if nodes_str.endswith(','):
-        rest = nodes_str[:-1]
-        return _split_subtree(rest) + ['']
+    # iterator of substrings split on ',' to separate children.
+    # ""                  no children
+    # ","                 two children w/ no info
+    # ",,"                multiple children w/ no info
+    # "a,b"               children with names
+    # "a:3,b:4"           children w/ names and dist"
+    # "a[...]:100[...]"   child w/ '' and meta
+    # "(c,d),e"           subtree and child(ren) w or w/o stuff
+    subtrees = _iter_split_non_nested(inner, delim=",")
 
-    # or, find node ending and split to return (subtree, rest)
-    next_node_end = _find_next_node_end(nodes_str)
-    node = nodes_str[:next_node_end + 1]
-    rest = nodes_str[next_node_end + 1:].lstrip()
-    if rest.startswith(','):
-        rest = rest[1:]
-    return [node] + _split_subtree(rest)
+    # iterate over subtrees calling this function recursively on each
+    # and storing their data to their parent Node's child_data list.
+    edge_features = set()
+    child_data = []
+    for child in subtrees:
+        args = (aggregator, dist_formatter, feat_formatter)
+        child_obj, features = _walk_newick_subtrees(child, *args)
+        child_data.append(child_obj)
+        edge_features |= features
+
+    # str to float format the dist values
+    distance = 1. if dist is None else dist_formatter(dist)
+
+    # str to dict format the meta features
+    nmeta = {} if nmeta is None else feat_formatter(nmeta)
+    emeta = {} if emeta is None else feat_formatter(emeta)
+    edge_features |= set(emeta)
+
+    # aggegator func converts nested data to dict, Node, or other format.
+    return aggregator(label, child_data, distance, nmeta | emeta), edge_features
 
 
-# default distance_parser in `parse_newick_string_custom`
+def _node_str_to_data(newick: str) -> Tuple[str, str, str, str, str]:
+    """Return data from a Node string (inner, label, dist, nmeta, emeta)
+
+    """
+    # split this node from the rest of tree.
+    if newick.startswith("("):
+        eidx = _find_closing(newick)
+        outer = newick[eidx + 1:]
+        inner = newick[1: eidx]
+    else:
+        outer = newick
+        inner = ""
+
+    # extract info from Node and Edge if ":" occurs outside sq brackets
+    # label:          -> (label, None)
+    # label[anno]:    -> (label, anno)
+    # [anno]:         -> ('', anno)
+    parts = list(_iter_split_non_nested(outer, delim=":"))
+    if len(parts) > 1:
+        node, edge = parts
+        label, nmeta = _split_label_and_meta(node)
+        dist, emeta = _split_label_and_meta(edge)
+
+    # special for awful mrbayes format root edge anno w/o ':' delimiter
+    # [anno1][anno2]  -> ('', anno1)
+    elif "][" in outer:
+        node, edge = outer.split("][")
+        label, nmeta = _split_label_and_meta(node + "]")
+        dist, emeta = None, None
+
+    # label           -> (label, None)
+    # label[anno]     -> (label, anno)
+    # ''              -> ('', None)
+    # [anno]          -> ('', anno)
+    else:
+        label, nmeta = _split_label_and_meta(outer)
+        dist, emeta = None, None
+    return inner, label, dist, nmeta, emeta
+
+
+def _split_label_and_meta(substring: str) -> Tuple[str, str]:
+    """Return tuple with (label, meta) given an outer newick substring."""
+    for i, j in enumerate(substring):
+        if j in "[:":
+            return substring[:i], substring[i + 1: -1]
+    return substring, None
+
+
 def distance_parser(dist: str) -> Optional[float]:
-    """Default float distance parser and formatter.
-    """
-    return float(dist) if dist else 1.0
+    """Default float distance parser and formatter."""
+    return float(dist)
 
 
-# default feature_parser in `parse_newick_string_custom`
-def feature_parser(
-    feats: str,
-    prefix="",
-    delim=",",
-    assignment="=",
+def meta_parser(
+    features: str,
+    prefix: str = "",
+    delim: str = ",",
+    assignment: str = "=",
 ) -> Dict[str, str]:
     """Return a dict with auto-formatted features.
 
@@ -251,12 +245,6 @@ def feature_parser(
     example, if all can converted to floats or ints they will be.
 
     This will return {} if no features present.
-
-    Note
-    ----
-    problems arise when comma is delim and is also present inside the
-    values of some features, such as a set {1.0,1.3}. Requires the
-    data to be pre-cleaned to some extent...
 
     Parameters
     ----------
@@ -270,161 +258,45 @@ def feature_parser(
         A string assignment character located between keys and values
         in the feature string.
     """
-    # remove the prefix (e.g., &&NHX:)
-    feats = feats[len(prefix):]
+    # remove the prefix (e.g., &&NHX:) and check that prefix was not
+    # entered wrongly.
+    #   [x=3]
+    #   [&x=3]       amp can appear within metadata
+    #   [&&NHX:x=3]  colons can appear within metadata.
+    feats = features.lstrip(prefix)
+
+    # return empty dict if no meta data present
     if not feats:
         return {}
 
     # split on feature separator
-    items = feats.split(delim)
+    items = _iter_split_non_nested(feats, delim)
 
     # store map of feature names to values
-    features = {}
+    meta = {}
 
     # iterate over items splitting to key,val pairs on assignment splitter
-    for item in items:
-        try:
+    try:
+        for item in items:
             key, value = item.split(assignment)
-        except ValueError as inst:
-            msg = (
-                "Failed to parse newick format.\n"
-                "Try using `toytree.io.parse_newick` with different "
-                "options."
-            )
-            logger.error(msg)
-            raise NewickError(msg) from inst
-        features[key] = str(value)
-    return features
-
-
-# default aggregator in `parse_newick_string_custom`
-def node_aggregator(
-    label: str,
-    children: List[Node],
-    distance: float,
-    features: Dict[str, Any],
-) -> Node:
-    """Aggregator function to connect Nodes and add features.
-
-    Example of expected newick format: ((a:10,b:10)100:20, c:30);
-    This tree contains 5 nodes, a, b, c, and two unlabeled nodes,
-    the (a,b) ancestor, and the root. Their dists are 10, 10, 110,
-    30, and default (0). The (a,b) ancestor has a label of '100',
-    which could be interpreted as either a node str 'name', or as a
-    node int 'support' value. This is a problem.
-    """
-    node = Node(name=label)
-    node._dist = distance
-    for child in children:
-        node._add_child(child)
-    for key, value in features.items():
-        setattr(node, key, value)
-    return node
-
-
-def _dict_aggregator(label, children, distance, features):
-    """Not Used, only for testing."""
-    return dict(
-        label=label,
-        children=children,
-        features=(distance, features)
-    )
-
-
-def _parse_newick_subtree(
-    newick: str,
-    aggregator=None,  #: Callable[[str, List[Node], float, Any], Node] = None,  # This one works.
-    dist_formatter=None,  #: Callable[str, float] = None,
-    feat_formatter=None,  #: Callable[str, Any] = None  # FIXME: error on py3.8 'args must be a list.'
-) -> Node:
-    """Recursive func (private) for building Nodes from newick subtrees.
-
-    See parse_newick
-    """
-    # split first node from the newick string
-    children, label, dist, feats = _find_parts_of_subtree(newick.strip())
-
-    # call this func recursive on children to return children as Nodes
-    child_nodes = []
-    for subtree in _split_subtree(children):
-        child = _parse_newick_subtree(subtree, aggregator, dist_formatter, feat_formatter)
-        child_nodes.append(child)
-
-    # formatting of distances and features
-    distance = dist_formatter(dist)
-    features = feat_formatter(feats)
-
-    # convert this node data into a Node and return
-    return aggregator(label, child_nodes, distance, features)
-
-
-def _infer_internal_label_type(
-    tree: ToyTree,
-    internal_labels: Optional[str],
-) -> ToyTree:
-    """Return a ToyTree with Node 'name' and 'support' updated.
-
-    Check type of 'name' labels on internal Nodes. If all are numeric
-    then save them as 'support' values instead of 'name' values.
-    Changes are made to the Nodes in-place.
-    """
-    if internal_labels == "support":
-        for idx in range(tree.ntips, tree.nnodes):
-            node = tree[idx]
-            try:
-                node.support = float(node.name)
-            except ValueError:
-                node.support = np.nan
-            node.name = ""
-
-    # infer types, any errors cause internal labels to be str names.
-    # To save support values there must be a numeric label for every
-    # internal non-root Node.
-    elif internal_labels is None:
-        try:
-            # try to convert all internal node 'names' to floats (raises ValueError if str)
-            names = [i.name for i in tree[tree.ntips:-1]]
-            supports = [float(i.name) for i in tree[tree.ntips:-1]]
-
-            # try to convert floats to ints if no floating points
-            if all(i.is_integer() for i in supports):
-                supports = [int(i) for i in supports]
-
-            # store internal node values as 'support' and set 'name' to empty.
-            for idx, inode in enumerate(tree[tree.ntips:-1]):
-                inode.support = supports[idx]
-                inode.name = ""
-
-            # root Node is likely empty, but may have a name or even support
-            # value. If so, we will try to store it numeric first, then string.
-            tree.treenode.support = np.nan
-            if not tree.treenode.name:
-                tree.treenode.name = ""
-            else:
-                try:
-                    tree.treenode.support = float(tree.treenode.name)
-                    if tree.treenode.support.is_integer():
-                        tree.treenode.support = int(tree.treenode.support)
-                    tree.treenode.name = ""
-                except ValueError:
-                    pass
-
-        # internal Node labels are inferred to be string name labels or other.
-        except ValueError:
-            if any(names):
-                logger.info(
-                    "empty or non-numeric node labels detected and set "
-                    "as 'name' feature, not 'support'")
-    return tree
+            meta[key] = str(value)
+    except ValueError as exc:
+        msg = NHX_ERROR.format(
+            features,
+            *(f"\"{i}\"" for i in (prefix, assignment, delim))
+        )
+        logger.error(msg)
+        raise ToytreeError(msg) from exc
+    return meta
 
 
 def parse_newick_string_custom(
     newick: str,
-    dist_formatter=None,  #: Callable[str, float] = None, # FIXME
-    feat_formatter=None,  #: Callable[str, Dict[str,Any]] = None,
-    aggregator=None,  #: Callable[[str, List[Node], float, Any], Node] = None,
+    dist_formatter: Callable[[str], float] = None,
+    feat_formatter: Callable[str, Dict[str, Any]] = None,
+    aggregator: Callable[[str, List[Node], float, Any], Node] = None,
     internal_labels: Optional[str] = None,
-) -> ToyTree:
+) -> Tuple[ToyTree, List[str]]:
     """Return a ToyTree from a newick string.
 
     Recursive function to build connected Nodes from nested data in
@@ -440,7 +312,7 @@ def parse_newick_string_custom(
 
     See Also
     --------
-    `toytree.tree`, `totyree.io`
+    `toytree.tree`, `toytree.io`
 
     Parameters
     ----------
@@ -476,25 +348,130 @@ def parse_newick_string_custom(
 
     # select formatting functions
     if feat_formatter is None:
-        feat_formatter = feature_parser
+        feat_formatter = meta_parser
     if dist_formatter is None:
         dist_formatter = distance_parser
     if aggregator is None:
         aggregator = node_aggregator
 
     # build the connected Nodes from newick w/ features saved.
-    treenode = _parse_newick_subtree(newick, aggregator, dist_formatter, feat_formatter)
+    args = (newick, aggregator, dist_formatter, feat_formatter)
+    treenode, edge_features = _walk_newick_subtrees(*args)
 
-    # set default treenode (root) dist to 0.
+    # set default root dist to 0 (Note: other Node's w/o dist default=1.)
     treenode._dist = 0.
 
     # convert connected Nodes to a ToyTree
     tree = ToyTree(treenode)
 
-    # check whether labels on internal nodes are names or supports
+    # set edge features to ensure proper polarization if re-rooted
+    tree.edge_features |= edge_features
+
+    # infer whether labels on internal nodes are names or supports
     tree = _infer_internal_label_type(tree, internal_labels)
 
     # return the final tree
+    return tree
+
+
+# default aggregator in `parse_newick_string_custom`
+def node_aggregator(
+    label: str,
+    children: List[Node],
+    distance: float,
+    features: Dict[str, Any],
+) -> Node:
+    """Aggregator function to connect Nodes and add features.
+
+    Example of expected newick format: ((a:10,b:10)100:20, c:30);
+    This tree contains 5 nodes, a, b, c, and two unlabeled nodes,
+    the (a,b) ancestor, and the root. Their dists are 10, 10, 110,
+    30, and default (0). The (a,b) ancestor has a label of '100',
+    which could be interpreted as either a node str 'name', or as a
+    node int 'support' value. This is a problem.
+    """
+    node = Node(name=label)
+    node._dist = distance
+    for child in children:
+        node._add_child(child)
+
+    # if any metadata annotations (e.g., [&x=3]) store as features
+    for key, value in features.items():
+        setattr(node, key, value)
+    return node
+
+
+def _dict_aggregator(label, children, distance, features):
+    """Not Used, only for testing."""
+    return dict(
+        label=label,
+        children=children,
+        features=(distance, features)
+    )
+
+
+def _infer_internal_label_type(tree: ToyTree, internal_labels: Optional[str]) -> ToyTree:
+    """Return a ToyTree with Node 'name' and 'support' updated.
+
+    Check type of 'name' labels on internal Nodes. If all are numeric
+    then save them as 'support' values instead of 'name' values.
+    Changes are made to the Nodes in-place.
+    """
+    # if support set as numeric type
+    if internal_labels == "support":
+        for idx in range(tree.ntips, tree.nnodes):
+            node = tree[idx]
+            try:
+                node.support = float(node.name)
+            except ValueError:
+                node.support = np.nan
+            node.name = ""
+
+    # if user entered a diff name then use that
+    elif isinstance(internal_labels, str):
+        for idx in range(tree.ntips, tree.nnodes):
+            node = tree[idx]
+            setattr(node, internal_labels, node.name)
+            node.name = ""
+
+    # infer types, any errors cause internal labels to be str names.
+    # To save support values there must be a numeric label for every
+    # internal non-root Node.
+    else:  # elif internal_labels is None:
+        try:
+            # try to convert all internal node 'names' to floats (raises ValueError if str)
+            names = [i.name for i in tree[tree.ntips:-1]]
+            supports = [float(i.name) for i in tree[tree.ntips:-1]]
+
+            # try to convert floats to ints if no floating points
+            if all(i.is_integer() for i in supports):
+                supports = [int(i) for i in supports]
+
+            # store internal node values as 'support' and set 'name' to empty.
+            for idx, inode in enumerate(tree[tree.ntips:-1]):
+                inode.support = supports[idx]
+                inode.name = ""
+
+            # root Node is likely empty, but may have a name or even support
+            # value. If so, we will try to store it numeric first, then string.
+            tree.treenode.support = np.nan
+            if not tree.treenode.name:
+                tree.treenode.name = ""
+            else:
+                try:
+                    tree.treenode.support = float(tree.treenode.name)
+                    if tree.treenode.support.is_integer():
+                        tree.treenode.support = int(tree.treenode.support)
+                    tree.treenode.name = ""
+                except ValueError:
+                    pass
+
+        # internal Node labels are inferred to be string name labels or other.
+        except ValueError:
+            if any(names):
+                logger.info(
+                    "empty or non-numeric node labels detected and set "
+                    "as 'name' feature, not 'support'")
     return tree
 
 
@@ -552,12 +529,15 @@ def parse_newick_string(
     >>> tree2 = parse_newick_string(nwk2)
     >>> print(tree2.get_node_data())
     """
+    # set default args to the feature parser (NHX)
     feat_formatter = partial(
-        feature_parser,
+        meta_parser,
         prefix=feature_prefix,
         delim=feature_delim,
         assignment=feature_assignment,
     )
+
+    # parse tree using custom func with custom subfuncs
     tree = parse_newick_string_custom(
         newick=newick,
         feat_formatter=feat_formatter,
@@ -568,26 +548,36 @@ def parse_newick_string(
     return tree
 
 
-if __name__ == "__main__":
-
-    # JSON example
-    # import json
-    # NWK = "((a,b)Name[x=3]:30[length=3],c);"
-    # TREE = _parse_newick_subtree(
-    #     NWK,
-    #     aggregator=_dict_aggregator,
-    #     dist_formatter=distance_parser,
-    #     feat_formatter=feature_parser,
-    # )
-    # print(json.dumps(TREE, indent=2))
-
-    # COMPLEX newick with two comment brackets
-    NWK = "((a,b)Name[x=3]:30[length=3],c);"
-
-    # TOYTREE custom example
+def test1():
+    NWK = "((a,b)Name[&&&x=3,z=0]:30[&&&length=3,y=4],c);"
+    print(NWK)
     TREE = parse_newick_string_custom(NWK)
     print(TREE.get_node_data())
 
-    # TOYTREE simple example
-    TREE = parse_newick_string(NWK, feature_prefix="")
+
+def test2():
+    NWK = "((a,b)Name[&&&x=3,z=0]:30[&&&length=3,y=4],c);"
+    print(NWK)
+    TREE = parse_newick_string(NWK, feature_prefix="&&&")
     print(TREE.get_node_data())
+
+
+def test3():
+    import toytree
+    NWK = """
+(((ADH2:0.1[&&NHX:S=human:E=1.1.1.1],
+ADH1:0.11[&&NHX:S=human:E=1.1.1.1]):0.05[&&NHX:S=Primates:E=1.1.1.1:D=Y:B=100],
+ADHY:0.1[&&NHX:S=nematode:E=1.1.1.1],
+ADHX:0.12[&&NHX:S=insect:E=1.1.1.1]):0.1[&&NHX:S=Metazoa:E=1.1.1.1:D=N],
+(ADH4:0.09[&&NHX:S=yeast:E=1.1.1.1],ADH3:0.13[&&NHX:S=yeast:E=1.1.1.1],
+ADH2:0.12[&&NHX:S=yeast:E=1.1.1.1],
+ADH1:0.11[&&NHX:S=yeast:E=1.1.1.1]):0.1[&&NHX:S=Fungi])[&&NHX:E=1.1.1.1:D=N];
+"""
+    # print(NWK)
+    t = toytree.tree(NWK, feature_delim=",", feature_prefix="&&NHX:", feature_assignment="=")
+    print(t.get_node_data())
+
+
+if __name__ == "__main__":
+
+    test3()

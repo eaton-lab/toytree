@@ -16,7 +16,7 @@ def simulate_continuous_multivariate_brownian(
     tree: ToyTree,
     rates: Union[float, Sequence[float], Dict[str, float]],
     root_states: Union[float, Sequence[float], Dict[str, float], None] = None,
-    seed: Optional[int] = None,
+    seed: Union[int, np.random.Generator, None] = None,
     df: bool = False,
 ) -> Union[ToyTree, pd.DataFrame]:
     """Simulate two or more continuous correlated traits under Brownian motion.
@@ -29,13 +29,13 @@ def simulate_continuous_multivariate_brownian(
 
 
 @add_subpackage_method(PhyloCompAPI)
-def simulate_continous_brownian(
+def simulate_continuous_brownian(
     tree: ToyTree,
     rates: Union[float, Sequence[float]],
     root_states: Union[float, Sequence[float], None] = None,
     tips_only: bool = False,
     inplace: bool = False,
-    seed: Optional[int] = None,
+    seed: Union[int, np.random.Generator, None] = None,
 ) -> Union[pd.DataFrame, None]:
     """Simulate one or more continuous traits under Brownian motion.
 
@@ -73,7 +73,7 @@ def simulate_continous_brownian(
         If False simulated data are returned as a pandas DataFrame; if
         True simulated data are assigned to Nodes on the input tree,
         and can be fetched using `tree.get_node_data()`.
-    seed: int or None
+    seed: int, numpy RNG, or None
         Seed for numpy random number generator.
 
     References
@@ -142,7 +142,7 @@ if __name__ == "__main__":
 
     import toytree
     tree = toytree.rtree.unittree(10, treeheight=1)
-    data = simulate_continous_brownian(
+    data = simulate_continuous_brownian(
         tree,
         rates=[1., 2.],
         root_states=[10, 20],
@@ -151,7 +151,7 @@ if __name__ == "__main__":
     )
     print(data)
 
-    data = simulate_continous_brownian(
+    data = simulate_continuous_brownian(
         tree,
         rates=1.,
         seed=123,
