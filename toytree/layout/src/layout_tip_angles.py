@@ -50,9 +50,8 @@ def get_tip_labels_angles(tree: ToyTree, coords: np.ndarray) -> np.ndarray:
                 theta += np.pi
             angles[node.idx] = np.rad2deg(theta)
             # logger.info(f"arctan2 {node.name}, {np.arctan2(dy, dx)}")
-            logger.info(
-                f"{node.name}, {dx:.2f}, {dy:.2f}, {theta:.2f}, {angles[node.idx]:.2f}"
-            )
+            # logger.info(
+            #     f"{node.name}, {dx:.2f}, {dy:.2f}, {theta:.2f}, {angles[node.idx]:.2f}")
     return angles
 
 
