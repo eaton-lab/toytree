@@ -109,15 +109,16 @@ class Rooter:
         self.edge_features: Set[str] = self._get_edge_features(edge_features)
         """: Features that should be re-polarized on rooting (e.g., support)"""
 
-    @staticmethod
-    def _get_edge_features(edge_features: Optional[Union[str, Sequence[str]]]) -> Set[str]:
+    def _get_edge_features(self, edge_features: Optional[Union[str, Sequence[str]]]) -> Set[str]:
         """Return the features associated with edges instead of nodes."""
         default = {"_dist", "support"}
         disallowed = {"dist", "idx", "up", "children"}
+
+        # use only defaults
         if edge_features is None:
-            return default - disallowed
+            edge_features = self.tree.edge_features
         if isinstance(edge_features, str):
-            return (default | {edge_features}) - disallowed
+            edge_features = self.tree.edge_features | {edge_features}
         return (default | set(edge_features)) - disallowed
 
     def _get_edge_to_split(self) -> Node:
@@ -427,9 +428,14 @@ if __name__ == "__main__":
     import toytree
     toytree.set_log_level("WARNING")
     TREE = toytree.rtree.imbtree(ntips=10)
+    print(TREE)
 
-    TREE.unroot().root(*TREE.treenode.children[0].get_leaf_names())
-    TREE.unroot().root("r8", "r9", "r0")
+    # root on
+    TREE.unroot().root('r0', 'r1', 'r2')
+
+    # raise error b/c not monophyletic
+    # TREE.unroot().root("r8", "r9", "r0")
+
     # c, a, m = unroot(TREE).draw()
     # _, a, m = root(TREE, 'r2')._draw_browser()
 
