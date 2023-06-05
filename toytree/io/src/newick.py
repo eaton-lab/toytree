@@ -275,11 +275,15 @@ def meta_parser(
     # store map of feature names to values
     meta = {}
 
-    # iterate over items splitting to key,val pairs on assignment splitter
+    # iterate over items splitting to key,val pairs on assignment
+    # splitter and attempting to convert to float.
     try:
         for item in items:
             key, value = item.split(assignment)
-            meta[key] = str(value)
+            try:
+                meta[key] = float(value)
+            except ValueError:
+                meta[key] = str(value)
     except ValueError as exc:
         msg = NHX_ERROR.format(
             features,
