@@ -4,7 +4,7 @@
 
 Speed
 -----
-Reducing to only unique topologies costs as much time as just 
+Reducing to only unique topologies costs as much time as just
 visiting and computing on them, and would not allow getting dist
 values. So this visits all trees.
 
@@ -14,7 +14,7 @@ Support getting mean, etc, of any feature on trees. This is a bit
 of work, needs to check all for int,float type. Not done.
 """
 
-from typing import TypeVar, Dict, Optional, Tuple
+from typing import TypeVar, Dict, Optional, Tuple, Iterator
 from loguru import logger
 import numpy as np
 from toytree.core.node import Node
@@ -27,12 +27,12 @@ MultiTree = TypeVar("MultiTree")
 
 class ConsensusTree:
     """An extended majority rule consensus class.
-    
-    Takes a set of input trees and returns a consensus tree. 
+
+    Takes a set of input trees and returns a consensus tree.
 
     Features on the consensus tree. Support values on the consensus
-    tree represent the proportion of edges that existed in the set 
-    of trees. 
+    tree represent the proportion of edges that existed in the set
+    of trees.
 
     Dist values represent the average 'dist' among edges
     that existed in the set of trees, but are only computed if best
@@ -50,7 +50,7 @@ class ConsensusTree:
         self.best_tree = best_tree
         self.majority_rule_min = majority_rule_min
 
-    def _iter_unique_trees(self):
+    def _iter_unique_trees(self) -> Iterator[Tuple[ToyTree, int]]:
         """Yield unique topologies and their counts from mtree."""
         for tree, count in self.mtree.get_unique_topologies():
             yield tree, count
@@ -61,15 +61,15 @@ class ConsensusTree:
             return self._map_clades_support_onto_best_tree()
         return self._get_majority_rule_consensus_tree()
 
-    def _map_clades_support_onto_best_tree(self):
+    def _map_clades_support_onto_best_tree(self) -> ToyTree:
         """Return the best tree with clade supports from trees.
 
         This relies on the sorted order of `get_bipartitions`. Finds
         'support' feature for all Nodes in 'best'. Any other requested
-        features of the input trees will also be 
+        features of the input trees will also be
         """
         # copy best tree and set default to 0
-        self.best_tree = self.best_tree.set_node_data("support", default=0) 
+        self.best_tree = self.best_tree.set_node_data("support", default=0)
 
         # returns ubipartitions (root has no effect)
         best_tree_parts = list(self.best_tree.iter_bipartitions("name", True, False))
@@ -105,18 +105,18 @@ class ConsensusTree:
         self.best_tree.treenode.support = 1.0
         return self.best_tree
 
-    def _get_majority_rule_consensus_tree(self):
+    def _get_majority_rule_consensus_tree(self) -> ToyTree:
         """Return the majrule consensus tree.
 
         Calculates clade 'support', 'dist', and 'features'.
-        This relies on the sorted order of `get_bipartitions`. 
+        This relies on the sorted order of `get_bipartitions`.
         """
         clade_freqs = self._get_all_clade_freqs()
         fclade_freqs = self._get_all_filtered_clades(clade_freqs)
         root = self._build_all_tree(fclade_freqs)
         return ToyTree(root)
 
-    def _build_all_tree(self, fclade_freqs: Dict[Tuple, int]):
+    def _build_all_tree(self, fclade_freqs: Dict[Tuple, int]) -> Node:
         """Build majority-rule consensus tree from clades"""
 
         # root node
@@ -146,7 +146,7 @@ class ConsensusTree:
             setattr(node, "dist_min", dmin.round(10))
             setattr(node, "dist_max", dists.max().round(10))
             setattr(node, "dist_median", np.median(dists).round(10))
-            setattr(node, "dist_std", dists.std().round(10))            
+            setattr(node, "dist_std", dists.std().round(10))
 
             # visit existing nodes from SMALLEST to LARGEST
             # children iteratively if node is not an descendant.
@@ -160,10 +160,10 @@ class ConsensusTree:
             sets_to_nodes[cset] = node
         return root
 
-    def _get_all_filtered_clades(self, clade_freqs: Dict[Tuple, int]):
+    def _get_all_filtered_clades(self, clade_freqs: Dict[Tuple, int]) -> Dict:
         """Remove conflicting clades and those < majority_rule_min"""
         # keep track of kept clades in order they are kept.
-        keep_dict = {} # {frozenset : float}
+        keep_dict = {}  # {frozenset : float}
 
         # visit clades in sorted order and drop conflicts or low support
         for clade, (freq, dist) in clade_freqs.items():
@@ -205,9 +205,9 @@ class ConsensusTree:
         is frequency of occurrence across treelist.
 
         Additional features are stored in a list in order following
-        'support' and 'dist'. Clades are represented by the smaller 
+        'support' and 'dist'. Clades are represented by the smaller
         of side of a bipartition (or lowest name str if same size).
-        
+
         The returned dict is sorted by high->low support values.
         {clade2: [support, dist, ...], clade2: [support, ...], ...}
         """
@@ -234,7 +234,7 @@ class ConsensusTree:
 
         # return in sorted order and w/ counts as proportions
         sort_clades = sorted(
-            clades, 
+            clades,
             key=lambda x: clades[x][0], reverse=True
         )
         return {i: clades[i] for i in sort_clades}
