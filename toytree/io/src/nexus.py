@@ -58,29 +58,36 @@ def extract_translate_info(trees_block: str) -> Mapping[int, str]:
         for line in lines:
             # Split each line on whitespace into {label: value}
             label, value = line.strip().split(None, 1)
-            translate_info[label] = value
+            translate_info[label] = value.strip(",")
     return translate_info
 
 
 def iter_trees(trees_block: str) -> Iterator[Tuple[str, str]]:
     """Generator to yield (name, newick) from trees block.
+
+    Various formats seem to exist for "tree ... = {data}" such as:
+    # tree * NAME = [&R] newick;
+    # TREE NAME = [&R] newick;
+    # TREE = [&R] newick;
+    # TREE = newick;
     """
-    # Define the regex pattern to match each tree
-    # Match tree name and tree topology
-    pattern = r'tree\s+(\w+)\s*=\s*([^;]+);'
+    # iter lines in the tree block that follow a line starting with the
+    # word tree (case insensitive) until a semicolon is found, to end.
+    iter_lines = iter(trees_block.split("\n"))
+    for line in iter_lines:
+        if re.match(r"\s*TREE\s", line, flags=re.IGNORECASE):
+            tree = [line.strip()]
+            while not line.strip().endswith(";"):
+                line = next(iter_lines)
+                tree.append(line.strip())
 
-    # Find all trees using regex
-    tree_matches = re.findall(pattern, trees_block, re.IGNORECASE)
-
-    # yield ('name', )
-    for tree_match in tree_matches:
-        tree_name = tree_match[0]
-        tree_topology = tree_match[1]
-
-        # skip optional rooting symbol e.g., [&R]
-        start = tree_topology.find("(")
-        tree_topology = WHITE_SPACE.sub("", tree_topology[start:])
-        yield tree_name, tree_topology + ";"
+            # return (name, newick), ignore optional * and [&R]
+            tree = "".join(tree)
+            name_parts, data_parts = tree.split("=", 1)
+            start = data_parts.find("(")
+            data = data_parts[start:]
+            name = name_parts.strip().split()[-1]
+            yield name, data
 
 
 def get_newicks_and_translation_from_nexus(data: str) -> Tuple[List[str], Dict[int, str]]:
@@ -93,8 +100,8 @@ def get_newicks_and_translation_from_nexus(data: str) -> Tuple[List[str], Dict[i
     trees_block = extract_trees_block(data)
     trans_dict = extract_translate_info(trees_block)
     newicks = []
-    for _, tree in iter_trees(trees_block):
-        newicks.append(tree)
+    for name, newick in iter_trees(trees_block):
+        newicks.append(newick)
     return newicks, trans_dict
 
 
@@ -178,6 +185,68 @@ end;
     # the TreeParser class would split the string into lines
     # print(get_newicks_and_translation_from_nexus(NEX))
 
-    newicks, tdict = get_newicks_and_translation_from_nexus(NEX)
-    print(newicks[0][:100], '...', newicks[0][-100:])
-    print(tdict)
+    # newicks, tdict = get_newicks_and_translation_from_nexus(NEX)
+    # print(newicks[0][:100], '...', newicks[0][-100:])
+    # print(tdict)
+
+    NEX = """\
+#NEXUS
+[R-package treeio, Thu Oct 14 11:24:19 2021]
+
+BEGIN TAXA;
+    DIMENSIONS NTAX = 16;
+    TAXLABELS
+        Prayidae_D27SS7@2825365
+        Kephyes_ovata@2606431
+        Chuniphyes_multidentata@1277217
+        Apolemia_sp_@1353964
+        Bargmannia_amoena@263997
+        Bargmannia_elongata@946788
+        Physonect_sp_@2066767
+        Stephalia_dilata@2960089
+        Frillagalma_vityazi@1155031
+        Resomia_ornicephala@3111757
+        Lychnagalma_utricularia@2253871
+        Nanomia_bijuga@717864
+        Cordagalma_sp_@1525873
+        Rhizophysa_filiformis@3073669
+        Hydra_magnipapillata@52244
+        Ectopleura_larynx@3556167
+    ;
+END;
+BEGIN TREES;
+    TRANSLATE
+        1   Prayidae_D27SS7@2825365,
+        2   Kephyes_ovata@2606431,
+        3   Chuniphyes_multidentata@1277217,
+        4   Apolemia_sp_@1353964,
+        5   Bargmannia_amoena@263997,
+        6   Bargmannia_elongata@946788,
+        7   Physonect_sp_@2066767,
+        8   Stephalia_dilata@2960089,
+        9   Frillagalma_vityazi@1155031,
+        10  Resomia_ornicephala@3111757,
+        11  Lychnagalma_utricularia@2253871,
+        12  Nanomia_bijuga@717864,
+        13  Cordagalma_sp_@1525873,
+        14  Rhizophysa_filiformis@3073669,
+        15  Hydra_magnipapillata@52244,
+        16  Ectopleura_larynx@3556167
+    ;
+    TREE * UNTITLED = [&R] (((1[&Ev=S,ND=0,S=58]:0.0682841,(2[&Ev=S,ND=1,
+S=69]:0.0193941,3[&Ev=S,ND=2,S=70]:0.0121378)[&Ev=S,ND=3,S=60]:0.0217782)
+[&Ev=S,ND=4,S=36]:0.0607598,((4[&Ev=S,ND=9,S=31]:0.11832,(((5[&Ev=S,ND=10,
+S=37]:0.0144549,6[&Ev=S,ND=11,S=38]:0.0149723)[&Ev=S,ND=12,S=33]:0.0925388,
+7[&Ev=S,ND=13,S=61]:0.077429)[&Ev=S,ND=14,S=24]:0.0274637,(8[&Ev=S,ND=15,
+S=52]:0.0761163,((9[&Ev=S,ND=16,S=53]:0.0906068,10[&Ev=S,ND=17,S=54]:1e-06)
+[&Ev=S,ND=18,S=45]:1e-06,((11[&Ev=S,ND=19,S=65]:0.120851,12[&Ev=S,ND=20,
+S=71]:0.133939)[&Ev=S,ND=21,S=56]:1e-06,13[&Ev=S,ND=22,S=64]:0.0693814)
+[&Ev=S,ND=23,S=46]:1e-06)[&Ev=S,ND=24,S=40]:0.0333823)[&Ev=S,ND=25,S=35]:
+1e-06)[&Ev=D,ND=26,S=24]:0.0431861)[&Ev=S,ND=27,S=19]:1e-06,14[&Ev=S,ND=28,
+S=26]:0.22283)[&Ev=S,ND=29,S=17]:0.0292362)[&Ev=D,ND=8,S=17]:0.185603,
+(15[&Ev=S,ND=5,S=16]:0.0621782,16[&Ev=S,ND=6,S=15]:0.332505)[&Ev=S,ND=7,
+S=12]:0.185603)[&Ev=S,ND=30,S=9];
+END;
+"""
+
+    print(get_newicks_and_translation_from_nexus(NEX))

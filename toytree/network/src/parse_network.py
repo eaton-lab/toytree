@@ -42,7 +42,7 @@ from pathlib import Path
 import re
 from loguru import logger
 import toytree
-from toytree.io.src.parse import WHITE_SPACE
+from toytree.io.src.parse import replace_whitespace  # WHITE_SPACE
 
 logger = logger.bind(name="toytree")
 
@@ -79,7 +79,7 @@ class NetworkToMajorTree:
             if ";" in net:
                 net = net.split(";")[0] + ';'
         # strip whitespace
-        net = WHITE_SPACE.sub("", net)
+        net = replace_whitespace(net)  # WHITE_SPACE.sub("", net)
         self.net = net
 
     def _set_tree_with_admix_as_node_labels(self) -> toytree.ToyTree:
