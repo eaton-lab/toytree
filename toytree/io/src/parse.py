@@ -119,7 +119,8 @@ def parse_tree(data: Union[str, Url, Path], **kwargs) -> ToyTree:
     if len(nwks) > 1:
         logger.warning(
             f"Data contains ({len(nwks)}) trees.\n"
-            "Loading first using `toytree.tree`. Use `toytree.mtree` to instead load a MultiTree.")
+            "Loading first using `toytree.tree`. Use `toytree.mtree` "
+            "to instead load a MultiTree.")
     return translate_node_names(tree, tdict)
 
 
