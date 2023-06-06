@@ -23,7 +23,6 @@ from toytree.core.apis import TreeEnumAPI, add_subpackage_method, add_toytree_me
 
 __all__ = [
     "iter_edges",
-    "get_edges",
 ]
 
 
@@ -58,7 +57,6 @@ def iter_edges(self, feature: Optional[str] = None) -> Iterator[Tuple[Node, Node
 
 
 @add_toytree_method(ToyTree)
-@add_subpackage_method(TreeEnumAPI)
 def get_edges(self, feature: Optional[str] = None, df: bool = False) -> Union[np.ndarray, pd.DataFrame]:
     """Return matrix of (child, parent) edges.
 
