@@ -129,7 +129,7 @@ def _iter_quartet_sets(
 
     # generate full collection of quartets from bipartitions
     else:
-        observed = []
+        observed = set()
         for below, above in tree.iter_bipartitions(**kwargs):
             # generator to sample 2 from either side of each bipart
             pairgen = itertools.product(
@@ -137,11 +137,10 @@ def _iter_quartet_sets(
                 itertools.combinations(above, 2),
             )
             for (i, j), (x, y) in pairgen:
-                qrt = set((i, j, x, y))
+                qrt = frozenset((i, j, x, y))
                 if qrt not in observed:
                     yield i, j, x, y
-                else:
-                    observed.append(qrt)
+                    observed.add(qrt)
 
 
 @add_toytree_method(ToyTree)
