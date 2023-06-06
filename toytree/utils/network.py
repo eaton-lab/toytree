@@ -12,16 +12,16 @@ Extended newick network format
 ------------------------------
 Basic network, e.g., used by dendroscope.
 >>> ((r3,(r2,(r1, #HX)),(r0)#HX);
-This indicates an admix edges from r1 -> r0. The #HX node is the 
+This indicates an admix edges from r1 -> r0. The #HX node is the
 source, and the #HX node label is the destination. This example shows
-only the edge, but not its proportions, or edge lengths indicating 
+only the edge, but not its proportions, or edge lengths indicating
 where the admix edge starts or stops at each end.
 
 With admixture magnitudes (termed gamma values under some models).
 >>> ((r3,(r2, (r1, #HX:::0.1)),(r0)#HX);
 
 With admixture magnitudes and edge lengths.
->>> 
+>>>
 
 This is what it looks like when more than one admix from a node:
 >>> ((A,#H1),B)
@@ -51,13 +51,13 @@ class Network:
     """Child class of ToyTree that stores and draws network edges.
 
     A network object can be used to draw networks, to calculate or
-    report statistics on a network, and to extract minor or major 
-    trees from a network (as ToyTree objects). 
+    report statistics on a network, and to extract minor or major
+    trees from a network (as ToyTree objects).
 
     Algorithm to traverse nodes of a network in order... could still
     use the same traversals that trace the major or minor tree to visit
     each node, but another traversal may be available that would also
-    visit nodes connected by an admix edge sooner... 
+    visit nodes connected by an admix edge sooner...
     """
     def __init__(self, network: Union[str, Path]):
         self.network = network
@@ -65,7 +65,7 @@ class Network:
         # super().__init__(tree, *args, **kwargs)
         # self.admix = admix
 
-    # def ... , disconnect: bool = True, **kwargs):    
+    # def ... , disconnect: bool = True, **kwargs):
 
     def add_edge(self) -> toytree.ToyTree:
         """Return modified Network with a new degree-3 edge added."""
@@ -88,7 +88,7 @@ class Network:
 
 class NetworkToMajorTree:
     """Class with functions to parse (ToyTree, admix_edges) from net.
-    
+
     ...
     """
     def __init__(self, net: Union[str, Path], disconnect=True):
@@ -119,15 +119,15 @@ class NetworkToMajorTree:
 
     def _set_tree_with_admix_as_node_labels(self) -> toytree.ToyTree:
         """Return a ToyTree parsed from network newick with gamma nodes.
-        
+
         Admix nodes are indicated by #[name]:[dist]::[gamma] where dist
         will be absent for tip nodes but present for internal nodes. We
         modify this to be #[name-with-gamma]:dist so we can still use
-        the same tree parser and then modify the tree afterwards to 
+        the same tree parser and then modify the tree afterwards to
         extract the major tree and minor admix edges.
         """
         string = self.net
-        # tip nodes replace L:::G -> L-G 
+        # tip nodes replace L:::G -> L-G
         re0 = re.compile(r"(#\w+):::([\d.]+)")
         # internal nodes replace L:D::G -> L-G:D
         re1 = re.compile(r"(#\w+):([\d.]+)::([\d.]+)")
@@ -137,7 +137,7 @@ class NetworkToMajorTree:
 
     def _pseudo_unroot(self) -> toytree.ToyTree:
         """Return unrooted tree re-ordered for display purposes.
-        
+
         Tree is rooted tree on an edge that does not split a ...
         """
         # store a list of all nodes the tree *could* be rooted on.
@@ -153,7 +153,7 @@ class NetworkToMajorTree:
     def get_major_tree_and_admix_edges(self) -> Tuple:
         """..."""
         self._set_tree_with_admix_as_node_labels()
-        self.tree._draw_browser(ts='s', layout='unr', width=700, node_labels="name", node_colors="pink")        
+        self.tree._draw_browser(ts='s', layout='unr', width=700, node_labels="name", node_colors="pink")
         self.tree = self._pseudo_unroot()
         self.tree._draw_browser(ts='s', width=500, node_labels="idx", node_colors="pink")
 
@@ -178,7 +178,7 @@ class NetworkToMajorTree:
 
             # remove the tip node representing a src
             logger.debug(f"deleting minor node: {hnodes[1].name} {hnodes[1].idx}")
-            hnodes[1]._delete()        
+            hnodes[1]._delete()
             desc1 = tuple(hnodes[1]._up.get_leaf_names())
             desc1 = [i for i in desc1 if not i.startswith("#H")]
             logger.trace(f"desc1: {desc1}")
@@ -186,18 +186,18 @@ class NetworkToMajorTree:
             # remove internal node representing admix destination
             logger.debug(f"deleting major node: {hnodes[0].name} {hnodes[0].idx}")
             desc0 = tuple(hnodes[0].get_leaf_names())
-            desc0 = [i for i in desc0 if not i.startswith("#H")]            
+            desc0 = [i for i in desc0 if not i.startswith("#H")]
             hnodes[0]._delete()
             logger.trace(f"desc0: {desc0}")
-            
+
             self.tree._update()
             self.admix.append((desc0, desc1, 0.5, {}, f"{float(prop):.3g}"))
-        
-        
+
+
 def parse_network(net: Union[str, Path], disconnect=True):
     """Parse a network file to extract a major topology and admix dict.
 
-    This leaves the hybrid nodes in the tree and labels each with 
+    This leaves the hybrid nodes in the tree and labels each with
     .name="H{int}" and .gamma={float}.
     """
     # if net is a file then read the first line
@@ -237,8 +237,8 @@ def parse_network(net: Union[str, Path], disconnect=True):
             [i for i in net.get_tip_labels() if not i.startswith("#H")][0]
         )
 
-    # Traverse tree to find hybrid nodes. If a hybrid node is labeled as a 
-    # distinct branch in the tree then it is dropped from the tree and 
+    # Traverse tree to find hybrid nodes. If a hybrid node is labeled as a
+    # distinct branch in the tree then it is dropped from the tree and
     for node in net.traverse("postorder"):
 
         # find hybrid nodes as internal nchild=1, or external with H in name
@@ -301,20 +301,20 @@ def parse_network(net: Union[str, Path], disconnect=True):
                 # this is the minor edge
                 if aprop < admix[aname][1]:
                     admix[aname] = (
-                        admix[aname][0], 
-                        desc, 
-                        0.5, 
-                        {}, 
+                        admix[aname][0],
+                        desc,
+                        0.5,
+                        {},
                         str(round(float(aprop), 3)),
                     )
 
                 # this is the major edge
                 else:
                     admix[aname] = (
-                        desc, 
-                        admix[aname][0], 
-                        0.5, 
-                        {}, 
+                        desc,
+                        admix[aname][0],
+                        0.5,
+                        {},
                         str(round(float(admix[aname][1]), 3)),
                     )
 
@@ -342,7 +342,7 @@ def test3B():
     # net = "(((r0,r1),#HX),(((r2,r3))#HX,r4),r5);"
     # net = "(C,D,((O,(E,#H7:::0.196):0.314):0.664,(((A1,A2))#H7:::0.804,B):10.0):10.0);"
     # net = "(C,D,((O,(E,#H7)),(B,(A)#H7)));"
-    # net = "(C,D,((O,(E,#H7:::0.49)),(B,(A)#H7:::0.51)));"    
+    # net = "(C,D,((O,(E,#H7:::0.49)),(B,(A)#H7:::0.51)));"
     # net = "(C,D,((O,(E,#H7:::0.51)),(B,(A)#H7:::0.49)));"
     net = "((r5,(r4,(r3,((r2,(r0,r1):4.268188213461936):2.9023407392778653)#H9:10.0::0.7093477022612464):3.2038798063864555):10.0):10.0,r6,(r7,#H9:0.0::0.2906522977387535):10.0);"
     # net = "(C,D,((O,(E,#H7:::0.195):0.313):0.664,(B,(A)#H7:::0.804):10.0):10.0);"
@@ -379,7 +379,7 @@ if __name__ == "__main__":
     t0, a0 = test_am_2()
     # t0 = t0.root("fimbriatus")
     t0._draw_browser(
-        ts='s', 
+        ts='s',
         width=500, height=800,
         node_labels="idx",
         use_edge_lengths=True,
