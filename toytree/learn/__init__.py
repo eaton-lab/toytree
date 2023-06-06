@@ -1,10 +1,13 @@
 #!/usr/bin/env python
 
-"""Education submodule.
+"""Educational resources submodule.
 
-- wright_fisher: simulation and visualization tools.
-- substitution: [todo] markov model sympy demonstration tools.
-- markov: [todo] markov model visualization tools.
+IDEAS
+-----
+- tree traversal animations
+- wright_fisher: simulation, animation, and pair w/ tree visualizations
+- markov: [todo] markov model visualization w/ animations.
+- substitution: Markov model sympy demonstration tools.
 - ...
 
 """
