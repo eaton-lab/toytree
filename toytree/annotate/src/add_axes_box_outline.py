@@ -6,8 +6,8 @@ Set margin to 60.
 """
 
 from typing import Union, Sequence
-import toyplot
 from toytree import ToyTree
+from toytree.core import Cartesian
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
 # from toytree.annotate.src.annotation_mark import (
 #     get_last_toytree_mark_from_cartesian,
@@ -20,11 +20,11 @@ __all__ = ["add_axes_box_outline"]
 @add_subpackage_method(AnnotationAPI)
 def add_axes_box_outline(
     tree: ToyTree,
-    axes: toyplot.coordinates.Cartesian,
+    axes: Cartesian,
     margin: Union[int, Sequence[int]] = 60,
     padding: Union[int, Sequence[int]] = None,
     **kwargs,
-) -> toyplot.coordinates.Cartesian:
+) -> Cartesian:
     """Adds a box outline to plots.
 
     This is achieved by creating new axes objects that ignore the data
@@ -89,9 +89,12 @@ def add_axes_box_outline(
     return axes
 
 
+@add_subpackage_method(AnnotationAPI)
 def set_axes_ticks_external(
-    axes: toyplot.coordinates.Cartesian,
-) -> toyplot.coordinates.Cartesian:
+    tree: ToyTree,
+    axes: Cartesian,
+    show_domain: bool = True,
+) -> Cartesian:
     """Add custom generic style to plot axes.
 
     Sets tick marks to extend 5px outside of spine, tick mark labels
@@ -100,8 +103,8 @@ def set_axes_ticks_external(
     by 10px, so that it is 60px on top, bottom, left and right.
     """
     axes.x.ticks.show = True
-    axes.x.domain.show = False
-    axes.y.domain.show = False
+    axes.x.domain.show = show_domain
+    axes.y.domain.show = show_domain
     axes.y.ticks.show = True
     axes.x.ticks.near = 5
     axes.x.ticks.far = 0

@@ -4,6 +4,7 @@
 
 """
 
+from typing import Optional
 import numpy as np
 from toytree import ToyTree
 import toyplot
@@ -21,7 +22,8 @@ __all__ = [
 def add_axes_scale_bar(
     tree: ToyTree,
     axes: Cartesian,
-    only_inside: bool = True,
+    # nticks: Optional[int] = None,
+    # only_inside: bool = True,
     # above/below,
     # padding,margin,near,far...
     # positive/negative time,
@@ -35,15 +37,9 @@ def add_axes_scale_bar(
 
     Note
     -----
-    Some work is done internally to try to nicely handle floating point
-    precision.
-
-    Parameters
-    ----------
-    ...
-    only_inside: bool
-        Option used by toyplot.locator.Extended to automatically find
-        tick marks given the data range.
+    This is a convenience function to provide just *one* way to style
+    the axes. You can also instead use the `toyplot.locator` module to
+    apply many more additional options for styling ticks.
     """
     mark = get_last_toytree_mark(axes)
     assert_tree_matches_mark(tree, mark)

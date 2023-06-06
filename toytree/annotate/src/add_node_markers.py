@@ -25,11 +25,9 @@ from toytree.style.src.validate_data import (
     validate_mask,
     validate_labels,
 )
-from toytree.style.src.validate_node_labels import (
-    validate_node_labels_style)
-from toytree.style.src.validate_nodes import (
-    validate_node_style,
-)
+from toytree.style.src.validate_node_labels import validate_node_labels_style
+from toytree.style.src.validate_nodes import validate_node_style
+
 
 logger = logger.bind(name="toytree")
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -319,7 +317,8 @@ def add_node_bars(
 ) -> Mark:
     """Returns a toyplot marker to add bars at Nodes.
 
-    This is commonly used to display confidence intervals.
+    This is commonly used to display confidence intervals on node ages.
+    Bars are rectangles on which styles can be set.
 
     Parameters
     ----------
@@ -435,7 +434,6 @@ def add_node_bars(
     axes._scenegraph._relationships['map']._targets[axes.x].insert(z_index, mark)
     axes._scenegraph._relationships['map']._targets[axes.y].insert(z_index, mark)
     return mark
-
 
 
 # def add_clade_box(
