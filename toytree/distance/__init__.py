@@ -36,3 +36,4 @@ Examples
 
 from toytree.distance._src.nodedist import *
 from toytree.distance._src.treedist import *
+from toytree.distance._src.quartet_dist import *
