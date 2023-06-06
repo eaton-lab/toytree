@@ -170,7 +170,7 @@ class ConsensusTree:
 
             # clade is below threshold, discard.
             if freq < self.majority_rule_min:
-                logger.debug(f"clade {clade}:{freq} below min threshold")
+                # logger.debug(f"clade {clade}:{freq} below min threshold")
                 continue
 
             # clade conflicts with others, discard. If any tips in this
@@ -193,7 +193,7 @@ class ConsensusTree:
                 if cset.issuperset(pset):
                     continue
                 conflict = True
-                logger.debug(f"clade {clade} conflicts.")
+                # logger.debug(f"clade {clade} conflicts.")
 
             # passed filters, keep it.
             if not conflict:
