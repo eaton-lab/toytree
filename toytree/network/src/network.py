@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""(Experimental) Network class.
+"""(Experimental) Network class. NOT YET IMPLEMENTED.
 
 - network parsing functions
     - bpp format
@@ -26,9 +26,9 @@ logger = logger.bind(name="toytree")
 
 class Node3(Node):
     """Nodes contained within a Network class object.
-    
-    In contrast to treenodes these nodes can have degree > 3, by 
-    having >1 parent. 
+
+    In contrast to treenodes these nodes can have degree > 3, by
+    having >1 parent.
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -44,13 +44,13 @@ class ToyNet(toytree.ToyTree):
     """Child class of ToyTree that stores and draws network edges.
 
     A network object can be used to draw networks, to calculate or
-    report statistics on a network, and to extract minor or major 
-    trees from a network (as ToyTree objects). 
+    report statistics on a network, and to extract minor or major
+    trees from a network (as ToyTree objects).
 
     Algorithm to traverse nodes of a network in order... could still
     use the same traversals that trace the major or minor tree to visit
     each node, but another traversal may be available that would also
-    visit nodes connected by an admix edge sooner... 
+    visit nodes connected by an admix edge sooner...
     """
     def __init__(self, network: Union[str, Path]):
         self.network = network
@@ -58,7 +58,7 @@ class ToyNet(toytree.ToyTree):
         # super().__init__(tree, *args, **kwargs)
         # self.admix = admix
 
-    # def ... , disconnect: bool = True, **kwargs):    
+    # def ... , disconnect: bool = True, **kwargs):
 
     def add_edge(self) -> toytree.ToyTree:
         """Return modified Network with a new degree-3 edge added."""

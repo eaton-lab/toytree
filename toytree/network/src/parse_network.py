@@ -120,14 +120,14 @@ class NetworkToMajorTree:
     def get_major_tree_and_admix_edges(self) -> Tuple:
         """..."""
         self._set_tree_with_admix_as_node_labels()
-        self.tree._draw_browser(ts='s', layout='unr', width=700, node_labels="name", node_colors="pink")
+        # self.tree._draw_browser(ts='s', layout='unr', width=700, node_labels="name", node_colors="pink")
         self.tree = self._pseudo_unroot()
-        self.tree._draw_browser(ts='s', width=500, node_labels="idx", node_colors="pink")
+        # self.tree._draw_browser(ts='s', width=500, node_labels="idx", node_colors="pink")
 
         # restart traversal after each pair of nodes is fixed.
         while 1:
             try:
-                hnodes = self.tree.get_nodes("#H*", regex=True)
+                hnodes = self.tree.get_nodes("~#H*")
                 hnodes = sorted(hnodes, key=lambda x: x.name)
             except ValueError:
                 self.tree.mod.remove_unary_nodes(inplace=True)
@@ -174,6 +174,7 @@ def parse_network_to_tree_and_admix(
 #     net = "(((r0,#H1:::0.9),r2),(r3,(r4,#H1:::0.1)));"
 #     return parse_network(net)
 
+
 def test3A():
     """No gamma values."""
     # nwk = "((a:0.11,b:0.22):0.33,c:0.5);"
@@ -181,6 +182,7 @@ def test3A():
     parse = NetworkToMajorTree(net)
     tree, admix = parse.get_major_tree_and_admix_edges()
     return tree, admix
+
 
 def test3B():
     """Major tree has higher gamma value.
@@ -197,11 +199,13 @@ def test3B():
     tree, admix = parse.get_major_tree_and_admix_edges()
     return tree, admix
 
+
 def test3C():
     """...
     >>> ((r0,r2),(r3,r4));  [((r3, r4),r0, 0.5)]
     """
     NET = "(((r0,#H1:::0.9),r2),(r3,r4)#H1:::0.1);"
+
 
 def test_am_2():
     net = """(quitensis,caudatus,((hybridus,((cruentus,((((retroflexus,wrightii):3.177882128684601,powellii):1.0960348982483923,acutilobus):1.196100087172878,((((((((tuberculatus,arenicola):0.6109501450803072,pumilus):0.4760189778806285,cannabinus):2.412166114595602,(((albus,blitoides):3.721391761165372,(viridis,(blitum,tricolor):1.0147162921429302):3.1242417846101658):0.8709001073072796,(fimbriatus)#H24:::0.5252749295119973):1.8571548128366557):2.707582965691606,#H24:::0.4747250704880027):1.5826753575568118,(((palmeri,watsonii):0.9398829701307351,spinosus):1.724020571200692)#H26:5.622450726846983::0.7964515993969742):3.198826088104374,(dubius,#H26:0.0005151894132288451::0.20354840060302581):9.999954155584865):0.6322904226943913)#H25:0.49722570736992866::0.7233188613740416):2.5040114155558104):0.47630091121000095,hypochondriacus):0.754444529685924):0.7024345634254702,#H25:2.415867402213081::0.2766811386259585):3.554563433506071);"""
@@ -212,11 +216,11 @@ def test_am_2():
     # return parse
     # return parse_network(NET, disconnect=0)
 
-def test_interactive_3():
-    NET = "(r1,(r2,(r3,(r4,#H6):10.0):1.949048825686914):10.0,(r0)#H6);"
-    NET = "((r3,(r2,(r1, #HX))),(r0)#HX);"
-    parse = NetworkParser(NET)
-    # parse_network(NET)
+# def test_interactive_3():
+#     NET = "(r1,(r2,(r3,(r4,#H6):10.0):1.949048825686914):10.0,(r0)#H6);"
+#     NET = "((r3,(r2,(r1, #HX))),(r0)#HX);"
+#     parse = NetworkParser(NET)
+#     # parse_network(NET)
 
 
 def test_interactive():
@@ -228,14 +232,17 @@ def test_interactive():
 
 if __name__ == "__main__":
 
-    toytree.set_log_level("TRACE")
-    t0, a0 = test_interactive()
-    # t0, a0 = test3B()
+    # toytree.set_log_level("TRACE")
+    # t0, a0 = test_interactive()
+    t0, a0 = test3B()
     # t0, a0 = test_am_2()
+
+    print(a0)
     t0._draw_browser(
-        ts='s',
+        # ts='p',
         # width=500, height=800,
         node_labels="idx",
         # use_edge_lengths=True,
         admixture_edges=a0,
+        node_sizes=18,
     )
