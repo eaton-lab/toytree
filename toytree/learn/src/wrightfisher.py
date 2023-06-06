@@ -55,7 +55,7 @@ class WrightFisherPlot:
         )
         self.axes = self.canvas.cartesian(
             ylabel="Time (generations)",
-            xlabel="Gene copies at the present",
+            xlabel="Gene copies",
             margin=70,
             padding=25,
         )
