@@ -20,16 +20,35 @@ Brown developed probability calculations for all labeled and unlabeled topologie
 """
 
 import numpy as np
+from toytree.core import ToyTree
 import toytree
+from toytree.core.apis import TreeEnumAPI, add_subpackage_method, add_toytree_method
+
 
 __all__ = [
+    "get_n_quartets",
     "get_n_labeled_trees",
-    "get_n_unlabeled_trees",
+    # "get_n_unlabeled_trees",
     # "iter_labeled_trees",
     # "iter_unlabeled_trees",
 ]
 
 
+# @add_subpackage_method(TreeEnumAPI)
+def get_n_quartets(ntips: int, sample: int = 4) -> int:
+    """Return number of possible quartets for a tree of N tips.
+
+    This uses the formula for binomial coefficient.
+    """
+    numerator = 1
+    denominator = 1
+    for i in range(1, sample + 1):
+        numerator *= ntips - i + 1
+        denominator *= i
+    return numerator // denominator
+
+
+# @add_subpackage_method(TreeEnumAPI)
 def get_n_labeled_trees(ntips: int) -> int:
     r"""Return the number of possible labeled trees for ntips.
 
