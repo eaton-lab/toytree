@@ -66,9 +66,7 @@ def get_canvas_and_axes(
     padding: int = 15,
     margin: int = 50,
 ) -> Union[Tuple[Canvas, Cartesian], Tuple[None, Cartesian]]:
-    """Get Canvas, Cartesian for a ToyTree drawing and optionally style
-    the axes with ticks.
-    """
+    """Get Canvas, Cartesian for a ToyTree drawing."""
     # Create new Carteian to plot tree onto
     if axes is None:
         if mark.layout in "rlud":
