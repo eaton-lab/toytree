@@ -33,28 +33,10 @@ ToyTree = TypeVar("ToyTree")
 logger = logger.bind(name="toytree")
 
 
-def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMark]:
-    """Parse arguments to draw function and return drawing objects.
+def parse_draw_args_to_tree_style(tree: ToyTree, **kwargs) -> TreeStyle:
+    """Return an expanded TreeStyle given user args and base treestyle.
 
-    The drawing style arguments can be entered in two ways, either
-    by modifying attributes of the `.style` dict-like object linked
-    to a ToyTree, or by providing parameter arguments to the `.draw`
-    function. The latter type overrides any values in the `.style`
-    settings, and similarly, if a `tree_style` argument is used this
-    overrides any/all settings in `.style` setting a new fresh base
-    style setting.
-
-    This function parses arguments to `draw`, updates a copy of the
-    `.style`, and passes these style args as a dict to the ToyTreeMark
-    class init function, along with the edges and verts.
     """
-    # extract the ToyTree instance from kwargs
-    # TODO: can we get rid of this?
-    # tree = kwargs.pop("toytree")
-
-    # extract Cartesian axes or None
-    axes = kwargs.pop("axes")
-
     # extract extra kwargs that are not in ToyTree.draw()
     extra_kwargs = kwargs.pop("kwargs")
 
@@ -78,6 +60,29 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
 
     # check and expand user-kwargs if provided else base style value
     style = validate_style(tree, style, **kwargs)
+    return style
+
+
+def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMark]:
+    """Parse arguments to draw function and return drawing objects.
+
+    The drawing style arguments can be entered in two ways, either
+    by modifying attributes of the `.style` dict-like object linked
+    to a ToyTree, or by providing parameter arguments to the `.draw`
+    function. The latter type overrides any values in the `.style`
+    settings, and similarly, if a `tree_style` argument is used this
+    overrides any/all settings in `.style` setting a new fresh base
+    style setting.
+
+    This function parses arguments to `draw`, updates a copy of the
+    `.style`, and passes these style args as a dict to the ToyTreeMark
+    class init function, along with the edges and verts.
+    """
+    # extract Cartesian axes or None
+    axes = kwargs.pop("axes")
+
+    # get tree style expanded for user args and base tree style (ts)
+    style = parse_draw_args_to_tree_style(tree, **kwargs)
 
     # get a Layout with coordinates projected based on style
     layout = get_layout(

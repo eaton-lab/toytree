@@ -26,9 +26,7 @@ import numpy as np
 import toyplot.html
 from toyplot.mark import Mark
 from toytree.color import ToyColor
-# from toytree.color.src.utils import style_to_string, split_rgba_style, concat_style_to_str
-# from toytree.color.src.utils import concat_style_to_str
-from toytree.style.src.utils import concat_style_to_str2
+from toytree.color import concat_style_fix_color
 
 
 class Polygon(Mark):
@@ -63,7 +61,7 @@ dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 @dispatch(toyplot.coordinates.Cartesian, Polygon, toyplot.html.RenderContext)
 def _render(axes, mark, context):
     RenderPolygon(axes, mark, context)
-# ---------------------------------------------------------------------    
+# ---------------------------------------------------------------------
 
 
 class RenderPolygon:
@@ -79,13 +77,13 @@ class RenderPolygon:
         )
 
         xproj = self.axes.project("x", self.mark._table[:, 0])
-        yproj = self.axes.project("y", self.mark._table[:, 1]) 
+        yproj = self.axes.project("y", self.mark._table[:, 1])
         points = " ".join([f"{i[0]},{i[1]}" for i in zip(xproj, yproj)])
         xml.SubElement(
             self.mark_xml, "polygon",
             points=points,
-            style=concat_style_to_str2({
-                "fill": "red", 
+            style=concat_style_fix_color({
+                "fill": "red",
                 "fill-opacity": 0.5,
                 "stroke": self.mark.stroke,
                 "stroke-width": 3,
