@@ -148,7 +148,7 @@ def get_color_mapped_values(
 
     # --- colormap is now CategoricalMap, LinearMap or Palette ---
 
-    # if map is Categorical
+    # if map is Categorical then try to treat data as categorical too
     if isinstance(cmap, toyplot.color.CategoricalMap):
 
         # convert data to str, with nan as highest sort str character
@@ -211,7 +211,7 @@ def get_color_mapped_values(
                     colors[idx] = ToyColor((0, 0, 0, 0))
                 else:
                     colors[idx] = cmap.color(nan_value)
-                logger.warning(f"NAN color: {colors[idx]}")
+                # logger.warning(f"NAN color: {colors[idx]}")
         # skip if type=str or other that cannot be checked for nan.
         except TypeError:
             pass
