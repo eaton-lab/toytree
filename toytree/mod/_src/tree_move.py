@@ -7,6 +7,10 @@ usually applied with an optimality criterion to find a best scoring
 tree under either parsimony or maximum likelihood hill-climbing
 algorithms.
 
+TODO
+----
+could implement using only .mod topo funcs on ToyTrees?
+
 UNDER DEVELOPMENT
 -----------------
 - rooted tree moves need to iterate over placements of the root?
@@ -29,7 +33,7 @@ ToyTree = TypeVar("ToyTree")
 
 
 # FIXME: needs further work.
-def move_spr_iter(tree: ToyTree, highlight: bool=False) -> Iterator[ToyTree]:
+def move_spr_iter(tree: ToyTree, highlight: bool = False) -> Iterator[ToyTree]:
     """Generator to yield all trees within 1 SPR move of input tree.
 
     Returns a generator function to iterate through each of the
@@ -53,11 +57,11 @@ def move_spr_iter(tree: ToyTree, highlight: bool=False) -> Iterator[ToyTree]:
         # cannot be root, or a desc on the subtree Node, or the subtree itself.
         subtree = tree[nidx]
         edges = (
-            set(range(tree.nnodes)) -
-            set((i._idx for i in subtree._iter_descendants())) -
-            set((i._idx for i in subtree._iter_sisters())) -
-            set((subtree._up._idx, )) -
-            set((subtree._idx, ))
+            set(range(tree.nnodes))
+            - set((i._idx for i in subtree.iter_descendants()))
+            - set((i._idx for i in subtree.iter_sisters()))
+            - set((subtree._up._idx, ))
+            - set((subtree._idx, ))
         )
 
         # iterate over each possible insertion point of this edge
@@ -139,7 +143,7 @@ def move_spr_iter(tree: ToyTree, highlight: bool=False) -> Iterator[ToyTree]:
             yield ntree
 
 
-def move_nni_iter(tree: ToyTree, highlight: bool=False) -> Iterator[ToyTree]:
+def move_nni_iter(tree: ToyTree, highlight: bool = False) -> Iterator[ToyTree]:
     """Generator to yield all trees within one NNI of input tree.
 
     Returns a generator function to iterate through each of the
@@ -228,10 +232,10 @@ def move_nni_iter(tree: ToyTree, highlight: bool=False) -> Iterator[ToyTree]:
 
 def move_nni(
     tree: ToyTree,
-    edge: Optional[int]=None,
-    seed: Optional[int]=None,
-    inplace: bool=False,
-    highlight: bool=False,
+    edge: Optional[int] = None,
+    seed: Optional[int] = None,
+    inplace: bool = False,
+    highlight: bool = False,
 ) -> ToyTree:
     """Return a tree one nearest-neighbor-interchange from current tree.
 
@@ -333,9 +337,9 @@ def move_nni(
 # TODO: try to simplify more like in NNI
 def move_spr(
     tree: ToyTree,
-    seed: Optional[int]=None,
-    inplace: bool=False,
-    highlight: bool=False,
+    seed: Optional[int] = None,
+    inplace: bool = False,
+    highlight: bool = False,
 ) -> ToyTree:
     """Return a rooted ToyTree one SPR move from the current tree.
 
@@ -468,7 +472,6 @@ def style_tree(tree: ToyTree) -> ToyTree:
     tree.style.tip_labels_style.baseline_shift = 8
     tree.style.tip_labels_style.font_size = 14
     return tree
-
 
 
 # def move_nni_search(
@@ -684,21 +687,21 @@ def style_tree(tree: ToyTree) -> ToyTree:
 if __name__ == "__main__":
 
     toytree.set_log_level("INFO")
-
     NTIPS = 5
+    TREE = toytree.rtree.unittree(NTIPS, seed=333).unroot()
 
     # draw the original tree
-    TREE = toytree.rtree.unittree(NTIPS, seed=333).unroot()
     c0, _, _ = TREE.draw(
         layout='unroot',
         use_edge_lengths=False,
-        tip_labels_style={"baseline-shift": 15},
+        # tip_labels_style={"baseline-shift": 15},
         node_labels="idx",
         node_sizes=13,
     )
+
     # get mtree with all trees in NNI generator
-    # GEN = toytree.mod.move_nni_iter(TREE, highlight=True)
-    GEN = move_spr_iter(TREE, highlight=True)
+    GEN = move_nni_iter(TREE, highlight=True)
+    # GEN = move_spr_iter(TREE, highlight=True)
     MTRE = toytree.mtree(list(GEN))
 
     # get shape of tree drawing grid
