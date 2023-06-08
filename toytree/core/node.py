@@ -634,27 +634,55 @@ class Node:
         Parameters
         ----------
         root: Node or None
-            By default this will return all Nodes between this Node and
-            the total tree root, but an alternative Node can be entered
-            here which, when reached, will be returned as the root and
-            stop the iteration.
+            Iteration will stop when <root> is reached, without yielding
+            <root>. Default is None, which occurs above the tree root
+            Node. You can optionally enter a Node to serve as the root/
+            endpoint of iteration.
         include_self: bool
             If True then this Node will be returned as its own first
             ancestor, else its parent (.up) will be the first ancestor.
+
+        Note
+        ----
+        'include_self' arg overrides 'root' and will return this Node
+        if it is both self and root.
         """
         node = self
+
+        # yield self and end iteration if self == root
         if include_self:
             yield self
-        while 1:
-            node = node.up
-            if node not in (root, None):
-                yield node
-            else:
-                break
+            if self == root:
+                return
 
-    def get_ancestors(self, root: Optional[Node] = None) -> Tuple[Node]:
-        """Return a list of Nodes on path from this node to root."""
-        return tuple(self.iter_ancestors())
+        # continue up tree yielding nodes until root or None is reached.
+        node = node._up
+        while 1:
+            if node in (root, None):
+                break
+            yield node
+            node = node._up
+
+    def get_ancestors(self, root: Optional[Node] = None, include_self: bool = False) -> Tuple[Node]:
+        """Return a tuple of Nodes on path from this node to root.
+
+        Parameters
+        ----------
+        root: Node or None
+            Iteration will stop when <root> is reached, without yielding
+            <root>. Default is None, which occurs above the tree root
+            Node. You can optionally enter a Node to serve as the root/
+            endpoint of iteration.
+        include_self: bool
+            If True then this Node will be returned as its own first
+            ancestor, else its parent (.up) will be the first ancestor.
+
+        Note
+        ----
+        'include_self' arg overrides 'root' and will return this Node
+        if it is both self and root.
+        """
+        return tuple(self.iter_ancestors(root=root, include_self=include_self))
 
     #####################################################
     # TO TOYTREE                                        #

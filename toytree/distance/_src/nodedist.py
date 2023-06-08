@@ -34,7 +34,7 @@ __all__ = [
 
 @add_subpackage_method(TreeDistanceAPI)
 def get_node_path(tree: ToyTree, node0: Query, node1: Query) -> Tuple[Node]:
-    """Return a list of Nodes on the path between two Nodes.
+    """Return a list of Nodes connecting two Nodes (including at ends).
 
     Parameters
     ----------
@@ -50,7 +50,7 @@ def get_node_path(tree: ToyTree, node0: Query, node1: Query) -> Tuple[Node]:
     -------
     >>> tree = toytree.rtree.imbtree(10)
     >>> tree.distance.get_node_path(0, 2)
-    >>> # (Node(idx=10), Node(11))
+    >>> # (<Node(idx=0)>, <Node(idx=10)>, <Node(idx=11)>, <Node(idx=2)>)
     """
     return tuple(iter_node_path(tree, node0, node1))
 
@@ -58,16 +58,22 @@ def get_node_path(tree: ToyTree, node0: Query, node1: Query) -> Tuple[Node]:
 @add_subpackage_method(TreeDistanceAPI)
 def iter_node_path(tree: ToyTree, node0: Query, node1: Query) -> Iterator[Node]:
     """Generator of the path between two Nodes."""
-    node0 = tree.get_nodes(node0)[0]
-    yield node0
-    node1 = tree.get_nodes(node1)[0]
-    mrca = tree.get_mrca_node(node0.idx, node1.idx)
-    for node in node0.iter_ancestors(mrca):
+    n0 = tree.get_nodes(node0)[0]
+    n1 = tree.get_nodes(node1)[0]
+    mrca = tree.get_mrca_node(n0, n1)
+
+    # yield all nodes on path from n0 to mrca, not including mrca
+    for node in n0.iter_ancestors(include_self=True, root=mrca):
         yield node
-    yield mrca
-    for node in list(node1.iter_ancestors(mrca))[::-1]:
+
+    # yield mrca IF it is not n2
+    if mrca != n1:
+        yield mrca
+
+    # yield all nodes on path from n1 to mrca, not including mrca
+    rev = list(n1.iter_ancestors(include_self=True, root=mrca))
+    for node in rev[::-1]:
         yield node
-    yield node1
 
 
 # >3X faster than older TreeNode.get_distance(), and scales better.
