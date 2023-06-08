@@ -11,7 +11,7 @@ and does not include wrappers around any external tools.
 
 """
 
-__version__ = "3.0.dev6"
+__version__ = "3.0.dev7"
 __author__ = "Deren Eaton"
 
 # core class objects
