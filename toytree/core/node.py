@@ -288,7 +288,7 @@ class Node:
         _idx = "" if self.idx == -1 else f"idx={self.idx}"
         _name = "" if not self.name else f"name='{self.name}'"
         inner = ", ".join([i for i in (_idx, _name) if i])
-        return f"Node({inner})"
+        return f"<Node({inner})>"
 
     # def __str__(self) -> str:
     #     """Printed string representation of Node"""
@@ -301,7 +301,7 @@ class Node:
     @total_ordering  # auto-creates all other ordering operations
     def __gt__(self, other: Node) -> bool:
         """Return True if this Node's idx is greater than the others."""
-        if self.idx > other.idx:
+        if self._idx > other._idx:
             return True
         return False
 
@@ -310,10 +310,11 @@ class Node:
         return hash(repr(self))
 
     #####################################################
-    ## TREE MODIFICATION (NOT MUTATING THIS NODE THO?)
-    ## in-place mod funcs that should be followed by _update_idxs()
-    ## See ToyTree.mod subpackage for safer to use alternative.
-    ## these are primarily maintained for internal use.
+    # NODE CONNECTIONS
+    # after modifying connections among Nodes in a ToyTree the
+    # ToyTree._update() function must be called. See the
+    # ToyTree.mod subpackage for alternative tree modification funcs.
+    # These funcs are primarily for internal/developer use.
     #####################################################
 
     def _add_child(self, node: Node) -> None:
