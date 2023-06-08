@@ -62,18 +62,24 @@ def iter_node_path(tree: ToyTree, node0: Query, node1: Query) -> Iterator[Node]:
     n1 = tree.get_nodes(node1)[0]
     mrca = tree.get_mrca_node(n0, n1)
 
-    # yield all nodes on path from n0 to mrca, not including mrca
-    for node in n0.iter_ancestors(include_self=True, root=mrca):
+    # yield start of path
+    if n0 != mrca:
+        yield n0
+
+    # yield from start -> mrca
+    for node in n0.iter_ancestors(root=mrca):
         yield node
 
-    # yield mrca IF it is not n2
-    if mrca != n1:
-        yield mrca
+    # yield mrca
+    yield mrca
 
-    # yield all nodes on path from n1 to mrca, not including mrca
-    rev = list(n1.iter_ancestors(include_self=True, root=mrca))
-    for node in rev[::-1]:
+    # yield path from mrca -> end
+    for node in list(n1.iter_ancestors(root=mrca))[::-1]:
         yield node
+
+    # yield end
+    if n1 != mrca:
+        yield n1
 
 
 # >3X faster than older TreeNode.get_distance(), and scales better.

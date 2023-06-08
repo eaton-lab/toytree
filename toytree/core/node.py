@@ -649,11 +649,13 @@ class Node:
         """
         node = self
 
-        # yield self and end iteration if self == root
+        # optionally yield self
         if include_self:
             yield self
-            if self == root:
-                return
+
+        # end iteration if self == root
+        if self == root:
+            return
 
         # continue up tree yielding nodes until root or None is reached.
         node = node._up
