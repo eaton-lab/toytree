@@ -21,6 +21,7 @@ from typing import (
 import re
 from copy import deepcopy
 from hashlib import md5
+from collections.abc import Sequence as SequenceType
 
 from loguru import logger
 import numpy as np
@@ -46,7 +47,10 @@ logger = logger.bind(name="toytree")
 # Type alias for Node selection
 Query = TypeVar("Query", str, int, Node)
 Color = TypeVar("Color", str, np.ndarray, tuple)  # toyplot.ColorMap, ...
-# NodeQuery, NodeMrcaQuery
+UNPACKING_MSG = """\
+Use unpacking on collections:
+>>> query_list = [0, 1, 2]
+>>> tree.method(*query_list, ...)"""
 
 
 class ToyTree:
@@ -381,7 +385,9 @@ class ToyTree:
         for node in self:
             for que, regex in comps:
                 if regex:
-                    if regex.match(node.name):
+                    # match() is faster but search() is more flexible...
+                    # if regex.match(node.name):
+                    if regex.search(node.name):
                         matched.add(que)
                         yield node
                 else:
@@ -448,7 +454,10 @@ class ToyTree:
             elif isinstance(que, np.integer):
                 nodes.add(self[que])
             else:
-                raise TypeError(f"query type {type(que)} not supported.")
+                msg = f"query type {type(que)} not supported. "
+                if isinstance(que, (list, tuple)):
+                    msg += UNPACKING_MSG
+                raise TypeError(msg)
 
         # match Node names as a group so we only need to perform one
         # tree traversal. Each query can return multiple regex hits.
@@ -664,96 +673,6 @@ class ToyTree:
     # I/O FORMATTING (toytree.io)
     # read and write trees to newick, nexus, nhx
     ###################################################
-
-    def write(
-        self,
-        path: Optional[str] = None,
-        dist_formatter: Optional[str] = "%.12g",
-        internal_labels: Optional[str] = "support",
-        internal_labels_formatter: Optional[str] = "%.12g",
-        features: Optional[Sequence[str]] = None,
-        features_prefix: str = "&",
-        features_delim: str = ",",
-        features_assignment: str = "=",
-        **kwargs,
-    ) -> Optional[str]:
-        """Write tree to newick string and return or write to filepath.
-
-        The newick string can be formatted in several ways. The default
-        will include dist values (edge lengths) and support values as
-        internal node labels. The edge lengths can be suppressed by
-        setting `dist_formatter=None`, and internal node labels can be
-        similarly suppressed, or set to store a different feature, such
-        as internal node names. Additional features can be stored in the
-        node comment blocks in extended-newick-format (NHX-like) by using
-        the "features" arguments (see examples).
-
-        Parameters
-        ----------
-        tree: ToyTree
-            A ToyTree instance to write as a newick string.
-        path: str or None
-            A filepath to write to file, or None to return newick string.
-        dist_formatter: str or None
-            A formatting string to format float dist values (edge lengths),
-            or None to not write dist values. Default is "%.6g".
-        internal_labels: str or None
-            A feature to write as internal node labels. None suppresses
-            internal labels. The 'support' feature is default, and
-            often used here, but 'name' or any other feature can be
-            used as well.
-        internal_labels_formatter: str or None
-            A formatting string to format internal labels. If an internal
-            label cannot be formatted due to TypeError (e.g., you select
-            'name' for `internal_labels` but leave this optional at its
-            default as a float formatter '%.6g', instead of str formatter)
-            it will simply be converted to a string.
-        features: List[str]
-            A list of additional features to write in the newick comment
-            block. For example, features=["height"] will save heights.
-        features_prefix: str
-            A prefix character written to the start of newick comment
-            blocks. Typical values are "&" (default) or "&&NHX:".
-        features_delim: str
-            A character used to delimit features in the newick comment
-            block. Default is ",".
-        features_assignment: str
-            A character used to separate feature keys and values. Default
-            is "=".
-
-        See Also
-        --------
-        `write_nexus`
-            Write tree newick string in a NEXUS format.
-        `ToyTree.write`
-            This function is available from ToyTree objects as `.write`.
-
-        Examples
-        --------
-        >>> # parse newick to tree using general or specific parser
-        >>> nwk = "((a:3[&state=1],b:3[&state=1])D:1[&state=1],c:4[&state=2])E:1[&state=1];"
-        >>> tree = toytree.tree(nwk)
-        >>> tree = toytree.io.parse_newick_string(nwk, features_prefix="&")
-        >>> # write tree with or without feature data
-        >>> tree.write()
-        >>> # ((a:3,b:3)100:1,c:4)100:1
-        >>> tree.write(dist_formatter=None)
-        >>> # ((a,b)100,c)100
-        >>> tree.write(internal_labels=None)
-        >>> # ((a:3,b:3):1,c:4):1
-        >>> tree.write(internal_labels="name")
-        >>> # ((a:3,b:3)D:1,c:4)E:1
-        >>> tree.write(features=["state"])
-        >>> # ((a:3[&state=1],b:3[&state=1])100:1[&state=1],c:4[&state=2])100:1[&state=1]
-        """
-        if kwargs:
-            logger.warning(
-                f"Deprecated args to write(): {list(kwargs.values())}. See docs.")
-        return toytree.io.write_newick(
-            self, path,
-            dist_formatter, internal_labels, internal_labels_formatter,
-            features, features_prefix, features_delim, features_assignment
-        )
 
     ###################################################
     # TOPOLOGY OR LEAF ANALYSIS FUNCTIONS

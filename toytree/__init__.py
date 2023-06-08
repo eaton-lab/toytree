@@ -9,12 +9,6 @@ with trees as data, or data on trees. All subpackages make use only of
 standard Python data science libs (e.g., numpy, scipy, pandas, numba) 
 and does not include wrappers around any external tools.
 
-Examples
---------
->>> tree1 = toytree.rtree.unittree(ntips=10)
->>> tree1.draw();
->>> tree2 = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
->>> tree2.root("prz", regex=True).draw(tree_style='o')
 """
 
 __version__ = "3.0.dev6"
