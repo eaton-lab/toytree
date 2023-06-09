@@ -185,32 +185,31 @@ def get_treedist_rf(
     by the total number of (internal) bipartitions in both sets.
     Larger values indicate that two trees are more different.
 
-    Parameters
-    ----------
-    tree1: ToyTree
-        An input ToyTree to compare to tree2.
-    tree2: ToyTree
-        An input ToyTree to compare to tree1.
-    normalize: bool
-        Normalize distance score by the total number of splits in
-        both trees (the max number of possible differences).
+    Parameters:
+        tree1: ToyTree
+            An input ToyTree to compare to tree2.
+        tree2: ToyTree
+            An input ToyTree to compare to tree1.
+        normalize: bool
+            Normalize distance score by the total number of splits in
+            both trees (the max number of possible differences).
 
-    Examples
-    --------
-    >>> t0 = toytree.rtree.unittree(ntips=10, seed=123)
-    >>> t1 = toytree.rtree.unittree(ntips=10, seed=321)
-    >>> print(t0.distance.get_treedist_rf(t1, normalize=False))
-    >>> print(t0.distance.get_treedist_rf(t1, normalize=True))
+    Examples:
+        >>> t0 = toytree.rtree.unittree(ntips=10, seed=123)
+        >>> t1 = toytree.rtree.unittree(ntips=10, seed=321)
+        >>> t0.distance.get_treedist_rf(t1, normalize=False)
+        ...
+        >>> t0.distance.get_treedist_rf(t1, normalize=True)
+        ...
 
-    References
-    ----------
-    - Robinson, D.F. and Foulds, L.R. (1981) "Comparison of phylogenetic
-      trees". Mathematical Biosciences. 53 (1–2): 131–147.
-      doi:10.1016/0025-5564(81)90043-2.
+    References:
+        1. Robinson, D.F. and Foulds, L.R. (1981) "Comparison of phylogenetic
+        trees". Mathematical Biosciences. 53 (1–2): 131–147.
+        doi:10.1016/0025-5564(81)90043-2.
     """
     assert set(tree1.get_tip_labels()) == set(tree2.get_tip_labels()), TIPS_IDENTICAL
-    set1 = set(tree1.iter_bipartitions())
-    set2 = set(tree2.iter_bipartitions())
+    set1 = set(tree1.iter_bipartitions(type=frozenset))
+    set2 = set(tree2.iter_bipartitions(type=frozenset))
     return _get_rf_distance(set1, set2, normalize=normalize)
 
 
@@ -244,8 +243,8 @@ def get_treedist_rfi(
     - Martin Smith: https://cran.r-project.org/web/packages/TreeDist/vignettes/information.html
     """
     assert set(tree1.get_tip_labels()) == set(tree2.get_tip_labels()), TIPS_IDENTICAL
-    set1 = set(tree1.iter_bipartitions())
-    set2 = set(tree2.iter_bipartitions())
+    set1 = set(tree1.iter_bipartitions(type=frozenset))
+    set2 = set(tree2.iter_bipartitions(type=frozenset))
     return _get_rf_distance_information_corrected(set1, set2, normalize)
 
 
