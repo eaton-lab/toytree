@@ -275,7 +275,7 @@ def write(
     features_assignment: str
         A character used to separate feature keys and values. Default
         is "=".
-    feature_formatter: str or None
+    features_formatter: str or None
         A formatting string used for float feature metadata. Default
         is "%.12g".
     nexus: bool
