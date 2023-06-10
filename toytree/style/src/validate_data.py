@@ -469,6 +469,32 @@ def validate_node_style(
     return style
 
 
+def validate_admixture_edges(tree: ToyTree, **kwargs):
+
+    admixture_edges = kwargs['style'].get("admixture_edges")
+    if admixture_edges is None:
+        return []
+
+    if not admixture_edges:
+        return []
+
+    # ((2,3),(2,4)) or (2,3)
+    if isinstance(admixture_edges, tuple):
+        if isinstance(admixture_edges[0], tuple):
+            admixture_edges = list(admixture_edges)
+        else:
+            admixture_edges = [admixture_edges]
+
+    # [(2,3),]
+    aedges = []
+    for aedge in admixture_edges:
+        src = tree.get_nodes(aedge[0])[0].idx
+        dst = tree.get_nodes(aedge[1])[0].idx
+        aedges.append((src, dst) + tuple(aedge[2:]))
+
+    return aedges
+
+
 if __name__ == "__main__":
 
     import toytree

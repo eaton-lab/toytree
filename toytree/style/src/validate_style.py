@@ -27,6 +27,7 @@ from toytree.style.src.validate_data import (
     validate_colors,
     validate_hover,
     validate_labels,
+    validate_admixture_edges,
 )
 from toytree.style.src.validate_nodes import validate_node_style
 from toytree.style.src.validate_node_labels import validate_node_labels_style
@@ -50,8 +51,8 @@ NON_VALIDATED = [
     "padding",
     "xbaseline",
     "ybaseline",
-    "admixture_edges",
     "shrink",
+    # "admixture_edges",
     # "fixed_order",
     # "fixed_position",
 ]
@@ -134,6 +135,8 @@ def validate_style(tree: ToyTree, style: TreeStyle, **kwargs) -> TreeStyle:
     style.node_labels_style = validate_node_labels_style(tree, style.node_labels_style, **get_dict(kwargs, "node_labels_style"))
     style.edge_align_style = validate_edge_align_style(tree, style.edge_align_style, **get_dict(kwargs, "edge_align_style"))
     style.tip_labels_style = validate_tip_labels_style(tree, style.tip_labels_style, **get_dict(kwargs, "tip_labels_style"))
+
+    style.admixture_edges = validate_admixture_edges(tree, style=kwargs)
 
     # set remaining key:val that do not have validators
     for key in NON_VALIDATED:

@@ -21,7 +21,7 @@ teh
 """
 
 from __future__ import annotations
-from typing import Union, Sequence, TypeVar, Tuple, Optional, Iterator, Any
+from typing import Union, Sequence, TypeVar, Tuple, Optional, Iterator, Any, List
 from dataclasses import dataclass, field
 from copy import deepcopy
 from loguru import logger
@@ -185,6 +185,7 @@ class TreeStyle:
     """: Shift tree on Cartesian axes so Node 0 is at (xbaseline, ybaseline)."""
     shrink: float = 0.0
     """: Add additional space to fit tip names relative to tree."""
+    admixture_edges: List[Tuple] = None
 
     def __repr__(self):
         """Return a serialized JSON formatted style dict."""
