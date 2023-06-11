@@ -106,7 +106,7 @@ class RenderToytree:
         """Creates DOM of xml.SubElements in self.context."""
         self.mark_edges()
         self.mark_align_edges()
-        # self.mark_admixture_edges()
+        self.mark_admixture_edges()
         self.mark_nodes()
         self.mark_node_labels()
 
@@ -490,10 +490,10 @@ class RenderToytree:
 
         # get position of 15% tipward from source point
         path_format = [
-            "M {sdx:.1f} {sdy:.1f}",
-            "L {sux:.1f} {suy:.1f}",
-            "L {ddx:.1f} {ddy:.1f}",
-            "L {dux:.1f} {duy:.1f}",
+            "M {sdx:.2f} {sdy:.2f}",
+            "L {sux:.2f} {suy:.2f}",
+            "L {ddx:.2f} {ddy:.2f}",
+            "L {dux:.2f} {duy:.2f}",
         ]
 
         # ensure admixture_edges is a list of tuples
@@ -504,7 +504,18 @@ class RenderToytree:
         for aedge in self.mark.admixture_edges:
 
             # check if nodes have an overlapping interval
-            src, dest, aprop, estyle, label = aedge
+            src, dest, *details = aedge
+
+            # parse optional prop float, edgestyle dict, and label text
+            aprop = 0.5
+            estyle = {}
+            label = ""
+            if len(details) == 1:
+                aprop = details
+            elif len(details) == 2:
+                aprop, estyle = details
+            elif len(details) == 3:
+                aprop, estyle, label = details
 
             # get their parents coord positions
             try:

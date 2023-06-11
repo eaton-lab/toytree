@@ -24,7 +24,6 @@ from toytree.style import (
     validate_style,
     get_base_tree_style_by_name,
     tree_style_to_css_dict,
-    get_range_mapped_feature,
 )
 
 
