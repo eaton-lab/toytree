@@ -42,7 +42,7 @@ from loguru import logger
 from toytree.utils import ToytreeError
 from toytree.core import ToyTree, Node
 from toytree.style import TreeStyle, get_base_tree_style_by_name
-from toytree.drawing.src.setup_canvas import get_canvas_and_axes
+# from toytree.drawing.src.setup_canvas import get_canvas_and_axes
 from toytree.drawing.src.setup_grid import Grid
 from toytree.annotate import add_axes_scale_bar
 # from toytree.core.drawing.render import ToytreeMark
@@ -553,7 +553,7 @@ class MultiTree:
                 mark.width = canvas.width / ncols
                 mark.height = canvas.height / nrows
                 mark.scale_bar = kwargs.get("scale_bar", False)
-                add_axes_scale_bar(treelist[idx], grid.axes[idx])
+                add_axes_scale_bar(treelist[idx], grid.axes[idx], ymax=ymax)
                 # set_axes_ticks_style(ymax, grid.axes[idx], mark, only_inside=True)
 
                 # add an invisible spacer point. This does a much
@@ -753,5 +753,9 @@ if __name__ == "__main__":
     #     print(repr(tree))
     # print(mtree.get_unique_topologies())
 
-    c, a, m = mtree.draw_cloud_tree()
+    # c, a, m = mtree.draw_cloud_tree()
+    # toytree.utils.show(c)
+    mtree[1][-1].children[0]._dist = 5
+    mtree[1]._update()
+    c, a, m = mtree.draw(scale_bar=True, node_sizes=0, shared_axes=True, layout='d')
     toytree.utils.show(c)

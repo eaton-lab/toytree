@@ -6,24 +6,25 @@
 
 from typing import Optional
 import numpy as np
-from toytree import ToyTree
 import toyplot
 from toyplot.coordinates import Cartesian
-
+from loguru import logger
+from toytree import ToyTree
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
 from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
 
-__all__ = [
-    "add_axes_scale_bar",
-]
+
+logger = logger.bind(name="toytree")
+__all__ = ["add_axes_scale_bar"]
 
 
 @add_subpackage_method(AnnotationAPI)
 def add_axes_scale_bar(
     tree: ToyTree,
     axes: Cartesian,
+    ymax: Optional[float] = None,
+    only_inside: bool = True,
     # nticks: Optional[int] = None,
-    # only_inside: bool = True,
     # above/below,
     # padding,margin,near,far...
     # positive/negative time,
@@ -54,7 +55,7 @@ def add_axes_scale_bar(
         axes.x.show = True
         axes.x.ticks.show = True
         left, right = mark.domain('x')
-        tree_height = right - left
+        tree_height = ymax if ymax else right - left
 
     # ...
     elif mark.layout in ("u", "d"):
@@ -65,7 +66,7 @@ def add_axes_scale_bar(
         axes.y.show = True
         axes.y.ticks.show = True
         bottom, top = mark.domain('y')
-        tree_height = top - bottom
+        tree_height = ymax if ymax else top - bottom
 
     # e.g., unrooted layout with axes shown (e.g., ts='p')
     else:
