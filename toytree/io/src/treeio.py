@@ -67,7 +67,7 @@ def tree(
     >>> tree = toytree.tree("((a:10,b:20)A:100,c:30);")
     >>> tree = toytree.tree("/tmp/test.nex")
     >>> tree = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
-    """ 
+    """
     # load ToyTree from Node, insures detach if Node is not root.
     if isinstance(data, Node):
         treenode = data.copy(detach=True)

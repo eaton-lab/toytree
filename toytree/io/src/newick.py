@@ -297,7 +297,7 @@ def meta_parser(
 def parse_newick_string_custom(
     newick: str,
     dist_formatter: Callable[[str], float] = None,
-    feat_formatter: Callable[str, Dict[str, Any]] = None,
+    feat_formatter: Callable[[str], Dict[str, Any]] = None,
     aggregator: Callable[[str, List[Node], float, Any], Node] = None,
     internal_labels: Optional[str] = None,
 ) -> Tuple[ToyTree, List[str]]:
@@ -578,7 +578,7 @@ ADH2:0.12[&&NHX:S=yeast:E=1.1.1.1],
 ADH1:0.11[&&NHX:S=yeast:E=1.1.1.1]):0.1[&&NHX:S=Fungi])[&&NHX:E=1.1.1.1:D=N];
 """
     # print(NWK)
-    t = toytree.tree(NWK, feature_delim=",", feature_prefix="&&NHX:", feature_assignment="=")
+    t = toytree.tree(NWK, feature_delim=":", feature_prefix="&&NHX:", feature_assignment="=")
     print(t.get_node_data())
 
 
