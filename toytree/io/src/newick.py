@@ -164,7 +164,8 @@ def _walk_newick_subtrees(
         args = (aggregator, dist_formatter, feat_formatter)
         child_obj, features = _walk_newick_subtrees(child, *args)
         child_data.append(child_obj)
-        edge_features |= features
+        edge_features.update(features)
+        # edge_features |= features
 
     # str to float format the dist values
     distance = 1. if dist is None else dist_formatter(dist)
@@ -172,10 +173,13 @@ def _walk_newick_subtrees(
     # str to dict format the meta features
     nmeta = {} if nmeta is None else feat_formatter(nmeta)
     emeta = {} if emeta is None else feat_formatter(emeta)
-    edge_features |= set(emeta)
+    edge_features.update(set(emeta))
+    # edge_features |= set(emeta)
 
     # aggegator func converts nested data to dict, Node, or other format.
-    return aggregator(label, child_data, distance, nmeta | emeta), edge_features
+    all_meta = {**nmeta, **emeta}
+    # all_meta = nmeta | emeta  # dict merge operator '|' only py3.9+
+    return aggregator(label, child_data, distance, all_meta), edge_features
 
 
 def _node_str_to_data(newick: str) -> Tuple[str, str, str, str, str]:
@@ -369,7 +373,7 @@ def parse_newick_string_custom(
     tree = ToyTree(treenode)
 
     # set edge features to ensure proper polarization if re-rooted
-    tree.edge_features |= edge_features
+    tree.edge_features.update(edge_features)
 
     # infer whether labels on internal nodes are names or supports
     tree = _infer_internal_label_type(tree, internal_labels)

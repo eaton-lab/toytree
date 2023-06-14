@@ -63,36 +63,55 @@ class ToyTree:
 
     Parameters
     ----------
-    Node: Node
+    treenode: Node
         A toytree.Node class instance representing the tree root.
+
+    Attributes
+    ----------
+    nnodes: int
+        Number of Nodes in the tree.
+    ntips: int
+        Number of leaf Nodes (tips) in the tree. Updated on modification.
+    features:
+        The features names assigned to Nodes. A dynamic property.
+    edge_features
+        Set of feature names applying to edges, not nodes.
+    style: TreeStyle
+        Mutable dataclass with base drawing style.
+    mod: TreeModAPI
+        API to apply methods from `toytree.mod` to this tree.
+    enum: TreeEnumAPI
+        API to apply methods from `toytree.enum` to this tree.
+    distance: TreeDistanceAPI
+        API to apply methods from `toytree.distance` to this tree.
+    pcm: PhyloCompAPI
+        API to apply methods from `toytree.pcm` to this tree.
+    annotate: AnnotationAPI
+        API to apply methods from `toytree.annotate` to this tree.
+
+    Examples
+    --------
+    >>> tree = toytree.tree("((a,b),c);")
+    >>> isinstance(tree, toytree.ToyTree)
+    >>> # True
     """
     def __init__(self, treenode: Node) -> ToyTree:
         """Initialize a ToyTree from a Node instance."""
 
         self.treenode = treenode
-        """: The root Node; connected Nodes form the tree structure."""
         self.nnodes: int = 0
-        """: number of Nodes in the tree. Automatically updated."""
         self.ntips: int = 0
-        """: number of leaf Nodes (tips) in the tree. Automatically updated."""
         self.style = TreeStyle()
-        """: dict-like class for setting base drawing styles."""
-        self._idx_dict: Dict[int, Node] = {}
-        """: dict mapping Node idx labels to Node instance. (private)."""
         self.edge_features: Set = set(("dist", "support"))
-        """: set of edge feature names."""
+        self._idx_dict: Dict[int, Node] = {}
+        """Private dict mapping Node idx labels to Node instances."""
 
         # toytree subpackage library API (mod, pcm, distance, layout)"""
         self.mod = TreeModAPI(self)
-        """: API to apply :mod:`toytree.mod` tree modification funcs to this tree."""
         self.distance = TreeDistanceAPI(self)
-        """: API to apply :mod:`toytree.distance` comparison funcs to this tree."""
         self.pcm = PhyloCompAPI(self)
-        """: API to apply :mod:`toytree.pcm` phylogenetic comparative methods to this tree."""
         self.enum = TreeEnumAPI(self)
-        """: API to apply :mod:`toytree.enum` enumeration methods to this tree."""
         self.annotate = AnnotationAPI(self)
-        # """: API to apply :mod:`toytree.annotate` drawing methods to this tree."""
 
         # update Node idxs, _idx_dict, nnodes, ntips, and Node heights
         self._update()
@@ -150,23 +169,18 @@ class ToyTree:
     def features(self) -> Tuple[str]:
         """Return a tuple of all Node data feature names.
 
-        The basic 'features' present on all Nodes include 'dist',
+        The basic features present on all Nodes include 'dist',
         'name', 'support', 'height', and 'idx'. These features will
         all be shown if you call `ToyTree.get_node_data()`. To add
         additional features to use `ToyTree.set_node_data`, or add as
-        attributes to Node objects.
+        attributes to Node objects. If features apply to edges instead
+        of Nodes (e.g., dist, support) they are also listed in
+        ToyTree.edge_features.
 
-        Note
-        ----
+        Notes:
         This function finds node features dynamically by visiting every
         Node in the tree. It is thus not performant for speed sensitive
         code.
-
-        Note
-        ----
-        Tree.edge_features is a subset of items in features which
-        indicate that these features should be treated as edge data,
-        and thus re-polarized during a tree re-rooting.
 
         Examples
         --------
@@ -184,9 +198,16 @@ class ToyTree:
         return defaults + tuple(sorted(feats))
 
     def remove_features(self, *feature: str, inplace: bool = False) -> ToyTree:
-        """Remove one or more non-deafult data features from all Nodes.
+        """Remove one or more non-default data features from all Nodes.
 
-        Cannot remove "idx", "name", "height", "dist", or "support".
+        This function is very rarely needed. Note that you cannot
+        remove default features "idx", "name", "height", "dist", or
+        "support".
+
+        Examples
+        --------
+        >>> tree = tree.set_node_data("new_feature", {0: 10})
+        >>> tree = tree.remove_features("new_feature")
         """
         tree = self if inplace else self.copy()
         for feat in feature:
@@ -234,8 +255,12 @@ class ToyTree:
     def traverse(self, strategy: str = "levelorder") -> Iterator[Node]:
         """Return an iterator over Nodes in a specific traversal order.
 
-        Notes
-        -----
+        Traversal strategies: admonition
+        idxorder:
+            Leaf nodes are visited first from left to right, followed
+            by internal nodes in postorder traversal. Note: this
+            traversal order is already cached on any ToyTree and can
+            thus be accessed much faster by indexing.
         preorder:
             Parents are visited before children. Traverses all the way
             down each left subtree before proceeding to right child.
@@ -245,14 +270,6 @@ class ToyTree:
         levelorder:
             Nodes the same distance (number of edges) from root are
             visited left to right, before descending to next level.
-        idxorder:
-            Leaf nodes are visited first from left to right, followed
-            by internal nodes in postorder traversal. Note: this
-            traversal order is already cached on any ToyTree and can
-            thus be accessed much faster by indexing directly, e.g.,
-            >>> nodes_in_idx_order = list(tree)
-            >>> nodes_in_idx_order_except_root = tree[:-1]
-            >>> tip_nodes_in_idx_order = tree[:tree.ntips]
         inorder:
             Nodes are visited in non-descreasing order if they are
             a binary search tree: left child, parent, right child.
@@ -266,6 +283,7 @@ class ToyTree:
 
         Examples
         --------
+        Generate tree drawings enumerating each traversal strategy
         >>> tree = toytree.rtree.unittree(10, seed=123)
         >>> ords = ['postorder', 'preorder', 'levelorder', 'idxorder']
         >>> for trav in ords:
@@ -401,20 +419,23 @@ class ToyTree:
             raise ValueError(f"No Node names match query: {not_matched}")
 
     def get_nodes(self, *query: Query) -> List[Node]:
-        """Return a list of Nodes matching a flexible query.
+        """Return a list of Nodes matching a flexible Query.
 
-        Node instances can be selected by entering Node name strings,
-        Node int idx labels, and/or Node objects. Input types are
-        detected automatically, and even mixed input types can be
-        entered. Node name strings can also be entered as regular
-        expressions by prefixing a name query with '~', (e.g.,
-        '~r[0-3]') to match multiple names. If no query is entered then
+        One or more Node instances are returned that match one ore more
+        Node Queries. A Node Query can be an int, str, or Node type,
+        and is matched depending on the type. Nodes are simply returned,
+        int matches to Node idx labels, and str matches to Node name
+        features. A str prefixed by `~` can match multiple Node names
+        as a regular expression search. (e.g., `~r[0-3]`) matches will
+        match ["r0", "r1", "r2", "r3"]. If no query is entered then
         all Nodes are returned.
 
-        This function is used inside many other toytree functions that
-        similarly take `NodeQuery` as an argument; any place users may
-        want to use a flexible query method to select a set of Nodes,
-        or their common ancestor.
+        You can [practice your regex here](https://pythex.org/).
+        The order in which Nodes are returned may be different than the
+        order of queries.
+
+        This function is used inside many other `toytree` functions that
+        accept `Query` as an argument.
 
         Parameters
         ----------
@@ -422,12 +443,6 @@ class ToyTree:
             Flexible query selector can search for Nodes by name, idx
             label, or by entering a Node directly. Multiple values can
             be entered to return a list of matching Nodes.
-
-        Notes
-        -----
-        You can `practice your regex here: <https://pythex.org/>`_
-        The order in which Nodes are returned may be different than the
-        order of queries.
 
         Examples
         --------
@@ -570,7 +585,7 @@ class ToyTree:
 
         # optionally include query nodes in ancestor set.
         if include_query:
-            ancestors |= query
+            ancestors.update(query)
 
         # stopping criterion (global root or sample mrca)
         if stop_at_mrca:
