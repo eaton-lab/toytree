@@ -486,10 +486,18 @@ def validate_admixture_edges(tree: ToyTree, **kwargs):
             admixture_edges = [admixture_edges]
 
     # [(2,3),]
+    # [((2,3), 4, ...), (...)]
     aedges = []
     for aedge in admixture_edges:
-        src = tree.get_nodes(aedge[0])[0].idx
-        dst = tree.get_nodes(aedge[1])[0].idx
+        print("AAAAA", aedge)
+        if isinstance(aedge[0], (tuple, list)):
+            src = tree.get_mrca_node(*aedge[0]).idx
+        else:
+            src = tree.get_nodes(aedge[0])[0].idx
+        if isinstance(aedge[1], (tuple, list)):
+            dst = tree.get_mrca_node(*aedge[1]).idx
+        else:
+            dst = tree.get_nodes(aedge[1])[0].idx
         aedges.append((src, dst) + tuple(aedge[2:]))
 
     return aedges

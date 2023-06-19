@@ -2,7 +2,6 @@
 
 """Information-based generalized Robinson-Foulds distances
 
-
 References
 ----------
 - https://ms609.github.io/TreeDist/reference/TreeDistance.html
@@ -671,6 +670,7 @@ if __name__ == "__main__":
 
     # phy info for a split:
     # print(_get_phylo_info(0, 0))
+
 
     # phy info for a tree (all splits): SplitWiseInfo(tree1) = 22.54
     print(get_tree_splitwise_phylo_info(t1)) # 22.54
