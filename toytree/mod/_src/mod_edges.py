@@ -193,7 +193,7 @@ def edges_extend_tips_to_align(
 @add_subpackage_method(TreeModAPI)
 def edges_set_node_heights(
     tree: ToyTree,
-    mapping: Dict[Query, float],
+    data: Dict[Query, float],
     inplace: bool = False,
 ) -> ToyTree:
     """Return a ToyTree with one or more Node heights set explicitly.
@@ -206,11 +206,9 @@ def edges_set_node_heights(
 
     Parameters
     ----------
-    mapping: Dict[Query, float]
+    data: Dict[Query, float]
         A dictionary mapping a Node query (Node, Node idx label, or Node
-        name) to a float value for the new height of that Node. Note
-        that not all Nodes usually have unique name labels, so int idx
-        labels can be a safer query type to use.
+        name) to a float value for the new height of that Node.
     inplace: bool
         Tree is modified in place or returned as a copy.
 
@@ -224,7 +222,7 @@ def edges_set_node_heights(
 
     # convert {query: float} to {idx: float} using Node int idx labels
     mapping = {
-        tree.get_nodes(i)[0].idx: j for (i, j) in mapping.items()
+        tree.get_nodes(i)[0].idx: j for (i, j) in data.items()
     }
 
     # set node height to current value for those not in hdict

@@ -28,6 +28,19 @@ def get_node_data(
     """Return a pandas Series or DataFrame with values for one or
     more selected features in the tree.
 
+    This function is convenient for accessing data in tabular
+    format, but is slower than accessing data directly from Nodes,
+    for example during a traversal, because it spends time checking
+    for Nodes with missing values and type-checking missing values.
+    See Documentation for accessing data from Nodes.
+
+    Setting complex objects to Node data, such as lists or sets,
+    rather than float, int, or str, should generally work fine,
+    but beware that this function will not attempt to automatically
+    check or fill missing values for these data.
+
+    See Also: `get_feature_dict`, `set_node_data`, `get_tip_data`.
+
     Parameters
     ----------
     feature: str, Sequence[str], or None
@@ -36,7 +49,7 @@ def get_node_data(
         support) as well as any attribute that has been set to
         a Node (except attrs with names that start with an '_'.)
     missing: Any, Sequence[Any], or None
-        A value to use for missing data (nodes that do not have
+        A value to use for missing data (Nodes that do not have
         the feature). Default arg is None which will automatically
         set missing data to `np.nan`. Example: you can set the
         missing values to a default value like 0 for an int feature
@@ -61,27 +74,6 @@ def get_node_data(
     >>> tree = tree.set_node_data("trait2", {2: 3.5, 3: 5.0})
     >>> data1 = tree.get_tip_data(feature="trait1", missing="C")
     >>> data2 = tree.get_tip_data(feature="trait2")
-
-    See Also
-    --------
-    get_feature_dict
-        Get a dict mapping any node feature to another.
-    set_node_data
-        Set a feature value to one or more Nodes in a ToyTree.
-    get_tip_data
-        Return DataFrame with feature data for only the tip Nodes.
-
-    Note
-    ----
-    This function is convenient for accessing data in tabular
-    format, but is slower than accessing data directly from Nodes,
-    for example during a traversal, because it spends time checking
-    for Nodes with missing values and type-checking missing values.
-
-    Setting complex objects to Node data, such as lists or sets,
-    rather than float, int, or str, should generally work fine,
-    but beware that this function will not attempt to automatically
-    check or fill missing values for these data.
     """
     # Note: tried storing missing as pd.NA which allows not having to
     # convert the dtype of other values from e.g., int to float. BUT, if

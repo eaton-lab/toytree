@@ -39,13 +39,13 @@ def set_node_data(
 ) -> ToyTree:
     """Create or modify features (data) set to Nodes in a ToyTree.
 
-    Features can be set on all or only some nodes. In the latter case
-    a value for nodes with missing features can be imputed when you
-    call the function :meth:`~toytree.core.tree.ToyTree.get_node_data`.
-    Some features used internally are protected from modification
-    (e.g., idx, up, children), but other base features such as name,
-    dist, height, and support can be modified, and any new feature can
-    be created or modified.
+    Features can be set on all or only some Nodes. In the latter case
+    a value for Nodes with missing features can be imputed when you
+    call the function `get_node_data`. Some features used internally
+    are protected from modification (e.g., idx, up, children), but
+    other base features such as name, dist, height, and support can be
+    modified, and any new named feature can be created or modified.
+    Note that a modified tree copy is returned unless `inplace=True`.
 
     Parameters
     -----------
@@ -65,8 +65,6 @@ def set_node_data(
         If True the tree data is modified inplace and returned, else
         the original tree data is unchanged and a copy is returned.
 
-    Notes
-    -----
     Data can be set to Nodes by entering `data` as either a Mapping or
     as a Series of values. These two options differ slightly and are
     described below.
@@ -85,16 +83,12 @@ def set_node_data(
     be listed in Node idx traversal order. The 'default' arg value will
     still apply to any Nodes given a value of None.
 
-    See Also
-    --------
-    :meth:`~toytree.core.tree.ToyTree.get_node_data`.
-    :meth:`~toytree.core.tree.ToyTree.set_tip_data`.
+    See Also: `get_node_data`
 
     Examples
     --------
+    Set data to Nodes using a variety of Node query dicts
     >>> tree = toytree.rtree.unittree(ntips=10)
-
-    >>> # set data to Nodes as a Mapping
     >>> new = tree.set_node_data(feature="Ne", default=5000)
     >>> new = tree.set_node_data(feature="Ne", data={0:1e5, 1:1e6, 2:1e3})
     >>> new = tree.set_node_data(feature="Ne", data={0:1e5, 1:1e6}, default=5000)
@@ -102,7 +96,7 @@ def set_node_data(
     >>> new = tree.set_node_data(feature="Ne", data={'~r[0-5]+': 1e5})
     >>> new = tree.set_node_data("state", {10: "A", 11: "B"}, inherit=True")
 
-    >>> # or, set data to Nodes as a Series
+    or, set data to Nodes as a Series
     >>> new = tree.set_node_data("X", range(tree.nnodes))
     """
     # immutable; do not allow modifying topology attributes
@@ -156,7 +150,7 @@ def set_node_data(
 
     # special mod submodule method for height modifications
     if feature == "height":
-        height_map = {i._idx: j for (i, j) in ndict.items() if j is not None}
+        height_map = {i: j for (i, j) in ndict.items() if j is not None}
         return tree.mod.edges_set_node_heights(height_map, inplace=inplace)
 
     # dist is immutable, but allow it here, and do an update.
@@ -239,6 +233,7 @@ if __name__ == "__main__":
     toytree.set_log_level("INFO")
 
     tree = toytree.rtree.unittree(ntips=10)
+    new_tree = set_node_data(tree, feature="height", data={0: 10, 'r1': 20, tree[3]: 50}, default=5000)    
     new_tree = set_node_data(tree, feature="Ne", default=5000)
     new_tree = set_node_data(tree, feature="Ne", data={0: 1e5, 1: 1e6, 2: 1e3})
     new_tree = set_node_data(tree, feature="Ne", data={0: 1e5, 1: 1e6}, default=5000)
