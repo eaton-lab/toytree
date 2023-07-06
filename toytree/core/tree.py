@@ -755,8 +755,9 @@ class ToyTree:
         # optional: duplicate last bipart to indicate rooting
         if include_root and self.is_rooted():
             biparts += [
-                tuple(sorted(i.get_leaf_names()))
-                for i in self.treenode.children
+                tuple(sorted(
+                    sorted(i.get_leaf_names()) for i in self.treenode.children
+                ))
             ]
         return md5(str(biparts).encode('utf-8')).hexdigest()
 
@@ -1068,7 +1069,7 @@ class ToyTree:
             Admixture edges add colored edges to the plot in the
             style of the 'edge_align_style'. These will be drawn
             from (source, dest, height, width, color). Example:
-            >>> [(4, 3, 50000, 3, 'red')].
+            `>>> [(4, 3, 50000, 3, 'red')]`.
         fixed_order: Sequence[str]
             An Iterable of tip labels in the order they should be
             plotted. The default is the node names in idx order
@@ -1146,6 +1147,23 @@ class ToyTree:
             raise exc
 
 
+# def inside_notebook() -> bool:
+#     """Return True if executed from inside jupyter, else False.
+
+#     takes only ~140 ns.
+#     """
+#     try:
+#         shell = get_ipython().__class__.__name__
+#         if shell == 'ZMQInteractiveShell':
+#             return True   # Jupyter notebook or qtconsole
+#         elif shell == 'TerminalInteractiveShell':
+#             return False  # Terminal running IPython
+#         else:
+#             return False  # Other type (?)
+#     except NameError:
+#         return False      # Probably standard Python interpreter
+
+
 if __name__ == "__main__":
 
     # import toytree
@@ -1154,8 +1172,8 @@ if __name__ == "__main__":
     # c, a, m = tree_._draw_browser(tree_style='s', layout='d', new=False)
     print(tree_.write(dist_formatter="%.12g"))
     print(tree_.get_node_data())
-
-    print(tree_.root)
+    print(tree_.treenode)
+    tree_.draw()
 
     # print(tree.get_tip_labels())
 
