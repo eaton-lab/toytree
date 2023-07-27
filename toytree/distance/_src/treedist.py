@@ -208,8 +208,8 @@ def get_treedist_rf(
         doi:10.1016/0025-5564(81)90043-2.
     """
     assert set(tree1.get_tip_labels()) == set(tree2.get_tip_labels()), TIPS_IDENTICAL
-    set1 = set(tree1.iter_bipartitions(type=frozenset))
-    set2 = set(tree2.iter_bipartitions(type=frozenset))
+    set1 = set(tree1.iter_bipartitions(type=frozenset, sort=True))
+    set2 = set(tree2.iter_bipartitions(type=frozenset, sort=True))
     return _get_rf_distance(set1, set2, normalize=normalize)
 
 
@@ -243,8 +243,8 @@ def get_treedist_rfi(
     - Martin Smith: https://cran.r-project.org/web/packages/TreeDist/vignettes/information.html
     """
     assert set(tree1.get_tip_labels()) == set(tree2.get_tip_labels()), TIPS_IDENTICAL
-    set1 = set(tree1.iter_bipartitions(type=frozenset))
-    set2 = set(tree2.iter_bipartitions(type=frozenset))
+    set1 = set(tree1.iter_bipartitions(type=frozenset, sort=True))
+    set2 = set(tree2.iter_bipartitions(type=frozenset, sort=True))
     return _get_rf_distance_information_corrected(set1, set2, normalize)
 
 
