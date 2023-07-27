@@ -467,6 +467,8 @@ class RenderToytree:
         """Create SVG paths for admixture edges.
 
         The edge takes the same style as the edge_type of the tree.
+
+        (SRC, DEST, PROP, {STYLE}, TEXT)
         """
         if self.mark.admixture_edges is None:
             return
@@ -511,7 +513,7 @@ class RenderToytree:
             estyle = {}
             label = ""
             if len(details) == 1:
-                aprop = details
+                aprop = details[0]
             elif len(details) == 2:
                 aprop, estyle = details
             elif len(details) == 3:
@@ -541,6 +543,7 @@ class RenderToytree:
                 p_src_x, p_src_y = self.nodes_y[psrc], self.nodes_x[psrc]
                 p_dst_x, p_dst_y = self.nodes_y[pdest], self.nodes_x[pdest]
 
+                # ...
                 if self.mark.layout == 'r':
                     disjoint = (p_src_y >= dst_y) or (src_y <= p_dst_y)
                     sign = 1
@@ -548,6 +551,7 @@ class RenderToytree:
                     disjoint = (p_src_y >= dst_y) or (src_y <= p_dst_y)
                     sign = -1
 
+                # ...
                 if disjoint or (not shared):
                     src_mid_y = src_y - sign * (abs(src_y - p_src_y) * aprop[0])
                     dest_mid_y = dst_y - sign * (abs(dst_y - p_dst_y) * aprop[1])

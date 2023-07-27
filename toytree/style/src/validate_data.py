@@ -4,7 +4,7 @@
 
 """
 
-from typing import Union, Sequence, Mapping, Any, Dict, TypeVar, Tuple, Optional
+from typing import Union, Sequence, Mapping, Any, Dict, TypeVar, Tuple, Optional, List
 import numpy as np
 import toyplot
 from loguru import logger
@@ -469,8 +469,9 @@ def validate_node_style(
     return style
 
 
-def validate_admixture_edges(tree: ToyTree, **kwargs):
-
+def validate_admixture_edges(tree: ToyTree, **kwargs) -> List[Tuple]:
+    """Return the aedges list with src,dest expanded to Nodes.
+    """
     admixture_edges = kwargs['style'].get("admixture_edges")
     if admixture_edges is None:
         return []
@@ -489,7 +490,7 @@ def validate_admixture_edges(tree: ToyTree, **kwargs):
     # [((2,3), 4, ...), (...)]
     aedges = []
     for aedge in admixture_edges:
-        print("AAAAA", aedge)
+        # user can enter multiple Nodes to get mrca or a single node
         if isinstance(aedge[0], (tuple, list)):
             src = tree.get_mrca_node(*aedge[0]).idx
         else:
@@ -499,7 +500,6 @@ def validate_admixture_edges(tree: ToyTree, **kwargs):
         else:
             dst = tree.get_nodes(aedge[1])[0].idx
         aedges.append((src, dst) + tuple(aedge[2:]))
-
     return aedges
 
 
