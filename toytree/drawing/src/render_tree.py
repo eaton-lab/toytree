@@ -522,13 +522,12 @@ class RenderToytree:
             # get their parents coord positions
             try:
                 psrc = self.mark.etable[self.mark.etable[:, 0] == src, 1][0]
+            except IndexError:
+                psrc = self.mark.nnodes - 1
+            try:
                 pdest = self.mark.etable[self.mark.etable[:, 0] == dest, 1][0]
-
-            # except if root edge
-            except IndexError as err:
-                raise NotImplementedError(
-                    "whoops, admixture edge error (root node?). TODO."
-                ) from err
+            except IndexError:
+                pdest = self.mark.nnodes - 1
 
             # if only one midpoint then expand to use same for both edges.
             shared = False

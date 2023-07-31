@@ -194,17 +194,19 @@ if __name__ == "__main__":
 
     import toytree
     toytree.set_log_level("DEBUG")
-    tre = toytree.rtree.unittree(10)
-    tre[0].name = "HELLO"
-    tre[4].name = "HELLO"
-    tre[6].name = "HELLO WORLD"
-    tre[-1]._dist = 10
-    tre._draw_browser(
-        ts='p',
-        layout='c',
-        edge_type='c',
-        height=400,
-        width=400,
-        node_mask=tre.get_node_mask(1, 5, 9),
-        # tip_labels="name",
-    )
+    tre = toytree.rtree.imbtree(10, )
+    tre._draw_browser('s', admixture_edges=[((2, 3), 4)])
+
+    # tre[0].name = "HELLO"
+    # tre[4].name = "HELLO"
+    # tre[6].name = "HELLO WORLD"
+    # tre[-1]._dist = 10
+    # tre._draw_browser(
+    #     ts='p',
+    #     layout='c',
+    #     edge_type='c',
+    #     height=400,
+    #     width=400,
+    #     node_mask=tre.get_node_mask(1, 5, 9),
+    #     # tip_labels="name",
+    # )

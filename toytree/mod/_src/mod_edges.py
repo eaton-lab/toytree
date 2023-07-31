@@ -237,7 +237,7 @@ def edges_set_node_heights(
         if node.up:
             node._dist = mapping[node.up.idx] - mapping[node.idx]
             if node._dist < 0:
-                logger.warning("negative edge lengths created.")
+                logger.warning(f"negative edge lengths @ Node {node._idx}")
     return tree
 
 
