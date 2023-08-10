@@ -214,7 +214,7 @@ def rotate_node(
 ) -> ToyTree:
     """Return ToyTree with one Node rotated (children order reversed).
 
-    Rotates only one Node per call. Internal Nodes are easiest selected
+    Rotates *only one Node per call*. Internal Nodes can be selected
     by idx label, or by entering multiple tip Node names from which the
     MRCA will be selected and rotated.
 
@@ -234,10 +234,13 @@ def rotate_node(
     >>> toytree.mod.rotate_node(tree, 12)
     >>> toytree.mod.rotate_node(tree, 'r0', 'r1')
     >>> toytree.mod.rotate_node(tree, '~r[0-3]$')
+    Can chain multiple calls together:
+    >>> tree.mod.rotate_node(14).mod.rotate_node(13).mod.rotate_node(12)
     """
     node = tree.get_mrca_node(*query)
     tree = tree if inplace else tree.copy()
-    node._children = node.children[::-1]
+    node = tree[node._idx]
+    node._children = tuple(node.children[::-1])
     tree._update()
     return tree
 
@@ -416,8 +419,8 @@ def drop_tips(
     >>> tree.mod.drop_tips('~r[0-3]$').draw()
     >>> tree.mod.drop_tips('r1', 'r2')
     """
-    tree = tree if inplace else tree.copy()
     nodes = tree.get_nodes(*query)
+    tree = tree if inplace else tree.copy()
     tipnames = [i.name for i in nodes if i.is_leaf()]
     if len(tipnames) == tree.ntips:
         raise ToytreeError("You cannot drop all tips from the tree.")
@@ -464,8 +467,9 @@ def resolve_polytomies(
     >>> tree = toytree.tree("((a,b,c),d);")
     >>> tree.resolve_polytomy().draw();
     """
-    tree = tree if inplace else tree.copy()
     nodes = tree.get_nodes(*query)
+    tree = tree if inplace else tree.copy()
+    nodes = [tree[i._idx] for i in nodes]
     rng = np.random.default_rng(seed)
 
     for node in nodes:
