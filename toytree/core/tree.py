@@ -157,9 +157,9 @@ class ToyTree:
         """Short object representation for toytree.core.tree.ToyTree"""
         return f"<toytree.ToyTree at {hex(id(self))}>"
 
-    def __str__(self) -> str:
-        """Return ascii representation of tree."""
-        return "\n".join(self.treenode._get_ascii()[0])
+    # def __str__(self) -> str:
+    #     """Return ascii representation of tree."""
+    #     return "\n".join(self.treenode._get_ascii()[0])
 
     #####################################################
     # FEATURES
