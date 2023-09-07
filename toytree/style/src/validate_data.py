@@ -197,6 +197,8 @@ def validate_colors(
     if colors is None:
         if isinstance(style, TreeStyle):
             colors = getattr(style, key, None)
+        elif tree_style is not None:
+            colors = getattr(tree_style, key, None)
 
     # if None then Nodes will be colored by style.fill during render
     if colors is None:
