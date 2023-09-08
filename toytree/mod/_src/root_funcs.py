@@ -67,7 +67,7 @@ def root_on_midpoint(tree: ToyTree, inplace: bool = False) -> ToyTree:
     # get matrix of pairwise tip distances
     dmat = tree.distance.get_tip_distance_matrix()
 
-    # get a pair of Nodes that span the max distance
+    # get any pair of Nodes that span the max distance
     pairs = np.where(dmat == dmat.max())
     n0, n1 = pairs[0][0], pairs[1][0]
 
@@ -90,9 +90,9 @@ def root_on_midpoint(tree: ToyTree, inplace: bool = False) -> ToyTree:
             if node._up.is_root():
                 break
 
-            # check further up from this Node.
-            node = node._up
+            # add blen and check further up from this Node.
             dist_below += node._dist
+            node = node._up
 
     # return tree or copy re-rooted
     tree = tree if inplace else tree.copy()
