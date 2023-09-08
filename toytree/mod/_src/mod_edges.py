@@ -82,9 +82,11 @@ def edges_scale_to_root_height(
 @add_subpackage_method(TreeModAPI)
 def edges_slider(
     tree: ToyTree,
+    # query: Query = None,
     prop: float = 0.999,
     seed: Optional[int] = None,
     inplace: bool = False,
+    root: bool = False,
 ) -> ToyTree:
     """Return a ToyTree with node heights randomly shifted within bounds.
 
@@ -108,13 +110,13 @@ def edges_slider(
     # smaller value means less jitter
     assert 0 < prop < 1, "prop must be a proportion >0 and < 1."
 
-    # randomly sample the traveral direction
+    # randomly sample the traversal direction
     order = rng.choice(["postorder", "preorder"])
 
     # traverse tree sampling new heights within constrained ranges
     for node in tree.traverse(order):
 
-        # slide internal Nodes 
+        # slide internal Nodes
         if (not node.is_root()) and (not node.is_leaf()):
 
             # the closest child to me
@@ -145,17 +147,34 @@ def edges_slider(
 @add_subpackage_method(TreeModAPI)
 def edges_multiplier(
     tree: ToyTree,
-    multiplier: float = 1.0,
+    alpha: float = 3.0,
     inplace: bool = False,
+    seed: Optional[int] = None
 ) -> ToyTree:
-    """Return ToyTree w/ all Nodes multiplied by a random constant.
+    """Return ToyTree w/ all Nodes scaled by a random constant.
+
+    This scales the entire tree height and all nodes in unison, similar
+    to `edges_scale_to_root_height` but instead of setting the root
+    to a specific value, the value is sampled from a gamma distribution.
+    The current mean root height serves as the mean of the distribution
+    mean = (a / b); the user enter's a value for a to determine the
+    variance of the distribution (a / b**2), smaller values have larger
+    variance.
 
     Parameters
     ----------
-    multiplier: float
-        The multiplier will be sampled uniformly in (multiplier, 1/multiplier).
+    alpha: float
+        The node height multiplier will be sampled from a gamma dist
+        with parameters (a,b), where b will be automatically set so
+        that the mean = a/b = current root height.
+    inplace: bool
+        Transform tree in place and return it, or return a copy.
+    seed: int or None or RNG
+        Random number generator seed used to sample new heights.
     """
     tree = tree if inplace else tree.copy()
+    beta = tree.treenode.height / alpha
+    multiplier = np.random.default_rng(seed).gamma(shape=alpha, scale=beta)
     for node in tree:
         node._dist = node._dist * multiplier
         node._height = node._height * multiplier
@@ -236,8 +255,11 @@ def edges_set_node_heights(
         node._height = mapping[node.idx]
         if node.up:
             node._dist = mapping[node.up.idx] - mapping[node.idx]
-            if node._dist < 0:
-                logger.warning(f"negative edge lengths @ Node {node._idx}")
+
+    # report warning if any edges end up negative
+    for node in tree:
+        if node._dist < 0:
+            logger.warning(f"negative edge length {node._dist:.6g} @ Node {node._idx}")
     return tree
 
 
@@ -257,6 +279,6 @@ if __name__ == "__main__":
 
     print(edges_scale_to_root_height(TREE, 100, False, False).get_node_data())
     print(edges_slider(TREE, 0.5).get_node_data())
-    print(edges_multiplier(TREE, 0.5).get_node_data())
+    print(edges_multiplier(TREE, alpha=0.5).get_node_data())
     print(edges_extend_tips_to_align(TREE).get_node_data())
     print(edges_set_node_heights(TREE, NEW_HEIGHTS).get_node_data())
