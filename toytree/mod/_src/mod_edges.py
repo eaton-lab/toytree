@@ -88,7 +88,7 @@ def edges_slider(
     inplace: bool = False,
     root: bool = False,
 ) -> ToyTree:
-    """Return a ToyTree with node heights randomly shifted within bounds.
+    """Return ToyTree with node heights randomly shifted within bounds.
 
     Node heights are moved up or down uniformly between their parent
     and highest child node heights in 'levelorder' (from root to tips).

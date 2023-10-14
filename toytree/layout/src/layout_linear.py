@@ -11,10 +11,11 @@ used then it requires a tree traversal and to make a copy of the
 style dict.
 """
 
-from typing import TypeVar
+from typing import TypeVar, Optional, Sequence
 import numpy as np
 from loguru import logger
 from toytree.utils import ToytreeError
+from toytree.style import TreeStyle
 from toytree.layout.src.layout_base import BaseLayout
 
 ToyTree = TypeVar("ToyTree")
@@ -30,22 +31,33 @@ class LinearLayout(BaseLayout):
     The interior_node_layout string is optionally entered as a
     number after the linear style, e.g., "r0", "r1", "u2", etc.
     The options implement 'intermediate', 'centered', or 'weighted',
-    positioning of internal nodes relative to their descendants or 
+    positioning of internal nodes relative to their descendants or
     tips.
     """
-    # TODO perhaps.
-    # def __init__(self, interior_node_pos: int = 0):
-    # self.interior_node_pos = interior_node_pos
+    def __init__(
+        self,
+        tree: ToyTree,
+        style: TreeStyle,
+        fixed_order: Optional[Sequence[str]] = None,
+        fixed_position: Optional[Sequence[float]] = None,
+        interior_algorithm: int = 0
+    ):
+        self.interior_algorithm = interior_algorithm
+        super().__init__(tree, style, fixed_order, fixed_position)
 
     def run(self):
-        """Fills the .coords array with x, y coordinates."""
+        """Fills the .coords array with x, y coordinates.
 
-        # get coordinates from current x,y attributes unless fixed args,
-        # in which case a new traversal is required to get coords.
-        if (self.fixed_order is None) and (self.fixed_position is None):
-            self.coords = np.array(list(self.tree._iter_node_coordinates()))
-        else:
+        mode: int
+            0 = intermediate (mean of children; default)
+            1 = centered (mean of descendant tips; used in cloud trees)
+            2 = weighted (TODO: not implemented)
+        """
+        # generate new (x, y) linear coordinates
+        if bool(self.interior_algorithm) | (self.fixed_order is not None) | (self.fixed_position is not None):
             self.coords = self._get_fixed_order_and_position_coords()
+        else:
+            self.coords = np.array(list(self.tree._iter_node_coordinates()))
 
         # update coordinates for 'use_edge_lengths' and orientation.
         self._update_coordinates()
@@ -99,7 +111,7 @@ class LinearLayout(BaseLayout):
 
     def _assign_unit_length_edges(self) -> None:
         """When use_edge_length=False this sets all dists to unit 1"""
-        for node in self.tree.traverse("postorder"):
+        for node in self.tree:  # .traverse("postorder"):
             if node.is_leaf():
                 self.coords[node.idx, 1] = 0
             else:
@@ -143,7 +155,31 @@ class LinearLayout(BaseLayout):
                 newx = positions[idxorder[node.idx]]
                 coords.append((newx, node._height))
             else:
-                newx = np.mean([coords[i.idx][0] for i in node.children])
+                # set internal node at midpoint between its children
+                # centered placement
+                if not self.interior_algorithm:
+                    newx = sum([
+                        coords[min(node.children).idx][0],
+                        coords[max(node.children).idx][0],
+                    ]) / 2
+                    # newx = np.mean([coords[i.idx][0] for i in node.children])
+                # intermediate placement
+                elif self.interior_algorithm == 1:
+                    tips = node.get_leaves()
+                    newx = sum([
+                        coords[min(tips).idx][0],
+                        coords[max(tips).idx][0],
+                    ]) / 2
+                # weighted
+                else:
+                    minc = min(node.children)
+                    maxc = max(node.children)
+                    mind = minc.dist
+                    maxd = maxc.dist
+                    minx = coords[minc.idx][0]
+                    maxx = coords[maxc.idx][0]
+                    newx = (((1 / mind) * minx) + ((1 / maxd) * maxx)) / ((1 / mind) + (1 / maxd))
+
                 coords.append((newx, node._height))
         return np.array(coords)
 
@@ -156,6 +192,7 @@ if __name__ == "__main__":
     tre.style.xbaseline = 5
     tre.style.ybaseline = 2.5
     tre.style.layout = 'u'
-    lay = LinearLayout(tre, tre.style, None, None)
+    lay = LinearLayout(tre, tre.style, None, None, interior_algorithm=1)
     print(lay.coords)
     print(lay.tcoords)
+    print(lay.interior_algorithm)
