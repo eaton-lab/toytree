@@ -350,9 +350,14 @@ def parse_newick_string_custom(
         either 'name' or 'support' based on numeric or string types
         being present.
     """
+    # raise exception if semicolon is missing then strip it.
     newick = newick.strip()
     assert newick.endswith(";"), "newick string must end with ';'"
     newick = newick[:-1]
+
+    # raise exception if parentheses are imbalanced
+    if newick.count("(") != newick.count(")"):
+        raise ToytreeError("Newick string parentheses are imbalanced")
 
     # select formatting functions
     if feat_formatter is None:
