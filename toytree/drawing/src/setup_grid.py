@@ -53,7 +53,7 @@ class Grid:
         for idx in range(nplots):
 
             # get the margin setting depending on axes on edge or mid
-            if self.margin:
+            if self.margin is not None:
                 margin = self.margin
             else:
                 if self.nrows == 1:
@@ -185,8 +185,7 @@ class GridSetup:
             self.axes.append(axes)
 
     def get_tree_dims(self):
-        """
-        get height and width if not set by user
+        """Get height and width if not set by user
         """
         # wider than tall
         if self.layout in ("d", "u"):

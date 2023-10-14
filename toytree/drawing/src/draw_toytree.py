@@ -168,7 +168,8 @@ def get_layout(tree: ToyTree, style: TreeStyle, **kwargs) -> BaseLayout:
             tree,
             style,
             kwargs.get("fixed_order"),
-            kwargs.get("fixed_position")
+            kwargs.get("fixed_position"),
+            kwargs.get("interior_algorithm", 0),
         )
 
     # warn user that positional constraints are only for linear layouts

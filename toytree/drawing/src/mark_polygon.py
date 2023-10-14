@@ -37,8 +37,13 @@ class Polygon(Mark):
         self._table = points
         # self.points: str = self._points_to_str(points)
         self.stroke: str = kwargs.get("stroke", "black")
-        self.stroke_width: float = kwargs.get("stroke_width", 1)
+        self.stroke_width: float = kwargs.get("stroke_width", 2)
+        self.stroke_opacity: float = kwargs.get("stroke_opacity", 1)
+        self.stroke_opacity: float = kwargs.get("stroke-opacity", self.stroke_opacity)
+
         self.fill: str = kwargs.get("fill", ToyColor("black"))
+        self.fill_opacity: float = kwargs.get("fill_opacity", 0.5)
+        self.fill_opacity: float = kwargs.get("fill-opacity", self.fill_opacity)
 
     def domain(self, axis: str) -> np.ndarray:
         """Return position of Marks on a coordinate axis."""
@@ -83,10 +88,11 @@ class RenderPolygon:
             self.mark_xml, "polygon",
             points=points,
             style=concat_style_fix_color({
-                "fill": "red",
-                "fill-opacity": 0.5,
+                "fill": self.mark.fill,
+                "fill-opacity": self.mark.fill_opacity,
                 "stroke": self.mark.stroke,
-                "stroke-width": 3,
+                "stroke-width": self.mark.stroke_width,
+                "stroke-opacity": self.mark.stroke_opacity
             }),
         )
 

@@ -107,7 +107,6 @@ if __name__ == "__main__":
 
     mtree[10].style.edge_style.stroke = "red"
     mtree[10].style.edge_style.stroke_opacity = 1
-    _, axes, marks = draw_cloudtree(mtree, **kwargs)
-
+    marks = draw_cloudtree(mtree, **kwargs)
     if marks:
         toytree.utils.show([canvas])
