@@ -278,7 +278,7 @@ class Coords:
             tmp = verts
 
         # right-facing tips align at x=0, last ladderized tip at y=0
-        if layout == 'r':
+        elif layout == 'r':
             # verts swap x and ys and make xs 0 to negative
             tmp = np.zeros(verts.shape)
             tmp[:, 1] = verts[:, 0]
