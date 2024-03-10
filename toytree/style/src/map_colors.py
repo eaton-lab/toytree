@@ -15,7 +15,6 @@ import toyplot
 from toytree.color import ToyColor
 from toytree.utils.src.exceptions import ToytreeError
 
-
 logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
 
@@ -57,6 +56,7 @@ def get_color_mapped_feature(
     domain_max: Optional[float] = None,
     nan_value: Optional[float] = None,
     tips_only: bool = False,
+    reverse: bool = False,
 ) -> np.ndarray:
     """Return an array of colors mapped to feature data in a tree.
 
@@ -77,13 +77,15 @@ def get_color_mapped_feature(
         then NaN values will be mapped to 'transparent'.
     tips_only: bool
         If True then data is only projected and returned for tip Nodes.
+    reverse: bool
+        Reverse the order of the colormap.
     """
+    assert hasattr(tree, "nnodes"), "first argument must be a ToyTree."
     if tips_only:
         values = tree.get_tip_data(feature).values
     else:
         values = tree.get_node_data(feature).values
-    values = tree.get_node_data(feature).values
-    return get_color_mapped_values(values, cmap, domain_min, domain_max, nan_value)
+    return get_color_mapped_values(values, cmap, domain_min, domain_max, nan_value, reverse)
 
 
 def get_color_mapped_values(
@@ -92,6 +94,7 @@ def get_color_mapped_values(
     domain_min: Optional[float] = None,
     domain_max: Optional[float] = None,
     nan_value: Optional[float] = None,
+    reverse: bool = False,
 ) -> np.ndarray:
     """Return feature mapped to a continuous or discrete color map.
 
@@ -111,6 +114,8 @@ def get_color_mapped_values(
     nan_value: float or None
         A value to substitute for any missing (NaN) values. If None
         then NaN values will be mapped to 'transparent'.
+    reverse: bool
+        Reverse the order of the colormap.
 
     Examples
     --------
@@ -120,16 +125,22 @@ def get_color_mapped_values(
     if cmap is None:
         cmap = "Spectral"
 
+    # store original cmap var before conversion to ColorMap
+    cmap_orig = cmap
+
     # if colormap is str then expand to a color.Map
     if isinstance(cmap, str):
+        # return as Categorial or LinearMap or...
         try:
-            cmap = toyplot.color.brewer.map(cmap, domain_min=domain_min, domain_max=domain_max)
+            cmap = toyplot.color.brewer.map(cmap, domain_min=domain_min, domain_max=domain_max, reverse=reverse)
         except KeyError:
+            # return as LinearMap
             try:
                 cmap = toyplot.color.linear.map(cmap, domain_min=domain_min, domain_max=domain_max)
             except KeyError:
+                # return as DivergingMap
                 try:
-                    cmap = toyplot.color.diverging.map(cmap, domain_min=domain_min, domain_max=domain_max)
+                    cmap = toyplot.color.diverging.map(cmap, domain_min=domain_min, domain_max=domain_max, reverse=reverse)
                 except KeyError:
                     msg = "Invalid colormap arg for (feature, colormap) input.\n" + CMAP_ERROR
                     raise ToytreeError(msg)
@@ -140,7 +151,7 @@ def get_color_mapped_values(
         # try converting colormap to a Palette for ndarray or Sequence[Color]
         # and add a transparent color at end to use for np.nan.
         try:
-            cmap = toyplot.color.Palette(cmap)
+            cmap = toyplot.color.Palette(cmap, reverse=reverse)
             cmap += toyplot.color.Palette(["transparent"])
         except Exception:
             msg = "Invalid colormap arg for (feature, colormap) input.\n" + CMAP_ERROR
@@ -148,9 +159,8 @@ def get_color_mapped_values(
 
     # --- colormap is now CategoricalMap, LinearMap or Palette ---
 
-    # if map is Categorical then try to treat data as categorical too
+    # if map is Categorical then try to treat data as categorical, or raise error
     if isinstance(cmap, toyplot.color.CategoricalMap):
-
         # convert data to str, with nan as highest sort str character
         cvalues = [str(i) for i in values]
         cvalues = ["~~" + i if i == "nan" else i for i in cvalues]
@@ -160,17 +170,26 @@ def get_color_mapped_values(
 
         # raise warning if not enough categories for data
         if cmap.domain.max < len(categories):
-            logger.warning(CATEGORICAL_TOO_FEW_CATEGORIES)
+            # logger.warning(CATEGORICAL_TOO_FEW_CATEGORIES)
+            raise ToytreeError(CATEGORICAL_TOO_FEW_CATEGORIES)
+
+        # recreate the map using count of current data
+        if isinstance(cmap_orig, str):
+            # handle toyplot error that does not allow ncategories=2
+            try:
+                cmap = toyplot.color.brewer.map(cmap_orig, count=len(categories), domain_min=domain_min, domain_max=domain_max, reverse=reverse)
+            # ...HERE...
+            except KeyError:
+                cmap = toyplot.color.brewer.map(cmap_orig, count=max(3, len(categories)), domain_min=domain_min, domain_max=domain_max, reverse=reverse)                
 
         # broadcast data to color map
         colors = cmap.colors(cvalues)
 
-    # if is a Palette
+    # if cmap is a Palette
     elif isinstance(cmap, toyplot.color.Palette):
 
         # convert data to int categories
         cvalues = [str(i) for i in values]
-
         categories, cvalues = np.unique(cvalues, return_inverse=True)
 
         # raise warning if not enough categories for data
@@ -180,7 +199,7 @@ def get_color_mapped_values(
         # broadcast data to color map
         colors = np.array([cmap.color(i) for i in cvalues])
 
-    # if map is Linear
+    # if map is Linear (data can be linear or categorial)
     else:
 
         # convert values to floats and fit colormap to data domain
@@ -191,6 +210,21 @@ def get_color_mapped_values(
         except (TypeError, ValueError):
             cvalues = [str(i) for i in values]
             categories, cvalues = np.unique(cvalues, return_inverse=True)
+
+            # recreate the map using count of current data
+            try:
+                if isinstance(cmap_orig, str):
+                    cmap = toyplot.color.brewer.map(cmap_orig, count=len(categories), domain_min=domain_min, domain_max=domain_max, reverse=reverse)
+            # try to convert linearmap to categorical
+            except KeyError:
+                cmap = toyplot.color.brewer.map(cmap_orig, count=max(3, len(categories) + 1), domain_min=domain_min, domain_max=domain_max, reverse=reverse)                
+                # raise ToytreeError(
+                #     "Data cannot be colormapped. You selected discrete data but a linear colormap.\n"
+                #     f"  data={cvalues[:5]}...\n"
+                #     f"  cmap={cmap}.\n"
+                #     "Try an alternative cmap such as 'Set2'.\n\n"
+                #     "(See https://toyplot.readthedocs.io/en/stable/colors.html#Color-Maps)"
+                # ) from exc
 
         # fit colormap domain to float values or int categories
         if not all(np.isnan(cvalues)):
@@ -232,9 +266,10 @@ if __name__ == "__main__":
         "BlueRed",
         "Spectral",
         toyplot.color.brewer.map("BlueRed"),
+        "Set2",
     ]
 
     for idx, values in enumerate(DATA):
         for cmap in COLOR_MAPS:
             print(f"dataset={idx}, colormap={cmap}")
-            print(get_color_mapped_feature(values, cmap))
+            print(get_color_mapped_values(values, cmap))
