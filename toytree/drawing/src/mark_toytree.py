@@ -18,6 +18,7 @@ import toyplot.text
 logger = logger.bind(name="toytree")
 
 
+# Note: see toytree/drawing/src/render_tree.py for rendering code.
 class ToyTreeMark(Mark):
     """Tree Mark optionally including Node markers and tip labels.
 
@@ -129,7 +130,7 @@ def set_marker_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndarray
     iter_data = zip(mark.node_markers, mark.node_sizes)
     for idx, (marker, size) in enumerate(iter_data):
         if marker.startswith("r"):
-            width, height = [int(i) for i in marker[1:].split("x")]
+            width, height = [float(i) for i in marker[1:].split("x")]
         else:
             width, height = 1, 1
         yext[idx] = height * size
