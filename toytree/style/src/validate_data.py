@@ -10,7 +10,7 @@ import toyplot
 from loguru import logger
 
 from toytree.color import ToyColor
-from toytree.utils import ToytreeError
+from toytree.utils import ToytreeError, ToyColorError
 from toytree.style.src.validate_utils import check_arr
 from toytree.style.src.style_base import NodeStyle, NodeLabelStyle, TreeStyle
 from toytree.style import get_range_mapped_feature, get_color_mapped_feature
@@ -115,22 +115,30 @@ def validate_numeric(
     if isinstance(values, (int, float)):
         values = np.repeat(values, size)
 
-    # expand str feature name to a tuple of (feature,) or (feature, min, max)
+    # expand str feature name to a tuple of (feature, min, max) so that nan is handled below
     elif isinstance(values, str):
-        if values == "node_sizes":
-            values = (values, 5., 20.)
-        elif values == "edge_widths":
-            values = (values, 2., 5.)
+        if size == tree.ntips:
+            data = tree.get_tip_data(values)
+            values = (values, data.min(), data.max())
         else:
-            values = (values, )
+            data = tree.get_node_data(values)
+            values = (values, data.min(), data.max())
+        # if values == "node_sizes":
+        #     values = (values, 5., 20.)
+        # elif values == "edge_widths":
+        #     values = (values, 2., 5.)
+        # else:
+        #     values = (values, )
 
     # expand as value mapped
     if isinstance(values, tuple) and isinstance(values[0], str):  # len(values) <= 4:
         feature, *args = values
         # defaults selected for marker sizes
+        min_default = 2 if feature == "edge_widths" else 5
+        max_default = 5 if feature == "edge_widths" else 20
         kwargs = dict(zip(("min_value", "max_value", "nan_value"), args))
-        kwargs["min_value"] = kwargs.get("min_value", 5.0)
-        kwargs["max_value"] = kwargs.get("max_value", 20.0)
+        kwargs["min_value"] = kwargs.get("min_value", min_default)
+        kwargs["max_value"] = kwargs.get("max_value", max_default)
         kwargs["nan_value"] = kwargs.get("nan_value", 0.0)
         kwargs["tips_only"] = True if size == tree.ntips else False
         return get_range_mapped_feature(tree, feature, **kwargs)
@@ -184,7 +192,7 @@ def validate_colors(
     Args
     ----
     None: None. Node color will use node_style.fill
-    str: set all as ToyColor(str)
+    str: set all as ToyColor(str) unless str is a feature name
     ndarray dtype: set all as ToyColor(ndarray)
     tuple w/ len > 2:
     tuple w/ len == 2:
@@ -206,7 +214,12 @@ def validate_colors(
 
     # do colormapping if colors is a str feature name
     if isinstance(colors, str) and colors in tree.features:
-        colors = (colors, )
+        # do not colormap feature if feature is already a valid list of colors
+        try:
+            colors = ToyColor.color_expander(tree.get_node_data(colors))
+        # else colormap it
+        except ToyColorError:
+            colors = (colors, )
 
     # special (feature, cmap), but not single color as tuple (0, 0, 1, 1).
     if isinstance(colors, tuple) and isinstance(colors[0], str):
