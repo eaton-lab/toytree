@@ -11,15 +11,15 @@ References
 ----------
 - https://pedrohbraga.github.io/CommunityPhylogenetics-Workshop/CommunityPhylogenetics-Workshop.html#within-assemblage-phylogenetic-structure
 - https://phylodiversity.net/
-- Cavender‐Bares, J. , Kozak, K. H., Fine, P. V. and Kembel, S. W. 
-(2009), The merging of community ecology and phylogenetic biology. 
+- Cavender‐Bares, J. , Kozak, K. H., Fine, P. V. and Kembel, S. W.
+(2009), The merging of community ecology and phylogenetic biology.
 Ecology Letters, 12: 693-715. doi:10.1111/j.1461-0248.2009.01314.x
 
 PSV and PGLMM methods
 ---------------------
 - Ives and Helmus 2011
-- Helmus M.R., Bland T.J., Williams C.K. & Ives A.R. (2007) 
-  Phylogenetic measures of biodiversity. American Naturalist, 
+- Helmus M.R., Bland T.J., Williams C.K. & Ives A.R. (2007)
+  Phylogenetic measures of biodiversity. American Naturalist,
   169, E68-E83
 - TODO: phylogenetic entropy, Allen et al. 2009
 
@@ -27,7 +27,7 @@ Validation
 ----------
 Following the methods in this paper
 - https://link.springer.com/chapter/10.1007/978-3-662-43550-2_19
-which cites Cadotte et al. for the approach, we can simulate 
+which cites Cadotte et al. for the approach, we can simulate
 communities, compute N different statistics, and perform clustering
 on the outputs to show how similar the results of different metrics
 are.
@@ -50,8 +50,8 @@ ToyTree = TypeVar("ToyTree")
 # TODO: simulate abundances as lognormally distributed?
 def simulate_community_data(
     tree: ToyTree,
-    scalar: float=0, 
-    size: int=1, 
+    scalar: float=0,
+    size: int=1,
     seed: Optional[int]=None,
     ) -> pd.DataFrame:
     """Return a binary (nsites, nspecies) community data matrix.
@@ -61,14 +61,14 @@ def simulate_community_data(
     for phylogenetic attraction, or negative for repulsion. Phylo
     effects are modeled by a Cholesky decomposition of the VCV if
     scalar is positive, or of the inverse of VCV if negative. Random
-    values are drawn from a normal distribution (R), and the 
+    values are drawn from a normal distribution (R), and the
     prob of species occurrence is logistic with probability:
 
     $$ p = \frac{e^{cLR}}{(1 - e^{cLR})} $$
 
     A pandas.DataFrame is returned with N (size) sites where every
     site includes at least one observed species from the phylogeny.
-    
+
     Parameters
     ----------
     tree: ToyTree
@@ -97,14 +97,14 @@ def simulate_community_data(
 
 def get_community_metric(
     tree: ToyTree,
-    matrix: ArrayLike, 
+    matrix: ArrayLike,
     metric="pd",
     null=None,
     ) -> Union[float, np.ndarray]:
     """Return a community metric given a tree and matrix.
 
     Supported metrics are also available in individual functions
-    with more detailed documentation in the `toytree.pcm.phylocom` 
+    with more detailed documentation in the `toytree.pcm.phylocom`
     subpackage. These include ...
 
     Parameters
