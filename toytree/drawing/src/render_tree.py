@@ -6,7 +6,7 @@ TODO
 ----
   - fixed-order extension to tip positions for missing labels..?
   - container tree to Mark
-  - Cirlce tree does not project y-axis...
+  - Circle tree does not project y-axis...
 
 
 <g class='pie-0'b style='stroke: black; stroke-width: 1'>
@@ -33,6 +33,7 @@ from toytree.drawing import ToyTreeMark
 from toytree.drawing.src.render_text import render_text
 from toytree.drawing.src.render_marker import render_marker
 from toytree.color.src.concat import concat_style_fix_color
+from toytree.layout.src.get_edge_midpoints import get_edge_midpoints
 
 # SVG path formats for creating edges in tree drawings
 PATH_FORMAT = {
@@ -101,6 +102,10 @@ class RenderToytree:
         self.nodes_y = self.axes.project('y', self.mark.ntable[:, 1])
         self.tips_x = self.axes.project('x', self.mark.ttable[:, 0])
         self.tips_y = self.axes.project('y', self.mark.ttable[:, 1])
+        mcoords = get_edge_midpoints(
+            self.mark.etable, self.mark.ntable, self.mark.layout, self.mark.edge_type)
+        self.mid_x = self.axes.project('x', mcoords[:, 0])
+        self.mid_y = self.axes.project('y', mcoords[:, 1])
 
     def build_dom(self):
         """Creates DOM of xml.SubElements in self.context."""
@@ -261,8 +266,22 @@ class RenderToytree:
         # for node_style.fill-opacity (except for fill=transparent)
         unique_styles = get_unique_node_styles(self.mark)
 
+        # get nnodes to draw (fewer if drawing edges or unrooted)
+        if self.mark.node_as_edge_data:
+            nedges = self.mark.nnodes - 2
+            if np.count_nonzero(self.mark.etable[:, 1] == self.mark.etable[-1, 1]) > 2:
+                nedges += 1
+            nmarkers = nedges
+            xcoords = self.mid_x
+            ycoords = self.mid_y
+        else:
+            nmarkers = self.mark.nnodes
+            xcoords = self.nodes_x
+            ycoords = self.nodes_y
+
         # add node markers in reverse idx order (levelorder traversal)
-        for nidx in range(self.mark.nnodes):
+        # for nidx in range(self.mark.nnodes):
+        for nidx in range(nmarkers):
 
             # skip if node is masked
             if not self.mark.node_mask[nidx]:
@@ -294,8 +313,8 @@ class RenderToytree:
 
             # project marker in coordinate space
             transform = "translate({:.6g},{:.6g})".format(
-                self.nodes_x[nidx],
-                self.nodes_y[nidx],
+                xcoords[nidx],
+                ycoords[nidx],
             )
             if marker.angle:
                 transform += " rotate({:.3f})".format(-marker.angle)
@@ -325,8 +344,21 @@ class RenderToytree:
             style=concat_style_fix_color(shared_style, "stroke:none"),
         )
 
+        # get nnodes to draw (fewer if drawing edges or unrooted)
+        if self.mark.node_as_edge_data:
+            nedges = self.mark.nnodes - 2
+            if np.count_nonzero(self.mark.etable[:, 1] == self.mark.etable[-1, 1]) > 2:
+                nedges += 1
+            nmarkers = nedges
+            xcoords = self.mid_x
+            ycoords = self.mid_y
+        else:
+            nmarkers = self.mark.nnodes
+            xcoords = self.nodes_x
+            ycoords = self.nodes_y
+
         # apply unique styles to each node label
-        for idx in range(self.mark.nnodes):
+        for idx in range(nmarkers):
             # masked label
             if not self.mark.node_mask[idx]:
                 continue
@@ -344,8 +376,8 @@ class RenderToytree:
             render_text(
                 root=node_labels_xml,
                 text=label,
-                xpos=self.nodes_x[idx],
-                ypos=self.nodes_y[idx],
+                xpos=xcoords[idx],
+                ypos=ycoords[idx],
                 angle=0,
                 attributes={"class": "toytree-NodeLabel"},
                 style=nlstyle,
