@@ -9,15 +9,20 @@ optimized for speed.
 from typing import Iterator, Callable, Generator, List
 
 from abc import ABC, abstractmethod
+
+from loguru import logger
 from numpy.typing import ArrayLike
 import numpy as np
 import toyplot
 import toytree
 
+logger = logger.bind(name="toytree")
+
 # not yet part of core toytree install
 try:
     import sympy
 except ImportError:
+    # logger.warning("sympy is not installed.")
     pass
 
 # pylint: disable=invalid-name
@@ -598,7 +603,8 @@ class TN93(SubstitutionModel):
 
 def node_conditional_probability(
     node: toytree.Node,
-    p_matrix_func: sympy.core.function) -> ArrayLike:
+    p_matrix_func: sympy.core.function,
+) -> ArrayLike:
     """Return the conditional probability of a Node.
 
     This is a recursive function that can be called on the root Node
@@ -625,7 +631,7 @@ def node_conditional_probability(
 def combine_descendent_conditional_probability(
     child_conditional_prob_gen: Iterator[ArrayLike],
     child_prob_matrix_gen: Iterator[ArrayLike],
-    ) -> ArrayLike:
+) -> ArrayLike:
     r"""Return conditional likelihood of a Node.
 
     Calculates the conditional probability of current node given its
@@ -674,9 +680,9 @@ def get_tree_likelihood(
     data: dict[str: str],
     p_matrix_func: sympy.core.function,
     pi_list: ArrayLike,
-    ) -> float:
+) -> float:
     """Return the log-likelihood of observing data given a tree.
-    
+
     """
     # set observed data as features of tip Nodes
     for nidx in range(tree.ntips):
@@ -691,9 +697,9 @@ def get_tree_likelihood(
 
 
 ######################################################
-##
-## VISUALIZATION FUNCTIONS
-##
+#
+# VISUALIZATION FUNCTIONS
+#
 ######################################################
 
 
@@ -701,7 +707,7 @@ def combine_descendent_conditional_probability_with_plot(
     child_conditional_prob_list: List[ArrayLike],
     child_prob_matrix_list: List[ArrayLike],
     ax1,
-    ) -> ArrayLike:
+) -> ArrayLike:
     """Return visualization of combine_descendent_conditional_probability.
 
     Parameters
@@ -855,13 +861,13 @@ def combine_descendent_conditional_probability_with_plot(
                                   mstyle={"fill": BASE_COLOR_SCHEME[go_base], "stroke": "lightgrey",
                                           "fill-opacity": 0.2})
         ]
-                        )
+    )
     return accumulated_prob
 
 
 def node_conditional_probability_with_plot(
     node, p_matrix_func: sympy.core.function, tree: toytree.ToyTree,
-    ) -> Generator:
+) -> Generator:
     """More description...
 
     Parameters
