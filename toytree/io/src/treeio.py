@@ -93,3 +93,7 @@ if __name__ == "__main__":
     TREE = tree(URI)
     print(TREE)
     print(TREE.get_node_data())
+
+    import toytree
+    tree = toytree.tree("((a,b),c),d);")
+    tree

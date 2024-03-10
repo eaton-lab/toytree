@@ -283,7 +283,16 @@ def meta_parser(
     # splitter and attempting to convert to float.
     try:
         for item in items:
-            key, value = item.split(assignment)
+            # accommodate simplest NHX as in the example of RaxmlBipartitionsBranchLabels
+            # format which has only [value], with no prefix, delim, or assignment
+            if assignment not in item:
+                key = "label"
+                value = item
+            # else parse it as you would normally expect, e.g., [...key=value...]
+            else:
+                key, value = item.split(assignment)
+
+            # try to treat the value as numeric, else default to str
             try:
                 meta[key] = float(value)
             except ValueError:
@@ -445,7 +454,8 @@ def _infer_internal_label_type(tree: ToyTree, internal_labels: Optional[str]) ->
         for idx in range(tree.ntips, tree.nnodes):
             node = tree[idx]
             setattr(node, internal_labels, node.name)
-            node.name = ""
+            if internal_labels != "name":
+                node.name = ""
 
     # infer types, any errors cause internal labels to be str names.
     # To save support values there must be a numeric label for every
@@ -591,6 +601,16 @@ ADH1:0.11[&&NHX:S=yeast:E=1.1.1.1]):0.1[&&NHX:S=Fungi])[&&NHX:E=1.1.1.1:D=N];
     print(t.get_node_data())
 
 
+def test4():
+    import toytree
+    NWK = "((C,D)1,(A,(B,X)3)2,E)R;"
+    print(toytree.tree(NWK).get_node_data())
+    print(toytree.tree(NWK, internal_labels='name').get_node_data())
+
+
 if __name__ == "__main__":
 
-    test3()
+    # test3()
+    # test4()
+    # print(meta_parser("&A=100", prefix="&", delim="", assignment="="))
+    print(meta_parser("100", prefix=""))
