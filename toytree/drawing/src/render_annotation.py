@@ -64,17 +64,17 @@ def render_markers(
 
         # create a <g ..> element for marker w/ or w/o unique style
         attrib = {"id": f"Mark-{nidx}"}
-        if mark.colors is None:
+        if (mark.colors is None) and (mark.opacity is None):
             marker_xml = xml.SubElement(axml, "g", attrib=attrib)
+        elif mark.colors is None:
+            style = f"fill-opacity: {mark.opacity[nidx]:.3f}"
+            marker_xml = xml.SubElement(axml, "g", attrib=attrib, style=style)
         else:
-            marker_xml = xml.SubElement(
-                axml, "g",
-                attrib=attrib,
-                style=concat_style_fix_color({
-                    "fill": mark.colors[nidx],
-                    "fill-opacity": mark.opacity,
-                })
-            )
+            style = concat_style_fix_color({
+                "fill": None if mark.colors is None else mark.colors[nidx],
+                "fill-opacity": None if mark.opacity is None else mark.opacity[nidx],
+            })
+            marker_xml = xml.SubElement(axml, "g", attrib=attrib, style=style)
 
         # project marker in coordinate space
         transform = "translate({:.6g},{:.6g})".format(
@@ -119,17 +119,17 @@ def render_rect(
 
         # create a <g ..> element for marker w/ or w/o unique style
         attrib = {"id": f"Rect-{nidx}"}
-        if mark.colors is None:
+        if (mark.colors is None) and (mark.opacity is None):
             marker_xml = xml.SubElement(axml, "g", attrib=attrib)
+        elif mark.colors is None:
+            style = f"fill-opacity: {mark.opacity[nidx]:.3f}"
+            marker_xml = xml.SubElement(axml, "g", attrib=attrib, style=style)
         else:
-            marker_xml = xml.SubElement(
-                axml, "g",
-                attrib=attrib,
-                style=concat_style_fix_color({
-                    "fill": mark.colors[nidx],
-                    "fill-opacity": mark.opacity[nidx],
-                })
-            )
+            style = concat_style_fix_color({
+                "fill": None if mark.colors is None else mark.colors[nidx],
+                "fill-opacity": None if mark.opacity is None else mark.opacity[nidx],
+            })
+            marker_xml = xml.SubElement(axml, "g", attrib=attrib, style=style)
 
         # position marker in coordinate space
         xpos = left_x[nidx] + mark.xshift
