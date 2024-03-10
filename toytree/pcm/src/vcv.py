@@ -109,8 +109,8 @@ def get_corr_matrix_from_tree(
     return pd.DataFrame(corr, index=names, columns=names)
 
 
-# @add_subpackage_method(PhyloCompAPI)
-def get_tree_from_vcv(vcv: Union[np.ndarray, pd.DataFrame]) -> ToyTree:
+@add_subpackage_method(PhyloCompAPI)
+def get_tree_from_vcv_matrix(vcv: Union[np.ndarray, pd.DataFrame]) -> ToyTree:
     """Return tree reconstructed from a variance-covariance matrix.
 
     This first converts the VCV, which represents unique and shared
@@ -133,6 +133,7 @@ if __name__ == "__main__":
     tre = toytree.rtree.rtree(10, seed=123)
     vcv = get_vcv_matrix_from_tree(tre, df=True)
     print(tre)
+    print(vcv)
 
     # ttt = get_tree_from_vcv(vcv)
     # print(ttt)
