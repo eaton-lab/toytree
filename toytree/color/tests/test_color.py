@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""
+"""Test converting user inputs of colors to ToyColor arrays.
 
 """
 
