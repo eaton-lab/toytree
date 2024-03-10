@@ -7,9 +7,9 @@ Nodes in a ToyTree.
 
 Note
 ----
-All 'edge' functions in `mod` are written so that the returned ToyTrees 
-are ready to be plotted. This means they update the cached heights 
-(Node._height attributes). These functions do not change the topology, 
+All 'edge' functions in `mod` are written so that the returned ToyTrees
+are ready to be plotted. This means they update the cached heights
+(Node._height attributes). These functions do not change the topology,
 so idx values and x positions do not need to be updated.
 """
 
