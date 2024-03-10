@@ -52,6 +52,7 @@ NON_VALIDATED = [
     "xbaseline",
     "ybaseline",
     "shrink",
+    "node_as_edge_data",
     # "admixture_edges",
     # "fixed_order",
     # "fixed_position",
@@ -110,6 +111,12 @@ def validate_style(tree: ToyTree, style: TreeStyle, **kwargs) -> TreeStyle:
         tree, key="node_colors", size=tree.nnodes, tree_style=style, style=kwargs)
     if node_fill_color is not None:
         style.node_style.fill = node_fill_color
+
+    # style.edge_markers = validate_markers(
+    #     tree, key="edge_markers", size=tree.nnodes - 2, tree_style=style, style=kwargs)
+    # style.edge_labels = validate_labels(
+    #     tree, key="edge_labels", size=tree.nnodes - 2, tree_style=style, style=kwargs)
+    # edge_hover: TODO
 
     # validate edge settings
     style.edge_widths = validate_numeric(
