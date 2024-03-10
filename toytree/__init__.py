@@ -22,7 +22,7 @@ from toytree.core.multitree import MultiTree
 # convenience functions
 from toytree.io.src.treeio import tree
 from toytree.io.src.mtreeio import mtree
-# from toytree.io.src.save import save    # save(canvas, method="html")
+from toytree.io.src.save import save
 
 # toytree v3 supported subpackages
 import toytree.rtree
@@ -35,6 +35,7 @@ import toytree.pcm
 import toytree.network
 import toytree.annotate
 import toytree.data
+
 
 # container trees... container
 
