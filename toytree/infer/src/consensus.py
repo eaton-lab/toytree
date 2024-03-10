@@ -329,7 +329,7 @@ class ConsensusTree:
                         children = node.up.children
                         if len(children) == 2:
                             dist = sum(i.dist for i in children)
-                            print(node, node.dist, dist)
+                            logger.debug([node, node.dist, dist])
                         else:
                             dist = node.dist
                     else:
