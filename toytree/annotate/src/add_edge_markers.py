@@ -26,6 +26,7 @@ from toytree.style.src.validate_nodes import (
 from toytree.style.src.validate_node_labels import (
     validate_node_labels_style,
 )
+from toytree.layout.src.get_edge_midpoints import get_edge_midpoints
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
 
@@ -34,40 +35,6 @@ __all__ = [
     "add_edge_labels",
     # "add_edge_pie_charts",  # see add_pie_markers.py
 ]
-
-
-def _get_edge_midpoints(
-    tree: ToyTree,
-    coords: np.ndarray,
-    layout: str,
-    edge_type: str,
-) -> np.ndarray:
-    """Return mid coords (x,y) on edges for the add_edge_[x] functions.
-
-    Finding midpoints requires information about the layout and edge_type
-    """
-    midpoints = np.zeros((tree.nnodes, 2))
-    for node in tree[:tree.nnodes - 1]:
-        cx, cy = coords[node._idx]
-        px, py = coords[node._up._idx]
-
-        # unrooted layout is always edge_type='c'
-        if edge_type == "c":
-            midx = (px + cx) / 2.
-            midy = (py + cy) / 2.
-        else:
-            if layout in ("u", "d"):
-                midx = cx
-                midy = (py + cy) / 2.
-            elif layout in ("r", "l"):
-                midx = (cx + px) / 2.
-                midy = cy
-            elif layout == "c":
-                raise NotImplementedError("TODO. For now, use edge_type='c'.")
-            else:  # "unrooted":
-                raise NotImplementedError("TODO. For now, use edge_type='c'.")
-        midpoints[node._idx] = (midx, midy)
-    return midpoints
 
 
 @add_subpackage_method(AnnotationAPI)
@@ -134,7 +101,8 @@ def add_edge_markers(
     nedges = tree.nnodes - 2 if tree.is_rooted() else tree.nnodes - 1
 
     # get coordinates of all real edges
-    coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)[:nedges]
+    # coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)[:nedges]
+    coords = get_edge_midpoints(mark.etable, mark.ntable, mark.layout, mark.edge_type)[:nedges]
 
     # mask some edges
     mask = validate_mask(tree, style={"node_mask": mask})[:nedges]
@@ -163,11 +131,13 @@ def add_edge_markers(
     sizes = validate_numeric(tree, key="size", size=tree.nnodes, style={"size": size})[:nedges][mask]
     opacity = validate_numeric(tree, key="opacity", size=tree.nnodes, style={"opacity": opacity})[:nedges][mask]
 
+    # logger.warning(coords)
+    # logger.warning(mask)
     coords = coords[mask, :]
 
     # plot edge markers as scatterplot markers
     mark = AnnotationMarker(
-        ntable=coords[mask],
+        ntable=coords,
         xshift=xshift,
         yshift=yshift,
         sizes=sizes,
@@ -245,7 +215,8 @@ def add_edge_labels(
 
     # get coordinates of all real edges
     nedges = tree.nnodes - 2 if tree.is_rooted() else tree.nnodes - 1
-    coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)[:nedges]
+    # coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)[:nedges]
+    coords = get_edge_midpoints(mark.etable, mark.ntable, mark.layout, mark.edge_type)[:nedges]
 
     # mask some edges
     mask = validate_mask(tree, style={"node_mask": mask})[:nedges]
@@ -262,22 +233,23 @@ def add_edge_labels(
         style["font-size"] = font_size
 
     # check colors
-    label_colors, stroke_color = validate_colors(
-        tree, key="color", size=tree.nnodes, style={"color": color})[:nedges]
+    label_colors, fill_color = validate_colors(
+        tree, key="color", size=tree.nnodes, style={"color": color})
     if label_colors is None:
-        if stroke_color:
-            style["stroke"] = ToyColor(stroke_color)  # overrides ..._style.fill
+        if fill_color:
+            style["fill"] = ToyColor(fill_color)  # overrides ..._style.fill
         else:
             pass  # node_style.fill overrides
     else:
-        label_colors = label_colors[mask]
-        style.pop("stroke")
+        label_colors = label_colors[:nedges][mask]
+        style.pop("fill")
 
     # mask some nodes
     opacity = validate_numeric(
         tree, key="opacity", size=tree.nnodes, style={"opacity": opacity})[:nedges][mask]
     angle = validate_numeric(
         tree, key="angle", size=tree.nnodes, style={"angle": angle})[:nedges][mask]
+
     # expand xshift,yshift args as anchor_shift,baseline_shift
     style['-toyplot-anchor-shift'] += xshift
     style['baseline-shift'] -= yshift
