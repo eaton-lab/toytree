@@ -14,6 +14,7 @@ import unittest
 import numpy as np
 import toytree
 from toytree.color import ToyColor as c
+from toytree.style import get_color_mapped_feature, get_color_mapped_values
 
 
 class TestColorMapper(unittest.TestCase):
@@ -26,12 +27,12 @@ class TestColorMapper(unittest.TestCase):
         data = self.tree.set_node_data("x", [2, 2, 2, 0, 0, 0, 0]).get_node_data("x")
 
         # Categorical
-        colors = toytree.color.get_color_mapped_feature(data, "Set2")
+        colors = get_color_mapped_feature(self.tree, 'x', "Set2")
         [self.assertEqual(c(self.cols[1]), c(i)) for i in colors[:3]]
         [self.assertEqual(c(self.cols[0]), c(i)) for i in colors[3:]]
 
         # Linear
-        colors = toytree.color.get_color_mapped_feature(data, "BlueRed")
+        colors = get_color_mapped_feature('x', "BlueRed")
         rgba_blue = (0.01960784, 0.18823529, 0.38039216, 1.)
         rgba_red = (0.40392157, 0., 0.12156863, 1.)
         for color, expected in zip(colors[0], rgba_red):
@@ -40,7 +41,7 @@ class TestColorMapper(unittest.TestCase):
             self.assertAlmostEqual(color, expected)
 
         # Palette
-        colors = toytree.color.get_color_mapped_feature(data, ['red', 'blue', 'green'])
+        colors = get_color_mapped_feature(data, ['red', 'blue', 'green'])
         tred = toytree.color.ToyColor('red')
         tblue = toytree.color.ToyColor('blue')
         for color, expected in zip(colors[0], tblue.rgba):
@@ -52,18 +53,18 @@ class TestColorMapper(unittest.TestCase):
         data = self.tree.set_node_data("x", [1, 1, 1, np.nan, np.nan, np.nan, np.nan]).get_node_data('x')
 
         # Categorical
-        colors = toytree.color.get_color_mapped_feature(data, "Set2")
+        colors = get_color_mapped_feature(data, "Set2")
         [self.assertEqual(c(self.cols[0]), c(i)) for i in colors[:3]]
         [self.assertEqual(c((0, 0, 0, 0)), c(i)) for i in colors[3:]]
 
         # Linear
-        colors = toytree.color.get_color_mapped_feature(data, "BlueRed")
+        colors = get_color_mapped_feature(data, "BlueRed")
         rgba_blue = (0.01960784, 0.18823529, 0.38039216, 1.)
         for color, expected in zip(colors[0], rgba_blue):
             self.assertAlmostEqual(color, expected)
 
         # Palette
-        colors = toytree.color.get_color_mapped_feature(data, ['red', 'blue', 'green'])
+        colors = get_color_mapped_feature(data, ['red', 'blue', 'green'])
         tred = toytree.color.ToyColor('red')
         for color, expected in zip(colors[0], tred.rgba):
             self.assertAlmostEqual(color, expected)
@@ -72,12 +73,12 @@ class TestColorMapper(unittest.TestCase):
         data = self.tree.set_node_data("x", list("aaabbbb")).get_node_data('x')
 
         # Categorical
-        colors = toytree.color.get_color_mapped_feature(data, "Set2")
+        colors = get_color_mapped_feature(data, "Set2")
         [self.assertEqual(c(self.cols[0]), c(i)) for i in colors[:3]]
         [self.assertEqual(c(self.cols[1]), c(i)) for i in colors[3:]]
 
         # Linear
-        colors = toytree.color.get_color_mapped_feature(data, "BlueRed")
+        colors = get_color_mapped_feature(data, "BlueRed")
         rgba_blue = (0.01960784, 0.18823529, 0.38039216, 1.)
         rgba_red = (0.40392157, 0., 0.12156863, 1.)
         for color, expected in zip(colors[0], rgba_blue):
@@ -86,7 +87,7 @@ class TestColorMapper(unittest.TestCase):
             self.assertAlmostEqual(color, expected)
 
         # Palette
-        colors = toytree.color.get_color_mapped_feature(data, ['red', 'blue', 'green'])
+        colors = get_color_mapped_feature(data, ['red', 'blue', 'green'])
         tred = toytree.color.ToyColor('red')
         tblue = toytree.color.ToyColor('blue')
         for color, expected in zip(colors[0], tred.rgba):
@@ -98,13 +99,13 @@ class TestColorMapper(unittest.TestCase):
         data = self.tree.set_node_data("x", list("aaabb") + [np.nan] * 2).get_node_data('x')
 
         # Categorical
-        colors = toytree.color.get_color_mapped_feature(data, "Set2")
+        colors = get_color_mapped_feature(data, "Set2")
         [self.assertEqual(c(self.cols[0]), c(i)) for i in colors[:3]]
         [self.assertEqual(c(self.cols[1]), c(i)) for i in colors[3:5]]
         [self.assertEqual(c((0, 0, 0, 0)), c(i)) for i in colors[5:]]
 
         # Linear
-        colors = toytree.color.get_color_mapped_feature(data, "BlueRed")
+        colors = get_color_mapped_feature(data, "BlueRed")
         rgba_blue = (0.01960784, 0.18823529, 0.38039216, 1.)
         rgba_mid = (0.96862745, 0.96862745, 0.96862745, 1.)
         for color, expected in zip(colors[0], rgba_blue):
@@ -113,7 +114,7 @@ class TestColorMapper(unittest.TestCase):
             self.assertAlmostEqual(color, expected)
 
         # Palette
-        colors = toytree.color.get_color_mapped_feature(data, ['red', 'blue', 'green'])
+        colors = get_color_mapped_feature(data, ['red', 'blue', 'green'])
         tred = toytree.color.ToyColor('red')
         tblue = toytree.color.ToyColor('blue')
         for color, expected in zip(colors[0], tred.rgba):
@@ -125,14 +126,14 @@ class TestColorMapper(unittest.TestCase):
         data = self.tree.set_node_data("x", [np.nan] * 2 + [3] * 2 + ['a'] * 2 + [3.3]).get_node_data('x')
 
         # Categorical
-        colors = toytree.color.get_color_mapped_feature(data, "Set2")
+        colors = get_color_mapped_feature(data, "Set2")
         [self.assertEqual(c((0, 0, 0, 0)), c(i)) for i in colors[:2]]
         [self.assertEqual(c(self.cols[0]), c(i)) for i in colors[2:4]]
         [self.assertEqual(c(self.cols[2]), c(i)) for i in colors[4:6]]
         [self.assertEqual(c(self.cols[1]), c(i)) for i in colors[6:]]
 
         # Linear
-        colors = toytree.color.get_color_mapped_feature(data, "BlueRed")
+        colors = get_color_mapped_feature(data, "BlueRed")
         c0 = (0., 0., 0., 0.)
         c1 = (0.01960784, 0.18823529, 0.38039216, 1.)
         c2 = (0.96862745, 0.71764706, 0.6, 1.)
