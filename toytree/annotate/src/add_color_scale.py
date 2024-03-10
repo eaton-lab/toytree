@@ -44,8 +44,8 @@ def add_color_scale_from_feature(
     Extracts the colormap and data domain range from the ToyTreeMark
     which has a plotted feature.
 
-    Example
-    -------
+    Examples
+    --------
     >>> c, a, m = tree.draw(node_labels="dist")
     >>> tree.annotate.add_color_scale_from_feature("node_labels", xpos=50, ypos=-50)
     >>> # ...
