@@ -21,7 +21,7 @@ from typing import (
 import re
 from copy import deepcopy
 from hashlib import md5
-from collections.abc import Sequence as SequenceType
+# from collections.abc import Sequence as SequenceType
 
 from loguru import logger
 import numpy as np
@@ -128,27 +128,56 @@ class ToyTree:
         """ToyTree is iterable, returning Nodes in idx order."""
         return (self[i] for i in range(self.nnodes))
 
+    # def __getitem__(self, idx: int) -> Node:
+    #     """Nodes can be accessed by indexing or slicing by idx label"""
+    #     # allow indexing by int, e.g., [3]
+    #     try:
+    #         return self._idx_dict[idx]
+    #     except Exception:
+    #         pass
+    #     # allow slicing by ints, e.g., [3:10:2]
+    #     try:
+    #         return [self._idx_dict[idx] for idx in range(*idx.indices(self.nnodes))]
+    #     except Exception:
+    #         pass
+    #     # allow indexing by a Sequence, e.g., [3, 10, 2, 4]
+    #     try:
+    #         return [self._idx_dict[i] for i in idx]
+    #     except Exception:
+    #         pass
+    #     # if a negative number then get positive and reindex
+    #     try:
+    #         if isinstance(idx, int) and idx < 0:
+    #             return self._idx_dict[self.nnodes + idx]  # idx is negative
+    #     # raise a helpful error message.
+    #     except Exception as exc:
+    #         raise ToytreeError(NODE_INDEXING_ERROR) from exc
+
     def __getitem__(self, idx: int) -> Node:
         """Nodes can be accessed by indexing or slicing by idx label"""
         # allow indexing by int, e.g., [3]
         try:
-            return self._idx_dict[idx]
-        except Exception:
-            pass
-        # allow slicing by ints, e.g., [3:10:2]
-        try:
-            return [self._idx_dict[idx] for idx in range(*idx.indices(self.nnodes))]
-        except Exception:
-            pass
-        # allow indexing by a Sequence, e.g., [3, 10, 2, 4]
-        try:
-            return [self._idx_dict[i] for i in idx]
-        except Exception:
-            pass
-        # if a negative number then get positive and reindex
-        try:
-            if isinstance(idx, int) and idx < 0:
-                return self._idx_dict[self.nnodes + idx]  # idx is negative
+            # try casting to int, to support int, np.int64, np.int32, etc
+            # if isinstance(idx, int):
+            try:
+                idx = int(idx)
+                if idx >= 0:
+                    return self._idx_dict[idx]
+                else:
+                    return self._idx_dict[self.nnodes + idx]  # idx is negative
+            except (ValueError, TypeError):
+                pass
+
+            # allow indexing by a Sequence, e.g., [3, 10, 2, 4]
+            if isinstance(idx, (list, np.ndarray)):
+                return [self._idx_dict[i] for i in idx]
+
+            # allow slicing by ints, e.g., [3:10:2]
+            else:
+                if hasattr(idx, "indices"):
+                    return [self._idx_dict[idx] for idx in range(*idx.indices(self.nnodes))]
+                raise ToytreeError("invalid indexing type.")
+
         # raise a helpful error message.
         except Exception as exc:
             raise ToytreeError(NODE_INDEXING_ERROR) from exc
@@ -919,11 +948,14 @@ class ToyTree:
         node_style: Dict[str, Any] = None,
         node_hover: bool = None,
         node_markers: Sequence[str] = None,
+        node_as_edge_data: bool = False,
         edge_colors: Union[str, Sequence[str]] = None,
         edge_widths: float = None,
         edge_type: str = None,
         edge_style: Dict[str, Any] = None,
         edge_align_style: Dict[str, Any] = None,
+        edge_markers: Sequence[str] = None,
+        edge_labels: Union[bool, Sequence[str]] = None,
         use_edge_lengths: bool = None,
         scale_bar: bool = None,
         padding: float = None,
@@ -1033,6 +1065,10 @@ class ToyTree:
             The shape of node markers: 'o'=circle, 's'=square. See
             toyplot documentation for all available options:
             https://toyplot.readthedocs.io/en/stable/markers.html
+        node_as_edge_data: bool
+            If True then node_markers and node_labels are instead
+            plotted as edge_markers and edge_labels. For more fine
+            control see `toytree.annotate`.
         edge_colors: str or Sequence[str]
             A color or collection of colors nnodes in length to apply
             to edges in node idx order.
@@ -1115,11 +1151,17 @@ class ToyTree:
             node_style=node_style,
             node_colors=node_colors,
             node_markers=node_markers,
+            node_as_edge_data=node_as_edge_data,
             edge_type=edge_type,
             edge_colors=edge_colors,
             edge_widths=edge_widths,
             edge_style=edge_style,
             edge_align_style=edge_align_style,
+            # edge_labels=edge_labels,                 # test
+            # edge_markers=edge_markers,               # test
+            # edge_marker_colors=edge_marker_colors,   # test
+            # edge_marker_sizes=edge_marker_size,      # test
+            # edge_marker_mask=edge_marker_mask,       # test
             use_edge_lengths=use_edge_lengths,
             scale_bar=scale_bar,
             padding=padding,
@@ -1170,10 +1212,11 @@ if __name__ == "__main__":
     tree_ = toytree.rtree.unittree(12, treeheight=1232344, seed=123)
     # tree = tree_.mod.edges_slider(0.5)
     # c, a, m = tree_._draw_browser(tree_style='s', layout='d', new=False)
-    print(tree_.write(dist_formatter="%.12g"))
-    print(tree_.get_node_data())
-    print(tree_.treenode)
-    tree_.draw()
+    # print(tree_.write(dist_formatter="%.12g"))
+    # print(tree_.get_node_data())
+    # print(tree_.treenode)
+    # tree_.draw()
+    print(tree_[80])
 
     # print(tree.get_tip_labels())
 
