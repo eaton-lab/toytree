@@ -151,6 +151,8 @@ class TreeStyle:
     """: Node hover creates a tooltip for interactive data inspection."""
     node_labels: Union[bool, str, Sequence[str], Tuple[str]] = False
     """: Node labels are str plotted on top of Node markers."""
+    node_as_edge_data: bool = False
+    """: Node markers and labels are shown as edge markers and labels."""
 
     tip_labels: Union[bool, Sequence[str], Tuple[str]] = True
     """: Tip labels are str plotted below leaf Node markers."""
