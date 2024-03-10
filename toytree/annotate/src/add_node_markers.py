@@ -48,7 +48,7 @@ def add_node_markers(
     marker: Union[str, Sequence[str]] = "o",
     size: Union[int, Sequence[int]] = 8,
     color: Union[Color, Sequence[Color]] = None,
-    opacity: Union[float, Sequence[float]] = 1.0,
+    opacity: Union[float, Sequence[float]] = None,
     mask: Union[np.ndarray, Tuple[int, int, int], bool, None] = None,
     xshift: int = 0,
     yshift: int = 0,
@@ -86,8 +86,8 @@ def add_node_markers(
     yshift: int
         Shift marker vertically by px units (+=down, -=up).
 
-    Example
-    -------
+    Examples
+    --------
     >>> tree = toytree.rtree.unittree(6, seed=123)
     >>> canvas, axes, m0 = tree.draw()
     >>> # add markers to all Nodes
@@ -138,6 +138,11 @@ def add_node_markers(
         tree, key="size", size=tree.nnodes, style={"size": size})[mask]
     opacity = validate_numeric(
         tree, key="opacity", size=tree.nnodes, style={"opacity": opacity})[mask]
+
+    # if all marker opacities are the same then set to 1 and use style
+    if len(set(opacity)) == 1:
+        style["fill-opacity"] = opacity[0]
+        opacity = None,
 
     mark = AnnotationMarker(
         ntable=coords[mask],
@@ -229,8 +234,8 @@ def add_node_labels(
     style: dict
         Style dict. See `tree.style.node_labels_style` for options.
 
-    Example
-    -------
+    Examples
+    --------
     >>> tree = toytree.rtree.unittree(6, seed=123)
     >>> canvas, axes, m0 = tree.draw()
     >>> m1 = tree.annotate.add_node_labels(
@@ -345,8 +350,8 @@ def add_node_bars(
         Index of annotation (default=0). Lower index makes the bars
         appears behind other marks (e.g., tree or other annotations).
 
-    Example
-    -------
+    Examples
+    --------
     >>> tree = toytree.rtree.unittree(10, treeheight=1e5)
     >>> c, a, m = tree.draw()
     >>> node_height = tree.get_node_data("height").values
