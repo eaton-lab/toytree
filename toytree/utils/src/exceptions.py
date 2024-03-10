@@ -75,11 +75,11 @@ following to translate a query from one tree to another:
 
 NODE_INDEXING_ERROR = """\
 Error indexing from ToyTree object. You likely entered an invalid
-Node query. Note: using indexing Nodes can be selected by their
-int idx label by index, slicing, or as a list:
->>> tree[3]                           # Node(idx=3)
->>> tree[3:4]                         # [Node(idx=3), Node(idx=4)]
->>> tree[[3,10,2]                     # [Node(idx=3), Node(idx=10), Node(idx=2)]
+Node query. Note: Nodes can be selected by their int idx label using
+indexing, slicing, or as a list:
+>>> tree[3]                         # Node(idx=3)
+>>> tree[3:4]                       # [Node(idx=3), Node(idx=4)]
+>>> tree[[3,10,2]]                  # [Node(idx=3), Node(idx=10), Node(idx=2)]
 
 Also, see the `.get_nodes` function for more options to query Nodes
 by int idx label, str name label, Node object, or a mixture:
