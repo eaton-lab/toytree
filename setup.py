@@ -1,8 +1,19 @@
 #!/usr/bin/env python
 
-from setuptools import setup, find_packages
+"""
+Users: Install with conda:
+    conda install toytree -c conda-forge
+
+Developers: Install with git + pip
+    conda install toytree -c conda-forge
+    git clone https://github.com/eaton-lab/toytree
+    cd toytree/
+    pip install -e . --no-deps
+"""
+
 import re
 from pathlib import Path
+from setuptools import setup, find_packages
 
 DIR = Path(__file__).parent
 LONG_DESC = (DIR / "README.md").read_text()
@@ -12,12 +23,6 @@ VERSION = re.search(
     INIT_DATA,
     re.M,
 ).group(1)
-
-# get version from __init__.py
-#INITFILE = "toytree/__init__.py"
-#CUR_VERSION = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]",
-#                    open(INITFILE, "r").read(),
-#                    re.M).group(1)
 
 # run setup
 setup(
@@ -30,16 +35,20 @@ setup(
     long_description=LONG_DESC,
     long_description_content_type='text/markdown',
     packages=find_packages(),
+    # packages=find_packages(),
     install_requires=[
         "toyplot",
         "numpy",
+        "scipy",
+        "pandas",
+        "loguru",
         "requests",
-        "future",
+        # "ghostscript"
+        # "pillow"
     ],
     entry_points={},
-    license='GPL',
+    license='GPLv3',
     classifiers=[
-        'Programming Language :: Python :: 2',
         'Programming Language :: Python :: 3',
     ],
 )

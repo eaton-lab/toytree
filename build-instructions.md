@@ -17,3 +17,6 @@ git add recipe/meta.yaml
 git commit -m "new release "
 # push and check that it passed auto checks
 git push origin main
+
+## conda-forge 
+git clone git@github.com:eaton-lab/toytree-feedstock.git

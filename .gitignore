@@ -1,10 +1,13 @@
 ## ignore these files
 *.pyc
 *~
+__pycache__/
 .DS_Store
 .ipynb_checkpoints
 build
 dist
 toyplot.egg-info/
+toytree.egg-info/
 tests/*
 site/
+.idea/
