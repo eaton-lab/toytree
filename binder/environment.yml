@@ -1,6 +1,0 @@
-name: toytree
-channels: 
-  - conda-forge
-dependencies:
-  - python>=3
-  - toytree

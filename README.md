@@ -3,7 +3,10 @@ Toytree
 
 Tree plotting with **Toytree** in Python
 ----------------------------------------
-Welcome to toytree, a minimalist tree manipulation and plotting library for use inside jupyter notebooks. Toytree combines a popular tree data structure based on the [ete3](http://etetoolkit.org/docs/latest/tutorial/tutorial_trees.html) library with modern plotting tools based on the [toyplot](http://toyplot.rtfd.io/) plotting library. The goal of toytree is to provide a light-weight Python equivalent to commonly used tree manipulation and plotting libraries in R, and in doing so, to promote further development of phylogenetic methods in Python. Toytree generates rich interactive figures (SVG+HTML+JS) that can be embedded in jupyter-notebooks or webpages, or rendered in SVG, PDF, or PNG for publications. 
+Welcome to toytree, a minimalist tree manipulation and plotting library 
+for use inside jupyter notebooks. Toytree combines a popular tree data 
+structure based on the [ete3](http://etetoolkit.org/docs/latest/tutorial/tutorial_trees.html) library with modern plotting tools based on the [toyplot](http://toyplot.rtfd.io/) 
+plotting library. The goal of toytree is to provide a light-weight Python equivalent to commonly used tree manipulation and plotting libraries in R, and in doing so, to promote further development of phylogenetic methods in Python. Toytree generates rich interactive figures (SVG+HTML+JS) that can be embedded in jupyter-notebooks or webpages, or rendered in SVG, PDF, or PNG for publications. 
 
 
 Current build status
@@ -49,7 +52,7 @@ import toytree
 tre = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
 
 # root the tree using a wildcard string matching and draw a tree figure.
-rtre = tre.root(wildcard='prz')
+rtre = tre.root('~prz')
 rtre.draw(width=400, tip_labels_align=True);
 
 # or chain a few functions together
