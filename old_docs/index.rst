@@ -25,6 +25,12 @@ Documentation
    9-networks.ipynb
    10-treestyles.ipynb
    Cookbook.ipynb
-   Change-log.rst
+   source/modules
+   .. Change-log.rst
 
 
+Indices and tables
+===================
+* :ref:`genindex`
+* :ref:`modindex`
+* :ref:`search`

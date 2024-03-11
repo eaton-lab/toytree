@@ -4,13 +4,13 @@
 
 
 Installation
-=================
+============
 
 Toytree can be installed using pip or conda. I recommend the conda version. 
 Either should pull in all dependencies including `toyplot`. 
 
 Conda install (recommended)
--------------------
+---------------------------
 
 .. code:: bash
 
@@ -18,18 +18,19 @@ Conda install (recommended)
 
 
 Pip install
-------------
+-----------
 
 .. code:: bash
 
 	pip install toytree
 
 
-Dependencies:
--------------
+Dependencies
+------------
 Toytree dependencies:  
 
 	- toyplot
 	- numpy
-	- future
-	- requests      
+    - requests      
+    - scipy
+    - pandas
