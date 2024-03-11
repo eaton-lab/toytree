@@ -1,0 +1,210 @@
+# yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
+
+# conda install mkdocs-material mkdocs-jupyter mkdocstrings mkdocstrings-python -c conda-forge
+site_name: toytree v3 documentation
+repo_url: https://github.com/eaton-lab/toytree
+edit_uri: edit/master/docs/
+
+theme:
+  name: material
+  palette:
+    primary: indigo
+  icon:
+    repo: fontawesome/brands/github
+  features:
+    - navigation.instant
+    - navigation.tracking
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - content.code.copy  # unfortunately style varies depending if mkdocs-jupyter or not.
+    # - search.highlight
+    # - search.suggest
+
+plugins:
+  - search
+  # - mkdocstrings:
+  #     handlers:
+  #       python:
+  #         options:
+  #           # docstring_style: google
+  #           docstring_style: numpy
+  #           annotations_path: brief            
+  - mkdocs-jupyter:
+      kernel_name: py310
+      ignore_h1_titles: true
+      include_requirejs: true
+      # highlight_extra_classes: "custom-css-classes"  # don't use this!
+      # execute: True      
+      # no_input: True
+      # show_input: False
+      # include: ["*.ipynb"] # Default: ["*.py", "*.ipynb"]
+      ignore: [".ipynb_checkpoints/*.ipynb"]
+
+extra_css:
+  # - stylesheets/extra.css
+  - css/mkdocstrings.css
+
+markdown_extensions:
+  - pymdownx.highlight:
+      anchor_linenums: true
+      line_spans: __span
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.snippets
+  - pymdownx.superfences
+
+nav:
+  - Getting started:
+    - Home: index.md    
+    - Installation: installation.md
+    # - Try it now: try-it-now.md (BINDER IS DEAD)
+    - Change log: change_log.md
+    - Contribute: contribute.md
+    - Citation: citation.md
+
+  - User Guide:
+    - Quick Guide: quick_guide.ipynb
+
+    - Tree I/O:
+      - parsing tree data: parse_trees.ipynb
+      - writing tree data: write_trees.ipynb
+    
+    - Object Types:
+      - Node: node.ipynb
+      - ToyTree: toytree.ipynb
+      - MultiTree: multitree.ipynb
+    
+    - Traversal and Node selection:
+      - traversal order/methods: traversal.ipynb
+      - node query/selection: query.ipynb
+    
+    - Data/Features: data.ipynb
+    
+    # - <span style="color:darkcyan; font-style:bold">Tree drawing</span>:
+    - Tree Drawing:
+      - draw basics: drawing-basics.ipynb
+      - draw options: ...
+      - coordinates and axes: ... #drawing-coordinates.ipynb
+      - composite plots: ...
+      - tree styles: ...
+      - save/export canvas: ...
+      - feature range-mapping: range-mapping.ipynb
+      - feature color-mapping: color-mapping.ipynb
+      - multitree tree grids: drawing-tree-grids.ipynb
+      - multitree cloud trees: drawing-cloud-trees.ipynb
+      # - Modifying axes style: ...
+
+    - Consensus Trees: ...
+    # - Admixture/Networks: ...
+    
+    # - <i>.mod</i> - tree modifications:
+    - <i>.mod</i> - tree modification:
+      - rooting trees: rooting.ipynb
+      - topology changes: mod-topology.ipynb
+      - edge/dist changes: mod-edges.ipynb
+      # - Tree moves: ...
+    
+    - <i>.enum</i> - tree enumeration:
+      - bipartition methods: ...
+      - quartet methods: ...
+      # - other: ...
+
+    - <i>.distance</i> - tree/node dists:
+      - node distances: ...
+      - tree distances: ...
+    
+    - <i>.pcm</i> - evol analyses:
+      - Continuous traits: ...
+      - Discrete traits: ...
+      - Diversification: ...
+      - Variance-Covariance: ...
+      - Diversity: ...
+      # - Root inference: ...
+      # - MulTree analysis: ...
+      # - Tree inference: ...
+
+    - <i>.annotate</i> - add to drawings: ...
+
+    - <i>.rtree</i> - random trees: ...   
+
+    # - networks:
+    #   - drawing admixture edges: ...
+    #   - parsing networks: ...
+    
+    # - tree sequences:
+    #   - draw tree sequences: ...
+    # - tree styles: ...
+
+  - FAQs: faqs.md
+
+  # Use this for the gallery: https://smarie.github.io/mkdocs-gallery/
+  - Cookbooks: gallery.md   
+    # - barplot
+    # - heatmap
+    # - co-phylogeny
+    # - trait tree
+    # - unrooted trait tree in 2D (PCA)
+    # - ipcoal stuff
+
+
+  # - Source:
+  #   - Data structures: 
+  #     - class - ToyTree: source/toytree.md
+  #     - class - Node: source/node.md
+  #     - class - MultiTree: source/multitree.md
+  #   - Modules:
+  #     - io:
+  #       - tree: source/treeio.md
+  #       - write: source/write.md
+  #     - distance: 
+  #       - treedist: source/distance.md
+  #       - nodedist: source/distance.md        
+
+
+  # - Blog: blog.md
+
+
+# markdown_extensions:
+
+#   # Python Markdown
+#   - abbr
+#   - admonition
+#   - attr_list
+#   - def_list
+#   - footnotes
+#   - meta
+#   - tables
+#   - md_in_html
+#   - toc:
+#       permalink: true
+
+#   # Python Markdown Extensions
+#   - pymdownx.arithmatex:
+#       generic: true
+#   - pymdownx.betterem:
+#       smart_enable: all
+#   - pymdownx.caret
+#   - pymdownx.details
+#   - pymdownx.emoji:
+#       emoji_index: !!python/name:materialx.emoji.twemoji
+#       emoji_generator: !!python/name:materialx.emoji.to_svg
+#   - pymdownx.highlight
+#   - pymdownx.inlinehilite
+#   - pymdownx.keys
+#   - pymdownx.mark
+#   - pymdownx.smartsymbols
+#   - pymdownx.superfences
+#   - pymdownx.snippets
+#   - pymdownx.tabbed:
+#       alternate_style: true
+#   - pymdownx.tasklist:
+#       custom_checkbox: true
+#   - pymdownx.tilde
+
+# plugins:
+  # - search
+    # - navigation.sections  # expands sections in nav.
+  # markdown_extensions:
+  #   - pymdownx.highlight:
+  #       use_pygments: true
+  #   - pymdownx.superfences
