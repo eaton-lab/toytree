@@ -1,0 +1,187 @@
+
+# version 3 TODO
+[x] toytree.save() added to save canvases to disk.
+[x] create a CLI tool to open in browser: `toytree --ts p --width --height [in]`
+[x] create unittests: parsing, colors, validations, ...
+[x] serialize new TreeStyle (before expansion)
+[x] expand/validate new TreeStyle
+[x] continue simplifying render starting at mark_nodes to use new Color mode perhaps...
+[x] toytree.tree infer internal label type improved.
+[x] .distance subpkg and elsewhere use consistent get...table() or get...matrix for pd vs np.
+[x] .distance functions allow to take flexible Query.
+[x] .distance copy api docs from src docs.
+[x] find a more efficient tree-based algorithm for `get_node_distance_matrix`
+[x] .mod.root_MAD is still quite slow.
+[x] dist default to 0. Including for random trees.
+[x] .mod.root_funcs tests
+[x] ToyTree [iter,get]\_bipartitions copy from enum, including df.
+[x] Query: remove regex arg and use "~name" (breaking w/ prior 1.0)
+[x] copy docs for main funcs in ToyTree that are inherited from submodules.
+[x] simplify ToyTree module by copying docstrings from submodules.
+[x] make API for enum
+[x] nan default in `_check_internal_label_for_name_or_support`
+[x] convert ToytreeMark to ToyTreeMark
+[x] check: unroot should destroy info on old root.
+[x] testing: allow rooting on internal node arg
+[x] expose Node iter functions insteead of .\_iter
+[x] edge_labels plot style function. This would improve rooting/support plotting.
+[x] add_node_pie_charts() annotate function
+[x] ??Node.iter_descendants (not include self), Node.iter_clade, Node.iter_ancestors
+[x] write `get_node_mapping` func for mapping={...} to allow for regex usage
+[x] ybaseline is not shifting in ts='c' (IT IS, just not on scale_bar)
+[x] get_canvas_and_axes() function
+[x] annotate square node markers and easily offset +- xy to make simple grid.
+[x] use extents info when auto-building canvas size (kind of, wasn't working well)
+[x] store tip positions to ToyTreeMark for extents...
+[x] revisit tip label extents. Do not allow text to extent vertical (minimized)
+[x] change default canvas size for unrooted and circular layouts
+[x] fix circular trees using NodePieChart code to get circular trees right.
+[x] incorporate tip_labels_align into ToyTreeMark extents and test with variable long names 
+[x] treestyle for support values with edge bin widths and values offset to Nodes.
+[x] move normalize_values from data to utils and maybe rename?
+[x] move axes styling (pos numbers, etc) func to utils.
+[x] support ('feature', cmap) for edge colors.
+[x] .style continue to simplify validation steps...
+[x] .style validation funcs take `size` arg for tip validation
+[x] .annotate add_node_bars() function
+[x] .annotate add tip markers is not fitting extents for AnnotationMarker (Toyplot problem)
+[x] .drawing improve canvas_setup and do grid_setup
+[x] bugfix to allow ts='p' when no Ne feature is present, using new validator.
+[x] newick: informative message on NHX parsing error about format options.
+[x] .style treestyle 'p' broken for fresh rtree. Fixed.
+[x] .style color draw args treat str as colormap even if data is colors.
+[x] .get_ancestors ToyTree method is fixed for updated Node.get_ancestors.
+[x] .io funcs: toytree.tree can now handle all of these.
+[x] .layout .style unrooted leaves node features set. Fixed.
+[x] colormapping NaN value mapping bugfix.
+[x] .io writes node and edge features to NHX separately. Doesn't write empty NHX.
+[x] .annotate .set_axes_ticks_style() for multitree and general use.
+[x] multitree.draw(share...) `NameError: name 'set_axes_ticks_style' is not defined`
+[x] .draw cloud trees.
+[x] .distance quartet dist code reorganized/faster.
+[x] .style only do color/value mapping with a tuple arg, otherwise how to use colors?
+[x] .style colormap tips_only arg now working.
+[x] .mod bugfix .add_internal_node raised exception iter_ancestors not exist.
+[x] .annotate add node/edge markers opacity is now working.
+[x] .annotate bugfix to allow colormapping edge labels.
+[x] .draw node_as_edge_data arg to draw edge_markers and edge_labels
+----------------------------------------------------------------------
+### tests
+[ ] .color test_color_mapper funcs for feature vs values, and examples in scratch nb
+[ ] .mod rooting test
+
+### recent
+[ ] conda installation on GitHub actions to conda-forge.
+[ ] pip installation on GitHub actions.
+[x] .core allow indexing from tree using int-like: np.int64, np.int32, etc.
+[ ] .consensus needs validating, including its effect on mean height/dist
+[ ] .annotate create simple docs
+[ ] .annotate add colormap scale bar
+[ ] .annotate add marker legend
+[ ] .annotate edge/node labels allow using a value formatter {%.2f}.
+[x] .io add support for bad NHX format w/ 1 value and no key, e.g., [100] -> {'label': 100}
+[x] .io bug "((C,D)1,(A,(B,X)3)2,E)R;" parses internal name R but not numeric ones.
+[x] .annotate add_edge_markers was not working maybe bc post rooting, or b/c -2 was nan? boolean index of mask error.
+[ ] .mod.root MAD is defaulting to inplace.
+[ ] .mod set_edge_heights uses a tree copy and thus can't take Nodes as input currently. But this works in using set_node_data.
+[x] .core raise exception when indexing non-existint idx
+[x] .treeio added back a check for parentheses counts to match
+[x] .tree changed query from match to search
+[x] .draw container using new polygon Mark
+[x] .draw node_colors=feat if feat is already a list of colors, then don't try to colormap.
+[ ] .draw italic tip labels are still broken.
+[ ] .draw add edge_labels, edge_markers, etc., or just nodes_as_edges?
+[ ] .data idea: allow setting a feature to None in set_node_data which removes feature from Node.
+[ ] .color not possible to assign (x, x, x, 0.y) w/ y variable across nodes. Or is it easier to add node and edge opacity args?
+[ ] .color want to be able to tab sample from .color.maps.[diverging,linear,categorical].{name}]
+[ ] .rtree use \_tdiv instead of tdiv feature.
+[ ] .container stroke
+[ ] .mtree consensus supports ultrametric argument to set only dists based on mean heights.
+[ ] .style set node_colors does not override node_style.fill.
+[ ] .dist compute KC tree distances.
+[ ] .mtree shared_axes still not aligning nticks among trees.
+[ ] .mtree indexing does allow lists
+[ ] .enum could be improved by using frozensets as default.
+[ ] .set_node_heights option to min_dist and minimize conflict?
+[ ] .mtree support write(nexus=True).
+[ ] bug: `mtree[1].set_node_data("height", {mtree[1].treenode: 2}, inplace=True)` doesn't work. (int has no idx.)
+
+### notes: places using variadic args
+These two functions are the only that take \*Query as input.
+- .get_mrca_node('r3', 'r4') --> ...
+- .get_nodes('r3', 'r4') --> ...
+Then, the rest of these take 'Query | List[Query]'
+- .root('r3', 'r4') --> .root('~r[3,4]') or .root(['r3', 'r4'])
+- .get_ancestors('r3', 'r4') --> .get_ancestors('~r[3,4]') or ...(['r3', 'r4'])
+- .is_monophyletic('r3', 'r4') --> .is_monophyletic("~...") or ...(['r3', 'r4'])
+- .get_node_mask('r3', 'r4', ...) --> ...
+- .mod.extract_subtree(tree, ...)
+- .mod.add_...
+
+### "3.0.dev6"
+[ ] .mtree i/o split on ; not ;\n. the newlines are not required.
+[ ] reorganize treedist utils to easier to find
+[ ] organize: move layout, drawing, and style inside core. Exposed modules
+are then .annotate, color, 
+
+## later
+[ ] refine the scale bar for unrooted layout.
+[ ] allow for linear gradient on Any stroke by creating defs.
+[ ] fixed position can be len ntips or nnodes, and can used ma.array. (i.e., 1D or 2D) For 2D, simply interact with getting coords function.
+[ ] get consensus tree store more data.
+[ ] .drawing show root arg needed, or not. nedges same as nnodes?
+[ ] .style simpler validation module add styledict validations
+[ ] tip labels <i>...</i> not working...
+[ ] .simplify annotate functions to reduce redundancy
+[ ] .distance add Kune-Felsenstein distance (topo and bls)?
+[ ] .annotate add_legend() w/ markers from tree.\_markers.
+
+[ ] .annotate wedge/arc shape? add_tip_label_block(min_name, max_name, padding, color[gradient], opacity, z_index)
+[ ] .annotation: add_admixture_edge 
+[ ] .annotate: add colormap scalebar (x, y, width, min, max, colormap, angle=0, stroke...)
+[ ] .annotate: block shape as color gradient to groups of tip names.
+[ ] .annotate: block color gradient as edges.
+[ ] .annotate radial xshift should be interpreted as radial shift on c trees.
+
+[ ] Tip labels SVG is not reducing CSS style for tip labels fill
+[ ] .github actions to do conda-forge and pip install on version update push.
+[ ] cleanup old files from repo
+[ ] make contributor guidelines in docs (read toyplot's)
+[ ] make advanced user section w/ Node modification section in docs
+
+[ ] revisit 'alignment-baseline' as arg for node labels.
+[ ] new validation should not allow setting substyle keys that aren't supported.
+[ ] friendly float format support values
+
+[ ] unittest search requires __init__ in all test dirs
+
+[ ] .rtree add ntrees arg to return a MultiTree instead of a ToyTree
+[ ] change all 'Query' to Union[Node, str, int]? or... (node: 'node') or node: Union[Node,str,int]
+
+[ ] testing: quadripartitions and quartets
+[ ] ensure no overriding styles in defaults.
+[ ] container trees using polygons
+[ ] option to show root_dist to draw, or as example in docs only? (using add_internal_node to root)
+
+[ ] make node_labels_style formatter. Default is None, but options are str ("{:.2f}" or "%.2f") or Callable.
+
+
+## Annotation
+[ ] store markers for legend
+
+
+## Pushed to later updates
+[ ] .io tree() args for U/R? (or auto-infer based on nan for last 1-2)?
+[ ] .core use get_ancestors in prune, extract, mod functions?
+[ ] Propose toyplot push to center title on axis domain instead of range or vice-versa
+[ ] website blog
+[ ] make example datasets in toytree.data
+[ ] NodeQuery, NodeMrcaQuery, NodeMatch, NodeMatchType, Node
+[ ] develop annotation edge marker for mapping mutations.
+	- require the ToyTree Mark so that we know which edge_type arg was
+	used to map positions correctly.
+	- use this method in ipcoal for drawing mutations.
+[ ] change `get_mrca_node` to `get_nodes_mrca`. Use a warning for a while to catch usage.
+[ ] get_edge_data function
+[ ] .partitions: allow user to select traversal strategy.
+[ ] use scenegraph reorder from annotation.py
