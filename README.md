@@ -40,7 +40,7 @@ conda search toytree --channel conda-forge
 
 Documentation
 -------------
-See the [full documentation](http://toytree.readthedocs.io) to learn more about plotting options, analysis methods, and other features of toytree. You can try out toytree in the cloud before installing by visiting the [toytree binder](http://mybinder.org/repo/eaton-lab/toytree).
+See the [full documentation](http://eaton-lab.org/toytree) to learn more about plotting options, analysis methods, and other features of toytree. You can try out toytree in the cloud before installing by visiting the [toytree binder](http://mybinder.org/repo/eaton-lab/toytree).
 
 
 Mock Example
@@ -56,7 +56,7 @@ rtre = tre.root('~prz')
 rtre.draw(width=400, tip_labels_align=True);
 
 # or chain a few functions together
-tre.root(wildcard='prz').drop_tips(wildcard="tham").ladderize().draw();
+tre.root('~prz').drop_tips("~tham").ladderize().draw();
 
 # extensive styling options are available
 rtre.draw(
