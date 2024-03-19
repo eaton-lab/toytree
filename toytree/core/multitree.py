@@ -651,7 +651,7 @@ class MultiTree:
             A value by which to randomly shift the baseline of tree
             subplots so that they do not overlap perfectly. This adds
             a value drawn from np.random.uniform(-jitter, jitter).
-        idxs: None | Sequence[int]
+        idxs: None or Sequence[int]
             Optional select indices of which trees to draw.
         **kwargs:
             All drawing style arguments supported in the .draw()
