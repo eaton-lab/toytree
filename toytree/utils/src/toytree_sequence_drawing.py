@@ -30,6 +30,7 @@ class Box:
     top: float
     bottom: float
 
+
 @dataclass
 class MultiDrawing:
     trees: List['ToyTree']
@@ -67,7 +68,7 @@ class ToyTreeSequenceDrawing(MultiDrawing):
         scrollable: bool=True,
         axes: Optional['toyplot.coordinates.Cartesian']=None,
         **kwargs,
-        ):
+    ):
         super().__init__(trees, breakpoints, width, height, padding, margin)
         self.canvas = self.get_canvas(scrollable, axes)
         self.axes = self.get_axes(axes)
@@ -113,7 +114,7 @@ class ToyTreeSequenceDrawing(MultiDrawing):
         Makes a 'share' axes so that ticks appear on top of plot.
         """
         if axes is not None:
-            return axes            
+            return axes
         axes = self.canvas.cartesian(margin=self.margin, padding=self.padding)
         axes2 = axes.share('y')
         axes.x.show = False
@@ -280,3 +281,7 @@ class ToyTreeSequenceDrawing(MultiDrawing):
         # labels = locator.ticks(min(self.breakpoints), max(self.breakpoints))
         # self.axes.x.ticks.locator = toyplot.locator.Explicit(
         #     ticks[0], labels[1])
+
+
+if __name__ == "__main__":
+    pass
