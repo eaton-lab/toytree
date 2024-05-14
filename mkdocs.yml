@@ -2,6 +2,7 @@
 
 # conda install mkdocs-material mkdocs-jupyter mkdocstrings mkdocstrings-python -c conda-forge
 site_name: toytree v3 documentation
+site_url: https://eaton-lab.org/toytree
 repo_url: https://github.com/eaton-lab/toytree
 edit_uri: edit/master/docs/
 
@@ -95,6 +96,7 @@ nav:
       # - Modifying axes style: ...
 
     - Consensus Trees: ...
+    # - Species/Demographic Trees: ...
     # - Admixture/Networks: ...
     
     # - <i>.mod</i> - tree modifications:
@@ -135,7 +137,7 @@ nav:
     #   - draw tree sequences: ...
     # - tree styles: ...
 
-  - FAQs: faqs.md
+  - FAQs: FAQs.md
 
   # Use this for the gallery: https://smarie.github.io/mkdocs-gallery/
   - Cookbooks: gallery.md   
