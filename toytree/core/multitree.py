@@ -778,8 +778,8 @@ class MultiTree:
         # scale bar was not allowed on individual trees. Add scale
         # bar for the tallest tree in the bunch
         if kwargs.get("scale_bar", False):
-            tree = max(self, key=lambda x: x[-1].height)
-            tree.annotate.add_axes_scale_bar(axes)
+            tree = max(self, key=lambda x: x.treenode.height)
+            tree.annotate.add_axes_scale_bar(axes, ymax=tree.treenode.height)
         else:
             if canvas is not None:
                 axes.x.show = False
