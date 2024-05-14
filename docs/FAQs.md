@@ -1,6 +1,6 @@
 ---
 section: FAQs
-icon: material/question
+icon: material/help-box-outline
 ---
 
 # Frequently Asked Questions

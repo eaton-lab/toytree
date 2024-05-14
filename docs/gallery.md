@@ -1,6 +1,6 @@
 ---
 section: FAQs
-icon: material/portrait
+icon: material/android-studio
 ---
 
 

@@ -1,3 +1,7 @@
+---
+section: Command line
+---
+
 # Command line
 
 
