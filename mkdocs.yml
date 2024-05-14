@@ -1,7 +1,7 @@
 # yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
 
 # conda install mkdocs-material mkdocs-jupyter mkdocstrings mkdocstrings-python -c conda-forge
-site_name: toytree v3 documentation
+site_name: toytree documentation
 site_url: https://eaton-lab.org/toytree
 repo_url: https://github.com/eaton-lab/toytree
 edit_uri: edit/master/docs/
@@ -14,13 +14,14 @@ theme:
     logo: material/graph-outline  
     repo: fontawesome/brands/github
     # logo: material/library     
-  favicon: images/favicon.png
+  favicon: assets/images/favicon.ico
   features:
     - navigation.instant
     - navigation.tracking
     - navigation.tabs
     - navigation.tabs.sticky
     - content.code.copy  # unfortunately style varies depending if mkdocs-jupyter or not.
+    - content.action.edit
     # - search.highlight
     # - search.suggest
 
