@@ -39,6 +39,7 @@ from toytree.utils import ToytreeError
 logger = logger.bind(name="toytree")
 PAIRS = {'(': '()', '[': '[]', '{': "{}"}
 COLON_OUTSIDE_SQUARE_BRACKETS = re.compile(r'(?<!\[):|:(?!\])')
+RESERVED_FEATURE_NAMES = ["idx", "height", "dist"]
 NHX_ERROR = """\
 Error parsing NHX (extended New Hampshire format) newick meta data.
   NHX format = "...[{{prefix}}{{key}}{{assign}}{{value}}{{delim}}{{key}}{{assign}}{{value}}...]"
@@ -419,6 +420,9 @@ def node_aggregator(
 
     # if any metadata annotations (e.g., [&x=3]) store as features
     for key, value in features.items():
+        if key in RESERVED_FEATURE_NAMES:
+            key = f"__{key}"
+            # logger.warning(f"NHX feature name {key} is reserved and has been changed to __{key}")
         setattr(node, key, value)
     return node
 
@@ -579,7 +583,7 @@ def test1():
 
 
 def test2():
-    NWK = "((a,b)Name[&&&x=3,z=0]:30[&&&length=3,y=4],c);"
+    NWK = "((a,b)Name[&&&x=3,z=0]:30[&&&length=3,y=4],c[&&&height=10]);"
     print(NWK)
     TREE = parse_newick_string(NWK, feature_prefix="&&&")
     print(TREE.get_node_data())
@@ -594,6 +598,7 @@ ADHY:0.1[&&NHX:S=nematode:E=1.1.1.1],
 ADHX:0.12[&&NHX:S=insect:E=1.1.1.1]):0.1[&&NHX:S=Metazoa:E=1.1.1.1:D=N],
 (ADH4:0.09[&&NHX:S=yeast:E=1.1.1.1],ADH3:0.13[&&NHX:S=yeast:E=1.1.1.1],
 ADH2:0.12[&&NHX:S=yeast:E=1.1.1.1],
+ADH1:0.11[&&NHX:S=yeast:E=1.1.1.1]):0.1[&&NHX:S=Fungi])[&&NHX:E=1.1.1.1:D=N];
 ADH1:0.11[&&NHX:S=yeast:E=1.1.1.1]):0.1[&&NHX:S=Fungi])[&&NHX:E=1.1.1.1:D=N];
 """
     # print(NWK)
@@ -610,7 +615,8 @@ def test4():
 
 if __name__ == "__main__":
 
+    test2()
     # test3()
     # test4()
     # print(meta_parser("&A=100", prefix="&", delim="", assignment="="))
-    print(meta_parser("100", prefix=""))
+    # print(meta_parser("100", prefix=""))

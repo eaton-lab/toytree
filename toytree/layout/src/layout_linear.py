@@ -12,6 +12,7 @@ style dict.
 """
 
 from typing import TypeVar, Optional, Sequence
+# from enum import Enum
 import numpy as np
 from loguru import logger
 from toytree.utils import ToytreeError
@@ -23,6 +24,13 @@ Node = TypeVar("Node")
 logger = logger.bind(name="toytree")
 
 # pylint: disable=too-many-branches, too-many-statements
+
+
+# this enum not yet used
+class InteriorAlgorithm:
+    INTERMEDIATE = 0
+    CENTERED = 1
+    WEIGHTED = 2
 
 
 class LinearLayout(BaseLayout):
