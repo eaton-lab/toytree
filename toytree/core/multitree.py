@@ -37,7 +37,7 @@ from __future__ import annotations
 from typing import Union, List, Sequence, Optional, Tuple, TypeVar, Iterator
 from copy import deepcopy
 import numpy as np
-# import pandas as pd
+import pandas as pd
 from loguru import logger
 from toytree.utils import ToytreeError
 from toytree.core import ToyTree, Node
