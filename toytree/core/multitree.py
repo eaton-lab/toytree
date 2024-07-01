@@ -562,7 +562,8 @@ class MultiTree:
             axes = grid.axes[idx]
 
             # add the mark
-            _, _, mark = treelist[idx].draw(axes=axes, **tmpargs)
+            if idx < len( treelist ) :
+                _, _, mark = treelist[idx].draw(axes=axes, **tmpargs)
 
             # store the mark
             marks.append(mark)

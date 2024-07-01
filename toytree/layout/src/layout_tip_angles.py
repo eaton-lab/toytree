@@ -45,7 +45,11 @@ def get_tip_labels_angles(tree: ToyTree, coords: np.ndarray) -> np.ndarray:
             dy = cy - py
 
             # sin(x) = opp / hyp; tan_(x) = opp/adj
-            theta = np.arctan(dy / dx)
+            if dx == 0 :
+                theta = np.pi / 2
+            else :
+                theta = np.arctan(dy / dx)
+            
             if dx < 0:
                 theta += np.pi
             angles[node.idx] = np.rad2deg(theta)
