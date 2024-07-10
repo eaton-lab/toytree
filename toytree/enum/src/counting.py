@@ -27,6 +27,7 @@ Brown developed probability calculations for all labeled and unlabeled topologie
 """
 
 from math import prod, factorial
+# import numpy as np
 from scipy.special import comb as scipy_comb
 from toytree.core import ToyTree
 from toytree.core.apis import TreeEnumAPI, add_subpackage_method
@@ -34,6 +35,7 @@ from toytree.core.apis import TreeEnumAPI, add_subpackage_method
 
 __all__ = [
     "get_num_bifurcating_trees",     # Module
+    # "get_num_multifurcating_trees",  # Module
     "get_num_quartets",              # Module and Tree API
     "get_num_subtrees",              # Module and Tree API
     "get_num_labeled_trees",         # Module
@@ -46,7 +48,9 @@ __all__ = [
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
 # Didactic functions used in lessons. See `get_num_bifurcating_trees`
-# as the recommended faster option for counting.
+# as the recommended faster option for counting. However, this slower
+# approach allows us to also accommodate the case of multifurcating
+# trees. For this see `get_num_trees_with_multifurcations`.
 def _get_num_places_a_tip_can_be_added(ntips: int, rooted: bool = True) -> int:
     """Return num places a tip can be added to a bifurcating rooted
     or unrooted tree.
@@ -59,8 +63,6 @@ def _get_num_places_a_tip_can_be_added(ntips: int, rooted: bool = True) -> int:
     return 2 * (ntips + 1) - 3
 
 
-# This is didactic, not as fast as get_num_bifurcating_rooted_trees()
-# but also not that much slower.
 def _get_num_bifurcating_trees_by_successive_odds(ntips: int, rooted: bool = True) -> int:
     """Return number of rooted trees
 
@@ -77,6 +79,55 @@ def _get_num_bifurcating_trees_by_successive_odds(ntips: int, rooted: bool = Tru
         for i in range(2, ntips)
     )
     return prod(successive_odds)
+
+
+# TODO: NOT YET TESTED. REVISIT FELSENSTEIN
+# def get_num_multifurcating_trees(
+#     ntips: int,
+#     n_internal_nodes: int,
+#     rooted: bool = True,
+# ) -> int:
+#     """Return the number of trees...
+
+#     Following Felsenstein ...
+#     """
+#     # reduce one possible tip in unrooted trees
+#     ntips = ntips if rooted else ntips - 1
+
+#     # calculate n_nodes to create matrix
+#     nnodes = ntips - 1
+
+#     # create an empty numpy array to store the progressive results
+#     matrix_ntrees = np.zeros(shape=(nnodes + 1, ntips + 1))
+
+#     # iterate over each n and each m
+#     for m in range(1, nnodes + 1):
+#         for n in range(2, ntips + 1):
+
+#             # fill diagonal that is equal to the bifurcating trees
+#             if m == n - 1:
+#                 matrix_ntrees[m, n] = (
+#                     _get_num_bifurcating_trees_by_successive_odds(ntips=n, rooted=rooted))
+
+#             # if it is a different m than n-1, fill the multifurcating trees counts
+#             else:
+#                 # m = 1 is an especial case because the number of trees is always 1
+#                 if m == 1:
+#                     matrix_ntrees[m, n] = 1
+
+#                 # if not m =1 them apply the following formula
+#                 else:
+#                     val = (n + m - 2) * matrix_ntrees[m-1, n-1] + m * matrix_ntrees[m, n-1]
+#                     matrix_ntrees[m, n] = val
+
+#     # if n_internal_nodes is passed get position in matrix that store n_tips and n_internal_nodes and store it as int
+#     if n_internal_nodes:
+#         result = int(matrix_ntrees[n_internal_nodes, ntips])
+#     else:
+#         # get max multifurcating trees
+#         result = int(np.sum(matrix_ntrees[:, ntips]))
+#     return result
+
 # -------------------------------------------------------------------
 # -------------------------------------------------------------------
 
@@ -165,9 +216,9 @@ def get_num_labeled_trees(ntips: int) -> int:
     Note
     ----
     The term "labeled trees" has a specific meaning when discussing
-    tree space. According to Harding (1971): 
+    tree space. According to Harding (1971):
     "At each node, the descendant species are partitioned
-    into two subtrees. A node at which the subtrees have identical 
+    into two subtrees. A node at which the subtrees have identical
     unlabeled topologies is balanced; otherwise, it is unbalanced."
     In other words, balanced cherries on a rooted tree contribute
     differently than unbalanced nodes to quantifying labeled trees.
@@ -222,4 +273,5 @@ if __name__ == "__main__":
 
     # get_probability_gene_tree_matches_species_tree(0.001)
     # print(get_num_labeled_trees(6))
-    print(get_num_quartets(10, 4))
+    print(get_num_quartets(10))
+    # print(get_num_multifurcating_trees(ntips=5, n_internal_nodes=4))
