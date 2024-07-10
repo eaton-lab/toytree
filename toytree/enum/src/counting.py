@@ -11,10 +11,8 @@ Deren Eaton and Carlos Alonso Maya-Lastra
 
 TODO
 ----
-- update name of this file?
-- Yule tree probs
-- get n-maximally probable tree
-
+- should all funcs take int|ToyTree as input and be exposed to Tree API?
+- check and explain n labeled/unlabeld versus rooted/unrooted trees.
 
 References
 ----------
@@ -28,65 +26,151 @@ Brown developed probability calculations for all labeled and unlabeled topologie
 - Pamilo and Nei (1988) ...
 """
 
-import math
-import numpy as np
+from math import prod, factorial
+from scipy.special import comb as scipy_comb
 from toytree.core import ToyTree
-from toytree.core.apis import TreeEnumAPI, add_subpackage_method, add_toytree_method
+from toytree.core.apis import TreeEnumAPI, add_subpackage_method
 
 
 __all__ = [
-    "get_num_quartets",
-    "get_num_labeled_trees",
-    # "get_n_unlabeled_trees",
-    # "iter_labeled_trees",
-    # "iter_unlabeled_trees",
+    "get_num_bifurcating_trees",     # Module
+    "get_num_quartets",              # Module and Tree API
+    "get_num_subtrees",              # Module and Tree API
+    "get_num_labeled_trees",         # Module
+    # "get_num_unlabeled_trees",
+    # "iter_labeled_trees",    # moved to enum/topologies
+    # "iter_unlabeled_trees",  # moved to enum/topologies
 ]
 
 
-def _get_num_places_to_insert_tip(ntips: int) -> int:
-    """Return num possible places to insert a new tip into an ntip tree.
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
+# Didactic functions used in lessons. See `get_num_bifurcating_trees`
+# as the recommended faster option for counting.
+def _get_num_places_a_tip_can_be_added(ntips: int, rooted: bool = True) -> int:
+    """Return num places a tip can be added to a bifurcating rooted
+    or unrooted tree.
+
+    Rooted = `2 * (ntips + 1) - 3`.
+    Unrooted = `2 * (ntips + 1) - 5`
     """
-    ntips_in_new_tree = ntips + 1
-    return 2 * ntips_in_new_tree - 3
+    if not rooted:
+        return 2 * (ntips + 1) - 5
+    return 2 * (ntips + 1) - 3
 
 
-def _get_num_places_to_insert_tip_from_tree(tree: ToyTree) -> int:
-    """Return num possible places to insert a new tip into a tree.
+# This is didactic, not as fast as get_num_bifurcating_rooted_trees()
+# but also not that much slower.
+def _get_num_bifurcating_trees_by_successive_odds(ntips: int, rooted: bool = True) -> int:
+    """Return number of rooted trees
 
-    The number of places that a new tip can be inserted is the number
-    of edges in a tree.
+    As discussed in Felsenstein (2004), there are a couple of ways to
+    get the possible number of bifurcating rooted trees considering
+    the places where a n-tip can be added. Considering one of the
+    methods mentioned, we can create a list of successive odds
+    (places where a new tip can be added) and use it to get the
+    number of possible tips.
     """
-    # nnodes = 
+    # To save list of successive odd integers
+    successive_odds = (
+        _get_num_places_a_tip_can_be_added(i, rooted=rooted)
+        for i in range(2, ntips)
+    )
+    return prod(successive_odds)
+# -------------------------------------------------------------------
+# -------------------------------------------------------------------
 
 
-# @add_subpackage_method(TreeEnumAPI)
-def get_num_quartets(ntips: int, sample: int = 4) -> int:
-    """Return number of possible quartets for a tree of N tips.
+def get_num_bifurcating_trees(ntips: int, rooted: bool = True) -> int:
+    """Return number of bifurcating trees for ntips (leaf nodes) as
+    rooted or unrooted trees.
+
+    Equations
+    ---------
+    Rooted = (2x-3)! / (2**(x-2) (x-3)!)
+    Unrooted = (2 (x-1) -3)! / (2**[x-3] (x-3)!)
+
+    Parameters
+    ----------
+    ntips: int
+        The number of tips.
+    rooted: bool
+        If True the equation for counting rooted trees is used else
+        the equation for unrooted trees. There are always more possible
+        rooted trees than unrooted trees.
+    """
+    # rooted case
+    if rooted:
+        ntrees = int(
+            factorial(2 * ntips - 3)
+            / (2 ** (ntips - 2) * factorial(ntips - 2))
+        )
+    # unrooted case
+    else:
+        ntrees = int(
+            factorial(2 * (ntips - 1) - 3)
+            / (2 ** (ntips - 3) * factorial(ntips - 3))
+        )
+    return ntrees
+
+
+@add_subpackage_method(TreeEnumAPI)
+def get_num_quartets(ntips: int | ToyTree, method: int = 0) -> int:
+    """Return number of possible quartet trees (ntips=4) that can be
+    extracted from a larger tree of size ntips.
 
     This uses the formula for binomial coefficient.
 
     Parameters
     ----------
     ntips: int
-        ...
-    sample: int
-        ...
+        The number of tips in the full tree.
+
+    Note
+    ----
+    This is a special case of the `enum.get_num_subtrees` function
+    which can calculate the number of subtrees of size >4.
     """
-    numerator = 1
-    denominator = 1
-    for i in range(1, sample + 1):
-        numerator *= ntips - i + 1
-        denominator *= i
-    return numerator // denominator
+    # input can be int or a ToyTree from which ntips is extracted
+    ntips = ntips if isinstance(ntips, int) else ntips.ntips
+
+    # fastest method tested
+    return scipy_comb(ntips, 4, exact=True)
 
 
-# @add_subpackage_method(TreeEnumAPI)
+@add_subpackage_method(TreeEnumAPI)
+def get_num_subtrees(ntips: int | ToyTree, subtree_size: int) -> int:
+    """Return number of possible subtrees of subtree_size tips that
+    can be extracted from a larger tree of size ntips.
+
+    This uses the formula for binomial coefficient.
+
+    Parameters
+    ----------
+    ntips: int
+        The number of tips in the full tree.
+    subtree_size: int
+        The number of tips in the subtrees (subtree size).
+    """
+    # input can be int or a ToyTree from which ntips is extracted
+    ntips = ntips if isinstance(ntips, int) else ntips.ntips
+
+    # fastest method tested
+    return scipy_comb(ntips, subtree_size, exact=True)
+
+
 def get_num_labeled_trees(ntips: int) -> int:
     r"""Return the number of possible labeled trees for ntips.
 
-    At each node, the descendant species are partitioned into two
-    subtrees. A node at which the subtrees have identical unlabeled
-    topologies is balanced; otherwise, it is unbalanced (Harding, 1971).
+    Note
+    ----
+    The term "labeled trees" has a specific meaning when discussing
+    tree space. According to Harding (1971): 
+    "At each node, the descendant species are partitioned
+    into two subtrees. A node at which the subtrees have identical 
+    unlabeled topologies is balanced; otherwise, it is unbalanced."
+    In other words, balanced cherries on a rooted tree contribute
+    differently than unbalanced nodes to quantifying labeled trees.
 
     $$ H_n = \frac{n!(n - 1)!}{2^{n - 1}} $$
 
@@ -100,95 +184,42 @@ def get_num_labeled_trees(ntips: int) -> int:
     | ...   |      ...        |
     |-------|-----------------|
 
+    See Also
+    --------
+    ...
+
+    Note
+    ----
+    Labeled trees
+
     References
     ----------
     - Edwards (1970)
     - Harding EF (1971) The probabilities of rooted tree-shapes generated by random bifurcation. Adv Appl Prob 3: 44–77.
     - Brown JKM (1994) Probabilities of evolutionary trees. Syst Biol 43: 78–91.
     """
-    fac = math.factorial
-    return int((fac(ntips) * fac(ntips - 1)) / (2 ** (ntips - 1)))
+    ntrees = int(
+        (factorial(ntips) * factorial(ntips - 1))
+        / (2 ** (ntips - 1))
+    )
+    return ntrees
 
 
 def get_num_unlabeled_trees(ntips: int) -> int:
     r"""...
 
-    Note
-    ----
-    In contrast to labeled trees, all unlabeled trees for ntips are 
-    *not* equiprobable, 
-
-    """
-
-
-def get_unlabeled_trees(ntips: int) -> int:
-    r"""Return unlabaled tree and its probability.
+    See Harding...
 
     Note
     ----
-    In contrast to labeled trees, all unlabeled trees for ntips are 
-    *not* equiprobable, 
-
+    In contrast to labeled trees, all unlabeled trees for ntips are
+    *not* equiprobable.
     """
 
-
-def get_the_n_maximally_probable_tree(ntips: int) -> ToyTree:
-    """Return the topology most probable under Yule model for ntips.
-
-    Reference
-    ---------
-    - ...
-    """
-
-
-def get_yule_tree_probability(tree: ToyTree) -> float:
-    """Return the probability of ... under a Yule model.
-
-    The probability that a specific labeled history is generated under
-    a Yule model is ... equation 3+> of Brown...
-
-    Utility
-    -------
-    Under the Yule model two (and only two) lineages are randomly
-    joined at a time until all lineages have been merged into a tree.
-    For nlineages there is thus a space of possible Yule trees, within
-    which not all tree topologies are equally likely. This function
-    returns the probabilitiy of the input tree topology under the Yule
-    model, given ntips.
-
-    Reference
-    ---------
-    - Harding EF (1971) The probabilities of rooted tree-shapes generated by random bifurcation. Adv Appl Prob 3: 44–77.
-    - Brown JKM (1994) Probabilities of evolutionary trees. Syst Biol 43: 78–91.
-    - Aldous DJ (2001) Stochastic models and descriptive statistics for phylogenetic trees, from Yule to today. Stat Sci 16: 23–34.
-    - Steel M, McKenzie A (2001) Properties of phylogenetic trees generated by Yule-type speciation models. Math Biosci 170: 91–112.
-    """
-
-
-def get_probability_gene_tree_matches_species_tree(internal_branch: float) -> float:
-    """...
-
-    TODO: use in the textbook.
-
-    References
-    ----------
-    - Pamilo and Nei (1988)
-    """
-
-    # a quartet (rooted three taxon) tree has no anomalies b/c
-    λ = internal_branch
-
-    # probability the gene tree matches the species tree
-    prob_true = 1 - (2 / 3) * np.exp(-λ)
-
-    # probability the gene tree matches other 2 possible trees
-    prob_false = (1 / 3) * np.exp(-λ)
-
-    # no matter how small the internal branch, prob_true always > prob_false
-    return prob_true > prob_false
 
 
 if __name__ == "__main__":
 
     # get_probability_gene_tree_matches_species_tree(0.001)
-    print(get_num_labeled_trees(6))
+    # print(get_num_labeled_trees(6))
+    print(get_num_quartets(10, 4))
