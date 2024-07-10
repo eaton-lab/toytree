@@ -31,7 +31,7 @@ Documentation
 See the [full documentation](http://eaton-lab.org/toytree) to learn more about plotting options, analysis methods, and other features of toytree. You can try out toytree in the cloud before installing by visiting the [toytree binder](http://mybinder.org/repo/eaton-lab/toytree).
 
 
-Mock Example
+Example code
 ------------
 
 ```python
@@ -58,5 +58,8 @@ rtre.draw(
     },
 )
 ```
+
+Example plots
+------------
 
 ![./manuscript/ToyTree-figure.svg](./manuscripts/toytree-1.0/ToyTree-figure.svg)
