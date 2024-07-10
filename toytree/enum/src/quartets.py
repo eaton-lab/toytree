@@ -1,18 +1,25 @@
 #!/usr/bin/env python
 
-"""...
+"""Generators to sample quartets of tips from a tree.
+
+The primary function `iter_quartets` can be used as a generator to
+yield quartet subtrees from a larger tree. This function is quite
+fast and includes options for sorting the output, and transforming
+its format to return Node objects, names, or any arbitrary feature
+of Nodes. See examples.
 
 Methods
 -------
-
 Get fast unordered sets of all combinations of 4 tip Nodes in a tree
->>> tree._iter_unresolved_quartet_sets()   # {0, 1, 2, 3}, ...
-
-Get number of quartets induced by the splits in a tree.
->>> tree.get_n_quartets()                  # 5
+>>> tree.enum._iter_unresolved_quartet_sets()   # {0, 1, 2, 3}, ...
 
 Get name-ordered tuples of Nodes for each quartet induced by bipartitions in a tree.
->>> tree.iter_quartets()                   # ((0, 1), (2, 3)), ...
+>>> tree.enum.iter_quartets()                   # ((0, 1), (2, 3)), ...
+
+See Also
+--------
+Get number of quartets induced by the splits in a tree.
+>>> tree.enum.get_n_quartets()                  # 5
 
 Format
 ------
@@ -29,7 +36,6 @@ Supported:
 
 Not supported:
 - ({'a', 'b', 'c', 'd'})    # type=set, collapse=True; split info lost.
-
 """
 
 from typing import TypeVar, Iterator, Tuple, Optional, Set, Callable
@@ -245,7 +251,7 @@ def iter_quartets(
     >>> #  ('c', 'd', 'e', 'f')]
     """
     # disallowed combinations
-    if (type == set) and (collapse is True):
+    if (type == set) and (collapse is True):  # noqa: E721
         collapse = False
         logger.warning(
             "collapse argument cannot be used with type=set, using collapse=False")
@@ -255,7 +261,7 @@ def iter_quartets(
     for i, j, x, y in _iter_quartet_sets(**kwargs):
 
         # sort within by min name
-        if type != set:
+        if type != set:  # noqa: E721
             if i.name > j.name:
                 j, i = i, j
             if x.name > y.name:
