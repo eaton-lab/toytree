@@ -9,7 +9,6 @@ Get tuples of Nodes on either side of each edge creating a bipartition
 
 Get a table of the edges in a tree as an array or dataframe
 >>> tree.get_edges('idx')                 # np.array([(0, 4), ...])
-
 """
 
 from typing import Iterator, Tuple, Optional, Union
@@ -28,7 +27,11 @@ __all__ = [
 
 @add_toytree_method(ToyTree)
 @add_subpackage_method(TreeEnumAPI)
-def iter_edges(self, feature: Optional[str] = None) -> Iterator[Tuple[Node, Node]]:
+def iter_edges(
+    self,
+    feature: Optional[str] = None,
+    include_root: bool = False,
+) -> Iterator[Tuple[Node, Node]]:
     """Generator of (Node, Node) tuples representing edges in tree.
 
     Given the current tree rooting edges are yielded in idx order
@@ -41,6 +44,11 @@ def iter_edges(self, feature: Optional[str] = None) -> Iterator[Tuple[Node, Node
     feature: str
         An optional feature of a Node returned in place of the Node
         object to represent it. For example, 'name' or 'idx'.
+    include_root: bool
+        By default the root edge is excluded whether or not the tree
+        is rooted. If this arg is set to True this edge will be
+        included as (treenode, None) where None is the non-existent
+        parent of the treenode. If tree is unrooted this has no effect.
 
     Example
     -------
@@ -55,9 +63,23 @@ def iter_edges(self, feature: Optional[str] = None) -> Iterator[Tuple[Node, Node
         for node in self[:-1]:
             yield (node, node._up)
 
+    # optionally return root edge
+    if self.is_rooted() and include_root:
+        node = self[-1]
+        if feature:
+            yield (getattr(node, feature), None)
+        else:
+            yield (node, None)
+
+
 
 @add_toytree_method(ToyTree)
-def get_edges(self, feature: Optional[str] = None, df: bool = False) -> Union[np.ndarray, pd.DataFrame]:
+def get_edges(
+    self,
+    feature: Optional[str] = None,
+    df: bool = False,
+    include_root: bool = False,
+) -> Union[np.ndarray, pd.DataFrame]:
     """Return matrix of (child, parent) edges.
 
     Given the current tree rooting edges are yielded in idx order
@@ -76,7 +98,7 @@ def get_edges(self, feature: Optional[str] = None, df: bool = False) -> Union[np
     --------
     tree.iter_edges
     """
-    edges = list(self.iter_edges(feature=feature))
+    edges = list(self.iter_edges(feature=feature, include_root=include_root))
     if df:
         return pd.DataFrame(edges, columns=["child", "parent"])
     return np.array(edges)
@@ -88,4 +110,9 @@ if __name__ == "__main__":
     tree = toytree.rtree.unittree(10, seed=123)
     edges = list(tree.iter_edges())
     print(edges)
-    print(tree.get_edges('idx', df=True))
+    print(tree.get_edges('idx', df=1))
+
+    # not ideal, but the include_root option is available.
+    # print(tree.get_edges('idx', df=1, include_root=True))    
+    # print(tree.get_edges('idx', df=0, include_root=True))
+    # print(tree.get_edges(include_root=True))    
