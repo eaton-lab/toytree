@@ -45,9 +45,11 @@ from toytree.style import TreeStyle, get_base_tree_style_by_name, tree_style_to_
 from toytree.drawing.src.setup_canvas import get_canvas_and_axes
 from toytree.drawing.src.setup_grid import Grid
 from toytree.drawing.src.draw_cloudtree import draw_cloudtree
+from toytree.drawing.src.draw_multitree import draw_multitree
 from toytree.annotate import add_axes_scale_bar
 # from toytree.core.drawing.render import ToytreeMark
 from toytree.infer.src.consensus import ConsensusTree
+
 # from toytree.utils import ToytreeError
 
 # aliases of Toyplot types returned by draw functions
@@ -439,6 +441,7 @@ class MultiTree:
     #
     ################################################################
 
+    # TODO: write grid draw code in separate module
     def draw(
         self,
         shape: Tuple[int, int] = (1, 4),
@@ -486,137 +489,11 @@ class MultiTree:
         >>> mtre = toytree.mtree([toytree.rtree.unittree(10) for i in range(10)])
         >>> mtre.draw(shape=(2, 3), width=800, edge_widths=4)
         """
-        # legacy support
-        if kwargs.get("nrows") or kwargs.get("ncols"):
-            raise DeprecationWarning(
-                "nrows and ncols args deprecated. Use shape=(nrows, ncols)")
+        draw_multitree(
+            mtree=self, shape=shape, shared_axes=shared_axes, idxs=idxs,
+            width=width, height=height, margin=margin, **kwargs,
+        )
 
-        # get index of trees that will be drawn
-        nrows = max(1, shape[0])
-        ncols = max(1, shape[1])
-        if idxs is None:
-            tidx = range(0, min(nrows * ncols, len(self.treelist)))
-        else:
-            tidx = [idxs] if isinstance(idxs, int) else list(idxs)
-
-        # get the subset list of ToyTrees
-        treelist = [self.treelist[i] for i in tidx]
-
-        # special multitree meaning fixed_order=True is consensus order
-        if kwargs.get("fixed_order") is True:
-            fixed_order = (
-                MultiTree(treelist)
-                .get_consensus_tree()
-                .get_tip_labels()
-            )
-            kwargs["fixed_order"] = fixed_order
-
-        # if less than 4 trees reshape ncols,rows to use ntrees
-        if len(treelist) < 4:
-            if nrows > ncols:
-                nrows = len(treelist)
-                ncols = 1
-            else:
-                nrows = 1
-                ncols = len(treelist)
-
-        # get layout first from direct arg then from treestyle
-        if "ts" in kwargs:
-            layout = get_base_tree_style_by_name(kwargs.get("ts")).layout
-        elif "tree_style" in kwargs:
-            layout = get_base_tree_style_by_name(kwargs.get("ts")).layout
-        else:
-            layout = kwargs.get("layout", 'r')
-
-        # get the canvas and axes that can fit the requested trees.
-        padding = kwargs.get("padding", 10)
-        scale_bar = kwargs.get("scale_bar", False)
-        grid = Grid(nrows, ncols, width, height, layout, margin, padding, scale_bar)
-        # GridSetup(nrows, ncols, width, height, layout, margin, padding, scale_bar)
-        canvas = grid.canvas
-        axes = grid.axes
-
-        # default style
-        if "tip_labels_style" in kwargs:
-            if "-toyplot-anchor-shift" not in kwargs["tip_labels_style"]:
-                kwargs["tip_labels_style"]["-toyplot-anchor-shift"] = "10px"
-            if "font-size" not in kwargs["tip_labels_style"]:
-                kwargs["font-size"] = "10px"
-        else:
-            kwargs["tip_labels_style"] = {
-                "-toyplot-anchor-shift": "10px",
-                "font-size": "10px",
-            }
-
-        # add toytree-Grid mark to the axes
-        marks = []
-        tmpargs = kwargs.copy()
-
-        # get max tree height for shared_axes top
-        ymax = max(abs(i.treenode.height) for i in treelist)
-
-        # add ToyTree marks
-        for idx in range(grid.nrows * grid.ncols):
-
-            # get the axis
-            axes = grid.axes[idx]
-
-            # add the mark
-            _, _, mark = treelist[idx].draw(axes=axes, **tmpargs)
-
-            # store the mark
-            marks.append(mark)
-
-        # mod style axes
-        for idx in range(grid.nrows * grid.ncols):
-
-            # HACK \/\/\/\/\/\/\/\/\/\/\/\
-            if shared_axes:
-                # grid.axes[idx].y.domain.max = ymax
-                mark.width = canvas.width / ncols
-                mark.height = canvas.height / nrows
-                mark.scale_bar = kwargs.get("scale_bar", False)
-                add_axes_scale_bar(treelist[idx], grid.axes[idx], ymax=ymax)
-                # set_axes_ticks_style(ymax, grid.axes[idx], mark, only_inside=True)
-
-                # add an invisible spacer point. This does a much
-                # better job than setting ticks alone.
-                if mark.layout == 'd':
-                    grid.axes[idx].scatterplot(
-                        mark.xbaseline + treelist[idx].ntips / 2,
-                        mark.ybaseline + ymax,
-                        color="transparent",
-                    )
-                elif mark.layout == 'u':
-                    grid.axes[idx].scatterplot(
-                        mark.xbaseline + treelist[idx].ntips / 2,
-                        mark.ybaseline - ymax,
-                        color="transparent",
-                    )
-                elif mark.layout == 'l':
-                    grid.axes[idx].scatterplot(
-                        mark.xbaseline + ymax,
-                        mark.ybaseline + treelist[idx].ntips / 2,
-                        color="transparent",
-                    )
-                elif mark.layout == 'r':
-                    grid.axes[idx].scatterplot(
-                        mark.xbaseline - ymax,
-                        mark.ybaseline + treelist[idx].ntips / 2,
-                        color="transparent",
-                    )
-
-            # axes off if not scale_bar
-            if kwargs.get("scale_bar", False) is False:
-                if mark.layout in 'du':
-                    grid.axes[idx].y.show = False
-                    grid.axes[idx].x.show = False
-                else:
-                    grid.axes[idx].y.show = False
-                    grid.axes[idx].x.show = False
-
-        # add mark to axes
-        return canvas, grid.axes, marks
 
     def draw_cloud_tree(
         self,

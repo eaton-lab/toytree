@@ -9,18 +9,6 @@ structure based on the [ete3](http://etetoolkit.org/docs/latest/tutorial/tutoria
 plotting library. The goal of toytree is to provide a light-weight Python equivalent to commonly used tree manipulation and plotting libraries in R, and in doing so, to promote further development of phylogenetic methods in Python. Toytree generates rich interactive figures (SVG+HTML+JS) that can be embedded in jupyter-notebooks or webpages, or rendered in SVG, PDF, or PNG for publications. 
 
 
-Current build status
---------------------
-
-<table><tr><td>All platforms:</td>
-    <td>
-      <a href="https://dev.azure.com/conda-forge/feedstock-builds/_build/latest?definitionId=9573&branchName=master">
-        <img src="https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/status/toytree-feedstock?branchName=master">
-      </a>
-    </td>
-  </tr>
-</table>
-
 Current release info
 --------------------
 | Name | Downloads | Version | Platforms |
@@ -71,4 +59,4 @@ rtre.draw(
 )
 ```
 
-![./manuscript/ToyTree-figure.svg](./manuscript/ToyTree-figure.svg)
+![./manuscript/ToyTree-figure.svg](./manuscripts/toytree-1.0/ToyTree-figure.svg)

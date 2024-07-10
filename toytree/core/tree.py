@@ -190,6 +190,19 @@ class ToyTree:
     #     """Return ascii representation of tree."""
     #     return "\n".join(self.treenode._get_ascii()[0])
 
+    @property
+    def nedges(self) -> int:
+        """Return the number of edges in the tree.
+
+        Note
+        ----
+        This value is not cached and requires an iteration of the tree.
+        For super speed-sensitive operations use nnodes-1 if tree is
+        bifurcating, else count as we do here, or count once and cache
+        if the tree doesn't change.
+        """
+        return sum(1 for i in self.enum.iter_edges())
+
     #####################################################
     # FEATURES
     #####################################################
