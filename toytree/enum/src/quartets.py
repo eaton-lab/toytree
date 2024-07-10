@@ -41,6 +41,7 @@ from toytree.core.apis import TreeEnumAPI, add_subpackage_method, add_toytree_me
 logger = logger.bind(name="toytree")
 Query = TypeVar("Query")
 
+
 __all__ = [
     "_iter_unresolved_quartet_sets",
     "_iter_quartet_sets",
@@ -243,15 +244,15 @@ def iter_quartets(
     >>> #  ('c', 'd', 'e', 'f'),
     >>> #  ('c', 'd', 'e', 'f')]
     """
-    # disallowed combination
+    # disallowed combinations
     if (type == set) and (collapse is True):
         collapse = False
         logger.warning(
             "collapse argument cannot be used with type=set, using collapse=False")
 
     # quartet args
-    kwargs = dict(feature=None, quadripartitions=quadripartitions)
-    for i, j, x, y in tree.enum._iter_quartet_sets(**kwargs):
+    kwargs = dict(tree=tree, feature=None, quadripartitions=quadripartitions)
+    for i, j, x, y in _iter_quartet_sets(**kwargs):
 
         # sort within by min name
         if type != set:
@@ -320,7 +321,7 @@ if __name__ == "__main__":
         print(qrt)
     print("")
 
-    print("type=tuple, collapse=True, sort=True, RAISES WARNING")
+    print("type=tuple, collapse=True, sort=True")
     for qrt in iter_quartets(tree, type=tuple, collapse=True, sort=True, quadripartitions=True):
         print(qrt)
     print("")
