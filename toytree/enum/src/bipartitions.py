@@ -1,6 +1,10 @@
 #!/usr/bin/env python
 
-"""
+"""Split trees into bipartitions and return in a variety of formats.
+
+Methods
+-------
+iter_bipartitions
 
 """
 
@@ -215,7 +219,7 @@ def iter_bipartitions(
     # fastest approach returns bipart consistently as (child, parent)
     # and get feature from _iter_bipartition_sets if requested.
     # yield ({part1}, {part2})
-    if (not sort) and (type == set):
+    if (not sort) and (type == set):  # noqa E721
         for below, other in _iter_bipartition_sets(**kwargs):
             yield below, other
 
@@ -236,7 +240,7 @@ def iter_bipartitions(
             # optional: sort biparts by len or min name
             # always: if not type==set sort within by name
             # returned as sets or sorted lists
-            clade1, clade2 = format_bipartition(below, other, type, sort)
+            clade1, clade2 = _format_bipartition(below, other, type, sort)
 
             # return as requested feature and type
             yield tformat(clade1), tformat(clade2)
@@ -249,7 +253,7 @@ def _build_node_names_for_sorting(node: Node) -> str:
     return "".join(sorted(node.get_leaf_names())[::-1])
 
 
-def format_bipartition(
+def _format_bipartition(
     below: Set,
     other: Set,
     type: Callable,
@@ -257,12 +261,16 @@ def format_bipartition(
 ) -> Tuple[Sequence[Node], Sequence[Node]]:
     """Sort bipartitions ({Node, Node}, {Node, Node}).
 
-    - First sorted by len: ({Node, Node}, {Node, Node, Node})
-    - Then by min Node name: ({'a', 'z'}, {'b', 'x'})
-    - which also requires assigning names to internal Nodes when present
-    based on their descendant tips: ({'a', 'z', 'za'}, {'b', 'x', 'xb'})
-    - if the type is not set then items within partitions are
-    consistently sorted: (['a', 'z', 'za'], ['b', 'x', 'xb']) and can
+    If sort is True this first sorts the two sides of the split by
+    length, or by lowest alphanumeric name if they are same length.
+    Example: ({Node, Node}, {Node, Node, Node})
+    Example: ({'a', 'z'}, {'b', 'x'})
+    This also requires assigning names to internal nodes when present,
+    based on their descendant tip names.
+    Example: ({'a', 'z', 'za'}, {'b', 'x', 'xb'})
+    If the type is not set then items within partitions are
+    consistently sorted.
+    Example: (['a', 'z', 'za'], ['b', 'x', 'xb']) and can
     be converted to final type (e.g., tuple) in later steps.
     """
     blen = len(below)
@@ -270,7 +278,7 @@ def format_bipartition(
 
     # if type == set then items within a partition do not need to be
     # sorted, but part1 vs part2 does still need it.
-    if sort and (type == set):
+    if sort and (type == set):  # noqa E721
         if blen < olen:
             return below, other
         elif olen < blen:
@@ -327,5 +335,6 @@ if __name__ == "__main__":
 
     tree = toytree.rtree.unittree(10, seed=123)
 
-    for bipart in tree.iter_bipartitions('idx', sort=True, include_singleton_partitions=True):
+    for bipart in tree.iter_bipartitions(
+        'idx', sort=True, include_singleton_partitions=True):
         print(bipart)
