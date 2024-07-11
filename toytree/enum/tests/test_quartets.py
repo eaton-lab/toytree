@@ -1,39 +1,41 @@
-''' Test enumeration methods for quartets.py
+#!/usr/bin/env python
 
-    For each combination of arguments, tests sorting, correct datatypes, and expected outputs
+"""Test enumeration methods for quartets.py
 
-    tree: ToyTree,
-    feature: Optional[str] = 'name',
-    type: Callable = set,
-    sort: bool = False,
-    collapse: bool = False,
-    quadripartitions: bool = False,
-    
-    possible combinations of arguments:
+For each combination of arguments, tests sorting, correct datatypes, and expected outputs
 
-    test_set (default)
-        test_set_sort
-                test_set_sort_quad
-        test_set_quad
+tree: ToyTree,
+feature: Optional[str] = 'name',
+type: Callable = set,
+sort: bool = False,
+collapse: bool = False,
+quadripartitions: bool = False,
 
-    test_tuple
-        test_tuple_sort
-            test_tuple_sort_collapse
-                test_tuple_sort_collapse_quad
-            test_tuple_sort_quad
-        test_tuple_collapse
-            test_tuple_collapse_quad
-        test_tuple_quad
+possible combinations of arguments:
 
-    test_list
-        test_list_sort
-            test_list_sort_collapse
-                test_list_sort_collapse_quad
-            test_list_sort_quad
-        test_list_collapse
-            test_list_collapse_quad
-        test_list_quad
-    '''
+test_set (default)
+    test_set_sort
+            test_set_sort_quad
+    test_set_quad
+
+test_tuple
+    test_tuple_sort
+        test_tuple_sort_collapse
+            test_tuple_sort_collapse_quad
+        test_tuple_sort_quad
+    test_tuple_collapse
+        test_tuple_collapse_quad
+    test_tuple_quad
+
+test_list
+    test_list_sort
+        test_list_sort_collapse
+            test_list_sort_collapse_quad
+        test_list_sort_quad
+    test_list_collapse
+        test_list_collapse_quad
+    test_list_quad
+"""
 
 import unittest
 import toytree
