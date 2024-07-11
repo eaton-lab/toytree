@@ -192,7 +192,8 @@ class ToyTree:
 
     @property
     def nedges(self) -> int:
-        """Return the number of edges in the tree.
+        """Return the number of edges in the tree, including the root
+        edge if the tree is rooted.
 
         Note
         ----
@@ -201,7 +202,8 @@ class ToyTree:
         bifurcating, else count as we do here, or count once and cache
         if the tree doesn't change.
         """
-        return sum(1 for i in self.enum.iter_edges())
+        internal = sum(1 for i in self.enum.iter_edges())
+        return internal + (1 if self.is_rooted() else 0)
 
     #####################################################
     # FEATURES
