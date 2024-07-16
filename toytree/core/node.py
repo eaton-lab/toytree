@@ -467,8 +467,6 @@ class Node:
         >>> subtree_node = node._detach()
         """
         if self._up:
-            # TODO: inherit the full length of dist, not split by treenode.
-            # if self._up.is_root():
             self._up._children = self.get_sisters()
             self._up = None
         return self
