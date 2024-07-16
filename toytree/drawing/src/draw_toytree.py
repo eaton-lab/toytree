@@ -35,6 +35,12 @@ logger = logger.bind(name="toytree")
 def parse_draw_args_to_tree_style(tree: ToyTree, **kwargs) -> TreeStyle:
     """Return an expanded TreeStyle given user args and base treestyle.
 
+    Parses the `Toytree.draw()` function arguments to update TreeStyle.
+    - expands special 'ts' arg as `tree_style`.
+    - logs warning for any unrecognized args.
+    - gets a TreeStyle base.
+    - validates style args and updates TreeStyle using them.
+    - return the updated TreeStyle object.
     """
     # extract extra kwargs that are not in ToyTree.draw()
     extra_kwargs = kwargs.pop("kwargs")
