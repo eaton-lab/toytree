@@ -86,6 +86,9 @@ def add_axes_scale_bar(
     lct = toyplot.locator.Extended(count=nticks, only_inside=False)
 
     # get root tree height
+    if not tree_height:
+        tree_height = 1e-6
+    # logger.warning(tree_height)
     if mark.layout in "ru":
         locs = lct.ticks(-tree_height, -0)[0]
         locs = locs[locs >= -tree_height]
@@ -128,4 +131,10 @@ def add_axes_scale_bar(
 
 if __name__ == "__main__":
 
-    pass
+    import toytree
+    orig = toytree.rtree.rtree(5, seed=123)
+    orig.set_node_data("orig", {i: i.idx for i in orig}, inplace=True)
+    # orig.draw('p', node_labels="orig");
+    a, b = orig.mod.bisect(1)
+    c, ax, m = a.draw()
+    add_axes_scale_bar(a, ax, )#scale_bar=True);
