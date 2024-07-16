@@ -41,7 +41,7 @@ Add a parent-child pair to split an existing branch into two children (new child
 
 """
 
-from typing import Optional, TypeVar
+from typing import Optional, TypeVar, Tuple
 import itertools
 from loguru import logger
 import numpy as np
@@ -62,12 +62,14 @@ __all__ = [
     "extract_subtree",
     "prune",
     "drop_tips",
+    "bisect",
     "resolve_polytomies",
     "add_internal_node",
     "add_child_node",
     "add_sister_node",
     "add_internal_node_and_child",
     "add_internal_node_and_subtree",
+    "remove_nodes",
 ]
 
 
@@ -174,8 +176,49 @@ def collapse_nodes(
             if (node.dist < min_dist) | (node.support < min_support) | (nidx in selected):
                 if not node.is_root():
                     node._delete()
-        # else:
-            # logger.warning("Tip Nodes cannot be collapsed.")
+    tree._update()
+    return tree
+
+
+@add_subpackage_method(TreeModAPI)
+def remove_nodes(tree: ToyTree, *query: Query, preserve_dists: bool = True, inplace: bool = False) -> ToyTree:
+    """Return ToyTree with one or more Nodes removed.
+
+    If multiple Nodes are entered they are removed in a postorder
+    traversal of the tree. Nodes can be selected using Node Queries.
+
+    Parameters
+    ----------
+    *query: str, int, or Node
+        The Node to rotate can be selected by entering the Node object,
+        or its idx label, or name str. For internal Nodes, multiple
+        queries can be entered and their MRCA will be rotated.
+    preserve_dists: bool
+        If True then children inherit the dist values of their
+        deleted parents so that their dist value reaches their
+        grandparents original height. If False, children retain
+        their original dist but are connected to their grandparent.
+    inplace: bool
+        If True then the original tree is changed in-place, and
+        returned, rather than leaving original tree unchanged.
+
+    See Also
+    --------
+    `toytree.mod.remove_unary_nodes`
+
+    Example
+    -------
+    >>> # remove a tip leaving behind a unary internal Node.
+    >>> tree = toytree.rtree.unittree(5, seed=123)
+    >>> tree = toytree.mod.remove_node(tree, "r0")
+    """
+    tree = tree if inplace else tree.copy()
+    nodes = tree.get_nodes(*query)
+
+    # postorder idx traversal
+    for node in tree:
+        if node in nodes:
+            node._delete(preserve_dists, prevent_unary=False)
     tree._update()
     return tree
 
@@ -189,6 +232,14 @@ def remove_unary_nodes(tree: ToyTree, inplace: bool = False) -> ToyTree:
     inplace: bool
         If True then the original tree is changed in-place, and
         returned, rather than leaving original tree unchanged.
+
+    Example
+    -------
+    >>> # add two unary Nodes then remove them.
+    >>> tree = toytree.rtree.unittree(5, seed=123)
+    >>> tree = toytree.mod.add_internal_node(tree, "~r[0-2]", name="i")
+    >>> tree = toytree.mod.add_internal_node(tree, "~r[0-1]", name="j")
+    >>> tree = toytree.mod.remove_unary_nodes(tree)
     """
     tree = tree if inplace else tree.copy()
     tipset = set(tree[i] for i in range(tree.ntips))
@@ -207,11 +258,7 @@ def remove_unary_nodes(tree: ToyTree, inplace: bool = False) -> ToyTree:
 
 
 @add_subpackage_method(TreeModAPI)
-def rotate_node(
-    tree: ToyTree,
-    *query: Query,
-    inplace: bool = False,
-) -> ToyTree:
+def rotate_node(tree: ToyTree, *query: Query, inplace: bool = False) -> ToyTree:
     """Return ToyTree with one Node rotated (children order reversed).
 
     Rotates *only one Node per call*. Internal Nodes can be selected
@@ -234,7 +281,7 @@ def rotate_node(
     >>> toytree.mod.rotate_node(tree, 12)
     >>> toytree.mod.rotate_node(tree, 'r0', 'r1')
     >>> toytree.mod.rotate_node(tree, '~r[0-3]$')
-    Can chain multiple calls together:
+    >>> # Can chain multiple calls together:
     >>> tree.mod.rotate_node(14).mod.rotate_node(13).mod.rotate_node(12)
     """
     node = tree.get_mrca_node(*query)
@@ -247,7 +294,13 @@ def rotate_node(
 
 @add_subpackage_method(TreeModAPI)
 def extract_subtree(tree: ToyTree, *query: Query) -> ToyTree:
-    """Return a subtree/clade extracted from a larger tree as a ToyTree.
+    r"""Return a subtree/clade extracted from a larger tree as a ToyTree.
+
+                4      extract_subtree (3)
+               / \                           |
+              3   \         ------>          3
+             / \   \                        / \
+            0   1   2                      0   1
 
     Parameters
     ----------
@@ -258,16 +311,65 @@ def extract_subtree(tree: ToyTree, *query: Query) -> ToyTree:
 
     See Also
     --------
-    `toytree.mod.prune`
+    `toytree.mod.prune`, `toytree.mod.drop_tips`, ...
 
     Example
     -------
-    >>> tree = toytree.rtree.unittree(5)
-    >>> subtree = tree.mod.extract_subtree("r0", "r1", "r2")
+    >>> tree = toytree.tree("((a,b),c);")
+    >>> subtree = tree.mod.extract_subtree('a', b')
     >>> toytree.mtree([tree, subtree]).draw('p')
     """
     node = tree.get_mrca_node(*query)
     return ToyTree(node.copy(detach=True))
+
+
+@add_subpackage_method(TreeModAPI)
+def bisect(tree, *query: Query) -> Tuple[ToyTree, ToyTree]:
+    """Return a tree bisected into two unrooted trees by splitting
+    on a selected edge.
+
+    This returns bisected copies of the tree and does not affect the
+    original tree. Trees can be returned as rooted or unrooted, and
+    the dist of the split edge can be partitioned among nodes.
+
+    Parameters
+    ----------
+    *query: str, int, or Node
+        One or more Node selectors (Node object, names, or idx labels)
+        from which the MRCA will select the Node below the edge to cut.
+        is found. This will serve as the root Node of the returned tree.
+
+    TODO
+    ----
+    options to treat how dist is inherited by the two trees.
+    options to treat rooting of returned trees.
+
+    Examples
+    --------
+    >>> ...
+    """
+    tree = tree.copy()
+    node = tree.get_mrca_node(*query)
+    if node.is_root():
+        raise ToytreeError("cannot bisect on root Node, nothing is above.")
+
+    # root on node; detach two child clades; assign dists
+    rtree = tree.root(node)
+    left, right = rtree.treenode.children
+    left = ToyTree(left._detach())
+    right = ToyTree(right._detach())
+
+    # treat differently depending on if node is unary, root, or tip.
+    if node.is_root():
+        pass
+    # elif not len(node.children):
+    #     pass
+    # elif len(node.children) == 1:
+    #     pass
+    # else:
+    #     pass
+
+    return (left, right)
 
 
 @add_subpackage_method(TreeModAPI)
