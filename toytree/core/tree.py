@@ -355,7 +355,7 @@ class ToyTree:
         Node objects are immutable.
         """
         # clear depth counters used to get heights during traversal
-        depths = {self.treenode: 0}
+        depths = {self.treenode: 0.}
 
         # queue starts with root children, and stack starts with root.
         queue = list(self.treenode._children)

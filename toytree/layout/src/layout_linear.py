@@ -53,7 +53,7 @@ class LinearLayout(BaseLayout):
         self.interior_algorithm = interior_algorithm
         super().__init__(tree, style, fixed_order, fixed_position)
 
-    def run(self):
+    def run(self) -> None:
         """Fills the .coords array with x, y coordinates.
 
         mode: int
@@ -195,12 +195,23 @@ class LinearLayout(BaseLayout):
 if __name__ == "__main__":
 
     import toytree
-    tre = toytree.rtree.rtree(5)
-    tre.style.tip_labels_align = True
-    tre.style.xbaseline = 5
-    tre.style.ybaseline = 2.5
-    tre.style.layout = 'u'
-    lay = LinearLayout(tre, tre.style, None, None, interior_algorithm=1)
-    print(lay.coords)
-    print(lay.tcoords)
-    print(lay.interior_algorithm)
+    toytree.set_log_level("INFO")
+
+    a = toytree.Node("a", dist=1.0)
+    b = toytree.Node("b", dist=1.5)
+    ab = toytree.Node("ab", dist=0.0)
+    ab._add_child(a)
+    ab._add_child(b)
+    ts = toytree.tree(a)
+    ll = toytree.layout.LinearLayout(ts, ts.style)
+
+    # tre = toytree.rtree.rtree(5)
+    # tre.style.tip_labels_align = True
+    # tre.style.xbaseline = 5
+    # tre.style.ybaseline = 2.5
+    # tre.style.layout = 'u'
+    # lay = LinearLayout(tre, tre.style, None, None, interior_algorithm=1)
+    # lay.run()
+    # print(lay.coords)
+    # print(lay.tcoords)
+    # print(lay.interior_algorithm)
