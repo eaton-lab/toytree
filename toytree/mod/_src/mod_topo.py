@@ -324,7 +324,7 @@ def extract_subtree(tree: ToyTree, *query: Query) -> ToyTree:
 
 
 @add_subpackage_method(TreeModAPI)
-def bisect(tree, *query: Query) -> Tuple[ToyTree, ToyTree]:
+def bisect(tree, *query: Query, rooted: bool = False) -> Tuple[ToyTree, ToyTree]:
     """Return a tree bisected into two unrooted trees by splitting
     on a selected edge.
 
@@ -338,6 +338,9 @@ def bisect(tree, *query: Query) -> Tuple[ToyTree, ToyTree]:
         One or more Node selectors (Node object, names, or idx labels)
         from which the MRCA will select the Node below the edge to cut.
         is found. This will serve as the root Node of the returned tree.
+    rooted: bool
+        If True the both trees are rooted on the Node adjacent to the
+        edge that is split, otherwise trees are returned unrooted.
 
     TODO
     ----
@@ -359,9 +362,15 @@ def bisect(tree, *query: Query) -> Tuple[ToyTree, ToyTree]:
     left = ToyTree(left._detach())
     right = ToyTree(right._detach())
 
+    # unroot the trees
+    if not rooted:
+        if left.ntips > 2:
+            left.unroot(inplace=True)
+        if right.ntips > 2:            
+            right.unroot(inplace=True)
     # treat differently depending on if node is unary, root, or tip.
-    if node.is_root():
-        pass
+    # if node.is_root():
+    #     pass
     # elif not len(node.children):
     #     pass
     # elif len(node.children) == 1:
