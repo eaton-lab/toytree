@@ -111,9 +111,9 @@ class Node:
     def __init__(self, name: str = "", dist: float = 0.0, support: float = np.nan):
         self._name = str(name)
         """: name string assigned to Node."""
-        self._dist = dist
+        self._dist = float(dist)
         """: length value associated to the edge above this Node."""
-        self._support = support
+        self._support = float(support)
         """: support value associated to the edge above this Node."""
 
         # Non-init attributes.
@@ -160,7 +160,7 @@ class Node:
     @support.setter
     def support(self, value: float) -> None:
         """Set a 'support' attribute. This is like any other feature
-        that can be set on a Node, but defaults to 0 for all Nodes."""
+        that can be set on a Node, but defaults to nan for all Nodes."""
         try:
             self._support = float(value)
         except ValueError as err:
@@ -250,32 +250,61 @@ class Node:
         return self.up is None
 
     def copy(self, detach: bool = False) -> Node:
-        """Return a deepcopy of this Node (and its connected Nodes).
+        r"""Return a deepcopy of this Node (and its connected Nodes).
 
         All connected Nodes (ancestral and descendant) are also copied
-        and returned in terms of their connections to this Node. Thus
-        no returned Nodes are connected to any the original Node or any
-        of its connected Nodes. This Node can optionally be detached
-        from ancestors and returned as the new root Node, such that
-        only descendants (nested Nodes) are copied.
+        and the can be referenced from the returned Node. The Node
+        that calls .copy() can optionally be detached from its
+        ancestors and returned as the root of its subtree. This is
+        slightly faster since only descendant Nodes are copied.
+
+                4   when .copy called from Node 3   n4
+               / \    all connected Nodes are       / \
+              3   \     also copied ------>       n3   \
+             / \   \                              / \   \
+            0   1   2                           n0  n1  n2
+
+        Parameters
+        ----------
+        detach: bool
+            If True the Node is returned as the treenode (root) of its
+            subtree with all Nodes of the subtree copied. If False any
+            ancestral Nodes are also copied and are connected to the
+            returned Node.
+
+        See Also
+        --------
+        `Toytree.copy()`, `toytree.mod.extract_subtree`
+
+        Examples
+        --------
+        >>> tree = toytree.tree("((a,b),c);")
+        >>> node = tree.get_mrca_node("a", "b")
+        >>> cnode = node.copy(detach=True)
+        >>> subtree = toytree.tree(cnode)
         """
-        # get root node.
-        node = self
-        while 1:
-            if node.up:
-                node = node.up
-            else:
-                break
+        # return a deepcopy of this Node and its descendants detached
+        # from any ancestor Nodes.
+        if detach:
+            # save connection to ancestors and remove it from this Node
+            saved_connection = self.up
+            self._up = None
+            # create deepcopy of this Node and descendants (not ancestors)
+            copied_node = deepcopy(self)
+            # restore connection to ancestors for the original Node
+            self._up = saved_connection
+            return copied_node
+
+        # get connected root Node
+        treenode = self.get_treenode()
 
         # make a deepcopy of root, otherwise only nested are copied.
-        root = deepcopy(node)
+        # TODO: is it still necessary to do this?
+        copied_treenode = deepcopy(treenode)
 
         # find focal node to be returned
-        for node in root.traverse():
+        for node in copied_treenode.traverse():
             if (node.idx == self.idx) and (node.name == self.name):
-                # optionally detach to make focal node the root.
-                if detach:
-                    node._detach()
                 return node
         raise TreeNodeError("copy failed, tree structure is broken.")
 
@@ -334,66 +363,113 @@ class Node:
 
     def _remove_child(self, node: Node) -> None:
         """Remove a connection from this Node to a child Node."""
+        # should we add assertion that children do not have self as .up?
         self._children = tuple(i for i in self._children if i != node)
 
-    def _delete(
-        self,
-        preserve_branch_length: bool = True,
-        prevent_nondicotomic: bool = False,
-    ) -> None:
+    def _delete(self, preserve_dists: bool = True, prevent_unary: bool = False) -> None:
         r"""Delete a Node from a tree.
 
-        This operates in-place and is retained for compatibility with
-        ete3. See toytree.mod for alternative implementations.
+        This removes a Node object and its connections to other Nodes.
+        The Node object is removed from namespace (`del` is called)
+        and the `.up` and `.children` attributes of any connected
+        Nodes are modified. If
 
-                  4                         4
-                 / \       delete 2        / \
-                2   3      ------->       /   3
-               /     \                   /     \
-              0       1                 0       1
+                    4                         3
+                   / \       delete 3        /|\
+                  3   \      ------->       / | \
+                 / \   \                   /  |  \
+                0   1   2                 0   1   2
+
+        Parameters
+        ----------
+        preserve_dists: bool
+            If True then children inherit the dist values of their
+            deleted parents so that their dist value reaches their
+            grandparents original height. If False, children retain
+            their original dist but are connected to their grandparent.
+        prevent_unary: bool
+            If True then any unary Nodes (single child) that are left
+            behind from the deletion process (e.g., Node 3 above) will
+            be removed as well.
+
+        See Also
+        --------
+        `toytree.mod.remove_node`, `toytree.mod.remove_unary_nodes`
+
+        Example
+        --------
+        >>> tree = toytree.tree("((a,b),c);")
+        >>> node = tree.get_mrca_node('a', 'b')
+        >>> node._delete()
+        >>> tree._update()  # required b/c Nodes changed
+        >>> tree.draw()
         """
         # get parent node
-        parent = self.up
-        if not parent:
+        grandparent = self.up
+        if not grandparent:
             logger.warning("cannot delete root Node.")
             return
 
-        # conserve branch lengths: child dist and parent dist grow.
-        if preserve_branch_length:
-            if len(self.children) == 1:
-                self.children[0]._dist += self.dist
-            elif len(self.children) > 1:
-                for child in self.children:
-                    child._dist += self.dist
+        # each child inherits deleted Node's dist
+        if preserve_dists:
+            for child in self._children:
+                child._dist += self._dist
 
         # connect children to grandparent and rm reference to self
-        for child in self.children:
-            parent._add_child(child)
-        parent._remove_child(self)
+        for child in self._children:
+            grandparent._add_child(child)
+        grandparent._remove_child(self)
 
         # do not allow parents with only one child
-        if prevent_nondicotomic and len(parent.children) < 2:
-            parent._delete(
-                preserve_branch_length=preserve_branch_length,
-                prevent_nondicotomic=prevent_nondicotomic,
-            )
+        if prevent_unary and len(grandparent.children) < 2:
+            grandparent._delete(preserve_dists, prevent_unary)
+
+        # Node cannot be deleted here, but all connections are severed.
+        self._idx = -1
+        self._up = None
+        self._children = ()
+
 
     def _detach(self) -> Node:
-        """Return this Node as a subtree detached from its ancestor.
+        r"""Return this Node as a subtree detached from its ancestor.
 
-        The Node will preserve its edge length as the root .dist
-        attribute, and can be connected to another tree using the
-        `add_child` function. However, see toytree.mod subpackage
-        for better options for SPR type tree modifications.
+        This Node and its descendants are detached from their ancestor
+        Nodes. In other words, this removes the parent from this Node's
+        `up` and removes this Node from its parent's `children`. This
+        does not create a copy of any Nodes (see Node.copy()), thus
+        other Nodes connected to this one are also affected. In the
+        example below .detach() is called on Node 3 and Node 3 is
+        returned as a subtree of the original tree structure, but note
+        that Node 4 was also modified.
+
+                    4                                   4
+                   / \       detach 3       |           |
+                  /   3      ------->       3           |
+                 /   / \                   / \          |
+                0   1   2                 1   2         0
+                                        [Returned]  [Modified]
 
         Note
         ----
-        This is destructive to the topology of the tree it is detached
-        from and so is usually used in combination with `.copy()`.
+        The Node will preserve its .dist (edge length) attribute, and
+        can be connected to another Node using the `Node._add_child`
+        method. The detach method is primarily used internally.
+
+        See Also
+        --------
+        `Node.copy`, `toytree.mod.extract_subtree`
+
+        Example
+        -------
+        >>> tree = toytree.tree("((1,2)3,0)4;")
+        >>> # get (0,1) detached from 2 as subtree
+        >>> node = tree.get_mrca_node('1', '2')
+        >>> subtree_node = node._detach()
         """
         if self._up:
-            my_sisters = tuple(i for i in self._up._children if i != self)
-            self._up._children = self._children + my_sisters
+            # TODO: inherit the full length of dist, not split by treenode.
+            # if self._up.is_root():
+            self._up._children = self.get_sisters()
             self._up = None
         return self
 
@@ -610,8 +686,8 @@ class Node:
 
     def iter_sisters(self) -> Iterator[Node]:
         """Return a Generator to iterate over sister nodes."""
-        if self.up:
-            for child in self.up.children:
+        if self._up:
+            for child in self._up._children:
                 if child != self:
                     yield child
 
@@ -685,6 +761,33 @@ class Node:
         if it is both self and root.
         """
         return tuple(self.iter_ancestors(root=root, include_self=include_self))
+
+    def get_treenode(self) -> Node:
+        """Return the treenode (top Node) from a connected set of Nodes.
+
+        This calls .up recursively until the top Node is reached and
+        returned.
+
+        Note
+        ----
+        It is much faster to fetch the treenode from a ToyTree object
+        using its cached info at ToyTree.treenode.
+
+        Examples
+        --------
+        >>> tree = toytree.tree("((a,b),c);")
+        >>> t0 = tree[-1]
+        >>> t1 = tree.treenode
+        >>> t2 = tree[0].get_treenode()
+        >>> assert t0 == t1 == t2
+        """
+        node = self
+        while 1:
+            if node.up:
+                node = node.up
+            else:
+                return node
+
 
     #####################################################
     # TO TOYTREE                                        #
@@ -772,7 +875,7 @@ class Node:
         )
         mid = int((lo + hi) / 2)
         prefixes[mid] = char1 + "-" * (space - 2) + prefixes[mid][-1]
-        result = [p + l for (p, l) in zip(prefixes, result)]
+        result = [x + y for (x, y) in zip(prefixes, result)]
         return (result, mid)
 
     def draw_ascii(self, compact: bool = False):
