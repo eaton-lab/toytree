@@ -324,7 +324,7 @@ def extract_subtree(tree: ToyTree, *query: Query) -> ToyTree:
 
 
 @add_subpackage_method(TreeModAPI)
-def bisect(tree, *query: Query, rooted: bool = False) -> Tuple[ToyTree, ToyTree]:
+def bisect(tree, *query: Query, rooted: bool = False, dist_partition: float = 0.5) -> Tuple[ToyTree, ToyTree]:
     """Return a tree bisected into two unrooted trees by splitting
     on a selected edge.
 
@@ -341,11 +341,11 @@ def bisect(tree, *query: Query, rooted: bool = False) -> Tuple[ToyTree, ToyTree]
     rooted: bool
         If True the both trees are rooted on the Node adjacent to the
         edge that is split, otherwise trees are returned unrooted.
-
-    TODO
-    ----
-    options to treat how dist is inherited by the two trees.
-    options to treat rooting of returned trees.
+    dist_partition: float
+        If the returned subtrees are rooted the dist of the bisected
+        edge can be assigned to one or the other treenodes, or both.
+        The value 0.5 splits the dist equally; 0.0 assigns all to the
+        query Node; 1.0 assign all to the Node above the query.
 
     Examples
     --------
@@ -358,6 +358,7 @@ def bisect(tree, *query: Query, rooted: bool = False) -> Tuple[ToyTree, ToyTree]
 
     # root on node; detach two child clades; assign dists
     rtree = tree.root(node)
+    pdist = sum(i.dist for i in rtree.treenode.children)
     left, right = rtree.treenode.children
     left = ToyTree(left._detach())
     right = ToyTree(right._detach())
@@ -368,16 +369,13 @@ def bisect(tree, *query: Query, rooted: bool = False) -> Tuple[ToyTree, ToyTree]
             left.unroot(inplace=True)
         if right.ntips > 2:            
             right.unroot(inplace=True)
-    # treat differently depending on if node is unary, root, or tip.
-    # if node.is_root():
-    #     pass
-    # elif not len(node.children):
-    #     pass
-    # elif len(node.children) == 1:
-    #     pass
-    # else:
-    #     pass
-
+    # return partitioned dist on rooted trees
+    else:
+        # force to be in [0, 1]
+        dist_partition = max(0, min(1, dist_partition))
+        alt_partition = 1 - dist_partition
+        left.treenode._dist = pdist - (pdist * dist_partition)
+        right.treenode._dist = pdist - (pdist * alt_partition)
     return (left, right)
 
 
