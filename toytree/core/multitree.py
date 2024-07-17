@@ -489,7 +489,7 @@ class MultiTree:
         >>> mtre = toytree.mtree([toytree.rtree.unittree(10) for i in range(10)])
         >>> mtre.draw(shape=(2, 3), width=800, edge_widths=4)
         """
-        draw_multitree(
+        return draw_multitree(
             mtree=self, shape=shape, shared_axes=shared_axes, idxs=idxs,
             width=width, height=height, margin=margin, **kwargs,
         )
