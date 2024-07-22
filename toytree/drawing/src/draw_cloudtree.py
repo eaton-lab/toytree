@@ -13,7 +13,9 @@ from toytree.drawing import ToyTreeMark
 # from toytree.core import Canvas, Cartesian
 from toytree.style import tree_style_to_css_dict
 from toytree.drawing.src.draw_toytree import (
-    get_layout, parse_draw_args_to_tree_style)
+    get_layout,
+    get_tree_style_updated_by_draw_args,
+)
 # from toytree.drawing.src.mark_cloudtree import CloudTreeMark
 
 Mark = TypeVar("Mark")
@@ -34,7 +36,7 @@ def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:
         mtree = mtree.copy()
         mtree.treelist = mtree.treelist[idxs]
 
-    # ... todo...
+    # TODO: allow jitter options along tip spread axis
     jitter = kwargs.get("jitter", 0.)
 
     # get fixed order of tips from consensus tree if not provided.
@@ -45,6 +47,16 @@ def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:
             .get_consensus_tree()
             .get_tip_labels()
         )
+
+    # TODO
+    else:
+        # require that the user fixed_order argument includes all of
+        # the tips present across all the trees.
+        # assert len(fixed_order) == max_num_tips, "..."
+        pass
+
+    # get a dict mapping tips to indices for the full set of tips
+    # tip_pos = dict(zip(fixed_order, range(len(fixed_order))))
 
     # iterate over trees and for each, allow the trees individual style
     # to override any styles not fixed or from kwargs.
@@ -60,6 +72,9 @@ def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:
 
         # get the tree's style
         style = parse_draw_args_to_tree_style(tree, **kwargs)
+
+        # using fixed order while allowing diff numbers of tips
+        # style.fixed_order = [tip_pos[i] for i in tree.get_tip_labels()]
 
         # override styles not set by user
         style.edge_type = kwargs.get("edge_type", 'c')
