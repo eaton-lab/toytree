@@ -370,11 +370,10 @@ class Node:
         r"""Delete a Node from a tree.
 
         This removes a Node object and its connections to other Nodes.
-        The Node object is removed from namespace (`del` is called)
-        and the `.up` and `.children` attributes of any connected
-        Nodes are modified. If
+        The `.up` and `.children` attributes of any connected Nodes are
+        modified.
 
-                    4                         3
+                    4                         4
                    / \       delete 3        /|\
                   3   \      ------->       / | \
                  / \   \                   /  |  \
@@ -388,9 +387,11 @@ class Node:
             grandparents original height. If False, children retain
             their original dist but are connected to their grandparent.
         prevent_unary: bool
-            If True then any unary Nodes (single child) that are left
-            behind from the deletion process (e.g., Node 3 above) will
-            be removed as well.
+            If True then any unary Nodes (internal nodes with a single
+            child) that are left behind from the deletion process will
+            be removed as well. For example, if Node 1 is deleted in
+            the example above then Node 3 would also be deleted to
+            connect Node 0 to Node 4.
 
         See Also
         --------
@@ -462,7 +463,7 @@ class Node:
         Example
         -------
         >>> tree = toytree.tree("((1,2)3,0)4;")
-        >>> # get (0,1) detached from 2 as subtree
+        >>> # get (1,2) detached as subtree
         >>> node = tree.get_mrca_node('1', '2')
         >>> subtree_node = node._detach()
         """
