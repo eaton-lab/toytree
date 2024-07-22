@@ -2,7 +2,6 @@
 
 """...
 
-
 Priority in color/opacity
 -------------------------
 1. color settings can take a single or multiple colors. If multiple
