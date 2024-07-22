@@ -2,31 +2,67 @@
 
 """Inference methods concerning multi-labeled trees (mul trees).
 
+Count the number of duplications and losses required to embed a gene
+tree into a species tree.
 
+References
+----------
 """
 
 from typing import TypeVar, Collection
 import pandas as pd
 import toytree
+from toytree import ToyTree
 
-ToyTree = TypeVar("ToyTree")
+# ToyTree = TypeVar("ToyTree")
 Node = TypeVar("Node")
 
 
-def set_ng_labels(gtree: ToyTree) -> None:
-    """Sets a feature 'ng' to each internal node in a tree."""
+def _set_ng_labels(gtree: ToyTree) -> None:
+    """Sets a cached feature 'ng' with leaf names under each node.
+    
+    Example
+    -------
+    >>> tree = toytree.rtree.unittree(ntips=5, seed=123)
+    >>> _set_ng_labels(tree)
+    >>> tree.get_node_data("ng")
+    >>> # 0                    {r0}
+    >>> # 1                    {r1}
+    >>> # 2                    {r2}
+    >>> # 3                    {r3}
+    >>> # 4                    {r4}
+    >>> # 5                {r0, r1}
+    >>> # 6            {r0, r1, r2}
+    >>> # 7                {r4, r3}
+    >>> # 8    {r4, r3, r0, r1, r2}
+    """
     for node in gtree:
-        if node.children:
-            node.ng = set.union(*(i.ng for i in node.children))
+        if node._children:
+            node.ng = set.union(*(i.ng for i in node._children))
         else:
             node.ng = {node.name}
 
 
-def set_ns_labels(gtrees: Collection[ToyTree], sptree: ToyTree) -> None:
-    """Sets a feature 'ns' as MRCA sptree node containing 'ng' set."""
-    for gtree in gtrees:
-        for node in gtree:
-            node.ns = sptree.get_mrca_node(*node.ng)
+def _set_ns_labels(gtree: ToyTree, sptree: ToyTree) -> None:
+    """Sets a feature 'ns' as MRCA sptree node containing 'ng' set.
+
+    Example
+    -------
+    >>> tree = toytree.rtree.unittree(ntips=5, seed=123)
+    >>> _set_ns_labels(tree, tree)
+    >>> tree.get_node_data("ns")
+    >>> # 0    <Node(idx=0, name='r0')>
+    >>> # 1    <Node(idx=1, name='r1')>
+    >>> # 2    <Node(idx=2, name='r2')>
+    >>> # 3    <Node(idx=3, name='r3')>
+    >>> # 4    <Node(idx=4, name='r4')>
+    >>> # 5               <Node(idx=5)>
+    >>> # 6               <Node(idx=6)>
+    >>> # 7               <Node(idx=7)>
+    >>> # 8               <Node(idx=8)>
+    """
+    for node in gtree:
+        node.ns = sptree.get_mrca_node(*node.ng)
 
 
 def count_duplications(gtree: ToyTree) -> int:
@@ -37,6 +73,10 @@ def count_duplications(gtree: ToyTree) -> int:
     descendants.
 
     Adds a feature 'dup' to Nodes with True or False.
+
+    Example
+    -------
+    ...
     """
     ndups = 0
     for node in gtree.traverse():
@@ -50,7 +90,7 @@ def count_duplications(gtree: ToyTree) -> int:
 
 
 def depth(sptree: ToyTree, node: Node) -> int:
-    """return distance from root in sptree"""
+    """Return distance from root in sptree"""
     return sptree.distance.get_node_distance(
         sptree.treenode.idx, node.idx, topology_only=True)
 
@@ -74,18 +114,34 @@ def count_losses(gtree: ToyTree, sptree: ToyTree) -> int:
 
 
 def get_multree_reconciliation_score(
-    gtrees: Collection[ToyTree],
-    sptrees: Collection[ToyTree],
+    gtrees: ToyTree | Collection[ToyTree],
+    sptrees: ToyTree | Collection[ToyTree],
 ) -> pd.DataFrame:
-    """
+    """Return table with DLC reconciliation...
 
-    [sptree, gtree, dtg, ltg, score]
+    Parameters
+    ----------
+    ...
+
+    Returns
+    -------
+    A pandas dataframe is returned w/ ...[sptree, gtree, dtg, ltg, score]
+
+    Example
+    --------
+    >>> tree = toytree.rtree.unittree(ntips=5, seed=123)
+    >>> dtree = tree.mod.add_internal_node_and_child('r3', name='r3')
+    >>> get_multree_reconciliation_score(tree, dtree)
     """
     # check that gtrees and sptrees are iterable (lists)
+    if isinstance(gtrees, ToyTree):
+        gtrees = [gtrees]
+    if isinstance(sptrees, ToyTree):
+        sptrees = [sptrees]
 
     # set 'ng' sets on the Nodes of all gene trees.
     for gtree in gtrees:
-        set_ng_labels(gtree)
+        _set_ng_labels(gtree)
 
     # build collection of species trees to be tested...
     # ...
@@ -96,7 +152,12 @@ def get_multree_reconciliation_score(
     sub_data = []
     for sidx, sptree in enumerate(sptrees):
         newick_s = sptree.write(None, None, None)
-        set_ns_labels(gtrees, sptree)
+
+        # cache the MRCA nodes
+        for gtree in gtrees:
+            _set_ns_labels(gtree, sptree)
+
+        # iterate over ...
         chunks = []
         for gidx, gtree in enumerate(gtrees):
             newick_g = gtree.write(None, None, None)
@@ -112,6 +173,8 @@ def get_multree_reconciliation_score(
                 columns=['sidx', 'gidx', 'sptree', 'gtree', 'dups', 'losses', 'score'],
             ))
         full_data.append([sidx, newick_s, sub_data[-1].score.sum()])
+
+    # concatenate dataframes into final df and relabel
     sub_data = pd.concat(sub_data).reset_index(drop=True)
     full_data = pd.DataFrame(full_data, columns=["sidx", "sptree", "score"])
     full_data = full_data.sort_values("sidx")
@@ -121,7 +184,7 @@ def get_multree_reconciliation_score(
 if __name__ == "__main__":
 
     # validation with ipcoal
-    import ipcoal
+    # import ipcoal
     import string
 
     # get a single-labeled species tree with names (A-...)
@@ -140,24 +203,26 @@ if __name__ == "__main__":
     sptree_mul2 = toytree.mod.add_internal_node_and_subtree(sptree_mul2, 'F', subtree=subtree)
 
     # draw species trees
-    c, _, _ = toytree.mtree([sptree_mul, sptree_mul2]).draw()
-    toytree.utils.show(c)
+    c, _, _ = toytree.mtree([sptree_mul, sptree_mul2]).draw(ts='s', height=400)
+    toytree.utils.show(c, tmpdir="~")
+
+    # sptree_mul2
 
     # simulate genealogies on this mul-species-tree
-    model = ipcoal.Model(
-        sptree_mul, Ne=2e5, nsamples=1, seed_trees=123, seed_mutations=123)
-    model.sim_trees(100)
+    # model = ipcoal.Model(
+    #     sptree_mul, Ne=2e5, nsamples=1, seed_trees=123, seed_mutations=123)
+    # model.sim_trees(100)
 
-    # draw some genealogies
-    # canvas, _, _ = model.draw_genealogies(scale_bar=True, shared_axes=True)
-    # toytree.utils.show(canvas)
-    gtrees = toytree.mtree(model.df.genealogy.to_list())
-    full, sub = get_multree_reconciliation_score(gtrees, [sptree_mul, sptree_mul2])
+    # # draw some genealogies
+    # # canvas, _, _ = model.draw_genealogies(scale_bar=True, shared_axes=True)
+    # # toytree.utils.show(canvas)
+    # gtrees = toytree.mtree(model.df.genealogy.to_list())
+    # full, sub = get_multree_reconciliation_score(gtrees, [sptree_mul, sptree_mul2])
 
-    print("Comparing species tree models:")
-    print("------------------------------")
-    print(full)
+    # print("Comparing species tree models:")
+    # print("------------------------------")
+    # print(full)
 
-    print("\n\nScores of individual gene trees for each model:")
-    print("--------------------------------------------------")
-    print(sub)
+    # print("\n\nScores of individual gene trees for each model:")
+    # print("--------------------------------------------------")
+    # print(sub)
