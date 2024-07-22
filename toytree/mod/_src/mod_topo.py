@@ -42,14 +42,12 @@ Add a parent-child pair to split an existing branch into two children (new child
 """
 
 from typing import Optional, TypeVar, Tuple
-import itertools
 from loguru import logger
 import numpy as np
 from toytree.core.apis import TreeModAPI, add_subpackage_method, add_toytree_method
 from toytree.core.node import Node
 from toytree.core.tree import ToyTree
 from toytree.utils import ToytreeError
-# pylint: disable="too-many-branches"
 
 logger = logger.bind(name="toytree")
 Query = TypeVar("Query", str, int, Node)
@@ -154,28 +152,21 @@ def collapse_nodes(
     --------
     >>> tree = toytree.rtree.unittree(ntips=12)
     >>> tree.mod.collapse_nodes(14)
-    >>> tree.mod.collapse_nodes(tree.get_mrca_node('r1', 'r2'))
-    >>> tree.mod.collapse_nodes(tree.get_mrca_node('~r[1-4]')
-    >>> tree = tree.set_node_data("dist", {22: 0.005, 23: 0.005})
-    >>> tree = tree.set_node_data("support", {25: 50}, default=100)
-    >>> tree = tree.collapse_nodes(min_dist=0.01, min_support=45)
+    >>> tree.mod.collapse_nodes(tree.get_mrca_node('r1', 'r2').idx)
+    >>> tree.mod.collapse_nodes(tree.get_mrca_node('~r[1-4]').idx)
+    >>> tree = tree.set_node_data("dist", {22: 0.005, 21: 0.005})
+    >>> tree = tree.set_node_data("support", {20: 50}, default=100)
+    >>> tree = tree.mod.collapse_nodes(min_dist=0.01, min_support=45)
     """
-    if not query:  # == (): # Node 0 is always a tip anyways.
-        selected = []
-    else:
-        selected = [i.idx for i in tree.get_nodes(*query)]
-
-    # get tree and nodes copy
+    nodes = () if not query else tree.get_nodes(*query)
     if not inplace:
         tree = tree.copy()
+        nodes = [tree[i.idx] for i in nodes]
 
-    # remove internal nodes meeting criteria
-    for nidx in range(tree.nnodes):
-        node = tree[nidx]
-        if not node.is_leaf():
-            if (node.dist < min_dist) | (node.support < min_support) | (nidx in selected):
-                if not node.is_root():
-                    node._delete()
+    # iterate over all internal nodes
+    for node in tree[tree.ntips:-1]:
+        if (node.dist < min_dist) | (node.support < min_support) | (node in nodes):
+            node._delete(preserve_dists=True, prevent_unary=True)
     tree._update()
     return tree
 
@@ -212,8 +203,10 @@ def remove_nodes(tree: ToyTree, *query: Query, preserve_dists: bool = True, inpl
     >>> tree = toytree.rtree.unittree(5, seed=123)
     >>> tree = toytree.mod.remove_node(tree, "r0")
     """
-    tree = tree if inplace else tree.copy()
-    nodes = tree.get_nodes(*query)
+    nodes = () if not query else tree.get_nodes(*query)
+    if not inplace:
+        tree = tree.copy()
+        nodes = [tree[i.idx] for i in nodes]
 
     # postorder idx traversal
     for node in tree:
@@ -225,7 +218,13 @@ def remove_nodes(tree: ToyTree, *query: Query, preserve_dists: bool = True, inpl
 
 @add_subpackage_method(TreeModAPI)
 def remove_unary_nodes(tree: ToyTree, inplace: bool = False) -> ToyTree:
-    """Return ToyTree with any unary Nodes removed.
+    r"""Return ToyTree with any unary Nodes removed.
+
+                4     remove_unary_nodes     4
+               / \                          / \
+              3   2         ------>        /   \
+             /     \                      /     \
+            0       1                    0       1
 
     Parameters
     ----------
@@ -285,8 +284,9 @@ def rotate_node(tree: ToyTree, *query: Query, inplace: bool = False) -> ToyTree:
     >>> tree.mod.rotate_node(14).mod.rotate_node(13).mod.rotate_node(12)
     """
     node = tree.get_mrca_node(*query)
-    tree = tree if inplace else tree.copy()
-    node = tree[node._idx]
+    if not inplace:
+        tree = tree.copy()
+        node = tree[node.idx]
     node._children = tuple(node.children[::-1])
     tree._update()
     return tree
@@ -302,6 +302,11 @@ def extract_subtree(tree: ToyTree, *query: Query) -> ToyTree:
              / \   \                        / \
             0   1   2                      0   1
 
+    Note
+    ----
+    The returned subtree is a copy of the subtree from the original;
+    the original tree is not affected.
+
     Parameters
     ----------
     *query: str, int, or Node
@@ -311,7 +316,9 @@ def extract_subtree(tree: ToyTree, *query: Query) -> ToyTree:
 
     See Also
     --------
-    `toytree.mod.prune`, `toytree.mod.drop_tips`, ...
+    `toytree.mod.bisect`
+    `toytree.mod.prune`
+    `toytree.mod.drop_tips`
 
     Example
     -------
@@ -324,13 +331,62 @@ def extract_subtree(tree: ToyTree, *query: Query) -> ToyTree:
 
 
 @add_subpackage_method(TreeModAPI)
-def bisect(tree, *query: Query, rooted: bool = False, dist_partition: float = 0.5) -> Tuple[ToyTree, ToyTree]:
-    """Return a tree bisected into two unrooted trees by splitting
-    on a selected edge.
+def bisect(tree: ToyTree, *query: Query, reroot: bool = False, dist_partition: float = 1.0) -> Tuple[ToyTree, ToyTree]:
+    r"""Return a tree bisected into two subtrees on a selected edge.
 
-    This returns bisected copies of the tree and does not affect the
-    original tree. Trees can be returned as rooted or unrooted, and
-    the dist of the split edge can be partitioned among nodes.
+    This returns two bisected subsets of the original tree. It does not
+    affect the original tree object. If query selects the treenode on
+    a rooted tree it returns a subtree for each child as a treenode with
+    its original dist. If query selects the treenode on an urooted tree
+    it raises an error. If query selects any other node it will split
+    the edge above to create two subtrees. The query node will become
+    a treenode of one new subtree. The arg 'reroot=False` will retain
+    the original treenode in the other subtree, otherwise the node above
+    the query becomes the new treenode (i.e., thesubtree is re-rooted).
+    The subtree below the query will inherit all of the dist of the
+    split edge unless the dist_partition arg is used to designate the
+    proportion of dist (0.0-1.0) to assign to this treenode.
+
+           __6(T)__      bisect (6)
+          |       |       ------->          |          |
+         _4_     _5_                       4(T)       5(T)
+        |   |   |   |                     |   |      |   |
+        0   1   2   3                     0   1      2   3
+    # bisect on treenode (T) of rooted tree returns the two child trees.
+
+           __6(T)__      bisect (4)         |
+          |       |       ------->          |
+         _4_     _5_                       4(T)       5(T)
+        |   |   |   |                     |   |      |   |
+        0   1   2   3                     0   1      2   3
+    # bisect on internal node (4) returns tree rooted on query (4) with
+    # full dist of split edge. The treenode (T) is ignored if on split
+    # edge and subtree from the side of split edge (5) is returned.
+
+           __6(T)__       bisect (4)
+          |       |   dist_partition=0.5    |          |
+         _4_     _5_      ------->         4(T)       5(T)
+        |   |   |   |                     |   |      |   |
+        0   1   2   3                     0   1      2   3
+    # The dist of the split edge can be partitioned among the two
+    # subtrees using `dist_partition`.
+
+           __6(T)__       bisect (1)                4(T)
+          |       |      reroot=True               |   |
+         _4_     _5_      ------->                 0   |
+        |   |   |   |                       |         _5_
+        0   1   2   3                      1(T)      |   |
+                                                     2   3
+    # If `reroot=True` the subtree on the other side of the split edge
+    # is rerooted to make that node the treenode.
+
+           __6(T)__       bisect (1)                 _6(T)
+          |       |      reroot=False               |    |
+         _4_     _5_      ------->                  |   _5_
+        |   |   |   |                       |       |  |   |
+        0   1   2   3                      1(T)     0  2   3
+    # If `reroot=False` the original treenode remains the treenode on
+    # the second subtree and any unary nodes (4) are removed.
 
     Parameters
     ----------
@@ -338,23 +394,43 @@ def bisect(tree, *query: Query, rooted: bool = False, dist_partition: float = 0.
         One or more Node selectors (Node object, names, or idx labels)
         from which the MRCA will select the Node below the edge to cut.
         is found. This will serve as the root Node of the returned tree.
-    rooted: bool
-        If True the both trees are rooted on the Node adjacent to the
-        edge that is split, otherwise trees are returned unrooted.
+    reroot: bool
+        If True the subtree above the query will be rerooted on the
+        node query parent rather than retain the original treenode.
     dist_partition: float
-        If the returned subtrees are rooted the dist of the bisected
-        edge can be assigned to one or the other treenodes, or both.
-        The value 0.5 splits the dist equally; 0.0 assigns all to the
-        query Node; 1.0 assign all to the Node above the query.
+        The proportion of dist of the split edge to assign to the
+        subtree selected by query. Default is to assign all dist to
+        the treenode of this subtree. A value between 0.0-1.0 can be
+        entered to split the dist and assign this proportion to the
+        query treenode. This arg cannot be combined with reroot=False.
 
     Examples
     --------
-    >>> ...
+    >>> tree = toytree.tree.unittree(ntips=6, seed=123)
+    >>> subtree1, subtree2 = tree.bisect("r2", "r3")
+    >>> subtree1, subtree2 = tree.bisect("r2", "r3", reroot=True)
+    >>> subtree1, subtree2 = tree.bisect("r2", "r3", reroot=True, dist_partition=0.5)
     """
     tree = tree.copy()
     node = tree.get_mrca_node(*query)
-    if node.is_root():
-        raise ToytreeError("cannot bisect on root Node, nothing is above.")
+
+    # if treenode selected on an unrooted tree raise error
+    if node.is_root() and not tree.is_rooted():
+        msg = "cannot bisect on treenode of an unrooted tree. Select one of its children."
+        logger.error(msg)
+        raise ToytreeError(msg)
+
+    # if treenode selected on a rooted tree return child subtrees
+    elif node.is_root() and tree.is_rooted():
+        children = tree.treenode.children
+        left = tree.mod.extract_subtree(children[0])
+        right = tree.mod.extract_subtree(children[1])
+        # optionally re-partition dist root edge dist among children
+        if dist_partition:
+            total_dist = left.treenode.dist + right.treenode.dist
+            left.treenode.dist = total_dist * dist_partition
+            right.treenode.dist = total_dist * (1. - dist_partition)
+        return left, right
 
     # root on node; detach two child clades; assign dists
     rtree = tree.root(node)
@@ -364,10 +440,10 @@ def bisect(tree, *query: Query, rooted: bool = False, dist_partition: float = 0.
     right = ToyTree(right._detach())
 
     # unroot the trees
-    if not rooted:
+    if not reroot:
         if left.ntips > 2:
             left.unroot(inplace=True)
-        if right.ntips > 2:            
+        if right.ntips > 2:
             right.unroot(inplace=True)
     # return partitioned dist on rooted trees
     else:
@@ -381,9 +457,9 @@ def bisect(tree, *query: Query, rooted: bool = False, dist_partition: float = 0.
 
 @add_subpackage_method(TreeModAPI)
 def prune(
-    tree,
+    tree: ToyTree,
     *query: Query,
-    preserve_branch_length: bool = True,
+    preserve_dists: bool = True,
     require_root: bool = False,
     inplace: bool = False,
 ) -> ToyTree:
@@ -395,18 +471,43 @@ def prune(
     is preserved if 'require_root=True', otherwise the lowest
     mrca connecting the selected nodes will be kept as the new root.
 
-                4      prune([0,2])     4
-               / \                     / \
-              3   \      ------>      /   \
-             / \   \                 /     \
-            0   1   2               0       2
+                4      prune([0,1])
+               / \
+              3   \      ------>        3
+             / \   \                   / \
+            0   1   2                 0   1
+    # min spanning tree of 0,1 involves only nodes 0,1,3
+
+                4      prune([0,1])     4
+               / \    require_root=1    |
+              3   \      ------>        3
+             / \   \                   / \
+            0   1   2                 0   1
+    # min spanning tree of 0,1 does not require node 4 but it is kept.
+
+                4      prune([0,2])      4
+               / \   preserve_dists=0   / \
+              3   \      ------>       0   \
+             / \   \                        \
+            0   1   2                        2
+    # min spanning tree of 0,2 involves only 0,2,4 (node 3 is excluded).
+    # if preserve_dist=False its dist is also discarded.
+
+                4    prune([0,2,3])      4
+               / \                      / \
+              3   \      ------>       3   \
+             / \   \                  /     \
+            0   1   2                0       2
+    # min spanning tree of 0,2,3 only excludes Node 1. Internal nodes
+    # are kept even if unary when they are included in the query.
 
     Parameters
     ----------
     *query: str, int, or Node
         One or more Node selectors, which can be Node objects, names,
-        or int idx labels.
-    preserve_branch_length: bool
+        or int idx labels. You can select tip Nodes and/or internal
+        Nodes to be kept in the tree.
+    preserve_dists: bool
         If True then the edge lengths of internal nodes that are
         removed are merged into the 'dist' attribute of their
         descendant node that is preserved.
@@ -417,76 +518,48 @@ def prune(
     inplace: bool
         If True then the original tree is changed in-place, and also
         returned, else a copy is returned and original is unchanged.
+
+    Examples
+    --------
+    >>> tree = toytree.tree("((a,b)ab,c)r;")
+    >>> tree.mod.prune("a", "b", require_root=False)
+    >>> # (a,b)ab;
+    >>> tree.mod.prune("a", "b", require_root=True)
+    >>> # ((a,b)ab)r;
+    >>> tree.mod.prune("a", "b", "ab", require_root=False)
+    >>> # (a,b)ab;
+    >>> tree.mod.prune("a", "b", "ab", require_root=True)
+    >>> # ((a,b)ab)r;
     """
-    # expand query into a set of Nodes
-    nodes = set(tree.get_nodes(*query))
-    nnodes = len(nodes)
-
-    # add mrca Node for each pair and add the root Node
-    nodes = nodes.union(set(
-        tree.get_mrca_node(i, j) for i, j in
-        itertools.permutations(nodes, 2))
-    )
-    nodes.add(tree.treenode)
-
-    # TODO: this func could be simplified using tree.get_ancestors.
-
-    # create a copy or operate in place
+    nodes = tree.get_nodes(*query)
     if not inplace:
         tree = tree.copy()
         nodes = [tree[i.idx] for i in nodes]
 
-    # keep track of ndescendants of each node after pruning to make
-    # it easy to find the mrca later, and whether it is a mrca.
-    ndesc = {}
-
-    # traverse tree by idx number since we cannot do traversal func
-    # while modifying the tree structure.
-    for nidx in range(tree.nnodes):
-        node = tree[nidx]
-
-        # remove connections to this node
-        if node not in nodes:
-            for cnode in node.children:
-
-                # add this node's dist to its children's dists
-                if preserve_branch_length:
-                    cnode._dist += node.dist
-
-                # connect children to grandparent, rm self as child.
-                cnode._up = node.up
-                node.up._add_child(cnode)
-            node.up._remove_child(node)
-
-        # count ndescendants of this node after postorder pruning
-        else:
-            ndesc[node] = max(1, sum(ndesc[i] for i in node.children))
-
-    # if a kept node is mrca then return it as the new root. If the
-    # tree IS only a single Node then
+    # get mrca node if not requiring root
     if not require_root:
-        if nnodes == 1:
-            tree.treenode = nodes[0]
-        else:
-            for node, ndesc in ndesc.items():
-                if ndesc == nnodes:
-                    tree.treenode = node
-                    break
-        tree.treenode._detach()
-        tree._update()
-        return tree
+        mrca = tree.get_mrca_node(*nodes)
+        nodes.append(mrca)
 
-    # if keeping orig root node, but it is unary, then remove internal
-    # node that is the current pseudo-root and extend its edges to root.
-    if len(tree.treenode.children) == 1:
-        child = tree.treenode.children[0]
-        if child.children:
-            for gchild in child.children:
-                gchild._up = tree.treenode
-                gchild._dist += child.dist
-            tree.treenode._remove_child(child)
-            tree.treenode._children = child.children
+    # traverse postorder removing nodes, but keeping treenode for now
+    counter = {i: 0 for i in tree}
+    for node in tree[:-1]:
+        # skip node if it is in query
+        if node in nodes:
+            counter[node._up] += 1
+            continue
 
+        # skip node if it has >1 child that is a keeper
+        if counter[node] > 1:
+            counter[node._up] += 1
+            continue
+
+        # remove the node
+        node._delete(preserve_dists=preserve_dists, prevent_unary=False)
+
+    # set mrca node as new treenode or update and return current tree
+    if not require_root:
+        return ToyTree(mrca._detach())
     tree._update()
     return tree
 
@@ -519,7 +592,11 @@ def drop_tips(
 
     See Also
     --------
-    prune: Extract a subtree from tree. The inverse of this function.
+    `mod.extract_subtree`
+        Extract a complete clade from a tree as a new ToyTree.
+    `mod.prune`
+        Extract the minimal spanning tree from a tree that connects
+        a subset of tip or internal Nodes.
 
     Examples
     --------
@@ -528,15 +605,33 @@ def drop_tips(
     >>> tree.mod.drop_tips('~r[0-3]$').draw()
     >>> tree.mod.drop_tips('r1', 'r2')
     """
+    # raise exception if no nodes were selected
+    if not query:
+        msg = "No nodes selected. Enter a node query."
+        logger.error(msg)
+        raise ValueError(msg)
+
+    # get query and tree
     nodes = tree.get_nodes(*query)
-    tree = tree if inplace else tree.copy()
-    tipnames = [i.name for i in nodes if i.is_leaf()]
-    if len(tipnames) == tree.ntips:
-        raise ToytreeError("You cannot drop all tips from the tree.")
-    if not tipnames:
-        logger.warning(f"No tips selected. Matched query: {nodes}")
-    keeptips = [i for i in tree.get_tip_labels() if i not in tipnames]
-    tree.mod.prune(*keeptips, preserve_branch_length=True, inplace=True)
+    if not inplace:
+        tree = tree.copy()
+        nodes = [tree[i.idx] for i in nodes]
+
+    # raise exception if all tips were selected
+    if len(nodes) == tree.nnodes:
+        msg = "Cannot drop all tips from the tree."
+        logger.error(msg)
+        raise ValueError(msg)
+    internal = []
+    for node in sorted(nodes):
+        if node.is_leaf():
+            node._delete(prevent_unary=True)
+        else:
+            internal.append(node)
+    # warn user that internal nodes were ignored.
+    if internal:
+        logger.warning("Only tip Nodes are removed. See `mod.remove_nodes`.")
+    tree._update()
     return tree
 
 
@@ -574,11 +669,12 @@ def resolve_polytomies(
     Examples
     --------
     >>> tree = toytree.tree("((a,b,c),d);")
-    >>> tree.resolve_polytomy().draw();
+    >>> tree.mod.resolve_polytomy().draw();
     """
     nodes = tree.get_nodes(*query)
-    tree = tree if inplace else tree.copy()
-    nodes = [tree[i._idx] for i in nodes]
+    if not inplace:
+        tree = tree.copy()
+        nodes = [tree[i.idx] for i in nodes]
     rng = np.random.default_rng(seed)
 
     for node in nodes:
@@ -599,9 +695,8 @@ def add_internal_node(
 ) -> ToyTree:
     r"""Add an internal node by splitting an edge to create new node.
 
-    Splits a branch spanning from node idx (A) to its parent (B)
-    to create a new internal node (C). This is not an especially
-    useful operation except for internal usage by toytree.
+    Splits a branch spanning from node (A) to its parent (B)
+    to create a new internal unary node (C).
 
                 B                      B          Example
                / \                    / \         -------
@@ -632,7 +727,9 @@ def add_internal_node(
         the new Node. This will be set as the dist of the
         descendant (A) whereas the new Node's dist (C) will be
         the descendants prior dist minus this dist value. If
-        no dist value is set then the edge midpoint is used.
+        no dist value is set then the edge midpoint is used, except
+        for the special case of adding a Node above the root, which
+        defaults to dist=1.0.
     name: Optional[str]
         A name string to apply to the new Node. Default="".
     inplace: bool
@@ -665,9 +762,9 @@ def add_internal_node(
     # NORMAL: parent is not root.
     dist = dist if dist is not None else node.dist / 2.
     if not node.dist >= dist >= 0:
-        raise ValueError(
-            f"the new Node dist must be >= 0 and <= {node.dist:.12g} (dist "
-            f"of {node})")
+        msg = f"the new Node dist must be >=0 and <={node.dist:.12g} (dist of {node})"
+        logger.error(msg)
+        raise ValueError(msg)
 
     # create the new Node and mend connections nearby
     new_node = Node(
@@ -797,6 +894,10 @@ def add_sister_node(
     """
     # expand query
     node = tree.get_mrca_node(*query)
+    if not inplace:
+        tree = tree.copy()
+        node = tree[node.idx]
+
     assert not node.is_root(), (
         "Cannot add sister to root, it has no parent. See `add_child_node()`.")
     # simply call add_child to the parent of the selected Node.
@@ -913,7 +1014,7 @@ def add_internal_node_and_subtree(
     subtree: ToyTree or Node
         A subtree to insert into the target tree.
     subtree_stem_dist: float or None
-        Edge length of the subtree stem dist (the subtree root Node
+        Edge length of the subtree stem dist (the subtree treenode
         dist value is ignored). If None it is set to half the dist of
         its sister clade.
     subtree_rescale: bool
@@ -934,9 +1035,9 @@ def add_internal_node_and_subtree(
     >>> subtree = tree.mod.extract_subtree("r0", "r1", "r2")
     >>> new_tree = tree.mod.add_internal_node_and_subtree(
     >>>     "r4", subtree=subtree, subtree_rescale=True)
-    >>> new_tree.draw(...)
+    >>> new_tree.draw();
     """
-    # expand query
+    # expand query while allowing for Node selector as input
     node = tree.get_mrca_node(*query)
     if not inplace:
         tree = tree.copy()
@@ -944,17 +1045,18 @@ def add_internal_node_and_subtree(
 
     # always copy the subtree and get as a detached Node.
     if isinstance(subtree, ToyTree):
-        subtree = subtree.treenode.copy()
+        subtree = subtree.copy()
     elif isinstance(subtree, Node):
-        subtree = subtree.copy(detach=True)
+        subtree = ToyTree(subtree.copy(detach=True))
     else:
         raise TypeError("subtree arg must be a ToyTree or Node instance.")
 
-    # use a temporary parent name and set the proper name later
+    # use a temporary parent name and set the proper name later. This
+    # performs an _update call to relabel Node idxs and heights.
     pname = "PARENT@@@@@"
     add_internal_node(tree, node, name=pname, dist=parent_dist, inplace=True)
 
-    # get parent node
+    # get new parent Node and set its name.
     parent = tree.get_nodes(pname)[0]
     parent.name = parent_name if parent_name else ""
 
@@ -964,15 +1066,15 @@ def add_internal_node_and_subtree(
 
     # optional: scale subtree edges to fit in same dist as sister.
     if subtree_rescale:
-        remaining_dist = subtree.treenode.height - subtree_stem_dist
+        remaining_dist = parent.height - subtree_stem_dist
+        # logger.warning(f"{subtree.treenode.height} {subtree_stem_dist}")
         subtree = subtree.mod.edges_scale_to_root_height(remaining_dist)
-
+        # logger.warning(f"r={remaining_dist} {subtree.treenode.height} {subtree_stem_dist} {subtree.treenode.height}")
     # add as a new child to end of parent's children
-    parent._add_child(subtree)
+    parent._add_child(subtree.treenode)
 
     # set the subtree stem dist
-    subtree._dist = subtree_stem_dist
-
+    subtree.treenode._dist = subtree_stem_dist
     tree._update()
     return tree
 
@@ -1190,6 +1292,7 @@ def _resolve_nodes(
 if __name__ == "__main__":
 
     import toytree
+    toytree.set_log_level("DEBUG")
     t = toytree.rtree.unittree(16, treeheight=10)
     t.mod.prune(0, 1, 2, 3)
     t.draw()
