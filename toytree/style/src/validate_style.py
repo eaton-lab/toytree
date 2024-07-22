@@ -76,6 +76,11 @@ def validate_style(tree: ToyTree, style: TreeStyle, **kwargs) -> TreeStyle:
     defaults. This expands arguments into values and checks the size
     and type. Many of the functions within are also used in annotations.
 
+    Note
+    ----
+    This function is only used in `ToyTree.draw`. By contrast,
+    `toytree.annotation` only calls the validation funcs within this.
+
     Parameters
     ----------
     tree: ToyTree
@@ -160,7 +165,7 @@ def validate_style(tree: ToyTree, style: TreeStyle, **kwargs) -> TreeStyle:
 if __name__ == "__main__":
 
     import toytree
-    from toytree.style import get_base_tree_style_by_name
+    # from toytree.style import get_base_tree_style_by_name
     from toytree.drawing.src.draw_toytree import get_tree_style_base
 
     tree = toytree.rtree.unittree(8)
@@ -172,4 +177,4 @@ if __name__ == "__main__":
     print(style.node_style)
 
     tree.draw(node_mask=False)
-    tree._draw_browser()
+    tree._draw_browser(tmpdir="~")
