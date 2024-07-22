@@ -404,6 +404,12 @@ def bisect(tree: ToyTree, *query: Query, reroot: bool = False, dist_partition: f
         entered to split the dist and assign this proportion to the
         query treenode. This arg cannot be combined with reroot=False.
 
+    TODO
+    ----
+    instead of disallowing dist_partition when not re-rooting, it could
+    create a new Node on the split branch to inherit the dist if the
+    dist_partition value is <1.
+
     Examples
     --------
     >>> tree = toytree.tree.unittree(ntips=6, seed=123)
@@ -411,8 +417,10 @@ def bisect(tree: ToyTree, *query: Query, reroot: bool = False, dist_partition: f
     >>> subtree1, subtree2 = tree.bisect("r2", "r3", reroot=True)
     >>> subtree1, subtree2 = tree.bisect("r2", "r3", reroot=True, dist_partition=0.5)
     """
-    tree = tree.copy()
+    # allow node query from outside tree
     node = tree.get_mrca_node(*query)
+    tree = tree.copy()
+    node = tree[node.idx]
 
     # if treenode selected on an unrooted tree raise error
     if node.is_root() and not tree.is_rooted():
@@ -428,31 +436,40 @@ def bisect(tree: ToyTree, *query: Query, reroot: bool = False, dist_partition: f
         # optionally re-partition dist root edge dist among children
         if dist_partition:
             total_dist = left.treenode.dist + right.treenode.dist
-            left.treenode.dist = total_dist * dist_partition
-            right.treenode.dist = total_dist * (1. - dist_partition)
+            left.treenode._dist = total_dist * dist_partition
+            right.treenode._dist = total_dist * (1. - dist_partition)
         return left, right
 
+    # ...
+    if reroot:
+        raise NotImplementedError("TODO")
     # root on node; detach two child clades; assign dists
-    rtree = tree.root(node)
-    pdist = sum(i.dist for i in rtree.treenode.children)
-    left, right = rtree.treenode.children
-    left = ToyTree(left._detach())
-    right = ToyTree(right._detach())
+    # rtree = tree.root(node)
+    # pdist = sum(i.dist for i in rtree.treenode.children)
+    # left, right = rtree.treenode.children
 
+    # cleanup original tree
+    ndist = node._dist
+    if node.up:
+        node.up._delete()
+    subtree = ToyTree(node._detach())
+    subtree.treenode._dist = ndist
+    tree._update()
+    return (subtree, tree)
     # unroot the trees
-    if not reroot:
-        if left.ntips > 2:
-            left.unroot(inplace=True)
-        if right.ntips > 2:
-            right.unroot(inplace=True)
+    # if not reroot:
+    #     if left.ntips > 2:
+    #         left.unroot(inplace=True)
+    #     if right.ntips > 2:
+    #         right.unroot(inplace=True)
     # return partitioned dist on rooted trees
-    else:
-        # force to be in [0, 1]
-        dist_partition = max(0, min(1, dist_partition))
-        alt_partition = 1 - dist_partition
-        left.treenode._dist = pdist - (pdist * dist_partition)
-        right.treenode._dist = pdist - (pdist * alt_partition)
-    return (left, right)
+    # else:
+    #     # force to be in [0, 1]
+    #     dist_partition = max(0, min(1, dist_partition))
+    #     alt_partition = 1 - dist_partition
+    #     left.treenode._dist = pdist - (pdist * dist_partition)
+    #     right.treenode._dist = pdist - (pdist * alt_partition)
+    # return (left, right)
 
 
 @add_subpackage_method(TreeModAPI)
