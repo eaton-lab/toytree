@@ -1,4 +1,8 @@
-"""Functionality for displaying a Toyplot canvas in a web browser."""
+#!/usr/bin/env python
+
+"""Functionality for displaying a Toyplot canvas in a web browser.
+
+"""
 
 from typing import Sequence, Union, TypeVar
 import xml.etree.ElementTree as xml
@@ -13,6 +17,7 @@ def show(
     canvases: Union[Canvas, Sequence[Canvas]],
     title: str = "toytree",
     new: bool = False,
+    tmpdir: Path | str = None,
 ) -> None:
     """Display one or more canvases in a web browser.
 
@@ -52,7 +57,10 @@ def show(
         body.append(toyplot.html.render(canvas))
 
     # write to a tempfile
-    path = Path(tempfile.gettempdir()) / f"{title}.html"
+    if tmpdir:
+        path = Path(tmpdir).expanduser().resolve() / f"{title}.html"
+    else:
+        path = Path(tempfile.gettempdir()) / f"{title}.html"
     with open(path, "wb") as stream:
         stream.write(xml.tostring(html, method="html"))
 
@@ -63,7 +71,8 @@ def show(
 
 
 if __name__ == "__main__":
+
     import toytree
-    tre = toytree.rtree.unittree(10)
-    c, a, m = tre.draw()
-    show(c)
+    # tre = toytree.rtree.unittree(10)
+    # c, a, m = tre.draw()
+    # show(c, tmpdir="~")
