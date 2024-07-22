@@ -3,10 +3,13 @@
 """Parse user args to `draw` and return drawing.
 
 The `draw_toytree` func does the following:
-    - get_tree_style: return a TreeStyle given tree and draw kwargs
-    - BaseLayout: get Node coordinates given tree and TreeStyle
-    - CanvasSetup: get Canvas and Axes from user kwargs or auto-sized.
-    - ToyTreeMark to generate and return the tree drawing.
+    - calls `get_tree_style_updated_by_draw_args` to get apply user
+      args to `draw` to a starting Treestyle. This includes validation
+      of user args by `validate_style`.
+    - calls `get_layout` to get a BaseLayout child class with Node
+      coordinates given the tree style.
+    - creates a ToyTreeMark to generate and return the tree drawing.
+    - calls `get_canvas_and_axes`to get Canvas and Axes sized.
 """
 
 from typing import Tuple, TypeVar
@@ -31,8 +34,7 @@ from toytree.style import (
 ToyTree = TypeVar("ToyTree")
 logger = logger.bind(name="toytree")
 
-
-def parse_draw_args_to_tree_style(tree: ToyTree, **kwargs) -> TreeStyle:
+def get_tree_style_updated_by_draw_args(tree: ToyTree, **kwargs) -> TreeStyle:
     """Return an expanded TreeStyle given user args and base treestyle.
 
     Parses the `Toytree.draw()` function arguments to update TreeStyle.
@@ -87,7 +89,7 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
     axes = kwargs.pop("axes")
 
     # get tree style expanded for user args and base tree style (ts)
-    style = parse_draw_args_to_tree_style(tree, **kwargs)
+    style = get_tree_style_updated_by_draw_args(tree, **kwargs)
 
     # get a Layout with coordinates projected based on style
     layout = get_layout(
