@@ -63,3 +63,24 @@ def _build_tree_from_scipy_dist_table(table: np.ndarray):
             child.up = internal
             internal.children.append(child)
     return toytree.ToyTree(internal)
+
+
+if __name__ == "__main__":
+
+    import toyplot
+    import numpy as np
+    import scipy.spatial
+    import scipy.cluster
+
+    # generate 100 random data points for 12 things
+    rng = np.random.default_rng(123)
+    data = rng.random(size=(6, 100))
+
+    # calculate a measure of distance between samples
+    dists = scipy.spatial.distance.pdist(data)
+
+    # infer a hierarchical tree by clustering samples by distances
+    edges = scipy.cluster.hierarchy.average(dists)
+    print(edges)
+    # draw the tree
+    # canvas, axes, mark = tree.draw()
