@@ -7,13 +7,8 @@ to handle them more nicely than other random errors. This includes
 adding a logging.error message.
 """
 
-# from loguru import logger
-# logger = logger.bind(name="toytree")
-
-
 class ToytreeError(Exception):
     """BaseClass for many custom exceptions or common user errors."""
-    pass
 
 
 class ToytreeRegexError(Exception):
