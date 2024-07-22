@@ -16,7 +16,7 @@ from loguru import logger
 from toytree.utils.src.logger_setup import capture_logs
 import toytree
 
-# logger.bind(name="toytree")
+logger.bind(name="toytree")
 
 
 class TestModLadderize(unittest.TestCase):
@@ -146,6 +146,7 @@ class TestModPrune(unittest.TestCase):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
         self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)
+        self.tree = toytree.tree("((a:2,b:1)ab:1,(c:1,d:2)cd:1)r:2;")
         self.trees = [self.itree, self.btree]
 
     def test_prune_docs_match(self):
@@ -154,116 +155,48 @@ class TestModPrune(unittest.TestCase):
         sdoc = [i.strip() for i in toytree.mod.prune.__doc__.split("\n")]
         self.assertEqual(adoc, sdoc)
 
-    def test_prune_orig_root_height(self):
-        """Prune maintains root node at its original height."""
-        select = [0, 1, 2, 3, 4]
-        for tre in self.trees:
-            new = tre.mod.prune(*select, require_root=True, preserve_branch_length=True)
-            self.assertAlmostEqual(tre.treenode.height, new.treenode.height)
+    def test_prune_require_root(self):
+        """Prune maintains root node at original height if require_root=True."""
+        tree1 = self.tree.mod.prune(
+            "a", "b", 
+            require_root=True, 
+            preserve_dists=True,
+        )
+        self.assertAlmostEqual(
+            self.tree.treenode.height,
+            tree1.treenode.height
+        )
 
-    def test_prune_new_root_height(self):
-        """Prune to new MRCA as root node with its orig height."""
-        select = [0, 1, 2, 3, 4]
-        for tre in self.trees:
-            mrca_height_on_orig_tree = tre.get_mrca_node(*select).height
-            new = tre.mod.prune(*select, require_root=False, preserve_branch_length=True)
-            self.assertAlmostEqual(mrca_height_on_orig_tree, new.treenode.height)
+        tree2 = self.tree.mod.prune(
+            "a", "b", 
+            require_root=False,
+            preserve_dists=True,
+        )
+        self.assertAlmostEqual(
+            self.tree.get_nodes("ab")[0].height,
+            tree2.treenode.height
+        )
 
-    def test_prune_preserve_branch_lengths(self):
+    def test_prune_preserve_dists(self):
         """Prune sums removed internal node dists onto retained edges, or not."""
-        select = ['r0', 'r1', 'r3', 'r4', 'r5']
-        tre = self.itree
-        tips_x = ('r0', 'r1') # height retained, dist changed.
-        tips_y = ('r0', 'r1', 'r2') # node is removed.
-        tips_z = ('r0', 'r1', 'r3') # height and dist retained
-        new = tre.mod.prune(*select, require_root=True, preserve_branch_length=True)
-        self.assertAlmostEqual(tre.treenode.height, new.treenode.height)
-        self.assertAlmostEqual(
-            tre.get_mrca_node(*tips_x).height,
-            new.get_mrca_node(*tips_x).height,
-        )
-        self.assertNotAlmostEqual(
-            tre.get_mrca_node(*tips_x).dist,
-            new.get_mrca_node(*tips_x).dist,
+        tree1 = self.tree.mod.prune(
+            "a", "b", "c",
+            require_root=False,
+            preserve_dists=True,
         )
         self.assertAlmostEqual(
-            tre.get_mrca_node(*tips_z).height,
-            new.get_mrca_node(*tips_z).height,
+            toytree.distance.get_node_distance(self.tree, 'a', 'c'),
+            toytree.distance.get_node_distance(tree1, 'a', 'c'),
         )
+        tree2 = self.tree.mod.prune(
+            "a", "b", "c",
+            require_root=False,
+            preserve_dists=False,
+        )        
         self.assertAlmostEqual(
-            tre.get_mrca_node(*tips_z).dist,
-            new.get_mrca_node(*tips_z).dist,
+            toytree.distance.get_node_distance(self.tree, 'a', 'c') - 1,
+            toytree.distance.get_node_distance(tree2, 'a', 'c'),
         )
-        self.assertRaises(ValueError, new.get_mrca_node, *tips_y)
-
-    def test_prune_not_preserve_branch_lengths(self):
-        """Prune sums removed internal node dists onto retained edges, or not."""
-        select = ['r0', 'r1', 'r3', 'r4', 'r5']
-        tre = self.itree
-        tips_x = ('r0', 'r1') # height changed, dist retained.
-        tips_y = ('r0', 'r1', 'r2') # node is removed.
-        tips_z = ('r0', 'r1', 'r3') # height and dist retained
-        new = tre.mod.prune(*select, require_root=True, preserve_branch_length=False)
-        # the root height may or may not change, depending on which nodes are removed.
-        # self.assertAlmostEqual(tre.treenode.height, new.treenode.height)
-        self.assertNotAlmostEqual(
-            tre.get_mrca_node(*tips_x).height,
-            new.get_mrca_node(*tips_x).height,
-        )
-        self.assertAlmostEqual(
-            tre.get_mrca_node(*tips_x).dist,
-            new.get_mrca_node(*tips_x).dist,
-        )
-        self.assertAlmostEqual(
-            tre.get_mrca_node(*tips_z).height,
-            new.get_mrca_node(*tips_z).height,
-        )
-        self.assertAlmostEqual(
-            tre.get_mrca_node(*tips_z).dist,
-            new.get_mrca_node(*tips_z).dist,
-        )
-        self.assertRaises(ValueError, new.get_mrca_node, *tips_y)
-
-    def test_prune_inplace(self):
-        """Inplace pruning has same result as prune copy."""
-        select = ['r0', 'r1', 'r3', 'r4', 'r5']
-        new = self.itree.mod.prune(*select)
-        ctre = self.itree.copy()
-        ctre.mod.prune(*select, inplace=True)
-        self.assertEqual(ctre.get_topology_id(), new.get_topology_id())
-
-    # def test_prune_new_root_height(self):
-    #     """Prune to get new MRCA root maintained at its original height."""
-    #     select = [0, 1, 2, 3, 4]
-
-    #     new = self.tree.mod.prune(*select, require_root=False, preserve_branch_length=True)
-    #     self.assertAlmostEqual(new.treenode.height, mrca_height_on_orig_tree)
-
-    # def test_prune_new_root_height(self):
-    #     """Prune to get new MRCA root maintained at its original height."""
-    #     select = [0, 1, 2, 3, 4]
-    #     mrca_height_on_orig_tree = self.tree.get_mrca_node(*select).height
-    #     new = self.tree.mod.prune(*select, require_root=False, preserve_branch_length=True)
-    #     self.assertAlmostEqual(new.treenode.height, mrca_height_on_orig_tree)
-
-    # def test_prune_2(self):
-    #     select = [0, 1, 2, 3, 4]
-    #     newtre = self.tree.mod.prune(*select)
-    #     new_tips = sorted(newtre.get_tip_labels())
-    #     select_tips = sorted([i.name for i in self.tree.get_nodes(*select)])
-    #     self.assertEqual(new_tips, select_tips)
-
-
-    # def test_isupper(self):
-    #     self.assertTrue('FOO'.isupper())
-    #     self.assertFalse('Foo'.isupper())
-
-    # def test_split(self):
-    #     s = 'hello world'
-    #     self.assertEqual(s.split(), ['hello', 'world'])
-    #     # check that s.split fails when the separator is not a string
-    #     with self.assertRaises(TypeError):
-    #         s.split(2)
 
 
 class TestModRemoveUnaryNodes(unittest.TestCase):
@@ -278,12 +211,19 @@ class TestModRemoveUnaryNodes(unittest.TestCase):
         sdoc = [i.strip() for i in toytree.mod.remove_unary_nodes.__doc__.split("\n")]
         self.assertEqual(adoc, sdoc)
 
-    def test_remove_unary_nodes(self):
+    def test_remove_unary_node(self):
         """Remove one unary node from a tree."""
         new1 = self.itree.mod.add_internal_node("r0", name="unary", dist=1)
         new2 = new1.mod.remove_unary_nodes()
         self.assertEqual(self.itree.nnodes, new2.nnodes)
-        # self.assertEqual(new.get_nodes("r0")[0].up.name, "unary")
+
+    def test_remove_unary_nodes(self):
+        """Remove one unary node from a tree."""
+        new1 = self.itree.mod.add_internal_node("r0", name="u1", dist=0.5)
+        new1 = new1.mod.add_internal_node("u1", name="u2", dist=0.1)
+        new1 = new1.mod.add_internal_node("r0", name="u3", dist=0.1)
+        new2 = new1.mod.remove_unary_nodes()
+        self.assertEqual(self.itree.nnodes, new2.nnodes)
 
 
 class TestModAddInternalNode(unittest.TestCase):
@@ -337,18 +277,148 @@ class TestModDropTips(unittest.TestCase):
         sdoc = [i.strip() for i in toytree.mod.drop_tips.__doc__.split("\n")]
         self.assertEqual(adoc, sdoc)
 
-    def test_drop_tips(self):
+    def test_drop_tips_one_tip(self):
+        """Remove one node."""
+        tre = self.trees[0].mod.drop_tips("r1")
+        self.assertEqual(self.trees[0].ntips - 1, tre.ntips)
+
+    def test_drop_tips_multiple_tips(self):
         """..."""
+        tre = self.itree.mod.drop_tips("r0", "r1")
+        self.assertEqual(self.itree.ntips - 2, tre.ntips)
+        self.assertEqual(self.itree.nnodes - 4, tre.nnodes)
+
+    def test_drop_tips_log_warning_and_exception_if_no_selection(self):
+        """Logger warning if tip Nodes are selected."""
+        with capture_logs(format="{message}") as cap:
+            with self.assertRaises(ValueError):            
+                self.itree.mod.drop_tips()
+        self.assertEqual(cap[0], "No nodes selected. Enter a node query.\n")
+
+    def test_drop_tips_log_warning_and_exception_if_all_tips_selected(self):
+        """Logger warning if tip Nodes are selected."""
+        with self.assertRaises(ValueError):
+            with capture_logs(format="{message}") as cap:
+                self.itree.mod.drop_tips("~r*")
+            self.assertEqual(cap[0], "Cannot drop all tips from the tree.\n")
 
     def test_drop_tips_log_warning_on_non_tip_selection(self):
         """Logger warning if tip Nodes are selected."""
         with capture_logs(format="{message}") as cap:
             self.itree.mod.drop_tips(15)
-        self.assertEqual(cap[0], "No tips selected. Matched query: [Node(idx=15)]\n")
+        self.assertEqual(cap[0], "Only tip Nodes are removed. See `mod.remove_nodes`.\n")
 
+
+class TestModExtractSubtree(unittest.TestCase):
+    def setUp(self):
+        self.tree = toytree.tree("((a:2,b:1)ab:1,(c:1,d:2)cd:1)r:2;")
+
+    def test_extract_subtree_docs_match(self):
+        """API and submodule documentations updated to match."""
+        adoc = [i.strip() for i in self.tree.mod.extract_subtree.__doc__.split("\n")]
+        sdoc = [i.strip() for i in toytree.mod.extract_subtree.__doc__.split("\n")]
+        self.assertEqual(adoc, sdoc)
+
+    def test_extract_subtree_single(self):
+        """Remove one node."""
+        tree = self.tree.mod.extract_subtree("a")
+        self.assertEqual(tree.ntips, 1)
+        self.assertEqual(tree.nnodes, 1)
+        self.assertEqual(tree[0].dist, 2)
+
+    def test_extract_subtree_multiple(self):
+        """Remove one node."""
+        tree = self.tree.mod.extract_subtree("a", "b")
+        self.assertEqual(tree.ntips, 2)
+        self.assertEqual(tree.nnodes, 3)
+        self.assertEqual(tree[0].dist, 2)
+        self.assertEqual(tree[1].dist, 1)
+        self.assertEqual(tree[2].dist, 1)
+
+    def test_extract_subtree_query_internal(self):
+        """Remove one node."""
+        tree = self.tree.mod.extract_subtree("ab")
+        self.assertEqual(tree.ntips, 2)
+        self.assertEqual(tree.nnodes, 3)
+        self.assertEqual(tree[0].dist, 2)
+        self.assertEqual(tree[1].dist, 1)
+        self.assertEqual(tree[2].dist, 1)
+
+    def test_extract_subtree_query_treenode(self):
+        """Remove one node."""
+        tree = self.tree.mod.extract_subtree("r")
+        self.assertEqual(tree.ntips, 4)
+        self.assertEqual(tree.nnodes, 7)
+        self.assertEqual(tree[0].dist, 2)
+        self.assertEqual(tree[1].dist, 1)
+        self.assertEqual(tree[2].dist, 1)
+
+
+class TestModBisect(unittest.TestCase):
+    def setUp(self):
+        self.tree = toytree.tree("((a:2,b:1)ab:1,(c:1,d:2)cd:1)r:2;")
+
+    def test_bisect_docs_match(self):
+        """API and submodule documentations updated to match."""
+        adoc = [i.strip() for i in self.tree.mod.bisect.__doc__.split("\n")]
+        sdoc = [i.strip() for i in toytree.mod.bisect.__doc__.split("\n")]
+        self.assertEqual(adoc, sdoc)
+
+    def test_bisect_single(self):
+        sub, tree = self.tree.mod.bisect("a")
+        self.assertEqual(sub.ntips, 1)
+        self.assertEqual(sub.nnodes, 1)
+        self.assertEqual(sub[0].dist, 2)
+
+    def test_bisect_xxx(self):
+        tree = self.tree.mod.extract_subtree("a", "b")
+        self.assertEqual(tree.ntips, 2)
+        self.assertEqual(tree.nnodes, 3)
+        self.assertEqual(tree[0].dist, 2)
+        self.assertEqual(tree[1].dist, 1)
+        self.assertEqual(tree[2].dist, 1)
+
+    def test_bisect_xxx_internal(self):
+        tree = self.tree.mod.extract_subtree("ab")
+        self.assertEqual(tree.ntips, 2)
+        self.assertEqual(tree.nnodes, 3)
+        self.assertEqual(tree[0].dist, 2)
+        self.assertEqual(tree[1].dist, 1)
+        self.assertEqual(tree[2].dist, 1)
+
+    def test_bisect_xxx_treenode(self):
+        tree = self.tree.mod.extract_subtree("r")
+        self.assertEqual(tree.ntips, 4)
+        self.assertEqual(tree.nnodes, 7)
+        self.assertEqual(tree[0].dist, 2)
+        self.assertEqual(tree[1].dist, 1)
+        self.assertEqual(tree[2].dist, 1)
 
 
 if __name__ == '__main__':
 
-    toytree.set_log_level("ERROR")
-    unittest.main()
+    toytree.set_log_level("CRITICAL")
+
+    #### RUN INDIVIDUAL TESTS #########################################
+    load = unittest.TestLoader()
+    tests = (
+        load.loadTestsFromTestCase(TestModLadderize),
+        load.loadTestsFromTestCase(TestModCollapseNodes),
+        load.loadTestsFromTestCase(TestModRemoveUnaryNodes),
+        load.loadTestsFromTestCase(TestModRotateNode),
+        load.loadTestsFromTestCase(TestModExtractSubtree),
+        load.loadTestsFromTestCase(TestModPrune),
+        load.loadTestsFromTestCase(TestModDropTips),
+        load.loadTestsFromTestCase(TestModBisect),
+        # l.loadTestsFromTestCase(TestModResolvePolytomies),        
+
+        load.loadTestsFromTestCase(TestModAddInternalNode),
+
+    )
+
+    runner = unittest.TextTestRunner()
+    runner.run(unittest.TestSuite(tests))
+
+
+    #### DO ALL TESTS #########################################
+    # unittest.main()
