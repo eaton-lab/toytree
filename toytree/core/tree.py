@@ -39,8 +39,6 @@ from toytree.utils.src.exceptions import (
 import toytree
 # from toytree.io.src.writer import write_newick
 
-# pylint: disable=too-many-branches, too-many-lines, too-many-public-methods
-
 # toytree logger
 logger = logger.bind(name="toytree")
 
@@ -192,18 +190,40 @@ class ToyTree:
 
     @property
     def nedges(self) -> int:
-        """Return the number of edges in the tree, including the root
-        edge if the tree is rooted.
+        """Return the number of edges in the tree, *not including the
+        root edge if the tree is rooted*.
+
+                        |  <- (not counted)
+                       _T_
+                     _|_  |                  ___T_
+                    |   | |                 |  |  |
+                    A   B C                 A  B  C
+              (rooted w/ 4 edges)      (unrooted with 3 edges)
 
         Note
         ----
-        This value is not cached and requires an iteration of the tree.
+        This value is not cached and requires an iteration of the tree
+        in order to accommodate counting edges of unresolved nodes.
         For super speed-sensitive operations use nnodes-1 if tree is
-        bifurcating, else count as we do here, or count once and cache
-        if the tree doesn't change.
+        bifurcating, else measure the value once and cache it if the
+        tree doesn't change.
+
+        See Also
+        --------
+        `ToyTree.iter_edges`
+            Generator of edges as child-parent Node pairs. Has the
+            option `include_root` to toggle counting of root split.
+
+        Example
+        -------
+        >>> tree = toytree.rtree.unittree(5, seed=123)
+        >>> tree.nedges == sum(1 for i in tree.iter_edges())
+        >>> # True
         """
         internal = sum(1 for i in self.enum.iter_edges())
-        return internal + (1 if self.is_rooted() else 0)
+        return internal
+        # to add counting of the root edge of rooted trees do this.
+        # return internal + (1 if self.is_rooted() else 0)
 
     #####################################################
     # FEATURES
@@ -460,7 +480,9 @@ class ToyTree:
         # raise exception for non-matched queries
         not_matched = set(query) - set(matched)
         if not_matched:
-            raise ValueError(f"No Node names match query: {not_matched}")
+            msg = f"No Node names match query: {not_matched}"
+            logger.error(msg)
+            raise ValueError(msg)
 
     def get_nodes(self, *query: Query) -> List[Node]:
         """Return a list of Nodes matching a flexible Query.
@@ -516,6 +538,7 @@ class ToyTree:
                 msg = f"query type {type(que)} not supported. "
                 if isinstance(que, (list, tuple)):
                     msg += UNPACKING_MSG
+                logger.error(msg)
                 raise TypeError(msg)
 
         # match Node names as a group so we only need to perform one
@@ -930,7 +953,7 @@ class ToyTree:
     # ------------------------------------------------------------------
     # Draw functions imported, but docstring here...
     # ------------------------------------------------------------------
-    def _draw_browser(self, *args, new: bool = False, **kwargs):
+    def _draw_browser(self, *args, new: bool = False, tmpdir: None | Path = None, **kwargs):
         """Open and display tree drawing in default web browser.
 
         TODO: overload toyplot function, option to reuse same tab,
@@ -940,7 +963,7 @@ class ToyTree:
         """
         # import toyplot.browser
         canvas, axes, mark = self.draw(**kwargs)
-        toytree.utils.show([canvas])
+        toytree.utils.show([canvas], new=new, tmpdir=tmpdir)
         return canvas, axes, mark
 
     def draw(
