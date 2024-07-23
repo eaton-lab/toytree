@@ -284,4 +284,4 @@ if __name__ == "__main__":
     add_edge_labels(tree, axes=a, labels="idx", font_size=15)
 
     data = np.array([[0.5, 0.3, 0.2]] * tree.nnodes)
-    toytree.utils.show(c)
+    toytree.utils.show(c, tmpdir="~")
