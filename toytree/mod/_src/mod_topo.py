@@ -39,9 +39,12 @@ Add a sister node as a child of the same existing parent Node (synonymous w/ add
 Add a parent-child pair to split an existing branch into two children (new child Node, old child clade)
 >>> add_internal_node_and_child()
 
+Add a parent-child clade pair to split an existing branch.
+>>> add_internal_node_and_subtree()
+
 """
 
-from typing import Optional, TypeVar, Tuple
+from typing import Optional, TypeVar, Tuple, Callable
 from loguru import logger
 import numpy as np
 from toytree.core.apis import TreeModAPI, add_subpackage_method, add_toytree_method
@@ -68,6 +71,7 @@ __all__ = [
     "add_internal_node_and_child",
     "add_internal_node_and_subtree",
     "remove_nodes",
+    "merge_nodes",    
 ]
 
 
@@ -169,6 +173,82 @@ def collapse_nodes(
             node._delete(preserve_dists=True, prevent_unary=True)
     tree._update()
     return tree
+
+
+@add_subpackage_method(TreeModAPI)
+def merge_nodes(
+    tree: ToyTree,
+    merge_method: Callable | str = "name",
+    selection_method: Callable = min,
+    inplace: bool = False,
+) -> ToyTree:
+    r"""Return ToyTree with one or more Nodes merged based on a Callable.
+
+    Merging means to discard at least one tip and one internal Node
+    while keeping one child node that inherits its parents dists. An
+    example use case for this is to compress duplicate tips in a clade
+    into a single representative.
+
+                    |                 |
+                   2()                |
+                   /  \     --->      |
+                0(a)  1(a)           0(a)
+
+    Parameters
+    ----------
+    merge_method: Callable or str
+        Two options: (1) A function that returns True if a Node should
+        be merged; or (2) A feature name for which a Node will be
+        merged if all descendant leaves share the same feature value.
+    selection_method: Callable
+        A function that returns a single Node from a collection of
+        Nodes. The default func `min` will return the Node with
+        the lowest idx index.
+    inplace: bool
+        If True then the original tree is changed in-place, and
+        returned, rather than leaving original tree unchanged.
+
+    See Also
+    --------
+    `toytree.mod.remove_nodes`
+
+    Example
+    -------
+    >>> tree = toytree.rtree.unittree(5, seed=123)
+    >>> tree1 = tree.mod.add_internal_node_and_child("r1", name="r1")
+    >>> # merge nodes with identical leaf names.
+    >>> tree2 = tree1.mod.merge_nodes("name")
+    >>> # more verbose example to do the same
+    >>> merge_method = lambda x: len(set(x.iter_leaf_names())) == 1
+    >>> tree2 = tree1.mod.merge_nodes(merge_method)
+    >>> toytree.mtree([tree1, tree2]).draw();
+    """
+    # select which nodes will be removed
+    merge = set()
+
+    # if feature selected make a def to return True if all leaf values
+    # are the same.
+    if isinstance(merge_method, str):
+        feat = merge_method
+        def merge_method(node: Node) -> bool:
+            nvals = set(getattr(i, feat) for i in node.iter_leaves())
+            return len(nvals) == 1
+
+    # check Callables
+    assert isinstance(merge_method(tree[0]), bool), "merge_method should return a boolean"
+    assert len(selection_method(tree[:3])) == 1, "selection_method should retain only one Node"
+
+    # iterate over tree from root to tips
+    for node in tree[::-1][1:]:
+        if node not in merge:
+            if merge_method(node):
+                desc = set(node.iter_descendants())
+                keep = selection_method(desc)
+                desc.discard(keep)
+                merge.update(desc)
+
+    # remove nodes and return tree
+    return tree.mod.remove_nodes(*merge, inplace=inplace)
 
 
 @add_subpackage_method(TreeModAPI)
@@ -1046,9 +1126,17 @@ def add_internal_node_and_subtree(
     inplace: bool
         If False (default) a copy of the original tree is returned.
 
+    See Also
+    --------
+    ...
+
+    Note
+    ----
+    On speed...
+
     Examples
     --------
-    >>> tree = toytree.rtree.unittree(10)
+    >>> tree = toytree.rtree.unittree(10, seed=123)
     >>> subtree = tree.mod.extract_subtree("r0", "r1", "r2")
     >>> new_tree = tree.mod.add_internal_node_and_subtree(
     >>>     "r4", subtree=subtree, subtree_rescale=True)
@@ -1065,6 +1153,8 @@ def add_internal_node_and_subtree(
         subtree = subtree.copy()
     elif isinstance(subtree, Node):
         subtree = ToyTree(subtree.copy(detach=True))
+    elif isinstance(subtree, str):
+        subtree = ToyTree(subtree)
     else:
         raise TypeError("subtree arg must be a ToyTree or Node instance.")
 
@@ -1083,10 +1173,12 @@ def add_internal_node_and_subtree(
 
     # optional: scale subtree edges to fit in same dist as sister.
     if subtree_rescale:
-        remaining_dist = parent.height - subtree_stem_dist
-        # logger.warning(f"{subtree.treenode.height} {subtree_stem_dist}")
-        subtree = subtree.mod.edges_scale_to_root_height(remaining_dist)
-        # logger.warning(f"r={remaining_dist} {subtree.treenode.height} {subtree_stem_dist} {subtree.treenode.height}")
+        if subtree.nnodes > 1:
+            remaining_dist = parent.height - subtree_stem_dist
+            subtree = subtree.mod.edges_scale_to_root_height(remaining_dist)
+        else:
+            subtree_stem_dist = parent.children[0]._dist
+
     # add as a new child to end of parent's children
     parent._add_child(subtree.treenode)
 

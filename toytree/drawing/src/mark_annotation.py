@@ -8,6 +8,9 @@ from typing import Tuple, List, Mapping, Any
 import numpy as np
 import toyplot
 from toyplot.mark import Mark
+from loguru import logger
+
+logger = logger.bind(name="toytree")
 
 
 class AnnotationMarker(Mark):
