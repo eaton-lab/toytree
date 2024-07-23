@@ -1,8 +1,8 @@
 #!/usr/bin/env python
 
-"""Distance-based tree inference functions.
+"""Calculate distance matrices from aligned discrete character data.
 
-TODO: use functions derived from ML code.
+TODO: use substitution model functions derived from ML code.
 
 Examples
 --------
@@ -18,6 +18,7 @@ Examples
 
 from typing import Union, Optional
 import numpy as np
+from numpy.typing import ArrayLike
 import pandas as pd
 from scipy import spatial
 import toytree
