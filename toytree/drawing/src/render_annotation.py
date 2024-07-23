@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+"""...
+
+"""
 
 import functools
 import xml.etree.ElementTree as xml
