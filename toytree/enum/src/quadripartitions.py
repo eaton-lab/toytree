@@ -423,34 +423,40 @@ if __name__ == "__main__":
 
     import toytree
 
-    newick = "((a,b)X,((c,d)Y,e)Z)R;"
-    tree = toytree.tree(newick).root("c")
+    # newick = "((a,b)X,((c,d)Y,e)Z)R;"
+    # tree = toytree.tree(newick).root("c")
 
     # tree = toytree.rtree.baltree(12, seed=1234).unroot()
     tree = toytree.tree("(a,b,((c,d)CD,(e,f)EF)X)AB;")
+
+    results = iter_quadripartitions(tree, type=list, sort=True, include_internal_nodes=True)
+    
+    for item in results:
+        print(item[1][0][0])
+
     # tree._draw_browser(ts='r')
     # for bipart in _iter_quadripartition_sets(tree, include_internal_nodes=True):
     # for part in iter_quadripartitions(tree,):
     # print(part)
 
     # args to get consistently sorted biparts regardless of rooting
-    tree = tree.root("X")
-    for i in sorted(iter_quadripartitions(tree, type=set, sort=True)):
-        print(i)
+    # tree = tree.root("X")
+    # for i in sorted(iter_quadripartitions(tree, type=set, sort=True)):
+    #     print(i)
     # [(('a', 'b'), ('c', 'd', 'e', 'f')),
     #  (('c', 'd'), ('a', 'b', 'e', 'f')),
     #  (('e', 'f'), ('a', 'b', 'c', 'd'))]
 
 
-    tree = tree.root("X")
-    for i in sorted(iter_quadripartitions(tree, sort=True, collapse=True)):
-        print(i)
+    # tree = tree.root("X")
+    # for i in sorted(iter_quadripartitions(tree, sort=True, collapse=True)):
+    #     print(i)
 
 
     # convert consistent bipartitions to sets for easy comparison
-    x = set(tree.root('a').enum.iter_quadripartitions(type=tuple, sort=True))
-    y = set(tree.root('e').enum.iter_quadripartitions(type=tuple, sort=True))
-    assert x == y
+    # x = set(tree.root('a').enum.iter_quadripartitions(type=tuple, sort=True))
+    # y = set(tree.root('e').enum.iter_quadripartitions(type=tuple, sort=True))
+    # assert x == y
 
     # tree = toytree.rtree.unittree(6, seed=123).unroot()
     # c1, *_ = tree.draw('p')

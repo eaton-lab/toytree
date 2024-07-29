@@ -2,6 +2,53 @@
 
 """Test enumeration methods to find partitions in a tree.
 
+args:
+feature, 
+contract_partitions, (True, False) "con"
+include_internal_nodes, (True, False) "int"
+collapse, (True, False) "col"
+type, (set, list, tuple)
+sort (True, False)
+
+possible combinations of arguments:
+
+2*2*2*2*3 = 48
+
+test_set (default)
+    test_set_sort
+            test_set_sort_int
+                test_set_sort_int_con
+                    test_set_sort_int_con_col
+                test_set_sort_con
+                    test_set_sort_con_col
+            test_set_int
+                test_set_int_con
+                    test_set_int_con_col
+        
+etc.
+
+These tests pick a subset of 16 possible combinations picked at random
+(first three test defaults of each major type)
+*reproducable tests will be checked for exact content
+
+test_default (set)
+test_tuple 
+test_list
+test_set_int_col
+test_set_int_con_col
+test_list_sort_int_con_col*
+test_list_sort_con*
+test_list_sort_con_col*
+test_list_int
+test_list_sort_int_col*
+test_set_int
+test_list_sort*
+test_tuple_col
+test_tuple_int
+test_set_int_col
+test_tuple_sort_int_col*
+
+
 """
 
 import unittest
@@ -10,111 +57,118 @@ import toytree
 from toytree.enum import iter_quadripartitions, _iter_quadripartition_sets
 
 
-class TestQuadripartitions(unittest.TestCase):
+class TestQuartets(unittest.TestCase):
     def setUp(self):
-        """Six tip tree three clades of two."""
+        """Setting up test trees: 
+        tree1: Six tip tree three clades of two.
+        tree2: random six tip tree from seed for reproduceability
+        tree3: list of tree1 and tree2"""
         self.tree1 = toytree.tree("(a,b,((c,d)CD,(e,f)EF)X)AB;")
-        self.tree2 = self.tree1.root("a")
-        self.tree3 = self.tree1.root("a", "b")
-        self.trees = [self.tree1, self.tree2, self.tree3]
+        self.tree2 = toytree.rtree.unittree(6, seed=123, random_names=True)
+        self.trees = [self.tree1, self.tree2]
 
-    def test_iter_quadripartitions_sets1(self):
-        """Quadripartitions """
-        PARTS = [
-            (({'c'}, {'d'}), ({'e', 'f'}, {'a', 'b'})),
-            (({'e'}, {'f'}), ({'c', 'd'}, {'a', 'b'})),
-            (({'c', 'd'}, {'e', 'f'}), ({'a'}, {'b'})),
-        ]
-        parts = sorted(_iter_quadripartition_sets(self.tree1))
-        self.assertEqual(parts, PARTS)
+    def _test_sorting(self, results, collapse: bool = False, sort: bool = False):
+        """Helper function to test sorting of quartets.
+        Tests both the automatic sorting method on the tip-level pairs
+        and the sort= argument at the quartet-level"""
+        for item in results: 
+            if not isinstance(item[0], set):
+                if collapse:
+                    if sort:
+                        if item[0][0] > item[1][0]:  #if the first node of each collection is out of order, then make sure it is in length order
+                            self.assertGreater(len(item[1]), len(item[0]))  
+                
+                else:
+                    if sort: 
+                        self.assertGreater(item[0][1][0], item[0][0][0])  #quartet-level sorting (x,y),(i,j) -> (i,j),(x,y)
 
-        PARTS = [
-            (({'c'}, {'d'}), ({'EF', 'f', 'e'}, {'AB', 'b', 'a'})),
-            (({'e'}, {'f'}), ({'c', 'd', 'CD'}, {'AB', 'b', 'a'})),
-            (({'c', 'd', 'CD'}, {'EF', 'f', 'e'}), ({'a'}, {'b'})),
-        ]
-        parts = sorted(_iter_quadripartition_sets(self.tree1, include_internal_nodes=True))
-        self.assertEqual(parts, PARTS)
 
-        PARTS = [
-            (({'c'}, {'d'}), ({'EF'}, {'AB'})),
-            (({'e'}, {'f'}), ({'CD'}, {'AB'})),
-            (({'CD'}, {'EF'}), ({'a'}, {'b'})),
-        ]
-        parts = sorted(iter_edge_quadripartition_sets(self.tree1, contract_partitions=True))
-        self.assertEqual(parts, PARTS)
-
-    def test_iter_quadripartitions_sets2(self):
-        """Quadripartitions """
-        PARTS = [
-            (({'c'}, {'d'}), ({'f', 'e'}, {'a', 'b'})),
-            (({'e'}, {'f'}), ({'c', 'd'}, {'a', 'b'})),
-            (({'c', 'd'}, {'f', 'e'}), ({'b'}, {'a'})),
-        ]
-        parts = sorted(iter_edge_quadripartition_sets(self.tree2))
-        self.assertEqual(parts, PARTS)
-
-        PARTS = [
-            (({'c'}, {'d'}), ({'f', 'e', 'EF'}, {'AB', 'b', 'a'})),
-            (({'e'}, {'f'}), ({'c', 'd', 'CD'}, {'AB', 'b', 'a'})),
-            (({'c', 'd', 'CD'}, {'f', 'e', 'EF'}), ({'b'}, {'a'})),
-        ]
-        parts = sorted(iter_edge_quadripartition_sets(self.tree2, include_internal_nodes=True))
-        self.assertEqual(parts, PARTS)
-
-        PARTS = [
-            (({'c'}, {'d'}), ({'EF'}, {'AB'})),
-            (({'e'}, {'f'}), ({'CD'}, {'AB'})),
-            (({'CD'}, {'EF'}), ({'b'}, {'a'})),
-        ]
-        parts = sorted(iter_edge_quadripartition_sets(self.tree2, contract_partitions=True))
-        self.assertEqual(parts, PARTS)
-
-    def test_iter_quadripartitions_sets3(self):
-        """Quadripartitions """
-        PARTS = [
-            (({'c'}, {'d'}), ({'f', 'e'}, {'a', 'b'})),
-            (({'e'}, {'f'}), ({'d', 'c'}, {'a', 'b'})),
-            (({'a'}, {'b'}), ({'d', 'c'}, {'f', 'e'})),
-        ]
-        parts = sorted(iter_edge_quadripartition_sets(self.tree3))
-        self.assertEqual(parts, PARTS)
-
-        PARTS = [
-            (({'c'}, {'d'}), ({'f', 'e', 'EF'}, {'AB', 'a', 'b'})),
-            (({'e'}, {'f'}), ({'CD', 'd', 'c'}, {'AB', 'a', 'b'})),
-            (({'a'}, {'b'}), ({'CD', 'd', 'c'}, {'f', 'e', 'EF'})),
-        ]
-        parts = sorted(iter_edge_quadripartition_sets(self.tree3, include_internal_nodes=True))
-        self.assertEqual(parts, PARTS)
-
-        PARTS = [
-            (({'c'}, {'d'}), ({'EF'}, {'AB'})),
-            (({'e'}, {'f'}), ({'CD'}, {'AB'})),
-            (({'a'}, {'b'}), ({'CD'}, {'EF'})),
-        ]
-        parts = sorted(iter_edge_quadripartition_sets(self.tree3, contract_partitions=True))
-        self.assertEqual(parts, PARTS)
-
-    def test_iter_quadripartitions_unrooted(self):
-        """Quadripartitions """
-        for tree in self.trees:
-            parts = sorted(iter_quadripartitions(tree))
-            PARTS = [
-                (('a', 'b'), ('c', 'e')),
-                (('a', 'b'), ('c', 'f')),
-                (('a', 'b'), ('d', 'e')),
-                (('a', 'b'), ('d', 'f')),
-                (('a', 'c'), ('e', 'f')),
-                (('a', 'd'), ('e', 'f')),
-                (('a', 'e'), ('c', 'd')),
-                (('a', 'f'), ('c', 'd')),
-                (('b', 'c'), ('e', 'f')),
-                (('b', 'd'), ('e', 'f')),
-                (('b', 'e'), ('c', 'd')),
-                (('b', 'f'), ('c', 'd')),
-            ]
-            self.assertEqual(parts, PARTS)
+    def test_default(self):
+        results = list(iter_quadripartitions(self.tree1))
+        self.assertIsInstance(results[0][0], tuple)
+        self.assertIsInstance(results[0][0][0], set)
+        self._test_sorting(results)
+    def test_tuple(self):
+        results = list(iter_quadripartitions(self.tree1, type=tuple))
+        self.assertIsInstance(results[0][0], tuple)
+        self.assertIsInstance(results[0][0][0], tuple)
+        self._test_sorting(results)
+    def test_list(self):
+        results = list(iter_quadripartitions(self.tree1, type=list))
+        self.assertIsInstance(results[0][0], tuple)
+        self.assertIsInstance(results[0][0][0], list)
+        self._test_sorting(results)
+    def test_set_int_col(self):
+        results = list(iter_quadripartitions(self.tree1, include_internal_nodes=True, collapse=True))
+        self.assertIsInstance(results[0][0], tuple)
+        self.assertIsInstance(results[0][0][0], set)
+        self._test_sorting(results, collapse=True)
+    def test_set_int_con_col(self):
+        results = list(iter_quadripartitions(self.tree1, include_internal_nodes=True, contract_partitions=True, collapse=True))
+        self.assertIsInstance(results[0][0], set)
+        self._test_sorting(results, collapse=True)
+    def test_list_sort_int_con_col(self):
+        results = sorted(iter_quadripartitions(self.tree1, type=list, sort=True, include_internal_nodes=True, contract_partitions=True, collapse=True))
+        RESULTS = [(['CD'], ['EF'], ['a'], ['b']), (['CD'], ['X'], ['e'], ['f']), (['EF'], ['X'], ['c'], ['d'])]
+        self.assertIsInstance(results[0][0], list)
+        self._test_sorting(results, collapse=True, sort=True)
+        self.assertEqual(results, RESULTS)
+        self._test_sorting(results, collapse=True, sort=True)
+    def test_list_sort_con(self):
+        results = sorted(iter_quadripartitions(self.tree1, type=list, sort=True, contract_partitions=True))
+        RESULTS = [((['CD'], ['EF']), (['a'], ['b'])), ((['CD'], ['X']), (['e'], ['f'])), ((['EF'], ['X']), (['c'], ['d']))]
+        self.assertIsInstance(results[0][0], tuple)
+        self.assertIsInstance(results[0][0][0], list)
+        self._test_sorting(results, sort=True)
+        self.assertEqual(results,RESULTS)
+    def test_list_sort_con_col(self):
+        results = sorted(iter_quadripartitions(self.tree1, type=list, sort=True, contract_partitions=True, collapse=True))
+        RESULTS = [(['CD'], ['EF'], ['a'], ['b']), (['CD'], ['X'], ['e'], ['f']), (['EF'], ['X'], ['c'], ['d'])]
+        self.assertIsInstance(results[0][0], list)
+        self._test_sorting(results, collapse=True, sort=True)
+        self.assertEqual(results,RESULTS)
+    def test_list_int(self):
+        results = list(iter_quadripartitions(self.tree1, type=list, include_internal_nodes=True))
+        self.assertIsInstance(results[0][0], tuple)
+        self.assertIsInstance(results[0][0][0], list)
+        self._test_sorting(results)
+    def test_list_sort_int_col(self):
+        results = sorted(iter_quadripartitions(self.tree1, type=list, sort=True, include_internal_nodes=True, collapse=True))
+        RESULTS = [(['a'], ['b'], ['c', 'd', 'CD'], ['e', 'f', 'EF']), (['c'], ['d'], ['a', 'b'], ['e', 'f', 'EF']), (['e'], ['f'], ['a', 'b'], ['c', 'd', 'CD'])]
+        self.assertIsInstance(results[0][0], list)
+        self._test_sorting(results, collapse=True, sort=True)
+        self.assertEqual(results,RESULTS)
+    def test_set_int(self):
+        results = list(iter_quadripartitions(self.tree1, include_internal_nodes=True))
+        self.assertIsInstance(results[0][0], tuple)
+        self.assertIsInstance(results[0][0][0], set)
+        self._test_sorting(results)
+    def test_list_sort(self):
+        results = sorted(iter_quadripartitions(self.tree1, type=list, sort=True))
+        RESULTS = [((['a'], ['b']), (['c', 'd'], ['e', 'f'])), ((['c'], ['d']), (['a', 'b'], ['e', 'f'])), ((['e'], ['f']), (['a', 'b'], ['c', 'd']))]
+        self.assertIsInstance(results[0][0], tuple)
+        self.assertIsInstance(results[0][0][0], list)
+        self._test_sorting(results, sort=True)
+        self.assertEqual(results,RESULTS)
+    def test_tuple_col(self):
+        results = list(iter_quadripartitions(self.tree1, type=tuple, collapse=True))
+        self.assertIsInstance(results[0][0], tuple)
+        self._test_sorting(results, collapse=True)
+    def test_tuple_int(self):
+        results = list(iter_quadripartitions(self.tree1, type=tuple, include_internal_nodes=True))
+        self.assertIsInstance(results[0][0], tuple)
+        self.assertIsInstance(results[0][0][0], tuple)
+        self._test_sorting(results)
+    def test_set_int_col(self):
+        results = list(iter_quadripartitions(self.tree1, include_internal_nodes=True, collapse=True))
+        self.assertIsInstance(results[0][0], set)
+        self._test_sorting(results, collapse=True)
+    def test_tuple_sort_int_col(self):
+        results = sorted(iter_quadripartitions(self.tree1, type=tuple, sort=True, include_internal_nodes=True, collapse=True))
+        RESULTS = [(('a',), ('b',), ('c', 'd', 'CD'), ('e', 'f', 'EF')), (('c',), ('d',), ('a', 'b'), ('e', 'f', 'EF')), (('e',), ('f',), ('a', 'b'), ('c', 'd', 'CD'))]
+        self.assertIsInstance(results[0][0], tuple)
+        self._test_sorting(results, collapse=True, sort=True)
+        self.assertEqual(results, RESULTS)
 
 
 if __name__ == "__main__":
