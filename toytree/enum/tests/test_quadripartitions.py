@@ -68,9 +68,7 @@ class TestQuartets(unittest.TestCase):
         self.trees = [self.tree1, self.tree2]
 
     def _test_sorting(self, results, collapse: bool = False, sort: bool = False):
-        """Helper function to test sorting of quartets.
-        Tests both the automatic sorting method on the tip-level pairs
-        and the sort= argument at the quartet-level"""
+        """Helper function to test sorting of quadripartitions."""
         for item in results: 
             if not isinstance(item[0], set):
                 if collapse:
@@ -83,7 +81,7 @@ class TestQuartets(unittest.TestCase):
                         self.assertGreater(item[0][1][0], item[0][0][0])  #quartet-level sorting (x,y),(i,j) -> (i,j),(x,y)
 
 
-    def test_default(self):
+    def test_default(self): #testing default behavior (set) 
         results = list(iter_quadripartitions(self.tree1))
         self.assertIsInstance(results[0][0], tuple)
         self.assertIsInstance(results[0][0][0], set)
