@@ -113,7 +113,7 @@ nav:
     - <i>.enum</i> - tree enumeration:
       - bipartition methods: bipartitions.ipynb
       - quartet methods: quartets.ipynb
-      - quadripartition methods: ...
+      - quadripartition methods: quadripartitions.ipnyb
       # - other: ...
 
     - <i>.distance</i> - tree/node dists:
