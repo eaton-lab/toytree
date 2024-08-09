@@ -88,6 +88,11 @@ def _count_duplications(gtree: ToyTree) -> int:
 
     Adds a feature 'dup' to Nodes with True or False.
 
+    Note
+    ----
+    - Can you have multiple duplications per node?
+    - How to treat polytomies?
+
     Example
     -------
     >>> tree = toytree.rtree.unittree(ntips=5, seed=123)
