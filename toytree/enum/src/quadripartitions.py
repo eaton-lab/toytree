@@ -31,7 +31,6 @@ Query = TypeVar("Query")
 __all__ = [
     "_iter_quadripartition_sets",
     "iter_quadripartitions",
-    # "iter_quartets",
     # "iter_edge_quadripartition_sets",
 ]
 
