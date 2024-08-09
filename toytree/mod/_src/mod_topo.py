@@ -422,7 +422,7 @@ def bisect(tree: ToyTree, *query: Query, reroot: bool = False, dist_partition: f
     the edge above to create two subtrees. The query node will become
     a treenode of one new subtree. The arg 'reroot=False` will retain
     the original treenode in the other subtree, otherwise the node above
-    the query becomes the new treenode (i.e., thesubtree is re-rooted).
+    the query becomes the new treenode (i.e., the subtree is re-rooted).
     The subtree below the query will inherit all of the dist of the
     split edge unless the dist_partition arg is used to designate the
     proportion of dist (0.0-1.0) to assign to this treenode.
@@ -766,7 +766,7 @@ def resolve_polytomies(
     Examples
     --------
     >>> tree = toytree.tree("((a,b,c),d);")
-    >>> tree.mod.resolve_polytomy().draw();
+    >>> tree.mod.resolve_polytomies().draw();
     """
     nodes = tree.get_nodes(*query)
     if not inplace:
