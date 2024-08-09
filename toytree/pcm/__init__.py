@@ -36,3 +36,6 @@ from toytree.pcm.src.traits import *
 # from toytree.pcm.src.diversification import *
 # from toytree.pcm.src.traits import *
 # from toytree.pcm.src.phylocom import simulate_community_data
+from toytree.pcm.src.red import (
+    get_relative_evolutionary_divergence,
+)
