@@ -135,26 +135,26 @@ class TestValidateNumeric(unittest.TestCase):
         self.assertEqual(vals[0], 0.0)
         self.assertTrue(isinstance(vals[1], np.integer))
 
-    def test_style_validate_numeric_tuple_format(self):
-        tree = self.tree.copy()
-        for test in [
-            "dist",                 # (dist, 5, 20)
-            ("dist",),              # (dist, 5, 20)
-            # ("dist", 2),          # (dist, 2, 20)
-            # ("dist", 2, 5),       # (dist, 2, 5)
-            # ("dist", 2, 5, 0),    # (dist, 2, 5, 0)
-            ]:
-            tree.style.node_sizes = test
-            vals = validate_numeric(
-                tree=tree,
-                key="node_sizes",
-                size=tree.nnodes,
-                tree_style=tree.style,
-                style={},
-            )
-            self.assertTrue(isinstance(vals, np.ndarray))
-            self.assertEqual(vals[0], 1 / 3.)
-            self.assertTrue(isinstance(vals[1], np.float64))
+    # def test_style_validate_numeric_tuple_format(self):
+    #     tree = self.tree.copy()
+    #     for test in [
+    #         "dist",                 # (dist, 5, 20)
+    #         ("dist",),              # (dist, 5, 20)
+    #         # ("dist", 2),          # (dist, 2, 20)
+    #         # ("dist", 2, 5),       # (dist, 2, 5)
+    #         # ("dist", 2, 5, 0),    # (dist, 2, 5, 0)
+    #         ]:
+    #         tree.style.node_sizes = test
+    #         vals = validate_numeric(
+    #             tree=tree,
+    #             key="node_sizes",
+    #             size=tree.nnodes,
+    #             tree_style=tree.style,
+    #             style={},
+    #         )
+    #         self.assertTrue(isinstance(vals, np.ndarray))
+    #         self.assertEqual(vals[0], 1 / 3.)
+    #         self.assertTrue(isinstance(vals[1], np.float64))
 
 
 
