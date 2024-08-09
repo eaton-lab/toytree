@@ -495,130 +495,130 @@ class MultiTree:
         )
 
 
-    def draw_cloud_tree(
-        self,
-        axes: Cartesian = None,
-        fixed_order: Sequence[str] = None,
-        jitter: float = 0.0,
-        idxs: Optional[Sequence[int]] = None,
-        **kwargs,
-    ):
-        """Return a cloud of overlapping low-opacity tree drawings.
+    # def draw_cloud_tree(
+    #     self,
+    #     axes: Cartesian = None,
+    #     fixed_order: Sequence[str] = None,
+    #     jitter: float = 0.0,
+    #     idxs: Optional[Sequence[int]] = None,
+    #     **kwargs,
+    # ):
+    #     """Return a cloud of overlapping low-opacity tree drawings.
 
-        Draw multiple trees overlapping in coordinate space. The
-        order of tip_labels is fixed in cloud trees so that trees
-        with discordant relationships can be seen in conflict. See
-        examples from the documentation for tips on using additional
-        styling options to further visualize patterns among subtrees
-        within the cloud.
+    #     Draw multiple trees overlapping in coordinate space. The
+    #     order of tip_labels is fixed in cloud trees so that trees
+    #     with discordant relationships can be seen in conflict. See
+    #     examples from the documentation for tips on using additional
+    #     styling options to further visualize patterns among subtrees
+    #     within the cloud.
 
-        Parameters
-        ----------
-        axes: None or toyplot.coordinates.Cartesian
-            If None then a new Canvas and Cartesian axes object is
-            returned, otherwise if a Cartesian axes object is provided
-            the cloudtree will be drawn on the axes.
-        fixed_order: Sequence[str], bool, or None
-            A list of tip names matching those in every tree in the
-            multitree, the order of which will determine the fixed
-            order of tips in plotted trees. If None (default) then a
-            consensus tree is inferred and its ladderized tip order
-            is used.
-        jitter: float
-            A value by which to randomly shift the baseline of tree
-            subplots so that they do not overlap perfectly. This adds
-            a value drawn from np.random.uniform(-jitter, jitter).
-        idxs: None or Sequence[int]
-            Optional select indices of which trees to draw.
-        **kwargs:
-            All drawing style arguments supported in the .draw()
-            function of toytree objects are also supported by
-            .draw_cloudtree(), most notably here, edge_style.
+    #     Parameters
+    #     ----------
+    #     axes: None or toyplot.coordinates.Cartesian
+    #         If None then a new Canvas and Cartesian axes object is
+    #         returned, otherwise if a Cartesian axes object is provided
+    #         the cloudtree will be drawn on the axes.
+    #     fixed_order: Sequence[str], bool, or None
+    #         A list of tip names matching those in every tree in the
+    #         multitree, the order of which will determine the fixed
+    #         order of tips in plotted trees. If None (default) then a
+    #         consensus tree is inferred and its ladderized tip order
+    #         is used.
+    #     jitter: float
+    #         A value by which to randomly shift the baseline of tree
+    #         subplots so that they do not overlap perfectly. This adds
+    #         a value drawn from np.random.uniform(-jitter, jitter).
+    #     idxs: None or Sequence[int]
+    #         Optional select indices of which trees to draw.
+    #     **kwargs:
+    #         All drawing style arguments supported in the .draw()
+    #         function of toytree objects are also supported by
+    #         .draw_cloudtree(), most notably here, edge_style.
 
-        Notes
-        -----
-        For style arguments that apply to tips (e.g., tip_labels) the
-        styles will be re-ordered by fixed_order to apply to all trees
-        correctly.
-        """
-        logger.warning(("kwargs", kwargs))
-        # which trees to draw
-        treelist = self.treelist if idxs is None else idxs
+    #     Notes
+    #     -----
+    #     For style arguments that apply to tips (e.g., tip_labels) the
+    #     styles will be re-ordered by fixed_order to apply to all trees
+    #     correctly.
+    #     """
+    #     logger.warning(("kwargs", kwargs))
+    #     # which trees to draw
+    #     treelist = self.treelist if idxs is None else idxs
 
-        # TreeStyle used for canvas, axes setup only, based on
-        # kwargs, not .style from any subtrees.
-        fstyle = TreeStyle()
-        fstyle.width = kwargs.get("width", None)
-        fstyle.height = kwargs.get("height", None)
-        fstyle.layout = kwargs.get("layout", 'r')
-        fstyle.padding = kwargs.get("padding", 20)
-        fstyle.scale_bar = kwargs.get("scale_bar", False)
-        fstyle.use_edge_lengths = kwargs.get("use_edge_lengths", True)
-        fstyle.edge_type = kwargs.get("edge_type", 'c')
-        fstyle.xbaseline = kwargs.get("xbaseline", 0)
-        fstyle.ybaseline = kwargs.get("ybaseline", 0)
-        fstyle.tip_labels = (
-            self.treelist[0].get_tip_labels() if "tip_labels" not in kwargs
-            else kwargs["tip_labels"]
-        )
-        logger.warning(("fstyle.tip_labels", fstyle.tip_labels))
-        fstyle.edge_style.stroke_opacity = 1 / len(treelist)
-        if "edge_style" in kwargs:
-            for key, val in kwargs["edge_style"]:
-                setattr(fstyle, key, val)
-        logger.warning(("fstyle.edge_style", fstyle.edge_style))
+    #     # TreeStyle used for canvas, axes setup only, based on
+    #     # kwargs, not .style from any subtrees.
+    #     fstyle = TreeStyle()
+    #     fstyle.width = kwargs.get("width", None)
+    #     fstyle.height = kwargs.get("height", None)
+    #     fstyle.layout = kwargs.get("layout", 'r')
+    #     fstyle.padding = kwargs.get("padding", 20)
+    #     fstyle.scale_bar = kwargs.get("scale_bar", False)
+    #     fstyle.use_edge_lengths = kwargs.get("use_edge_lengths", True)
+    #     fstyle.edge_type = kwargs.get("edge_type", 'c')
+    #     fstyle.xbaseline = kwargs.get("xbaseline", 0)
+    #     fstyle.ybaseline = kwargs.get("ybaseline", 0)
+    #     fstyle.tip_labels = (
+    #         self.treelist[0].get_tip_labels() if "tip_labels" not in kwargs
+    #         else kwargs["tip_labels"]
+    #     )
+    #     logger.warning(("fstyle.tip_labels", fstyle.tip_labels))
+    #     fstyle.edge_style.stroke_opacity = 1 / len(treelist)
+    #     if "edge_style" in kwargs:
+    #         for key, val in kwargs["edge_style"]:
+    #             setattr(fstyle, key, val)
+    #     logger.warning(("fstyle.edge_style", fstyle.edge_style))
 
-        # get fixed order of tips from consensus tree if not provided.
-        if fixed_order is None:
-            fixed_order = (
-                MultiTree(self.treelist)
-                .get_consensus_tree()
-                .get_tip_labels()
-            )
-        logger.warning(("fixed_order", fixed_order))
+    #     # get fixed order of tips from consensus tree if not provided.
+    #     if fixed_order is None:
+    #         fixed_order = (
+    #             MultiTree(self.treelist)
+    #             .get_consensus_tree()
+    #             .get_tip_labels()
+    #         )
+    #     logger.warning(("fixed_order", fixed_order))
 
-        # require fixed_order to match ntips
-        ntips = self.treelist[0].ntips
-        assert len(fixed_order) == ntips, (
-            f"fixed_order arg (len={len(fixed_order)}) "
-            f"must be the same length as ntips (len={ntips}). "
-            f"You entered: {fixed_order}")
+    #     # require fixed_order to match ntips
+    #     ntips = self.treelist[0].ntips
+    #     assert len(fixed_order) == ntips, (
+    #         f"fixed_order arg (len={len(fixed_order)}) "
+    #         f"must be the same length as ntips (len={ntips}). "
+    #         f"You entered: {fixed_order}")
 
-        # draw trees sequentially to get a list of ToyTreeMark objects
-        marks = []
-        for tidx, tree in enumerate(treelist):
+    #     # draw trees sequentially to get a list of ToyTreeMark objects
+    #     marks = []
+    #     for tidx, tree in enumerate(treelist):
 
-            # make copy of fstyle
-            tmpstyle = fstyle.copy()
+    #         # make copy of fstyle
+    #         tmpstyle = fstyle.copy()
 
-            # add jitter to tip coordinates
-            if jitter:
-                if fstyle.layout in "rl":
-                    tmpstyle.ybaseline = fstyle.ybaseline + np.random.uniform(-jitter, jitter)
-                else:
-                    tmpstyle.xbaseline = fstyle.xbaseline + np.random.uniform(-jitter, jitter)
+    #         # add jitter to tip coordinates
+    #         if jitter:
+    #             if fstyle.layout in "rl":
+    #                 tmpstyle.ybaseline = fstyle.ybaseline + np.random.uniform(-jitter, jitter)
+    #             else:
+    #                 tmpstyle.xbaseline = fstyle.xbaseline + np.random.uniform(-jitter, jitter)
 
-            # set the edge stroke-opacity
-            if tree.style.edge_style.stroke_opacity is not None:
-                tmpstyle.edge_style.stroke_opacity
+    #         # set the edge stroke-opacity
+    #         if tree.style.edge_style.stroke_opacity is not None:
+    #             tmpstyle.edge_style.stroke_opacity
 
-            # plot tip labels by reordering those of tree tidx=0
-            if not tidx:
-                tmpstyle.tip_labels = fstyle.tip_labels
-            else:
-                tmpstyle.tip_labels = False
+    #         # plot tip labels by reordering those of tree tidx=0
+    #         if not tidx:
+    #             tmpstyle.tip_labels = fstyle.tip_labels
+    #         else:
+    #             tmpstyle.tip_labels = False
 
-            # add mark to axes
-            kwargs = tree_style_to_css_dict(tmpstyle)
-            logger.warning(("kwargs", kwargs))
-            if not tidx:
-                canvas, axes, mark = tree.draw(axes=axes, fixed_order=fixed_order, **kwargs)
-            else:
-                _, _, mark = tree.draw(axes=axes, fixed_order=fixed_order, **kwargs)
-            marks.append(mark)
+    #         # add mark to axes
+    #         kwargs = tree_style_to_css_dict(tmpstyle)
+    #         logger.warning(("kwargs", kwargs))
+    #         if not tidx:
+    #             canvas, axes, mark = tree.draw(axes=axes, fixed_order=fixed_order, **kwargs)
+    #         else:
+    #             _, _, mark = tree.draw(axes=axes, fixed_order=fixed_order, **kwargs)
+    #         marks.append(mark)
 
-        # get shared tree styles.
-        return canvas, axes, marks
+    #     # get shared tree styles.
+    #     return canvas, axes, marks
 
 
     def draw_cloud_tree(
@@ -710,4 +710,4 @@ if __name__ == "__main__":
     mtree[1][-1].children[0]._dist = 100
     mtree[1]._update()
     c, a, m = mtree.draw(scale_bar=True, node_sizes=0, shared_axes=True, layout='d')
-    toytree.utils.show(c)
+    toytree.utils.show(c, tmpdir="~")

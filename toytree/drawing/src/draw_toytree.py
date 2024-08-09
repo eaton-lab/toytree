@@ -204,7 +204,7 @@ if __name__ == "__main__":
     import toytree
     toytree.set_log_level("DEBUG")
     tre = toytree.rtree.imbtree(10, )
-    tre._draw_browser('s', admixture_edges=[((2, 3), 4)])
+    tre._draw_browser('s', admixture_edges=[((2, 3), 4)], tmpdir="~")
 
     # tre[0].name = "HELLO"
     # tre[4].name = "HELLO"

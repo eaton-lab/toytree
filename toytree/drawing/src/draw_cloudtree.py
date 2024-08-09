@@ -71,7 +71,7 @@ def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:
         kwargs["scale_bar"] = False
 
         # get the tree's style
-        style = parse_draw_args_to_tree_style(tree, **kwargs)
+        style = get_tree_style_updated_by_draw_args(tree, **kwargs)
 
         # using fixed order while allowing diff numbers of tips
         # style.fixed_order = [tip_pos[i] for i in tree.get_tip_labels()]
@@ -111,17 +111,18 @@ if __name__ == "__main__":
     import toyplot
     trees = [toytree.rtree.coaltree(k=6, seed=i) for i in range(100)]
     mtree = toytree.mtree(trees)
+    c, a, m = mtree.draw_cloud_tree()
+    toytree.utils.show([c], tmpdir="~")
+    # canvas = toyplot.Canvas()
+    # axes = canvas.cartesian()
+    # kwargs = dict(
+    #     tree_style=None, axes=axes, kwargs={}, edge_widths=3,
+    #     fixed_position=None,
+    #     # fixed_order=["r1", "r0", "r3", "r4", "r5", "r2"],
+    # )
 
-    canvas = toyplot.Canvas()
-    axes = canvas.cartesian()
-    kwargs = dict(
-        tree_style=None, axes=axes, kwargs={}, edge_widths=3,
-        fixed_position=None,
-        # fixed_order=["r1", "r0", "r3", "r4", "r5", "r2"],
-    )
-
-    mtree[10].style.edge_style.stroke = "red"
-    mtree[10].style.edge_style.stroke_opacity = 1
-    marks = draw_cloudtree(mtree, **kwargs)
-    if marks:
-        toytree.utils.show([canvas])
+    # mtree[10].style.edge_style.stroke = "red"
+    # mtree[10].style.edge_style.stroke_opacity = 1
+    # marks = draw_cloudtree(mtree, **kwargs)
+    # if marks:
+    #     toytree.utils.show([canvas], tmpdir="~")
