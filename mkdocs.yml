@@ -89,10 +89,10 @@ nav:
     - Tree Drawing:
       - draw basics: drawing-basics.ipynb
       - draw options: ...
-      - coordinates and axes: ... #drawing-coordinates.ipynb
+      - coordinates and axes: drawing-coordinates.ipynb
       - composite plots: ...
-      - tree styles: ...
-      - save/export canvas: ...
+      - tree styles: tree-styles.ipynb
+      - save/export canvas: rendering.ipynb
       - feature range-mapping: range-mapping.ipynb
       - feature color-mapping: color-mapping.ipynb
       - multitree tree grids: drawing-tree-grids.ipynb
