@@ -92,7 +92,7 @@ nav:
       - coordinates and axes: ... #drawing-coordinates.ipynb
       - composite plots: ...
       - tree styles: tree-styles.ipynb
-      - save/export canvas: ...
+      - save/export canvas: rendering.ipynb
       - feature range-mapping: range-mapping.ipynb
       - feature color-mapping: color-mapping.ipynb
       - multitree tree grids: drawing-tree-grids.ipynb
