@@ -90,13 +90,13 @@ nav:
       - draw basics: drawing-basics.ipynb
       - draw options: draw-options.ipynb
       - coordinates and axes: drawing-coordinates.ipynb
-      - composite plots: ...
-      - tree styles: tree-styles.ipynb
+      - builtin tree styles: tree-styles.ipynb
       - save/export canvas: rendering.ipynb
       - feature range-mapping: range-mapping.ipynb
       - feature color-mapping: color-mapping.ipynb
       - multitree tree grids: drawing-tree-grids.ipynb
       - multitree cloud trees: drawing-cloud-trees.ipynb
+      # - composite plots
       # - Modifying axes style: ...
 
     - Consensus Trees: ...
