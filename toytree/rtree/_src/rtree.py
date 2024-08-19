@@ -194,6 +194,10 @@ def baltree(
     # each node as the node distance from the root, to evenly create
     # splits. 'dists' are later overwritten by extend_tips_to_align.
 
+    #check that ntips is even, if not raise an error
+    if ntips%2 != 0:
+        raise ToytreeError("Number of tips must be even to make a balanced tree!")
+
     # get a root Node and keep track of nancestors
     root = Node()
 

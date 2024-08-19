@@ -88,15 +88,15 @@ nav:
     # - <span style="color:darkcyan; font-style:bold">Tree drawing</span>:
     - Tree Drawing:
       - draw basics: drawing-basics.ipynb
-      - draw options: ...
+      - draw options: draw-options.ipynb
       - coordinates and axes: drawing-coordinates.ipynb
-      - composite plots: ...
-      - tree styles: tree-styles.ipynb
+      - builtin tree styles: tree-styles.ipynb
       - save/export canvas: rendering.ipynb
       - feature range-mapping: range-mapping.ipynb
       - feature color-mapping: color-mapping.ipynb
       - multitree tree grids: drawing-tree-grids.ipynb
       - multitree cloud trees: drawing-cloud-trees.ipynb
+      # - composite plots
       # - Modifying axes style: ...
 
     - Consensus Trees: ...
@@ -132,7 +132,7 @@ nav:
 
     - <i>.annotate</i> - add to drawings: ...
 
-    - <i>.rtree</i> - random trees: ...   
+    - <i>.rtree</i> - random trees: random-trees.ipynb  
 
     # - networks:
     #   - drawing admixture edges: ...
@@ -144,10 +144,12 @@ nav:
 
   - FAQs: FAQs.md
 
-  # Use this for the gallery: https://smarie.github.io/mkdocs-gallery/
-  - Cookbooks: gallery.md   
-    # - barplot
-    # - heatmap
+  - Cookbooks:
+    - ToyTree with barplot: barplot.ipynb
+    - Spacing tree vs. tip names: spacing.ipynb
+    - Colored rectangles to highlight clades: highlights.ipynb
+    - Ridge plot: ridge-plot.ipynb
+    - ToyTree with matrix/heatmap: heatmap.ipynb
     # - co-phylogeny
     # - trait tree
     # - unrooted trait tree in 2D (PCA)
