@@ -19,6 +19,7 @@ from typing import (
     TypeVar, Set,  # Callable,
 )
 import re
+from pathlib import Path
 from copy import deepcopy
 from hashlib import md5
 # from collections.abc import Sequence as SequenceType
@@ -1003,6 +1004,7 @@ class ToyTree:
         shrink: float = None,
         fixed_order: Sequence[str] = None,
         fixed_position: Sequence[float] = None,
+        label: Optional[str] = None,
         **kwargs,
     ) -> Tuple[Canvas, Cartesian, ToyTreeMark]:
         """Return a drawing of the tree as a Toyplot figure.
@@ -1209,6 +1211,7 @@ class ToyTree:
             shrink=shrink,
             fixed_order=fixed_order,
             fixed_position=fixed_position,
+            label=label,
             kwargs=kwargs,
         )
         # private debugging mode returns just the kwargs
