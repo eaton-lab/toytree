@@ -80,7 +80,6 @@ __all__ = [
     "get_treedist_rfg_msi",
     "get_treedist_rfg_spi",
     "get_treedist_rfg_mci",
-    "get_treedist_rfg_jac",
 ]
 
 
