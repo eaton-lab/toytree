@@ -54,7 +54,7 @@ def get_quartet_resolutions_table(tree: ToyTree, df: bool = False) -> np.ndarray
     assert len(snames) == len(set(snames)), "duplicate tip names are not allowed"
 
     # an empty array to enumerate all quartets and their resolutions
-    ntips = toytree.enum.get_n_quartets(tree.ntips)
+    ntips = toytree.enum.get_num_quartets(tree.ntips)
     arr = np.zeros(ntips, dtype=np.int_)
 
     # a dict to map {tipset: resolved} as {frozenset(abcd): tuple(abcd)}
