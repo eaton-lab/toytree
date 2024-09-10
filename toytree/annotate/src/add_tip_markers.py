@@ -36,7 +36,7 @@ Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = [
     # "add_tip_labels",
     "add_tip_markers",
-    # "add_tip_pie_charts",
+    # "add_tip_pie_charts", #to go in add_pie_markers?
     # "add_node_bars",
     # "add_node_histograms",
     # "add_node_densigrams",
@@ -95,7 +95,7 @@ def add_tip_markers(
     >>> tree = toytree.rtree.unittree(6, seed=123)
     >>> canvas, axes, m0 = tree.draw()
     >>> # add markers to all Nodes
-    >>> m1 = tree.annotate.add_node_markers(
+    >>> m1 = tree.annotate.add_tip_markers(
     >>>     axes,
     >>>     marker='s',
     >>>     size=9,
@@ -104,7 +104,7 @@ def add_tip_markers(
     >>> )
     >>>
     >>> # add markers to only a few Nodes
-    >>> m2 = tree.annotate.add_node_markers(
+    >>> m2 = tree.annotate.add_tip_markers(
     >>>     axes, marker=">", size=20, mask=tree.get_node_mask(9)
     >>> )
     """
