@@ -303,7 +303,6 @@ if __name__ == "__main__":
     import toytree
     tree = toytree.rtree.unittree(6, seed=123)
     canvas, axes, m0 = tree.draw()
-
     # generate random pie-like (proportion) data array
     import numpy as np
     ncategories = 3
@@ -311,7 +310,7 @@ if __name__ == "__main__":
     arr = (arr.T / arr.sum(axis=1)).T
 
     # add pie charts to all internal Nodes
-    tree.annotate.add_edge_pie_charts(
+    tree.annotate.add_node_pie_charts(
         axes=axes,
         data=arr,
         size=20,

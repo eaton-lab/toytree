@@ -116,7 +116,7 @@ nav:
       - quadripartition methods: quadripartitions.ipynb
       # - other: ...
 
-    - <i>.distance</i> - tree/node dists: # TO DO
+    - <i>.distance</i> - tree/node dists: 
       - node distances: node-distance.ipynb
       - tree distances: tree-distance.ipynb
     
