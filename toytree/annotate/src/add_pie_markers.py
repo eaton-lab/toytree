@@ -12,7 +12,7 @@ from toytree.core import ToyTree, Cartesian, Mark
 from toytree.style import check_arr, get_color_mapped_values
 from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
-from toytree.annotate.src.add_edge_markers import _get_edge_midpoints
+from toytree.annotate.src.add_edge_markers import get_edge_midpoints
 from toytree.drawing.src.mark_pie import PieChartMark
 from toytree.style.src.validate_data import (
     validate_numeric,
@@ -248,7 +248,8 @@ def add_edge_pie_charts(
 
     # get coordinates of all real edges
     nedges = tree.nnodes - 2 if tree.is_rooted() else tree.nnodes - 1
-    coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)
+    #coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)
+    coords = get_edge_midpoints(mark.etable, mark.ntable, mark.layout, mark.edge_type)
 
     mask = validate_mask(tree, style={"node_mask": mask})[:nedges]
 
@@ -302,7 +303,6 @@ if __name__ == "__main__":
     import toytree
     tree = toytree.rtree.unittree(6, seed=123)
     canvas, axes, m0 = tree.draw()
-
     # generate random pie-like (proportion) data array
     import numpy as np
     ncategories = 3
@@ -310,7 +310,7 @@ if __name__ == "__main__":
     arr = (arr.T / arr.sum(axis=1)).T
 
     # add pie charts to all internal Nodes
-    tree.annotate.add_edge_pie_charts(
+    tree.annotate.add_node_pie_charts(
         axes=axes,
         data=arr,
         size=20,

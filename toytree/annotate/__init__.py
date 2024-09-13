@@ -49,6 +49,7 @@ from toytree.annotate.src.add_node_markers import *
 from toytree.annotate.src.add_tip_markers import *
 from toytree.annotate.src.add_axes_box_outline import *
 from toytree.annotate.src.add_scale_bar import *
+from toytree.annotate.src.add_pie_markers import *
 
 # ... edge_labels
 # ... node_labels
