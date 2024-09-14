@@ -130,7 +130,8 @@ nav:
       # - MulTree analysis: ...
       # - Tree inference: ...
 
-    - <i>.annotate</i> - add to drawings: ... # TO DO
+    - <i>.annotate</i> - add to drawings:
+      - Tree annotations: tree-annotations.ipynb
 
     - <i>.rtree</i> - random trees: random-trees.ipynb  
 
