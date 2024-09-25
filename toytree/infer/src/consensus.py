@@ -41,7 +41,7 @@ class ConsensusTree:
     is not supplied as an input tree.
 
     If ultrametric is set to true then the returned tree is rooted
-    on
+    on...
 
     Parameters
     ----------
@@ -58,24 +58,24 @@ class ConsensusTree:
     Examples
     --------
     >>> tree = toytree.rtree.unittree(ntips=5, seed=123)
-    >>> tree = toytree.rtree.unittree(ntips=5, seed=123)
 
     Get 20 rooted ultrametric trees w/ same topology and variable dists
-    >>> rtrees = [
+    >>> rutrees = [
     >>>    tree.mod.edges_multiplier().mod.edges_slider()
     >>>    for i in range(20)]
 
     Get 20 unrooted ultrametric trees w/ same topology and variable dists
-    >>> utrees = [
+    >>> uutrees = [
     >>>    tree.unroot().mod.edges_multiplier().mod.edges_slider()
     >>>    for i in range(20)]
 
     Get 20 unrooted non-ultrametric trees w/ same topology and variable dists
-    >>> utrees = [
+    >>> untrees = [
     >>>    tree.unroot().mod.edges_multiplier().mod.edges_slider()
     >>>    for i in range(20)]
-
-
+    
+    ...
+    >>> # ...
     """
     def __init__(
         self,
@@ -315,7 +315,8 @@ class ConsensusTree:
         for utree in self.mtree:
 
             # iterate over ubipartitions in tree: [[['a'], ['b', 'c']], [...]]
-            for nidx, bipart in enumerate(utree.iter_bipartitions("name", True, False)):
+            iter_biparts = utree.iter_bipartitions("name", True, False, set, True)
+            for nidx, bipart in enumerate(iter_biparts):
                 # skip tip-only Nodes
                 node = utree[nidx]
                 # store the smaller half
@@ -371,8 +372,8 @@ if __name__ == "__main__":
     mtre = toytree.mtree(tres)
     ctre = ConsensusTree(mtre).run()
     # ctre = ctre.root("r8", "r9")
-    # ctre._draw_browser(node_sizes=20, node_labels="support")
-    print(ctre.write(features=ctre.features))
+    ctre._draw_browser(node_sizes=20, node_labels="support", tmpdir="~")
+    # print(ctre.write(features=ctre.features))
 
     # ctre = ConsensusTree(mtre, best_tree=mtre[0]).run()
     # ctre = ctre.root('r8', 'r9')
