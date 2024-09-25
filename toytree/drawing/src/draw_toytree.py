@@ -87,6 +87,7 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
     """
     # extract Cartesian axes or None
     axes = kwargs.pop("axes")
+    label = kwargs.pop("label")
 
     # get tree style expanded for user args and base tree style (ts)
     style = get_tree_style_updated_by_draw_args(tree, **kwargs)
@@ -126,15 +127,18 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
     # add ToyTreeMark to Cartesian axes.
     axes.add_mark(mark)
 
-    # Hide axes if Cartesian is new and scale bar not added.
+    # Show axes with a scale bar if requested.
     if mark.scale_bar is False:
+        # hide axes if Cartesian is new and scale bar not added.
         if canvas is not None:
             axes.x.show = False
             axes.y.show = False
-
-    # Show axes with a scale bar if requested.
     else:
         tree.annotate.add_axes_scale_bar(axes)
+
+    # add label text to axes (user can add more styling outside)
+    if label:
+        axes.label.text = label
 
     return canvas, axes, mark
 
@@ -204,7 +208,7 @@ if __name__ == "__main__":
     import toytree
     toytree.set_log_level("DEBUG")
     tre = toytree.rtree.imbtree(10, )
-    tre._draw_browser('s', admixture_edges=[((2, 3), 4)], tmpdir="~")
+    tre._draw_browser('s', admixture_edges=[((2, 3), 4)], tmpdir="~", label="HI")
 
     # tre[0].name = "HELLO"
     # tre[4].name = "HELLO"
