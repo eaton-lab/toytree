@@ -17,12 +17,24 @@ amalgamation, is to find the tree that is concordant with the greatest
 number of input quartet trees. Finding this tree is a NP-hard problem
 (Steel 1992).
 
+Development notes
+-----------------
+- See docs/consensus2.ipynb notebook for current embedding implementation
+- For small ntaxa the non-embedding maxcut search is working.
+- Have not yet implemented building the tree from the finished set of cuts.
+
 References
 ----------
-- Snir & Rao 2012 https://doi.org/10.1016/j.ympev.2011.06.021
+The first quartet inference paper
+- Snir & Rao 2012 "Quartet MaxCut: A fast algorithm for amalgamating quartet trees".
+  https://doi.org/10.1016/j.ympev.2011.06.021
+
+A paper that describes the embedding approach in more detail.
 - Snir & Rao 2006 "Using Max Cut to Enhance Rooted Trees Consistency"
   IEEE/ACM Transactions on Computational Biology and Bioinformatics,
   doi: 10.1109/TCBB.2006.58.
+
+A paper that describes the maxcut algorithm in more detail.
 - Snir & Rao 2010 "Quartets MaxCut: A Divide and Conquer Quartets Algorithm".
   IEEE/ACM Transactions on Computational Biology and Bioinformatics,
 """
