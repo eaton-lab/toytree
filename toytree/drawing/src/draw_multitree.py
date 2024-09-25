@@ -9,6 +9,7 @@ from toytree.core import Canvas, Cartesian, Mark
 from toytree.drawing.src.setup_grid import Grid
 from toytree.style import get_base_tree_style_by_name
 from toytree.annotate import add_axes_scale_bar
+import toytree
 from loguru import logger
 
 MultiTree = TypeVar("MultiTree")
@@ -87,7 +88,7 @@ def draw_multitree(
     # as a List[str] and set that as the fixed_order arg.
     if kwargs.get("fixed_order") is True:
         fixed_order = (
-            MultiTree(treelist)
+            toytree.MultiTree(treelist)
             .get_consensus_tree()
             .get_tip_labels()
         )
@@ -142,6 +143,11 @@ def draw_multitree(
 
         # get the axis
         axes = grid.axes[idx]
+
+        # check if an input arg that should be singular was entered as a
+        # list of ncells, in which case it should be applied individually
+        # to each tree as a sequence.
+        # ...
 
         # add the mark
         if idx < len(treelist):
@@ -198,6 +204,12 @@ def draw_multitree(
                 grid.axes[idx].y.show = False
                 grid.axes[idx].x.show = False
 
+        if kwargs.get("label"):
+            label = kwargs.get("label")
+            if not isinstance(label, str):
+                label = label[idx]
+            grid.axes[idx].label.text = label
+
     # add mark to axes
     return canvas, grid.axes, marks    
 
@@ -207,4 +219,5 @@ if __name__ == "__main__":
     import toytree    
     trees = [toytree.rtree.unittree(5) for i in range(10)]
     mtree = toytree.mtree(trees)
-    draw_multitree(mtree, shape=(2, 8))
+    c, a, m = draw_multitree(mtree, shape=(2, 8))
+    toytree.utils.show([c], tmpdir="~")
