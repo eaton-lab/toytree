@@ -268,10 +268,51 @@ def get_num_unlabeled_trees(ntips: int) -> int:
     """
 
 
+def get_num_labeled_partitions(ntips: int, min_size: int = 2):
+    """Return the number of ways to partition ntips names into two
+    groups given a minimum group size.
+
+    Using a minimum group size of 2 this returns the number of possible
+    ways that ntips can be partitioned by a tree edge.
+
+    Parameters
+    ----------
+    ntips: int
+        The number of labeled samples.
+    min_size: int
+        The minimum number of samples in a valid partition. This is
+        usually either 2 or 1 depending on the question being asked.
+
+    Example
+    -------
+    >>> toytree.enum.get_num_labeled_partitions(5)
+    >>> # 10
+    >>> toytree.enum.get_num_labeled_partitions(40)
+    >>> # 549755813847
+
+    See Also
+    --------
+    - toytree.enum.iter_bipartitions
+    """
+    # not enough items to form two groups of at least 2
+    if ntips < 4:
+        return 0
+
+    # iterate over possible sizes for the first group (2 to N-2)
+    total_ways = 0
+    for size in range(2, ntips - 1):
+        # choose `size` items for group 1
+        total_ways += scipy_comb(ntips, size)
+    # divide by 2 to account for indistinguishable groups
+    return int(total_ways // 2)
+
+
+
 
 if __name__ == "__main__":
 
     # get_probability_gene_tree_matches_species_tree(0.001)
     # print(get_num_labeled_trees(6))
     print(get_num_quartets(10))
+    print(get_num_labeled_partitions(15))
     # print(get_num_multifurcating_trees(ntips=5, n_internal_nodes=4))
