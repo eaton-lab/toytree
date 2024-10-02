@@ -71,7 +71,7 @@ __all__ = [
     "add_internal_node_and_child",
     "add_internal_node_and_subtree",
     "remove_nodes",
-    "merge_nodes",    
+    "merge_nodes",
 ]
 
 
@@ -580,7 +580,7 @@ def prune(
               3   \      ------>        3
              / \   \                   / \
             0   1   2                 0   1
-    # min spanning tree of 0,1 does not require node 4 but it is kept.
+    # min spanning tree of 0,2 does not require node 4 but it is kept.
 
                 4      prune([0,2])      4
                / \   preserve_dists=0   / \
@@ -588,7 +588,7 @@ def prune(
              / \   \                        \
             0   1   2                        2
     # min spanning tree of 0,2 involves only 0,2,4 (node 3 is excluded).
-    # if preserve_dist=False its dist is also discarded.
+    # if preserve_dists=False its dist is also discarded.
 
                 4    prune([0,2,3])      4
                / \                      / \
@@ -596,7 +596,7 @@ def prune(
              / \   \                  /     \
             0   1   2                0       2
     # min spanning tree of 0,2,3 only excludes Node 1. Internal nodes
-    # are kept even if unary when they are included in the query.
+    # are kept if selected in query, even if they are unary.
 
     Parameters
     ----------
@@ -641,15 +641,16 @@ def prune(
     # traverse postorder removing nodes, but keeping treenode for now
     counter = {i: 0 for i in tree}
     for node in tree[:-1]:
-        # skip node if it is in query
+        # increment parent count and skip node if it is in query
         if node in nodes:
             counter[node._up] += 1
             continue
 
-        # skip node if it has >1 child that is a keeper
-        if counter[node] > 1:
+        # increment parent count if in counter, skip if >1 in counter.
+        if counter[node]:
             counter[node._up] += 1
-            continue
+            if counter[node] > 1:
+                continue
 
         # remove the node
         node._delete(preserve_dists=preserve_dists, prevent_unary=False)
