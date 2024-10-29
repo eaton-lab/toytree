@@ -42,7 +42,7 @@ from pathlib import Path
 import re
 from loguru import logger
 import toytree
-from toytree.io.src.parse import WHITE_SPACE
+from toytree.io.src.utils import replace_whitespace
 
 logger = logger.bind(name="toytree")
 
@@ -114,7 +114,8 @@ class NetworkToMajorTree:
             if ";" in net:
                 net = net.split(";")[0] + ';'
         # strip whitespace
-        net = WHITE_SPACE.sub("", net)
+        net = replace_whitespace(net)
+        # net = WHITE_SPACE.sub("", net)
         return net
 
     def _set_tree_with_admix_as_node_labels(self) -> toytree.ToyTree:
@@ -155,12 +156,12 @@ class NetworkToMajorTree:
         self._set_tree_with_admix_as_node_labels()
         self.tree._draw_browser(ts='s', layout='unr', width=700, node_labels="name", node_colors="pink")
         self.tree = self._pseudo_unroot()
-        self.tree._draw_browser(ts='s', width=500, node_labels="idx", node_colors="pink")
+        self.tree._draw_browser(ts='s', width=500, node_labels="idx", node_colors="pink", tmpdir="~")
 
         # restart traversal after each pair of nodes is fixed.
         while 1:
             try:
-                hnodes = self.tree.get_nodes("#H*", regex=True)
+                hnodes = self.tree.get_nodes("~#H*")
                 hnodes = sorted(hnodes, key=lambda x: x.name)
             except ValueError:
                 self.tree.mod.remove_unary_nodes(inplace=True)
@@ -178,8 +179,8 @@ class NetworkToMajorTree:
 
             # remove the tip node representing a src
             logger.debug(f"deleting minor node: {hnodes[1].name} {hnodes[1].idx}")
-            hnodes[1]._delete()
             desc1 = tuple(hnodes[1]._up.get_leaf_names())
+            hnodes[1]._delete()
             desc1 = [i for i in desc1 if not i.startswith("#H")]
             logger.trace(f"desc1: {desc1}")
 
@@ -376,12 +377,18 @@ if __name__ == "__main__":
 
     toytree.set_log_level("TRACE")
     # t0, a0 = test3B()
-    t0, a0 = test_am_2()
-    # t0 = t0.root("fimbriatus")
-    t0._draw_browser(
-        ts='s',
-        width=500, height=800,
-        node_labels="idx",
-        use_edge_lengths=True,
-        admixture_edges=a0,
-    )
+    NET = "(r1,(r2,(r3,(r4,#H6):10.0):1.949048825686914):10.0,(r0)#H6);"
+    # parse_network(NET)
+    parser = NetworkToMajorTree(NET)
+    tree, edges = parser.get_major_tree_and_admix_edges()
+    tree._draw_browser(tmpdir="~", admixture_edges=edges)
+
+    # t0, a0 = test_am_2()
+    # # t0 = t0.root("fimbriatus")
+    # t0._draw_browser(
+    #     ts='s',
+    #     width=500, height=800,
+    #     node_labels="idx",
+    #     use_edge_lengths=True,
+    #     admixture_edges=a0,
+    # )

@@ -231,7 +231,6 @@ def test_interactive():
 
 
 if __name__ == "__main__":
-
     # toytree.set_log_level("TRACE")
     # t0, a0 = test_interactive()
     t0, a0 = test3B()
