@@ -146,8 +146,9 @@ class NetworkToMajorTree:
 
             # remove the tip node representing a src
             logger.debug(f"deleting minor node: {hnodes[1].name} {hnodes[1].idx}")
-            hnodes[1]._delete()
+
             desc1 = tuple(hnodes[1]._up.get_leaf_names())
+            hnodes[1]._delete() #deleting after desc1= because hnodes[1]._up is empty after deletion. 
             desc1 = [i for i in desc1 if not i.startswith("#H")]
             logger.trace(f"desc1: {desc1}")
 
@@ -364,27 +365,39 @@ def test_interactive():
 
 
 if __name__ == "__main__":
-    # toytree.set_log_level("TRACE")
-    # t0, a0 = test_interactive()
-    t0, a0 = test3B()
-    # t0, a0 = test_am_2()
+
     toytree.set_log_level("TRACE")
-        # t0, a0 = test3B()
-        t0, a0 = test_am_2()
-        # t0 = t0.root("fimbriatus")
-        t0._draw_browser(
-            ts='s',
-            width=500, height=800,
-            node_labels="idx",
-            use_edge_lengths=True,
-            admixture_edges=a0,
-        )
-    print(a0)
-    t0._draw_browser(
-        # ts='p',
-        # width=500, height=800,
+
+
+    test, adm = test3A()
+    test._draw_browser(
+        ts = 's',
+        width=500, height=800,
         node_labels="idx",
-        # use_edge_lengths=True,
-        admixture_edges=a0,
-        node_sizes=18,
+        use_edge_lengths=True,
+        admixture_edges=adm,
     )
+    print(adm)
+
+    # t0, a0 = test_interactive()
+    # t0, a0 = test3B()
+    # t0, a0 = test_am_2()
+    # t0, a0 = test3B()
+    # t0, a0 = test_am_2()
+    # t0 = t0.root("fimbriatus")
+    # t0._draw_browser(
+    #     ts='s',
+    #     width=500, height=800,
+    #     node_labels="idx",
+    #     use_edge_lengths=True,
+    #     admixture_edges=a0,
+    # )
+    #print(a0)
+    # t0._draw_browser(
+    #     # ts='p',
+    #     # width=500, height=800,
+    #     node_labels="idx",
+    #     # use_edge_lengths=True,
+    #     admixture_edges=a0,
+    #     node_sizes=18,
+    # )
