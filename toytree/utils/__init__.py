@@ -39,7 +39,7 @@ utils/src/exceptions/
     Raising and catching exceptions. Users can access the main
     exception class from the top level module: `toytree.ToyTreeError`
     and so do not need to access it here.
-utils/src/networks/
+utils/src/network/
     Network parsing functions. Currently `parse_network` is the only
     function, and is accessible at `toytree.utils.parse_network`.
 utils/src/logging/
@@ -58,3 +58,4 @@ from toytree.utils.src.style_axes import (
     set_axes_ticks_external,
     set_axes_box_outline,
 )
+#from toytree.utils.src.network import parse_network
