@@ -370,14 +370,14 @@ if __name__ == "__main__":
     # t0, a0 = test_am_2()
     toytree.set_log_level("TRACE")
         # t0, a0 = test3B()
-        t0, a0 = test_am_2()
-        # t0 = t0.root("fimbriatus")
-        t0._draw_browser(
-            ts='s',
-            width=500, height=800,
-            node_labels="idx",
-            use_edge_lengths=True,
-            admixture_edges=a0,
+    t0, a0 = test_am_2()
+    # t0 = t0.root("fimbriatus")
+    t0._draw_browser(
+        ts='s',
+        width=500, height=800,
+        node_labels="idx",
+        use_edge_lengths=True,
+        admixture_edges=a0,
         )
     print(a0)
     t0._draw_browser(

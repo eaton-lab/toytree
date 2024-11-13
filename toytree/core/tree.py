@@ -1000,7 +1000,7 @@ class ToyTree:
         padding: float = None,
         xbaseline: float = None,
         ybaseline: float = None,
-        admixture_edges: List[Tuple[int, int]] = None,
+        admixture_edges: List[Tuple] = None,
         shrink: float = None,
         fixed_order: Sequence[str] = None,
         fixed_position: Sequence[float] = None,
@@ -1250,14 +1250,14 @@ class ToyTree:
 if __name__ == "__main__":
 
     # import toytree
-    tree_ = toytree.rtree.unittree(12, treeheight=1232344, seed=123)
+    tree_ = toytree.rtree.unittree(12)
     # tree = tree_.mod.edges_slider(0.5)
     # c, a, m = tree_._draw_browser(tree_style='s', layout='d', new=False)
     # print(tree_.write(dist_formatter="%.12g"))
     # print(tree_.get_node_data())
     # print(tree_.treenode)
-    # tree_.draw()
-    print(tree_[80])
+    
+    # print(tree_[80])
 
     # print(tree.get_tip_labels())
 
