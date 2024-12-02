@@ -279,7 +279,7 @@ class MultiTree:
     # ---------------------------------------------------------------#
     # see toytree.infer.get_consensus_tree()
     # ---------------------------------------------------------------#
-    def get_consensus_tree(self, min_freq: float, **kwargs) -> ToyTree:
+    def get_consensus_tree(self, min_freq: float = 0.0, **kwargs) -> ToyTree:
         """Return an exteded majority-rule consensus tree from a list of trees.
 
         The trees must contain the same set of tips. The returned tree will
@@ -318,7 +318,7 @@ class MultiTree:
         return toytree.infer.get_consensus_tree(self.treelist, min_freq=min_freq)
 
 
-    def get_consensus_features(self, tree: ToyTree, features: list[str], ultrametric: bool = False, conditional: bool = True) -> ToyTree:
+    def get_consensus_features(self, tree: ToyTree, features: list[str] | None = None, ultrametric: bool = False, conditional: bool = True) -> ToyTree:
         """Return tree with feature data mapped to each bipartition from
         a set of trees that may or may not share the same bipartitions.
 
@@ -745,10 +745,16 @@ if __name__ == "__main__":
     # for tree in mtree:
     #     print(repr(tree))
     # print(mtree.get_unique_topologies())
+    ctree = mtree.get_consensus_tree()
+    print(ctree.get_node_data())
+
+    ctree = mtree.get_consensus_features(ctree)
+    print(ctree.get_node_data())
+    # ctree._draw_browser(node_sizes=16, node_markers="r1.5x1", node_labels="support", tmpdir="~", scale_bar=True, ts='u')
 
     # c, a, m = mtree.draw_cloud_tree()
     # toytree.utils.show(c)
-    mtree[1][-1].children[0]._dist = 100
-    mtree[1]._update()
-    c, a, m = mtree.draw(scale_bar=True, node_sizes=0, shared_axes=True, layout='d')
-    toytree.utils.show(c, tmpdir="~")
+    # mtree[1][-1].children[0]._dist = 100
+    # mtree[1]._update()
+    # c, a, m = mtree.draw(scale_bar=True, node_sizes=0, shared_axes=True, layout='d')
+    # toytree.utils.show(c, tmpdir="~")

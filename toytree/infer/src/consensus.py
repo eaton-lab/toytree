@@ -150,7 +150,8 @@ def get_consensus_clades(clades: dict[frozenset, float], min_freq: float) -> dic
 
     # remove any clades that conflicted w/ equal frequency
     for clade in mark:
-        keep.pop(clade)
+        if clade in keep:
+            keep.pop(clade)
     return keep
 
 
@@ -305,7 +306,7 @@ def get_consensus_features(
     tree: ToyTree,
     trees: MultiTree,
     features: list[str] = None,
-    rooted: bool = False,
+    ultrametric: bool = False,
     conditional: bool = False,
 ) -> ToyTree:
     """Return tree with feature data mapped to each bipartition from
@@ -331,7 +332,7 @@ def get_consensus_features(
         wish to have summarized across the nodes of the consensus tree.
         For quantitative features this will record min, max, mean, std
         conditional on the existence of the node in the tree.
-    rooted: bool
+    ultrametric: bool
         If trees are rooted and ultrametric then set this option to
         True to summarize stats of node heights instead of node dists.
         Note: this forces conditional=True.
@@ -342,7 +343,7 @@ def get_consensus_features(
         calculated from tip nodes across all input trees. This only
         affects tip node dists.
     """
-    if rooted:
+    if ultrametric:
         # mtree.all_tree_tips_aligned()
         return map_rooted_tree_supports_and_heights_to_rooted_tree(tree, trees, features)
     return map_unrooted_tree_supports_and_dists_to_unrooted_tree(tree, trees, features, conditional)
@@ -424,7 +425,7 @@ def map_unrooted_tree_supports_and_dists_to_unrooted_tree(
             setattr(node, "dist_max", np.max(data[bipart]["dist"]))
             setattr(node, "dist_std", np.std(data[bipart]["dist"]))
             node._dist = node.dist_mean
-            node.name = set(node.get_leaf_names())            
+            # node.name = set(node.get_leaf_names())            
 
     for name in tips:
         node = tree.get_nodes(name)[0]
@@ -439,7 +440,7 @@ def map_unrooted_tree_supports_and_dists_to_unrooted_tree(
     tree.edge_features.add("dist_min")
     tree.edge_features.add("dist_max")
     tree.edge_features.add("dist_std")
-    tree = tree.mod.root_on_minimal_ancestor_deviation(*outg)
+    # tree = tree.mod.root_on_minimal_ancestor_deviation(*outg)
     return tree
 
 
