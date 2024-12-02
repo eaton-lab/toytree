@@ -13,11 +13,13 @@ Plant Diversity. https://doi.org/10.1016/j.pld.2022.05.005
 
 Data Sources
 ------------
-[name     scope       ntips        nnodes      reference]
-[-------------------------------------------------------]
-[...      birds      10,000        20,000      author...]
-[...      plants    300,000       400,000      author...]
-[...       ...        ...           ...          ...    ]
+[name                           scope                   ntips                               nnodes      reference]
+[----------------------------------------------------------------------------------------------------------------]
+[World Plants (WP)              vascular plants          355,576                            ...          Hassler, Michael (1994 - 2024): World Plants. Synonymic Checklist and Distribution of the World Flora. Version 24.11; last update November 5th, 2024.]
+[Leipzig Plant Catalogue (LCVP) vascular plants          351,180 (+6,160 hybrids)           ...          Freiberg M (2020). The Leipzig catalogue of vascular plants. German Centre for Integrative Biodiversity Research (iDiv) Halle-Jena-Leipzig. Checklist dataset https://doi.org/10.15468/9qxmn3 accessed via GBIF.org on 2024-11-25.]
+[TreeFam (TF)                   animal gene trees        ...                                ...          Jue Ruan, Heng Li, et al. Nucleic Acids Research (2008) doi: 10.1093/nar/gkm1005]
+[BirdTree (BT)                  birds                    9,993                              ...          Jetz, W., G. H. Thomas, J. B. Joy, K. Hartmann, and A. O. Mooers. 2012. The global diversity of birds in space and time. Nature 491:444-448    ]
+
 
 Development Plan
 -----------------
