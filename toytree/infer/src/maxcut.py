@@ -7,7 +7,7 @@ Snir and Rao for fast inference of a supertree from weighted quartets.
 
 The smallest informative piece of phylogenetic information is a quartet
 tree (quartet), which is a tree with four tips separated by a single
-internal edge. A quartet can be written in newick as "((a,b),(c, d));"
+internal edge. A quartet can be written in newick as "((a,b),(c,d));"
 or abbreviated as "ab|cd". Note that this does not mean that 'a' is
 more closely related to 'b' than to 'c', only that there is an edge
 separating them.
