@@ -1,388 +1,622 @@
 #!/usr/bin/env python
 
-"""Class to construct and return a consensus tree from multiple trees.
+"""Infer a consensus tree from a set of trees.
 
-Speed
------
-Reducing to only unique topologies costs as much time as just
-visiting and computing on them, and would not allow getting dist
-values. So this visits all trees.
+This can be performed with a set of trees that all share the same tips.
+(See supertree methods for trees with non-overlapping tip sets.)
+
+Examples
+--------
+# get consensus tree with supports.
+>>> trees = ...
+>>> ctree = toytree.infer.get_majority_rule_consensus_tree(trees)
+>>> print(ctree.get_node_data())
+
+# get consensus tree with supports and conditional edge dist values
+>>> trees = ...
+>>> ctree = toytree.infer.get_majority_rule_consensus_tree(trees)
+>>> cctree = toytree.infer.map_features_to_consensus_tree(ctree, trees, conditional=True)
+>>> print(cctree.get_node_data())
+
+# get consensus tree of rooted trees with support and conditional node heights
+>>> trees = ...
+>>> ctree = toytree.infer.get_majority_rule_consensus_tree(trees)
+>>> rtree = ctree.root(trees[0].treenode.children[0].get_leaf_names())
+>>> ftree = toytree.infer.map_features_to_consensus_tree(rtree, trees, rooted=True)
+>>> print(ftree.get_node_data())
+
 
 TODO
 ----
-Support getting mean, etc, of any feature on trees. This is a bit
-of work, needs to check all for int,float type. Not done.
+- support mapping arbitrary traits (discrete and quantitative?) from
+  a set of trees onto the nodes of a consensus tree.
+
 """
 
-from typing import TypeVar, Dict, Optional, Tuple, Iterator
-from loguru import logger
+from typing import TypeVar
 import numpy as np
-from toytree.core.node import Node
-from toytree.core.tree import ToyTree
-
-logger = logger.bind(name="toytree")
+from toytree.core import ToyTree, Node
+from loguru import logger
 
 MultiTree = TypeVar("MultiTree")
+logger = logger.bind(name="toytree")
+
+__all__ = [
+    "get_consensus_tree",     # (trees)
+    "get_consensus_features"  # (tree, trees, ...)
+]
 
 
-class ConsensusTree:
-    """An extended majority rule consensus class.
+def check_trees_set_for_ultrametric(trees: list[ToyTree]) -> None:
+    """Raise exception if input trees are not suitable for consensus
+    tree analysis with option ultrametric=True.
+    """
+    for tre in trees:
+        if not tre.is_rooted():
+            msg = "input trees are not rooted. Cannot use option 'ultrametric=True'"
+            logger.error(msg)
+            raise ValueError(msg)
+        if not np.allclose([i._height for i in tre[:tre.ntips]], 0.0, atol=1e-5):
+            msg = "input trees are not ultrametric. Cannot use option 'ultrametric=True'"
+            logger.error(msg)
+            raise ValueError(msg)
 
-    Takes a set of input trees and returns a consensus tree. The input
-    trees can be rooted or unrooted, and the returned consensus tree
-    can be rooted or unrooted, depending on options used.
 
-    Features on the consensus tree. Support values on the consensus
-    tree represent the proportion of edges that existed in the set
-    of trees.
+def get_clade_frequencies(trees: MultiTree | list[ToyTree]) -> dict[frozenset, float]:
+    """Return a dict mapping bipartitions to their frequencies and dists.
 
-    Dist values represent the average 'dist' among edges
-    that existed in the set of trees, but are only computed if best
-    is not supplied as an input tree.
-
-    If ultrametric is set to true then the returned tree is rooted
-    on...
+    This performs one pass through each tree to get its bipartitions
+    and records the frequency of each split and the dist of edges
+    corresponding to the split. Rooted trees root node position is
+    ignored.
 
     Parameters
     ----------
-    ultrametric: bool
-        If true then node height statistics are calculated and the
-        tree will be rooted using the "root_method" argument option.
-        The tree can be rooted without being ultrametric, but it
-        cannot be ultrametric without being rooted.
-    root_method: int
-        0: root on midpoint given branch lengths on consensus tree.
-        1: root on edge that contains root across majority of input
-        trees, using the mean root position on this edge.
-
-    Examples
-    --------
-    >>> tree = toytree.rtree.unittree(ntips=5, seed=123)
-
-    Get 20 rooted ultrametric trees w/ same topology and variable dists
-    >>> rutrees = [
-    >>>    tree.mod.edges_multiplier().mod.edges_slider()
-    >>>    for i in range(20)]
-
-    Get 20 unrooted ultrametric trees w/ same topology and variable dists
-    >>> uutrees = [
-    >>>    tree.unroot().mod.edges_multiplier().mod.edges_slider()
-    >>>    for i in range(20)]
-
-    Get 20 unrooted non-ultrametric trees w/ same topology and variable dists
-    >>> untrees = [
-    >>>    tree.unroot().mod.edges_multiplier().mod.edges_slider()
-    >>>    for i in range(20)]
-    
-    ...
-    >>> # ...
+    trees: MultiTree | list[ToyTree]
+        A collection of ToyTrees (list or MultiTree object) sharing the
+        same tip labels.
     """
-    def __init__(
-        self,
-        mtree: MultiTree,
-        best_tree: Optional[ToyTree] = None,
-        majority_rule_min: float = 0.0,
-        ultrametric: Optional[bool] = None,
-        root_method: Optional[bool] = None,
-    ):
-        # creates an unrooted copy of the original tree
-        self.mtree = mtree
-        self.best_tree = best_tree
-        self.majority_rule_min = majority_rule_min
+    # require all trees to share the same tips
+    # ... TODO: use MultiTree... or do this outside this func.
 
-        if ultrametric is None:
-            self.ultrametric = self.mtree.all_tree_tips_aligned()
-        else:
-            self.ultrametric = ultrametric
+    # dict to store clade occurrences. Set full tip set to freq=1.0.
+    ntrees = len(trees)
+    all_tips = frozenset(trees[0].get_tip_labels())
+    clades = {all_tips: {"count": ntrees}}
 
-    def _iter_unique_trees(self) -> Iterator[Tuple[ToyTree, int]]:
-        """Yield unique topologies and their counts from mtree."""
-        for tree, count in self.mtree.get_unique_topologies():
-            yield tree, count
+    # iterate over the input tree set
+    for tre in trees:
 
-    def run(self) -> ToyTree:
-        """Return a ToyTree with consensus support values."""
-        # map clade support values onto a user-supplied input tree
-        if self.best_tree is not None:
-            return self._map_clades_support_onto_best_tree()
+        # iterate over splits in the tree as (fset, fset)
+        iter_biparts = tre.iter_bipartitions("name", True, False, type=frozenset, sort=True)
+        for node, bipart in zip(tre, iter_biparts):
 
-        # build the majrule tree with clade support and other meta data
-        ctree = self._get_majority_rule_consensus_tree()
+            # get node dist; extra if root edge and tree is rooted.
+            dist = node._dist
+            if not node._up.is_root():
+                if tre.is_rooted():
+                    dist = sum(node._dist for i in node._up.children)
 
-        # if the tree is ultrametric then align tips
-        if self.ultrametric:
-            # find the most likely root
-            ctree.mod.root_on_midpoint(inplace=True)
+            # store the partition count and dist
+            part = bipart[0]
+            if part not in clades:
+                clades[part] = {"count": 1, "dist": [dist]}
+            else:
+                clades[part]["count"] += 1
+                clades[part]["dist"].append(dist)
 
-            # set tips to 0 and root to a temporary high value for now.
-            ctree.set_node_data(
-                "height",
-                {-1: ctree[-2].height + 1} | {i: 0 for i in range(ctree.ntips)},
-                inplace=True
-            )
+    # sort clades by occurrence
+    sclades = sorted(clades, key=lambda x: clades[x]["count"], reverse=True)
 
-            # set internal non-root-associated nodes to their mean height
-            ctree.set_node_data(
-                "height",
-                {i: i.height_mean for i in range(ctree.ntips, ctree.nnodes - 2)},
-                inplace=True,
-            )
+    # sort and convert counts to (frequency of trees containing the split)
+    clades = {i: clades[i] for i in sclades}
+    for clade in clades:
+        clades[clade]["freq"] = clades[clade]["count"] / ntrees
+    return clades
 
-            # prior root node that had its edge split to insert the root
-            ctree.set_node_data(
-                "height",
-                {ctree[-2]: ..., ctree[-1]: ...},
-                inplace=True,
-            )
 
-            # new root node
-            ctree.set_node_data("height", {ctree[-1]: ...}, inplace=True)
-        return ctree
+def get_consensus_clades(clades: dict[frozenset, float], min_freq: float) -> dict[frozenset, float]:
+    """Return dict with only non-conflicting clades above min_freq.
 
-    def _map_clades_support_onto_best_tree(self) -> ToyTree:
-        """Return the best tree with clade supports from trees.
+    This is used prior to constructing a majority-rule consensus tree,
+    and min_freq sets the minimum clade frequency to keep/collapse.
+    """
+    keep = {}
+    mark = []
+    for clade, data in clades.items():
+        freq = data["freq"]
+        if freq < min_freq:
+            continue
 
-        This relies on the sorted order of `get_bipartitions`. Finds
-        'support' feature for all Nodes in 'best'. Any other requested
-        features of the input trees will also be
-        """
-        # copy best tree and set default to 0
-        self.best_tree = self.best_tree.set_node_data("support", default=0)
-
-        # returns ubipartitions (root has no effect)
-        best_tree_parts = list(self.best_tree.iter_bipartitions("name", True, False))
-
-        # mirror the support on the root Node's children
-        cidxs = [i.idx for i in self.best_tree.treenode.children]
-        cmax = max(cidxs)
-        cmin = min(cidxs)
-
-        # iterate over all unique tree topologies
-        for utree, count in self._iter_unique_trees():
-
-            # iterate over ubipartitions in tree: [[['a'], ['b', 'c']], [...]]
-            for nidx, bipart in enumerate(utree.iter_bipartitions("name", True, False)):
-                if nidx >= self.best_tree.ntips:
-                    try:
-                        idx = best_tree_parts.index(bipart)
-                        if idx == cmin:
-                            self.best_tree[cmax].support += count
-                            self.best_tree[cmin].support += count
-                        else:
-                            self.best_tree[idx].support += count
-                    except ValueError:
-                        pass
-
-        # divide support by ntrees to get proportion
-        ntrees = self.mtree.ntrees
-        for node in self.best_tree.traverse():
-            node.support /= ntrees
-
-        # root Node doesn't truly have support, except in the sense
-        # that an outgroup *was* present and is now trimmed from the
-        # tree, while retaining support for this tree versus outside.
-        self.best_tree.treenode.support = 1.0
-        return self.best_tree
-
-    def _get_majority_rule_consensus_tree(self) -> ToyTree:
-        """Return the majrule consensus tree.
-
-        Calculates clade 'support', 'dist', and 'features'.
-        This relies on the sorted order of `get_bipartitions`.
-        """
-        clade_freqs = self._get_all_clade_freqs()
-        fclade_freqs = self._get_all_filtered_clades(clade_freqs)
-        root = self._build_all_tree(fclade_freqs)
-        return ToyTree(root)
-
-    def _build_all_tree(self, fclade_freqs: Dict[Tuple, int]) -> Node:
-        """Build majority-rule consensus tree from clades"""
-
-        # root node
-        all_tips = frozenset(self.mtree.get_tip_labels())
-        # root = Node(name="")
-        # cset = fclade_freqs[all_tips]
-        # for feat in ['dist_min', 'dist_max', 'dist_median', 'dist_std']:
-        #     setattr(root, feat, 0.)
-        # for feat in ['height_min', 'height_max', 'height_median', 'height_std']:
-
-        # dict with {tip-set: Node} in order they are added (Py3)
-        # sets_to_nodes = {all_tips: root}
-        sets_to_nodes = {}
-
-        # visit filtered clades from LARGEST to SMALLEST
-        for cset in sorted(fclade_freqs, key=len, reverse=True):
-
-            # skip if already added
-            if cset in sets_to_nodes:
+        # bipart conflicts with others, discard.
+        conflict = False
+        for c in keep:
+            if conflict:
+                break
+            if c.isdisjoint(clade):
                 continue
-
-            # create Node to represent this clade
-            dists = np.array(fclade_freqs[cset][1])
-            heights = np.array(fclade_freqs[cset][2])
-
-            # ...
-            node = Node(
-                name=str(*cset) if len(cset) == 1 else "",
-                support=fclade_freqs[cset][0],
-                dist=dists.mean(),
-            )
-
-            # ...
-            dmin = dists[dists > 0].min() if (dists > 0).sum() else 0
-            setattr(node, "dist_min", dmin)
-            setattr(node, "dist_max", dists.max())
-            setattr(node, "dist_mean", np.mean(dists))
-            setattr(node, "dist_median", np.median(dists))
-            setattr(node, "dist_std", dists.std())
-
-            hmin = 0 if not (heights > 0).sum() else min(heights[heights > 0])
-            setattr(node, "height_min", hmin)
-            setattr(node, "height_max", heights.max())
-            setattr(node, "height_mean", np.mean(heights))
-            setattr(node, "height_median", np.median(heights))
-            setattr(node, "height_std", heights.std())
-
-            # visit existing nodes from SMALLEST to LARGEST
-            # children iteratively if node is not an descendant.
-            for tset in sorted(sets_to_nodes, key=len):
-                # is this node (node) is a superset of existing node (tnode)
-                if cset.issubset(tset):
-                    # get node that exists
-                    tnode = sets_to_nodes[tset]
-                    tnode._add_child(node)
-                    break
-            sets_to_nodes[cset] = node
-        return sets_to_nodes[all_tips]
-
-    def _get_all_filtered_clades(self, clade_freqs: Dict[Tuple, int]) -> Dict:
-        """Remove conflicting clades and those < majority_rule_min"""
-        # keep track of kept clades in order they are kept.
-        keep_dict = {}  # {frozenset : float}
-
-        # visit clades in sorted order and drop conflicts or low support
-        for clade, (freq, dist, height) in clade_freqs.items():
-
-            # clade is below threshold, discard.
-            if freq < self.majority_rule_min:
-                # logger.debug(f"clade {clade}:{freq} below min threshold")
+            if c.issubset(clade):
                 continue
+            if c.issuperset(clade):
+                continue
+            conflict = True
 
-            # clade conflicts with others, discard. If any tips in this
-            # clade also occur in an existing clade, then this must be
-            # a subset or superset of that clade. Example:
-            # ('a', 'b', 'c') conflicts with ('a', 'b', 'd')
-            # ('a', 'b', 'c') does not conflict with ('a', 'b', 'c', 'd')
-            # ('a', 'b', 'c') does not conflict with ('a', 'b')
-            cset = frozenset(clade)
+        # keep this bipartition
+        if not conflict:
+            keep[clade] = data
+        # if conflicted w/ equal frequency then mark existing for removal
+        elif conflict and (freq == keep[c]["freq"]):
+            mark.append(c)
 
-            # check until conflict, or not more sets to compare
-            conflict = False
-            for pset in keep_dict:
-                if conflict:
-                    break
-                if cset.isdisjoint(pset):
-                    continue
-                if cset.issubset(pset):
-                    continue
-                if cset.issuperset(pset):
-                    continue
-                conflict = True
-                # logger.debug(f"clade {clade} conflicts.")
+    # remove any clades that conflicted w/ equal frequency
+    for clade in mark:
+        keep.pop(clade)
+    return keep
 
-            # passed filters, keep it.
-            if not conflict:
-                keep_dict[cset] = (freq, dist, height)
-        return keep_dict
 
-    def _get_all_clade_freqs(self) -> Dict:
-        """Return a dict of {clades: features} where 'support' feature
-        is frequency of occurrence across treelist.
+def build_consensus_tree(clades: dict[frozenset, float]) -> ToyTree:
+    """Return a majority-rule consensus tree constructed from non-
+    conflicting clades.
+    """
+    # sort clades by size, large to small
+    sclades = sorted(clades, key=len, reverse=True)
 
-        Additional features are stored in a list in order following
-        'support' and 'dist'. Clades are represented by the smaller
-        of side of a bipartition (or lowest name str if same size).
+    # dict {clade-set: Node} in order they are added. Root Node first.
+    treenode = sclades.pop(0)
+    sets_to_nodes = {treenode: Node()}
 
-        The returned dict is sorted by high->low support values.
-        {clade2: [support, dist, ...], clade2: [support, ...], ...}
-        """
-        # keep track of all observed clades
-        clades = {}
-        ntrees = self.mtree.ntrees
-        increment = 1 / ntrees
+    # iterate over filtered clades ordered by size
+    for clade in sclades:
 
-        # iterate over all unique tree topologies
-        for utree in self.mtree:
+        # create the Node
+        name = str(*clade) if len(clade) == 1 else ""
+        node = Node(name=name, support=clades[clade]["freq"], dist=np.mean(clades[clade]["dist"]))
 
-            # iterate over ubipartitions in tree: [[['a'], ['b', 'c']], [...]]
-            iter_biparts = utree.iter_bipartitions("name", True, False, set, True)
-            for nidx, bipart in enumerate(iter_biparts):
-                # skip tip-only Nodes
-                node = utree[nidx]
-                # store the smaller half
-                clade = tuple(bipart[0])
+        # connect node to smallest clade parent
+        # TODO: probably faster not to have to sort here
+        for eclade in sorted(sets_to_nodes, key=len):
+            if clade.issubset(eclade):
+                enode = sets_to_nodes[eclade]
+                enode._add_child(node)
+                break
+        # store this {clade: node}
+        sets_to_nodes[clade] = node
 
-                # if a root child then store the edge length in unrooted form
-                # store the root position on the branch in the case that it
-                # is again inferred as the root.
-                if node.up:
-                    if node.up.is_root():
-                        children = node.up.children
-                        if len(children) == 2:
-                            dist = sum(i.dist for i in children)
-                            logger.debug([node, node.dist, dist])
+    # convert to ToyTree
+    tree = ToyTree(sets_to_nodes[treenode])
+
+    # set tip and root supports to nan
+    tree[-1].support = np.nan
+    for nidx in range(tree.ntips):
+        tree[nidx].support = np.nan
+    return tree
+
+
+# def get_clade_frequencies2(trees: MultiTree, rooted: bool) -> dict[tuple, float]:
+#     """Return a dict mapping bipartitions to their frequencies and dists.
+
+#     This performs one pass through each tree to get its bipartitions
+#     and records the count of each split and stores the dist or height
+#     associated with the clade. If trees are rooted and ultrametric then
+#     heights are stored.
+
+#     Parameters
+#     ----------
+#     trees: MultiTree
+#         A MultiTree containing multiple ToyTree objects.
+#     rooted: bool
+#         If True node heights are stored instead of dists.
+#     """
+#     clades = {}
+#     ntrees = len(trees)
+
+#     def feat(node: Node) -> float:
+#         if rooted:
+#             return getattr(node, "_height")
+#         return getattr(node, "_dist")
+
+#     # iterate over splits in input trees. If the tree is rooted then
+#     # store clades of both descendants from root, not just the split.
+#     for tre in trees:
+#         iter_biparts = tre.iter_bipartitions("name", True, False, type=frozenset, sort=True)
+#         for node, bipart in zip(tre, iter_biparts):
+#             part = bipart[0]
+#             if part not in clades:
+#                 clades[part] = {feature: [feat(node)], "count": 1}
+#             else:
+#                 clades[part]["count"] += 1
+#                 clades[part][feature].append(feat(node))
+
+#             # for rooted trees store other root child
+#             if rooted and node.up.is_root():
+#                 node = node.get_sisters()[0]
+#                 part = bipart[1]
+#                 if part not in clades:
+#                     clades[part] = {feature: [feat(node)], "count": 1}
+#                 else:
+#                     clades[part]["count"] += 1
+#                     clades[part][feature].append(feat(node))
+
+#         # add full clade
+#         part = frozenset(tre.get_tip_labels())
+#         if part not in clades:
+#             clades[part] = {feature: [feat(tre.treenode)], "count": 1}
+#         else:
+#             clades[part]["count"] += 1
+#             clades[part][feature].append(feat(tre.treenode))
+
+#     # sort clades by occurrence
+#     sclades = sorted(clades, key=lambda x: clades[x]["count"], reverse=True)
+
+#     # sort and convert counts to (frequency of trees containing the split)
+#     clades = {i: clades[i] for i in sclades}
+#     for clade in clades:
+#         clades[clade]["freq"] = clades[clade]["count"] / ntrees
+#     clades[part]["freq"] = np.nan
+#     return clades
+
+# def build_consensus_tree2(clades: dict[frozenset, float], rooted: bool) -> ToyTree:
+#     """Return a majority-rule consensus tree constructed from non-
+#     conflicting clades.
+#     """
+#     # dict mapping {clade-set: Node} in order they are added.
+#     sets_to_nodes = {}
+
+#     # sort clades by size
+#     sclades = sorted(clades, key=len, reverse=True)
+#     for clade in sclades:
+#         if clade in sets_to_nodes:
+#             continue
+
+#         # create the Node
+#         name = str(*clade) if len(clade) == 1 else ""
+#         node = Node(name=name, support=clades[clade]["freq"])
+#         # feats[node.idxname] = clades[clade][feature]
+#         node.feat = clades[clade][feature]
+
+#         # connect nodes (visit existing smallest to largest)
+#         for eclade in sorted(sets_to_nodes, key=len):
+#             if clade.issubset(eclade):
+#                 enode = sets_to_nodes[eclade]
+#                 enode._add_child(node)
+#                 break
+#         # store this {clade: node}
+#         sets_to_nodes[clade] = node
+
+#     # convert to ToyTree
+#     tree = ToyTree(sets_to_nodes[sclades[0]])
+
+#     # set node dist and height attrs
+#     if rooted:
+#         tree.set_node_data("height", {i: np.mean(i.feat) for i in tree}, inplace=True)
+#         tree.set_node_data("height_min", {i: np.min(i.feat) for i in tree}, inplace=True)
+#         tree.set_node_data("height_max", {i: np.max(i.feat) for i in tree}, inplace=True)
+#         tree.set_node_data("height_std", {i: np.std(i.feat) for i in tree}, inplace=True)
+#     else:
+#         tree.set_node_data("dist", {i: np.mean(i.feat) for i in tree}, inplace=True)
+#         tree.set_node_data("dist_min", {i: np.min(i.feat) for i in tree}, inplace=True)
+#         tree.set_node_data("dist_max", {i: np.max(i.feat) for i in tree}, inplace=True)
+#         tree.set_node_data("dist_std", {i: np.std(i.feat) for i in tree}, inplace=True)
+#     tree.remove_features(feature, inplace=True)
+#     return tree
+
+
+def get_consensus_features(
+    tree: ToyTree,
+    trees: MultiTree,
+    features: list[str] = None,
+    rooted: bool = False,
+    conditional: bool = False,
+) -> ToyTree:
+    """Return tree with feature data mapped to each bipartition from
+    a set of trees that may or may not share the same bipartitions.
+
+    The 'support' value on the consensus tree represents the proportion
+    of trees that supported the split in the consensus, and the 'dist'
+    is the mean dist value of the bipartition edge in the set of trees
+    that included that edge. These two features are set on MJ rule
+    consensus trees by default. Other features can be optionally
+    computed as well.
+
+    Parameters
+    ----------
+    tree: ToyTree
+        The tree can be the MJ consensus tree or a user input tree.
+    trees: MultiTree | list[ToyTree]
+        A list of trees from which features will be extracted. Support
+        is always measured. Edge lengths are extracted as 'dists' or
+        'heights' depending on the option 'rooted'.
+    features: None | list[str]
+        A list of feature names that exist on the input trees that you
+        wish to have summarized across the nodes of the consensus tree.
+        For quantitative features this will record min, max, mean, std
+        conditional on the existence of the node in the tree.
+    rooted: bool
+        If trees are rooted and ultrametric then set this option to
+        True to summarize stats of node heights instead of node dists.
+        Note: this forces conditional=True.
+    conditional: bool
+        If True then dist values of tip nodes on unrooted trees are
+        only calculated from the subset of trees where these tips occur
+        in the same splits as in the main tree, otherwise dists are
+        calculated from tip nodes across all input trees. This only
+        affects tip node dists.
+    """
+    if rooted:
+        # mtree.all_tree_tips_aligned()
+        return map_rooted_tree_supports_and_heights_to_rooted_tree(tree, trees, features)
+    return map_unrooted_tree_supports_and_dists_to_unrooted_tree(tree, trees, features, conditional)
+
+
+def map_unrooted_tree_supports_and_dists_to_unrooted_tree(
+    tree: ToyTree,
+    trees: MultiTree,
+    features: list[str] = None,
+    conditional: bool = False,
+) -> ToyTree:
+    """
+
+    """
+    # save outgroup to re-root tree later
+    outg = tree.treenode.children[1].get_leaf_names()
+
+    # create a copy of the input tree and set support values to zero
+    tree = tree.unroot().set_node_data("support", default=np.nan)
+
+    # get the non-singleton bipartitions
+    biparts = list(tree.iter_bipartitions("name", False, False, type=frozenset, sort=True))
+
+    # iterate over all input trees
+    data = {}
+    tips = {}
+    for tre in trees:
+        
+        # get this trees non-singleton biparts
+        biparts2 = tre.iter_bipartitions("name", False, False, type=frozenset, sort=True)
+        
+        # iterate over biparts in test tree
+        for node, bipart in zip(tre[tre.ntips:], biparts2):
+            
+            # record the bipartition counts to get supports and dist | height
+            if bipart in biparts:
+                if bipart not in data:
+                    data[bipart] = {"count": 1, "dist": [node._dist]}
+                else:
+                    data[bipart]["count"] += 1
+                    data[bipart]["dist"].append(node._dist)
+
+            # if this node contains tips as children then store their
+            # features as well conditional on the existence of this clade.
+            if conditional:
+                for child in node._children:
+                    if child.is_leaf():
+                        if child.name not in tips:
+                            tips[child.name] = {"count": 1, "dist": [node._dist]}
                         else:
-                            dist = node.dist
-                    else:
-                        dist = node.dist
+                            tips[child.name]["count"] += 1
+                            tips[child.name]["dist"].append(node._dist)
+
+                # if tree is unrooted and node parent is root then its
+                # sisters can be tips, supported by this split.
+                if node.up.is_root():
+                    for child in node.get_sisters():
+                        if child.is_leaf():
+                            if child.name not in tips:
+                                tips[child.name] = {"count": 1, "dist": [node._dist]}
+                            else:
+                                tips[child.name]["count"] += 1
+                                tips[child.name]["dist"].append(node._dist)
+
+        # if not conditional tip dists then add all children here.
+        if not conditional:
+            for node in tre[:tre.ntips]:
+                if node.name not in tips:
+                    tips[node.name] = {"dist": [node._dist]}
                 else:
-                    dist = node.dist
+                    tips[node.name]["dist"].append(node._dist)
 
-                # store dist and height
-                if clade in clades:
-                    clades[clade][0] += increment
-                    clades[clade][1].append(dist)
-                    clades[clade][2].append(node.height)
-                else:
-                    clades[clade] = [increment, [node.dist], [node.height]]
+    # iterate over input tree nodes and splits
+    for node, bipart in zip(tree[tree.ntips:], biparts):
+        if bipart in data:
+            node.support = data[bipart]["count"] / len(trees)
+            setattr(node, "dist_mean", np.mean(data[bipart]["dist"]))
+            setattr(node, "dist_min", np.min(data[bipart]["dist"]))
+            setattr(node, "dist_max", np.max(data[bipart]["dist"]))
+            setattr(node, "dist_std", np.std(data[bipart]["dist"]))
+            node._dist = node.dist_mean
+            node.name = set(node.get_leaf_names())            
 
-        # return in sorted order and w/ counts as proportions
-        sort_clades = sorted(
-            clades,
-            key=lambda x: clades[x][0], reverse=True
-        )
+    for name in tips:
+        node = tree.get_nodes(name)[0]
+        setattr(node, "dist_mean", np.mean(tips[node.name]["dist"]))
+        setattr(node, "dist_min", np.min(tips[node.name]["dist"]))
+        setattr(node, "dist_max", np.max(tips[node.name]["dist"]))
+        setattr(node, "dist_std", np.std(tips[node.name]["dist"]))
+        node._dist = node.dist_mean
 
-        # add the full (all samples) clade to get stats for it.
-        all_tips = tuple(self.mtree[0].get_tip_labels())
-        sort_clades = [all_tips] + sort_clades
-        clades[all_tips] = (
-            1.0,
-            [i.treenode.dist for i in self.mtree],
-            [i.treenode.height for i in self.mtree],
-        )
-        return {i: clades[i] for i in sort_clades}
+    # set as edge features in case user re-roots the tree
+    tree.edge_features.add("dist_mean")
+    tree.edge_features.add("dist_min")
+    tree.edge_features.add("dist_max")
+    tree.edge_features.add("dist_std")
+    tree = tree.mod.root_on_minimal_ancestor_deviation(*outg)
+    return tree
+
+
+def map_rooted_tree_supports_and_heights_to_rooted_tree(
+    tree: ToyTree,
+    trees: MultiTree,
+    features: list[str] = None,
+    conditional: bool = False,
+) -> ToyTree:
+    """
+
+    """
+    # check that rooted is valid
+    check_trees_set_for_ultrametric(trees)
+
+    # create a copy of the input tree and set support values to zero
+    tree = tree.copy().set_node_data("support", default=np.nan)
+
+    # store clades as {node: frozenset(leaf_names), ...} for internal nodes
+    clades = [frozenset(i.get_leaf_names()) for i in tree[tree.ntips:]]
+
+    # iterate over all input trees
+    data = {}
+    # tips = {}
+    for tre in trees:
+
+        # get this trees clades
+        tclades = {i: frozenset(i.get_leaf_names()) for i in tre[tre.ntips:]}
+
+        # iterate over nodes in rooted trees
+        for node, clade in tclades.items():
+            if clade not in data:
+                data[clade] = {"count": 1, "height": [node._height]}
+            else:
+                data[clade]["count"] += 1
+                data[clade]["height"].append(node._height)
+
+    # iterate over input tree nodes and splits
+    for node, clade in zip(tree[tree.ntips:], clades):
+        if clade in data:
+            node.support = data[clade]["count"] / len(trees)
+            setattr(node, "height_mean", np.mean(data[clade]["height"]))
+            setattr(node, "height_min", np.min(data[clade]["height"]))
+            setattr(node, "height_max", np.max(data[clade]["height"]))
+            setattr(node, "height_std", np.std(data[clade]["height"]))
+    tree.set_node_data("height", {i: i.height_mean for i in tree[tree.ntips:]}, inplace=True)
+    tree[-1].support = np.nan
+    tree[-2].support = np.nan
+    return tree
+
+
+def get_consensus_tree(trees: MultiTree | list[ToyTree], min_freq: float=0.0) -> ToyTree:
+    """Return an exteded majority-rule consensus tree from a list of trees.
+
+    The trees must contain the same set of tips. The returned tree will
+    contain the most frequently occurring non-conflicting clades in the
+    input trees. If the most frequent clades conflict with equal
+    frequency the node is collapsed. A minimum clade frequency can
+    be set to only include clades occurring above that threshold. For
+    example, min_freq=0.5 will procude a 50% majority-rule consensus
+    tree. The returned tree is unrooted with edge dist values as the
+    mean dist across all occurrences of that split in the set of trees.
+
+    Parameters
+    ----------
+    trees: MultiTree | list[ToyTree]
+        A MultiTree or list of ToyTrees sharing the same tip labels.
+    min_freq: float
+        A minimum frequency cutoff for a split to occur across the set
+        of trees for it to be included in the consensus tree.
+
+    See Also
+    --------
+    map_features_to_consensus_tree
+        Map dists, heights, or other features from a set of input trees
+        to nodes of a consensus tree with additional options.
+    """
+    # infer the majority-rule consensus unrooted tree w/ support and dist
+    clade_freqs = get_clade_frequencies(trees)
+    fclade_freqs = get_consensus_clades(clade_freqs, min_freq)
+    ctree = build_consensus_tree(fclade_freqs)
+    return ctree
 
 
 if __name__ == "__main__":
 
     import toytree
+    import numpy as np
 
-    # these trees should all have full support
-    tres = [toytree.rtree.unittree(10, seed=123) for i in range(5)]
-    mtre = toytree.mtree(tres)
-    ctre = ConsensusTree(mtre).run()
-    # ctre = ctre.root("r8", "r9")
-    ctre._draw_browser(node_sizes=20, node_labels="support", tmpdir="~")
-    # print(ctre.write(features=ctre.features))
+    # multiple input rooted trees
+    rtrees = toytree.mtree([
+        "((a:1,b:1):3,(c:3,(d:2,e:2):1):1);",
+        "((a:1,b:1):3,(c:3,(d:2,e:2):1):1);",
+        # "((a:1,b:1):4,(e:2,(c:3,d:2):1));",
+        # "((a:1,b:1):4,(d:2,(c:3,e:2):1));",
+        "((a:1,b:1):3,(e:3,(c:2,d:2):1):1);",
+        "((a:1,b:1):4,(d:3,(c:2,e:2):1):2);",
+    ])
 
-    # ctre = ConsensusTree(mtre, best_tree=mtre[0]).run()
-    # ctre = ctre.root('r8', 'r9')
-    # ctre._draw_browser(node_sizes=20, node_labels="support")
+    # multiple input unrooted trees
+    utrees = toytree.mtree([
+        "((a:1,b:1):3,(c:3,(d:2,e:2):1):1);",
+        "((a:1,b:1):3,(c:3,(d:2,e:2):1):1);",
+        # "((a:1,b:1):4,(e:2,(c:3,d:2):1));",
+        # "((a:1,b:1):4,(d:2,(c:3,e:2):1));",
+        "((a:1,b:1):3,(e:2,(c:3,d:2):1):1);",
+        # "((a:1,b:1):3,(e:2,(c:3,d:2):1):1);",        
+        "((a:1,b:1):3,(d:2,(c:3,e:2):1):1);",
+        # "((d:2,(c:3,e:2):1),(a:1,b:1):3):1;",
+        # "((a:1,e:1):3,(d:3,(c:2,b:2):1):1);",
+    ])
+    utrees = [i.unroot() for i in utrees]
 
-    # these trees should all have diff support
-    # trees = [toytree.rtree.unittree(10, ) for i in range(20)]
-    # mtree = toytree.mtree(trees)
-    # ctree = ConsensusTree(mtree, best_tree=mtree[0]).run()
-    # ctree._draw_browser(node_sizes=20, node_labels="support")
-    # ctree.root('r8', 'r9', inplace=True)
-    # ctree._draw_browser(node_sizes=20, node_labels="support")
+    utrees[0]._draw_browser(node_sizes=16, node_markers="r1.5x1", node_labels="support", tmpdir="~", scale_bar=True)
+    # raise SystemExit(0)
+
+    TREES = utrees
+    ROOTED = 0
+
+    cdict = get_clade_frequencies(TREES)
+    for i in cdict:
+        print(i, cdict[i])
+    print("-------------")
+
+    cdict = get_consensus_clades(cdict, 0.0)
+    for i in cdict:
+        print(i, cdict[i])
+    print("-------------")
+
+    tree = build_consensus_tree(cdict)
+    print(tree.get_node_data())
+    tree.treenode.draw_ascii()
+
+    ctree = get_consensus_features(tree, TREES)
+    print(tree.get_node_data())
+
+
+    fish = toytree.mtree("https://eaton-lab.org/data/densitree.nex")
+    fish = get_consensus_tree(fish)
+    print(fish.get_node_data())
+    raise SystemExit(0)    
+    # tree = tree.root("a", "b")
+    # tree = tree.mod.root_on_minimal_ancestor_deviation()
+    # tree[-2].support = np.nan
+    # tree._draw_browser(node_sizes=16, node_markers="r1.5x1", node_labels="support", tmpdir="~", scale_bar=True)
+
+    # tree = map_features_to_consensus_tree(tree, trees, None, False, True)
+    # print(tree.get_node_data())
+    # tree._draw_browser(node_sizes=16, node_markers="r1.5x1", node_labels="support", tmpdir="~", scale_bar=True)
+
+    # map support and dist to correct utree
+    tree = map_features_to_consensus_tree(utrees[0], utrees, None, False, False)
+    print(tree.get_node_data())
+    tree.treenode.draw_ascii()
+
+    # map support and dist to incorrect utree
+    tree = map_features_to_consensus_tree(utrees[-1], utrees, None, False, True)
+    print(tree.get_node_data())
+    tree.treenode.draw_ascii()
+
+    # map support and height to correct rtree
+    # tree = map_features_to_consensus_tree(trees[0], trees, None, True, False)
+    tree = map_rooted_tree_supports_and_heights_to_rooted_tree(rtrees[0], rtrees, )
+    print(tree.get_node_data(["idx", "name", "support", "dist", "height", "height_mean", "height_std"]))
+    tree.treenode.draw_ascii()
+    # tree._draw_browser(node_sizes=16, node_markers="r1.5x1", node_labels="support", tmpdir="~", scale_bar=True, ts='b')
+
+    # map support and height to incorrect rtree
+    tree = map_rooted_tree_supports_and_heights_to_rooted_tree(rtrees[-1], rtrees, )
+    print(tree.get_node_data(["idx", "name", "support", "dist", "height", "height_mean", "height_std"]))
+    tree.treenode.draw_ascii()
+    # tree._draw_browser(node_sizes=16, node_markers="r1.5x1", node_labels="support", tmpdir="~", scale_bar=True, ts='b')
+
+    # map support of unrooted trees onto a rooted tree.
+    # should this unroot the tree?
+    # should it mess with dist values?
+    tree = map_unrooted_tree_supports_and_dists_to_unrooted_tree(rtrees[0], utrees)
+    print(tree.get_node_data())
+    tree.treenode.draw_ascii()
+    tree._draw_browser(node_sizes=16, node_markers="r1.5x1", node_labels="support", tmpdir="~", scale_bar=True, ts='b')

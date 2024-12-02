@@ -48,7 +48,7 @@ from toytree.drawing.src.draw_cloudtree import draw_cloudtree
 from toytree.drawing.src.draw_multitree import draw_multitree
 from toytree.annotate import add_axes_scale_bar
 # from toytree.core.drawing.render import ToytreeMark
-from toytree.infer.src.consensus import ConsensusTree
+import toytree.infer
 
 # from toytree.utils import ToytreeError
 
@@ -257,8 +257,7 @@ class MultiTree:
             This function is available from ToyTree objects as `.write`.
         """
         if kwargs:
-            logger.warning(
-                f"Deprecated args to write(): {list(kwargs.values())}. See docs.")
+            logger.warning(f"Deprecated args to write(): {list(kwargs.values())}. See docs.")
         newicks = []
         for tree in self:
             newicks.append(tree.write(
@@ -277,53 +276,95 @@ class MultiTree:
             out.write(newicks)
         return None
 
-    def get_consensus_tree(
-        self,
-        best_tree: ToyTree = None,
-        majority_rule_min: float = 0.0,
-        ultrametric: Optional[bool] = None,
-    ) -> ToyTree:
-        """Return an extended majority rule consensus Toytree.
+    # ---------------------------------------------------------------#
+    # see toytree.infer.get_consensus_tree()
+    # ---------------------------------------------------------------#
+    def get_consensus_tree(self, min_freq: float, **kwargs) -> ToyTree:
+        """Return an exteded majority-rule consensus tree from a list of trees.
 
-        Consensus tree Node 'support' features record the frequency of
-        occurrence of clades across the input MultiTree treelist.
-        Clades with support below 'majority_rule_min' are collapsed
-        into polytomies. If you enter an optional 'best_tree' then
-        support values from the input trees will be calculated for
-        clades in this tree, and the 'best_tree' is returned with
-        support values added to Nodes, else a majority-rule consensus
-        tree is generated and returned. The mean, min, and max of
-        additional features in the trees can also be calculated.
+        The trees must contain the same set of tips. The returned tree will
+        contain the most frequently occurring non-conflicting clades in the
+        input trees. If the most frequent clades conflict with equal
+        frequency the node is collapsed. A minimum clade frequency can
+        be set to only include clades occurring above that threshold. For
+        example, min_freq=0.5 will procude a 50% majority-rule consensus
+        tree. The returned tree is unrooted with edge dist values as the
+        mean dist across all occurrences of that split in the set of trees.
 
         Parameters
         ----------
-        best_tree: Toytree, str, or None
-            A tree that support values should be calculated for and
-            added to. For example, you want to calculate how often
-            clades in your best ML tree are supported in 100 bootstrap
-            trees.
-        majority_rule_min: float
-            Cut-off below which clades are collapsed in the majority
-            rule consensus tree. This is a proportion (e.g., 0.5 means
-            50%).
+        trees: MultiTree | list[ToyTree]
+            A MultiTree or list of ToyTrees sharing the same tip labels.
+        min_freq: float
+            A minimum frequency cutoff for a split to occur across the set
+            of trees for it to be included in the consensus tree.
+
+        See Also
+        --------
+        map_features_to_consensus_tree
+            Map dists, heights, or other features from a set of input trees
+            to nodes of a consensus tree with additional options.
 
         Examples
         --------
-        >>> best = toytree.rtree.unittree(ntips=10, seed=123)
         >>> trees = [toytree.rtree.unittree(ntips=10) for i in range(10)]
         >>> mtree = toytree.mtree(trees)
-        >>> ctree1 = mtree.get_consensus_tree(trees, best_tree=best)
-        >>> ctree2 = mtree.get_consensus_tree(trees)
-        >>> ctree3 = mtree.get_consensus_tree(trees, majority_rule_min=0.5)
-        >>> toytree.mtree([ctree1, ctree2, ctree3]).draw();
+        >>> ctree1 = mtree.get_consensus_tree(trees)
+        >>> ctree2 = mtree.get_consensus_tree(trees, majority_rule_min=0.5)
+        >>> toytree.mtree([ctree1, ctree2]).draw();
         """
-        cons = ConsensusTree(
-            mtree=self,
-            best_tree=best_tree,
-            majority_rule_min=majority_rule_min,
-            ultrametric=ultrametric,
-        )
-        return cons.run()
+        if kwargs:
+            logger.warning(f"Deprecated args to get_consensus_tree(): {list(kwargs.values())}. See docs.")
+        return toytree.infer.get_consensus_tree(self.treelist, min_freq=min_freq)
+
+
+    def get_consensus_features(self, tree: ToyTree, features: list[str], ultrametric: bool = False, conditional: bool = True) -> ToyTree:
+        """Return tree with feature data mapped to each bipartition from
+        a set of trees that may or may not share the same bipartitions.
+
+        The 'support' value on the consensus tree represents the proportion
+        of trees that supported the split in the consensus, and the 'dist'
+        is the mean dist value of the bipartition edge in the set of trees
+        that included that edge. These two features are set on MJ rule
+        consensus trees by default. Other features can be optionally
+        computed as well.
+
+        Parameters
+        ----------
+        tree: ToyTree
+            The tree can be the MJ consensus tree or a user input tree.
+        trees: MultiTree | list[ToyTree]
+            A list of trees from which features will be extracted. Support
+            is always measured. Edge lengths are extracted as 'dists' or
+            'heights' depending on the option 'rooted'.
+        features: None | list[str]
+            A list of feature names that exist on the input trees that you
+            wish to have summarized across the nodes of the consensus tree.
+            For quantitative features this will record min, max, mean, std
+            conditional on the existence of the node in the tree.
+        rooted: bool
+            If trees are rooted and ultrametric then set this option to
+            True to summarize stats of node heights instead of node dists.
+            Note: this forces conditional=True.
+        conditional: bool
+            If True then dist values of tip nodes on unrooted trees are
+            only calculated from the subset of trees where these tips occur
+            in the same splits as in the main tree, otherwise dists are
+            calculated from tip nodes across all input trees. This only
+            affects tip node dists.
+
+        See Also
+        --------
+        ...
+
+        Examples
+        --------
+        ...
+        """
+        return toytree.infer.get_consensus_features(
+            tree=tree, trees=self.treelist,
+            features=features, ultrametric=ultrametric, conditional=True)
+
 
     ################################################################
     # Tree Modification functions
