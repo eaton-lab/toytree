@@ -164,14 +164,13 @@ class NetworkToMajorTree:
 
 
 # USER FUNCTION
-def parse_network_to_tree_and_admix(
-    net: Union[str, Path],
-) -> Tuple[toytree.ToyTree, List[Tuple]]:
+def parse_network_to_tree_and_admix(net: Union[str, Path]) -> Tuple[toytree.ToyTree, List[Tuple]]:
     """..."""
     parse = NetworkToMajorTree(net)
     tree, admix = parse.get_major_tree_and_admix_edges()
     return tree, admix
-'''
+
+
 # Possible Implementation of Network Parse WITHOUT using class NetworkToMajorTree:
 def parse_network(net: Union[str, Path], disconnect=True):
     """Parse a network file to extract a major topology and admix dict.
@@ -303,7 +302,6 @@ def parse_network(net: Union[str, Path], disconnect=True):
     net = net.mod.ladderize()
     return net, admix
 
-'''
 # def test3A():
 #     net = "(((r0,#H1:::0.9),r2),(r3,(r4,#H1:::0.1)));"
 #     return parse_network(net)
