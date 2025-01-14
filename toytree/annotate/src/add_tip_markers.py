@@ -24,6 +24,7 @@ from toytree.style.src.validate_data import (
     validate_colors,
     validate_markers,
     validate_numeric,
+    validate_mask,
     validate_labels,
 )
 from toytree.style.src.validate_node_labels import validate_node_labels_style
@@ -129,6 +130,19 @@ def add_tip_markers(
         else:
             raise NotImplementedError("TODO")
 
+    # get mask and apply to all other styles below. Allow user to enter
+    # either a node mask or tip mask.
+    if mask is None:
+        mask = tree.get_node_mask(show_tips=True)[:tree.ntips]
+    else:
+        if mask.size == tree.ntips:
+            mask = np.concatenate(mask, np.full(tree.nnodes - tree.ntips), False)
+            mask = validate_mask(tree, style={"node_mask": mask})[:tree.ntips]
+        elif mask.size == tree.nnodes:
+            mask = validate_mask(tree, style={"node_mask": mask})[:tree.ntips]
+        else:
+            raise ValueError(f"mask should be of size ntips ({tree.ntips}).")
+
     # update node_style setting
     style = {} if style is None else style
     style = validate_node_style(tree, style=None, **style)
@@ -151,15 +165,15 @@ def add_tip_markers(
 
     # validate others and trim to mask
     markers = validate_markers(
-        tree, key="node_markers", size=tree.ntips, style={"node_markers": marker})
+        tree, key="node_markers", size=tree.ntips, style={"node_markers": marker})[mask]
     sizes = validate_numeric(
-        tree, key="size", size=tree.ntips, style={"size": size})
+        tree, key="size", size=tree.ntips, style={"size": size})[mask]
     opacity = validate_numeric(
-        tree, key="opacity", size=tree.ntips, style={"opacity": opacity})
+        tree, key="opacity", size=tree.ntips, style={"opacity": opacity})[mask]
 
     # create custom Mark that allows for [xy]shift
     mark = AnnotationMarker(
-        ntable=coords,
+        ntable=coords[mask],
         xshift=xshift,
         yshift=yshift,
         sizes=sizes,
@@ -311,7 +325,7 @@ def add_tip_markers(
 #     axes: Cartesian
 #         A toyplot Cartesian axes object containing a tree drawing.
 #     data: numpy.ndarray
-#         Array of shape(ncategories, nnodes) with rows summing to 1. 
+#         Array of shape(ncategories, nnodes) with rows summing to 1.
 #     size: int or Sequence[int]
 #         Size of markers as single int or Sequence of ints, in px units.
 #     colors: None, str, tuple, or array, or Sequence
@@ -428,7 +442,7 @@ def add_tip_markers(
 #     >>> }
 #     >>> canvas, axes, mark0 = tree.draw()
 #     >>> tree.annotate.node_height_confidence_intervals(axes, ages_ci)
-#     >>> 
+#     >>>
 #     >>> mark = toytree.annotate.node_height_confidence_intervals(
 #     >>>     tree=tree, axes=axes, mapping=ages_ci)
 #     """
@@ -456,6 +470,12 @@ if __name__ == "__main__":
     #     tree, axes=a, size=10, marker='s', color=("idx", "BlueRed"))
     # add_node_labels(tree, axes=a, labels='idx')
     data = np.array([[0.5, 0.3, 0.2]] * tree.nnodes)
-    m = tree.annotate.add_tip_markers(a, color=("name"), xshift=0, yshift=50)
-    print(m.extents(['x', 'y']))
-    toytree.utils.show(c)
+    m = tree.annotate.add_tip_markers(
+        a, 
+        mask=tree.get_node_mask(1, 2, 3),
+        color=("name", "Spectral"),
+        opacity=1.0, size=10,
+        # xshift=0, yshift=10,
+    )
+    # print(m.extents(['x', 'y']))
+    toytree.utils.show(c, tmpdir="~")
