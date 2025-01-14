@@ -48,7 +48,7 @@ def add_node_markers(
     marker: Union[str, Sequence[str]] = "o",
     size: Union[int, Sequence[int]] = 8,
     color: Union[Color, Sequence[Color]] = None,
-    opacity: Union[float, Sequence[float]] = None,
+    opacity: Union[float, Sequence[float]] = 1.0,
     mask: Union[np.ndarray, Tuple[int, int, int], bool, None] = None,
     xshift: int = 0,
     yshift: int = 0,
@@ -141,7 +141,7 @@ def add_node_markers(
 
     # if all marker opacities are the same then set to 1 and use style.
     # this simplifies the CSS and makes things faster, but is otherwise
-    # not necessary. EDIT: commented out for now until `concat_tyle_fix_color`
+    # not necessary. EDIT: commented out for now until `concat_style_fix_color`
     # used in render_annotations.py can handle fill-opacity w/o fill.
     # if len(set(opacity)) == 1:
     #     style["fill-opacity"] = opacity[0]
@@ -457,8 +457,14 @@ if __name__ == "__main__":
     # base tree drawing
     tree = toytree.rtree.unittree(12)
     c, a, m = tree.draw(layout='r', scale_bar=True, node_sizes=5, width=400)
-
-    m0 = tree.annotate.add_node_markers(a, color="idx", yshift=-15, opacity=0.3)
+    m0 = tree.annotate.add_node_markers(
+        a, 
+        # color="idx",
+        color=('idx',),
+        yshift=-15, 
+        opacity=0.3,
+        # style={"fill-opacity": 0.1, "stroke-opacity": 0.5},
+        )
     # m1 = tree.annotate.add_node_labels(a, font_size=20, yshift=-15)
     # m2 = tree.annotate.add_node_bars(
     #     a,
