@@ -65,30 +65,79 @@
 [x] .annotate add node/edge markers opacity is now working.
 [x] .annotate bugfix to allow colormapping edge labels.
 [x] .draw node_as_edge_data arg to draw edge_markers and edge_labels
-----------------------------------------------------------------------
-### tests
-[ ] .color test_color_mapper funcs for feature vs values, and examples in scratch nb
-[ ] .mod rooting test
 
-### recent
-[ ] conda installation on GitHub actions to conda-forge.
-[ ] pip installation on GitHub actions.
+# v.3.0.1
 [x] .core allow indexing from tree using int-like: np.int64, np.int32, etc.
-[ ] .consensus needs validating, including its effect on mean height/dist
-[ ] .annotate create simple docs
-[ ] .annotate add colormap scale bar
-[ ] .annotate add marker legend
-[ ] .annotate edge/node labels allow using a value formatter {%.2f}.
 [x] .io add support for bad NHX format w/ 1 value and no key, e.g., [100] -> {'label': 100}
 [x] .io bug "((C,D)1,(A,(B,X)3)2,E)R;" parses internal name R but not numeric ones.
 [x] .annotate add_edge_markers was not working maybe bc post rooting, or b/c -2 was nan? boolean index of mask error.
-[ ] .mod.root MAD is defaulting to inplace.
-[ ] .mod set_edge_heights uses a tree copy and thus can't take Nodes as input currently. But this works in using set_node_data.
 [x] .core raise exception when indexing non-existint idx
 [x] .treeio added back a check for parentheses counts to match
 [x] .tree changed query from match to search
 [x] .draw container using new polygon Mark
 [x] .draw node_colors=feat if feat is already a list of colors, then don't try to colormap.
+
+# v.3.0.2  
+[x] pypi (pip) upload automated on GitHub actions.  
+[x] confirmed conda-forge autobot is detecting tag pushes.  
+
+# v.3.0.3  
+[x] README updated.  
+[x] bugfix: nedges +1 for rooted edge in rooted trees.  
+[x] .core: implement nedges property on ToyTree
+
+# v.3.0.4-dev
+[x] .enum: added option to return root edge in iter_edges.  
+[x] .enum: expanded count module with new get funcs.  
+[x] .mod: created `toytree.mod.remove_nodes` as analog to Node._delete()
+[x] .core: Node._detach docstring clarifies that dist is split on treenode.
+[x] .mod: faster versions of prune and drop_tips.
+[x] .mod: improved version of bisect
+[x] .core: changed .nedges property back to excluding root edge.
+
+# v.3.0.5-dev
+[x] .mod: bugfix to prune for keeping internal nodes.
+
+# v.3.0.6
+[x] .annotate: add_node_markers defaults to opacity 0.
+[x] .annotate: add_tip_markers allow using mask.
+[x] .pcm bug fix to vcv function on diagonal calculation.
+[x] .cli update code for rooting w/o regex arg.
+----------------------------------------------------------------------
+
+### tests
+[ ] .color test_color_mapper funcs for feature vs values, and examples in scratch nb
+[ ] .mod rooting test
+
+### recent
+[ ] .annotate: add a 'add_edge_lines' method.
+[ ] .infer finish new implementation of consensus
+[ ] .infer finish application of maxcut -- see external tools like MQLib.
+```
+t = toytree.rtree.rtree(8)
+t.set_node_data("x", {i: {i.idx} for i in t}, inplace=True)
+t.draw(node_colors="x", node_sizes=10, node_mask=False);
+```
+[ ] .draw embedding plot.
+[ ] .draw | should we use aspect='fit-range'?; how can shrink apply to names here?
+[ ] .draw allow setting edge_colors, widths, markers, labels, etc with Sequence of len=nedges or nedges + 1 or nedges + 2?
+[ ] .mod allow rooting on a unary Node?
+[ ] .data set_node_data (or heights mod) should ensure (float) type when setting _feature.
+[ ] .io parse w/ .tree currently discards root dist. 
+[ ] .core convert all NaN from numpy.nan to math.nan
+[ ] .style/draw bug: draw(tip_labels_colors) parses nnodes instead of ntips values.
+[ ] .distance treedist_quartets is soo slow for big trees... allow subsampling?
+[ ] .mod clarify prune / drop_tips / extract_subtree / bisect
+[ ] consensus allow diff numbers of tips (but require some kind of overlap?)
+[ ] push textbook code to a branch.
+[ ] .core check indexing w/ int-like for numpy 2.0
+[ ] .consensus needs validating, including its effect on mean height/dist
+[x] .annotate create simple docs
+[ ] .annotate add colormap scale bar
+[ ] .annotate add marker legend
+[ ] .annotate edge/node labels allow using a value formatter {%.2f}.
+[ ] .mod.root MAD is defaulting to inplace.
+[ ] .mod set_edge_heights uses a tree copy and thus can't take Nodes as input currently. But this works in using set_node_data.
 [ ] .draw italic tip labels are still broken.
 [ ] .draw add edge_labels, edge_markers, etc., or just nodes_as_edges?
 [ ] .data idea: allow setting a feature to None in set_node_data which removes feature from Node.
