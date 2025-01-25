@@ -2,6 +2,13 @@
 
 """Conversion of phylogeny to and from variance-covariance matrix.
 
+
+References
+-----------
+- Garland, T. Jr. and Ives, A. R. (2000) Using the past to predict the
+  present: confidence intervals for regression equations in phylogenetic
+  comparative methods. American Naturalist, 155, 346-364.
+
 """
 
 from typing import Union
@@ -57,9 +64,9 @@ def get_vcv_matrix_from_tree(
         vcv[tip1, tip2] = dmat[mrca.idx, tree.treenode.idx]
         vcv[tip2, tip1] = vcv[tip1, tip2]
 
-    # fill diagonal with each tips dist
+    # fill diagonal with each tips dist from the root
     for node in tree[:tree.ntips]:
-        vcv[node._idx, node._idx] = node._dist
+        vcv[node._idx, node._idx] = dmat[node._idx, -1]
 
     # return as ndarray or dataframe
     if not df:
@@ -130,10 +137,16 @@ def get_tree_from_vcv_matrix(vcv: Union[np.ndarray, pd.DataFrame]) -> ToyTree:
 
 if __name__ == "__main__":
 
-    tre = toytree.rtree.rtree(10, seed=123)
+    tre = toytree.rtree.unittree(10, )
+    print(tre.write())
+    # dists = toytree.distance.get_tip_distance_matrix(tre, df=True)
+    # print(dists)
+    # vcv = get_covariance_matrix_from_tree(tre, df=True)    
     vcv = get_vcv_matrix_from_tree(tre, df=True)
-    print(tre)
     print(vcv)
+
+    np.linalg.inv(vcv)
+    # print(tre.get_tip_data())
 
     # ttt = get_tree_from_vcv(vcv)
     # print(ttt)
