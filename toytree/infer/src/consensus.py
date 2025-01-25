@@ -33,7 +33,7 @@ TODO
 
 """
 
-from typing import TypeVar
+from typing import TypeVar, Union
 import numpy as np
 from toytree.core import ToyTree, Node
 from loguru import logger
@@ -356,7 +356,6 @@ def map_unrooted_tree_supports_and_dists_to_unrooted_tree(
     conditional: bool = False,
 ) -> ToyTree:
     """
-
     """
     # save outgroup to re-root tree later
     outg = tree.treenode.children[1].get_leaf_names()
@@ -492,7 +491,7 @@ def map_rooted_tree_supports_and_heights_to_rooted_tree(
     return tree
 
 
-def get_consensus_tree(trees: MultiTree | list[ToyTree], min_freq: float=0.0) -> ToyTree:
+def get_consensus_tree(trees: Union[MultiTree | list[ToyTree]], min_freq: float=0.0) -> ToyTree:
     """Return an exteded majority-rule consensus tree from a list of trees.
 
     The trees must contain the same set of tips. The returned tree will

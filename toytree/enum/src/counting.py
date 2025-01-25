@@ -26,6 +26,7 @@ Brown developed probability calculations for all labeled and unlabeled topologie
 - Pamilo and Nei (1988) ...
 """
 
+from typing import Union
 from math import prod, factorial
 # import numpy as np
 from scipy.special import comb as scipy_comb
@@ -166,7 +167,7 @@ def get_num_bifurcating_trees(ntips: int, rooted: bool = True) -> int:
 
 
 @add_subpackage_method(TreeEnumAPI)
-def get_num_quartets(ntips: int | ToyTree, method: int = 0) -> int:
+def get_num_quartets(ntips: Union[int, ToyTree], method: int = 0) -> int:
     """Return number of possible quartet trees (ntips=4) that can be
     extracted from a larger tree of size ntips.
 
@@ -190,7 +191,7 @@ def get_num_quartets(ntips: int | ToyTree, method: int = 0) -> int:
 
 
 @add_subpackage_method(TreeEnumAPI)
-def get_num_subtrees(ntips: int | ToyTree, subtree_size: int) -> int:
+def get_num_subtrees(ntips: Union[int, ToyTree], subtree_size: int) -> int:
     """Return number of possible subtrees of subtree_size tips that
     can be extracted from a larger tree of size ntips.
 

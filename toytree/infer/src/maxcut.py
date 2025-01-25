@@ -2,6 +2,11 @@
 
 """Maxcut algorithm.
 
+TODO
+----
+- see MQLib for new heuristics to solve max-cut given the graph,
+which we construct here.
+
 This is an implementation of the QMC (quartet maxcut) algorithm of
 Snir and Rao for fast inference of a supertree from weighted quartets.
 
@@ -39,6 +44,7 @@ A paper that describes the maxcut algorithm in more detail.
   IEEE/ACM Transactions on Computational Biology and Bioinformatics,
 """
 
+from typing import Union
 import itertools
 from collections import defaultdict
 import numpy as np
@@ -60,7 +66,7 @@ logger = logger.bind(name="toytree")
 ##################################################################
 
 def get_weighted_quartets_from_trees(
-    trees: MultiTree | list[ToyTree],
+    trees: Union[MultiTree, list[ToyTree]],
     normalize: bool = False,
 ) -> dict[tuple[frozenset,frozenset],float]:
     """Return {quartet: weight, ...} from a sequence of trees.
@@ -850,8 +856,8 @@ class ArtificialTaxon:
 
 
 def old_get_maxcut_quartet_supertree(
-    trees: MultiTree | list[ToyTree],
-    seed: int | np.random.Generator | None = None,
+    trees: Union[MultiTree, list[ToyTree]],
+    seed: Union[int, np.random.Generator, None] = None,
     normalize_by_ntrees: bool = False,
 ) -> ToyTree:
     """Return an unrooted supertree inferred from weighted quartet
@@ -879,8 +885,6 @@ def old_get_maxcut_quartet_supertree(
     >>> ])
     >>> tree = get_maxcut_quartet_supertree(trees)
     """
-
-
     raise SystemExit(0)
 
     # ...
@@ -966,10 +970,9 @@ def old_get_maxcut_quartet_supertree(
 
 
 
-
 def get_maxcut_quartet_supertree(
-    trees: MultiTree | list[ToyTree],
-    seed: int | np.random.Generator | None = None,
+    trees: Union[MultiTree, list[ToyTree]],
+    seed: Union[int, np.random.Generator, None] = None,
     use_weights: bool = False,
 ) -> ToyTree:
     """Return an unrooted supertree inferred from weighted quartet

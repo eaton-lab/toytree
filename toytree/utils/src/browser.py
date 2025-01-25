@@ -17,7 +17,7 @@ def show(
     canvases: Union[Canvas, Sequence[Canvas]],
     title: str = "toytree",
     new: bool = False,
-    tmpdir: Path | str = None,
+    tmpdir: Union[Path, str] = None,
 ) -> None:
     """Display one or more canvases in a web browser.
 

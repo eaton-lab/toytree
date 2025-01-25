@@ -954,7 +954,7 @@ class ToyTree:
     # ------------------------------------------------------------------
     # Draw functions imported, but docstring here...
     # ------------------------------------------------------------------
-    def _draw_browser(self, *args, new: bool = False, tmpdir: None | Path = None, **kwargs):
+    def _draw_browser(self, *args, new: bool = False, tmpdir: Path = None, **kwargs):
         """Open and display tree drawing in default web browser.
 
         TODO: overload toyplot function, option to reuse same tab,

@@ -318,7 +318,7 @@ class MultiTree:
         return toytree.infer.get_consensus_tree(self.treelist, min_freq=min_freq)
 
 
-    def get_consensus_features(self, tree: ToyTree, features: list[str] | None = None, ultrametric: bool = False, conditional: bool = True) -> ToyTree:
+    def get_consensus_features(self, tree: ToyTree, features: list[str] = None, ultrametric: bool = False, conditional: bool = True) -> ToyTree:
         """Return tree with feature data mapped to each bipartition from
         a set of trees that may or may not share the same bipartitions.
 

@@ -10,7 +10,7 @@ References
 ...
 """
 
-from typing import Dict, Optional, Sequence
+from typing import Dict, Optional, Sequence, Union
 import pandas as pd
 import toytree
 from toytree import ToyTree
@@ -196,8 +196,8 @@ def get_duplication_loss_coalescence(
 
 
 def get_multree_reconciliation_scores(
-    gtrees: ToyTree | Sequence[ToyTree],
-    sptrees: ToyTree | Sequence[ToyTree],
+    gtrees: Union[ToyTree, Sequence[ToyTree]],
+    sptrees: Union[ToyTree, Sequence[ToyTree]],
 ) -> pd.DataFrame:
     """Return table with DLC reconciliation...
 

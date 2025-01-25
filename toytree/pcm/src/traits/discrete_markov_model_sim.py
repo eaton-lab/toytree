@@ -2,6 +2,12 @@
 
 """Discrete State Markov Model Simulator.
 
+This module implements a discrete trait simulator based on a Markov
+model. The root state is either randomly sampled, or assigned, and
+transitions among states occur probabilistiically along the edges of
+a phylogeny. Transition rates can be specified for models with
+unequal transition rates.   
+
 References
 ----------
 - Yang...
@@ -15,6 +21,11 @@ import pandas as pd
 import scipy.linalg
 from toytree import ToyTree
 from toytree.core.apis import add_subpackage_method, PhyloCompAPI
+
+__all__ = [
+    "get_markov_model",
+    "simulate_discrete_data",
+]
 
 
 class ModelType(Enum):
@@ -83,6 +94,9 @@ class MarkovModel:
         """
         # user entered rate matrix
         rates = self.relative_rates
+        
+        # if no user-entered rates then sample random rates constrained
+        # by the model type.
         if rates is None:
             if self.mtype.name == "SYM":
                 rates = np.random.uniform(0.5, 2, (self.nstates, self.nstates))
@@ -95,8 +109,9 @@ class MarkovModel:
                 rates[0, 1] = 1
             else:
                 rates = np.ones((self.nstates, self.nstates))
-            # report the sampled rates
             np.fill_diagonal(rates, 0)
+        
+        # if user entered rates then check that they are valid.
         else:
             rates = np.array(rates)
             # check if singular for ER model
@@ -261,6 +276,12 @@ class MarkovModel:
     #     TODO: return multiple tables?
     #     """
 
+    def __repr__(self):
+        """Return a str representation of the Markov model."""
+        return f"MarkovModel(nstates={self.nstates}, model={self.mtype.name})"
+        # ,\nT matrix\n{self.transition_matrix}\nQ matrix\n{self.qmatrix}\nTransition Probabilities (t=1)\n{self.get_transition_probability_matrix(time=1)}"
+
+
 
 @dataclass
 class DiscreteMarkovSimulator:
@@ -324,7 +345,7 @@ class DiscreteMarkovSimulator:
 def get_markov_model(
     nstates: int,
     model: str = "ER",
-    rate: float = 1.0,
+    rate_scalar: float = 1.0,
     relative_rates: Optional[np.ndarray] = None,
     state_frequencies: Optional[np.ndarray] = None,
     seed: Optional[int] = None,
@@ -350,7 +371,7 @@ def get_markov_model(
         The Markov model name ("ER", "SYM", or "ARD"). This is used
         to either sample random valid parameters for a model of the
         specified type, or to check that user-entered value are valid.
-    rate: float
+    rate_scalar: float
         A scalar by which the Q-matrix will be multipled to act
         as a unit scaler. Example, rate=1e-6 would mean that a 1
         in the relatives rates matrix represents 1 change per
@@ -381,7 +402,7 @@ def get_markov_model(
     model = MarkovModel(
         mtype=str(model).upper(),
         nstates=nstates,
-        rate=rate,
+        rate_scalar=rate_scalar,
         relative_rates=relative_rates,
         state_frequencies=state_frequencies,
         seed=seed,
@@ -427,7 +448,7 @@ def simulate_discrete_data(
     relative_rates: Optional[numpy.ndarray]
         The relative transition rates between states as an array
         of size (nstates x nstates). Values on the diagonal are
-        ignored. Only relative differences matter. See rate.
+        ignored. Only relative differences matter. See rate_scalar.
     state_frequencies: Optional[numpy.ndarray]
         Equilibrium frequencies of states 0-n in order (must sum
         to one.
@@ -538,16 +559,15 @@ if __name__ == "__main__":
         tree=tre,
         nstates=3,
         model="SYM",
-        # rate=0.1,
+        rate_scalar=1.,
         state_frequencies=[0.1, 0.3, 0.6],
         tips_only=True,
         root_state=0,
-        # nreplicates=10,
+        nreplicates=10,
         state_names=['a', 'b', 'c'],
     )
-    print(data.T)
-
-    data = simulate_discrete_data(tre, nstates=2, inplace=True)
+    # print(data.T)
+    # data = simulate_discrete_data(tre, nstates=2, inplace=True)
     print(data)
 
     # get many trees with traits simulated
@@ -558,3 +578,7 @@ if __name__ == "__main__":
 
     # get an array of many replicate sim data
     # ...
+
+    model = get_markov_model(model="SYM", nstates=3, state_frequencies=[0.1, 0.2, 0.7], rate_scalar=0.1)
+    print(model)
+    print(model.get_transition_probability_matrix(time=10))
