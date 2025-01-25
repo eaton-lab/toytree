@@ -78,7 +78,7 @@ def setup_parsers() -> argparse.ArgumentParser:
     # toytree root [options] TREE --------------------------------------------
     parser_root = subparsers.add_parser("root", help="(re)root tree and return to STDOUT")
     parser_root.add_argument("-o", type=str, nargs="+", default=(), help="outgroup")
-    parser_root.add_argument("-r", action="store_true", help="use regex matching on outgroup string.")
+    # parser_root.add_argument("-r", action="store_true", help="use regex matching on outgroup string.")
     parser_root.add_argument("TREE", type=str, help="tree newick file or string")
 
     # toytree distance [options] TREE TREE ----------------------------------
@@ -105,7 +105,7 @@ def main(cmd: Optional[str] = None) -> int:
     # root
     if args.subcommand == "root":
         tree = toytree.tree(args.TREE)
-        tree = tree.root(*args.o, regex=args.r)
+        tree = tree.root(*args.o)
         sys.stdout.write(tree.write(None))
         return 0
 
