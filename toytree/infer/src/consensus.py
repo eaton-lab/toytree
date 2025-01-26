@@ -33,7 +33,7 @@ TODO
 
 """
 
-from typing import TypeVar, Union
+from typing import TypeVar, Union, List, Dict
 import numpy as np
 from toytree.core import ToyTree, Node
 from loguru import logger
@@ -47,7 +47,7 @@ __all__ = [
 ]
 
 
-def check_trees_set_for_ultrametric(trees: list[ToyTree]) -> None:
+def check_trees_set_for_ultrametric(trees: List[ToyTree]) -> None:
     """Raise exception if input trees are not suitable for consensus
     tree analysis with option ultrametric=True.
     """
@@ -62,7 +62,7 @@ def check_trees_set_for_ultrametric(trees: list[ToyTree]) -> None:
             raise ValueError(msg)
 
 
-def get_clade_frequencies(trees: MultiTree | list[ToyTree]) -> dict[frozenset, float]:
+def get_clade_frequencies(trees: Union[MultiTree, List[ToyTree]]) -> Dict[frozenset, float]:
     """Return a dict mapping bipartitions to their frequencies and dists.
 
     This performs one pass through each tree to get its bipartitions
@@ -115,7 +115,7 @@ def get_clade_frequencies(trees: MultiTree | list[ToyTree]) -> dict[frozenset, f
     return clades
 
 
-def get_consensus_clades(clades: dict[frozenset, float], min_freq: float) -> dict[frozenset, float]:
+def get_consensus_clades(clades: Dict[frozenset, float], min_freq: float) -> Dict[frozenset, float]:
     """Return dict with only non-conflicting clades above min_freq.
 
     This is used prior to constructing a majority-rule consensus tree,
@@ -155,7 +155,7 @@ def get_consensus_clades(clades: dict[frozenset, float], min_freq: float) -> dic
     return keep
 
 
-def build_consensus_tree(clades: dict[frozenset, float]) -> ToyTree:
+def build_consensus_tree(clades: Dict[frozenset, float]) -> ToyTree:
     """Return a majority-rule consensus tree constructed from non-
     conflicting clades.
     """
@@ -305,7 +305,7 @@ def build_consensus_tree(clades: dict[frozenset, float]) -> ToyTree:
 def get_consensus_features(
     tree: ToyTree,
     trees: MultiTree,
-    features: list[str] = None,
+    features: List[str] = None,
     ultrametric: bool = False,
     conditional: bool = False,
 ) -> ToyTree:
@@ -352,7 +352,7 @@ def get_consensus_features(
 def map_unrooted_tree_supports_and_dists_to_unrooted_tree(
     tree: ToyTree,
     trees: MultiTree,
-    features: list[str] = None,
+    features: List[str] = None,
     conditional: bool = False,
 ) -> ToyTree:
     """
@@ -446,7 +446,7 @@ def map_unrooted_tree_supports_and_dists_to_unrooted_tree(
 def map_rooted_tree_supports_and_heights_to_rooted_tree(
     tree: ToyTree,
     trees: MultiTree,
-    features: list[str] = None,
+    features: List[str] = None,
     conditional: bool = False,
 ) -> ToyTree:
     """
@@ -491,7 +491,7 @@ def map_rooted_tree_supports_and_heights_to_rooted_tree(
     return tree
 
 
-def get_consensus_tree(trees: Union[MultiTree | list[ToyTree]], min_freq: float=0.0) -> ToyTree:
+def get_consensus_tree(trees: Union[MultiTree, List[ToyTree]], min_freq: float=0.0) -> ToyTree:
     """Return an exteded majority-rule consensus tree from a list of trees.
 
     The trees must contain the same set of tips. The returned tree will

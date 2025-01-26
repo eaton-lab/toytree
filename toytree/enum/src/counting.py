@@ -27,7 +27,9 @@ Brown developed probability calculations for all labeled and unlabeled topologie
 """
 
 from typing import Union
-from math import prod, factorial
+from math import factorial
+from functools import reduce
+import operator
 # import numpy as np
 from scipy.special import comb as scipy_comb
 from toytree.core import ToyTree
@@ -79,7 +81,8 @@ def _get_num_bifurcating_trees_by_successive_odds(ntips: int, rooted: bool = Tru
         _get_num_places_a_tip_can_be_added(i, rooted=rooted)
         for i in range(2, ntips)
     )
-    return prod(successive_odds)
+    # return prod(successive_odds)  # no prod() in Py3.7!
+    return reduce(operator.mul, successive_odds, 1)
 
 
 # TODO: NOT YET TESTED. REVISIT FELSENSTEIN
