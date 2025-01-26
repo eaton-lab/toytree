@@ -44,7 +44,7 @@ Add a parent-child clade pair to split an existing branch.
 
 """
 
-from typing import Optional, TypeVar, Tuple, Callable
+from typing import Optional, TypeVar, Tuple, Callable, Union
 from loguru import logger
 import numpy as np
 from toytree.core.apis import TreeModAPI, add_subpackage_method, add_toytree_method
@@ -178,7 +178,7 @@ def collapse_nodes(
 @add_subpackage_method(TreeModAPI)
 def merge_nodes(
     tree: ToyTree,
-    merge_method: Callable | str = "name",
+    merge_method: Union[Callable, str] = "name",
     selection_method: Callable = min,
     inplace: bool = False,
 ) -> ToyTree:
