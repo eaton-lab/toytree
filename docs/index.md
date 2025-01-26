@@ -7,7 +7,8 @@ icon: material/table-edit
 
 Welcome to **toytree**, a Python library for tree visualization, manipulation,
 and numerical and evolutionary analyses. If you are new to toytree, head to 
-the [User Guide](/toytree/quick_guide/) to see examples and learn about its features.
+the [User Guide](/toytree/quick_guide/) to see examples and learn about its 
+features.
 
 ## History
 `toytree` is an object-oriented library built to meet the desire for a framework
