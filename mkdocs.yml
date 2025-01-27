@@ -107,7 +107,7 @@ nav:
     - <i>.mod</i> - tree modification:
       - rooting trees: rooting.ipynb
       - topology changes: mod-topology.ipynb
-      - edge/dist changes: mod-edges.ipynb #TO DO
+      - edge/dist changes: mod-edges.ipynb 
       # - Tree moves: ...
     
     - <i>.enum</i> - tree enumeration:
