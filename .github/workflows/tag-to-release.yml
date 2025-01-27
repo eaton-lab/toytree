@@ -1,0 +1,27 @@
+name: Create Release on Tag
+
+on:
+  push:
+    tags:
+      - '*'  # Triggers on all tags. You can customize this pattern.
+
+jobs:
+  create-release:
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step 1: Checkout the repository
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      # Step 2: Create the GitHub release
+      - name: Create Release
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Default GitHub token
+        with:
+          tag_name: ${{ github.ref_name }}           # The tag name that triggered the workflow
+          release_name: Release ${{ github.ref_name }}
+          draft: false                              # Set to true if you want the release to be a draft
+          prerelease: false                         # Set to true if the tag is for a pre-release
