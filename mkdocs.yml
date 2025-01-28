@@ -38,7 +38,7 @@ plugins:
       kernel_name: py310
       ignore_h1_titles: true
       include_requirejs: true
-      custom_mathjax_url: https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js  
+      # custom_mathjax_url: https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js  
       # highlight_extra_classes: "custom-css-classes"  # don't use this!
       # execute: True      
       # no_input: True
@@ -51,9 +51,9 @@ extra_css:
   - css/mkdocstrings.css
 
 extra_javascript:
-  - javascripts/mathjax.js
+  # - javascripts/mathjax.js
   # - javascripts/MathJax-3.2.2/es5/tex-mml-chtml.js"
-  - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js  
+  # - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js  
 
 markdown_extensions:
   - pymdownx.highlight:
