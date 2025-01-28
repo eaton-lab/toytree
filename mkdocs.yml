@@ -11,7 +11,7 @@ theme:
   palette:
     primary: indigo
   icon:
-    logo: material/graph-outline  
+    logo: material/graph-outline
     repo: fontawesome/brands/github
     # logo: material/library     
   favicon: assets/images/favicon.ico
@@ -50,7 +50,7 @@ extra_css:
   # - stylesheets/extra.css
   - css/mkdocstrings.css
 
-extra_javascript:
+# extra_javascript:
   # - javascripts/mathjax.js
   # - javascripts/MathJax-3.2.2/es5/tex-mml-chtml.js"
   # - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js  
@@ -63,14 +63,13 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
-  - pymdownx.arithmatex:
-      generic: true
+  #- pymdownx.arithmatex:
+  #    generic: true
 
 nav:
   - Getting started:
-    - Home: index.md    
+    - Home: index.md
     - Installation: installation.md
-    # - Try it now: try-it-now.md (BINDER IS DEAD)
     - Change log: change_log.md
     - Contribute: contribute.md
     - Citation: citation.md
@@ -81,19 +80,18 @@ nav:
     - Tree I/O:
       - parsing tree data: parse_trees.ipynb
       - writing tree data: write_trees.ipynb
-    
+
     - Object Types:
       - Node: node.ipynb
       - ToyTree: toytree.ipynb
       - MultiTree: multitree.ipynb
-    
+
     - Traversal and Node selection:
       - traversal order/methods: traversal.ipynb
       - node query/selection: query.ipynb
-    
+
     - Data/Features: data.ipynb
-    
-    # - <span style="color:darkcyan; font-style:bold">Tree drawing</span>:
+
     - Tree Drawing:
       - draw basics: drawing-basics.ipynb
       - draw options: draw-options.ipynb
@@ -110,24 +108,24 @@ nav:
     #- Consensus Trees: ...
     # - Species/Demographic Trees: ...
     # - Admixture/Networks: ... # TO DO
-    
+
     # - <i>.mod</i> - tree modifications:
     - <i>.mod</i> - tree modification:
       - rooting trees: rooting.ipynb
       - topology changes: mod-topology.ipynb
-      - edge/dist changes: mod-edges.ipynb 
+      - edge/dist changes: mod-edges.ipynb
       # - Tree moves: ...
-    
+
     - <i>.enum</i> - tree enumeration:
       - bipartition methods: bipartitions.ipynb
       - quartet methods: quartets.ipynb
       - quadripartition methods: quadripartitions.ipynb
       # - other: ...
 
-    - <i>.distance</i> - tree/node dists: 
+    - <i>.distance</i> - tree/node dists:
       - node distances: node-distance.ipynb
       - tree distances: tree-distance.ipynb
-    
+
     # - <i>.pcm</i> - evol analyses:
     #   - Continuous traits: ...
     #   - Discrete traits: ...
@@ -141,7 +139,7 @@ nav:
     - <i>.annotate</i> - add to drawings:
       - Tree annotations: tree-annotations.ipynb
 
-    - <i>.rtree</i> - random trees: random-trees.ipynb  
+    - <i>.rtree</i> - random trees: random-trees.ipynb
 
     # - networks:
     #   - drawing admixture edges: ...
