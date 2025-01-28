@@ -47,9 +47,9 @@ Examples
 >>>
 >>> # draw the trees
 >>> kwargs = {
->>>     'layout': 'd', 
+>>>     'layout': 'd',
 >>>     'use_edge_lengths': False,
->>>     'node_sizes': 10, 
+>>>     'node_sizes': 10,
 >>>     'node_labels': 'name',
 >>>     'node_labels_style': {
 >>>         'font-size': 20,
@@ -110,16 +110,30 @@ class Rooter:
         """: Features that should be re-polarized on rooting (e.g., support)"""
 
     def _get_edge_features(self, edge_features: Optional[Union[str, Sequence[str]]]) -> Set[str]:
-        """Return the features associated with edges instead of nodes."""
+        """Return the features associated with edges instead of nodes.
+
+        This requires dist and support to be edge features. It also adds
+        any features in self.tree.edge_features, and also adds any that
+        were entered as args to the Rooter class.
+        """
         default = {"_dist", "support"}
         disallowed = {"dist", "idx", "up", "children"}
 
-        # use only defaults
-        if edge_features is None:
-            edge_features = self.tree.edge_features
+        # start with tree's designated edge features
+        efeatures = self.tree.edge_features
+        # add user entered single feature
         if isinstance(edge_features, str):
-            edge_features = self.tree.edge_features | {edge_features}
-        return (default | set(edge_features)) - disallowed
+            efeatures = self.tree.edge_features | {edge_features}
+        # add user entered sequence of features
+        elif isinstance(edge_features, (tuple, list, set)):
+            efeatures = efeatures | set(edge_features)
+        # add default features
+        efeatures = efeatures | default
+        # remove unallowed features
+        efeatures = efeatures - disallowed
+        logger.debug(f"edge_features: {efeatures}")
+        return efeatures
+        # return (default | set(edge_features)) - disallowed
 
     def _get_edge_to_split(self) -> Node:
         """Return the Node below new root edge from input query.

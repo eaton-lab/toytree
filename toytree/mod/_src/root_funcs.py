@@ -18,7 +18,7 @@ References
 - ...
 """
 
-from typing import TypeVar, Dict, Union
+from typing import TypeVar, Dict, Union, Optional, Sequence
 import itertools
 import numpy as np
 from loguru import logger
@@ -37,7 +37,11 @@ __all__ = [
 
 
 @add_subpackage_method(TreeModAPI)
-def root_on_midpoint(tree: ToyTree, inplace: bool = False) -> ToyTree:
+def root_on_midpoint(
+    tree: ToyTree,
+    inplace: bool = False,
+    edge_features: Optional[Sequence[str]] = None,
+) -> ToyTree:
     """Return ToyTree rooted on midpoint of longest edge.
 
     Rooting on the "midpoint" assumes a clock-like evolutionary rate
@@ -53,6 +57,12 @@ def root_on_midpoint(tree: ToyTree, inplace: bool = False) -> ToyTree:
     inplace: bool
         If True then the input tree object is modified and returned,
         else a copy of the tree is modified and returned.
+    edge_features: Sequence[str]
+        One or more Node features that should be treated as a feature
+        of its edge, not the Node itself. On rooting, edge features
+        are re-polarized, to apply to the correct Node. The 'dist'
+        and 'support' features are always treated as edge features.
+        Add additional edge features here. See docs for example.
 
     References
     ----------
@@ -95,8 +105,14 @@ def root_on_midpoint(tree: ToyTree, inplace: bool = False) -> ToyTree:
             node = node._up
 
     # return tree or copy re-rooted
-    tree = tree if inplace else tree.copy()
-    return tree.root(root_node.idx, root_dist=root_node_dist)
+    # tree = tree if inplace else tree.copy()
+    tree = tree.root(
+        root_node.idx,
+        root_dist=root_node_dist,
+        edge_features=edge_features,
+        inplace=inplace,
+    )
+    return tree
 
 
 @add_subpackage_method(TreeModAPI)
@@ -106,6 +122,7 @@ def root_on_minimal_ancestor_deviation(
     inplace: bool = False,
     return_stats: bool = False,
     min_dist: float = 1e-12,
+    edge_features: Optional[Sequence[str]] = None,
 ) -> Union[ToyTree, Dict[ToyTree, Dict[str, float]]]:
     """Return ToyTree rooted on edge that minimizes ancestor deviations.
 
@@ -141,6 +158,12 @@ def root_on_minimal_ancestor_deviation(
     min_dist: float
         Zero length edges use a min_dist value of default=1e-12 to
         prevent division by zero errors.
+    edge_features: Sequence[str]
+        One or more Node features that should be treated as a feature
+        of its edge, not the Node itself. On rooting, edge features
+        are re-polarized, to apply to the correct Node. The 'dist'
+        and 'support' features are always treated as edge features.
+        Add additional edge features here. See docs for example.
 
     Note
     ----
@@ -327,11 +350,14 @@ def root_on_minimal_ancestor_deviation(
     tree.set_node_data("MAD", mads, inplace=True)
     tree.set_node_data("MAD_root_prob", root_probs, inplace=True)
 
+    # add these features as edge features
+    tree.edge_features = tree.edge_features | {"MAD", "MAD_root_prob"}
+
     # root the tree
     tree.root(
         ridx,
         root_dist=tree[ridx]._dist * rho_i,
-        edge_features=["MAD", "MAD_root_prob"],
+        edge_features=edge_features,
         inplace=True,
     )
 
