@@ -48,6 +48,13 @@ plugins:
 extra_css:
   # - stylesheets/extra.css
   - css/mkdocstrings.css
+  - https://unpkg.com/katex@0/dist/katex.min.css  # katex
+
+# 3 js scripts to support katex
+extra_javascript:
+  - javascripts/katex.js
+  - https://unpkg.com/katex@0/dist/katex.min.js
+  - https://unpkg.com/katex@0/dist/contrib/auto-render.min.js  
 
 markdown_extensions:
   - pymdownx.highlight:
@@ -57,6 +64,8 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
+  - pymdownx.arithmatex:
+      generic: true  
 
 nav:
   - Getting started:
