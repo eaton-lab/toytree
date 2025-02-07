@@ -2,6 +2,10 @@
 
 """Conversion of phylogeny to and from variance-covariance matrix.
 
+TODO
+-----
+1. Allow other correlation structures besides Brownian motion.
+2. Estimate covariance structure using statsmodels.
 
 References
 -----------
@@ -18,6 +22,13 @@ import pandas as pd
 import toytree
 from toytree import ToyTree
 from toytree.core.apis import add_subpackage_method, PhyloCompAPI
+
+
+
+# # Fit GLS model without fixing the covariance structure (let it estimate)
+# gls_model_est = sm.GLS(y, X).fit()
+# print(gls_model_est.summary())
+
 
 
 @add_subpackage_method(PhyloCompAPI)

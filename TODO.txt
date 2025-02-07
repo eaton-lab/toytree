@@ -103,13 +103,26 @@
 [x] .annotate: add_tip_markers allow using mask.
 [x] .pcm bug fix to vcv function on diagonal calculation.
 [x] .cli update code for rooting w/o regex arg.
+
+# v.3.0.7
+[x] .mod automatically add MAD stats to edge_features.
+[x] .mod allow edge_features arg to all rooting methods.
+[x] docs updates to mod submodule.
+
+# v.3.0.8
 ----------------------------------------------------------------------
 
 ### tests
 [ ] .color test_color_mapper funcs for feature vs values, and examples in scratch nb
 [ ] .mod rooting test
+[ ] .mod drop_tips (suggest extract_subclade on drop root error message.)
+[ ] .annotate continue development of add_axes_scale_bar with more options.
+[ ] .annotate improve support for pie charts where every node does not have data, or has nans.
+[ ] consider adding statsmodels as a requirement (requires patsy which requires six; not bad).
 
 ### recent
+[ ] .annotate (func to help with trees drawn on sepraate axes to make extents ALIGN!)
+[ ] .mod current resolve_polytomies func is biased towards making unbalanced trees.
 [ ] .annotate: add a 'add_edge_lines' method.
 [ ] .infer finish new implementation of consensus
 [ ] .infer finish application of maxcut -- see external tools like MQLib.

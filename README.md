@@ -3,20 +3,17 @@ Toytree
 
 Tree plotting with **Toytree** in Python
 ----------------------------------------
-Welcome to toytree, a Python library for tree visualization, manipulation,
-and numerical and evolutionary analyses. If you are new to toytree, head to 
-the [User Guide](https://eaton-lab.org/toytree/quick_guide/) to see 
-examples and learn about its features.
+Welcome to toytree, a Python library for tree object data parsing, visualization,
+manipulation, and numerical and evolutionary analyses. If you are new to toytree, head to 
+the [User Guide](https://eaton-lab.org/toytree/quick_guide/) to see examples and learn about its features.
 
-Toytree builds upon the Node data structure from the [ete3](http://etetoolkit.org/docs/latest/tutorial/tutorial_trees.html) library, but aims to provide
-a more user-friendly object-oriented framework for interactive coding 
-through our ToyTree object. The toytree library includes a suite of 
-growing and extendable modules for analyses of trees and of data on trees.
-It also includes modern plotting tools built on the [toyplot](http://toyplot.rtfd.io/) 
-plotting library. The goal of toytree is to provide a light-weight Python equivalent to commonly used tree manipulation and plotting libraries in R, 
-and in doing so, to promote further development of phylogenetic methods in Python. Toytree generates rich interactive figures (SVG+HTML+JS) that can be embedded in jupyter-notebooks or webpages, or rendered in SVG, PDF, or PNG for publications. 
-The library is small and easy to install, making it easy to incorporate into 
-other projects. 
+The goal of toytree is to provide a light-weight Python equivalent to widely used tree analysis
+and plotting libraries in R, and in doing so, to promote further development of phylogenetic and
+evolutionary analysis methods in Python.
+
+Toytree generates rich interactive figures (SVG+HTML+JS) that render in jupyter-notebooks or webpages,
+and can be exported as high quality SVG, PDF, or PNG figures for publications. The library is minimal
+dependencies, is easy to install, and can be easily incorporated into other projects. 
 
 
 Current release info
@@ -38,7 +35,7 @@ conda search toytree --channel conda-forge
 
 Documentation
 -------------
-See the [full documentation](http://eaton-lab.org/toytree) to learn more about plotting options, analysis methods, and other features of toytree. You can try out toytree in the cloud before installing by visiting the [toytree binder](http://mybinder.org/repo/eaton-lab/toytree).
+See the full documentation at [http://eaton-lab.org/toytree](http://eaton-lab.org/toytree).
 
 
 Example code

@@ -38,7 +38,6 @@ plugins:
       kernel_name: py310
       ignore_h1_titles: true
       include_requirejs: true
-      # custom_mathjax_url: https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js  
       # highlight_extra_classes: "custom-css-classes"  # don't use this!
       # execute: True      
       # no_input: True
@@ -49,22 +48,24 @@ plugins:
 extra_css:
   # - stylesheets/extra.css
   - css/mkdocstrings.css
+  - https://unpkg.com/katex@0/dist/katex.min.css  
 
-# extra_javascript:
-  # - javascripts/mathjax.js
-  # - javascripts/MathJax-3.2.2/es5/tex-mml-chtml.js"
-  # - https://unpkg.com/mathjax@3/es5/tex-mml-chtml.js  
+extra_javascript:
+  - javascripts/katex.js
+  - https://unpkg.com/katex@0/dist/katex.min.js
+  - https://unpkg.com/katex@0/dist/contrib/auto-render.min.js
 
 markdown_extensions:
   - pymdownx.highlight:
       anchor_linenums: true
       line_spans: __span
       pygments_lang_class: true
+  - pymdownx.arithmatex:
+     generic: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
-  #- pymdownx.arithmatex:
-  #    generic: true
+
 
 nav:
   - Getting started:
@@ -136,8 +137,13 @@ nav:
       # - MulTree analysis: ...
       # - Tree inference: ...
 
-    - <i>.annotate</i> - add to drawings:
-      - Tree annotations: tree-annotations.ipynb
+    - <i>.annotate</i> - add to drawings: annotate-intro.ipynb
+      # - annotations: 
+      # - node_annotations: 
+      # - edge_annotations: 
+      # - axes_annotations: 
+      # - histograms:
+      # - ...
 
     - <i>.rtree</i> - random trees: random-trees.ipynb
 
