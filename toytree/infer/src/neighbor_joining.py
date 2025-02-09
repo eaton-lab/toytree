@@ -4,14 +4,14 @@
 
 """
 
-from typing import Tuple, Iterator
+from typing import Tuple, Iterator, Union
 from numpy.typing import ArrayLike
 import numpy as np
 import pandas as pd
 import toytree
 
 
-def infer_neighbor_joining_tree(data: pd.DataFrame) -> toytree.ToyTree:
+def infer_neighbor_joining_tree(data: ArrayLike) -> toytree.ToyTree:
     """Return a ToyTree inferred by neighbor-joining from a distance matrix.
 
     Neighbor-joining is a clustering algorithm for building trees from
@@ -28,11 +28,17 @@ def infer_neighbor_joining_tree(data: pd.DataFrame) -> toytree.ToyTree:
     -------
     >>> ...
     """
+    # store names if provided, else use numeric range
+    if hasattr(data, "index"):
+        names = data.index
+    else:
+        names = np.arange(data.shape[0])
+
     # store a copy of dataframe as an array that will be modified.
     arr = np.array(data).astype(float)
 
     # dict to store Nodes, starting with tips.
-    nodes = {i: toytree.Node(name=i) for i in data.index}
+    nodes = {i: toytree.Node(name=i) for i in names}
 
     # iterate generator function to get next pair of Nodes to join.
     for i, j, v_i, v_j in iter_nj_algorithm(arr):
@@ -143,12 +149,12 @@ if __name__ == "__main__":
     TREE._draw_browser(
         scale_bar=True,
         node_labels=DISTS,
-        node_labels_style={"-toyplot-anchor-shift": -12, "baseline-shift": -10},
+        node_labels_style={"anchor-shift": -12, "baseline-shift": -10},
         node_mask=(0, 1, 1),
         node_sizes=5,
-        # node_markers="r2x1",
-        tip_labels_style={"-toyplot-anchor-shift": 10},
+        tip_labels_style={"anchor-shift": 10},
         tip_labels_align=True,
         width=400,
         height=400,
+        tmpdir="~",
     )
