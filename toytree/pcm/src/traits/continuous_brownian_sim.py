@@ -11,6 +11,10 @@ from toytree import ToyTree
 from toytree.utils import ToytreeError
 from toytree.core.apis import add_subpackage_method, PhyloCompAPI
 
+__all__ = [
+    "simulate_continuous_brownian",
+]
+
 
 def simulate_continuous_multivariate_brownian(
     tree: ToyTree,

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-"""
+"""DEPRECATED
+
 Phylogenetic comparative methods functions made accessible at
 :mod:`toytree.pcm` as a subpackage-level API.
 """
