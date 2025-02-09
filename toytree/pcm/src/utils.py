@@ -70,7 +70,7 @@ def calculate_posterior(
         ntips = trees.ntips
         tiporder = trees.get_tip_labels()
     elif isinstance(trees, toytree.MultiTree):
-        itertree = iter(i for i in trees)
+        itertree = iter(trees)
         ntrees = len(trees)
         ntips = trees.treelist[0].ntips
         tiporder = trees.treelist[0].get_tip_labels()
@@ -92,6 +92,7 @@ def calculate_posterior(
         rasyncs = {}
 
         # submit as many jobs as there are cores
+        njobs = min(njobs, len(trees))
         for job in range(njobs):
             tree = next(itertree)
             kwargs.update({"tree": tree})

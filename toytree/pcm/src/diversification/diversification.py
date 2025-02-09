@@ -15,41 +15,47 @@ from toytree.pcm.src.utils import calculate_posterior
 ToyTree = TypeVar("ToyTree")
 MultiTree = TypeVar("MultiTree")
 
+__all__ = [
+    "get_tip_level_diversification", 
+    "get_equal_splits",
+]
 
-def _get_equal_splits(tree: ToyTree):
-    """Return DataFrame with equal splits (ES) metric sensu Redding 
-    and Mooers 2006. See :meth:`.get_equal_splits`
+
+def _get_equal_splits(tree: ToyTree) -> pd.Series:
+    """Return equal splits (ES) metric sensu Redding and Mooers 2006. 
+    See :meth:`.get_equal_splits`
     """
     # store results
-    data = pd.Series(name="ES", index=tree.get_tip_labels(), dtype=float)
+    data = pd.Series(name="ES", index=tree.get_tip_labels(), dtype=np.float64)
 
     # traverse up to root from each tip
-    for idx in range(tree.ntips):
-        node = tree[idx]
+    for node in tree:
+        name = node.name
         divrate = 0
         j = 1
         while node.up:
             divrate += node.up.dist / (2 ** j)
             node = node.up
             j += 1
-        data[idx] = divrate
+        data[name] = divrate
     return data    
 
+
 def _get_tip_level_diversification(tree: ToyTree):
-    """Returns a DataFrame with tip-level diversification rates
-    sensu Jetz 2012. See :meth:`.get_tip_level_diversification`
+    """Return tip-level diversification rates sensu Jetz 2012. 
+    See :meth:`.get_tip_level_diversification`
     """
     # ensure tree is a tree
     data = 1 / get_equal_splits(tree)
     data.name = "DR"
     return data
 
+
 def get_equal_splits(
     trees: Union[ToyTree, MultiTree, str],
     njobs: int=1,
-    ) -> pd.DataFrame:
-    """Return DataFrame with equal splits (ES) metric sensu Redding 
-    and Mooers 2006.
+) -> pd.DataFrame:
+    """Return equal splits (ES) metric sensu Redding and Mooers 2006.
 
     Parameters
     ----------
@@ -57,8 +63,6 @@ def get_equal_splits(
         One or more input trees.
     njobs: int
         Distribute N jobs in parallel using ProcessPoolExecutor.
-    **kwargs: dict
-        A dictionary of arguments to the Callable function.
 
     Returns
     -------
@@ -74,13 +78,13 @@ def get_equal_splits(
         return _get_equal_splits(trees)
     return calculate_posterior(_get_equal_splits, trees, njobs)
 
+
 def get_tip_level_diversification(
     trees: Union[ToyTree, MultiTree, str],
     njobs: int=1,
     **kwargs,
-    ) -> pd.DataFrame:
-    """Return a DataFrame with tip-level diversification rates
-    sensu Jetz 2012.
+) -> pd.DataFrame:
+    """Return tip-level diversification rates sensu Jetz 2012.
 
     Parameters
     ----------
@@ -96,10 +100,6 @@ def get_tip_level_diversification(
     pandas.DataFrame or pandas.Series
         If multiple trees a DataFrame with posterior statistics is
         returned, else a Series with stats for a single tree.
-
-    Reference
-    ---------
-    TODO
     """
     if isinstance(trees, toytree.ToyTree):
         return _get_tip_level_diversification(trees, **kwargs)
@@ -113,9 +113,8 @@ def get_prob_dist_of_ntips(
     speciation_rate: float=0.5,
     extinction_rate: float=0.5,
     n_max_tips: int=500,
-    ) -> np.ndarray:
+) -> np.ndarray:
     """Return probability distribution of a b-d model ending in ntips.
-
 
     References
     ----------
@@ -126,16 +125,18 @@ def get_prob_dist_of_ntips(
     rel_ext = extinction_rate / speciation_rate
 
     # the prob that any particular lineage has gone extinct before t
-    alpha = lambda time: (
-        (rel_ext * ((np.exp(net_div) * time) - 1)) / 
-        (np.exp(net_div) * time - rel_ext)
-    )
+    def alpha(time):
+        return (
+            (rel_ext * ((np.exp(net_div) * time) - 1)) / 
+            (np.exp(net_div) * time - rel_ext)
+        )
 
     # ...
-    beta = lambda time: (
-        (np.exp(net_div) * time - 1) /        
-        (np.exp(net_div) * time - rel_ext)
-    )
+    def beta(time):
+        return (
+            (np.exp(net_div) * time - 1) /        
+            (np.exp(net_div) * time - rel_ext)
+        )
 
     # a simpler set of equations can be used when n_starting=1
     # p0t = alpha(0) ** n_starting_tips
@@ -157,7 +158,7 @@ def get_net_diversification_rate(
     age: float, 
     stem: bool=True,
     relative_extinction_rate: float=0, 
-    ) -> float:
+) -> float:
     r"""
     
     $r_{stem} = \frac{ln(n)}{t_{stem}}$
@@ -202,7 +203,7 @@ def get_birth_death_likelihood(
     time_to_present: float,
     time_to_root: float,
     condition_on_tree_existence: bool=True,
-    ) -> float:
+) -> float:
     """...
 
     Example
@@ -230,7 +231,7 @@ def get_birth_death_likelihood(
 
 def fit_birth_death_model(
     tree: ToyTree,
-    ):
+):
     pass
 
 
@@ -242,3 +243,5 @@ if __name__ == "__main__":
     # print(get_tip_level_diversification(mtree, 2))
     
     TREE = toytree.rtree.bdtree(ntips=100, b=0.5, d=0.5)
+    MTREE = [TREE, TREE, TREE]
+    print(get_tip_level_diversification(MTREE, njobs=10))
