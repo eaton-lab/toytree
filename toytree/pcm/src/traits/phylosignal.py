@@ -32,6 +32,10 @@ __Philipp Mitteroecker, Michael L Collyer, Dean C Adams, Exploring Phylogenetic
 Signal in Multivariate Phenotypes by Maximizing Blomberg’s K, Systematic 
 Biology, 2024;, syae035, https://doi.org/10.1093/sysbio/syae035__
 
+__Adams, D. C. (2014). A generalized K statistic for estimating 
+phylogenetic signal from shape and other high-dimensional multivariate
+data. Systematic biology, 63(5), 685-697.__
+
 """
 
 from typing import Union, Sequence, TypeAlias
