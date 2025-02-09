@@ -119,7 +119,15 @@
 [x] .annotate new add_tip_labels method
 
 # v.3.0.9
+[x] .pcm updated simulate_continuous_bm name and options
 
+
+# TODO
+[ ] .annotate add_color_bar add_scale_bar
+[ ] .pcm implement multivariate K
+[ ] .pcm implement Pagel's lambda
+[ ] .pcm implement discrete model fit
+[ ] .pcm implement 
 
 ----------------------------------------------------------------------
 

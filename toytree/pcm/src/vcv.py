@@ -133,22 +133,27 @@ def get_corr_matrix_from_tree(
     return pd.DataFrame(corr, index=names, columns=names)
 
 
-@add_subpackage_method(PhyloCompAPI)
+# @add_subpackage_method(PhyloCompAPI)
 def get_distance_matrix_from_vcv_matrix(vcv: Union[np.ndarray, pd.DataFrame]) -> Union[np.ndarray, pd.DataFrame]:
     """Returns the Euclidean distance between tips from a VCV matrix.
 
     The Euclidean distance is computed as:
         V[i, i] + V[j, j] - (2 * V[i, j])
     """
+    names = None
+    if isinstance(vcv, pd.DataFrame):
+        names = vcv.index
     vcv = np.array(vcv)
     dists = np.zeros_like(vcv)
     for i in range(dists.shape[0]):
         for j in range(dists.shape[0]):
             dists[i, j] = vcv[i, i] + vcv[j, j] - (2 * vcv[i, j])
+    if names is not None:
+        dists = pd.DataFrame(dists, index=names, columns=names)
     return dists
 
 
-@add_subpackage_method(PhyloCompAPI)
+# @add_subpackage_method(PhyloCompAPI)
 def get_tree_from_vcv_matrix(vcv: Union[np.ndarray, pd.DataFrame]) -> ToyTree:
     """Return tree reconstructed from a variance-covariance matrix.
 

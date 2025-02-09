@@ -4,14 +4,16 @@
 
 """
 
-from typing import Tuple, Iterator, Union
-from numpy.typing import ArrayLike
+from typing import Tuple, Iterator, Union, TypeVar
 import numpy as np
 import pandas as pd
 import toytree
 
 
-def infer_neighbor_joining_tree(data: ArrayLike) -> toytree.ToyTree:
+Array: TypeVar = Union[np.ndarray, pd.DataFrame]
+
+
+def infer_neighbor_joining_tree(data: Array) -> toytree.ToyTree:
     """Return a ToyTree inferred by neighbor-joining from a distance matrix.
 
     Neighbor-joining is a clustering algorithm for building trees from
@@ -26,7 +28,26 @@ def infer_neighbor_joining_tree(data: ArrayLike) -> toytree.ToyTree:
 
     Example
     -------
-    >>> ...
+    >>> # example from Felsenstein book
+    >>> names = ["dog", "bear", "raccoon", "weasel", "seal", "sea lion", "cat", "monkey"]
+    >>> data = pd.DataFrame(
+    >>>     index=names,
+    >>>     columns=names,
+    >>>     data=np.array([
+    >>>         [0, 32, 48, 51, 50, 48, 98, 148],
+    >>>         [32, 0, 26, 34, 29, 33, 84, 136],
+    >>>         [48, 26, 0, 42, 44, 44, 92, 152],
+    >>>         [51, 34, 42, 0, 44, 38, 86, 142],
+    >>>         [50, 29, 44, 44, 0, 24, 89, 142],
+    >>>         [48, 33, 44, 38, 24, 0, 90, 142],
+    >>>         [98, 84, 92, 86, 89, 90, 0, 148],
+    >>>         [148, 136, 152, 142, 142, 142, 148, 0],
+    >>>     ])
+    >>> )
+    >>> # run tree inference, root, and draw it.
+    >>> tree = infer_neighbor_joining_tree(data)
+    >>> tree = tree.mod.root_on_minimal_ancestor_deviation()
+    >>> tree.draw(scale_bar=True, node_sizes=5, tip_labels_align=True)
     """
     # store names if provided, else use numeric range
     if hasattr(data, "index"):
@@ -72,7 +93,7 @@ def infer_neighbor_joining_tree(data: ArrayLike) -> toytree.ToyTree:
     return toytree.ToyTree(node_j)
 
 
-def iter_nj_algorithm(arr: ArrayLike) -> Iterator[Tuple[int, int, float, float]]:
+def iter_nj_algorithm(arr: Array) -> Iterator[Tuple[int, int, float, float]]:
     """Generator function to yield node indices and branch lengths.
 
     Each iteration of the neighbor-joining algorithm finds the pair
@@ -122,9 +143,10 @@ def iter_nj_algorithm(arr: ArrayLike) -> Iterator[Tuple[int, int, float, float]]
 if __name__ == "__main__":
 
     # example from Felsenstein
-    DATA = pd.DataFrame(
-        index=["dog", "bear", "raccoon", "weasel", "seal", "sea lion", "cat", "monkey"],
-        columns=["dog", "bear", "raccoon", "weasel", "seal", "sea lion", "cat", "monkey"],
+    names = ["dog", "bear", "raccoon", "weasel", "seal", "sea lion", "cat", "monkey"]
+    data = pd.DataFrame(
+        index=names,
+        columns=names,
         data=np.array([
             [0, 32, 48, 51, 50, 48, 98, 148],
             [32, 0, 26, 34, 29, 33, 84, 136],
@@ -138,23 +160,21 @@ if __name__ == "__main__":
     )
 
     # run tree inference and draw it.
-    TREE = infer_neighbor_joining_tree(DATA)
+    tree = infer_neighbor_joining_tree(data)
 
-    # root on 'monkey' at ~1/3 of length.
-    # TREE = TREE.root("monkey", root_dist=30)
-    TREE = TREE.mod.root_on_midpoint()  # ("monkey", root_dist=30)
+    # roots on 'monkey'
+    tree = tree.mod.root_on_minimal_ancestor_deviation()
 
     # plot with .dist values shown
-    DISTS = [f"{i:.2f}" for i in TREE.get_node_data('dist')]
-    TREE._draw_browser(
+    # DISTS = [f"{i:.2f}" for i in TREE.get_node_data('dist')]
+    tree._draw_browser(
         scale_bar=True,
-        node_labels=DISTS,
-        node_labels_style={"anchor-shift": -12, "baseline-shift": -10},
-        node_mask=(0, 1, 1),
         node_sizes=5,
-        tip_labels_style={"anchor-shift": 10},
         tip_labels_align=True,
-        width=400,
-        height=400,
         tmpdir="~",
+        # node_labels="dist",
+        # node_labels_style={"anchor-shift": -15, "baseline-shift": -10},
+        # node_mask=(0, 1, 1),
     )
+
+    help(infer_neighbor_joining_tree)

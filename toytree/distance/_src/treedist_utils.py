@@ -582,6 +582,8 @@ def get_trees_shared_phylo_info_dist(
     spi = get_trees_shared_phylo_info(tree1, tree2, normalize=False)
     ind_info = sum(get_tree_splitwise_phylo_info(i) for i in (tree1, tree2))
     if normalize:
+        if not ind_info:
+            return 0.
         return (ind_info - (2 * spi)) / ind_info
     return ind_info - (2 * spi)
 

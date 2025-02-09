@@ -21,11 +21,11 @@ def write_test_data(ntips: int = 24, seed: int = 123) -> None:
     csv_path = "/tmp/traits.csv"    
 
     # generate tree
-    tree = toytree.rtree.unittree(ntips=ntips, seed=seed)
+    tree = toytree.rtree.unittree(ntips=ntips, seed=seed, treeheight=10.)
 
     # generate data
     tree.pcm.simulate_continuous_brownian(
-        rates=[1.0, 0.1], tips_only=True, seed=seed, inplace=True)
+        rates=[5.0, 0.5], tips_only=True, seed=seed, inplace=True)
 
     # write data to csv
     feature = tree.get_node_data(["t0", "t1"])[:tree.ntips]
@@ -62,5 +62,5 @@ if __name__ == "__main__":
     # nwk_path, csv_path = write_test_data()
     # print(run_phytools(nwk_path, csv_path))
 
-    nwk_path, csv_path = write_test_data(24, 123)
+    nwk_path, csv_path = write_test_data(50, 123)
     print(run_phytools(nwk_path, csv_path))

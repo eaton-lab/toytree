@@ -4,7 +4,7 @@
 
 """
 
-from typing import Optional, Union, Sequence, Dict
+from typing import Union, Sequence, Dict
 import pandas as pd
 import numpy as np
 from toytree import ToyTree
@@ -12,11 +12,11 @@ from toytree.utils import ToytreeError
 from toytree.core.apis import add_subpackage_method, PhyloCompAPI
 
 __all__ = [
-    "simulate_continuous_brownian",
+    "simulate_continuous_bm",
 ]
 
 
-def simulate_continuous_multivariate_brownian(
+def simulate_continuous_multivariate_bm(
     tree: ToyTree,
     rates: Union[float, Sequence[float], Dict[str, float]],
     root_states: Union[float, Sequence[float], Dict[str, float], None] = None,
@@ -24,6 +24,9 @@ def simulate_continuous_multivariate_brownian(
     df: bool = False,
 ) -> Union[ToyTree, pd.DataFrame]:
     """Simulate two or more continuous correlated traits under Brownian motion.
+    
+    THIS CAN PROB BE ACCOMPLISHED WITHIN THE FUNC BELOW BY ALLOWING
+    A VCV AS INPUT FOR RATES.
 
     References
     ----------
@@ -33,7 +36,7 @@ def simulate_continuous_multivariate_brownian(
 
 
 @add_subpackage_method(PhyloCompAPI)
-def simulate_continuous_brownian(
+def simulate_continuous_bm(
     tree: ToyTree,
     rates: Union[float, Sequence[float]],
     root_states: Union[float, Sequence[float], None] = None,
@@ -50,14 +53,13 @@ def simulate_continuous_brownian(
     described by an evolutionary rate parameter, sigma**2. To model the
     change over an interval of time we can simply sample a random value
     from a normal distribution with mean=0 and variance as the product
-    of the length of time and the rate parameter sigma**2.
+    of the length of time and the rate parameter sigma**2 * t.
 
     Simulated traits are labeled t0-tN for N traits, unless the rates
     arg is entered as a mapping (e.g., dict) in which case traits can
-    be given custom names. By default, simulated data are stored to
-    Node objects of the input tree, and can be fetched by calling
-    `tree.get_node_data()`. However, you can alternatively use the
-    argument `df=True` to instead return simulated data in a DataFrame.
+    be given custom names. By default, simulated data are returned as
+    a pandas DataFrame, but can alternatively be stored to the Nodes
+    of the tree by using `inplace=True`. 
 
     Paramaters
     ----------
@@ -87,13 +89,13 @@ def simulate_continuous_brownian(
     Example
     -------
     >>> tree = toytree.rtree.unittree(10, treeheight=10)
-    >>> data = tree.pcm.simulate_continuous_brownian(rate=1.0)
-
+    >>> data = tree.pcm.simulate_continuous_bm(rate=1.0)
+    >>> 
     >>> # simulate multiple traits with different rates
-    >>> data = tree.pcm.simulate_continuous_brownian(rates=[1, 2, 3])
-
+    >>> data = tree.pcm.simulate_continuous_bm(rates=[1, 2, 3])
+    >>>
     >>> # simulate 100 replicates w/ same rate and assign to tree Nodes
-    >>> tree.pcm.simulate_continuous_brownian([1.0] * 100, inplace=True)
+    >>> tree.pcm.simulate_continuous_bm([1.0] * 100, inplace=True)
     >>> print(tree.get_node_data())
     """
     # seed random number generator
@@ -106,6 +108,9 @@ def simulate_continuous_brownian(
     elif isinstance(rates, (list, tuple, np.ndarray)):
         rates = np.array(rates)
         names = [f"t{i}" for i in range(len(rates))]
+    elif isinstance(rates, dict):
+        names = list(rates.keys())
+        rates = np.array(list(rates.values()))
     else:
         raise ToytreeError("rate argument type not supported")
 
@@ -146,7 +151,7 @@ if __name__ == "__main__":
 
     import toytree
     tree = toytree.rtree.unittree(10, treeheight=1)
-    data = simulate_continuous_brownian(
+    data = simulate_continuous_bm(
         tree,
         rates=[1., 2.],
         root_states=[10, 20],
@@ -155,7 +160,7 @@ if __name__ == "__main__":
     )
     print(data)
 
-    data = simulate_continuous_brownian(
+    data = simulate_continuous_bm(
         tree,
         rates=1.,
         seed=123,
@@ -163,7 +168,6 @@ if __name__ == "__main__":
     )
     print(data)
 
-    # simulate_continous_brownian(tree, rates=1, seed=123, inplace=True)
     # tree._draw_browser(
     #     # edge_widths=4,
     #     # ts='c',

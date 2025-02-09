@@ -27,7 +27,12 @@ __Ives, A. R., P. E. Midford, and T. Garland Jr. (2007) Within-species
 variation and measurement error in phylogenetic comparative biology.
 Systematic Biology, *56*, 252-270.__
 
-Extension to multivariate measure of K:  
+Extension to multivariate measure of K:
+__Dean C. Adams, A Generalized K Statistic for Estimating Phylogenetic 
+Signal from Shape and Other High-Dimensional Multivariate Data, 
+Systematic Biology, Volume 63, Issue 5, September 2014, Pages 685–697, 
+https://doi.org/10.1093/sysbio/syu030__
+
 __Philipp Mitteroecker, Michael L Collyer, Dean C Adams, Exploring Phylogenetic
 Signal in Multivariate Phenotypes by Maximizing Blomberg’s K, Systematic 
 Biology, 2024;, syae035, https://doi.org/10.1093/sysbio/syae035__
@@ -35,15 +40,15 @@ Biology, 2024;, syae035, https://doi.org/10.1093/sysbio/syae035__
 __Adams, D. C. (2014). A generalized K statistic for estimating 
 phylogenetic signal from shape and other high-dimensional multivariate
 data. Systematic biology, 63(5), 685-697.__
-
 """
+
 
 from typing import Union, Sequence, TypeAlias
 import numpy as np
 import pandas as pd
 from toytree.core import ToyTree
 from toytree.pcm import get_vcv_matrix_from_tree
-from scipy.optimize import minimize_scalar
+from scipy.optimize import minimize_scalar, shgo
 from loguru import logger
 
 
@@ -111,9 +116,7 @@ def phylogenetic_signal_k(
     if error is None:
         return _phylogenetic_signal_k(tree, data, None, test, permutations)
     else:
-        logger.warning("IN DEVELOPMENT")
         return _phylogenetic_signal_k_with_se(tree, data, error, test, permutations)
-
 
 
 def _phylogenetic_signal_k(
@@ -148,8 +151,13 @@ def _phylogenetic_signal_k(
     # [optional] permutation test
     if test:
         pval = _permutation_test_k(permutations, x, V, kstat)
-        return {"K": kstat, "P-value": pval, "permutations": permutations}
-    return {"K": kstat, "P-value": np.nan, "permutations": 0}
+
+    # return as a dict
+    return {
+        "K": kstat,
+        "P-value": np.nan if not test else pval,
+        "permutations": np.nan if not test else permutations,
+    }
 
 
 def _calculate_k(x, V, IV = None) -> float:
@@ -179,14 +187,12 @@ def _permutation_test_k(size: int, x: np.ndarray, V: np.ndarray, k: float):
     return np.sum(kstats >= k) / kstats.size
 
 
-def _calculate_k_with_se(x: np.ndarray, V: np.ndarray, error: np.ndarray) -> tuple[float, float]:
+def _calculate_k_with_se(x: np.ndarray, V: np.ndarray, IV: np.ndarray, E: np.ndarray) -> tuple[float, float]:
     """
     """
     # start using no error vcv
-    IV = np.linalg.inv(V)
     a = np.sum(IV @ x) / np.sum(IV)
     n = x.size
-    E = np.diag(error ** 2)    
 
     # constrain optimization by setting a max on sigma2
     term = x - a
@@ -196,14 +202,16 @@ def _calculate_k_with_se(x: np.ndarray, V: np.ndarray, error: np.ndarray) -> tup
     estimate = minimize_scalar(
         _likelihood,
         args=(V, E, x),
-        bounds=(1e-6, max_sig2),
+        bounds=(0, max_sig2),
         method="bounded",
+        # options=dict(maxiter=1000, xatol=1e-10, disp=0),
     )
     model_fit = {
         "optimum": estimate.x,
-        "LogLik": -estimate.fun,
+        "LogLik": estimate.fun,
         "convergence": estimate.success,
     }
+    # logger.debug(estimate)
     # logger.debug(f"\n{pd.Series(model_fit)}")
 
     # get rate parameter
@@ -217,10 +225,10 @@ def _calculate_k_with_se(x: np.ndarray, V: np.ndarray, error: np.ndarray) -> tup
     a = np.sum(IVe @ x) / np.sum(IVe)
     num = ((x - a).T @ (x - a) / ((x - a).T @ IVe @ (x - a)))
     dnm = ((np.sum(Ve.diagonal()) - n / np.sum(IVe)) / (n - 1))
-    return num / dnm, sig2, model_fit["LogLik"]
+    return num / dnm, sig2, model_fit["LogLik"], model_fit["convergence"]
 
 
-def _permutation_test_k_with_se(size: int, x: np.ndarray, V: np.ndarray, error: np.ndarray, kstat: float):
+def _permutation_test_k_with_se(size: int, x: np.ndarray, V: np.ndarray, IV: np.ndarray, error: np.ndarray, k: float):
     """Return p-value from permutations as a test statistic. 
     """
     kstats = np.zeros(size)
@@ -230,10 +238,10 @@ def _permutation_test_k_with_se(size: int, x: np.ndarray, V: np.ndarray, error: 
         _x = x[order]
         _e = error[order]
         _E = np.diag(_e ** 2)
-        kstats[i], _, _ = _calculate_k_with_se(_x, V, _E)
+        kstats[i], _, _, _ = _calculate_k_with_se(_x, V, IV, _E)
 
     # the proportion of permutations w/ k_ > k
-    return np.sum(kstats >= kstat) / kstats.size
+    return np.sum(kstats >= k) / kstats.size
 
 
 def _phylogenetic_signal_k_with_se(
@@ -260,22 +268,27 @@ def _phylogenetic_signal_k_with_se(
         error = np.repeat(0.0, ntips)
 
     # validate proper trait format returned as float array
-    x = _validate_features(data, max_dim=1, size=ntips)    
+    x = _validate_features(data, max_dim=1, size=ntips)
+    error = _validate_features(error, max_dim=1, size=ntips)
 
     # calculate K stat w/ error
-    kstat, sig2, loglik = _calculate_k_with_se(x, V, error)
+    IV = np.linalg.inv(V)    
+    E = np.diag(error ** 2)
+    kstat, sig2, loglik, conv = _calculate_k_with_se(x, V, IV, E)
+    loglik = _likelihood(sig2, V, E, x)
 
     # [optional] permutation test statistic
-    if permutations:
-        pval = _permutation_test_k_with_se(permutations, x, V, error, kstat)
+    if test:
+        pval = _permutation_test_k_with_se(permutations, x, V, IV, error, kstat)
 
     # return as a dict
     return {
         "K": kstat, 
-        "P-value": pval,
+        "P-value": np.nan if not test else pval,
         "permutations": 0 if not test else permutations,
         "log-likelihood": -loglik,
         "sig2": sig2,
+        "convergence": conv,
     }
 
 
@@ -287,13 +300,13 @@ def _likelihood(theta: float, V: np.ndarray, E: np.ndarray, y: np.ndarray) -> fl
 
     # get pgls mean
     IC = np.linalg.inv(C)
-    n = len(y)
+    n = y.size
     a = np.sum(IC @ y) / np.sum(IC)
 
     # get log determinant of variance covariance matrix
     det = np.linalg.det(C)
     if det <= 0:
-        logdet2 = np.log(1e-12)
+        logdet2 = np.nan # np.log(1e-12)
     else:
         logdet2 = np.log(det) / 2.
 
@@ -314,15 +327,15 @@ if __name__ == "__main__":
     toytree.set_log_level("DEBUG")
 
     # generate test data
-    tree = toytree.rtree.unittree(ntips=24, seed=123)
+    tree = toytree.rtree.unittree(ntips=50, treeheight=10., seed=123)
     tree.pcm.simulate_continuous_brownian(
-        rates=[1.0, 0.1], tips_only=True, seed=123, inplace=True
+        rates=[5.0, 0.5], tips_only=True, seed=123, inplace=True
     )
 
     # get K
-    k = _phylogenetic_signal_k(tree=tree, data="t0", test=True)
-    logger.info(k)
+    # k = _phylogenetic_signal_k(tree=tree, data="t0", test=True)
+    # logger.info(k)
 
     # get K w/ Error
-    k = _phylogenetic_signal_k_with_se(tree=tree, data="t0", error="t1", test=True)
+    k = _phylogenetic_signal_k_with_se(tree=tree, data="t0", error="t1", test=0)
     logger.info(k)
