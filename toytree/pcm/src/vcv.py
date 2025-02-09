@@ -24,11 +24,16 @@ from toytree import ToyTree
 from toytree.core.apis import add_subpackage_method, PhyloCompAPI
 
 
+__all__ = [
+    "get_vcv_matrix_from_tree",
+    "get_corr_matrix_from_tree",
+    "get_distance_matrix_from_vcv_matrix",
+    "get_tree_from_vcv_matrix",
+]
 
 # # Fit GLS model without fixing the covariance structure (let it estimate)
 # gls_model_est = sm.GLS(y, X).fit()
 # print(gls_model_est.summary())
-
 
 
 @add_subpackage_method(PhyloCompAPI)
@@ -55,13 +60,13 @@ def get_vcv_matrix_from_tree(
     Example
     -------
     >>> tree = toytree.rtree.unittree(ntips=5, seed=123, treeheight=3)
-    >>> print(get_vcv_from_tree(tree))
-    >>> #      r0     r1      r2      r3      r4
-    >>> # r0  3.0     2.0     1.0     0.0     0.0
-    >>> # r1  2.0     3.0     1.0     0.0     0.0
-    >>> # r2  1.0     1.0     3.0     0.0     0.0
-    >>> # r3  0.0     0.0     0.0     3.0     1.0
-    >>> # r4  0.0     0.0     0.0     1.0     3.0
+    >>> vcv = get_vcv_matrix_from_tree(tree, df=True)
+    >>> #      r0   r1   r2   r3   r4
+    >>> # r0  3.0  2.0  1.0  0.0  0.0
+    >>> # r1  2.0  3.0  1.0  0.0  0.0
+    >>> # r2  1.0  1.0  3.0  0.0  0.0
+    >>> # r3  0.0  0.0  0.0  3.0  1.0
+    >>> # r4  0.0  0.0  0.0  1.0  3.0
     """
     # get node distance matrix
     dmat = tree.distance.get_node_distance_matrix()
@@ -108,23 +113,39 @@ def get_corr_matrix_from_tree(
     Example
     -------
     >>> tree = toytree.rtree.unittree(ntips=5, seed=123, treeheight=3)
-    >>> print(get_vcv_from_tree(tree))
-    >>> #      r0     r1      r2      r3      r4
-    >>> # r0  3.0     2.0     1.0     0.0     0.0
-    >>> # r1  2.0     3.0     1.0     0.0     0.0
-    >>> # r2  1.0     1.0     3.0     0.0     0.0
-    >>> # r3  0.0     0.0     0.0     3.0     1.0
-    >>> # r4  0.0     0.0     0.0     1.0     3.0
+    >>> corr = get_corr_matrix_from_tree(tree, df=True)
+    >>> #           r0        r1        r2        r3        r4
+    >>> # r0  1.000000  0.666667  0.333333  0.000000  0.000000
+    >>> # r1  0.666667  1.000000  0.333333  0.000000  0.000000
+    >>> # r2  0.333333  0.333333  1.000000  0.000000  0.000000
+    >>> # r3  0.000000  0.000000  0.000000  1.000000  0.333333
+    >>> # r4  0.000000  0.000000  0.000000  0.333333  1.000000
     """
     vcv = get_vcv_matrix_from_tree(tree)
     diag_std = np.sqrt(np.diag(vcv))
     outer = np.outer(diag_std, diag_std)
     corr = vcv / outer
-    corr[vcv == 0] = 0
+    # correct rounding point errors
+    corr[vcv == 0] = 0.
     if not df:
         return corr
     names = tree.get_tip_labels()
     return pd.DataFrame(corr, index=names, columns=names)
+
+
+@add_subpackage_method(PhyloCompAPI)
+def get_distance_matrix_from_vcv_matrix(vcv: Union[np.ndarray, pd.DataFrame]) -> Union[np.ndarray, pd.DataFrame]:
+    """Returns the Euclidean distance between tips from a VCV matrix.
+
+    The Euclidean distance is computed as:
+        V[i, i] + V[j, j] - (2 * V[i, j])
+    """
+    vcv = np.array(vcv)
+    dists = np.zeros_like(vcv)
+    for i in range(dists.shape[0]):
+        for j in range(dists.shape[0]):
+            dists[i, j] = vcv[i, i] + vcv[j, j] - (2 * vcv[i, j])
+    return dists
 
 
 @add_subpackage_method(PhyloCompAPI)
@@ -137,27 +158,52 @@ def get_tree_from_vcv_matrix(vcv: Union[np.ndarray, pd.DataFrame]) -> ToyTree:
     joining is applied to the distance matrix. The returned tree
     is unrooted.
 
+    Example
+    -------
+    >>> tree = toytree.rtree.unittree(ntips=5, seed=123, treeheight=3)
+    >>> vcv = get_vcv_matrix_from_tree(tree, df=True)
+    >>> nj_tree = get_tree_from_vcv_matrix(vcv)
+
     Parameters
     ----------
     vcv: ArrayLike
         A variance-covariance matrix as a np.ndarray or pd.DataFrame.
     """
-    max_value = np.array(vcv).max()
-    return toytree.infer.infer_neighbor_joining_tree(max_value - vcv)
+    dist_mat = get_distance_matrix_from_vcv_matrix(vcv)
+    return toytree.infer.infer_neighbor_joining_tree(dist_mat)
 
 
 if __name__ == "__main__":
 
-    tre = toytree.rtree.unittree(10, )
-    print(tre.write())
+    tre = toytree.rtree.unittree(ntips=10, seed=123, treeheight=3)
+    # print(tre.write())
     # dists = toytree.distance.get_tip_distance_matrix(tre, df=True)
     # print(dists)
-    # vcv = get_covariance_matrix_from_tree(tre, df=True)    
+    # vcv = get_covariance_matrix_from_tree(tre, df=True)
     vcv = get_vcv_matrix_from_tree(tre, df=True)
     print(vcv)
+    corr = get_corr_matrix_from_tree(tre, df=True)
+    print(corr)
 
-    np.linalg.inv(vcv)
+    std_dev = np.sqrt(np.diag(vcv))
+    cov_mat_scaled = corr * np.outer(std_dev, std_dev)
+    print(cov_mat_scaled)
+
+    # np.linalg.inv(vcv)
     # print(tre.get_tip_data())
 
     # ttt = get_tree_from_vcv(vcv)
     # print(ttt)
+    tree = toytree.rtree.unittree(ntips=5, seed=123, treeheight=3)
+    print(tree.get_node_data())
+    print(tree.distance.get_tip_distance_matrix())
+    vcv = get_vcv_matrix_from_tree(tree, df=True)
+    corr = get_corr_matrix_from_tree(tree, df=True)
+    dist = get_distance_matrix_from_vcv_matrix(vcv)
+    # print(vcv)
+    # print(corr)
+    print(dist)
+
+    tree = get_tree_from_vcv_matrix(vcv).mod.root_on_minimal_ancestor_deviation()
+    print(tree.get_node_data())
+    tree.treenode.draw_ascii()
