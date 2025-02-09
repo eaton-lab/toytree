@@ -110,6 +110,17 @@
 [x] docs updates to mod submodule.
 
 # v.3.0.8
+[x] .pcm update to equal_split type div methods
+[x] .pcm added phylosignal Blom K calc.
+[x] .pcm cleaned up api access.
+[x] .pcm added vcv to dist matrix method.
+[x] .pcm bug fix to vcv method.
+[x] docs updates to annotate methods
+[x] .annotate new add_tip_labels method
+
+# v.3.0.9
+
+
 ----------------------------------------------------------------------
 
 ### tests
