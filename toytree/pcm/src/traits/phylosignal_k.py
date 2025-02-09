@@ -48,7 +48,7 @@ import numpy as np
 import pandas as pd
 from toytree.core import ToyTree
 from toytree.pcm import get_vcv_matrix_from_tree
-from scipy.optimize import minimize_scalar, shgo
+from scipy.optimize import minimize_scalar
 from loguru import logger
 
 
@@ -109,7 +109,7 @@ def phylogenetic_signal_k(
     Example
     -------
     >>> tree = toytree.rtree.unittree(ntips=10, seed=123, treeheight=2.0)
-    >>> data = tree.pcm.simulate_continuous_brownian(1.0, tips_only=True)
+    >>> data = tree.pcm.simulate_continuous_bm(1.0, tips_only=True)
     >>> tree.pcm.phylogenetic_signal_k(tree, data)
     >>> # {"K": ..., "P-value": ..., ...}
     """
@@ -328,7 +328,7 @@ if __name__ == "__main__":
 
     # generate test data
     tree = toytree.rtree.unittree(ntips=50, treeheight=10., seed=123)
-    tree.pcm.simulate_continuous_brownian(
+    tree.pcm.simulate_continuous_bm(
         rates=[5.0, 0.5], tips_only=True, seed=123, inplace=True
     )
 
