@@ -43,7 +43,7 @@ data. Systematic biology, 63(5), 685-697.__
 """
 
 
-from typing import Union, Sequence, TypeAlias
+from typing import Union, Sequence
 import numpy as np
 import pandas as pd
 from toytree.core import ToyTree
@@ -53,7 +53,7 @@ from loguru import logger
 
 
 logger = logger.bind(name="toytree")
-feature: TypeAlias = Union[str, Sequence[float], pd.Series, pd.DataFrame]
+feature = Union[str, Sequence[float], pd.Series, pd.DataFrame]
 __all__ = ["phylogenetic_signal_k"]
 
 
@@ -339,3 +339,4 @@ if __name__ == "__main__":
     # get K w/ Error
     k = _phylogenetic_signal_k_with_se(tree=tree, data="t0", error="t1", test=0)
     logger.info(k)
+    help(phylogenetic_signal_k)
