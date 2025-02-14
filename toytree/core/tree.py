@@ -8,9 +8,6 @@ Examples
 >>> tree = toytree.ToyTree(toytree.Node('a'))
 >>> tree = toytree.tree("((a,b),c);")
 
-References
-----------
-- toytree
 """
 
 from __future__ import annotations
@@ -1257,7 +1254,7 @@ if __name__ == "__main__":
     # print(tree_.get_node_data())
     # print(tree_.treenode)
     # tree_.draw()
-    print(tree_[80])
+    print(tree_)
 
     # print(tree.get_tip_labels())
 
