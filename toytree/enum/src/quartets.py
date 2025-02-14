@@ -331,3 +331,8 @@ if __name__ == "__main__":
     for qrt in iter_quartets(tree, type=tuple, collapse=True, sort=True, quadripartitions=True):
         print(qrt)
     print("")
+
+    print("default")
+    for qrt in iter_quartets(tree):
+        print(qrt)
+    print("")
