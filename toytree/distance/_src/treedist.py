@@ -441,6 +441,7 @@ def get_treedist_kf_branch_score(
       phylogeny algorithms under equal and unequal evolutionary rates.
       Molecular Biology and Evolution, 11, 459–468.
     """
+    raise NotImplementedError("TODO")
     utree = tree.unroot()
     iter_biparts = tree.iter_bipartitions(include_singleton_partitions=True)
     for node, bipart in zip(tree, iter_biparts):
@@ -574,6 +575,7 @@ def _iter_random_biparts(
 #
 #  VALIDATION FUNCTIONS FOR COMPARING TO R LIBRARY
 #
+#  TODO: move this to a test/ directory
 ##############################################################
 
 def _test_with_treedist_r(
