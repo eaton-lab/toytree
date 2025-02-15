@@ -32,8 +32,113 @@ logger = logger.bind(name="toytree")
 
 __all__ = [
     "root_on_midpoint",
+    "root_on_balanced_midpoint",    
     "root_on_minimal_ancestor_deviation",
 ]
+
+
+
+@add_subpackage_method(TreeModAPI)
+def root_on_balanced_midpoint(
+    tree: ToyTree,
+    inplace: bool = False,
+    edge_features: Optional[Sequence[str]] = None,
+    tolerance: float = 1e-6,
+) -> ToyTree:
+    """Return ToyTree rooted on the balanced midpoint.
+
+    Rooting on the "balanced midpoint" assumes a clock-like evol. rate
+    (i.e., branch lengths are equal to time) and may yield odd results
+    when this assumption is violated. This algorithm minimizes the max
+    distance to all other tips. It solves the "tree center" problem.
+
+    Parameters
+    ----------
+    tree: ToyTree
+        Tree that will be (re-)rooted.
+    inplace: bool
+        If True then the input tree object is modified and returned,
+        else a copy of the tree is modified and returned.
+    edge_features: Sequence[str]
+        One or more Node features that should be treated as a feature
+        of its edge, not the Node itself. On rooting, edge features
+        are re-polarized, to apply to the correct Node. The 'dist'
+        and 'support' features are always treated as edge features.
+        Add additional edge features here. See docs for example.
+    tolerance: float
+        The minimum improvement used as a stopping criterion when
+        optimizing the rooting position on the treenode edge.
+
+    Example
+    -------
+    >>> tree = toytree.rtree.unittree(10).unroot()
+    >>> rtree = tree.mod.root_on_balanced_midpoint()
+    """
+    # get matrix of pairwise node distances
+    dmat = tree.distance.get_node_distance_matrix()
+
+    # set dists between internal nodes to zero on an array copy
+    nmat = dmat.copy()
+    nmat[tree.ntips:, tree.ntips:] = 0.
+
+    # get node idx's with smallest max dist to all other tips
+    dists = np.max(dmat, axis=0)
+    n0, n1 = dists.argsort()[:2]
+
+    # going up this dist from one of the two Nodes will hit the
+    # pseudo-root, but not for the other. Optimize position on other.
+    rdists = {i: nmat[i].sum() for i in [n0, n1]}
+    rpos = {i: 0 for i in [n0, n1]}
+    for idx in [n0, n1]:
+        node = tree[idx]
+        idxs_d = set([i.idx for i in node.get_leaves()])
+        idxs_u = set([i.idx for i in tree[:tree.ntips]]) - idxs_d
+
+        # skip if node is root
+        if node.is_root():
+            continue
+
+        # optimize position on the branch
+        lmin = 0.
+        lmax = node._dist
+        while 1:
+
+            # get dists to each side from the new position
+            pos = lmin + (lmax - lmin) / 2.
+            dists_d = nmat[idx][list(idxs_d)] + pos
+            dists_u = nmat[idx][list(idxs_u)] - pos
+
+            # minimize the mean dist to each side
+            bias = np.max(dists_d) - np.max(dists_u)
+            diff = abs(bias) - rdists[idx]
+
+            # end if difference less than tolerance
+            if abs(diff) < tolerance:
+                break
+
+            # if dist to down is greater, move down.
+            if bias < 0:
+                lmin = pos
+            # if dist to up is greater, move up.
+            else:
+                lmax = pos
+            rpos[idx] = pos
+            rdists[idx] = abs(bias)
+
+    # keep node with min dist
+    root_node_idx = sorted(rdists, key=lambda x: rdists[x])[0]
+    root_node_dist = rpos[root_node_idx]
+
+    # return tree or copy re-rooted
+    # tree = tree if inplace else tree.copy()
+    tree = tree.root(
+        root_node_idx,
+        root_dist=root_node_dist,
+        edge_features=edge_features,
+        inplace=inplace,
+    )
+    return tree
+
 
 
 @add_subpackage_method(TreeModAPI)
@@ -49,6 +154,11 @@ def root_on_midpoint(
     when this assumption is violated. This algorithm calculates the
     pairwise path length between all tips in an unrooted tree and roots
     on the midpoint of the longest path.
+
+    Note
+    ----
+    This method performs less accurately than balanced midpoint rooting
+    or minimal ancestor deviation rooting on highly imbalanced trees.
 
     Parameters
     ----------
@@ -384,12 +494,19 @@ if __name__ == "__main__":
     toytree.set_log_level("INFO")
     import numpy as np
 
-    # tree = toytree.rtree.unittree(6, seed=123).unroot()
+    # tree = toytree.rtree.rtree(6, seed=123).unroot()
+    tree = toytree.rtree.bdtree(6, seed=123).root("r1")
+    # tree[5]._dist = 3.
     # tree = toytree.rtree.rtree(5, seed=123).mod.ladderize()#.unroot()
     # tree.set_node_data('dist', {4: 5, 7: 3}, inplace=True)
     # tree.set_node_data('name', {5: "X", 6: "Y", 7: "Z"}, inplace=True)
     # tree.treenode.draw_ascii()
     # tree.write("/tmp/test.tree")
+    c1, _, _ = tree.draw()
+    c2, _, _ = tree.mod.root_on_midpoint().draw()
+    c3, _, _ = root_on_balanced_midpoint(tree).draw()    
+    toytree.utils.show([c1, c2, c3], tmpdir="~")
+
 
     # test1 rtree 5-tips variable edgelens
     # tree = toytree.rtree.rtree(5, seed=123).unroot()
@@ -428,15 +545,15 @@ if __name__ == "__main__":
     # toytree.utils.show([c1, c2])
 
     # test w/ polytomies
-    tree = toytree.rtree.rtree(10, seed=123).unroot()
-    tree.mod.collapse_nodes(1, 2, 12, 15, inplace=True)
-    tree.set_node_data('dist', {2: 5, 12: 3, 13: 10}, inplace=True)
-    tree.write("/tmp/test3.tree")
-    c1, a, m = tree.draw(ts='p', layout='r', node_hover=True)
+    # tree = toytree.rtree.rtree(10, seed=123).unroot()
+    # tree.mod.collapse_nodes(1, 2, 12, 15, inplace=True)
+    # tree.set_node_data('dist', {2: 5, 12: 3, 13: 10}, inplace=True)
+    # tree.write("/tmp/test3.tree")
+    # c1, a, m = tree.draw(ts='p', layout='r', node_hover=True)
 
-    tree = tree.mod.resolve_polytomies()
-    rtree, stats = root_on_minimal_ancestor_deviation(tree, return_stats=True)
-    c2, a, m = rtree.draw(ts='p', layout='r', node_hover=True)
-    print(stats)
-    print(rtree.get_node_data())
-    toytree.utils.show([c1, c2])
+    # tree = tree.mod.resolve_polytomies()
+    # rtree, stats = root_on_minimal_ancestor_deviation(tree, return_stats=True)
+    # c2, a, m = rtree.draw(ts='p', layout='r', node_hover=True)
+    # print(stats)
+    # print(rtree.get_node_data())
+    # toytree.utils.show([c1, c2])

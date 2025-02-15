@@ -35,11 +35,11 @@ plugins:
   #           docstring_style: numpy
   #           annotations_path: brief
   - mkdocs-jupyter:
-      kernel_name: py310
+      kernel_name: toytree-dev
       ignore_h1_titles: true
-      include_requirejs: true
+      # include_requirejs: true  # only needed for plotly?
       # highlight_extra_classes: "custom-css-classes"  # don't use this!
-      # execute: True      
+      # execute: True
       # no_input: True
       # show_input: False
       # include: ["*.ipynb"] # Default: ["*.py", "*.ipynb"]
