@@ -17,13 +17,31 @@ References
 """
 
 import os
-from typing import Union, Callable
+from typing import Union, Callable, Sequence
 from concurrent.futures import ProcessPoolExecutor
 import numpy as np
 import pandas as pd
 import toytree
 from toytree import ToyTree, MultiTree
-from toytree.core.apis import add_subpackage_method, PhyloCompAPI
+# from toytree.core.apis import add_subpackage_method, PhyloCompAPI
+
+# Define a feature TypeAlias for type hints
+feature = Union[str, Sequence[float], pd.Series, pd.DataFrame]
+
+
+def _validate_features(x: feature, max_dim: int, size: int) -> np.ndarray:
+    """Validate data has correct dimensions and size.
+    """
+    # if DataFrame w/ only 1 column convert to Series
+    if isinstance(x, pd.DataFrame):
+        if x.shape[1] == 1:
+            x = x.iloc[:, 0]
+    # force to array
+    x = np.asarray(x)
+    # check dimensions and size
+    assert x.ndim <= max_dim, f"feature ndim ({x.ndim}) exceeds max allowed ndim ({max_dim})."
+    assert x.shape[0] == size, "feature cannot exceed ntips"
+    return x
 
 
 def calculate_posterior(
@@ -57,6 +75,8 @@ def calculate_posterior(
     # load data and metadata from newick, toytree, or multitree
     if isinstance(trees, list):
         trees = toytree.mtree(trees)
+
+    # if it is a file path
     if isinstance(trees, str) and os.path.exists(trees):
         with open(trees) as tree_generator:
             tre = toytree.tree(next(tree_generator))
@@ -64,11 +84,15 @@ def calculate_posterior(
             ntrees = sum(1 for i in tree_generator) + 1
             tiporder = tre.get_tip_labels()
         itertree = open(trees, 'r')
+
+    # if it is a ToyTree
     elif isinstance(trees, toytree.ToyTree):
         itertree = iter([trees])
         ntrees = len(trees)
         ntips = trees.ntips
         tiporder = trees.get_tip_labels()
+
+    # if it is a MuliTree
     elif isinstance(trees, toytree.MultiTree):
         itertree = iter(trees)
         ntrees = len(trees)

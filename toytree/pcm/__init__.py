@@ -32,6 +32,8 @@ from toytree.pcm.src.diversification.diversification import *
 from toytree.pcm.src.diversification.red import *
 from toytree.pcm.src.traits.discrete_markov_model_sim import *
 from toytree.pcm.src.traits.continuous_bm_sim import *
+from toytree.pcm.src.traits.pic import *
 from toytree.pcm.src.traits.phylosignal_k import *
+from toytree.pcm.src.traits.phylosignal_lambda import *
 
 # from toytree.pcm.src.phylocom import simulate_community_data

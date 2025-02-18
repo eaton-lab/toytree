@@ -282,7 +282,6 @@ class MarkovModel:
         # ,\nT matrix\n{self.transition_matrix}\nQ matrix\n{self.qmatrix}\nTransition Probabilities (t=1)\n{self.get_transition_probability_matrix(time=1)}"
 
 
-
 @dataclass
 class DiscreteMarkovSimulator:
     """Simulate a discrete trait on a tree given a Q-matrix.
@@ -314,13 +313,14 @@ class DiscreteMarkovSimulator:
     def _traversal_sim(self) -> np.ndarray:
         """Traverse tree from root to tips simulating trait."""
         arr = np.zeros(self.tree.nnodes, dtype=np.int64)
+
         # sample a random root state
         if self.root_state is None:
             arr[-1] = self.rng.multinomial(1, self.model.state_frequencies).argmax()
         else:
             arr[-1] = self.root_state
 
-        # ...
+        # traverse down tree simulating traits
         for node in self.tree[::-1][1:]:
             parent_state = arr[node.up._idx]
             state = self._edge_sim(parent_state, node._dist)
@@ -359,7 +359,7 @@ def get_markov_model(
     internally in functions such as :meth:`~toytree.pcm.simulate_discrete_data`.
 
     It checks that the user input for rates and state_frequencies
-    if valid given the model type and number of states, and can
+    is valid given the model type and number of states, and can
     return random valid paramterizations for each model type.
 
     Parameters
