@@ -2,10 +2,10 @@
 
 """Metrics to calculate phylogenetic signal in trait values.
 
-Blomberg's K is used to quantify phylogenetic signal relative in trait
-evolution relative to a Brownian motion model. Values of K>1 indicate
-samples are less similar than expected, whereas K<1 indicates that they
-are more similar than expected. Permutations can be used to perform
+Blomberg's K is used to quantify phylogenetic signal in trait evolution
+relative to a Brownian motion model. Values of K>1 indicate samples 
+are less similar than expected, whereas K<1 indicates that they are 
+more similar than expected. Permutations can be used to perform
 a significance test.
 
 Example
@@ -44,39 +44,25 @@ data. Systematic biology, 63(5), 685-697.__
 
 
 from typing import Union, Sequence
+from loguru import logger
 import numpy as np
-import pandas as pd
+from scipy.optimize import minimize_scalar
 from toytree.core import ToyTree
 from toytree.pcm import get_vcv_matrix_from_tree
-from scipy.optimize import minimize_scalar
-from loguru import logger
+from toytree.pcm.src.utils import _validate_features
+from toytree.core.apis import add_subpackage_method, PhyloCompAPI
 
 
 logger = logger.bind(name="toytree")
-feature = Union[str, Sequence[float], pd.Series, pd.DataFrame]
 __all__ = ["phylogenetic_signal_k"]
 
 
-def _validate_features(x: feature, max_dim: int, size: int) -> np.ndarray:
-    """Validate data has correct dimensions and size."""
-    # if DataFrame w/ only 1 column convert to Series
-    if isinstance(x, pd.DataFrame):
-        if x.shape[1] == 1:
-            x = x.iloc[:, 0]
-    # force to array
-    x = np.asarray(x)
-    # check dimensions and size
-    assert x.ndim <= max_dim, f"feature ndim ({x.ndim}) exceeds max allowed ndim ({max_dim})."
-    assert x.shape[0] == size, "feature cannot exceed ntips"
-    return x
-
-
+@add_subpackage_method(PhyloCompAPI)
 def phylogenetic_signal_k(
     tree: ToyTree,
     data: Union[str, Sequence[float]],
     error: Union[str, Sequence[float]] = None,
-    test: bool = False,
-    permutations: int = 1000,
+    nsims: int = 1000,
 ) -> dict[str, float]:
     """Return Blomberg's K measurement of phylogenetic signal.
 
@@ -94,10 +80,8 @@ def phylogenetic_signal_k(
         Continuous trait values. 
     error: str | Sequence[float]
         Optional standard errors measured on trait values. 
-    test: bool
-        Perform permutation test for significance.
-    permutations: int
-        Number of permutations to perform if testing significance.
+    nsims: int
+        Number of permutations to perform to calculate significance.
 
     Returns
     -------
@@ -113,54 +97,77 @@ def phylogenetic_signal_k(
     >>> tree.pcm.phylogenetic_signal_k(tree, data)
     >>> # {"K": ..., "P-value": ..., ...}
     """
+    # [optional] get data as features from the tree
+    if isinstance(data, str):
+        data = tree.get_node_data(data)[:tree.ntips]
+    if isinstance(error, str):
+        error = tree.get_node_data(error)[:tree.ntips]
+
+    # validate proper trait format returned as float array
+    x = _validate_features(data, max_dim=1, size=tree.ntips)
+    if error is not None:
+        e = _validate_features(error, max_dim=1, size=tree.ntips)
+
+    # run func
     if error is None:
-        return _phylogenetic_signal_k(tree, data, None, test, permutations)
+        return _phylogenetic_signal_k(tree, x, nsims)
     else:
-        return _phylogenetic_signal_k_with_se(tree, data, error, test, permutations)
+        return _phylogenetic_signal_k_with_se(tree, x, e, nsims)
 
 
-def _phylogenetic_signal_k(
-    tree: ToyTree,
-    data: Union[str, Sequence[float]],
-    error: Union[str, Sequence[float]] = None,
-    test: bool = False,
-    permutations: int = 1000,
-) -> dict[str, float]:
+def _phylogenetic_signal_k(tree: ToyTree, x: np.ndarray, nsims: int) -> dict[str, float]:
     """Return Blomberg's K measurement of phylogenetic signal.
 
     See docstring in `phylogenetic_signal_k`.
     """
-    # get ntips and the variance-covariance matrix from tree
-    ntips = tree.ntips
+    # get variance-covariance matrix from tree
     V = get_vcv_matrix_from_tree(tree)
-
-    # [optional] get data as features from the tree
-    if isinstance(data, str):
-        data = tree.get_node_data(data)[:ntips]
-    if isinstance(error, str):
-        error = tree.get_node_data(error)[:ntips]
-    if error is None:
-        error = np.repeat(np.nan, ntips)
-
-    # validate proper trait format returned as float array
-    x = _validate_features(data, max_dim=1, size=tree.ntips)    
 
     # calculate K statistic
     kstat = _calculate_k(x, V)
 
     # [optional] permutation test
-    if test:
-        pval = _permutation_test_k(permutations, x, V, kstat)
+    if nsims:
+        pval = _permutation_test_k(nsims, x, V, kstat)
 
     # return as a dict
     return {
         "K": kstat,
-        "P-value": np.nan if not test else pval,
-        "permutations": np.nan if not test else permutations,
+        "P-value": np.nan if not nsims else pval,
+        "permutations": np.nan if not nsims else nsims,
     }
 
 
-def _calculate_k(x, V, IV = None) -> float:
+def _phylogenetic_signal_k_with_se(tree: ToyTree, x: np.ndarray, e: np.ndarray, nsims: int) -> dict[str, float]:
+    """Calculate phylogenetic signal (K) with measurement error.
+
+    This involves fitting a ML model to estimate the rate ...
+    """
+    # get variance-covariance matrix from tree
+    V = get_vcv_matrix_from_tree(tree)
+
+    # calculate K stat w/ error
+    IV = np.linalg.inv(V)    
+    E = np.diag(e ** 2)
+    kstat, sig2, loglik, conv = _calculate_k_with_se(x, V, IV, E)
+    loglik = _likelihood_k(sig2, V, E, x)
+
+    # [optional] permutation test statistic
+    if nsims:
+        pval = _permutation_test_k_with_se(nsims, x, V, IV, e, kstat)
+
+    # return as a dict
+    return {
+        "K": kstat, 
+        "P-value": pval if nsims else np.nan,
+        "permutations": nsims if nsims else np.nan,
+        "log-likelihood": -loglik,
+        "sig2": sig2,
+        "convergence": conv,
+    }
+
+
+def _calculate_k(x: np.ndarray, V: np.ndarray, IV: np.ndarray = None) -> float:
     """Return K statistic calculated for data x and variance-covariance
     matrix V."""
     # compute PGLS mean (root state)
@@ -172,19 +179,6 @@ def _calculate_k(x, V, IV = None) -> float:
     num = ((x - a).T @ (x - a) / ((x - a).T @ IV @ (x - a)))
     dnm = ((np.sum(V.diagonal()) - n / np.sum(IV)) / (n - 1))
     return num / dnm
-
-
-def _permutation_test_k(size: int, x: np.ndarray, V: np.ndarray, k: float):
-    """Return p-value from permutations as a test statistic. 
-    """
-    kstats = np.zeros(size)
-    rng = np.random.default_rng()
-    for i in range(size):
-        _x = rng.choice(x, size=x.size, replace=False)
-        kstats[i] = _calculate_k(_x, V)
-
-    # the proportion of permutations w/ k_ > k
-    return np.sum(kstats >= k) / kstats.size
 
 
 def _calculate_k_with_se(x: np.ndarray, V: np.ndarray, IV: np.ndarray, E: np.ndarray) -> tuple[float, float]:
@@ -199,23 +193,18 @@ def _calculate_k_with_se(x: np.ndarray, V: np.ndarray, IV: np.ndarray, E: np.nda
     max_sig2 = (term.T @ IV @ term) / n
 
     # maximum likelihood model fitting
-    estimate = minimize_scalar(
-        _likelihood,
+    res = minimize_scalar(
+        _likelihood_k,
         args=(V, E, x),
         bounds=(0, max_sig2),
         method="bounded",
         # options=dict(maxiter=1000, xatol=1e-10, disp=0),
     )
-    model_fit = {
-        "optimum": estimate.x,
-        "LogLik": estimate.fun,
-        "convergence": estimate.success,
-    }
     # logger.debug(estimate)
     # logger.debug(f"\n{pd.Series(model_fit)}")
 
     # get rate parameter
-    sig2 = model_fit["optimum"] * (n / (n - 1))
+    sig2 = res.x * (n / (n - 1))
 
     # get VCV w/ rate scalar
     Ve = sig2 * V + E
@@ -225,7 +214,20 @@ def _calculate_k_with_se(x: np.ndarray, V: np.ndarray, IV: np.ndarray, E: np.nda
     a = np.sum(IVe @ x) / np.sum(IVe)
     num = ((x - a).T @ (x - a) / ((x - a).T @ IVe @ (x - a)))
     dnm = ((np.sum(Ve.diagonal()) - n / np.sum(IVe)) / (n - 1))
-    return num / dnm, sig2, model_fit["LogLik"], model_fit["convergence"]
+    return num / dnm, sig2, res.fun, res.success
+
+
+def _permutation_test_k(size: int, x: np.ndarray, V: np.ndarray, k: float):
+    """Return p-value from permutations as a test statistic. 
+    """
+    kstats = np.zeros(size)
+    rng = np.random.default_rng()
+    for i in range(size):
+        _x = rng.choice(x, size=x.size, replace=False)
+        kstats[i] = _calculate_k(_x, V)
+
+    # the proportion of permutations w/ k_ > k
+    return np.sum(kstats >= k) / kstats.size
 
 
 def _permutation_test_k_with_se(size: int, x: np.ndarray, V: np.ndarray, IV: np.ndarray, error: np.ndarray, k: float):
@@ -244,55 +246,7 @@ def _permutation_test_k_with_se(size: int, x: np.ndarray, V: np.ndarray, IV: np.
     return np.sum(kstats >= k) / kstats.size
 
 
-def _phylogenetic_signal_k_with_se(
-    tree: ToyTree,
-    data: Union[str, Sequence[float]],
-    error: Union[str, Sequence[float]] = None,
-    test: bool = False,
-    permutations: int = 1000,
-) -> dict[str, float]:
-    """Calculate phylogenetic signal (K) with measurement error.
-
-    This involves fitting a ML model to estimate the rate ...
-    """
-    # get ntips and the variance-covariance matrix from tree
-    ntips = tree.ntips
-    V = get_vcv_matrix_from_tree(tree)
-
-    # [optional] get data as features from the tree
-    if isinstance(data, str):
-        data = tree.get_node_data(data)[:ntips]
-    if isinstance(error, str):
-        error = tree.get_node_data(error)[:ntips]
-    if error is None:
-        error = np.repeat(0.0, ntips)
-
-    # validate proper trait format returned as float array
-    x = _validate_features(data, max_dim=1, size=ntips)
-    error = _validate_features(error, max_dim=1, size=ntips)
-
-    # calculate K stat w/ error
-    IV = np.linalg.inv(V)    
-    E = np.diag(error ** 2)
-    kstat, sig2, loglik, conv = _calculate_k_with_se(x, V, IV, E)
-    loglik = _likelihood(sig2, V, E, x)
-
-    # [optional] permutation test statistic
-    if test:
-        pval = _permutation_test_k_with_se(permutations, x, V, IV, error, kstat)
-
-    # return as a dict
-    return {
-        "K": kstat, 
-        "P-value": np.nan if not test else pval,
-        "permutations": 0 if not test else permutations,
-        "log-likelihood": -loglik,
-        "sig2": sig2,
-        "convergence": conv,
-    }
-
-
-def _likelihood(theta: float, V: np.ndarray, E: np.ndarray, y: np.ndarray) -> float:
+def _likelihood_k(theta: float, V: np.ndarray, E: np.ndarray, y: np.ndarray) -> float:
     """Estimate theta by maximizing the likelihood.
     """
     # weight variances by theta and add Error variance
@@ -320,23 +274,30 @@ def _likelihood(theta: float, V: np.ndarray, E: np.ndarray, y: np.ndarray) -> fl
 
 
 
-
 if __name__ == "__main__":
 
     import toytree
     toytree.set_log_level("DEBUG")
 
     # generate test data
-    tree = toytree.rtree.unittree(ntips=50, treeheight=10., seed=123)
-    tree.pcm.simulate_continuous_bm(
-        rates=[5.0, 0.5], tips_only=True, seed=123, inplace=True
-    )
+    tree = toytree.rtree.unittree(ntips=50, treeheight=1.0, seed=123)
+    traits = tree.pcm.simulate_continuous_bm(1.0, seed=123, tips_only=True)
+    traits["se"] = np.random.default_rng(seed=123).uniform(0, 0.01, tree.ntips)
 
-    # get K
-    # k = _phylogenetic_signal_k(tree=tree, data="t0", test=True)
-    # logger.info(k)
+    # write data
+    tree.write("/tmp/test.nwk")
+    traits.to_csv("/tmp/test.csv")
 
-    # get K w/ Error
-    k = _phylogenetic_signal_k_with_se(tree=tree, data="t0", error="t1", test=0)
+    # 
+    k = phylogenetic_signal_k(tree=tree, data=traits.t0, nsims=1000)
     logger.info(k)
-    help(phylogenetic_signal_k)
+
+    k = phylogenetic_signal_k(tree=tree, data=traits.t0, error=traits.se, nsims=1000)
+    logger.info(k)
+
+    # 
+    k = phylogenetic_signal_k(tree=tree, data=traits.se, nsims=1000)
+    logger.info(k)
+
+    k = phylogenetic_signal_k(tree=tree, data=traits.se, error=traits.se, nsims=1000)
+    logger.info(k)

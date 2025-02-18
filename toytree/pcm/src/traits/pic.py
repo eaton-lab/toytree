@@ -2,18 +2,48 @@
 
 """Phylogenetic independent contrasts for continuous traits.
 
+Examples
+--------
+>>> # The example in Phylip 3.5c (originally from Lynch 1991)
+>>> NWK = "((((Homo:0.21,Pongo:0.21):0.28,Macaca:0.49):0.13,Ateles:0.62):0.38,Galago:1.00);"
+>>> TREE = toytree.tree(NWK)
+>>> NAMES = ["Homo", "Pongo", "Macaca", "Ateles", "Galago"]
+>>> TREE.set_node_data("X", dict(zip(NAMES, [4.09434, 3.61092, 2.37024, 2.02815, -1.46968])), inplace=True)
+>>> TREE.set_node_data("Y", dict(zip(NAMES, [4.09434, 3.61092, 2.37024, 2.02815, -1.46968])), inplace=True)
+>>>
+>>> # get pic's
+>>> pic_x = get_phylogenetic_independent_contrasts(TREE, "X")
+>>> pic_y = get_phylogenetic_independent_contrasts(TREE, "Y")
+>>> 
+>>> # fit linear model to contrasts through the origin (could use scipy...)
+>>> import statsmodels.api as sm
+>>> traits = 
+>>> sm.OLS.from_model("Y ~ X - 1", Y=pic_y, X=pic_x).summary()
+>>> # 0.4319
+>>> sm.OLS.from_model("X ~ Y - 1", Y=pic_y, X=pic_x).summary()
+>>> # 0.998
+
 References
 ----------
-- Felsenstein 1985
-- Harmon textbook
-- ...
-
+Felsenstein, J. (1985) Phylogenies and the comparative method.
+_American Naturalist_, *125*, 1-15.
 """
 
-from typing import Tuple
+from typing import Union, Sequence
+import pandas as pd
+from toytree.core import ToyTree
+from toytree.core.apis import add_subpackage_method, PhyloCompAPI
 
 
-def get_phylogenetic_independent_contrasts(tree, feature):
+feature = Union[str, Sequence[float]]
+__all__ = [
+    "get_phylogenetic_independent_contrasts",
+    "get_ancestral_states_pic",
+]
+
+
+@add_subpackage_method(PhyloCompAPI)
+def get_phylogenetic_independent_contrasts(tree: ToyTree, feature: feature) -> pd.DataFrame:
     """Return a dictionary of {idx: standardized-contrasts}.
 
     Independent contrasts are calculated for every internal node
@@ -24,20 +54,21 @@ def get_phylogenetic_independent_contrasts(tree, feature):
 
     Parameters
     ----------
-    feature: (str)
-        The name of a feature of the tree that has been mapped to all 
-        tip nodes of the tree. 
+    feature: str | Sequence[float]
+        A feature stored to the tree object or a Sequence of floats
+        of length ntips.
 
     Returns
     -------
-    Dict[int, Tuple(float, float, float, float)]
+    pandas.DataFrame with columns for [ancestral state, ancestral state
+    variance, independent contrast, independent contrast variance] for
+    all internal nodes.
 
     Examples
     --------
     >>> tree = toytree.rtree.unittree(ntips=10, treeheight=1)
-    >>> tree.set_node_data("trait", dict(range(10), range(10)), inplace=True)
+    >>> tree.pcm.simulate_continuous_bm({"trait": 1.0}, inplace=True)
     >>> pics = toytree.pcm.get_phylogenetic_independent_contrasts(tree, "trait")
-    >>> ...
     """
     # get current node features at the tips
     tips = [tree[i] for i in range(tree.ntips)]
@@ -48,31 +79,12 @@ def get_phylogenetic_independent_contrasts(tree, feature):
     results = _dynamic_pic(tree.treenode, data, results={})
 
     # return dictionary mapping nodes to (mean, var, contrast, cvar)
-    return results
-
-
-### NEEDS MORE...
-
-# def get_continuous_ancestral_states(tre, feature):
-#     """Infer ancestral states on ancestral nodes for continuous traits
-#     under a brownian motion model of evolution.
-
-#     Modified from IVY interactive (https://github.com/rhr/ivy/)   
-
-#     Returns:
-#     --------
-#     toytree (toytree.ToyTree)
-#         A modified copy of the input tree is returned with the mean 
-#         ancestral value for the selected feature applied to all nodes 
-#         of the tree. 
-#     """
-#     ntre = tre.copy()
-#     resdict = get_phylogenetic_independent_contrasts(ntre, feature)
-#     ntre = ntre.set_node_data(
-#         feature, 
-#         {i.idx: j[0] for (i, j) in resdict.items()}
-#     )
-#     return ntre
+    # return results
+    return pd.DataFrame(
+        index=[i.idx for i in results],
+        columns=["anc", "anc_var", "contrast", "contrast_var"],
+        data=list(results.values())
+    )
 
 
 def _dynamic_pic(node, data, results):
@@ -131,8 +143,7 @@ def _dynamic_pic(node, data, results):
 
     # Xk is the reconstructed state at the node
     means_k = (
-        ((1.0 / vars_i) * means_i + (1 / vars_j) * means_j) / 
-        (1.0 / vars_i + 1.0 / vars_j)
+        ((1.0 / vars_i) * means_i + (1 / vars_j) * means_j) / (1.0 / vars_i + 1.0 / vars_j)
     )
 
     # vk is the variance
@@ -143,22 +154,47 @@ def _dynamic_pic(node, data, results):
     return results
 
 
-# def independent_contrasts(tre, feature):
-#     """
-#     Set independent contrasts as features on internal nodes labeled
-#     as ...
-#     """
-#     ntre = tre.copy()
-#     resdict = PIC(ntre, feature)
-#     ntre = ntre.set_node_values(
-#         feature="{}-contrast",
-#         values={i.name: j[2] for (i, j) in resdict.items()}
-#     )
-#     ntre = ntre.set_node_values(
-#         feature="{}-contrast-var",
-#         values={i.name: j[3] for (i, j) in resdict.items()}
-#     )        
-#     return ntree
+@add_subpackage_method(PhyloCompAPI)
+def get_ancestral_states_pic(tree: ToyTree, feature: feature, inplace: bool = False) -> Union[pd.Series, ToyTree]:
+    """Return feature with ancestral states inferred at internal nodes.
+
+    Trait must be continuous without missing value for tip nodes.
+
+    Parameters
+    ----------
+    tree: ToyTree
+        A tree with branch lengths.
+    feature: str | Sequence[float]
+        A continous trait for each tip node in the tree entered as a
+        sequence of floats or ints, or as a str name of a feature stored
+        to the tree object.
+    inplace: bool
+        If True the result is stored as a feature to the tree data and
+        the tree is returned, else a pandas Series is returned with the
+        inferred trait values.
+
+    See Also
+    --------
+    `get_ancestral_state_pgls`
+
+    Example
+    -------
+    >>> tree = toytree.rtree.unittree(ntips=10, treeheight=1.0)
+    >>> tree.pcm.simulate_continuous_bm({"X": 1.0}, tips_only=True, inplace=True)
+    >>> tree.pcm.get_ancestral_state_pic("X", inplace=True)
+    >>> print(tree.get_node_data("X"))
+    """
+    pics = get_phylogenetic_independent_contrasts(tree, feature)
+    if inplace:
+        tip_traits = list(tree.get_node_data(feature)[:tree.ntips])
+        int_traits = list(pics["anc"])
+        tree.set_node_data(feature, tip_traits + int_traits, inplace=True)
+        return tree
+    trait = tree.get_node_data(feature)
+    trait.iloc[tree.ntips:] = pics["anc"]
+    trait.name = feature
+    return trait
+
 
 # single test
 if __name__ == "__main__":
@@ -168,13 +204,8 @@ if __name__ == "__main__":
 
     CMAP = toyplot.color.brewer.map("BlueRed", reverse=True)
 
-    TREE = toytree.rtree.imbtree(5, 1e6)
-    TREE = TREE.set_node_data(
-        "g", 
-        mapping={i: 5 for i in (2, 3, 4)},
-        default=1,
-    )
-
+    TREE = toytree.rtree.imbtree(ntips=5, treeheight=1)
+    TREE = TREE.set_node_data("g", data={i: 5 for i in (2, 3, 4)}, default=1)
     TREE.draw(
         ts='p', 
         node_labels=TREE.get_node_data("g"),
@@ -183,7 +214,11 @@ if __name__ == "__main__":
         )
 
     # apply reconstruction
-    ntree = get_phylogenetic_independent_contrasts(TREE, "g")
+    # pics = get_phylogenetic_independent_contrasts(TREE, "g")
+    # for node in pics:
+    #     print(node, pics[node])
+    # print(ntree)#.get_node_data())
+
 
     # # new values are stored as -mean, -var, -contrasts, ...
     # evals = ntree.get_edge_values("g-mean")
@@ -196,3 +231,25 @@ if __name__ == "__main__":
     #         colormap.colors(i, 0, 5) for i in 
     #         ntree.get_node_values('g-mean', 1, 1)]
     # )
+
+    NWK = "((((Homo:0.21,Pongo:0.21):0.28,Macaca:0.49):0.13,Ateles:0.62):0.38,Galago:1.00);"
+    TRE = toytree.tree(NWK)
+    names = ["Homo", "Pongo", "Macaca", "Ateles", "Galago"]
+    X = pd.Series([4.09434, 3.61092, 2.37024, 2.02815, -1.46968], index=names)
+    Y = pd.Series([4.74493, 3.33220, 3.36730, 2.89037, 2.30259], index=names)
+    TRE = TRE.set_node_data("X", X)
+    TRE = TRE.set_node_data("Y", Y)    
+    # print(TRE.get_node_data())
+    # PICX = get_phylogenetic_independent_contrasts(TRE, "X")
+    get_ancestral_state_pic(TRE, "X", inplace=True)
+    print(TRE.get_node_data())
+
+    tree = toytree.rtree.unittree(ntips=10, treeheight=1)
+    tree.pcm.simulate_continuous_bm({"trait": 1.0}, inplace=True)
+    pics = toytree.pcm.get_phylogenetic_independent_contrasts(tree, "trait")
+    print(pics)
+
+    tree = toytree.rtree.unittree(ntips=10, treeheight=1.0)
+    tree.pcm.simulate_continuous_bm({"X": 1.0}, tips_only=True, inplace=True)
+    tree.pcm.get_ancestral_state_pic("X", inplace=True)
+    print(tree.get_node_data("X"))
