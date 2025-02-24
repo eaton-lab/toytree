@@ -19,7 +19,6 @@ Generate random ToyTrees
 Generate a MultiTree object
 >>> trees = [toytree.rtree.unittree(10) for i in range(5)]
 >>> mtree = toytree.mtree(trees)
-
 """
 
 from toytree.core.tree import ToyTree

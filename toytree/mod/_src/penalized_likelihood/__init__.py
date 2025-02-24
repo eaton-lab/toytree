@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-"""
-IN DEVELOPMENT
+"""Model-based methods for making trees ultrametric using PL.
 """
 

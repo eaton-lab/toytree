@@ -4,9 +4,10 @@
 
 Methods
 -------
-- root_on_longest_edge(gene_tree)
-- root_on_minimal_ancestor_deviations(...)
-- root_on_minimal_duplication_loss_score(species_tree, gene_tree)
+- root_on_midpoint
+- root_on_balanced_midpoint
+- root_on_minimal_ancestor_deviations
+# - root_on_minimal_duplication_loss_score(species_tree, gene_tree)
 
 References
 ----------

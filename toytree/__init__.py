@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 
-"""A minimalist Python package for visualizing and studying evolution 
-on trees.
+"""A minimalist Python package for representing tree objects, performing
+operations on trees, and performing tree visualization.
 
 Toytree's primary use if for visualizing and manipulating tree data
 structures. It includes a number of additional subpackages for working
 with trees as data, or data on trees. All subpackages make use only of
-standard Python data science libs (e.g., numpy, scipy, pandas, numba) 
-and does not include wrappers around any external tools.
-
+standard Python data science libs (e.g., numpy, scipy, pandas).
 """
 
 __version__ = "3.0.10"
@@ -42,3 +40,21 @@ import toytree.data
 # start the logger at log_level WARNING
 from toytree.utils.src.logger_setup import set_log_level
 set_log_level("WARNING")
+
+
+# AN IDEA TO STORE WHETHER WE ARE IN AN IDE OR NOT.
+# def inside_notebook() -> bool:
+#     """Return True if executed from inside jupyter, else False.
+
+#     takes ~140 ns.
+#     """
+#     try:
+#         shell = get_ipython().__class__.__name__
+#         if shell == 'ZMQInteractiveShell':
+#             return True   # Jupyter notebook or qtconsole
+#         elif shell == 'TerminalInteractiveShell':
+#             return False  # Terminal running IPython
+#         else:
+#             return False  # Other type (?)
+#     except NameError:
+#         return False      # Probably standard Python interpreter

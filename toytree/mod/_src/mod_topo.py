@@ -1073,7 +1073,6 @@ def add_internal_node_and_child(
     tree.get_nodes(pname)[0].name = parent_name if parent_name else ""
     return tree
 
-
 @add_subpackage_method(TreeModAPI)
 def add_internal_node_and_subtree(
     tree: ToyTree,
@@ -1404,5 +1403,3 @@ if __name__ == "__main__":
     import toytree
     toytree.set_log_level("DEBUG")
     t = toytree.rtree.unittree(16, treeheight=10)
-    t.mod.prune(0, 1, 2, 3)
-    t.draw()

@@ -717,4 +717,4 @@ if __name__ == "__main__":
     )
 
     # show result in default browser
-    toytree.utils.show([c0, c1], new=False)
+    toytree.utils.show([c0, c1], new=False, tmpdir="~")
