@@ -27,6 +27,8 @@ References
 ----------
 Felsenstein, J. (1985) Phylogenies and the comparative method.
 _American Naturalist_, *125*, 1-15.
+
+ape:::pic
 """
 
 from typing import Union, Sequence
@@ -241,7 +243,7 @@ if __name__ == "__main__":
     TRE = TRE.set_node_data("Y", Y)    
     # print(TRE.get_node_data())
     # PICX = get_phylogenetic_independent_contrasts(TRE, "X")
-    get_ancestral_state_pic(TRE, "X", inplace=True)
+    get_ancestral_states_pic(TRE, "X", inplace=True)
     print(TRE.get_node_data())
 
     tree = toytree.rtree.unittree(ntips=10, treeheight=1)
@@ -251,5 +253,5 @@ if __name__ == "__main__":
 
     tree = toytree.rtree.unittree(ntips=10, treeheight=1.0)
     tree.pcm.simulate_continuous_bm({"X": 1.0}, tips_only=True, inplace=True)
-    tree.pcm.get_ancestral_state_pic("X", inplace=True)
+    tree.pcm.get_ancestral_states_pic("X", inplace=True)
     print(tree.get_node_data("X"))
