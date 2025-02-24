@@ -304,6 +304,13 @@ class ToyTree:
             return all(tris)
         return all(tris[:-1])
 
+    def is_ultrametric(self, tol: float = 1e-9) -> bool:
+        """Return True if tree is ultrametric (all tips align) within
+        an allowed tolerance (default=1e-9).
+        """
+        heights = [i._height for i in self[:self.ntips]]
+        return np.allclose(heights, 0., atol=tol)
+
     def copy(self) -> ToyTree:
         """Return a deepcopy of the ToyTree."""
         return deepcopy(self)
@@ -1225,23 +1232,6 @@ class ToyTree:
         except Exception as exc:
             logger.error(exc)
             raise exc
-
-
-# def inside_notebook() -> bool:
-#     """Return True if executed from inside jupyter, else False.
-
-#     takes only ~140 ns.
-#     """
-#     try:
-#         shell = get_ipython().__class__.__name__
-#         if shell == 'ZMQInteractiveShell':
-#             return True   # Jupyter notebook or qtconsole
-#         elif shell == 'TerminalInteractiveShell':
-#             return False  # Terminal running IPython
-#         else:
-#             return False  # Other type (?)
-#     except NameError:
-#         return False      # Probably standard Python interpreter
 
 
 if __name__ == "__main__":
