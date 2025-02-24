@@ -44,11 +44,11 @@ constrained.
 
 Methods
 --------
-- edges_make_ultrametric()                  # implements all models
-- edges_make_ultrametric_pl_clock()  
-- edges_make_ultrametric_pl_discrete()  
-- edges_make_ultrametric_pl_correlated()  
-- edges_make_ultrametric_pl_relaxed() 
+- edges_make_ultrametric()                  # implements all models and returns best fit result.
+- edges_make_ultrametric_pl_clock()
+- edges_make_ultrametric_pl_discrete()
+- edges_make_ultrametric_pl_correlated()
+- edges_make_ultrametric_pl_relaxed()
 - TODO: edges_make_ultrametric_pl_lasso()   # minimize the L1 penalty
 - TODO: edges_make_ultrametric_pl_ridge()   # minimize the L2 norm
 - TODO: edges_make_ultrametric_pl_elastic() # minimize L1 + L2
@@ -82,7 +82,6 @@ TODO
     Either yes, or we can stick in a unary node that extends to 0.
 - find edge cases of conflicting calibrations
 - test edge cases of non bifurcating trees
-- model comparisons?
 """
 
 from typing import Dict, Optional, Tuple, List, Any, Union
@@ -219,6 +218,7 @@ def _get_params_bounds(tree: ToyTree, calibrations: Dict[int, Tuple[float, float
     return rates_bounds, ages_bounds
 
 
+# NOT CURRENTLY USED
 def _get_mean_rooted_path_distance(tree) -> float:
     """Return the mena distance between tips on either side of the treenode.
     """
@@ -732,6 +732,32 @@ def log_likelihood_poisson_discrete(rates_hat, ages_hat, edges, edata, freqs_hat
     # multiply each by its weight in each category
     loglik = np.sum(np.log(prob.T @ freqs_hat))
     return loglik
+
+
+# def objective_correlated(rates, ages, lamb, ):
+#     """..."""
+#     # handle the treenode child edges differently
+#     # ...
+
+#     # get D_ki and A_ki for gradient functions.
+#     # ...
+
+#     #
+#     loglik = log_likelihood_poisson(rates, ages)
+#     mu = np.mean(rates)
+#     return loglik - lamb * sum(...)
+
+
+# def _gradient_poisson_correlated():
+#     pass
+
+
+# def _gradient_poisson_relaxed():
+#     pass
+
+
+# def objective_relaxed():
+#     pass
 
 
 if __name__ == "__main__":
