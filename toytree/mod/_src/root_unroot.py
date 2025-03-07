@@ -226,49 +226,41 @@ class Rooter:
         oldroot is removed, newroot is created. All Nodes that are
         ancestors of u on the original tree are re-polarized.
         """
-        # store references to Nodes before their relationships change.
-        # support = self._infer_max_support()
-        # self.node.support = np.nan
-        newroot = Node(name="root", support=np.nan, dist=0)
-        edge = (self.node, self.node.up)
+        # create Node to insert, select edge to insert to, and store its dist
+        newroot = Node(name="root", support=np.nan, dist=0.)
+        edge = (self.node, self.node._up)
         odist = float(edge[0]._dist)
-        # odist = sum([i._dist for i in self.node.up.children if i != self.node])
-        # sumdist = sum([ndist, odist])
-        # logger.warning(f"edge={edge}, ndist={ndist} odist={odist}")
 
-        # nodes on path from node to the original root.
-        path = (self.node,) + self.node.get_ancestors()  # [n, u, 2, o]
+        # get path from selected node to the treenode, and the edge features
+        path = (self.node,) + self.node.get_ancestors()
 
-        # store edge features for re-polarizing edges in path.
-        feats = {
-            n: {i: getattr(n, i, None) for i in self.edge_features}
-            for n in path
-        }
+        # cache the edge feature data
+        feats = {n: {i: getattr(n, i, None) for i in self.edge_features} for n in path}
 
-        # polarize each node on path
-        for idx in range(1, len(path)):           # [u, 2, o]    [3, 2, R]
-            # connect this node to its new parent (previously child)
-            node = path[idx]                      # u            R
-            child = path[idx - 1]                 # n            2
-            node._up = child                      # u -> n       R -> 2
-            node._remove_child(child)             # n -x u       2 -x R
+        # iterate along path re-polarizing edge feature data
+        for idx in range(1, len(path)):
+            node = path[idx]
+            if not idx:
+                continue
 
-            # connect this node to its new child (previously parent)
-            # if this node is not the former root node.
+            # make this node's orig child (on path) its parent
+            _child = path[idx - 1]
+            node._up = _child
+            node._remove_child(_child)
+
+            # if this node was treenode inherit former (on path) child's edge feats
             if node != path[-1]:
                 node._add_child(path[idx + 1])
 
-            # transfer non-root edge features
-            for feature in self.edge_features:
-                value = feats[child][feature]
+            # set former child's edge features to this node
+            giver = path[idx - 1]
+            for fname in self.edge_features:
+                value = feats[giver][fname]
                 if value is not None:
-                    setattr(node, feature, value)
+                    setattr(node, fname, value)
                 else:
-                    if hasattr(node, feature):
-                        delattr(node, feature)
-
-        # set support of mirror root child to nan
-        # self.node.support = np.nan
+                    if hasattr(node, fname):
+                        delattr(node, fname)
 
         # set node and its parent as sisters, and children of newroot.
         newroot._children = edge             # n -> x, u -> x
@@ -279,18 +271,14 @@ class Rooter:
         if self.root_dist is None:
             edge[0]._dist = odist / 2.
             edge[1]._dist = odist / 2.
-            # edge[0]._dist /= 2.
-            # edge[1]._dist /= 2.
         else:
-            logger.debug(f"sumdist={odist}, root_dist={self.root_dist}")
+            # logger.debug(f"sumdist={odist}, root_dist={self.root_dist}")
             if self.root_dist > odist:
                 raise ValueError(
                     "`root_dist` arg (placement of root node on existing edge) "
                     f"cannot be greater than length of the edge: {odist}.")
             edge[0]._dist = self.root_dist
             edge[1]._dist = odist - self.root_dist
-            # logger.warning(f"sumdist={sumdist}, root_dist={self.root_dist}")
-            # logger.warning(f"0={edge[0]._dist}, 1={edge[1]._dist}")
 
         # update as ToyTree
         self.tree.treenode = newroot
@@ -440,32 +428,17 @@ if __name__ == "__main__":
 
     # Example test: start with a simple balanced tree.
     import toytree
-    toytree.set_log_level("WARNING")
-    TREE = toytree.rtree.imbtree(ntips=10)
-    print(TREE)
+    toytree.set_log_level("DEBUG")
 
-    # root on
-    TREE.unroot().root('r0', 'r1', 'r2')
+    tre = toytree.rtree.unittree(8, seed=123).unroot()
+    tre.set_node_data("X", tre.get_node_data("idx"), inplace=True)
+    tre.set_node_data("Y", tre.get_node_data("idx"), inplace=True)
+    tre.treenode.X = np.nan
+    tre.edge_features |= {"X"}
+    c, a, m = tre.draw(ts='s')
 
-    # raise error b/c not monophyletic
-    # TREE.unroot().root("r8", "r9", "r0")
+    rtre = tre.root("r0")
+    c, a, m = rtre.draw(ts='s')
 
-    # c, a, m = unroot(TREE).draw()
-    # _, a, m = root(TREE, 'r2')._draw_browser()
-
-    # T0 = root(TREE, 'r2', root_dist=0.3)
-
-    # c2, a, m = unroot(TREE)._draw_browser(axes=a)
-    # print(unroot(TREE))
-
-    # unroot the tree
-    # TREE = TREE.unroot()
-
-    # root the tree a clade with the first two samples
-    # TREE = TREE.root(['r1', 'r2'])
-
-    # re-root on a different clade, for last two samples
-    # TREE = TREE.root(['r9', 'r10'])
-
-    # check that dist and support values were properly retained.
-    # ...
+    print(tre.get_node_data())
+    print(rtre.get_node_data())
