@@ -83,7 +83,9 @@ def get_canvas_and_axes(
                 height = _height
 
         # create canvas and axes
-        canvas = Canvas(height=height, width=width)
+	# cast height/width to float to avoid bug with toyplot.Canvas
+	# passing np.float() into the output javascript, which killed rendering
+        canvas = Canvas(height=float(height), width=float(width))
         axes = canvas.cartesian(padding=padding, margin=margin)
 
     # tree is being plotted on an existing set of axes
