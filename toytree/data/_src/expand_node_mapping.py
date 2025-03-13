@@ -40,15 +40,15 @@ def expand_node_mapping(tree: ToyTree, mapping: Mapping[Query, Any]) -> Mapping[
     Examples
     --------
     >>> tree = toytree.rtree.unittree(8, seed=123)
-    >>> mapping = {0: 1, 'r1': 2, '~r[2-3]+': 4)
+    >>> mapping = {0: 1, 'r1': 2, '~r[2-3]+': 4}
     >>> tree.set_node_data('x', mapping, inplace=True)
     >>> tree.get_node_data('x')
-    >>> 0     0.0
-    >>> 1     0.0
-    >>> 2     0.0
-    >>> 3     0.0
-    >>> 4     1.0
-    >>> 5     2.0
+    >>> 0     1.0
+    >>> 1     2.0
+    >>> 2     4.0
+    >>> 3     4.0
+    >>> 4     NaN
+    >>> 5     NaN
     >>> 6     NaN
     >>> 7     NaN
     >>> 8     NaN
@@ -58,6 +58,7 @@ def expand_node_mapping(tree: ToyTree, mapping: Mapping[Query, Any]) -> Mapping[
     >>> 12    NaN
     >>> 13    NaN
     >>> 14    NaN
+    >>> dtype: float64
     """
     nodes = {}
     names = {}
