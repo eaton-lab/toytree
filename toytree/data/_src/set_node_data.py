@@ -36,6 +36,7 @@ def set_node_data(
     default: Any = None,
     inherit: bool = False,
     inplace: bool = False,
+    edge: bool = False,
 ) -> ToyTree:
     """Create or modify features (data) set to Nodes in a ToyTree.
 
@@ -64,6 +65,11 @@ def set_node_data(
     inplace: bool
         If True the tree data is modified inplace and returned, else
         the original tree data is unchanged and a copy is returned.
+    edge: bool
+        If True the data is stored as an edge feature, meaning it will
+        be re-polarized during re-rooting operations, just like for
+        'dist' and 'support' values. This simply adds the feature name
+        to `tree.edge_features`.
 
     Data can be set to Nodes by entering `data` as either a Mapping or
     as a Series of values. These two options differ slightly and are
@@ -165,6 +171,10 @@ def set_node_data(
             setattr(tree[nidx], feature, value.copy())
         else:
             setattr(tree[nidx], feature, value)
+
+    # add new feature to edge_features
+    if edge:
+        tree.edge_features |= {feature}
 
     # if dist was mod'd then must call update
     if feature == "_dist":

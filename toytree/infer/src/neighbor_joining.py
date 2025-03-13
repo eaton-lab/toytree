@@ -7,13 +7,14 @@
 from typing import Tuple, Iterator, Union, TypeVar
 import numpy as np
 import pandas as pd
+from loguru import logger
 import toytree
 
-
+logger = logger.bind(name="toytree")
 Array: TypeVar = Union[np.ndarray, pd.DataFrame]
 
 
-def infer_neighbor_joining_tree(data: Array) -> toytree.ToyTree:
+def neighbor_joining_tree(data: Array) -> toytree.ToyTree:
     """Return a ToyTree inferred by neighbor-joining from a distance matrix.
 
     Neighbor-joining is a clustering algorithm for building trees from
@@ -23,8 +24,10 @@ def infer_neighbor_joining_tree(data: Array) -> toytree.ToyTree:
 
     Parameters
     ----------
-    data: pd.DataFrame
-        A symmetric DataFrame with distances measured between samples.
+    data: pd.DataFrame | np.ndarray
+        An input dataframe or array representing a symmetric distance
+        matrix. If no labels are provided (e.g., array) then tips are
+        named by their row index.
 
     Example
     -------
@@ -45,21 +48,21 @@ def infer_neighbor_joining_tree(data: Array) -> toytree.ToyTree:
     >>>     ])
     >>> )
     >>> # run tree inference, root, and draw it.
-    >>> tree = infer_neighbor_joining_tree(data)
+    >>> tree = neighbor_joining_tree(data)
     >>> tree = tree.mod.root_on_minimal_ancestor_deviation()
     >>> tree.draw(scale_bar=True, node_sizes=5, tip_labels_align=True)
     """
-    # store names if provided, else use numeric range
-    if hasattr(data, "index"):
-        names = data.index
-    else:
-        names = np.arange(data.shape[0])
+    # convert data to an array for faster processing.
+    arr = np.array(data, dtype=float)
 
-    # store a copy of dataframe as an array that will be modified.
-    arr = np.array(data).astype(float)
+    # get names index from df or arr, do not allow replicate names
+    index = data.index if isinstance(data, pd.DataFrame) else range(data.shape[0])
+    if len(index) != len(set(index)):
+        logger.warning("identical names found in data, using int indices for upgma tree")
+        index = range(data.shape[0])
 
     # dict to store Nodes, starting with tips.
-    nodes = {i: toytree.Node(name=i) for i in names}
+    nodes = {i: toytree.Node(name=i) for i in index}
 
     # iterate generator function to get next pair of Nodes to join.
     for i, j, v_i, v_j in iter_nj_algorithm(arr):
@@ -89,8 +92,14 @@ def infer_neighbor_joining_tree(data: Array) -> toytree.ToyTree:
             node_i._dist = v_i
             node_j._add_child(node_i)
 
-    # return final ancestor Node as root of a ToyTree
-    return toytree.ToyTree(node_j)
+    # conver treenode to a ToyTree
+    tree = toytree.ToyTree(node_j)
+
+    # collapse polytomies (zero-dist) edges
+    to_collapse = [i for i in tree[:-1] if i._dist == 0]
+    if to_collapse:
+        toytree.mod.remove_nodes(tree, *to_collapse, inplace=True)
+    return tree
 
 
 def iter_nj_algorithm(arr: Array) -> Iterator[Tuple[int, int, float, float]]:
@@ -112,11 +121,8 @@ def iter_nj_algorithm(arr: Array) -> Iterator[Tuple[int, int, float, float]]:
         c_arr = arr - uvals - np.expand_dims(uvals, 1)
 
         # mask diagonal and get (i,j) index of min off-diagonal value
-        mask = np.ones(c_arr.shape, dtype=bool)
-        np.fill_diagonal(mask, False)
-        idxs, jdxs = np.where(c_arr == c_arr[mask].min())
-        i = idxs[0]
-        j = jdxs[0]
+        np.fill_diagonal(c_arr, np.inf)
+        i, j = [i[0] for i in np.where(c_arr == c_arr.min())]
 
         # get branch lengths from i,j to new internal Node
         v_i = 0.5 * arr[i, j] + 0.5 * (uvals[i] - uvals[j])
@@ -160,7 +166,7 @@ if __name__ == "__main__":
     )
 
     # run tree inference and draw it.
-    tree = infer_neighbor_joining_tree(data)
+    tree = neighbor_joining_tree(data)
 
     # roots on 'monkey'
     tree = tree.mod.root_on_minimal_ancestor_deviation()
@@ -177,4 +183,4 @@ if __name__ == "__main__":
         # node_mask=(0, 1, 1),
     )
 
-    help(infer_neighbor_joining_tree)
+    help(neighbor_joining_tree)

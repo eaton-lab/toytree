@@ -5,8 +5,8 @@
 
 """
 
-from toytree.infer.src.upgma import infer_upgma_tree
-from toytree.infer.src.neighbor_joining import infer_neighbor_joining_tree
+from toytree.infer.src.upgma import upgma_tree
+from toytree.infer.src.neighbor_joining import neighbor_joining_tree
 from toytree.infer.src.consensus import get_consensus_tree, get_consensus_features
 
 # requires sympy which is not yet in conda recipe, so for now
