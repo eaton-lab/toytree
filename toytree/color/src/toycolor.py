@@ -59,6 +59,12 @@ class ToyColor(np.ndarray):
         return ColorKit(self).rgb
 
     @property
+    def hex(self):
+        """Returns a hexadecimal color string (no opacity handling)."""
+        r, g, b = [int(i * 100) for i in self.rgb]
+        return "#{:02X}{:02X}{:02X}".format(r, g, b)
+
+    @property
     def colorkit(self):
         """Returns a ..."""
         return ColorKit(self)
@@ -165,9 +171,10 @@ if __name__ == "__main__":
     for i in COLORS:
         c = ToyColor.color_expander(i)
         if isinstance(c, ToyColor):
-            print(f"orig = {str(i):<50} | {repr(c)}")
+            print(f"orig = {str(i):<50} | {repr(c)} | hex={c.hex}")
         else:
             print(f"orig = {str(type(i)):<50} | len={len(c)}, {repr([c[0], '...'])}")
+
 
     # NOT_SUPPORTED = [
     #     toyplot.color.brewer.map("Pastel1"),
