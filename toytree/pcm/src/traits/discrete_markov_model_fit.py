@@ -11,6 +11,12 @@ Example
         rates=None,               # will be estimated
         state_frequencies=None,   # will be estimated
     )
+
+
+References
+----------
+https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1004763
+Patro R, Sefer E, Malin J, Marçais G, Navlakha S, Kingsford C. Parsimonious reconstruction of network evolution. Algorithms for Molecular Biology. 2012;7(1):1. 
 """
 
 from typing import Optional, Union, List, TypeVar
