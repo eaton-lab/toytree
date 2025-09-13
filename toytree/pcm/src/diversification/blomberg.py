@@ -1,4 +1,4 @@
-'''
+"""
 functions for determining the Blomberg's K phylogenetic signal metric
 
 References
@@ -6,9 +6,8 @@ References
 Blomberg, Simon P., Theodore Garland, and Anthony R. Ives. 
 “TESTING FOR PHYLOGENETIC SIGNAL IN COMPARATIVE DATA: BEHAVIORAL TRAITS ARE MORE LABILE.” 
 Evolution 57, no. 4 (April 2003): 717–45. https://doi.org/10.1111/j.0014-3820.2003.tb00285.x.
+"""
 
-
-'''
 import numpy as np
 import toytree
 
@@ -47,6 +46,7 @@ def generalized_least_squares(X, V):
 
     return a_hat, MSE
 
+
 def calculate_blomberg_k(tree, data):
     V = tree.pcm.get_vcv_matrix_from_tree()
     n = tree.ntips
@@ -66,14 +66,28 @@ def calculate_blomberg_k(tree, data):
     K = (MSE_0 / MSE) / expected_MSE
     return K
 
+
 if __name__ == "__main__":
 
-    tree = toytree.rtree.rtree(10)
-    #purposefully high signal
-    tip_data_1 = np.array([3.45, 6.78, 7.32, 16.43, 16.94, 25.56, 35.66, 37.55, 67.43, 68.78]) 
-    mu, sigma = 0, 0.1 
-    #random data (should be low signal)
-    tip_data_2 = np.random.normal(mu, sigma, 10) 
 
-    print(calculate_blomberg_k(tree, tip_data_1))
-    print(calculate_blomberg_k(tree, tip_data_2))
+    import toytree
+    tree = toytree.rtree.unittree(ntips=25, treeheight=10.0, seed=123)
+    features = tree.pcm.simulate_continuous_bm(rates=[1.0, 2.0], tips_only=True, seed=123)
+    t0, t1 = features
+
+    vcv = tree.pcm.get_vcv_matrix_from_tree()
+    print(vcv)
+
+    # print(calculate_blomberg_k(tree, t0))
+    #print(calculate_blomberg_k(tree, t1))
+
+
+    #purposefully high signal
+    # tip_data_1 = np.array([3.45, 6.78, 7.32, 16.43, 16.94, 25.56, 35.66, 37.55, 67.43, 68.78]) 
+    # mu, sigma = 0, 0.1 
+    #random data (should be low signal)
+    # tip_data_2 = np.random.normal(mu, sigma, 10) 
+
+    # print(calculate_blomberg_k(tree, tip_data_1))
+    # print(calculate_blomberg_k(tree, tip_data_2))
+    # R: 1.261913
