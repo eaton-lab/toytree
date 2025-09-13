@@ -24,8 +24,8 @@ class AnnotationMarker(Mark):
         shapes: np.ndarray,
         colors: np.ndarray,
         opacity: float,
-        xshift: float,
-        yshift: float,
+        xshift: float, # pixel units left/right
+        yshift: float, # pixel units up/down
         style: Mapping[str, Any],
     ):
         Mark.__init__(self, annotation=True)
