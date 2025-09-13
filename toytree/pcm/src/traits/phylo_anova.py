@@ -11,10 +11,21 @@ intended for use.
 
 References
 -----------
-__Adams, D. C., & Collyer, M. L. (2018). Phylogenetic ANOVA: group-clade 
+Adams, D. C., & Collyer, M. L. (2018). Phylogenetic ANOVA: group-clade 
 aggregation, biological challenges, and a refined permutation procedure.
-Evolution, 72(6), 1204-1215.__
+Evolution, 72(6), 1204-1215.
 
+Garland, T., Jr., A. W. Dickerman, C. M. Janis, & J. A. Jones. (1993) 
+Phylogenetic analysis of covariance by computer simulation. Systematic
+Biology, 42, 265-292.
+
+Harmon, L. J., J. T. Weir, C. D. Brock, R. E. Glor, W. Challenger. 
+(2008) GEIGER: investigating evolutionary radiations. Bioinformatics,
+24, 129-131. 
+
+Adams, D.C and M.L. Collyer. 2018. Multivariate phylogenetic anova:
+group-clade aggregation, biological challenges, and a refined 
+permutation procedure. Evolution. 72:1204-1215. 
 """
 
 from typing import Sequence
@@ -189,12 +200,28 @@ def phylogenetic_generalized_least_squares(values: Sequence[float], groups: Sequ
     print("p-values:\n", p_values)
 
 
-
 def test_R_gls():
     """Compare results to a pgls in R ...
     """
 
+def phyANOVA(tree, x, y):
+    """
 
+    Significance in the phylogenetic linear model is assessed by
+    randomizing residuals in a permutation procedure (RRPP) following
+    Adams...; or by phylogenetic simulation (Garland 1993).
+
+    Parameters
+    ----------
+    x: Sequence[str | int]
+        A sequence of categorical values.
+    y: Sequence[float]
+        A sequence of continuous response variables.
+    """
+    # get mean PIC**2 after randomly resolving polytomies
+    # ...
+
+    # perform anova on linear model of y~x
 
 
 
@@ -202,21 +229,21 @@ if __name__ == "__main__":
 
     import toytree
 
-    # standard ANOVA
+    # standard ANOVA on data with different means.
     rng = np.random.default_rng(124)
     values = rng.normal([1, 2, 3], [2, 2, 2], size=(100, 3)).flatten("F")
     groups = np.repeat([1, 2, 3], 100)
     result = anova(values, groups)
-    # print(result)
+    print(f"Standard ANOVA:\n{result}")
 
     # phylogenetic ANOVA    
 
 
     # phylogenetic GLS
-    tree = toytree.rtree.unittree(6, treeheight=2, seed=123)
+    tree = toytree.rtree.unittree(25, treeheight=1, seed=123).ladderize()
     tree.treenode.draw_ascii()
-    traits = tree.pcm.simulate_continuous_brownian(1.0, tips_only=True)
+    traits = tree.pcm.simulate_continuous_bm(rates=[1, 2, 3], tips_only=True)
     print(traits)
     groups = tree.get_tip_labels()
-    # vcv = tree.pcm.get_vcv_matrix_from_tree(df=True)
-    phylogenetic_generalized_least_squares(traits, groups, tree)
+    vcv = tree.pcm.get_vcv_matrix_from_tree(df=True)
+
