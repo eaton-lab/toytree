@@ -19,12 +19,10 @@ Chain commands
 from typing import Optional
 import argparse
 import sys
-import tempfile
 import subprocess
 from pathlib import Path
 import toytree
 
-TMPFILE = Path(tempfile.gettempdir()) / "test"
 DESCRIPTION = "toytree command line tool. Select a subcommand."
 EPILOG = "EXAMPLE:\n$ toytree draw TREE -ts o -d 400 400 -v"
 
@@ -60,8 +58,8 @@ def setup_parsers() -> argparse.ArgumentParser:
         help="width height (px)",
     )
     parser_draw.add_argument(
-        "-o", type=Path, metavar="basename", default=TMPFILE,
-        help="output basename[.format suffix]",
+        "-o", type=Path, metavar="basename", default="./ttree",
+        help="drawing is saved as {basename}.{format suffix}",
     )
     parser_draw.add_argument(
         "-v", type=str, metavar="app", nargs="?", const="auto",
@@ -70,6 +68,9 @@ def setup_parsers() -> argparse.ArgumentParser:
     parser_draw.add_argument(
         "-f", type=str, help="output file format", default="html",
         choices=["html", "svg", "pdf"]
+    )
+    parser_draw.add_argument(
+        "-l", action="store_true", help="ladderize the tree",
     )
     parser_draw.add_argument(
         "TREE", type=string_or_stdin_parse, help="tree newick file or string",
@@ -111,13 +112,17 @@ def main(cmd: Optional[str] = None) -> int:
 
     # draw
     if args.subcommand == "draw":
-        # print(args)
         tree = toytree.tree(args.TREE)
         width, height = args.d
+        if args.l:
+            tree = tree.ladderize()
         canvas, _, _ = tree.draw(tree_style=args.ts, width=width, height=height)
         canvas.style['background-color'] = "white"
 
-        path = Path(args.o).with_suffix(f".{args.f}")
+        # set path to outfile
+        args.f = args.f.lower()
+        args.o = args.o if args.o is not None else Path("./toytree")
+        path = args.o.with_suffix(f".{args.f}")
         if args.f == "html":
             import toyplot.html
             toyplot.html.render(canvas, str(path))
