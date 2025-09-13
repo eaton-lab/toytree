@@ -96,7 +96,7 @@ def neighbor_joining_tree(data: Array) -> toytree.ToyTree:
     tree = toytree.ToyTree(node_j)
 
     # collapse polytomies (zero-dist) edges
-    to_collapse = [i for i in tree[:-1] if i._dist == 0]
+    to_collapse = [i for i in tree[tree.ntips:-1] if i._dist == 0]
     if to_collapse:
         toytree.mod.remove_nodes(tree, *to_collapse, inplace=True)
     return tree
