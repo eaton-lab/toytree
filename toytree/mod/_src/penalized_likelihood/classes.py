@@ -72,7 +72,7 @@ class Chronos:
         weight: float=1, 
         tol: float=1e-8, 
         verbose: bool=False,
-        ):
+    ):
 
         # store tree data
         self.tree = tree
@@ -89,8 +89,8 @@ class Chronos:
         self.print = (print if verbose else iter)
 
         # store tree components
-        self.edges = self.tree.get_edges()
-        self.dists = self.tree.get_edge_values("dist")
+        self.edges = self.tree.get_edges("idx")
+        self.dists = self.tree.get_node_data("dist").values[:-1]
         self.dists_lf = np.log(factorial(self.dists))
         self.edge_paths = [
             (leaf.idx,) + tuple(i.idx for i in leaf.iter_ancestors()) 
@@ -141,6 +141,7 @@ class Chronos:
         to nodes of a Toytree.
         """
         # report results
+        self.print(f"params: {self.params}")
         self.print('init ploglik: {}'.format(-self.objective(self.params)))
         self.optimize()
         self.print('final ploglik: {}'.format(-self.objective(self.results)))
@@ -215,7 +216,7 @@ class Chronos:
             
             # get age edge lengths
             self.ages_lens = (
-                self.ages_init[self.edges[:, 0]] - self.ages_init[self.edges[:, 1]]
+                self.ages_init[self.edges[:, 1]] - self.ages_init[self.edges[:, 0]]
             )
             
             # check that all edges are positive in length        
@@ -227,6 +228,8 @@ class Chronos:
                 raise ToytreeError("bad starting values")
 
         # store initial values for method validation
+        print(self.ages_init)        
+        print(self.ages_lens)
         self.init_tree = self.get_transformed_tree()
 
     def get_bounds(self):
@@ -281,8 +284,9 @@ class Chronos:
         )        
         self.results = fit.x
         self.ploglik = fit.fun
+        self.print(fit)
 
-    def update(self, params, rates, ages):
+    def update(self, params: np.ndarray, rates: bool, ages: bool):
         """
         Update one or both parameter sets...
         """
@@ -326,7 +330,7 @@ class Chronos:
         is inappropriate. 
         """
         # check that edge lengths are still all positive
-        age_lens = self.ages_init[self.edges[:, 0]] - self.ages_init[self.edges[:, 1]]
+        age_lens = self.ages_init[self.edges[:, 1]] - self.ages_init[self.edges[:, 0]]
         if any(age_lens < 0):
             return -1e100
 
@@ -338,8 +342,7 @@ class Chronos:
         return loglik
 
     def lik_penalty_relaxed(self):
-        """
-        Penalty component to likelihood for the relaxed model.
+        """Penalty component to likelihood for the relaxed model.
         """
         alpha = self.rates_hat.mean()
         pdens = sorted(stats.gamma.cdf(self.rates_hat, alpha))
@@ -446,8 +449,9 @@ class Chronos:
         newtre = self.tree.copy()
         for node in newtre.treenode.traverse("postorder"):
             if node.up:
-                node.dist = self.ages_init[node.up.idx] - self.ages_init[node.idx]
+                node._dist = self.ages_init[node.up.idx] - self.ages_init[node.idx]
                 # node.rate = self.params[node.]
+        newtre._update()
         return newtre
 
     def iterative_model_fit(self):
@@ -625,7 +629,6 @@ def _run_chronos_in_r(tree, lamb=1, model="relaxed", calibrations=None):
     return ctre, out
 
 
-
 class TreeSampler:
     """
     Class for applying uncorrelated gamma rate transformations to edges
@@ -691,12 +694,12 @@ class TreeSampler:
             nevals = gamma_rates * self.neff
         
             # apply randomly to nodes of the tree
-            tree = tree.set_node_values(
+            tree = tree.set_node_data(
                 feature="Ne",
-                mapping={i: nevals[i] for i in range(tree.nnodes)}
+                data={i: nevals[i] for i in range(tree.nnodes)}
             )
         else:
-            tree = tree.set_node_values("Ne", default=self.neff)
+            tree = tree.set_node_data("Ne", default=self.neff)
         
         if G:
             gamma_rates = np.random.gamma(
@@ -709,31 +712,42 @@ class TreeSampler:
             gvals = gamma_rates * self.gentime
         
             # apply randomly to nodes of the tree
-            tree = tree.set_node_values(
+            tree = tree.set_node_data(
                 feature="g",
-                mapping={i: gvals[i] for i in range(tree.nnodes)}
+                data={i: gvals[i] for i in range(tree.nnodes)}
             )
         else:
-            tree = tree.set_node_values("g", default=self.gentime)      
+            tree = tree.set_node_data("g", default=self.gentime)      
         
         # optionally convert edges to coal units
         if transform == 1:
-            tree = tree.set_node_values(
+            tree = tree.set_node_data(
                 feature="dist",
-                mapping={i: j.dist / (j.Ne * 2 * j.g) for i,j in enumerate(tree)}
+                data={i: j.dist / (j.Ne * 2 * j.g) for i,j in enumerate(tree)}
             )
             
         elif transform == 2:
-            tree = tree.set_node_values(
+            tree = tree.set_node_data(
                 feature="dist",
-                mapping={i: j.dist / j.g for i,j in enumerate(tree)}
+                data={i: j.dist / j.g for i,j in enumerate(tree)}
             )            
         return tree
 
 
 if __name__ == "__main__":
 
-    TREE = toytree.rtree.unittree(10, treeheight=1e6)
-    TSA = TreeSampler(TREE, neff=5e5, gentime=1, gamma=3)
-    TRE = TSA.get_tree()
-    print(TRE)
+    import toytree
+    toytree.set_log_level("INFO")
+
+    # TREE = toytree.rtree.unittree(10, treeheight=1e6)
+    # TSA = TreeSampler(TREE)
+    # TRE = TSA.get_tree(transform=1, N=5e5, G=1)
+    # # print(TREE)
+    # TRE._draw_browser(ts='n', tmpdir="~")
+    # Chronos(TRE).run()
+
+    tree = toytree.rtree.rtree(10, seed=123)
+    tree._draw_browser(ts='s', use_edge_lengths=True, tmpdir="~")
+    c = Chronos(tree, verbose=True)
+    c.run()
+    c.tree._draw_browser(ts='s', use_edge_lengths=True, scale_bar=True, tmpdir="~")

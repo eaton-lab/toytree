@@ -44,20 +44,20 @@ constrained.
 
 Methods
 --------
-- edges_make_ultrametric()                  # implements all models and returns best fit result.
-- edges_make_ultrametric_pl_clock()
-- edges_make_ultrametric_pl_discrete()
-- edges_make_ultrametric_pl_correlated()
-- edges_make_ultrametric_pl_relaxed()
-- TODO: edges_make_ultrametric_pl_lasso()   # minimize the L1 penalty
-- TODO: edges_make_ultrametric_pl_ridge()   # minimize the L2 norm
-- TODO: edges_make_ultrametric_pl_elastic() # minimize L1 + L2
-- TODO: edges_make_ultrametric_pl_bayes()   # Bayesian regularization
+- make_ultrametric()                  # implements all models and returns best fit result.
+- make_ultrametric_pl_clock()
+- make_ultrametric_pl_discrete()
+- make_ultrametric_pl_correlated()
+- make_ultrametric_pl_relaxed()
+- TODO: make_ultrametric_pl_lasso()   # minimize the L1 penalty
+- TODO: make_ultrametric_pl_ridge()   # minimize the L2 norm
+- TODO: make_ultrametric_pl_elastic() # minimize L1 + L2
+- TODO: make_ultrametric_pl_bayes()   # Bayesian regularization
 
 Examples
 --------
 >>> tree = toytree.rtree.rtree(ntips=20, seed=123)
->>> utree = toytree.mod.edges_make_ultrametric(tree, model="clock")
+>>> utree = toytree.mod.make_ultrametric(tree, model="clock")
 >>> toytree.mtree([tree, utree]).draw(ts='o')
 
 References
@@ -82,9 +82,11 @@ TODO
     Either yes, or we can stick in a unary node that extends to 0.
 - find edge cases of conflicting calibrations
 - test edge cases of non bifurcating trees
+- could be [if available] numba-fied
 """
 
-from typing import Dict, Optional, Tuple, List, Any, Union
+from typing import Dict, Tuple, Any, Union
+from itertools import cycle
 from loguru import logger
 import numpy as np
 import scipy.stats as stats
@@ -96,6 +98,13 @@ logger = logger.bind(name="toytree")
 Calibrations = Dict[int, Tuple[float, float]]
 PARAM_MIN = 1e-8
 PARAM_MAX = 1e8
+
+__all__ = [
+    "edges_make_ultrametric_pl_clock",
+    "edges_make_ultrametric_pl_discrete",
+    "edges_make_ultrametric_pl_relaxed"
+    # "edges_make_ultrametric_pl_uncorrelated"
+]
 
 
 def _get_init_ages(tree: ToyTree, calibrations: Calibrations, mult: float = 1.5) -> Tuple[np.ndarray, np.ndarray]:
@@ -130,6 +139,7 @@ def _get_init_ages(tree: ToyTree, calibrations: Calibrations, mult: float = 1.5)
             calib = (float(calib), float(calib))
         span = calib[1] - calib[0]
         ages[nidx] = calib[0] + span / 2.
+        logger.debug(f"setting calibration: node {nidx} age to {ages[nidx]}")
 
     # set root age (if not calibrated) to mult of max internal age
     if np.isnan(ages[-1]):
@@ -200,18 +210,24 @@ def _get_params_bounds(tree: ToyTree, calibrations: Dict[int, Tuple[float, float
     if not calibrations:
         calibrations = {tree[-1].idx: (1., 1.)}
 
-    # get indices of the node ages that need to be estimated
+    # set bounds for all internal nodes to min,max
     ages_bounds = {}
-    for nidx in range(tree.ntips, tree.nnodes):
-        if nidx in calibrations:
-            calib = calibrations[nidx]
-            if isinstance(calib, (float, int)):
-                calib = (float(calib), float(calib))
-            cmin, cmax = calib
-            if cmin != cmax:
-                ages_bounds[nidx] = (cmin, cmax)
+    for node in tree[tree.ntips:]:
+        ages_bounds[node._idx] = (PARAM_MIN, PARAM_MAX)
+
+    # set stricter bounds on calibrated nodes, unless fixed age, then remove.
+    fixed = []
+    for selector, calib in calibrations.items():
+        node = tree.get_nodes(selector)[0]
+        nidx = node._idx
+        if isinstance(calib, (float, int)):
+            calib = (float(calib), float(calib))
+        cmin, cmax = calib
+        if cmin != cmax:
+            ages_bounds[nidx] = (cmin, cmax)
         else:
-            ages_bounds[nidx] = (PARAM_MIN, PARAM_MAX)
+            fixed.append(nidx)
+    ages_bounds = {i: j for (i, j) in ages_bounds.items() if i not in fixed}
 
     # get indices of edge rates that need to be estimated (all)
     rates_bounds = {i: (PARAM_MIN, PARAM_MAX) for i in np.arange(tree.nnodes - 1)}
@@ -231,10 +247,9 @@ def _get_mean_rooted_path_distance(tree) -> float:
 
 def edges_make_ultrametric_pl_clock(
     tree: ToyTree,
-    calibrations: Calibrations,
-    inplace: bool = False,
+    calibrations: Calibrations = {},
     full: bool = False,
-    rates_feature: bool | str = "rate",
+    inplace: bool = False,
     max_iter: int = 1e5,
     max_fun: int = 1e5,
     max_refine: int = 20,
@@ -251,17 +266,12 @@ def edges_make_ultrametric_pl_clock(
     calibrations: dict[int, (float, float)]
         A dict mapping node selectors (e.g., idx labels) to calibrated
         ages as a single value or a tuple of (min, max) age.
-    inplace: bool
-        If True the tree is modified in-place and returned, else a 
-        copy is returned.
     full: bool
         If full=True a dictionary is returned with the modified tree,
         log-likelihood score, and PHIIC score.
-    rates_feature: bool or str
-        If True the estimated rates on each edge will be stored as a
-        data feature to the returned tree. If False no rate data is
-        stored. The rate data is stored as feature name "rate" unless
-        a different string name is entered for this arg.
+    inplace: bool
+        If True the tree is modified in-place and returned, else a
+        copy is returned.
     max_iter: int
         Max number of iterations for optimization.
     max_fun: int
@@ -284,7 +294,7 @@ def edges_make_ultrametric_pl_clock(
         PHIIC, and rate.
     """
     # get init and fixed node ages that make tree ultrametric
-    ages_init, dists_init = _get_init_ages(tree, calibrations)
+    ages_init, _ = _get_init_ages(tree, calibrations)
 
     # get bounds on params that need to be inferred; are not fixed
     rates_bounds, ages_bounds = _get_params_bounds(tree, calibrations)
@@ -324,58 +334,51 @@ def edges_make_ultrametric_pl_clock(
     else:
         logger.debug(f"Initial fit loglik={-fit.fun}")
 
-    # iterative optimization while alternately fixing rates or ages
+   # iterative optimization while alternately fixing rates or ages
     current_loglik = fit.fun
     current_params = fit.x
     iter_refine = 0
+
+    # dict mapping fixed param type to fixed bool selector, and param subset slice
+    fix_dict = {
+        "rates": [(False, True), slice(None, 1)],
+        "ages": [(True, False), slice(1, None)],
+    }
+
+    # iterator to cycle through this dict infinitely
+    iter_fixed = cycle(fix_dict)
+
+    # loop to optimize one param type at a time
     while 1:
 
-        # [AGES] fix the rate and optimize ages
-        rate_hat = current_params[0]
+        # get a fixed param and its info
+        fixed = next(iter_fixed)
+        fbools, fslice = fix_dict[fixed]
+
+        # update params from current accepted values
+        rates_hat = current_params[:1]
         ages_hat = ages_init.copy()
         ages_hat[ages_idxs] = current_params[1:]
-        ifit_r = minimize(
+
+        # optimize the subset of non-fixed params
+        args = fbools + (rates_hat, ages_hat, ages_idxs, edges, edata, valid_loglik)
+        ifit = minimize(
             fun=objective_clock,
-            x0=current_params[1:],
-            args=(True, False, rate_hat, ages_hat, ages_idxs, edges, edata, valid_loglik),
+            x0=current_params[fslice],
+            args=args,
             method="L-BFGS-B",
-            bounds=bounds[1:],
+            bounds=bounds[fslice],
             options=dict(maxiter=int(max_iter), maxfun=int(max_fun))
         )
 
         # if improvement is negative and abs() > 1e-9 then accept
-        Δ_loglik = ifit_r.fun - current_loglik
+        Δ_loglik = ifit.fun - current_loglik
         if Δ_loglik <= 0:
-            # accept new proposed ages
-            current_loglik = ifit_r.fun
-            current_params[1:] = ifit_r.x
-            logger.debug(f"fixed rate loglik={-current_loglik}; Δloglik={Δ_loglik}")
+            current_loglik = ifit.fun
+            current_params[fslice] = ifit.x
+            logger.debug(f"fixed {fixed:<5} loglik={-current_loglik}; Δloglik={Δ_loglik}")
             if abs(Δ_loglik) < 1e-9:
-                fit = ifit_r                
-                break
-
-        # fix the ages and optimize the rate
-        rate_hat = current_params[0]
-        ages_hat = ages_init.copy()
-        ages_hat[ages_idxs] = current_params[1:]
-        ifit_a = minimize(
-            fun=objective_clock,
-            x0=current_params[:1],
-            args=(False, True, rate_hat, ages_hat, ages_idxs, edges, edata, valid_loglik),
-            method="L-BFGS-B",
-            bounds=bounds[:1],
-            options=dict(maxiter=int(max_iter), maxfun=int(max_fun))
-        )
-
-        # if improvement is negative and abs() > 1e-9 then accept
-        Δ_loglik = ifit_a.fun - current_loglik
-        if Δ_loglik <= 0:
-            # accept new proposed rate
-            current_loglik = ifit_a.fun
-            current_params[:1] = ifit_a.x
-            logger.debug(f"fixed ages loglik={-current_loglik}; Δloglik={Δ_loglik}")
-            if abs(Δ_loglik) < 1e-9:
-                fit = ifit_a
+                fit = ifit
                 break
 
         # break on max_refine
@@ -387,13 +390,7 @@ def edges_make_ultrametric_pl_clock(
     ages = ages_init.copy()
     ages[ages_idxs] = current_params[1:]
     tree = tree.set_node_data("height", ages, inplace=inplace)
-
-    # store rate to every node
     rate = current_params[0]
-    if rates_feature not in [False, None]:
-        if not isinstance(rates_feature, str):
-            rates_feature = "rate"
-        tree.set_node_data(rates_feature, default=rate, inplace=True)
 
     # Final fit for PHIIC calculation (Penalized Hierarchical Information Criterion)
     loglik = log_likelihood_poisson(rate, ages, edges, edata, valid_loglik)
@@ -409,40 +406,39 @@ def edges_make_ultrametric_pl_clock(
 def edges_make_ultrametric_pl_discrete(
     tree: ToyTree,
     ncategories: int,
-    calibrations: Calibrations,
-    inplace: bool = False,
+    calibrations: Calibrations = {},
     full: bool = False,
-    rates_feature: bool | str = "rate",
-    cat_feature: bool | str = "cat",
+    inplace: bool = False,
     max_iter: int = 1e5,
     max_fun: int = 1e5,
     max_refine: int = 20,
 ) -> Union[ToyTree, dict[str, Any]]:
-    """Return a tree made ultrametric under a discrete clock model by
-    penalized likelihood.
+    """Return a tree made ultrametric under a discrete model with N
+    rate categories under penalized likelihood.
 
     Edges are scaled while assuming a edge rates are drawn from N 
     discrete distributions. The number of parameters in this model is
-    n_edges rates + n_non_fixed_nodes ages + n_categories.
+    n_categories rates + n_non_fixed_nodes ages + n_categories - 1
+    frequencies (weights). A rate is estimated for each category and
+    weights are also fit to assign the path lengths from tip to root
+    for all edges as a proportion to each rate.
 
     Parameters
     ----------
     tree: ToyTree
         A ToyTree with non-ultrametric edge lengths.
+    ncategories: int
+        The number of discrete rate categories. If greater than the
+        number of edges it is set to nedges.
     calibrations: dict[int, (float, float)]
         A dict mapping node selectors (e.g., idx labels) to calibrated
         ages as a single value or a tuple of (min, max) age.
-    inplace: bool
-        If True the tree is modified in-place and returned, else a 
-        copy is returned.
     full: bool
         If full=True a dictionary is returned with the modified tree,
         log-likelihood score, and PHIIC score.
-    rates_feature: bool or str
-        If True the estimated rates on each edge will be stored as a
-        data feature to the returned tree. If False no rate data is
-        stored. The rate data is stored as feature name "rate" unless
-        a different string name is entered for this arg.
+    inplace: bool
+        If True the tree is modified in-place and returned, else a
+        copy is returned.
     max_iter: int
         Max number of iterations for optimization.
     max_fun: int
@@ -463,6 +459,20 @@ def edges_make_ultrametric_pl_discrete(
         An alternative option to return a dict with the new scaled tree
         as well as statistics on the model fit including likelihood, 
         PHIIC, and rate.
+
+    Example
+    -------
+    >>> # create tree with edge rates from two discrete rates
+    >>> rng = np.random.default_rng(seed=123)
+    >>> tree = toytree.rtree.unittree(25, seed=123)
+    >>> for node in tree:
+    >>>     if rng.binomial(n=1, p=0.5):
+    >>>         node._dist = node._dist * rng.gamma(shape=3, scale=1.0)
+    >>>     else:
+    >>>         node._dist = node._dist * rng.gamma(shape=3, scale=5.0)
+    >>> tree.mod.edges_make_ultrametric_pl_discrete(tree, 2, full=True)
+    >>> # {'loglik': -82.42541, 'PHIIC': 216.85082, 'rates': [4.12272, 17.56474], 'freqs': [0.53751, 0.46248], 'tree': <toytree.ToyTree at 0x791451cb5190>, 'converged': True}
+
     """
     # ncategories cannot exceed number of edges
     ncategories = min(ncategories, tree.nedges)
@@ -502,7 +512,7 @@ def edges_make_ultrametric_pl_discrete(
     _freqs_hat = np.append(freqs_init, 1 - freqs_init.sum())    
     valid_loglik = log_likelihood_poisson_discrete(rates_init, ages_init, edges, edata, _freqs_hat, None)
 
-    # fit model
+    # fit joint model
     params = np.hstack([rates_init, ages_init[ages_idxs], freqs_init])
     fit = minimize(
         fun=objective_discrete,
@@ -514,7 +524,7 @@ def edges_make_ultrametric_pl_discrete(
     )
     # log success/fail report
     if not fit.success:
-        logger.warning(f"Failed to converge. Consider increasing max_iter & max_fun:\n{fit}")
+        logger.warning(f"Failed to converge. Consider increasing max_iter & max_fun, or reducing ncategories.\n{fit}")
     else:
         logger.debug(f"Initial fit loglik={-fit.fun}")
 
@@ -526,80 +536,49 @@ def edges_make_ultrametric_pl_discrete(
     asize = ages_idxs.size
     fsize = freqs_init.size
 
-    # TODO: write this loop more concisely.
+    # dict mapping fixed param type to fixed bool selector, and param subset slice
+    fix_dict = {
+        "rates": [(False, True, True), slice(None, rsize)],
+        "ages": [(True, False, True), slice(rsize, rsize + asize)],
+        "freqs": [(True, True, False), slice(-fsize, None)],
+    }
+
+    # iterator to cycle through this dict infinitely
+    iter_fixed = cycle(fix_dict)
+
+    # loop to optimize one param type at a time until no further improvement
+    # or the max_refine number is reached.
     while 1:
-        # [RATES] estimate rates while keeping other params fixed
-        rates_hat = current_params[:rates_init.size]
-        ages_hat = ages_init.copy()
-        ages_hat[ages_idxs] = current_params[rsize:rsize + asize]
-        freqs_hat = current_params[-fsize:]
-        ifit_r = minimize(
-            fun=objective_discrete,
-            x0=current_params[:rates_init.size],
-            args=(False, True, True, rates_hat, ages_hat, ages_idxs, edges, edata, freqs_hat, valid_loglik),
-            method="L-BFGS-B",
-            bounds=bounds[:rates_init.size],
-            options=dict(maxiter=int(max_iter), maxfun=int(max_fun))
-        )
-        # if improvement is negative and abs() > 1e-9 then accept
-        Δ_loglik = ifit_r.fun - current_loglik
-        if Δ_loglik <= 0:
-            # accept new proposed ages
-            current_loglik = ifit_r.fun
-            current_params[:rsize] = ifit_r.x
-            logger.debug(f"fixed rates loglik={-current_loglik}; Δloglik={Δ_loglik}")
-            if abs(Δ_loglik) < 1e-9:
-                fit = ifit_r
-                break
 
-        # [AGES] estimate ages while keeping other parmas fixed
-        rates_hat = current_params[:rates_init.size]
+        # get a fixed param and its info
+        fixed = next(iter_fixed)
+        fbools, fslice = fix_dict[fixed]
+
+        # update params from current accepted values
+        rates_hat = current_params[:rsize]
         ages_hat = ages_init.copy()
         ages_hat[ages_idxs] = current_params[rsize:rsize + asize]
         freqs_hat = current_params[-fsize:]
-        ifit_a = minimize(
+
+        # optimize the subset of non-fixed params
+        args = fbools + (rates_hat, ages_hat, ages_idxs, edges, edata, freqs_hat, valid_loglik)
+        ifit = minimize(
             fun=objective_discrete,
-            x0=current_params[rsize:rsize + asize],
-            args=(True, False, True, rates_hat, ages_hat, ages_idxs, edges, edata, freqs_hat, valid_loglik),
+            x0=current_params[fslice],
+            args=args,
             method="L-BFGS-B",
-            bounds=bounds[rsize:rsize + asize],
+            bounds=bounds[fslice],
             options=dict(maxiter=int(max_iter), maxfun=int(max_fun))
         )
 
         # if improvement is negative and abs() > 1e-9 then accept
-        Δ_loglik = ifit_a.fun - current_loglik
+        Δ_loglik = ifit.fun - current_loglik
         if Δ_loglik <= 0:
-            # accept new proposed rate
-            current_loglik = ifit_a.fun
-            current_params[rsize:rsize + asize] = ifit_a.x
-            logger.debug(f"fixed ages loglik={-current_loglik}; Δloglik={Δ_loglik}")
+            current_loglik = ifit.fun
+            current_params[fslice] = ifit.x
+            logger.debug(f"fixed {fixed:<5} loglik={-current_loglik}; Δloglik={Δ_loglik}")
             if abs(Δ_loglik) < 1e-9:
-                fit = ifit_a
-                break
-
-        # [FREQS] estimate freqs while keeping other parmas fixed
-        rates_hat = current_params[:rates_init.size]
-        ages_hat = ages_init.copy()
-        ages_hat[ages_idxs] = current_params[rsize:rsize + asize]
-        freqs_hat = current_params[-fsize:]
-        ifit_f = minimize(
-            fun=objective_discrete,
-            x0=current_params[-fsize:],
-            args=(True, True, False, rates_hat, ages_hat, ages_idxs, edges, edata, freqs_hat, valid_loglik),
-            method="L-BFGS-B",
-            bounds=bounds[-fsize:],
-            options=dict(maxiter=int(max_iter), maxfun=int(max_fun))
-        )
-
-        # if improvement is negative and abs() > 1e-9 then accept
-        Δ_loglik = ifit_f.fun - current_loglik
-        if Δ_loglik <= 0:
-            # accept new proposed rate
-            current_loglik = ifit_f.fun
-            current_params[-fsize:] = ifit_f.x
-            logger.debug(f"fixed ages loglik={-current_loglik}; Δloglik={Δ_loglik}")
-            if abs(Δ_loglik) < 1e-9:
-                fit = ifit_f                
+                fit = ifit
                 break
 
         # break on max_refine
@@ -617,7 +596,7 @@ def edges_make_ultrametric_pl_discrete(
     freqs = current_params[-fsize:]
 
     # Final fit for PHIIC calculation (Penalized Hierarchical Information Criterion)
-    _freqs = np.append(freqs, 1. - freqs.sum())    
+    _freqs = np.append(freqs, 1. - freqs.sum())
     loglik = log_likelihood_poisson_discrete(rates, ages, edges, edata, _freqs, valid_loglik)
     k = len(bounds)
     PHIIC = -2 * loglik + 2 * k
@@ -628,13 +607,193 @@ def edges_make_ultrametric_pl_discrete(
     return {"loglik": loglik, "PHIIC": PHIIC, "rates": list(rates), "freqs": list(_freqs), "tree": tree, "converged": fit.success}
 
 
-def objective_clock(params, fixed_rate, fixed_ages, rate, ages, ages_idxs, edges, edata, valid_loglik):
-    """Return neg log-likelihood under clock model.
+def edges_make_ultrametric_pl_relaxed(
+    tree: ToyTree,
+    lam: float,
+    calibrations: Calibrations = {},
+    full: bool = False,
+    inplace: bool = False,
+    max_iter: int = 1e5,
+    max_fun: int = 1e5,
+    max_refine: int = 20,
+) -> Union[ToyTree, dict[str, Any]]:
+    """Return a tree made ultrametric under a relaxed clock model with
+    rate variation among edges under penalized likelihood.
 
-    >>> objective(params, 0, 0, rate, ages_init, ages_idxs, edata, valid_loglik)
-    >>> objective(params, 1, 0, rate, ages_init, ages_idxs, edata, valid_loglik)
-    >>> objective(params, 0, 1, rate, ages_init, ages_idxs, edata, valid_loglik)    
+    Edges are scaled while assuming ...
+
+    Parameters
+    ----------
+    tree: ToyTree
+        A ToyTree with non-ultrametric edge lengths.
+    lam: float
+        Lambda rate variation penalty parameter of Sanderson's
+        relaxed model. Lower values allow less rate variation.
+    calibrations: dict[int, (float, float)]
+        A dict mapping node selectors (e.g., idx labels) to calibrated
+        ages as a single value or a tuple of (min, max) age.
+    full: bool
+        If full=True a dictionary is returned with the modified tree,
+        log-likelihood score, and PHIIC score.
+    inplace: bool
+        If True the tree is modified in-place and returned, else a
+        copy is returned.
+    max_iter: int
+        Max number of iterations for optimization.
+    max_fun: int
+        Max number of function calls for optimization.
+    max_refine: int
+        Number of iterative refining steps performed to alternately fit
+        model rates while keeping ages fixed, or vice-versa, to search
+        for improvements on the joint fit model.
+
+    Returns
+    -------
+    ToyTree
+        The default return is a ToyTree with node dist values scaled
+        so that the tree is ultrametric. If inplace=True this
+        overwrites the original tree and the returned tree does not
+        need to be stored.
+    dict
+        An alternative option to return a dict with the new scaled tree
+        as well as statistics on the model fit including likelihood,
+        PHIIC, and rate.
+
+    Example
+    -------
+    >>> # create tree with edge rates from two discrete rates
+    >>> rng = np.random.default_rng(seed=123)
+    >>> tree = toytree.rtree.unittree(25, seed=123)
+    >>> for node in tree:
+    >>>     if rng.binomial(n=1, p=0.5):
+    >>>         node._dist = node._dist * rng.gamma(shape=3, scale=1.0)
+    >>>     else:
+    >>>         node._dist = node._dist * rng.gamma(shape=3, scale=5.0)
+    >>> tree.mod.edges_make_ultrametric_pl_discrete(tree, 2, full=True)
+    >>> # {'loglik': -82.42541, 'PHIIC': 216.85082, 'rates': [4.12272, 17.56474], 'freqs': [0.53751, 0.46248], 'tree': <toytree.ToyTree at 0x791451cb5190>, 'converged': True}
     """
+    # get init and fixed node ages that make tree ultrametric
+    ages_init, dists_init = _get_init_ages(tree, calibrations)
+
+    # get bounds on params that need to be inferred; are not fixed
+    rates_bounds, ages_bounds = _get_params_bounds(tree, calibrations)
+
+    # get edges, dists and log-factorial-dists from rate-x-time edges
+    edges = tree.get_edges("idx")
+    dists_o = tree.get_node_data("dist").values[:-1]
+    dists_lf = np.log(factorial(dists_o))
+    edata = np.vstack([dists_o, dists_lf]).T
+
+    # get starting rates as old/new edge dists.
+    rates_init = dists_o / (ages_init[edges[:, 1]] - ages_init[edges[:, 0]])
+
+    # get indices of which node ages will be estimated
+    ages_idxs = np.array(sorted(ages_bounds))
+
+    # gradient incidence matrices for relaxed model
+    mat_a = np.array([edges[:, 1] == i for i in ages_idxs])
+    mat_d = np.array([edges[:, 0] == i for i in ages_idxs])
+
+    # slim bounds to only those needing to be estimated
+    ages_bounds = [ages_bounds[i] for i in ages_idxs]
+    bounds = rates_bounds + ages_bounds
+
+    # get loglik at a valid starting params to scale neg dist penalty
+    valid_loglik = log_likelihood_poisson_relaxed(rates_init, ages_init, edges, edata, None)
+
+    # fit joint model
+    params = np.hstack([rates_init, ages_init[ages_idxs]])
+    fit = minimize(
+        fun=objective_relaxed,
+        x0=params,
+        args=(False, False, rates_init, ages_init, ages_idxs, edges, edata, valid_loglik),
+        method="L-BFGS-B",
+        bounds=bounds,
+        options=dict(maxiter=int(max_iter), maxfun=int(max_fun))
+    )
+    # log success/fail report
+    if not fit.success:
+        logger.warning(f"Failed to converge. Consider increasing max_iter & max_fun:\n{fit}")
+    else:
+        logger.debug(f"Initial fit loglik={-fit.fun}")
+
+    # iterative optimization while alternately fixing rates or ages
+    current_loglik = fit.fun
+    current_params = fit.x
+    iter_refine = 0
+    rsize = rates_init.size
+    asize = ages_idxs.size
+
+    # dict mapping fixed param type to fixed bool selector, and param subset slice
+    fix_dict = {
+        "rates": [(False, True, True), slice(None, rsize)],
+        "ages": [(True, False, True), slice(rsize, rsize + asize)],
+    }
+
+    # iterator to cycle through this dict infinitely
+    iter_fixed = cycle(fix_dict)
+
+    # loop to optimize one param type at a time until no further improvement
+    # or the max_refine number is reached.
+    while 1:
+
+        # get a fixed param and its info
+        fixed = next(iter_fixed)
+        fbools, fslice = fix_dict[fixed]
+
+        # update params from current accepted values
+        rates_hat = current_params[:rsize]
+        ages_hat = ages_init.copy()
+        ages_hat[ages_idxs] = current_params[rsize:rsize + asize]
+
+        # optimize the subset of non-fixed params
+        args = fbools + (rates_hat, ages_hat, ages_idxs, edges, edata, valid_loglik)
+        ifit = minimize(
+            fun=objective_discrete,
+            x0=current_params[fslice],
+            args=args,
+            method="L-BFGS-B",
+            bounds=bounds[fslice],
+            options=dict(maxiter=int(max_iter), maxfun=int(max_fun))
+        )
+
+        # if improvement is negative and abs() > 1e-9 then accept
+        Δ_loglik = ifit.fun - current_loglik
+        if Δ_loglik <= 0:
+            current_loglik = ifit.fun
+            current_params[fslice] = ifit.x
+            logger.debug(f"fixed {fixed:<5} loglik={-current_loglik}; Δloglik={Δ_loglik}")
+            if abs(Δ_loglik) < 1e-9:
+                fit = ifit
+                break
+
+        # break on max_refine
+        iter_refine += 1
+        if iter_refine > max_refine:
+            break
+
+    # transform tree with new ages
+    ages = ages_init.copy()
+    ages[ages_idxs] = current_params[rsize:rsize + asize]
+    tree = tree.set_node_data("height", ages, inplace=inplace)
+
+    # get rates and freqs params
+    rates = current_params[:rsize]
+
+    # Final fit for PHIIC calculation (Penalized Hierarchical Information Criterion)
+    loglik = log_likelihood_poisson_discrete(rates, ages, edges, edata, valid_loglik)
+    k = len(bounds)
+    PHIIC = -2 * loglik + 2 * k
+
+    # return as a tree or a dict
+    if not full:
+        return tree
+    return {"loglik": loglik, "PHIIC": PHIIC, "rates": list(rates), "tree": tree, "converged": fit.success}
+
+
+
+def objective_clock(params, fixed_rate, fixed_ages, rate, ages, ages_idxs, edges, edata, valid_loglik):
+    """Return neg log-likelihood under clock model."""
     # [AGES] optimize ages while keeping rate fixed
     if fixed_rate and not fixed_ages:
         assert params.size == ages_idxs.size
@@ -734,71 +893,86 @@ def log_likelihood_poisson_discrete(rates_hat, ages_hat, edges, edata, freqs_hat
     return loglik
 
 
-# def objective_correlated(rates, ages, lamb, ):
-#     """..."""
-#     # handle the treenode child edges differently
-#     # ...
-
-#     # get D_ki and A_ki for gradient functions.
-#     # ...
-
-#     #
-#     loglik = log_likelihood_poisson(rates, ages)
-#     mu = np.mean(rates)
-#     return loglik - lamb * sum(...)
+def objective_relaxed(params, fixed_rates, fixed_ages, rates, ages, ages_idxs, edges, edata, lam, valid_loglik) -> float:
+    """..."""
 
 
-# def _gradient_poisson_correlated():
-#     pass
+def log_likelihood_poisson_relaxed() -> float:
+    # get likelihood of model parameters
+    loglik = log_likelihood_poisson(rates, ages, edges, edata, valid_loglik)
+
+    # get penalty under relaxed lambda weighting
+    mu = np.mean(rates)
+    return loglik - lamb * sum(...)
 
 
-# def _gradient_poisson_relaxed():
-#     pass
+def objective_relaxed():
+    pass
 
 
-# def objective_relaxed():
-#     pass
+def gradient_poisson(ages, rates, edges, einfo, mat_a, mat_d):
+    """Gradient function for the Poisson component."""
+    # get edge lengths between node ages
+    age_lens = ages[edges[:, 0]] - ages[edges[:, 1]]
+
+    # gradient for the rates
+    rates_gr = (einfo[:, 0] / rates) - age_lens
+
+    # gradient for the dates
+    inner = (einfo[:, 0] / age_lens) - rates
+    dates_gr = np.sum((inner * mat_a) - (inner * mat_d), axis=1)
+
+    # return as a concatenated array
+    return np.concatenate([rates_gr, dates_gr])
+
+
+def _gradient_poisson_relaxed(rates: np.ndarray, ages: np.ndarray):
+
+    gradient = gradient_poisson(rates, ages)
+    mean_rate = np.mean(rates)
+    # penalty = lam * 2. * dgamma(rate, mean.rate) * (rank(rate) / Nb.rates - pgamma(rate, mean.rate))
+    gradient[...] = gradient[...] + penalty
+
+
+def gradient_penalty_relaxed(self):
+    """Gradient function for the relaxed model penalty component
+    """
+    alpha = self.rates_hat.mean()
+    a = stats.gamma.pdf(self.rates_hat, alpha)
+    b = np.argsort(self.rates_hat) / self.rates_hat.size
+    c = stats.gamma.cdf(self.rates_hat, alpha)
+    gradient = 2 * a * (b - c)
+    return self.weight * gradient
+
+
+def get_tree_with_categorical_rates(ntips: int, nrates: int, seed: int) -> ToyTree:
+    """FOR TESTING"""
+    import toytree
+    rng = np.random.default_rng(seed=seed)
+    tree = toytree.rtree.unittree(ntips, seed=123)
+    rates = np.linspace(1, 10, nrates)
+    for node in tree:
+        gidx = rng.choice(nrates)
+        node._dist = node._dist * rng.gamma(shape=3, scale=rates[gidx])
+    return tree
 
 
 if __name__ == "__main__":
 
     import toytree
     import numpy as np
-    toytree.set_log_level("INFO")
+    toytree.set_log_level("DEBUG")
 
-    # ...
-    rng = np.random.default_rng(seed=123)
-    tree = toytree.rtree.unittree(100, seed=123)
-    for node in tree:
-        if rng.binomial(n=1, p=0.5):
-            node._dist = node._dist * rng.gamma(shape=3, scale=1.0)
-        else:
-            node._dist = node._dist * rng.gamma(shape=3, scale=5.0)
-    tree._update()
-
-    # 
-    scale = _get_mean_rooted_path_distance(tree) / 2.
-
-    # raise SystemExit(0)
-    # print(rng.gamma(shape=3, scale=1.0, size=10000).mean())
-    # print(rng.gamma(shape=3, scale=5.0, size=10000).mean())    
-
-    # ncategories = 4
-    # alphas = [3] * ncategories
-    # betas = np.linspace(1, 5, ncategories)
-    # shapes = 1 / alphas * betas ** 2
-    # scales = alphas * betas ** 2
-    # rng = np.random.default_rng(seed=123)
-    # rng.gamma(shape=shapes, scale=scales, size=()        
+    tree = get_tree_with_categorical_rates(ntips=50, nrates=3, seed=123)
     c1, _, _ = tree.draw(ts='s', use_edge_lengths=True, scale_bar=True)
     tree.write("/tmp/test.nwk")
 
-    res = edges_make_ultrametric_pl_clock(tree, {}, full=True, max_fun=1e6, max_iter=1e6, max_refine=50)
+    res = edges_make_ultrametric_pl_clock(tree, {-1: 50}, full=True, max_fun=1e6, max_iter=1e6, max_refine=50)
     print(res)
-
-    res = edges_make_ultrametric_pl_discrete(tree, 2, {}, full=True, max_fun=1e6, max_iter=1e6, max_refine=50)
+    res = edges_make_ultrametric_pl_discrete(tree, 3, {-1: 35}, full=True, max_fun=1e6, max_iter=1e6, max_refine=50)
     print(res)
-    res["tree"].ladderize()._draw_browser(tmpdir="~", scale_bar=True)
+    # res["tree"].set_node_data("fixed", {-1: 'red'}, default="lightgrey", inplace=True)
+    # c, a, m = res["tree"]._draw_browser(ts="s", use_edge_lengths=True, tmpdir="~", scale_bar=True, node_colors="fixed")
 
     # res = edges_make_ultrametric_pl_discrete(tree, 3, {}, full=True)
     # print(res)
