@@ -2,21 +2,42 @@
 
 """Inference methods concerning multi-labeled trees (mul trees).
 
-Count the number of duplications and losses required to embed a gene
-tree into a species tree.
+Count the number of duplications and losses required to embed a
+mult-labeled gene tree (mul-tree) into a species tree.
+
+TODO
+----
+[ ] losses counter is not working correctly.
+[ ] better simulation methods for testing. Perhaps, define mul-tree to
+serve as the demography for an ipcoal simulation (or implement tt-only).
+[ ] read for improvements on the LCA- approach.
+[ ] test for compatibility with Thomas paper before releasing.
+
+
+Methods
+-------
+...
+    Given a set of mul-trees this identifies the parental lineage that
+    hybridized to form allopolyploidy.
+...
+    ...
 
 References
 ----------
-...
+- Thomas, G. W., Ather, S. H., & Hahn, M. W. (2017). Gene-tree
+reconciliation with MUL-trees to resolve polyploidy events. Systematic
+biology, 66(6), 1007-1018.
+- Gascon, M., Dondi, R., & El-Mabrouk, N. (2022). MUL-tree pruning for
+consistency and optimal reconciliation-complexity and algorithms.
+Theoretical Computer Science, 937, 22-38.
+
 """
 
 from typing import Dict, Optional, Sequence, Union
+from itertools import combinations
 import pandas as pd
 import toytree
 from toytree import ToyTree
-
-# ToyTree = TypeVar("ToyTree")
-# Node = TypeVar("Node")
 
 
 def _set_ng_labels(gtree: ToyTree) -> None:
@@ -78,7 +99,7 @@ def _set_ns_labels(gtree: ToyTree, sptree: ToyTree) -> None:
         node.ns = sptree.get_mrca_node(*node.ng).idx
 
 
-def _count_duplications(gtree: ToyTree) -> int:
+def _count_duplications(gtree: ToyTree, sptree: ToyTree) -> int:
     """Return numer of duplication events on a gene tree.
 
     Nodes in the gene tree are said to be duplication nodes when they
@@ -86,7 +107,7 @@ def _count_duplications(gtree: ToyTree) -> int:
     descendants. This assumes that the gene trees already have a
     value "ns" stored to every Node by `_set_ns_labels`.
 
-    Adds a feature 'dup' to Nodes with True or False.
+    Adds a feature 'duplication' to Nodes with True or False.
 
     Note
     ----
@@ -101,7 +122,7 @@ def _count_duplications(gtree: ToyTree) -> int:
     >>> _set_ns_labels(tree1, tree)
     >>> _count_duplications(tree1)
     >>> # 1
-    >>> tree1.get_node_data("dup")
+    >>> tree1.get_node_data("duplication")
     >>> # 0     False
     >>> # 1     False
     >>> # 2     False
@@ -119,6 +140,8 @@ def _count_duplications(gtree: ToyTree) -> int:
         # if any descendants (not including self) trace back to the
         # same species tree interval then a duplication occurred
         node.duplication = False
+
+        # original method implemented based on paper and species tree nodes
         for desc in node.iter_descendants():
             if node == desc:
                 continue
@@ -126,6 +149,22 @@ def _count_duplications(gtree: ToyTree) -> int:
                 ndups += 1
                 node.duplication = True
                 break
+    return ndups
+
+
+def _count_duplications_new(gtree, sptree):
+    ndups = 0
+    for node in gtree[gtree.ntips:]:
+        # if any descendants (not including self) trace back to the
+        # same species tree interval then a duplication occurred
+        node.duplication = False
+
+        # alternative method implemented using simpler double occurrence of desc
+        # get a set of tips in each child lineage
+        child_sets = [set(i.get_leaf_names()) for i in node.children]
+        if any(i & j for (i, j) in combinations(child_sets, 2)):
+            ndups += 1
+            node.duplication = True
     return ndups
 
 
@@ -137,7 +176,7 @@ def _count_losses(gtree: ToyTree, sptree: ToyTree) -> int:
     from a duplication event but do not include all descendants
     leaves.
 
-    Adds feature 'loss' as an int to each Node.
+    Adds feature 'losses' as an int to each Node.
     """
     losses = 0
 
@@ -152,6 +191,21 @@ def _count_losses(gtree: ToyTree, sptree: ToyTree) -> int:
         node.losses = ((node.depth - node.up.depth) - 1) + int(node.up.duplication)
         if node.losses:
             losses += 1
+    return losses
+
+
+def _count_losses_new(gtree: ToyTree, sptree: ToyTree) -> int:
+    """...
+
+
+    """
+    # expect = {}...
+    losses = 0
+    for node in gtree:
+        desc_g = set(node.get_leaf_names())
+        desc_s = set(sptree[node.ns].get_leaf_names())
+        node.losses = desc_s - desc_g
+        losses += node.losses
     return losses
 
 
@@ -183,7 +237,7 @@ def get_duplication_loss_coalescence(
     gtree = gtree.copy()  # speed cost but prevents added features.
     _set_ng_labels(gtree)
     _set_ns_labels(gtree, sptree)
-    duplications = _count_duplications(gtree)
+    duplications = _count_duplications(gtree, sptree)
     losses = _count_losses(gtree, sptree)
     data = {
         "tree": gtree,
@@ -199,11 +253,15 @@ def get_multree_reconciliation_scores(
     gtrees: Union[ToyTree, Sequence[ToyTree]],
     sptrees: Union[ToyTree, Sequence[ToyTree]],
 ) -> pd.DataFrame:
-    """Return table with DLC reconciliation...
+    """Return table with DLC reconciliation.
 
     Parameters
     ----------
-    ...
+    gtrees: ToyTree | Sequence[ToyTree]
+        One or more mul-trees (gene trees with multi-labeled tips).
+    sptrees: ToyTree | Sequence[ToyTree]
+        One or more species trees containing only a single tip per
+        species
 
     Returns
     -------
@@ -214,6 +272,10 @@ def get_multree_reconciliation_scores(
     >>> tree = toytree.rtree.unittree(ntips=5, seed=123)
     >>> dtree = tree.mod.add_internal_node_and_child('r3', name='r3')
     >>> get_multree_reconciliation_score(tree, dtree)
+
+    References
+    ----------
+    ...
     """
     # check that gtrees and sptrees are iterable (lists)
     if isinstance(gtrees, ToyTree):
@@ -243,7 +305,7 @@ def get_multree_reconciliation_scores(
         chunks = []
         for gidx, gtree in enumerate(gtrees):
             newick_g = gtree.write(None, None, None)
-            dtg = _count_duplications(gtree)
+            dtg = _count_duplications(gtree, sptree)
             ltg = _count_losses(gtree, sptree)
             score = dtg + ltg
             chunks.append([sidx, gidx, newick_s, newick_g, dtg, ltg, score])
@@ -263,16 +325,42 @@ def get_multree_reconciliation_scores(
     return full_data, sub_data
 
 
+def example_fig2_thomas():
+    """..."""
+    tree = toytree.tree("((A,B),(C,D));")
+    subtree = toytree.tree("(Z,(X,Y));")
+
+    # insert the "duplicated" subclade XYZ into both lineages that
+    # hybridized (e.g., B and C) to represent a mul-tree.
+    tree = tree.mod.add_internal_node_and_subtree("B", subtree=subtree)
+    tree = tree.mod.add_internal_node_and_subtree("C", subtree=subtree)
+    return tree
+
+
+
 if __name__ == "__main__":
 
-
+    # set up a tree with one duplicated tip label
     tree = toytree.rtree.unittree(5, seed=123)
     tree1 = tree.mod.add_internal_node_and_child("r1", name="r1")
+
+    # add 'ng' feature as {*children idx} for each Node
     _set_ng_labels(tree1)
     print(tree1.get_node_data("ng"))
 
+    # add 'ns' feature as mrca(ng) for each node (minimal sp tree mrca)
     _set_ns_labels(tree1, tree)
     print(tree1.get_node_data("ns"))
+
+    #
+    tree1._draw_browser(tmpdir="~", node_sizes=20, node_labels="ns", node_mask=False)
+
+    # get mul-tree
+    mul_tree = example_fig2_thomas()
+    mul_tree._draw_browser(tmpdir="~", ts='s', tip_labels_colors=("name", "Dark2"))
+    # full, sub = get_multree_reconciliation_scores(gtrees, [sptree_mul, sptree_mul2])
+
+
     # validation with ipcoal
     # import ipcoal
     # import string
