@@ -9,7 +9,7 @@ with trees as data, or data on trees. All subpackages make use only of
 standard Python data science libs (e.g., numpy, scipy, pandas).
 """
 
-__version__ = "3.0.10"
+__version__ = "3.0.11"
 __author__ = "Deren Eaton"
 
 # core class objects
