@@ -8,7 +8,7 @@ import sys
 import textwrap
 from pathlib import Path
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
-from loguru import logger
+# from loguru import logger
 from .make_wide import make_wide
 # from ortholab.utils.parallel import run_pipeline  # , run_with_pool
 # from ortholab.utils.logger_setup import set_log_level
@@ -81,8 +81,7 @@ def run_get_node_data(args):
         data = sys.stdin.read()
         tre = tree(data, internal_labels=args.internal_labels)
     else:
-        data = args.input.expanduser().absolute()
-        tre = tree(data, internal_labels=args.internal_labels)
+        tre = tree(args.input, internal_labels=args.internal_labels)
 
     # get data
     if args.tips_only:
@@ -116,5 +115,6 @@ if __name__ == "__main__":
     try:
         main()
     except Exception as exc:
-        logger.bind(name="toytree").error(exc)
+        raise exc
+        # logger.bind(name="toytree").error(exc)
 

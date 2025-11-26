@@ -657,7 +657,8 @@ def prune(
 
     # set mrca node as new treenode or update and return current tree
     if not require_root:
-        return ToyTree(mrca._detach())
+        tree.treenode = mrca._detach()
+        # return ToyTree(mrca._detach())  # doesn't work w/ inplace
     tree._update()
     return tree
 
@@ -1403,3 +1404,6 @@ if __name__ == "__main__":
     import toytree
     toytree.set_log_level("DEBUG")
     t = toytree.rtree.unittree(16, treeheight=10)
+    x = t.mod.prune("~r[1-4]$", inplace=True)
+    x.treenode.draw_ascii()
+    print(x.ntips)

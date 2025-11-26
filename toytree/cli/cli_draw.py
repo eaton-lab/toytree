@@ -4,14 +4,9 @@ from pathlib import Path
 import sys
 import textwrap
 import tempfile
-import os
-import platform
-import subprocess
-import shutil
-import webbrowser
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from .make_wide import make_wide
-from loguru import logger
+# from loguru import logger
 
 
 KWARGS = dict(
@@ -32,9 +27,9 @@ KWARGS = dict(
         --------
         $ draw -i TRE.nwk -a
         $ draw -i TRE.nwk -f png -v
-        $ draw -i TRE.nwk -f html -v -k ...
-        $ draw -i TRE.nwk -f pdf -o /tmp/DRAWING
-        $ draw -i TRE.nwk -v -N fill=red -E stroke=pink -T font-size=10px
+        $ draw -i TRE.nwk -f html -v -ts c
+        $ draw -i TRE.nwk -f pdf -o /tmp/DRAWING -ns 8 -nc teal -ta true
+        $ draw -i TRE.nwk -v -N fill=red -E stroke=pink -T font-size=10px fill=blue
         $ root -i TRE.nwk -n R | draw -i - -v
     """)
 )
@@ -52,24 +47,31 @@ def get_parser_draw(parser: ArgumentParser | None = None) -> ArgumentParser:
         parser = ArgumentParser(**KWARGS)
 
     # path args
-    parser.add_argument("-i", "--input", type=Path, metavar="path", required=True, help="input tree file (nwk, nex or nhx)")
-    parser.add_argument("-o", "--output", type=Path, metavar="path", help="optional basename of outfile path. If None prints to STDOUT")
+    parser.add_argument("-i", "--input", type=Path, metavar="path", required=True, help="input tree file (nwk, nex or nhx) or stdin (-)")
+    parser.add_argument("-o", "--output", type=Path, metavar="path", help="optional basename of output [/tmp/toytree].")
     # option
     parser.add_argument("-a", "--ascii", action="store_true", help="print ascii tree (overrides other draw args)")
-    parser.add_argument("-f", "--format", choices=["html", "svg", "pdf", "png"], default="png", help="file format of drawing [png]")
-    parser.add_argument("-v", "--view", type=str, metavar="app", const="auto", nargs="?", help="open drawing in default viewer, or provide an app name")
     parser.add_argument("-e", "--ladderize", action="store_true", help="ladderize the tree")
-    parser.add_argument("-k", "--kwargs", type=str, metavar="str", nargs="*", help="any supported toytree.draw kwargs as 'key=val'")
+    parser.add_argument("-f", "--format", choices=["html", "svg", "pdf", "png"], default="pdf", help="file format of drawing [pdf]")
+    parser.add_argument("-v", "--view", type=str, metavar="app", const="auto", nargs="?", help="open drawing in default viewer, or provide an app name")
+    # parser.add_argument("-k", "--kwargs", type=str, metavar="str", nargs="*", help="any supported toytree.draw kwargs as 'key=val'")
     parser.add_argument("-I", "--internal-labels", type=str, metavar="str", help="parse internal node feature (e.g., support) [auto]")
     parser.add_argument("-l", "--log-level", type=str, metavar="level", default="INFO", help="stderr logging level (DEBUG, [INFO], WARNING, ERROR)")
 
-    parser.add_argument("-ts", "--tree-style", type=str, metavar="str", help="base tree style [[None], 'r', 'c', 's', 'o', 'b']")
-    parser.add_argument("-N", "--node-style", type=str, metavar="str", nargs="+", help="node style args")
-    parser.add_argument("-E", "--edge-style", type=str, metavar="str", nargs="+", help="edge style args")
-    parser.add_argument("-T", "--tip-labels-style", type=str, metavar="str", nargs="+", help="tip labels style args")
-    parser.add_argument("-ns", "--node-sizes", type=int, metavar="int", nargs="+", default=[6], help="node sizes")
-    parser.add_argument("-nc", "--node-colors", type=str, metavar="str", nargs="+", default=["#262626"], help="node colors")
-    parser.add_argument("-tl", "--tip-labels-align", type=bool, metavar="bool", nargs="+", help="align tip labels")
+    p = parser.add_argument_group(title="optional style args")
+    p.add_argument("-wi", "--width", type=int, metavar="int", help="width in pixel units")
+    p.add_argument("-he", "--height", type=int, metavar="int", help="height n pixel units")
+    p.add_argument("-la", "--layout", type=str, metavar="str", help="layout [['r'], 'l', 'u', 'd', 'c', 'c0-180', 'un']")
+    p.add_argument("-ts", "--tree-style", type=str, metavar="str", help="base tree style [['n'], 'r', 'c', 's', 'o', 'b']")
+    p.add_argument("-ta", "--tip-labels-align", type=bool, metavar="bool", nargs="+", help="align tip labels")
+    p.add_argument("-ns", "--node-sizes", type=int, metavar="int", nargs="+", default=[None], help="node sizes")
+    p.add_argument("-nc", "--node-colors", type=str, metavar="str", nargs="+", default=[None], help="node colors")
+    p.add_argument("-et", "--edge-type", type=str, metavar="str", choices=["p", "c", "b"], help="edge type ([phylogram], cladogram, bezier)")
+
+    p.add_argument("-N", "--node-style", type=str, metavar="str", nargs="+", help="node style args")
+    p.add_argument("-E", "--edge-style", type=str, metavar="str", nargs="+", help="edge style args")
+    p.add_argument("-T", "--tip-labels-style", type=str, metavar="str", nargs="+", help="tip labels style args")
+
     # parser.add_argument("-L", "--log-file", type=Path, metavar="path", help="append stderr log to a file")
     return parser
 
@@ -79,6 +81,12 @@ def open_with_default_viewer(path: str) -> bool:
     """Try to open a file with the system's default app.
     Returns True on (likely) success, False if we had no good option.
     """
+    import os
+    import platform
+    import subprocess
+    import shutil
+    import webbrowser
+
     path = os.path.abspath(path)
     system = platform.system()
 
@@ -111,7 +119,7 @@ def open_with_default_viewer(path: str) -> bool:
 
     except Exception:
         # You might want to log this if you have logging set up
-        logger.bind(name="toytree").error("could not find a default viewer to open drawing file")
+        raise OSError("could not find a default viewer to open drawing file")
     return False
 
 
@@ -132,7 +140,7 @@ def run_draw(args):
 
     # ascii tree drawing
     if args.ascii:
-        print(tre.treenode.draw_ascii(), sys.stdout)
+        tre.treenode.draw_ascii()
         return 0
 
     # create drawing
@@ -142,12 +150,17 @@ def run_draw(args):
     # else:
     #     kwargs = {}
     canvas, axes, mark = tre.draw(
+        height=args.height,
+        width=args.width,
         tree_style=args.tree_style,
+        layout=args.layout,
+        tip_labels_align=args.tip_labels_align,
+        node_sizes=args.node_sizes if len(args.node_sizes) > 1 else args.node_sizes[0],
+        node_colors=args.node_colors if len(args.node_colors) > 1 else args.node_colors[0],
         node_style=dict(tuple(i.split("=") for i in args.node_style)) if args.node_style else {},
         edge_style=dict(tuple(i.split("=") for i in args.edge_style)) if args.edge_style else {},
         tip_labels_style=dict(tuple(i.split("=") for i in args.tip_labels_style)) if args.tip_labels_style else {},
-        node_sizes=args.node_sizes if len(args.node_sizes) > 1 else args.node_sizes[0],
-        # node_colors=args.node_colors if len(args.node_colors) > 1 else args.node_colors[0],
+        edge_type=args.edge_type,
         # tip_labels_align=args.tip_labels_align,
         # **kwargs
     )
@@ -161,7 +174,7 @@ def run_draw(args):
             prefix = prefix / "toytree"
         out = Path(f"{prefix}").with_suffix(suffix)
     else:
-        out = tempfile.NamedTemporaryFile(prefix="toytree", suffix=suffix, delete=False)
+        out = tempfile.NamedTemporaryFile(prefix="toytree-", suffix=suffix, delete=False)
         out = out.name
     save(canvas, out)
 
@@ -182,4 +195,5 @@ if __name__ == "__main__":
     # except ToytreeError as exc:
     #     logger.bind(name="toytree").error(exc)
     except Exception as exc:
-        logger.bind(name="toytree").exception(exc)
+        raise exc
+        # logger.bind(name="toytree").exception(exc)

@@ -16,11 +16,12 @@ Chain commands
 >>>   toytree draw -v -ts o -
 """
 
+import sys
 from typing import Optional
 import textwrap
 import argparse
-from loguru import logger
-import toytree
+# from loguru import logger
+# import toytree
 from .make_wide import make_wide
 from .cli_draw import get_parser_draw, run_draw
 from .cli_root import get_parser_root, run_root
@@ -28,9 +29,10 @@ from .cli_get_node_data import get_parser_get_node_data, run_get_node_data
 from .cli_prune import get_parser_prune, run_prune
 # from cli_distance import get_parser_distance
 
-logger = logger.bind(name="toytree")
+# logger = logger.bind(name="toytree")
 DESCRIPTION = "toytree command line tool. Select a subcommand."
 EPILOG = "EXAMPLE:\n$ toytree draw TREE -ts o -d 400 400 -v"
+VERSION = "..."
 
 
 def setup_parsers() -> argparse.ArgumentParser:
@@ -63,7 +65,7 @@ def setup_parsers() -> argparse.ArgumentParser:
 #         description=DESCRIPTION,
 #         epilog=EPILOG,
 #     )
-    parser.add_argument("-v", "--version", action='version', version=f"toytree {toytree.__version__}")
+    parser.add_argument("-v", "--version", action='version', version=f"toytree {VERSION}")
     subparsers = parser.add_subparsers(
         prog="%(prog)s", required=True,
         title="subcommands",
@@ -89,7 +91,7 @@ def main(cmd: Optional[str] = None) -> int:
     args = parser.parse_args(cmd.split() if cmd else None)
 
     dispatch = {
-        "get-node-data": run_get_node_data,
+        "node-data": run_get_node_data,
         "draw": run_draw,
         "root": run_root,
         "prune": run_prune,
@@ -109,6 +111,8 @@ if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        logger.warning("interrupted by user")
+        print("interrupted by user", file=sys.stderr)
+        # logger.warning("interrupted by user")
     except Exception as exc:
-        logger.error(exc)
+        raise exc
+        # logger.error(exc)
