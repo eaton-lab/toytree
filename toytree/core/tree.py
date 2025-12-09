@@ -21,7 +21,7 @@ from copy import deepcopy
 from hashlib import md5
 # from collections.abc import Sequence as SequenceType
 
-from loguru import logger
+# from loguru import logger
 import numpy as np
 from toyplot import Canvas
 from toyplot.coordinates import Cartesian
@@ -38,7 +38,7 @@ import toytree
 # from toytree.io.src.writer import write_newick
 
 # toytree logger
-logger = logger.bind(name="toytree")
+# logger = logger.bind(name="toytree")
 
 # Type alias for Node selection
 Query = TypeVar("Query", str, int, Node)
@@ -464,7 +464,6 @@ class ToyTree:
                     comps.append((que, re.compile(que[1:])))
                 except re.error as exc:
                     msg = f"invalid regex query {query} raised re.error:\n{exc}"
-                    logger.error(msg)
                     raise ToytreeError(msg) from exc
 
         # traverse tree in idxorder checking each Node for a name match
@@ -486,7 +485,6 @@ class ToyTree:
         not_matched = set(query) - set(matched)
         if not_matched:
             msg = f"No Node names match query: {not_matched}"
-            logger.error(msg)
             raise ValueError(msg)
 
     def get_nodes(self, *query: Query) -> List[Node]:
@@ -541,9 +539,8 @@ class ToyTree:
                 nodes.add(self[que])
             else:
                 msg = f"query type {type(que)} not supported. "
-                if isinstance(que, (list, tuple)):
+                if isinstance(que, (list, tuple, set)):
                     msg += UNPACKING_MSG
-                logger.error(msg)
                 raise TypeError(msg)
 
         # match Node names as a group so we only need to perform one
@@ -1227,10 +1224,8 @@ class ToyTree:
             canvas, axes, mark = draw_toytree(tree=self, **kwargs)
             return canvas, axes, mark
         except ToytreeError as exc:
-            logger.error(exc)
             raise exc
         except Exception as exc:
-            logger.error(exc)
             raise exc
 
 

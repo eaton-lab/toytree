@@ -71,7 +71,7 @@ Examples
 >>> );
 """
 from typing import Optional, Sequence, TypeVar, Set, Union
-from loguru import logger
+# from loguru import logger
 import numpy as np
 from toytree.core.node import Node
 from toytree.core.tree import ToyTree
@@ -80,7 +80,7 @@ from toytree.core.apis import (
 )
 from toytree.utils import ToytreeError, NON_MONOPHYLETIC_OUTGROUP
 
-logger = logger.bind(name="toytree")
+# logger = logger.bind(name="toytree")
 Query = TypeVar("Query", int, str, Node)
 
 __all__ = ["root", "unroot"]
@@ -131,7 +131,7 @@ class Rooter:
         efeatures = efeatures | default
         # remove unallowed features
         efeatures = efeatures - disallowed
-        logger.debug(f"edge_features: {efeatures}")
+        # logger.debug(f"edge_features: {efeatures}")
         return efeatures
         # return (default | set(edge_features)) - disallowed
 
@@ -171,7 +171,6 @@ class Rooter:
                     tips = str(sorted(i.name for i in tips))
                     raise ToytreeError(NON_MONOPHYLETIC_OUTGROUP.format(tips))
         except ToytreeError as exc:
-            logger.error(exc)
             raise exc
         return mrca
 
@@ -186,7 +185,7 @@ class Rooter:
         if self.tree.is_rooted():
             # return same if rooting on current rooting.
             if self.tree.treenode in [self.node, self.node.up]:
-                logger.debug("tree is already rooted this way.")
+                # logger.debug("tree is already rooted this way.")
                 return self.tree
             self.tree.unroot(inplace=True)
 
@@ -196,7 +195,6 @@ class Rooter:
                 msg = (
                     "Cannot root unrooted tree on the pseudo-root, it has no "
                     "edge. Select a valid outgroup")
-                logger.error(msg)
                 raise ToytreeError(msg)
 
         self._insert_root_node()
