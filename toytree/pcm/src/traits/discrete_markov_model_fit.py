@@ -331,9 +331,7 @@ class DiscreteMarkovModelFit:
         )
         return model.qmatrix, rates, freqs
 
-    def _compute_conditional_likelihoods(
-        self, qmatrix: np.ndarray
-    ) -> Dict[object, np.ndarray]:
+    def _compute_conditional_likelihoods(self, qmatrix: np.ndarray) -> Dict[object, np.ndarray]:
         """Compute conditional likelihoods at every node."""
         likelihoods: Dict[object, np.ndarray] = {}
         nstates = self.nstates
@@ -468,6 +466,7 @@ class DiscreteMarkovModelFit:
         start = np.zeros(nparams)
         result = minimize(self._neg_log_likelihood, start, method="L-BFGS-B")
         qmatrix, rates, freqs = self._build_qmatrix(result.x)
+        
         return FitMarkovModelResult(
             nstates=self.nstates,
             model=self.model,
