@@ -97,9 +97,22 @@ def render_pie_chart(axes: Cartesian, mark: Mark, context: toyplot.html.RenderCo
 
         # iterate over slices: e.g., [0.3, 0.5, 0.2]
         # sums = [0, 0.3, 0.8, 1.0]
+        data_row = mark.data[nidx]
+        tooltip_label = ", ".join(f"{value:g}" for value in data_row)
+        xml.SubElement(group, "title").text = tooltip_label
         for cidx in range(mark.data[0].size):
-            start_sum = mark.data[nidx][:cidx].sum()
-            end_sum = mark.data[nidx][:cidx + 1].sum()
+            start_sum = data_row[:cidx].sum()
+            end_sum = data_row[:cidx + 1].sum()
+            slice_size = end_sum - start_sum
+
+            if np.isclose(slice_size, 1.0):
+                # Render a filled circle for a full slice and skip remaining slices.
+                xml.SubElement(
+                    group, "circle",
+                    r=str(mark.sizes[nidx]),
+                    style=concat_style_fix_color(colors[cidx]),
+                )
+                break
 
             # only set radius on circle since placement uses transform
             path = _get_pie_path(
@@ -132,6 +145,13 @@ def _get_pie_path(percent_start: float, percent_end: float, radius: float) -> st
 
     <path d='M end_x end_y A r r 0 flag 1 end_x end_y L 0 0'></path>
     """
+    if np.isclose(percent_end - percent_start, 1.0):
+        return (
+            f"M 0 0 L {radius} 0 "
+            f"A {radius} {radius} 0 1 1 {-radius} 0 "
+            f"A {radius} {radius} 0 1 1 {radius} 0 "
+            f"L 0 0"
+        )
     start = _get_radial_coordinates_for_percents(percent_start)
     end = _get_radial_coordinates_for_percents(percent_end)
     flag = int((percent_end - percent_start) > 0.5)
