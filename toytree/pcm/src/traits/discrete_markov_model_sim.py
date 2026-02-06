@@ -68,7 +68,7 @@ class MarkovModel:
     rng: np.random.Generator = field(init=False, repr=False)
     """: Random number generator init with seed."""
     transition_matrix: np.ndarray = field(init=False)
-    """: Transition probability matrix (P)."""
+    """: Instantaneous rate matrix (Q), retained for backward compatibility."""
     qmatrix: np.ndarray = field(init=False)
     """: Instantaneous rate matrix (Q)."""
 
@@ -78,7 +78,6 @@ class MarkovModel:
         self._check_rates()
         self._check_freqs()
         self._set_transition_matrix()
-        self._set_qmatrix()
 
     def _check_rates(self):
         """Checks the relative rates matrix given mtype and nstates.
@@ -99,13 +98,13 @@ class MarkovModel:
         # by the model type.
         if rates is None:
             if self.mtype.name == "SYM":
-                rates = np.random.uniform(0.5, 2, (self.nstates, self.nstates))
+                rates = self.rng.uniform(0.5, 2, (self.nstates, self.nstates))
                 rates[0, 1] = 1
                 lower = np.tril_indices_from(rates)
                 upper = np.tril_indices_from(rates)[::-1]
                 rates[lower] = rates[upper]
             elif self.mtype.name == "ARD":
-                rates = np.random.uniform(0.5, 2, (self.nstates, self.nstates))
+                rates = self.rng.uniform(0.5, 2, (self.nstates, self.nstates))
                 rates[0, 1] = 1
             else:
                 rates = np.ones((self.nstates, self.nstates))
@@ -150,7 +149,7 @@ class MarkovModel:
         freqs = self.state_frequencies
         if freqs is None:
             if self.mtype.name in ("SYM", "ARD"):
-                freqs = np.random.uniform(0.5, 2, self.nstates)
+                freqs = self.rng.uniform(0.5, 2, self.nstates)
                 freqs /= freqs.sum()
             else:
                 freqs = np.repeat(1.0 / self.nstates, self.nstates)
@@ -170,73 +169,42 @@ class MarkovModel:
         self.state_frequencies = freqs
 
     def _set_transition_matrix(self):
-        """Sets the transition probabilities (freqs.T x rates).
+        """Sets the instantaneous rate matrix (Q) using relative rates.
+
+        The instantaneous rate matrix has off-diagonal entries defined as:
+        q_ij = rate_scalar * r_ij * pi_j
+        where r_ij are relative rates and pi_j are equilibrium frequencies.
+        Diagonal entries are then set to the negative row sums so that each
+        row of Q sums to zero, as required for a continuous-time Markov model.
 
         Examples
         --------
         >>> MarkovModel(3, "ER").transition_matrix
-        [[0, 1/3, 1/3, 1/3]
-         [1/3, 0, 1/3, 1/3]
-         [1/3, 1/3, 0, 1/3]
-         [1/3, 1/3, 1/3, 0]]
+        [[-2/3, 1/3, 1/3]
+         [1/3, -2/3, 1/3]
+         [1/3, 1/3, -2/3]]
         """
-        # matrix multiply and set diagonal back to zero.
-        sfreq_mat = np.eye(self.nstates) * self.state_frequencies
-        trans_mat = np.matmul(sfreq_mat, self.relative_rates)
+        # off-diagonal rates follow a reversible form: q_ij = r_ij * pi_j
+        trans_mat = self.relative_rates * self.state_frequencies
         np.fill_diagonal(trans_mat, 0)
+        trans_mat *= self.rate_scalar
 
-        # divide by scaling factor (largest rowsum excluding diagonal)
-        scaling = np.sum(trans_mat, axis=1).max()
-        trans_mat /= scaling
-
-        # fill diagonals to sum to 1
-        for idx in range(trans_mat.shape[0]):
-            trans_mat[idx, idx] = abs(1 - trans_mat[idx].sum())
-        self.transition_matrix = self.rate_scalar * trans_mat
-
-    def _set_qmatrix(self):
-        """Set a instantaneous transition probability matrix (Q).
-
-        This matrix is the probability of transitioning from one
-        state to another in a single unit of time. The rates are
-        normalized by a matrix scaling factor, calculated as the max
-        rowsum of the state_frequencies matrix x rates_matrix.
-        >>> T = (rates_matrix * state_frequencies) * rate / scaling
-        >>> Q = (set T diagonal so rows sum to 0.)
-
-        Parameters
-        ----------
-        rate: float
-            A scalar by which the Q-matrix will be multipled to act
-            as a unit scaler. Example, rate=1e-6 would mean that a 1
-            in the relatives rates matrix represents 1 change per
-            million edge length units on a tree.
-        rates_matrix: numpy.ndarray
-            The relative transition rates between states as an array
-            of size (nstates x nstates). Values on the diagonal are
-            ignored. Only relative differences matter. See rate.
-        state_frequencies: numpy.ndarray
-            Equilibrium frequencies of states 0-n in order (must sum
-            to one.
-
-        Examples
-        --------
-        >>> MarkovModel(nstates=3, model="ER").qmatrix
-        [[-1, 1/3, 1/3, 1/3]
-         [1/3, -1, 1/3, 1/3]
-         [1/3, 1/3, -1, 1/3]
-         [1/3, 1/3, 1/3, -1]]
-        """
-        self.qmatrix = self.transition_matrix - (self.rate_scalar * np.eye(self.nstates))
+        # set diagonals so rows sum to zero
+        row_sums = trans_mat.sum(axis=1)
+        np.fill_diagonal(trans_mat, -row_sums)
+        # store the result on both names for clarity and compatibility
+        # with callers that expect either attribute.
+        self.transition_matrix = trans_mat
+        self.qmatrix = trans_mat
 
     def get_transition_probability_matrix(self, time: float) -> np.ndarray:
         """Return a transition probability matrix for a length of time.
 
         This represents the probability that over the length of time
         a character starting in one state will transition to another:
-        >>> T = (rates_matrix * state_frequencies) / scaling_factor
-        >>> Q = (set diagonal of T to sum rows to 0)
-        >>> P(t) = expm(Q * rate * time)
+        >>> Q_ij = rate_scalar * r_ij * pi_j
+        >>> Q_ii = -sum(Q_ij)
+        >>> P(t) = expm(Q * time)
 
         Parameters
         ----------
@@ -249,25 +217,22 @@ class MarkovModel:
         --------
         >>> mod = MarkovModel(nstates=3, model="ER")
         >>> mod.get_transition_probability_matrix(time=1.)
-        [[0.44769785 0.18410072 0.18410072 0.18410072]
-         [0.18410072 0.44769785 0.18410072 0.18410072]
-         [0.18410072 0.18410072 0.44769785 0.18410072]
-         [0.18410072 0.18410072 0.18410072 0.44769785]]
+        [[0.57858629 0.21070686 0.21070686]
+         [0.21070686 0.57858629 0.21070686]
+         [0.21070686 0.21070686 0.57858629]]
 
         Over zero amount of time no change is expected:
         >>> mod.get_transition_probability_matrix(time=0)
-        [[1. 0. 0. 0.]
-         [0. 1. 0. 0.]
-         [0. 0. 1. 0.]
-         [0. 0. 0. 1.]]
+        [[1. 0. 0.]
+         [0. 1. 0.]
+         [0. 0. 1.]]
 
         Over very long time scales transition probabilities will match
         the state_frequencies (1 / nstates for ER model):
         >>> mod.get_transition_probability_matrix(time=1000)
-        [[0.25 0.25 0.25 0.25]
-         [0.25 0.25 0.25 0.25]
-         [0.25 0.25 0.25 0.25]
-         [0.25 0.25 0.25 0.25]]
+        [[0.33333333 0.33333333 0.33333333]
+         [0.33333333 0.33333333 0.33333333]
+         [0.33333333 0.33333333 0.33333333]]
         """
         return scipy.linalg.expm(self.qmatrix * time)
 
