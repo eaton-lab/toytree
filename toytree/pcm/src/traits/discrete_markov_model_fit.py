@@ -1,618 +1,557 @@
 #!/usr/bin/env python
 
-"""Fit a discrete Markov model to data using Maximum Likelihood.
+"""Fit discrete Markov models to traits using maximum likelihood.
 
-Model fit estimates model parameters and ancestral states.
+This module provides a compact, fully working implementation of
+Felsenstein's pruning algorithm for discrete-state traits under
+continuous-time Markov models. It aligns with the simulator's
+parameterization where off-diagonal rates follow:
 
-Example
--------
->>> toytree.pcm.fit_discrete_markov_data(
-        nstates=3, model="ER", 
-        rates=None,               # will be estimated
-        state_frequencies=None,   # will be estimated
-    )
+    q_ij = rate_scalar * r_ij * pi_j
 
-
-References
-----------
-https://journals.plos.org/ploscompbiol/article?id=10.1371/journal.pcbi.1004763
-Patro R, Sefer E, Malin J, Marçais G, Navlakha S, Kingsford C. Parsimonious reconstruction of network evolution. Algorithms for Molecular Biology. 2012;7(1):1. 
+with r_ij representing relative rates and pi_j the stationary
+frequencies. Diagonal elements are set so each row sums to zero.
 """
 
-from typing import Optional, Union, List, TypeVar
-from dataclasses import dataclass, field
-import pandas as pd
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Dict, Iterable, List, Optional, Tuple, Union
+
 import numpy as np
-from scipy.optimize import minimize
+import pandas as pd
 from scipy.linalg import expm
+from scipy.optimize import minimize
+
 from toytree.utils import ToytreeError
-from toytree.pcm.src.discrete_markov_model_sim import MarkovModel
-
-
-ToyTree = TypeVar("ToyTree")
+from toytree.pcm.src.traits.discrete_markov_model_sim import MarkovModel
 
 
 @dataclass
 class FitMarkovModelResult:
-    """Result object of a Markov model fit by Maximum Likelihood."""
+    """Container for fitted parameters and likelihood results."""
+
     nstates: int
     model: str
-    transition_matrix: np.ndarray
+    relative_rates: np.ndarray
     state_frequencies: np.ndarray
-    data: pd.DataFrame = None
-    log_likelihood: float = None
-    fixed_rates: np.ndarray = None
-    nparams: int = None
-
-
-@dataclass
-class FitMarkovModelBase:
-    """Fit a Markov model to discrete data using Maximum Likelihood.
-
-    This uses Felsenstein's pruning algorith to recursively traverse
-    a tree to compute conditional likelihoods of each state at each
-    Node, and returns the total likelihood as the sum of 
-    log-likelihoods of the states at the root.
-
-    Parameters
-    ----------
-    tree: ToyTree
-        A ToyTree instance (usually ultrametric).
-    data: pandas.Series or pandas.DataFrame
-        If the index is numeric it is interpreted as node idx labels,
-        if not, then as string tip labels. Column names are not used,
-        and if multiple columns present they are treated as replicate 
-        observations of the same trait. Data is treated as categorical
-        (0-nstates). 
-    nstates: int
-        The number of discrete states in the Markov model.
-    model: str
-        The Markov model type ("ER", "SYM", "ARD") will determine the
-        number of parameters to be inferred. The fixed_rates arg can
-        be used to fix parameters, which will then not be inferred.
-    fixed_rates: Optional[np.ndarray]
-        An array of the dimension (nstates,nstates) with fixed rate
-        parameters (not to be estimated) in some or all off-diagonal
-        cells, or np.nan for parameters that should be estimated. 
-        Fixing parameters decrease the number that needs to be 
-        estimated. Fixed rates must match allowed values given the 
-        model type (e.g., ER must fix all to a single rate b/c only
-        on rate is allowed in this model, and SYM model rates must be
-        symmetric). Values on the diagonal are ignored.
-    fixed_state_frequencies: Optional[np.ndarray]
-        An array of dimension nstates with fixed values for the state
-        frequencies... how does this relate to root prior...?
-
-    Examples
-    --------
-    >>> #Fit a 2-state character observed for all tips in the tree.
-    >>> tree = ...
-    >>> data = tree.pcm.simulate_discrete_data(3, "ER", tips_only=True)
-    >>> fit = tree.pcm.fit_discrete_data(data, 3, "ER")
-    >>>
-    >>> #Fit a 3-state SYM model with observations for some internal nodes.
-    >>> data = tree.pcm.simulate_discrete_data(3, "ER", tips_only=True)
-    >>> fit = tree.pcm.fit_discrete_data(data, 3, "ER")
-    >>>
-    >>> #Fit a 2-state ARD model with some rates fixed:
-    >>> data = tree.pcm.simulate_discrete_data(2, "ARD",
-    >>>    relative_rates=[[0, 2], [1, 0]])
-    >>> fixed = np.array([[0, 2],[np.nan, 0]])
-    >>> fit = tree.pcm.fit_discrete_data(data, 2, "ARD", fixed_rates=fixed)
-    >>>
-    >>> #Fit a GTR model to DNA-like 4-state data
-    >>> true_rates = 1e-8 * np.array([
-    >>>     [0, 1, 2, 2],
-    >>>     [1, 0, 2, 2],
-    >>>     [2, 2, 0, 1],
-    >>>     [2, 2, 1, 0],
-    >>> ])
-    >>> true_freqs = [0.2,0.3,0.2,0.3]
-    >>> data = tree.pcm.simulate_discrete_data(4, "SYM",
-    >>>    relative_rates=true_rates, 
-    >>>    state_frequencies=true_freqs,
-    >>>    rate=1e-8, 
-    >>>    nreplicates=500, 
-    >>>    tips_only=True,
-    >>> )
-    >>> fit = tree.pcm.fit_discrete_data(data, 4, "SYM")
-
-    References
-    ----------
-    - Yang.
-    - Paradis et al. (2004).
-    - Harmon book.
-    """
-    tree: ToyTree
-    data: Union[pd.Series, pd.DataFrame]
-    nstates: int
-    model: str
-
-    root_prior: Optional[np.ndarray]=None   
-    fixed_rates: Optional[np.ndarray]=None
-    fixed_state_frequencies: Optional[np.ndarray]=None
-
-    nparams_fixed: int=field(init=False)
-    nparams_free: int=field(init=False)
-    rate_matrix: np.ndarray=field(init=False)
-    state_frequencies: np.ndarray=field(init=False)
-
-    def __post_init__(self):
-        self.model = self.model.upper()
-        assert self.model in ("ER", "SYM", "ARD"), (
-            "model must be one of 'ER', 'SYM', 'ARD'")
-
-        # Set parameters to be inferred as np.nan, and fixed params
-        # to the fixed value, and fill nparams_ counters.
-        self._check_freqs()
-        self._check_rates_and_nparams()
-
-        # ...
-        # self._check_data_with_tree()
-
-        # self._check_rates()
-        # self.qmatrix = self._get_qmatrix()
-
-    def _check_freqs(self):
-        """Check stationary frequencies given model and nstates.
-
-        Entered values are checked for correct size and that they 
-        sum to one. If no values are entered then a uniform frequency
-        of the correct size is sampled to represent the best starting
-        guess for root state.
-
-        Sets values for array of shape to nstates - 1, e.g., 
-        infer states for k=3: [np.nan, np.nan]
-        one fixed state for k=3: [0.5, np.nan]
-        """
-        freqs = self.state_frequencies
-        if freqs is None:
-            freqs = np.repeat(1.0 / self.nstates, self.nstates)
-        else:
-            freqs = np.array(freqs)
-            if self.model in ("SYM", "ARD"):
-                assert freqs.size == self.nstates, (
-                    f"states_frequencies should be len={self.nstates}.")
-            else:
-                fixed = np.repeat(1.0 / self.nstates, self.nstates)
-                assert np.allclose(freqs, fixed), (
-                    f"ER model with nstates={self.nstates} has fixed state "
-                    f"frequences: {fixed}. See SYM or ARD models.")
-                freqs = fixed
-        assert np.allclose(sum(freqs), 1.0), (
-            f"state_frequencies must sum to 1. You entered: {freqs}")
-        self.state_frequencies = freqs
-
-    def _check_rates_and_nparams(self):
-        """Get nparams based on model, nstates, and fixed params.
-
-        Checks that fixed params is valid given the other args. For
-        example, you can fix all parameters in which case no ML
-        optimization occurs and the loglik is simply calculated.
-
-        Number of parameters (k=nstates): The "ER" model always has 1 
-        parameter; the "SYM" model has ((k * (k-1)) / 2) + (k - 1) 
-        parameters; the "ARD" is (k * (k-1)) + (k - 1). The effect of
-        fixing a parameter is -2k for SYM, or -k for others.
-        """
-        rates = np.ones((self.nstates, self.nstates))
-        assert rates.shape == self.fixed_rates, (
-            "fixed_rates array must be dimension (nstates, nstates)")
-        np.fill_diagonal(rates, 0)
-        np.fill_diagonal(self.fixed_rates, 0)
-
-        # fixed rates must by symmetric for ER and SYM
-        if self.model in ("ER", "SYM"):
-            assert np.allclose(self.fixed_rates, self.fixed_rates.T, rtol=1e-5, atol=1e-8), (
-                "rates must be symmetric in ER and SYM models. See ARD model.")
-
-        k = self.nstates
-        mask = np.invert(np.eye(self.nstates, dtype=bool))
-        fixed = self.fixed_rates[mask]
-        if self.model == "ER":
-            self.nparams_fixed = fixed[~np.isnan(fixed)].size
-            self.nparams_free = 1 - self.nparams_fixed
-        elif self.model == "SYM":
-            self.nparams_free = (k * (k - 1)) / 2
-            self.nparams_fixed = 2 * fixed[~np.isnan(fixed)].size
-            self.nparams_free = 1 - self.nparams_fixed
-        else:
-            self.nparams_fixed = fixed[~np.isnan(fixed)].size
-            self.nparams_free = (k * (k - 1)) - self.nparams_fixed
-
-    def _check_data_with_tree(self):
-        """TODO... """
-
-
-class FitMarkovModel(FitMarkovModelBase):
-    """...
-
-    Examples
-    --------
-    >>> tree = toytree.rtree.unittree(10, seed=123)
-    >>> data = toytree.pcm.simulate_discrete_data(tree, 3, "ER")
-    >>>
-    >>> # Fit an ER model to the data
-    >>> fit = toytree.pcm.fit_discrete_markov_model(tree, data, "ER")
-    >>> print(fit.log_likelihood, fit.data)
-    """
-    def __init__(
-        self,
-        log_likelihood: float,
-        data: pd.DataFrame,
-        ):
-        pass
-
-    def _check_data_with_tree(self):
-        """Data index must be a set length and type.
-
-        Data will be converted to a DataFrame with index=range(nnodes)
-        and discrete data as floats 0-nstates or np.nan for missing.
-        """
-        assert isinstance(self.data, pd.DataFrame), "data must be a DataFrame"
-        # if data index is strings then convert to node idxs
-
-        assert set(self.data.index) == set(self.tree.get_tip_labels()), (
-            "the index of data must have the same tip names as the input tree")
-
+    qmatrix: np.ndarray
+    log_likelihood: float
+    fixed_rates: Optional[np.ndarray] = None
+    fixed_state_frequencies: Optional[np.ndarray] = None
+    nparams: int = 0
 
 
 class DiscreteMarkovModelFit:
-    """Fit parameters of an n-state discrete Markov model using 
-    maximum likelihood.
+    """Fit a discrete Markov model (ER, SYM, ARD) using ML.
 
-    Uses scipy to estimate transition rate parameters under one of
-    several supported models ("ER", "SYM", ARD").
+    The model uses the same reversible parameterization as the simulator
+    (see :class:`MarkovModel`) and computes likelihoods using
+    Felsenstein's pruning algorithm on a fixed tree.
 
     Parameters
     ----------
     tree: ToyTree
-        A toytree object with ultrametric branch lengths.
-    data: pd.DataFrame
-        A DataFrame with tip names as the index, and categorical data 
-        values (e.g., int, str, etc.) assigned to every tip in the tree.
-        The column names are not used. All columns in the DataFrame are
-        analyzed as replicate observations.
+        Tree with branch lengths in the same time units as rates.
+    data: pandas.Series or pandas.DataFrame
+        Tip data. Index must match tip labels. Each column is treated
+        as a replicate. Values are categorical states or NaN for missing.
+    nstates: int
+        Number of discrete states (must be >= the number observed).
     model: str
-        ...
-
-    Examples
-    --------
-    Simulate discrete data on a tree.
-    >>> tree = toytree.rtree.unittree(ntips=10, treeheight=10)
-    >>> data = tree.pcm.simulate_discrete_data(tree, 3, "ER", rate=0.5)
-    
-    Fit Markov model to discrete data.
-    >>> fit = tree.pcm.fit_discrete_markov_model(tree, data, 3, "ER")
-    >>> print(fit.log_likelihood, fit.data)
-
-    See also
-    --------
-    :func:`toytree.pcm.simulate_discrete_markov_data`
-
-    References
-    ----------
-    https://github.com/rcohen/hogtie
+        One of "ER", "SYM", "ARD".
+    fixed_rates: Optional[np.ndarray]
+        Optional (nstates x nstates) matrix of fixed off-diagonal rates.
+        Use np.nan for entries to estimate. Diagonal is ignored.
+    fixed_state_frequencies: Optional[np.ndarray]
+        Optional fixed stationary frequencies (length nstates).
+    root_prior: Optional[np.ndarray]
+        Optional prior for the root state. If None, uses stationary
+        frequencies for the model.
+    rate_scalar: float
+        Scalar applied to the relative rates during Q construction.
     """
+
     def __init__(
-        self, 
-        tree: 'toytree.ToyTree',
-        data: pd.DataFrame,
+        self,
+        tree,
+        data: Union[pd.Series, pd.DataFrame],
+        nstates: int,
         model: str,
-        prior: Optional[np.ndarray]=None,
-        ):
+        fixed_rates: Optional[np.ndarray] = None,
+        fixed_state_frequencies: Optional[np.ndarray] = None,
+        root_prior: Optional[np.ndarray] = None,
+        rate_scalar: float = 1.0,
+    ) -> None:
+        self.tree = tree
+        self.data = self._coerce_data(data)
+        self.model = model.upper()
+        self.nstates = nstates
+        self.rate_scalar = rate_scalar
 
-        self.tree = tree    # get's replaced by a copy 
-        self.model = model
+        if self.model not in {"ER", "SYM", "ARD"}:
+            raise ToytreeError("model must be one of 'ER', 'SYM', 'ARD'")
 
-        # get unique data and ensure tip names aligned
+        self.tip_labels = self.tree.get_tip_labels()
+        self._validate_data_index()
+        self.state_labels, self.state_map = self._build_state_map()
+        self._validate_nstates()
+
+        self.fixed_rates = self._coerce_fixed_rates(fixed_rates)
+        self.fixed_state_frequencies = self._coerce_fixed_frequencies(
+            fixed_state_frequencies
+        )
+        self.root_prior = self._coerce_root_prior(root_prior)
+
+        self.tip_states = self._encode_tip_states()
+        self.nreplicates = self.tip_states.shape[1]
+
+        self.state_names = self._build_state_names()
+        self._rate_param_info = self._build_rate_parameterization()
+        self._freq_param_info = self._build_frequency_parameterization()
+
+    def _coerce_data(self, data: Union[pd.Series, pd.DataFrame]) -> pd.DataFrame:
+        """Ensure data are in a DataFrame with replicate columns."""
         if isinstance(data, pd.Series):
-            data = pd.DataFrame(data)
-        assert isinstance(data, pd.DataFrame), "data must be a DataFrame"
-        assert set(data.index) == set(tree.get_tip_labels()), (
-            "the index of data must have the same tip names as the input tree")
-        self.data = data.copy() # gets converted to ints
+            data = data.to_frame()
+        if not isinstance(data, pd.DataFrame):
+            raise ToytreeError("data must be a pandas Series or DataFrame")
+        return data.copy()
 
-        # get empty Q matrix ...
-        self.ints_to_states = dict(enumerate(np.unique(data)))
-        self.states_to_ints = {j:i for i, j in self.ints_to_states.items()}
-        self.nstates = len(self.states_to_ints)
-        self.prior = (
-            prior if prior is not None 
-            else np.repeat(1 / self.nstates, self.nstates)
-        )
-        assert self.prior.size == self.nstates
+    def _validate_data_index(self) -> None:
+        """Ensure data index matches tree tip labels."""
+        if set(self.data.index) != set(self.tip_labels):
+            raise ToytreeError(
+                "data index must contain the same tip labels as the tree"
+            )
+        self.data = self.data.loc[self.tip_labels]
 
+    def _build_state_map(self) -> Tuple[List[object], Dict[object, int]]:
+        """Build a map from observed categorical states to integer indices."""
+        observed = pd.unique(self.data.values.ravel())
+        observed = [val for val in observed if pd.notna(val)]
+        state_labels = sorted(observed)
+        state_map = {state: idx for idx, state in enumerate(state_labels)}
+        return state_labels, state_map
 
-        # organize data as ints to w/ only uniques
-        self.unique = None
-        self.inverse = None
-        self.get_unique_data()
+    def _build_state_names(self) -> List[object]:
+        """Return state labels for all nstates (including unobserved)."""
+        names = list(self.state_labels)
+        if len(names) < self.nstates:
+            names.extend(range(len(names), self.nstates))
+        return names
 
-        # the params to infer depends on the model type and size
-        self.qmatrix = np.zeros((self.nstates, self.nstates))
-        self.params = {}
-        self.qidx = None
-        if isinstance(self.model, str):
-            self.model = self.model.upper()
-            self.set_qmatrix_auto()
+    def _validate_nstates(self) -> None:
+        """Ensure nstates is consistent with observed states."""
+        if self.nstates < len(self.state_map):
+            raise ToytreeError(
+                f"nstates={self.nstates} is less than observed states"
+            )
+
+    def _coerce_fixed_rates(self, fixed_rates: Optional[np.ndarray]) -> np.ndarray:
+        """Normalize fixed rate matrix and validate shape."""
+        if fixed_rates is None:
+            fixed_rates = np.full((self.nstates, self.nstates), np.nan)
+        fixed_rates = np.array(fixed_rates, dtype=float)
+        if fixed_rates.shape != (self.nstates, self.nstates):
+            raise ToytreeError(
+                "fixed_rates must be shape (nstates, nstates)"
+            )
+        np.fill_diagonal(fixed_rates, 0.0)
+        if self.model in {"ER", "SYM"}:
+            mask = ~np.isnan(fixed_rates) & ~np.isnan(fixed_rates.T)
+            if mask.any() and not np.allclose(
+                fixed_rates[mask], fixed_rates.T[mask], rtol=1e-5, atol=1e-8
+            ):
+                raise ToytreeError(
+                    "fixed_rates must be symmetric for ER and SYM models"
+                )
+        return fixed_rates
+
+    def _coerce_fixed_frequencies(
+        self, fixed_state_frequencies: Optional[np.ndarray]
+    ) -> Optional[np.ndarray]:
+        """Validate optional fixed stationary frequencies."""
+        if fixed_state_frequencies is None:
+            return None
+        fixed_state_frequencies = np.array(fixed_state_frequencies, dtype=float)
+        if fixed_state_frequencies.shape != (self.nstates,):
+            raise ToytreeError("fixed_state_frequencies must have length nstates")
+        if not np.isclose(fixed_state_frequencies.sum(), 1.0):
+            raise ToytreeError("fixed_state_frequencies must sum to 1")
+        return fixed_state_frequencies
+
+    def _coerce_root_prior(
+        self, root_prior: Optional[np.ndarray]
+    ) -> Optional[np.ndarray]:
+        """Validate optional root prior vector."""
+        if root_prior is None:
+            return None
+        root_prior = np.array(root_prior, dtype=float)
+        if root_prior.shape != (self.nstates,):
+            raise ToytreeError("root_prior must have length nstates")
+        if not np.isclose(root_prior.sum(), 1.0):
+            raise ToytreeError("root_prior must sum to 1")
+        return root_prior
+
+    def _encode_tip_states(self) -> np.ndarray:
+        """Convert tip data to integer state codes with NaN for missing."""
+        tip_states = self.data.copy()
+        for state, idx in self.state_map.items():
+            tip_states[tip_states == state] = idx
+        tip_states = tip_states.astype(float).to_numpy()
+        return tip_states
+
+    def _build_rate_parameterization(self) -> Dict[str, object]:
+        """Determine which rate parameters are fixed or free."""
+        k = self.nstates
+        free_positions: List[Tuple[int, int]] = []
+        fixed_values: Dict[Tuple[int, int], float] = {}
+
+        if self.model == "ER":
+            fixed_vals = self.fixed_rates[~np.eye(k, dtype=bool)]
+            fixed_vals = fixed_vals[~np.isnan(fixed_vals)]
+            if fixed_vals.size > 0:
+                if not np.allclose(fixed_vals, fixed_vals[0]):
+                    raise ToytreeError("ER model requires a single shared rate")
+                return {"mode": "er-fixed", "value": float(fixed_vals[0])}
+            return {"mode": "er-free"}
+
+        if self.model == "SYM":
+            for i in range(k):
+                for j in range(i + 1, k):
+                    if np.isnan(self.fixed_rates[i, j]):
+                        free_positions.append((i, j))
+                    else:
+                        fixed_values[(i, j)] = self.fixed_rates[i, j]
+            return {"mode": "sym", "free": free_positions, "fixed": fixed_values}
+
+        for i in range(k):
+            for j in range(k):
+                if i == j:
+                    continue
+                if np.isnan(self.fixed_rates[i, j]):
+                    free_positions.append((i, j))
+                else:
+                    fixed_values[(i, j)] = self.fixed_rates[i, j]
+        return {"mode": "ard", "free": free_positions, "fixed": fixed_values}
+
+    def _build_frequency_parameterization(self) -> Dict[str, object]:
+        """Determine how stationary frequencies are handled."""
+        if self.model == "ER":
+            return {"mode": "fixed", "values": np.repeat(1.0 / self.nstates, self.nstates)}
+        if self.fixed_state_frequencies is not None:
+            return {"mode": "fixed", "values": self.fixed_state_frequencies}
+        return {"mode": "free"}
+
+    def _params_to_rates(self, params: np.ndarray) -> np.ndarray:
+        """Construct relative rates from the parameter vector."""
+        k = self.nstates
+        rates = np.zeros((k, k))
+        info = self._rate_param_info
+
+        if info["mode"] == "er-fixed":
+            rates[:] = info["value"]
+            np.fill_diagonal(rates, 0.0)
+            return rates
+
+        if info["mode"] == "er-free":
+            rate = float(np.exp(params[0]))
+            rates[:] = rate
+            np.fill_diagonal(rates, 0.0)
+            return rates
+
+        offset = 0
+        if info["mode"] == "sym":
+            for idx, (i, j) in enumerate(info["free"]):
+                rates[i, j] = np.exp(params[idx])
+                rates[j, i] = rates[i, j]
+            for (i, j), value in info["fixed"].items():
+                rates[i, j] = value
+                rates[j, i] = value
+            np.fill_diagonal(rates, 0.0)
+            return rates
+
+        # ARD
+        for idx, (i, j) in enumerate(info["free"]):
+            rates[i, j] = np.exp(params[idx])
+        for (i, j), value in info["fixed"].items():
+            rates[i, j] = value
+        np.fill_diagonal(rates, 0.0)
+        return rates
+
+    def _params_to_frequencies(self, params: np.ndarray, offset: int) -> np.ndarray:
+        """Construct stationary frequencies from the parameter vector."""
+        info = self._freq_param_info
+        if info["mode"] == "fixed":
+            return info["values"]
+        raw = np.zeros(self.nstates)
+        raw[: self.nstates - 1] = params[offset : offset + self.nstates - 1]
+        raw[self.nstates - 1] = 0.0
+        weights = np.exp(raw)
+        return weights / weights.sum()
+
+    def _parameter_count(self) -> int:
+        """Return number of free parameters in the model."""
+        rate_info = self._rate_param_info
+        freq_info = self._freq_param_info
+
+        if rate_info["mode"] == "er-fixed":
+            rate_params = 0
+        elif rate_info["mode"] == "er-free":
+            rate_params = 1
         else:
-            self.set_qmatrix_custom()
+            rate_params = len(rate_info["free"])
 
-        # prepare data
-        self.set_node_arrays_to_tree()
+        freq_params = 0
+        if freq_info["mode"] == "free":
+            freq_params = self.nstates - 1
+        return rate_params + freq_params
 
+    def _split_params(self, params: np.ndarray) -> Tuple[np.ndarray, int]:
+        """Return parameters for rates and the offset for frequencies."""
+        rate_info = self._rate_param_info
+        if rate_info["mode"] == "er-free":
+            return params[:1], 1
+        if rate_info["mode"] == "er-fixed":
+            return np.empty(0), 0
+        return params[: len(rate_info["free"])], len(rate_info["free"])
 
-    def get_unique_data(self):
-        """
-        Record only unique observed tip patterns and the inverse info
-        to expand back to the full later.
-        """
-        for state in self.states_to_ints:
-            self.data[self.data == state] = self.states_to_ints[state]
-        self.unique, self.inverse = np.unique(
-            self.data,
-            return_inverse=True,
-            axis=1,
+    def _build_qmatrix(self, params: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Construct Q matrix plus relative rates and frequencies."""
+        rate_params, offset = self._split_params(params)
+        rates = self._params_to_rates(rate_params)
+        freqs = self._params_to_frequencies(params, offset)
+        model = MarkovModel(
+            nstates=self.nstates,
+            mtype=self.model,
+            relative_rates=rates,
+            state_frequencies=freqs,
+            rate_scalar=self.rate_scalar,
         )
-        #print(f'unique array shape: {self.unique.shape}')
+        return model.qmatrix, rates, freqs
 
+    def _compute_conditional_likelihoods(
+        self, qmatrix: np.ndarray
+    ) -> Dict[object, np.ndarray]:
+        """Compute conditional likelihoods at every node."""
+        likelihoods: Dict[object, np.ndarray] = {}
+        nstates = self.nstates
 
-    def set_qmatrix_custom(self):
-        """
-        TODO: Parse the custom qmatrix from user and check:
-          - todo: cannot enter mixed type w/ numpy tho...
-          - Values on the diagonal cannot be set (are overwritten)
-          - Values as floats are fixed at their value (not inferred)
-          - Values as ints on any off-diagonal are inferred.
-        """
-        raise NotImplementedError("TODO")
-        # try to coerce into an array if not a string
-        starting = 1 / self.tree.treenode.height
-        self.qidx = np.array(self.model).astype(int)
-        self.params = {i: starting for i in np.unique(self.qidx) if i}
-
-
-    def set_qmatrix_auto(self):
-        """
-        Get the number of parameters to estimate, and a matrix (qidx)
-        with those parameters. 
-
-               ER          SYM          ARD        CUSTOM
-           [0 1 1 1]    [0 1 2 3]    [0 1 2 3]      ...
-           [1 0 1 1]    [1 0 1 2]    [7 0 4 5]
-           [1 1 0 1]    [2 1 0 1]    [8 9 0 6]
-           [1 1 1 0]    [3 2 1 0]    [10 11 12 0]
-
-            [0 1 1]      [0 1 2]      [0 1 2]
-            [1 0 1]      [1 0 3]      [4 0 3]
-            [1 1 0]      [2 3 0]      [5 6 0]
-
-             [0 1]        [0 1]        [0 1]
-             [1 0]        [2 0]        [2 0]
-        """
-        starting = 1 / self.tree.treenode.height        
-        self.qidx = np.zeros(self.qmatrix.shape, dtype=int)
-
-        # assign everything to the same one rate (ER)
-        if self.model.upper() == "ER":
-            self.params[1] = starting
-            self.qidx[:] = 1
-            self.qidx[np.diag_indices_from(self.qidx)] = 0
-            return
-
-        # ARD & SIM: assign a parameter to every cell in upper triangle
-        pidx = 1
-        indices = np.triu_indices(self.qidx.shape[0], k=1)
-        for cidx, cidy in zip(*indices):
-            self.params[pidx] = 1 / self.tree.treenode.height
-            self.qidx[cidx, cidy] = pidx
-            pidx += 1
-
-        # assign a parameter to every cell in upper triangle            
-        indices = np.tril_indices(self.qidx.shape[0], k=-1)
-        for cidx, cidy in zip(*indices):
-            if self.model == "ARD":
-                self.params[pidx] = starting
-                self.qidx[cidx, cidy] = pidx
-                pidx += 1
-            elif self.model == "SYM":
-                self.qidx[cidx, cidy] = self.qidx[cidy, cidx]
-            else: 
-                raise ToytreeError(f"model type {self.model} not recognized")
-
-
-    def set_node_arrays_to_tree(self):
-        """
-        Sets a numpy array as a feature to every node that will store
-        the likelihood of each state in each replicate (nuniq, nstates)       
-
-        3-state model: 
-                 [0.5, 0.5, 0]
-                 [0, 0.5, 0.5]
-                      ...
-                 /           \
-            [1, 1, 0]     [1, 1, 0]
-            [0, 0, 1]     [0, 1, 0]
-               ...           ...
-        """
-        value = np.zeros((self.unique.shape[1], self.qidx.shape[0])),
-        self.tree = self.tree.set_node_data("likelihood", default=value)
-        for nidx in range(self.tree.ntips):
-            node = self.tree[nidx]
-
-            # get column index of this tip
-            sidx = self.data.index.tolist().index(node.name)
-
-            # get column from unique matching this tip index
-            udata = self.unique[sidx, :]
-            for istate in self.ints_to_states:
-                node.likelihood[:, istate] = (udata == istate).astype(float)
-
-
-    def node_conditional_likelihoods(self, node):
-        """
-        Returns the conditional likelihood at a single node given the
-        likelihood's of data at its child nodes.
-        """
-        # get transition probabilities over each branch length
-        probmats = {
-            0: expm(self.qmatrix * node.children[0].dist),
-            1: expm(self.qmatrix * node.children[1].dist),
-        }
-
-        nstates = node.likelihood.shape[1]
-        anclik = []
-        for ancstate in range(nstates):
-            # likelihood of child0 observation if anc==ancstate
-            prob = (probmats[0][ancstate, :] * node.children[0].likelihood).sum(axis=1)
-
-            prob = (probmats[1][:, 0] * node.children[1].likelihood).sum(axis=1)            
-
-            # TODO...
-            # anclik[ancstate] = x
-
-            for endstate in range(nstates):
-                for child in range(2):
-                    prob = probmats[child]
-                    prob[endstate, 0] * node.children[0].likelihood[:, ]
-
-        anc_liks = []
-        for childidx in range(2):
-            prob = probmats[childidx]
-            for sidx in range():
-
-                # prob child==sidx if anc==sidx
-                prob[sidx, sidx]
-
-                # get into a notebook for this...
-
-        # likelihood that child 0 observation occurs if anc==0
-        print(prob_child0, '0000')
-        child0_is0 = (
-            prob_child0[0, 0] * node.children[0].likelihood[:, 0] + 
-            prob_child0[0, 1] * node.children[0].likelihood[:, 1]
-        )
-
-        # likelihood that child 1 observation occurs if anc==0
-        child1_is0 = (
-            prob_child1[0, 0] * node.children[1].likelihood[:, 0] + 
-            prob_child1[0, 1] * node.children[1].likelihood[:, 1]
-        )
-        anc_lik_0 = child0_is0 * child1_is0
-
-        # likelihood that child 0 observation occurs if anc==1
-        child0_is1 = (
-            prob_child0[1, 0] * node.children[0].likelihood[:, 0] + 
-            prob_child0[1, 1] * node.children[0].likelihood[:, 1]
-        )
-        child1_is1 = (
-            prob_child1[1, 0] * node.children[1].likelihood[:, 0] + 
-            prob_child1[1, 1] * node.children[1].likelihood[:, 1]
-        )
-        anc_lik_1 = child0_is1 * child1_is1
-
-        # set estimated conditional likelihood on this node
-        node.likelihood = np.column_stack([anc_lik_0, anc_lik_1])        
-
-
-    def pruning_algorithm(self):
-        """
-        Traverse tree from tips to root calculating conditional 
-        likelihood at each internal node on the way, and compute final
-        conditional likelihood at root based on priors for root state.
-        """
-        # traverse tree in order **from tips to root**
-        # to get conditional likelihood estimate at root.
         for node in self.tree.treenode.traverse("postorder"):
-            if not node.is_leaf():               
-                self.node_conditional_likelihoods(node)
+            if node.is_leaf():
+                tip_index = self.tip_labels.index(node.name)
+                tip_obs = self.tip_states[tip_index]
+                arr = np.ones((self.nreplicates, nstates))
+                for rep_idx, obs in enumerate(tip_obs):
+                    if np.isnan(obs):
+                        continue
+                    arr[rep_idx, :] = 0.0
+                    arr[rep_idx, int(obs)] = 1.0
+                likelihoods[node] = arr
+                continue
 
-        # multiply root prior times the conditional likelihood at root
+            # start with ones and multiply in each child's conditional likelihood
+            node_lik = np.ones((self.nreplicates, nstates))
+            for child in node.children:
+                prob = expm(qmatrix * child.dist)
+                child_lik = likelihoods[child] @ prob.T
+                node_lik *= child_lik
+            likelihoods[node] = node_lik
+        return likelihoods
+
+    def _pruning_likelihood(self, qmatrix: np.ndarray, freqs: np.ndarray) -> np.ndarray:
+        """Compute per-replicate likelihoods with pruning algorithm."""
+        likelihoods = self._compute_conditional_likelihoods(qmatrix)
+
         root = self.tree.treenode
-        print(self.prior)
-        print(root.likelihood)
-        lik = self.prior * root.likelihood
-        print(lik)
-        lik = lik.sum()
-        print(lik)
-            # (1. - self.prior_root_is_1) * root.likelihood[:, 0] + 
-            # self.prior_root_is_1 * root.likelihood[:, 1]
-        # )
-        return lik[self.inverse]
+        prior = self.root_prior if self.root_prior is not None else freqs
+        root_lik = likelihoods[root]
+        return (root_lik * prior).sum(axis=1)
 
+    def _compute_node_posteriors(
+        self, qmatrix: np.ndarray, freqs: np.ndarray
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Return posterior state probabilities and inferred states per node."""
+        likelihoods = self._compute_conditional_likelihoods(qmatrix)
+        nstates = self.nstates
+        nrep = self.nreplicates
 
-    def optimize(self):
-        """
-        Use maximum likelihood optimization to find the optimal 
-        parameters (from .params) to fit the data.
+        prior = self.root_prior if self.root_prior is not None else freqs
+        up: Dict[object, np.ndarray] = {}
+        up[self.tree.treenode] = np.tile(prior, (nrep, 1))
 
-        TODO: max bounds could be set based on tree height. For smaller
-        tree heights (e.g., 1) the max should likely be higher. If the 
-        estimated parameters is at the max bound we should report a 
-        logger.warning(message).
-        """  
-        estimate = minimize(
-            fun=optim_func,
-            x0=np.array([self.params[i] for i in self.params]),
-            args=(self,),
-            method='L-BFGS-B',
-            bounds=[(1e-12, 500) for i in self.params],
+        for node in self.tree.treenode.traverse("preorder"):
+            if node.is_leaf():
+                continue
+            for child in node.children:
+                sibling_product = np.ones((nrep, nstates))
+                for sibling in node.children:
+                    if sibling is child:
+                        continue
+                    prob_sib = expm(qmatrix * sibling.dist)
+                    sib_lik = likelihoods[sibling] @ prob_sib.T
+                    sibling_product *= sib_lik
+                prob_child = expm(qmatrix * child.dist)
+                parent_weight = up[node] * sibling_product
+                up[child] = parent_weight @ prob_child
+
+        nnodes = self.tree.nnodes
+        posterior = np.zeros((nnodes, nrep, nstates))
+        for node in self.tree.treenode.traverse("preorder"):
+            node_idx = node._idx
+            node_post = up[node] * likelihoods[node]
+            node_post /= node_post.sum(axis=1, keepdims=True)
+            posterior[node_idx] = node_post
+
+        if nrep == 1:
+            prob_df = pd.DataFrame(
+                posterior[:, 0, :],
+                index=range(nnodes),
+                columns=self.state_names,
+            )
+            state_df = pd.DataFrame(
+                np.array(self.state_names, dtype=object)[posterior[:, 0, :].argmax(axis=1)],
+                index=range(nnodes),
+                columns=["state"],
+            )
+            return prob_df, state_df
+
+        columns = pd.MultiIndex.from_product(
+            [range(nrep), self.state_names], names=["replicate", "state"]
         )
-        self.model_fit = {
-            "params": estimate.x,
-            "negLogLik": estimate.fun,
-            "convergence": estimate.success,
-        }
-        print(self.model_fit)
-        print(self.qmatrix)
-        print(-np.log(self.pruning_algorithm()))
+        prob_df = pd.DataFrame(
+            posterior.reshape(nnodes, nrep * nstates),
+            index=range(nnodes),
+            columns=columns,
+        )
+        state_arr = np.array(self.state_names, dtype=object)[
+            posterior.argmax(axis=2)
+        ]
+        state_df = pd.DataFrame(state_arr, index=range(nnodes), columns=range(nrep))
+        return prob_df, state_df
+
+    def _neg_log_likelihood(self, params: np.ndarray) -> float:
+        """Negative log-likelihood for optimizer."""
+        qmatrix, _, freqs = self._build_qmatrix(params)
+        liks = self._pruning_likelihood(qmatrix, freqs)
+        liks = np.clip(liks, 1e-300, None)
+        return -np.log(liks).sum()
+
+    def fit(self, compute_posteriors: bool = False) -> FitMarkovModelResult:
+        """Fit the model parameters with ML and return a result object.
+
+        Parameters
+        ----------
+        compute_posteriors: bool
+            If True, compute node posterior probabilities and inferred
+            states during fitting. This is not required for fitting the
+            model parameters alone.
+        """
+        nparams = self._parameter_count()
+        if nparams == 0:
+            params = np.empty(0)
+            qmatrix, rates, freqs = self._build_qmatrix(params)
+            log_likelihood = -self._neg_log_likelihood(params)
+            return FitMarkovModelResult(
+                nstates=self.nstates,
+                model=self.model,
+                relative_rates=rates,
+                state_frequencies=freqs,
+                qmatrix=qmatrix,
+                log_likelihood=log_likelihood,
+                fixed_rates=self.fixed_rates,
+                fixed_state_frequencies=self.fixed_state_frequencies,
+                nparams=0,
+            )
+
+        start = np.zeros(nparams)
+        result = minimize(self._neg_log_likelihood, start, method="L-BFGS-B")
+        qmatrix, rates, freqs = self._build_qmatrix(result.x)
+        return FitMarkovModelResult(
+            nstates=self.nstates,
+            model=self.model,
+            relative_rates=rates,
+            state_frequencies=freqs,
+            qmatrix=qmatrix,
+            log_likelihood=-result.fun,
+            fixed_rates=self.fixed_rates,
+            fixed_state_frequencies=self.fixed_state_frequencies,
+            nparams=nparams,
+        )
 
 
+def fit_discrete_markov_model(
+    tree,
+    data: Union[pd.Series, pd.DataFrame],
+    nstates: int,
+    model: str,
+    fixed_rates: Optional[np.ndarray] = None,
+    fixed_state_frequencies: Optional[np.ndarray] = None,
+    root_prior: Optional[np.ndarray] = None,
+    rate_scalar: float = 1.0,
+) -> FitMarkovModelResult:
+    """Convenience wrapper to fit a discrete Markov model."""
+    fitter = DiscreteMarkovModelFit(
+        tree=tree,
+        data=data,
+        nstates=nstates,
+        model=model,
+        fixed_rates=fixed_rates,
+        fixed_state_frequencies=fixed_state_frequencies,
+        root_prior=root_prior,
+        rate_scalar=rate_scalar,
+    )
+    return fitter.fit(compute_posteriors=False)
 
-def optim_func(params, model):
-    """Function to optimize for discrete Markov Model. 
 
-    Takes an iterable as the first argument 
-    containing the parameters to be estimated (alpha, beta), and the
-    BinaryStateModel class instance as the second argument.
+def infer_ancestral_states_discrete_mk(
+    tree,
+    data: Union[pd.Series, pd.DataFrame],
+    nstates: int,
+    model: str,
+    fixed_rates: Optional[np.ndarray] = None,
+    fixed_state_frequencies: Optional[np.ndarray] = None,
+    root_prior: Optional[np.ndarray] = None,
+    rate_scalar: float = 1.0,
+    inplace: bool = False,
+) -> Union[Tuple[FitMarkovModelResult, pd.DataFrame, pd.DataFrame], object]:
+    """Infer ancestral states and return node-level posterior probabilities.
+
+    Parameters
+    ----------
+    inplace: bool
+        If True, store posterior probabilities on tree nodes and return the tree.
+        Each node receives a tuple of length nstates with state probabilities.
+        If False, return the fitted model result plus probability/state tables.
     """
-    # update qmatrix with input params
-    for pidx, param in enumerate(params):
-        idxs = np.where(model.qidx == pidx + 1)
-        model.qmatrix[idxs] = params[param]
-    for idx in range(model.qmatrix.shape[0]):
-        rowsum = model.qmatrix[idx].sum()
-        model.qmatrix[idx, idx] = -(rowsum - model.qmatrix[idx, idx])        
-
-    # get likelihood of the data given the model parameters
-    liks = model.pruning_algorithm()
-    return -np.log(liks).sum()
-
-
-
-if __name__ == "__main__":
-
-    import toytree
-
-    TREE = toytree.rtree.unittree(5, treeheight=1)
-    print(toytree.pcm.get_markov_model(3, "ER", rate=1).transition_matrix)
-    DATA = toytree.pcm.simulate_discrete_data(TREE, 3, "ER", rate=1)
-    print(DATA)
-
-    fit = FitMarkovModelBase(TREE, DATA, 3, "ER")
-    print(fit)
+    fitter = DiscreteMarkovModelFit(
+        tree=tree,
+        data=data,
+        nstates=nstates,
+        model=model,
+        fixed_rates=fixed_rates,
+        fixed_state_frequencies=fixed_state_frequencies,
+        root_prior=root_prior,
+        rate_scalar=rate_scalar,
+    )
+    result = fitter.fit(compute_posteriors=False)
+    node_probs, node_states = fitter._compute_node_posteriors(
+        result.qmatrix, result.state_frequencies
+    )
+    if inplace:
+        tree = tree.copy()
+        probs_by_node = node_probs.to_numpy()
+        for node in tree.treenode.traverse("preorder"):
+            node_probs_tuple = tuple(probs_by_node[node._idx])
+            node.add_feature("discrete_state_probabilities", node_probs_tuple)
+        return tree
+    return result, node_probs, node_states
 
 
-    # print(TREE.ntips, len(TREE.get_tip_labels()))
-    # DATA = DATA[:TREE.ntips]
-    # DATA.index = TREE.get_tip_labels()
-    # print(DATA)
-
-    # MOD = DiscreteMarkovModelFit(TREE, data=DATA, model="SYM")
-    # print(MOD.qidx)
-    # print(MOD.params)
-    # print(MOD.unique)
-    # print(MOD.tree[0].likelihood)
-    # MOD.optimize()
-    # # print(MOD.prior)
+__all__ = [
+    "FitMarkovModelResult",
+    "DiscreteMarkovModelFit",
+    "fit_discrete_markov_model",
+    "infer_ancestral_states_discrete_mk",
+]
