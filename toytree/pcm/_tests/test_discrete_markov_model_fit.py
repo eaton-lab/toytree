@@ -1,6 +1,7 @@
 import unittest
 
 import numpy as np
+import pandas as pd
 
 import toytree
 from toytree.pcm.src.traits.discrete_markov_model_fit import (
@@ -37,6 +38,17 @@ class TestDiscreteMarkovModelFit(unittest.TestCase):
         np.testing.assert_allclose(result.qmatrix, model.qmatrix)
         self.assertTrue(np.isfinite(result.log_likelihood))
         self.assertEqual(result.nparams, 0)
+        self.assertIsNotNone(result.node_state_probabilities)
+        self.assertIsNotNone(result.node_states)
+        prob_df = result.node_state_probabilities
+        if isinstance(prob_df.columns, pd.MultiIndex):
+            prob_sums = prob_df.T.groupby(level="replicate").sum().T
+            np.testing.assert_allclose(
+                prob_sums.to_numpy(), np.ones((tree.nnodes, prob_sums.shape[1]))
+            )
+        else:
+            prob_sums = prob_df.sum(axis=1).to_numpy()
+            np.testing.assert_allclose(prob_sums, np.ones(tree.nnodes))
 
 
 if __name__ == "__main__":
