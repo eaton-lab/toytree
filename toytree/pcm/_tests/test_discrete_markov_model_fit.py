@@ -6,6 +6,7 @@ import pandas as pd
 import toytree
 from toytree.pcm.src.traits.discrete_markov_model_fit import (
     fit_discrete_markov_model,
+    infer_ancestral_states_discrete_mk,
 )
 from toytree.pcm.src.traits.discrete_markov_model_sim import MarkovModel
 
@@ -38,17 +39,48 @@ class TestDiscreteMarkovModelFit(unittest.TestCase):
         np.testing.assert_allclose(result.qmatrix, model.qmatrix)
         self.assertTrue(np.isfinite(result.log_likelihood))
         self.assertEqual(result.nparams, 0)
-        self.assertIsNotNone(result.node_state_probabilities)
-        self.assertIsNotNone(result.node_states)
-        prob_df = result.node_state_probabilities
-        if isinstance(prob_df.columns, pd.MultiIndex):
-            prob_sums = prob_df.T.groupby(level="replicate").sum().T
-            np.testing.assert_allclose(
-                prob_sums.to_numpy(), np.ones((tree.nnodes, prob_sums.shape[1]))
-            )
-        else:
-            prob_sums = prob_df.sum(axis=1).to_numpy()
-            np.testing.assert_allclose(prob_sums, np.ones(tree.nnodes))
+
+    def test_infer_ancestral_states(self):
+        """Inference should return posterior probabilities and states."""
+        tree = toytree.rtree.unittree(ntips=4, treeheight=1.0, seed=2)
+        data = toytree.pcm.simulate_discrete_data(
+            tree=tree,
+            nstates=2,
+            model="ER",
+            tips_only=True,
+            seed=2,
+        )
+        data.index = tree.get_tip_labels()
+        result, prob_df, state_df = infer_ancestral_states_discrete_mk(
+            tree=tree,
+            data=data,
+            nstates=2,
+            model="ER",
+        )
+        self.assertTrue(np.isfinite(result.log_likelihood))
+        self.assertEqual(prob_df.shape[0], tree.nnodes)
+        prob_sums = prob_df.sum(axis=1).to_numpy()
+        np.testing.assert_allclose(prob_sums, np.ones(tree.nnodes))
+        self.assertEqual(state_df.shape[0], tree.nnodes)
+
+    def test_default_fixed_rates_allow_sym_model(self):
+        """Default fixed rates should not error for SYM models."""
+        tree = toytree.rtree.unittree(ntips=3, treeheight=1.0, seed=7)
+        data = toytree.pcm.simulate_discrete_data(
+            tree=tree,
+            nstates=3,
+            model="SYM",
+            tips_only=True,
+            seed=7,
+        )
+        data.index = tree.get_tip_labels()
+        result = fit_discrete_markov_model(
+            tree=tree,
+            data=data,
+            nstates=3,
+            model="SYM",
+        )
+        self.assertTrue(np.isfinite(result.log_likelihood))
 
 
 if __name__ == "__main__":
