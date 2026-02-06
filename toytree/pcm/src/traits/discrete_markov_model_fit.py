@@ -38,6 +38,8 @@ class FitMarkovModelResult:
     state_frequencies: np.ndarray
     qmatrix: np.ndarray
     log_likelihood: float
+    node_state_probabilities: Optional[pd.DataFrame] = None
+    node_states: Optional[pd.DataFrame] = None
     fixed_rates: Optional[np.ndarray] = None
     fixed_state_frequencies: Optional[np.ndarray] = None
     nparams: int = 0
@@ -107,6 +109,7 @@ class DiscreteMarkovModelFit:
         self.tip_states = self._encode_tip_states()
         self.nreplicates = self.tip_states.shape[1]
 
+        self.state_names = self._build_state_names()
         self._rate_param_info = self._build_rate_parameterization()
         self._freq_param_info = self._build_frequency_parameterization()
 
@@ -133,6 +136,13 @@ class DiscreteMarkovModelFit:
         state_labels = sorted(observed)
         state_map = {state: idx for idx, state in enumerate(state_labels)}
         return state_labels, state_map
+
+    def _build_state_names(self) -> List[object]:
+        """Return state labels for all nstates (including unobserved)."""
+        names = list(self.state_labels)
+        if len(names) < self.nstates:
+            names.extend(range(len(names), self.nstates))
+        return names
 
     def _validate_nstates(self) -> None:
         """Ensure nstates is consistent with observed states."""
@@ -321,8 +331,10 @@ class DiscreteMarkovModelFit:
         )
         return model.qmatrix, rates, freqs
 
-    def _pruning_likelihood(self, qmatrix: np.ndarray, freqs: np.ndarray) -> np.ndarray:
-        """Compute per-replicate likelihoods with pruning algorithm."""
+    def _compute_conditional_likelihoods(
+        self, qmatrix: np.ndarray
+    ) -> Dict[object, np.ndarray]:
+        """Compute conditional likelihoods at every node."""
         likelihoods: Dict[object, np.ndarray] = {}
         nstates = self.nstates
 
@@ -346,11 +358,78 @@ class DiscreteMarkovModelFit:
                 child_lik = likelihoods[child] @ prob.T
                 node_lik *= child_lik
             likelihoods[node] = node_lik
+        return likelihoods
+
+    def _pruning_likelihood(self, qmatrix: np.ndarray, freqs: np.ndarray) -> np.ndarray:
+        """Compute per-replicate likelihoods with pruning algorithm."""
+        likelihoods = self._compute_conditional_likelihoods(qmatrix)
 
         root = self.tree.treenode
         prior = self.root_prior if self.root_prior is not None else freqs
         root_lik = likelihoods[root]
         return (root_lik * prior).sum(axis=1)
+
+    def _compute_node_posteriors(
+        self, qmatrix: np.ndarray, freqs: np.ndarray
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
+        """Return posterior state probabilities and inferred states per node."""
+        likelihoods = self._compute_conditional_likelihoods(qmatrix)
+        nstates = self.nstates
+        nrep = self.nreplicates
+
+        prior = self.root_prior if self.root_prior is not None else freqs
+        up: Dict[object, np.ndarray] = {}
+        up[self.tree.treenode] = np.tile(prior, (nrep, 1))
+
+        for node in self.tree.treenode.traverse("preorder"):
+            if node.is_leaf():
+                continue
+            for child in node.children:
+                sibling_product = np.ones((nrep, nstates))
+                for sibling in node.children:
+                    if sibling is child:
+                        continue
+                    prob_sib = expm(qmatrix * sibling.dist)
+                    sib_lik = likelihoods[sibling] @ prob_sib.T
+                    sibling_product *= sib_lik
+                prob_child = expm(qmatrix * child.dist)
+                parent_weight = up[node] * sibling_product
+                up[child] = parent_weight @ prob_child
+
+        nnodes = self.tree.nnodes
+        posterior = np.zeros((nnodes, nrep, nstates))
+        for node in self.tree.treenode.traverse("preorder"):
+            node_idx = node._idx
+            node_post = up[node] * likelihoods[node]
+            node_post /= node_post.sum(axis=1, keepdims=True)
+            posterior[node_idx] = node_post
+
+        if nrep == 1:
+            prob_df = pd.DataFrame(
+                posterior[:, 0, :],
+                index=range(nnodes),
+                columns=self.state_names,
+            )
+            state_df = pd.DataFrame(
+                np.array(self.state_names, dtype=object)[posterior[:, 0, :].argmax(axis=1)],
+                index=range(nnodes),
+                columns=["state"],
+            )
+            return prob_df, state_df
+
+        columns = pd.MultiIndex.from_product(
+            [range(nrep), self.state_names], names=["replicate", "state"]
+        )
+        prob_df = pd.DataFrame(
+            posterior.reshape(nnodes, nrep * nstates),
+            index=range(nnodes),
+            columns=columns,
+        )
+        state_arr = np.array(self.state_names, dtype=object)[
+            posterior.argmax(axis=2)
+        ]
+        state_df = pd.DataFrame(state_arr, index=range(nnodes), columns=range(nrep))
+        return prob_df, state_df
 
     def _neg_log_likelihood(self, params: np.ndarray) -> float:
         """Negative log-likelihood for optimizer."""
@@ -366,6 +445,7 @@ class DiscreteMarkovModelFit:
             params = np.empty(0)
             qmatrix, rates, freqs = self._build_qmatrix(params)
             log_likelihood = -self._neg_log_likelihood(params)
+            node_probs, node_states = self._compute_node_posteriors(qmatrix, freqs)
             return FitMarkovModelResult(
                 nstates=self.nstates,
                 model=self.model,
@@ -373,6 +453,8 @@ class DiscreteMarkovModelFit:
                 state_frequencies=freqs,
                 qmatrix=qmatrix,
                 log_likelihood=log_likelihood,
+                node_state_probabilities=node_probs,
+                node_states=node_states,
                 fixed_rates=self.fixed_rates,
                 fixed_state_frequencies=self.fixed_state_frequencies,
                 nparams=0,
@@ -381,6 +463,7 @@ class DiscreteMarkovModelFit:
         start = np.zeros(nparams)
         result = minimize(self._neg_log_likelihood, start, method="L-BFGS-B")
         qmatrix, rates, freqs = self._build_qmatrix(result.x)
+        node_probs, node_states = self._compute_node_posteriors(qmatrix, freqs)
         return FitMarkovModelResult(
             nstates=self.nstates,
             model=self.model,
@@ -388,6 +471,8 @@ class DiscreteMarkovModelFit:
             state_frequencies=freqs,
             qmatrix=qmatrix,
             log_likelihood=-result.fun,
+            node_state_probabilities=node_probs,
+            node_states=node_states,
             fixed_rates=self.fixed_rates,
             fixed_state_frequencies=self.fixed_state_frequencies,
             nparams=nparams,
@@ -405,7 +490,13 @@ def fit_discrete_markov_model(
     root_prior: Optional[np.ndarray] = None,
     rate_scalar: float = 1.0,
 ) -> FitMarkovModelResult:
-    """Convenience wrapper to fit a discrete Markov model."""
+    """Convenience wrapper to fit a discrete Markov model.
+
+    Returns a FitMarkovModelResult that includes:
+    - fitted parameters and log-likelihood
+    - node_state_probabilities: posterior probabilities for each state
+    - node_states: most likely state per node (per replicate)
+    """
     fitter = DiscreteMarkovModelFit(
         tree=tree,
         data=data,
