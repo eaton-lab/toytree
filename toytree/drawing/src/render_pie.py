@@ -132,6 +132,13 @@ def _get_pie_path(percent_start: float, percent_end: float, radius: float) -> st
 
     <path d='M end_x end_y A r r 0 flag 1 end_x end_y L 0 0'></path>
     """
+    if np.isclose(percent_end - percent_start, 1.0):
+        return (
+            f"M 0 0 L {radius} 0 "
+            f"A {radius} {radius} 0 1 1 {-radius} 0 "
+            f"A {radius} {radius} 0 1 1 {radius} 0 "
+            f"L 0 0"
+        )
     start = _get_radial_coordinates_for_percents(percent_start)
     end = _get_radial_coordinates_for_percents(percent_end)
     flag = int((percent_end - percent_start) > 0.5)
