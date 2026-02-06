@@ -38,8 +38,6 @@ class FitMarkovModelResult:
     state_frequencies: np.ndarray
     qmatrix: np.ndarray
     log_likelihood: float
-    node_state_probabilities: Optional[pd.DataFrame] = None
-    node_states: Optional[pd.DataFrame] = None
     fixed_rates: Optional[np.ndarray] = None
     fixed_state_frequencies: Optional[np.ndarray] = None
     nparams: int = 0
@@ -162,7 +160,10 @@ class DiscreteMarkovModelFit:
             )
         np.fill_diagonal(fixed_rates, 0.0)
         if self.model in {"ER", "SYM"}:
-            if not np.allclose(fixed_rates, fixed_rates.T, rtol=1e-5, atol=1e-8):
+            mask = ~np.isnan(fixed_rates) & ~np.isnan(fixed_rates.T)
+            if mask.any() and not np.allclose(
+                fixed_rates[mask], fixed_rates.T[mask], rtol=1e-5, atol=1e-8
+            ):
                 raise ToytreeError(
                     "fixed_rates must be symmetric for ER and SYM models"
                 )
@@ -331,9 +332,7 @@ class DiscreteMarkovModelFit:
         )
         return model.qmatrix, rates, freqs
 
-    def _compute_conditional_likelihoods(
-        self, qmatrix: np.ndarray
-    ) -> Dict[object, np.ndarray]:
+    def _compute_conditional_likelihoods(self, qmatrix: np.ndarray) -> Dict[object, np.ndarray]:
         """Compute conditional likelihoods at every node."""
         likelihoods: Dict[object, np.ndarray] = {}
         nstates = self.nstates
@@ -438,14 +437,21 @@ class DiscreteMarkovModelFit:
         liks = np.clip(liks, 1e-300, None)
         return -np.log(liks).sum()
 
-    def fit(self) -> FitMarkovModelResult:
-        """Fit the model parameters with ML and return a result object."""
+    def fit(self, compute_posteriors: bool = False) -> FitMarkovModelResult:
+        """Fit the model parameters with ML and return a result object.
+
+        Parameters
+        ----------
+        compute_posteriors: bool
+            If True, compute node posterior probabilities and inferred
+            states during fitting. This is not required for fitting the
+            model parameters alone.
+        """
         nparams = self._parameter_count()
         if nparams == 0:
             params = np.empty(0)
             qmatrix, rates, freqs = self._build_qmatrix(params)
             log_likelihood = -self._neg_log_likelihood(params)
-            node_probs, node_states = self._compute_node_posteriors(qmatrix, freqs)
             return FitMarkovModelResult(
                 nstates=self.nstates,
                 model=self.model,
@@ -453,8 +459,6 @@ class DiscreteMarkovModelFit:
                 state_frequencies=freqs,
                 qmatrix=qmatrix,
                 log_likelihood=log_likelihood,
-                node_state_probabilities=node_probs,
-                node_states=node_states,
                 fixed_rates=self.fixed_rates,
                 fixed_state_frequencies=self.fixed_state_frequencies,
                 nparams=0,
@@ -463,7 +467,7 @@ class DiscreteMarkovModelFit:
         start = np.zeros(nparams)
         result = minimize(self._neg_log_likelihood, start, method="L-BFGS-B")
         qmatrix, rates, freqs = self._build_qmatrix(result.x)
-        node_probs, node_states = self._compute_node_posteriors(qmatrix, freqs)
+        
         return FitMarkovModelResult(
             nstates=self.nstates,
             model=self.model,
@@ -471,8 +475,6 @@ class DiscreteMarkovModelFit:
             state_frequencies=freqs,
             qmatrix=qmatrix,
             log_likelihood=-result.fun,
-            node_state_probabilities=node_probs,
-            node_states=node_states,
             fixed_rates=self.fixed_rates,
             fixed_state_frequencies=self.fixed_state_frequencies,
             nparams=nparams,
@@ -490,12 +492,39 @@ def fit_discrete_markov_model(
     root_prior: Optional[np.ndarray] = None,
     rate_scalar: float = 1.0,
 ) -> FitMarkovModelResult:
-    """Convenience wrapper to fit a discrete Markov model.
+    """Convenience wrapper to fit a discrete Markov model."""
+    fitter = DiscreteMarkovModelFit(
+        tree=tree,
+        data=data,
+        nstates=nstates,
+        model=model,
+        fixed_rates=fixed_rates,
+        fixed_state_frequencies=fixed_state_frequencies,
+        root_prior=root_prior,
+        rate_scalar=rate_scalar,
+    )
+    return fitter.fit(compute_posteriors=False)
 
-    Returns a FitMarkovModelResult that includes:
-    - fitted parameters and log-likelihood
-    - node_state_probabilities: posterior probabilities for each state
-    - node_states: most likely state per node (per replicate)
+
+def infer_ancestral_states_discrete_mk(
+    tree,
+    data: Union[pd.Series, pd.DataFrame],
+    nstates: int,
+    model: str,
+    fixed_rates: Optional[np.ndarray] = None,
+    fixed_state_frequencies: Optional[np.ndarray] = None,
+    root_prior: Optional[np.ndarray] = None,
+    rate_scalar: float = 1.0,
+    inplace: bool = False,
+) -> Union[Tuple[FitMarkovModelResult, pd.DataFrame, pd.DataFrame], object]:
+    """Infer ancestral states and return node-level posterior probabilities.
+
+    Parameters
+    ----------
+    inplace: bool
+        If True, store posterior probabilities on tree nodes and return the tree.
+        Each node receives a tuple of length nstates with state probabilities.
+        If False, return the fitted model result plus probability/state tables.
     """
     fitter = DiscreteMarkovModelFit(
         tree=tree,
@@ -507,7 +536,23 @@ def fit_discrete_markov_model(
         root_prior=root_prior,
         rate_scalar=rate_scalar,
     )
-    return fitter.fit()
+    result = fitter.fit(compute_posteriors=False)
+    node_probs, node_states = fitter._compute_node_posteriors(
+        result.qmatrix, result.state_frequencies
+    )
+    if inplace:
+        tree = tree.copy()
+        probs_by_node = node_probs.to_numpy()
+        for node in tree.treenode.traverse("preorder"):
+            node_probs_tuple = tuple(probs_by_node[node._idx])
+            node.add_feature("discrete_state_probabilities", node_probs_tuple)
+        return tree
+    return result, node_probs, node_states
 
 
-__all__ = ["FitMarkovModelResult", "DiscreteMarkovModelFit", "fit_discrete_markov_model"]
+__all__ = [
+    "FitMarkovModelResult",
+    "DiscreteMarkovModelFit",
+    "fit_discrete_markov_model",
+    "infer_ancestral_states_discrete_mk",
+]
