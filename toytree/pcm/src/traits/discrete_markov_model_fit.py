@@ -16,7 +16,7 @@ frequencies. Diagonal elements are set so each row sums to zero.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Dict, Iterable, List, Optional, Tuple, Union
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -25,6 +25,7 @@ from scipy.optimize import minimize
 
 from toytree.utils import ToytreeError
 from toytree.pcm.src.traits.discrete_markov_model_sim import MarkovModel
+from toytree.core.apis import add_subpackage_method, PhyloCompAPI
 
 
 @dataclass
@@ -393,6 +394,7 @@ class DiscreteMarkovModelFit:
         )
 
 
+@add_subpackage_method(PhyloCompAPI)
 def fit_discrete_markov_model(
     tree,
     data: Union[pd.Series, pd.DataFrame],
