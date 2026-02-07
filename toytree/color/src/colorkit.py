@@ -10,11 +10,9 @@ which uses ColorKit as its parser.
 from typing import Union, Tuple
 from copy import copy
 import numpy as np
-from loguru import logger
 import toyplot.color
 from toytree.utils import ToyColorError
 
-logger = logger.bind(name="toytree")
 ColorType = Union[str, np.ndarray, Tuple[float, float, float, float]]
 
 
@@ -102,7 +100,6 @@ class ColorKit:
         """Parse input color to three stored formats."""
         # input is a css string (parse input based on type
 
-        # logger.error(color)
         if isinstance(color, str):
             if color == "none":
                 self._rgba = (0, 0, 0, 0)
