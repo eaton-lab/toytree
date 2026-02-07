@@ -95,12 +95,23 @@ def _get_gamma_value(nodes: Iterable[toytree.Node]) -> float:
     return 0.5 if gamma is None else gamma
 
 
-def parse_major_tree_and_admixture_events(net: Union[str, Path]) -> Tuple[toytree.ToyTree, Dict[str, AdmixtureEvent]]:
+def _remove_unary_nodes(tree: toytree.ToyTree) -> None:
+    """Remove internal nodes with a single child without collapsing polytomies."""
+    for node in list(tree.traverse("postorder")):
+        if node.is_leaf():
+            continue
+        if len(node.children) == 1:
+            node._delete(prevent_unary=True)
+    tree._update()
+
+
+def parse_major_tree_and_admixture_events(
+    net: Union[str, Path],
+) -> Tuple[toytree.ToyTree, Dict[str, AdmixtureEvent]]:
     """Return the major tree and admixture events parsed from a network."""
     net_string = _load_network_string(net)
     net_string = _inject_gamma_into_labels(net_string)
-
-    tree = toytree.tree(net_string, internal_labels="name")
+    tree = toytree.tree(net_string)
     tree = _pseudo_unroot(tree)
 
     events: Dict[str, AdmixtureEvent] = {}
@@ -110,16 +121,13 @@ def parse_major_tree_and_admixture_events(net: Union[str, Path]) -> Tuple[toytre
             hnodes = tree.get_nodes("~#H*")
         except ValueError:
             hnodes = []
-
         if not hnodes:
-            tree.mod.remove_unary_nodes(inplace=True)
-            tree._update()
+            _remove_unary_nodes(tree)
             return tree, events
 
         grouped = _group_hybrid_nodes(hnodes)
         hybrid_id = sorted(grouped)[0]
         nodes = grouped[hybrid_id]
-
         event_id = hybrid_id.lstrip("#")
         if len(nodes) != 2:
             raise ValueError(f"Expected two nodes for {hybrid_id}, found {len(nodes)}")
@@ -135,7 +143,7 @@ def parse_major_tree_and_admixture_events(net: Union[str, Path]) -> Tuple[toytre
         minor_desc = ()
         if source_parent is not None:
             minor_desc = _filter_hybrid_leaves(source_parent.get_leaf_names())
-        source._delete()
+        source.name = event_id
 
         major_desc = _filter_hybrid_leaves(dest.get_leaf_names())
         dest._delete()

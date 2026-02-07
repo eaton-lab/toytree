@@ -18,7 +18,7 @@ class TestMajorTreeParser(unittest.TestCase):
         self.assertAlmostEqual(event.gamma, 0.51, places=2)
         self.assertTrue(set(event.major_descendants))
         self.assertTrue(set(event.minor_descendants))
-        self.assertTrue(set(tree.get_tip_labels()).issuperset({"A", "B", "C", "D", "E", "O"}))
+        self.assertTrue(set(tree.get_tip_labels()).issuperset({"A", "B", "C", "D", "E", "O", "H7"}))
 
     def test_two_admixture_edges(self):
         newick = "((A,#H1:::0.2),(B,#H2:::0.3),(C)#H1,(D)#H2);"
@@ -26,7 +26,7 @@ class TestMajorTreeParser(unittest.TestCase):
         self.assertEqual(set(events.keys()), {"H1", "H2"})
         self.assertAlmostEqual(events["H1"].gamma, 0.2, places=2)
         self.assertAlmostEqual(events["H2"].gamma, 0.3, places=2)
-        self.assertTrue(set(tree.get_tip_labels()).issubset({"A", "B", "C", "D"}))
+        self.assertTrue(set(tree.get_tip_labels()).issuperset({"A", "B", "C", "D", "H1", "H2"}))
 
 
 if __name__ == "__main__":
