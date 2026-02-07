@@ -99,13 +99,18 @@ def parse_major_tree_and_admixture_events(net: Union[str, Path]) -> Tuple[toytre
     """Return the major tree and admixture events parsed from a network."""
     net_string = _load_network_string(net)
     net_string = _inject_gamma_into_labels(net_string)
-    tree = toytree.tree(net_string)
+
+    tree = toytree.tree(net_string, internal_labels="name")
     tree = _pseudo_unroot(tree)
 
     events: Dict[str, AdmixtureEvent] = {}
 
     while True:
-        hnodes = tree.get_nodes("~#H*")
+        try:
+            hnodes = tree.get_nodes("~#H*")
+        except ValueError:
+            hnodes = []
+
         if not hnodes:
             tree.mod.remove_unary_nodes(inplace=True)
             tree._update()
@@ -114,6 +119,8 @@ def parse_major_tree_and_admixture_events(net: Union[str, Path]) -> Tuple[toytre
         grouped = _group_hybrid_nodes(hnodes)
         hybrid_id = sorted(grouped)[0]
         nodes = grouped[hybrid_id]
+
+        event_id = hybrid_id.lstrip("#")
         if len(nodes) != 2:
             raise ValueError(f"Expected two nodes for {hybrid_id}, found {len(nodes)}")
 
@@ -134,8 +141,8 @@ def parse_major_tree_and_admixture_events(net: Union[str, Path]) -> Tuple[toytre
         dest._delete()
 
         tree._update()
-        events[hybrid_id] = AdmixtureEvent(
-            hybrid_id=hybrid_id.lstrip("#"),
+        events[event_id] = AdmixtureEvent(
+            hybrid_id=event_id,
             major_descendants=major_desc,
             minor_descendants=minor_desc,
             gamma=gamma,
