@@ -5,9 +5,9 @@
 """
 
 from typing import Union, TypeVar, List, Tuple, Mapping
+import sys
 import re
 from pathlib import Path
-from loguru import logger
 import requests
 
 from toytree.core import ToyTree
@@ -15,8 +15,6 @@ from toytree.core.multitree import MultiTree
 from toytree.io.src.newick import parse_newick_string
 from toytree.io.src.nexus import get_newicks_and_translation_from_nexus
 from toytree.io.src.utils import replace_whitespace
-
-logger = logger.bind(name="toytree")
 
 # for removing white_ space from newicks
 # WHITE_SPACE = re.compile(r"[\n\r\t ]+")
@@ -117,10 +115,11 @@ def parse_tree(data: Union[str, Url, Path], **kwargs) -> ToyTree:
     nwks, tdict = parse_data_from_str(strdata)
     tree = parse_newick_string(nwks[0], **kwargs)
     if len(nwks) > 1:
-        logger.warning(
+        msg = (
             f"Data contains ({len(nwks)}) trees.\n"
-            "Loading first using `toytree.tree`. Use `toytree.mtree` "
+            "Loading only the first tree using `toytree.tree`. Use `toytree.mtree` "
             "to instead load a MultiTree.")
+        print(msg, file=sys.stderr)
     return translate_node_names(tree, tdict)
 
 
