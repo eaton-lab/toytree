@@ -15,6 +15,7 @@ __author__ = "Deren Eaton"
 # toytree v3 supported subpackages (lazy-loaded for faster imports)
 import importlib as _importlib
 
+
 # submodules mapped to module-API available at toytree.[submodule]
 _LAZY_SUBMODULES = {
     "annotate": "toytree.annotate",
@@ -26,7 +27,7 @@ _LAZY_SUBMODULES = {
     "rtree": "toytree.rtree",
     "io": "toytree.io",
     "mod": "toytree.mod",
-    # "network": "toytree.network",
+    "network": "toytree.network",
     "pcm": "toytree.pcm",
 }
 
@@ -39,6 +40,7 @@ _LAZY_ATTRS = {
     "mtree": ("toytree.io.src.mtreeio", "mtree"),
     "save": ("toytree.io.src.save", "save"),
     "ToytreeError": ("toytree.utils.src.exceptions", "ToytreeError"),
+    "set_log_level": ("toytree.utils.src.logger_setup", "set_log_level"),
 }
 
 
@@ -65,6 +67,7 @@ def __dir__():
         + list(_LAZY_ATTRS.keys())
     )
 
+# _logger.disable("toytree")
 
 
 if __name__ == "__main__":
