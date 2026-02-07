@@ -8,15 +8,13 @@ import sys
 import textwrap
 from pathlib import Path
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
-# from loguru import logger
-from .make_wide import make_wide
 
 
 KWARGS = dict(
     prog="prune",
     usage="prune [options]",
     help="return tree connecting only the selected tip names",
-    formatter_class=make_wide(RawDescriptionHelpFormatter, 120, 140),
+    formatter_class=lambda prog: RawDescriptionHelpFormatter(prog, width=120, max_help_position=120),
     description=textwrap.dedent("""
         -------------------------------------------------------------------
         | prune: return tree with only branches connecting a subset of tips

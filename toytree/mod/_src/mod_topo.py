@@ -45,14 +45,13 @@ Add a parent-child clade pair to split an existing branch.
 """
 
 from typing import Optional, TypeVar, Tuple, Callable, Union
-from loguru import logger
+import sys
 import numpy as np
 from toytree.core.apis import TreeModAPI, add_subpackage_method, add_toytree_method
 from toytree.core.node import Node
 from toytree.core.tree import ToyTree
 from toytree.utils import ToytreeError
 
-logger = logger.bind(name="toytree")
 Query = TypeVar("Query", str, int, Node)
 
 __all__ = [
@@ -505,7 +504,6 @@ def bisect(tree: ToyTree, *query: Query, reroot: bool = False, dist_partition: f
     # if treenode selected on an unrooted tree raise error
     if node.is_root() and not tree.is_rooted():
         msg = "cannot bisect on treenode of an unrooted tree. Select one of its children."
-        logger.error(msg)
         raise ToytreeError(msg)
 
     # if treenode selected on a rooted tree return child subtrees
@@ -707,7 +705,6 @@ def drop_tips(
     # raise exception if no nodes were selected
     if not query:
         msg = "No nodes selected. Enter a node query."
-        logger.error(msg)
         raise ValueError(msg)
 
     # get query and tree
@@ -719,7 +716,6 @@ def drop_tips(
     # raise exception if all tips were selected
     if len(nodes) == tree.nnodes:
         msg = "Cannot drop all tips from the tree."
-        logger.error(msg)
         raise ValueError(msg)
     internal = []
     for node in sorted(nodes):
@@ -729,7 +725,7 @@ def drop_tips(
             internal.append(node)
     # warn user that internal nodes were ignored.
     if internal:
-        logger.warning("Only tip Nodes are removed. See `mod.remove_nodes`.")
+        print("Warning: Your query included internal nodes, but only tip Nodes were removed. See `mod.remove_nodes`", file=sys.stderr)
     tree._update()
     return tree
 
@@ -862,7 +858,6 @@ def add_internal_node(
     dist = dist if dist is not None else node.dist / 2.
     if not node.dist >= dist >= 0:
         msg = f"the new Node dist must be >=0 and <={node.dist:.12g} (dist of {node})"
-        logger.error(msg)
         raise ValueError(msg)
 
     # create the new Node and mend connections nearby
@@ -1402,7 +1397,6 @@ def _resolve_nodes(
 if __name__ == "__main__":
 
     import toytree
-    toytree.set_log_level("DEBUG")
     t = toytree.rtree.unittree(16, treeheight=10)
     x = t.mod.prune("~r[1-4]$", inplace=True)
     x.treenode.draw_ascii()

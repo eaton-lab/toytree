@@ -6,10 +6,8 @@
 
 from typing import TypeVar, Tuple
 import numpy as np
-from loguru import logger
 from toytree.layout import BaseLayout, get_tip_labels_angles
 
-logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
 
 

@@ -26,7 +26,7 @@ import toytree
 
 def get_distance_matrix(
     data: Union[np.ndarray, pd.DataFrame]) -> pd.DataFrame:
-    """Return pairwise distances between samples from a data matrix.
+    """Return pairwise distances between samples from a character data matrix.
 
     D measured between samples represents the Euclidean distance,
     also termed the Minkowski distance with p=2, and is calculated

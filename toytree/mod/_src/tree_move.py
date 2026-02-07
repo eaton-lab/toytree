@@ -27,8 +27,6 @@ import numpy as np
 import toytree
 from toytree.utils import ToytreeError
 
-
-logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
 
 

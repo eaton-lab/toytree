@@ -28,8 +28,6 @@ from toytree.core.apis import TreeModAPI, add_subpackage_method
 from toytree.utils import ToytreeError
 
 Query = TypeVar("Query", str, int, Node)
-logger = logger.bind(name="toytree")
-
 
 __all__ = [
     "root_on_midpoint",

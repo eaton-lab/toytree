@@ -7,14 +7,11 @@
 from typing import Optional
 import numpy as np
 import pandas as pd
-from loguru import logger
 from toytree.core.tree import ToyTree
 from toytree.core.node import Node
 from toytree.utils import ToytreeError
 
 # pylint: disable=invalid-name, too-many-branches, too-many-statements
-
-logger = logger.bind(name="toytree")
 
 
 def _assign_names(tree: ToyTree, random: bool, rng: np.random.Generator) -> ToyTree:

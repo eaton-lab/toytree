@@ -12,9 +12,7 @@ from toytree.core.apis import add_toytree_method
 from toytree.data._src.expand_node_mapping import expand_node_mapping
 from toytree.utils import ToytreeError
 
-
 Query = TypeVar("Query", int, str, Node)
-logger = logger.bind(name="toytree")
 
 
 INVALID_SET_NODE_DATA_TYPE = """
@@ -50,6 +48,8 @@ def set_node_data(
 
     Parameters
     -----------
+    tree: ToyTree
+        The tree on which to set node data.
     feature: str
         The name of the node attribute to create or modify.
     data: Mapping or Series
@@ -232,7 +232,7 @@ def set_node_data_from_dataframe(
     tree = tree if inplace else tree.copy()
     for key in table.columns:
         mapping = table[key].to_dict()
-        tree.set_node_data(feature=key, data=mapping, inplace=True)
+        tree.set_node_data(feature=key, data=mapping, inplace=True, default=float("nan"))
     return tree
 
 

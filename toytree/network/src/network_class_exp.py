@@ -21,8 +21,6 @@ import toytree
 from toytree.io.src.parse import WHITE_SPACE
 from toytree.core.node import Node
 
-logger = logger.bind(name="toytree")
-
 
 class Node3(Node):
     """Nodes contained within a Network class object.

@@ -8,15 +8,12 @@ feature.
 """
 
 from typing import Union, Sequence, Any, TypeVar, Optional
-from loguru import logger
 import pandas as pd
 import numpy as np
 from toytree import ToyTree, Node
 from toytree.core.apis import add_toytree_method
-# from toytree.utils import ToytreeError
 
 Query = TypeVar("Query", int, str, Node)
-logger = logger.bind(name="toytree")
 
 
 @add_toytree_method(ToyTree)
@@ -151,6 +148,7 @@ def get_tip_data(
     tree: ToyTree,
     feature: Union[str, Sequence[str], None] = None,
     missing: Optional[Any] = None,
+    names: bool = False,
 ) -> pd.DataFrame:
     """Return a DataFrame with values for one or more selected
     features from every leaf node in the tree.
@@ -165,16 +163,18 @@ def get_tip_data(
         select a missing value based on the data type. Example:
         "" for str type, np.nan for numeric or complex types.
         Any value can be entered here to replace missing data.
+    names: bool
+        Use tip label names as the index. A ValueError is raised if
+        duplicate names are present.
 
     Returns
     -------
     data: pd.DataFrame or pd.Series
         If a single feature is selected then a pd.Series will be
-        returned with tip node 'idx' attributes as the index.
-        If multiple features are selected (or None, which selects
-        all features) then a pd.DataFrame is returned with tip
-        node 'idx' attributes as the index and feature names as
-        the column labels.
+        returned with tip node 'idx' attributes as the index, unless
+        names=True is used. If multiple features are selected (or None,
+        which selects all features) then a pd.DataFrame is returned
+        with feature names as column labels.
 
     Examples
     --------
@@ -198,7 +198,13 @@ def get_tip_data(
     format, but is slightly slower than accessing data directly
     from Nodes because it spends time type-checking missing data.
     """
-    return tree.get_node_data(feature, missing).iloc[:tree.ntips]
+    data = tree.get_node_data(feature, missing).iloc[:tree.ntips]
+    if names:
+        labels = tree.get_tip_labels()
+        if len(set(labels)) != len(labels):
+            raise ValueError("cannot return name-labeled tip data b/c names are not unique")
+        data.index = labels
+    return data
 
 
 if __name__ == "__main__":

@@ -1,25 +1,23 @@
 #!/usr/bin/env python
 
 """
+
 """
 
 import sys
 from pathlib import Path
 import textwrap
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
-from .make_wide import make_wide
-# from loguru import logger
-# logger = logger.bind(name="toytree")
 
 
 KWARGS = dict(
     prog="root",
     usage="root [options]",
-    help="return ...",
-    formatter_class=make_wide(RawDescriptionHelpFormatter, 120, 140),
+    help="return tree rooted on a selected or optimized edge",
+    formatter_class=lambda prog: RawDescriptionHelpFormatter(prog, width=120, max_help_position=120),
     description=textwrap.dedent("""
         -------------------------------------------------------------------
-        | root: return tree with only branches connecting a subset of tips
+        | root: return tree rooted on a selected or optimized edge
         -------------------------------------------------------------------
         | The root method ...
         -------------------------------------------------------------------
@@ -55,7 +53,7 @@ def get_parser_root(parser: ArgumentParser | None = None) -> ArgumentParser:
         parser = ArgumentParser(**KWARGS)
 
     # path args
-    parser.add_argument("-i", "--input", type=string_or_stdin_parse, metavar="path", required=True, help="input tree file (nwk, nex or nhx)")
+    parser.add_argument("-i", "--input", type=string_or_stdin_parse, metavar="path", required=True, help="input tree(s) file (nwk, nex or nhx)")
     parser.add_argument("-o", "--output", type=Path, metavar="path", help="optional outfile path name. If None prints to STDOUT")
     parser.add_argument("-n", "--nodes", type=str, metavar="str", nargs="*", help="one or more names or regular expressions to select outgroup mrca")
     # options
@@ -114,8 +112,5 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    # except ToytreeError as exc:
-    #     logger.bind(name="toytree").error(exc)
     except Exception as exc:
         raise exc
-        # logger.error(exc)

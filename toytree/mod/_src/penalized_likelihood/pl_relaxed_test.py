@@ -2,42 +2,44 @@
 
 from typing import Any, Union
 from itertools import cycle
-import numpy as np
 from loguru import logger
+import numpy as np
 from scipy.optimize import minimize
-from scipy.special import gammaln
+from scipy.special import factorial
+from scipy import stats
 from toytree.core import ToyTree
 from toytree.mod._src.penalized_likelihood.pl_utils import (
-    _get_init_ages,
-    _get_params_bounds,
-    get_tree_with_categorical_rates,
-    Calibrations
+    _get_init_ages, _get_params_bounds,
+    get_tree_with_uncorrelated_relaxed_rates, Calibrations
 )
-from toytree.core.apis import TreeModAPI, add_subpackage_method
+
+logger = logger.bind(name="toytree")
 
 
-__all__ = ["edges_make_ultrametric_pl_clock"]
-
-
-@add_subpackage_method(TreeModAPI)
-def edges_make_ultrametric_pl_clock(
+def edges_make_ultrametric_pl_relaxed(
     tree: ToyTree,
-    calibrations: Calibrations | None = None,
+    lam: float,
+    calibrations: Calibrations = {},
     full: bool = False,
     inplace: bool = False,
-    max_iter: int = 100_000,
-    max_fun: int = 100_000,
+    max_iter: int = 1e5,
+    max_fun: int = 1e5,
     max_refine: int = 20,
 ) -> Union[ToyTree, dict[str, Any]]:
-    """Return a tree made ultrametric under a molecular clock.
+    """Return a tree made ultrametric under a relaxed clock model with
+    rate variation among edges under penalized likelihood.
 
-    Edges are scaled while assuming a molecular clock with a single
-    rate that is estimated.
+    Edges are scaled while allowing each edge to have its own rate,
+    and a penalty is applied to discourage excessive variation away
+    from a gamma distribution of rates.
 
     Parameters
     ----------
-    tree:
+    tree: ToyTree
         A ToyTree with non-ultrametric edge lengths.
+    lam: float
+        Lambda rate variation penalty parameter of Sanderson's
+        relaxed model. Lower values allow more rate variation.
     calibrations: dict[int, (float, float)]
         A dict mapping node selectors (e.g., idx labels) to calibrated
         ages as a single value or a tuple of (min, max) age.
@@ -66,11 +68,8 @@ def edges_make_ultrametric_pl_clock(
     dict
         An alternative option to return a dict with the new scaled tree
         as well as statistics on the model fit including likelihood,
-        PHIIC, and rate.
+        PHIIC, and rates.
     """
-    if calibrations is None:
-        calibrations = {}
-
     # get init and fixed node ages that make tree ultrametric
     ages_init, _ = _get_init_ages(tree, calibrations)
 
@@ -80,29 +79,29 @@ def edges_make_ultrametric_pl_clock(
     # get edges, dists and log-factorial-dists from rate-x-time edges
     edges = tree.get_edges("idx")
     dists_o = tree.get_node_data("dist").values[:-1]
-    dists_lf = gammaln(dists_o + 1)
-    # dists_lf = np.log(factorial(dists_o))
+    dists_lf = np.log(factorial(dists_o))
     edata = np.vstack([dists_o, dists_lf]).T
 
-    # get starting rate in clock model as old/new treenode height
-    rate_init = tree.treenode.height / ages_init[-1]
+    # get starting rates as old/new edge dists.
+    rates_init = dists_o / (ages_init[edges[:, 1]] - ages_init[edges[:, 0]])
 
     # get indices of which node ages will be estimated
     ages_idxs = np.array(sorted(ages_bounds))
 
     # slim bounds to only those needing to be estimated
     ages_bounds = [ages_bounds[i] for i in ages_idxs]
-    bounds = [rates_bounds[0]] + ages_bounds
-    params = np.hstack([rate_init, ages_init[ages_idxs]])
+    rates_bounds = [rates_bounds[i] for i in range(tree.nnodes - 1)]
+    bounds = rates_bounds + ages_bounds
 
     # get loglik at a valid starting params to scale neg dist penalty
-    valid_loglik = log_likelihood_poisson(rate_init, ages_init, edges, edata, None)
+    valid_loglik = log_likelihood_poisson_relaxed(rates_init, ages_init, edges, edata, lam, None)
 
-    # get clock model log-likelihood
+    # fit joint model
+    params = np.hstack([rates_init, ages_init[ages_idxs]])
     fit = minimize(
-        fun=objective_clock,
+        fun=objective_relaxed,
         x0=params,
-        args=(False, False, rate_init, ages_init, ages_idxs, edges, edata, valid_loglik),
+        args=(False, False, rates_init, ages_init, ages_idxs, edges, edata, lam, valid_loglik),
         method="L-BFGS-B",
         bounds=bounds,
         options=dict(maxiter=int(max_iter), maxfun=int(max_fun))
@@ -111,23 +110,26 @@ def edges_make_ultrametric_pl_clock(
     if not fit.success:
         logger.warning(f"Failed to converge. Consider increasing max_iter & max_fun:\n{fit}")
     else:
-        logger.debug(f"Initial fit loglik={-fit.fun}")
+        logger.debug(f"Initial fit penalized loglik={-fit.fun}")
 
-   # iterative optimization while alternately fixing rates or ages
+    # iterative optimization while alternately fixing rates or ages
     current_loglik = fit.fun
     current_params = fit.x
     iter_refine = 0
+    rsize = rates_init.size
+    asize = ages_idxs.size
 
     # dict mapping fixed param type to fixed bool selector, and param subset slice
     fix_dict = {
-        "rates": [(False, True), slice(None, 1)],
-        "ages": [(True, False), slice(1, None)],
+        "rates": [(False, True), slice(None, rsize)],
+        "ages": [(True, False), slice(rsize, rsize + asize)],
     }
 
     # iterator to cycle through this dict infinitely
     iter_fixed = cycle(fix_dict)
 
-    # loop to optimize one param type at a time
+    # loop to optimize one param type at a time until no further improvement
+    # or the max_refine number is reached.
     while 1:
 
         # get a fixed param and its info
@@ -135,14 +137,14 @@ def edges_make_ultrametric_pl_clock(
         fbools, fslice = fix_dict[fixed]
 
         # update params from current accepted values
-        rates_hat = current_params[:1]
+        rates_hat = current_params[:rsize]
         ages_hat = ages_init.copy()
-        ages_hat[ages_idxs] = current_params[1:]
+        ages_hat[ages_idxs] = current_params[rsize:rsize + asize]
 
         # optimize the subset of non-fixed params
-        args = fbools + (rates_hat, ages_hat, ages_idxs, edges, edata, valid_loglik)
+        args = fbools + (rates_hat, ages_hat, ages_idxs, edges, edata, lam, valid_loglik)
         ifit = minimize(
-            fun=objective_clock,
+            fun=objective_relaxed,
             x0=current_params[fslice],
             args=args,
             method="L-BFGS-B",
@@ -155,7 +157,7 @@ def edges_make_ultrametric_pl_clock(
         if Δ_loglik <= 0:
             current_loglik = ifit.fun
             current_params[fslice] = ifit.x
-            logger.debug(f"fixed {fixed:<5} loglik={-current_loglik}; Δloglik={Δ_loglik}")
+            logger.debug(f"fixed {fixed:<5} penalized loglik={-current_loglik}; Δloglik={Δ_loglik}")
             if abs(Δ_loglik) < 1e-9:
                 fit = ifit
                 break
@@ -167,58 +169,79 @@ def edges_make_ultrametric_pl_clock(
 
     # transform tree with new ages
     ages = ages_init.copy()
-    ages[ages_idxs] = current_params[1:]
+    ages[ages_idxs] = current_params[rsize:rsize + asize]
     tree = tree.set_node_data("height", ages, inplace=inplace)
-    rate = current_params[0]
+
+    # get rates params
+    rates = current_params[:rsize]
 
     # Final fit for PHIIC calculation (Penalized Hierarchical Information Criterion)
-    loglik = log_likelihood_poisson(rate, ages, edges, edata, valid_loglik)
+    loglik = log_likelihood_poisson_relaxed(rates, ages, edges, edata, lam, valid_loglik)
     k = len(bounds)
     PHIIC = -2 * loglik + 2 * k
 
     # return as a tree or a dict
     if not full:
         return tree
-    return {"loglik": loglik, "PHIIC": PHIIC, "rate": rate, "tree": tree, "converged": fit.success}
+    raw_loglik = log_likelihood_poisson_relaxed(rates, ages, edges, edata, 0.0, valid_loglik)
+    penalty = _relaxed_penalty(rates)
+    return {
+        "loglik": loglik,
+        "raw_loglik": raw_loglik,
+        "penalty": penalty,
+        "PHIIC": PHIIC,
+        "rates": list(rates),
+        "tree": tree,
+        "converged": fit.success,
+    }
 
 
-def log_likelihood_poisson(rates_hat, ages_hat, edges, edata, valid_loglik) -> float:
-    """Return the log-likelihood of the rates x ages params"""
+def _relaxed_penalty(rates_hat: np.ndarray) -> float:
+    """Return the relaxed clock penalty score for rates."""
+    alpha = rates_hat.mean()
+    pcdf = np.sort(stats.gamma.cdf(rates_hat, a=alpha))
+    ecdf = np.arange(1, rates_hat.size + 1) / rates_hat.size
+    return float(np.sum((ecdf - pcdf) ** 2))
+
+
+def log_likelihood_poisson_relaxed(rates_hat, ages_hat, edges, edata, lam, valid_loglik) -> float:
+    """Return the penalized log-likelihood of the relaxed model."""
     # get dists given the new age estimates
     dists_hat = ages_hat[edges[:, 1]] - ages_hat[edges[:, 0]]
 
     # return high penalty as 2 x valid_loglik from starting params.
     if any(dists_hat < 0):
-        return 2 * valid_loglik if valid_loglik is not None else -np.inf
+        return 2 * valid_loglik
 
     # get product of dists(time) and rates
     pdists = dists_hat * rates_hat
 
     # calculate loglik
     loglik = np.sum(edata[:, 0] * np.log(pdists) - pdists - edata[:, 1])
-    return loglik if loglik is not None else -np.inf
+    penalty = _relaxed_penalty(rates_hat)
+    return loglik - lam * penalty
 
 
-def objective_clock(params, fixed_rate, fixed_ages, rate, ages, ages_idxs, edges, edata, valid_loglik):
-    """Return neg log-likelihood under clock model."""
-    # [AGES] optimize ages while keeping rate fixed
-    if fixed_rate and not fixed_ages:
+def objective_relaxed(params, fixed_rates, fixed_ages, rates, ages, ages_idxs, edges, edata, lam, valid_loglik):
+    """Return neg log-likelihood under relaxed clock model."""
+    # [RATES] optimize rates while keeping ages fixed
+    if fixed_ages and not fixed_rates:
+        assert params.size == rates.size
+        ages_hat = ages
+        rates_hat = params
+    # [AGES] optimize ages while keeping rates fixed
+    elif fixed_rates and not fixed_ages:
         assert params.size == ages_idxs.size
-        rate_hat = rate
+        rates_hat = rates
         ages_hat = ages.copy()
         ages_hat[ages_idxs] = params
-    # [RATE] optimize rate while keeping ages fixed
-    elif fixed_ages and not fixed_rate:
-        assert params.size == 1
-        ages_hat = ages
-        rate_hat = params
-    # joint optimize rate and ages
+    # joint optimize rates and ages
     else:
-        assert params.size == ages_idxs.size + 1
-        rate_hat = params[:1]
+        assert params.size == ages_idxs.size + rates.size
+        rates_hat = params[:rates.size]
         ages_hat = ages.copy()
-        ages_hat[ages_idxs] = params[1:]
-    return -log_likelihood_poisson(rate_hat, ages_hat, edges, edata, valid_loglik)
+        ages_hat[ages_idxs] = params[rates.size:]
+    return -log_likelihood_poisson_relaxed(rates_hat, ages_hat, edges, edata, lam, valid_loglik)
 
 
 if __name__ == "__main__":
@@ -227,10 +250,6 @@ if __name__ == "__main__":
     import numpy as np
     toytree.set_log_level("DEBUG")
 
-
-    tree = get_tree_with_categorical_rates(ntips=50, nrates=1, seed=123)
-    res = edges_make_ultrametric_pl_clock(tree, calibrations={-1: 50}, full=True, max_fun=1e6, max_iter=1e6, max_refine=50)
+    tree = get_tree_with_uncorrelated_relaxed_rates(ntips=50, mean=3, sigma=3, seed=123)
+    res = edges_make_ultrametric_pl_relaxed(tree, lam=0.5, calibrations={-1: 50}, full=True, max_fun=1e6, max_iter=1e6, max_refine=50)
     print(res)
-
-    # c1, _, _ = tree.draw(ts='s', use_edge_lengths=True, scale_bar=True)
-    # tree.write("/tmp/test.nwk")

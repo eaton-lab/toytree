@@ -10,13 +10,11 @@ from typing import Iterator, Callable, Generator, List
 
 from abc import ABC, abstractmethod
 
-from loguru import logger
+# from loguru import logger
 from numpy.typing import ArrayLike
 import numpy as np
 import toyplot
 import toytree
-
-logger = logger.bind(name="toytree")
 
 # not yet part of core toytree install
 try:

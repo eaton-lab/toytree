@@ -5,7 +5,6 @@
 """
 
 from typing import Optional, Mapping, Any
-from loguru import logger
 import toyplot
 from toytree import ToyTree
 from toytree.core import Cartesian
@@ -13,9 +12,6 @@ from toytree.core.apis import add_subpackage_method, AnnotationAPI
 from toytree.style.src.validate_utils import substyle_dict_to_css_dict
 # from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
 from toytree.drawing.src.mark_annotation import AnnotationRect  # AnnotationMarker
-
-
-logger = logger.bind(name="toytree")
 
 
 # def add_marker_legend(

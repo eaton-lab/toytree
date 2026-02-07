@@ -8,12 +8,10 @@ Example
 """
 
 from typing import Mapping, Sequence
-from loguru import logger
 import numpy as np
 import pandas as pd
 import toytree
 
-logger = logger.bind(name="toytree")
 COLUMNS = ['start', 'stop', 'st_node', 'neff', 'nedges', 'dist', 'gidx']
 
 

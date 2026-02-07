@@ -19,12 +19,10 @@ Get tuples of Nodes for each quartet induced by quadripartitions in a tree.
 
 from typing import TypeVar, Iterator, Tuple, Optional, Set, Callable, Sequence
 import itertools
-from loguru import logger
 from toytree import Node, ToyTree
 from toytree.core.apis import TreeEnumAPI, add_subpackage_method, add_toytree_method
 # from toytree.utils import ToytreeError
 
-logger = logger.bind(name="toytree")
 Query = TypeVar("Query")
 # Node = TypeVar("Node")
 

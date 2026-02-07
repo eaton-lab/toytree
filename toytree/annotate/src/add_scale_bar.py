@@ -8,13 +8,11 @@ from typing import Optional
 import numpy as np
 import toyplot
 from toyplot.coordinates import Cartesian
-from loguru import logger
 from toytree import ToyTree
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
 from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
 
 
-logger = logger.bind(name="toytree")
 __all__ = ["add_axes_scale_bar"]
 
 

@@ -9,13 +9,11 @@ cases NaN values are mapped to 'transparent'.
 """
 
 from typing import Union, Optional, Sequence, Any, TypeVar
-from loguru import logger
 import numpy as np
 import toyplot
 from toytree.color import ToyColor
 from toytree.utils.src.exceptions import ToytreeError
 
-logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
 
 

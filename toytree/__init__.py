@@ -9,28 +9,29 @@ with trees as data, or data on trees. All subpackages make use only of
 standard Python data science libs (e.g., numpy, scipy, pandas).
 """
 
-__version__ = "3.0.11"
+__version__ = "3.0.12"
 __author__ = "Deren Eaton"
 
-# core class objects (lazy-loaded for faster imports)
-# convenience functions (lazy-loaded for faster imports)
-
 # toytree v3 supported subpackages (lazy-loaded for faster imports)
-import importlib
+import importlib as _importlib
 
+
+# submodules mapped to module-API available at toytree.[submodule]
 _LAZY_SUBMODULES = {
-    "rtree": "toytree.rtree",
+    "annotate": "toytree.annotate",
+    "color": "toytree.color",
+    "data": "toytree.data",
     "distance": "toytree.distance",
+    "enum": "toytree.enum",
+    "infer": "toytree.infer",
+    "rtree": "toytree.rtree",
     "io": "toytree.io",
     "mod": "toytree.mod",
-    "color": "toytree.color",
-    "enum": "toytree.enum",
-    "pcm": "toytree.pcm",
     "network": "toytree.network",
-    "annotate": "toytree.annotate",
-    "data": "toytree.data",
+    "pcm": "toytree.pcm",
 }
 
+# attrs mapped to module-API available at toytree.[attr]
 _LAZY_ATTRS = {
     "Node": ("toytree.core.node", "Node"),
     "ToyTree": ("toytree.core.tree", "ToyTree"),
@@ -38,18 +39,20 @@ _LAZY_ATTRS = {
     "tree": ("toytree.io.src.treeio", "tree"),
     "mtree": ("toytree.io.src.mtreeio", "mtree"),
     "save": ("toytree.io.src.save", "save"),
+    "ToytreeError": ("toytree.utils.src.exceptions", "ToytreeError"),
     "set_log_level": ("toytree.utils.src.logger_setup", "set_log_level"),
 }
 
 
 def __getattr__(name):
+    """lazy-load module level submodule or attr on first call if not yet loaded."""
     if name in _LAZY_SUBMODULES:
-        module = importlib.import_module(_LAZY_SUBMODULES[name])
+        module = _importlib.import_module(_LAZY_SUBMODULES[name])
         globals()[name] = module
         return module
     if name in _LAZY_ATTRS:
         module_name, attr_name = _LAZY_ATTRS[name]
-        module = importlib.import_module(module_name)
+        module = _importlib.import_module(module_name)
         attr = getattr(module, attr_name)
         globals()[name] = attr
         return attr
@@ -57,33 +60,16 @@ def __getattr__(name):
 
 
 def __dir__():
+    """set attr and submodule dir names to toytree module to be lazy-loaded on first use"""
     return sorted(
         list(globals().keys())
         + list(_LAZY_SUBMODULES.keys())
         + list(_LAZY_ATTRS.keys())
     )
 
-
-# container trees... container
-
-# turn off the logger by default; expose set_log_level for manual enable
-from loguru import logger
-logger.disable("toytree")
+# _logger.disable("toytree")
 
 
-# AN IDEA TO STORE WHETHER WE ARE IN AN IDE OR NOT.
-# def inside_notebook() -> bool:
-#     """Return True if executed from inside jupyter, else False.
+if __name__ == "__main__":
 
-#     takes ~140 ns.
-#     """
-#     try:
-#         shell = get_ipython().__class__.__name__
-#         if shell == 'ZMQInteractiveShell':
-#             return True   # Jupyter notebook or qtconsole
-#         elif shell == 'TerminalInteractiveShell':
-#             return False  # Terminal running IPython
-#         else:
-#             return False  # Other type (?)
-#     except NameError:
-#         return False      # Probably standard Python interpreter
+    import toytree
