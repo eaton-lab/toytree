@@ -20,8 +20,6 @@ import sys
 from typing import Optional
 import textwrap
 import argparse
-# from loguru import logger
-# import toytree
 from .make_wide import make_wide
 from .cli_draw import get_parser_draw, run_draw
 from .cli_root import get_parser_root, run_root
@@ -29,7 +27,6 @@ from .cli_get_node_data import get_parser_get_node_data, run_get_node_data
 from .cli_prune import get_parser_prune, run_prune
 # from cli_distance import get_parser_distance
 
-# logger = logger.bind(name="toytree")
 DESCRIPTION = "toytree command line tool. Select a subcommand."
 EPILOG = "EXAMPLE:\n$ toytree draw TREE -ts o -d 400 400 -v"
 VERSION = "..."
@@ -112,7 +109,5 @@ if __name__ == "__main__":
         main()
     except KeyboardInterrupt:
         print("interrupted by user", file=sys.stderr)
-        # logger.warning("interrupted by user")
     except Exception as exc:
         raise exc
-        # logger.error(exc)
