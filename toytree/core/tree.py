@@ -51,10 +51,8 @@ Use unpacking on collections:
 _TOYTREE_METHOD_MODULES = (
     "toytree.data._src",
     "toytree.enum.src",
-    "toytree.mod._src.mod_topo",
-    "toytree.mod._src.root_unroot",
+    "toytree.mod._src",
     "toytree.io.src.writer",
-    "toytree.utils.src.exceptions",
 )
 
 
