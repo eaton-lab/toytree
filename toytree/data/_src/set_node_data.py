@@ -12,9 +12,7 @@ from toytree.core.apis import add_toytree_method
 from toytree.data._src.expand_node_mapping import expand_node_mapping
 from toytree.utils import ToytreeError
 
-
 Query = TypeVar("Query", int, str, Node)
-logger = logger.bind(name="toytree")
 
 
 INVALID_SET_NODE_DATA_TYPE = """

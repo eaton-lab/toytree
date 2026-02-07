@@ -18,13 +18,10 @@ single ToyColor or List[ToyColor].
 from __future__ import annotations
 from typing import List, Any
 import numpy as np
-# from loguru import logger
 import toyplot.color
 from toytree.color.src.colorkit import ColorKit
 from toytree.utils import ToyColorError
-# from toytree.utils.src.logger_setup import capture_logs
 
-# logger = logger.bind(name="toytree")
 DTYPE = {
     "names": ["r", "g", "b", "a"],
     "formats": ["float64", "float64", "float64", "float64"],

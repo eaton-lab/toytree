@@ -47,8 +47,6 @@ from loguru import logger
 import toytree
 from toytree.io.src.parse import replace_whitespace  # WHITE_SPACE
 
-logger = logger.bind(name="toytree")
-
 
 class NetworkToMajorTree:
     """Class with functions to parse (ToyTree, admix_edges) from net.

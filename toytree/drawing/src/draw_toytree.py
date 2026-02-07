@@ -32,7 +32,7 @@ from toytree.style import (
 
 # from toytree.utils import ToytreeError
 ToyTree = TypeVar("ToyTree")
-logger = logger.bind(name="toytree")
+
 
 def get_tree_style_updated_by_draw_args(tree: ToyTree, **kwargs) -> TreeStyle:
     """Return an expanded TreeStyle given user args and base treestyle.

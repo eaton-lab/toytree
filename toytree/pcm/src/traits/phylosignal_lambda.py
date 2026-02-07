@@ -18,7 +18,6 @@ Example
 """
 
 from typing import Union, Sequence
-from loguru import logger
 import numpy as np
 from scipy.stats import chi2
 from scipy.optimize import minimize_scalar, minimize
@@ -27,7 +26,6 @@ from toytree.pcm import get_vcv_matrix_from_tree
 from toytree.pcm.src.utils import _validate_features
 from toytree.core.apis import add_subpackage_method, PhyloCompAPI
 
-logger = logger.bind(name="toytree")
 __all__ = [
     "phylogenetic_signal_lambda",
     # "max_λ",
@@ -195,12 +193,10 @@ def _likelihood_λ(theta: float, V: np.ndarray, y: float) -> float:
     term = (y - a)
     sig2 = (term.T @ IC @ term) / n
 
-    # get log determinant of variance covariance matrix
-    det = np.linalg.det(sig2 * C)
-    if det <= 0:
-        logdet2 = np.nan # np.log(1e-12)
-    else:
-        logdet2 = np.log(det) / 2.
+    # slogdet is more stable than det for large/small values; when sign>0,
+    # log(det(V)) == logdet from slogdet
+    sign, logdet = np.linalg.slogdet(C)
+    logdet2 = logdet / 2. if sign > 0 else np.nan  # np.log(1e-12)
 
     # compute log-likelihood
     logL = (
@@ -237,6 +233,11 @@ def _likelihood_λ_w_se(params: tuple[float, float], V: np.ndarray, y: float, E:
     term = (y - a)
 
     # get log determinant of variance covariance matrix
+    # slogdet is more stable than det for large/small values; when sign>0,
+    # log(det(V)) == logdet from slogdet
+    sign, logdet = np.linalg.slogdet(V)
+    logdet2 = logdet / 2. if sign > 0 else np.nan  # np.log(1e-12)
+
     det = np.linalg.det(V)
     if det <= 0:
         logdet2 = np.nan # np.log(1e-12)

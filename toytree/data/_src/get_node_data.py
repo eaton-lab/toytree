@@ -8,15 +8,12 @@ feature.
 """
 
 from typing import Union, Sequence, Any, TypeVar, Optional
-from loguru import logger
 import pandas as pd
 import numpy as np
 from toytree import ToyTree, Node
 from toytree.core.apis import add_toytree_method
-# from toytree.utils import ToytreeError
 
 Query = TypeVar("Query", int, str, Node)
-logger = logger.bind(name="toytree")
 
 
 @add_toytree_method(ToyTree)

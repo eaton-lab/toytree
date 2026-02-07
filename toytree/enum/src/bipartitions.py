@@ -9,11 +9,9 @@ iter_bipartitions
 """
 
 from typing import TypeVar, Iterator, Tuple, Optional, Set, Callable, Sequence
-from loguru import logger
 from toytree import Node, ToyTree
 from toytree.core.apis import TreeEnumAPI, add_subpackage_method, add_toytree_method
 
-logger = logger.bind(name="toytree")
 Query = TypeVar("Query")
 
 __all__ = [

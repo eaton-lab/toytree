@@ -6,11 +6,8 @@
 
 from typing import Mapping, Any, Dict, Sequence
 import numpy as np
-from loguru import logger
 from toytree.style import TreeStyle, SubStyle
 from toytree.utils import ToytreeError
-
-logger = logger.bind(name="toytree")
 
 
 def check_arr(values: Sequence[Any], label: str, size: int, ctype: type) -> np.ndarray:

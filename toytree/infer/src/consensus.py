@@ -39,7 +39,6 @@ from toytree.core import ToyTree, Node
 from loguru import logger
 
 MultiTree = TypeVar("MultiTree")
-logger = logger.bind(name="toytree")
 
 __all__ = [
     "get_consensus_tree",     # (trees)

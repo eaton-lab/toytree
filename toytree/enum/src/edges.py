@@ -12,13 +12,11 @@ Get a table of the edges in a tree as an array or dataframe
 """
 
 from typing import Iterator, Tuple, Optional, Union
-# from loguru import logger
 import pandas as pd
 import numpy as np
 from toytree import Node, ToyTree
 from toytree.core.apis import TreeEnumAPI, add_subpackage_method, add_toytree_method
 
-# logger = logger.bind(name="toytree")
 
 __all__ = [
     "iter_edges",

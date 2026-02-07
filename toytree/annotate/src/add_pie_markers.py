@@ -6,7 +6,6 @@
 
 from typing import Sequence, Union, TypeVar
 
-from loguru import logger
 import numpy as np
 from toytree.core import ToyTree, Cartesian, Mark
 from toytree.style import check_arr, get_color_mapped_values
@@ -19,7 +18,6 @@ from toytree.style.src.validate_data import (
     validate_mask,
 )
 
-logger = logger.bind(name="toytree")
 Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = [
     "add_node_pie_charts",

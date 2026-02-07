@@ -4,15 +4,13 @@
 
 """
 
-from typing import Tuple, Iterator, Union, TypeVar
+from typing import Tuple, Iterator, Union
 import numpy as np
 import pandas as pd
 from loguru import logger
 import toytree
 
-logger = logger.bind(name="toytree")
-Array: TypeVar = Union[np.ndarray, pd.DataFrame]
-
+Array = Union[np.ndarray, pd.DataFrame]
 
 __all__ = ["neighbor_joining_tree"]
 

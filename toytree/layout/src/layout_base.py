@@ -16,13 +16,11 @@ end, not polar coordinates.
 from typing import TypeVar, Sequence, Optional
 from abc import ABC
 import numpy as np
-from loguru import logger
 from toytree.style import TreeStyle
 from toytree.utils import ToytreeError
 
 ToyTree = TypeVar("ToyTree")
 Node = TypeVar("Node")
-logger = logger.bind(name="toytree")
 
 
 class BaseLayout(ABC):

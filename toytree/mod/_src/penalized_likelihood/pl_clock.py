@@ -2,26 +2,31 @@
 
 from typing import Any, Union
 from itertools import cycle
-from loguru import logger
 import numpy as np
+from loguru import logger
 from scipy.optimize import minimize
-from scipy.special import factorial
+from scipy.special import gammaln
 from toytree.core import ToyTree
 from toytree.mod._src.penalized_likelihood.pl_utils import (
-    _get_init_ages, _get_params_bounds,
-    get_tree_with_categorical_rates, Calibrations
+    _get_init_ages,
+    _get_params_bounds,
+    get_tree_with_categorical_rates,
+    Calibrations
 )
+from toytree.core.apis import TreeModAPI, add_subpackage_method
 
-logger = logger.bind(name="toytree")
+
+__all__ = ["edges_make_ultrametric_pl_clock"]
 
 
+@add_subpackage_method(TreeModAPI)
 def edges_make_ultrametric_pl_clock(
     tree: ToyTree,
-    calibrations: Calibrations = {},
+    calibrations: Calibrations | None = None,
     full: bool = False,
     inplace: bool = False,
-    max_iter: int = 1e5,
-    max_fun: int = 1e5,
+    max_iter: int = 100_000,
+    max_fun: int = 100_000,
     max_refine: int = 20,
 ) -> Union[ToyTree, dict[str, Any]]:
     """Return a tree made ultrametric under a molecular clock.
@@ -63,6 +68,9 @@ def edges_make_ultrametric_pl_clock(
         as well as statistics on the model fit including likelihood,
         PHIIC, and rate.
     """
+    if calibrations is None:
+        calibrations = {}
+
     # get init and fixed node ages that make tree ultrametric
     ages_init, _ = _get_init_ages(tree, calibrations)
 
@@ -72,7 +80,8 @@ def edges_make_ultrametric_pl_clock(
     # get edges, dists and log-factorial-dists from rate-x-time edges
     edges = tree.get_edges("idx")
     dists_o = tree.get_node_data("dist").values[:-1]
-    dists_lf = np.log(factorial(dists_o))
+    dists_lf = gammaln(dists_o + 1)
+    # dists_lf = np.log(factorial(dists_o))
     edata = np.vstack([dists_o, dists_lf]).T
 
     # get starting rate in clock model as old/new treenode height
@@ -180,14 +189,14 @@ def log_likelihood_poisson(rates_hat, ages_hat, edges, edata, valid_loglik) -> f
 
     # return high penalty as 2 x valid_loglik from starting params.
     if any(dists_hat < 0):
-        return 2 * valid_loglik
+        return 2 * valid_loglik if valid_loglik is not None else -np.inf
 
     # get product of dists(time) and rates
     pdists = dists_hat * rates_hat
 
     # calculate loglik
     loglik = np.sum(edata[:, 0] * np.log(pdists) - pdists - edata[:, 1])
-    return loglik
+    return loglik if loglik is not None else -np.inf
 
 
 def objective_clock(params, fixed_rate, fixed_ages, rate, ages, ages_idxs, edges, edata, valid_loglik):

@@ -11,10 +11,7 @@ unique for each edge, requiring computation.
 
 from typing import TypeVar
 import numpy as np
-from loguru import logger
 
-
-logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
 
 

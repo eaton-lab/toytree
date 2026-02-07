@@ -8,22 +8,18 @@ import sys
 import textwrap
 from pathlib import Path
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
-# from loguru import logger
-from .make_wide import make_wide
-# from ortholab.utils.parallel import run_pipeline  # , run_with_pool
-# from ortholab.utils.logger_setup import set_log_level
 
 
 KWARGS = dict(
     prog="node-data",
     usage="node-data [options]",
     help="return table of feature data stored in a tree file",
-    formatter_class=make_wide(RawDescriptionHelpFormatter, 120, 140),
+    formatter_class=lambda prog: RawDescriptionHelpFormatter(prog, width=120, max_help_position=120),
     description=textwrap.dedent("""
         -------------------------------------------------------------------
         | node-data: return...
         -------------------------------------------------------------------
-        | The node-data method ...
+        | Prints node data table.
         -------------------------------------------------------------------
     """),
     epilog=textwrap.dedent("""
@@ -116,5 +112,4 @@ if __name__ == "__main__":
         main()
     except Exception as exc:
         raise exc
-        # logger.bind(name="toytree").error(exc)
 
