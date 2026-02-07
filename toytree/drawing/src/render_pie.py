@@ -97,6 +97,7 @@ def render_pie_chart(axes: Cartesian, mark: Mark, context: toyplot.html.RenderCo
         )
         group.set("transform", transform)
 
+
         # iterate over slices: e.g., [0.3, 0.5, 0.2]
         # sums = [0, 0.3, 0.8, 1.0]
         data_row = mark.data[nidx]
