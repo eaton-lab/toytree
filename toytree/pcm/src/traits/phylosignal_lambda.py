@@ -196,11 +196,10 @@ def _likelihood_λ(theta: float, V: np.ndarray, y: float) -> float:
     sig2 = (term.T @ IC @ term) / n
 
     # get log determinant of variance covariance matrix
-    det = np.linalg.det(sig2 * C)
-    if det <= 0:
-        logdet2 = np.nan # np.log(1e-12)
-    else:
-        logdet2 = np.log(det) / 2.
+    # slogdet is more stable than det for large/small values; when sign>0,
+    # log(det(sig2 * C)) == logdet from slogdet, matching the previous det approach.
+    sign, logdet = np.linalg.slogdet(sig2 * C)
+    logdet2 = logdet / 2. if sign > 0 else np.nan  # np.log(1e-12)
 
     # compute log-likelihood
     logL = (
@@ -237,11 +236,10 @@ def _likelihood_λ_w_se(params: tuple[float, float], V: np.ndarray, y: float, E:
     term = (y - a)
 
     # get log determinant of variance covariance matrix
-    det = np.linalg.det(V)
-    if det <= 0:
-        logdet2 = np.nan # np.log(1e-12)
-    else:
-        logdet2 = np.log(det) / 2.
+    # slogdet is more stable than det for large/small values; when sign>0,
+    # log(det(V)) == logdet from slogdet, matching the previous det approach.
+    sign, logdet = np.linalg.slogdet(V)
+    logdet2 = logdet / 2. if sign > 0 else np.nan  # np.log(1e-12)
 
     # compute log-likelihood
     logL = (

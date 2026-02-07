@@ -258,11 +258,10 @@ def _likelihood_k(theta: float, V: np.ndarray, E: np.ndarray, y: np.ndarray) -> 
     a = np.sum(IC @ y) / np.sum(IC)
 
     # get log determinant of variance covariance matrix
-    det = np.linalg.det(C)
-    if det <= 0:
-        logdet2 = np.nan # np.log(1e-12)
-    else:
-        logdet2 = np.log(det) / 2.
+    # slogdet is more stable than det for large/small values; when sign>0,
+    # log(det(C)) == logdet from slogdet, matching the previous det approach.
+    sign, logdet = np.linalg.slogdet(C)
+    logdet2 = logdet / 2. if sign > 0 else np.nan  # np.log(1e-12)
 
     # compute log likelihood
     term = (y - a)
