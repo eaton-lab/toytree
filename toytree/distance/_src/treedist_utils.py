@@ -8,21 +8,17 @@ References
 """
 
 from typing import Tuple, Sequence, Set
-
+import sys
 # FIXME: support backup method old Python does not support
 # from functools import cache
 import itertools
 
-from loguru import logger
 from scipy.special import factorial2
 from scipy.optimize import linear_sum_assignment
 import numpy as np
 import pandas as pd
-from toytree.utils import ToytreeError
-from toytree import ToyTree
+from toytree import ToyTree, ToytreeError
 from toytree.core.apis import TreeDistanceAPI, add_subpackage_method
-
-logger = logger.bind(name="toytree")
 
 ####################################################
 # Size of Tree Space, Tree Combinatorics, used to calc shared phylo info
@@ -509,7 +505,7 @@ def get_trees_matching_split_dist(
     arr, indices = _get_split_matching(biparts1, biparts2, "ms")
     msd = arr[indices].sum()
     if normalize:
-        logger.warning("no normalization method for matching split distance.")
+        print("no normalization method for matching split distance.", file=sys.stderr)
     return msd
 
 
@@ -699,51 +695,3 @@ if __name__ == "__main__":
     print("nNYED ", get_trees_nye_dist(t1, t2, normalize=True)) # 0.76
 
     _report_matching(t1, t2, 'ms')
-
-    # how similar are two trees? SharedPhylogeneticInfo(t1, t2) = 13.75
-    # print(get_trees_phylo_info_shared(t1, t2), "shared")
-
-    # how different are two trees? DifferentPhylogeneticInfo(t1, t2) = 14.40
-    # print(get_trees_phylo_info_different(t1, t2, 1), "different")
-
-    # _get_two_splits_shared_phylo_info()
-
-    # PhylogeneticInfoDistance === DifferentPhylogeneticInfo
-    # phy info diff for two trees: DifferentPhylogenetic Info
-    # print(_get_split_matching(t1, t2, "mci"))
-    # _visualize_matching(t1, t2)
-
-    # split = set([range(60), range(60, 100)]) # 0.97 bits
-    # split = set([range(50), range(50, 100)]) # 1 bits
-
-    # split1 = set([range(60), range(60, 100)]) # 0.97 bits
-    # split2 = set([range(0, 50), range(50, 100)]) # 1 bits
-    # print(_get_entropy_distance(split1, split2))
-    # print(_get_entropy_of_pair_split()  # 1.36 bits
-
-    # t1 = toytree.rtree.unittree(6, seed=333)
-
-    # for bipart in t1._iter_bipartitions():
-    #     bip1 = ",".join(bipart[0])
-    #     bip2 = ",".join(bipart[1])
-
-    #     for dipart in t1._iter_bipartitions():
-    #         dip1 = ",".join(dipart[0])
-    #         dip2 = ",".join(dipart[1])
-
-    #         e = _get_two_splits_entropy(bipart, dipart)
-    #         print(
-    #             f"{bip1}|{bip2} {_get_split_entropy(bipart):.2f} . "
-    #             f"{dip1}|{dip2} {_get_split_entropy(dipart):.2f} . "
-    #             f"{e[2]:.2f} {e[3]:.2f} {e[4]:.2f}"
-            # )
-
-    # t0 = toytree.tree('((a, b, c, d, e, f), (g, h, i, j));')
-    # t1 = toytree.tree('((a, b, c, d, e, i, j), (g, h, f));')
-
-    # b0 = t0._iter_bipartitions()
-    # b1 = t1._iter_bipartitions()
-
-    # for i in b0:
-    #     for j in b1:
-    #         print(i, j, _get_two_splits_matching_info(i, j))

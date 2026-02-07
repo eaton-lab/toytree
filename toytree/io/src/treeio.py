@@ -7,14 +7,11 @@ Parse flexible input types (filepath, str, Url) to ToyTree class.
 
 from typing import Union, TypeVar, Optional
 from pathlib import Path
-# from loguru import logger
 
 from toytree.core import ToyTree, Node
-# from toytree.core.node import Node
 from toytree.utils import ToytreeError
 from toytree.io.src.parse import parse_tree
 
-# logger = logger.bind(name="toytree")
 
 # PEP 484 recommend capitalizing alias names
 Url = TypeVar("Url")

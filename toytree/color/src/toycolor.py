@@ -18,13 +18,10 @@ single ToyColor or List[ToyColor].
 from __future__ import annotations
 from typing import List, Any
 import numpy as np
-from loguru import logger
 import toyplot.color
 from toytree.color.src.colorkit import ColorKit
 from toytree.utils import ToyColorError
-from toytree.utils.src.logger_setup import capture_logs
 
-logger = logger.bind(name="toytree")
 DTYPE = {
     "names": ["r", "g", "b", "a"],
     "formats": ["float64", "float64", "float64", "float64"],
@@ -105,11 +102,11 @@ class ToyColor(np.ndarray):
 
         # else it must be a multi-color type object
         if check_nested:
-            with capture_logs("ERROR"):
-                try:
-                    return [cls.color_expander(i, check_nested=False) for i in color]
-                except ToyColorError:
-                    pass
+            # with capture_logs("ERROR"):
+            try:
+                return [cls.color_expander(i, check_nested=False) for i in color]
+            except ToyColorError:
+                pass
 
         raise ToyColorError(
             f"{color} ({type(color)}) is not a supported color argument.")

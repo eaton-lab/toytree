@@ -26,6 +26,7 @@ https://mgarod.medium.com/dynamically-add-a-method-to-a-class-in-python-c49204b8
 
 from typing import TypeVar
 from functools import wraps
+import importlib
 
 ToyTree = TypeVar("ToyTree")
 # Cartesian = TypeVar("Cartesian")
@@ -35,26 +36,54 @@ class SubPackageAPI:
     """API to acess methods from `toytree.mod` as `tree.mod.{function}`"""
     def __init__(self, tree: ToyTree):
         self._tree = tree
+        self._module_name = getattr(self, "_module_name", None)
+
+    def __getattr__(self, name):
+        if self._module_name:
+            importlib.import_module(self._module_name)
+            attr = getattr(self.__class__, name, None)
+            if attr is not None:
+                return attr.__get__(self, self.__class__)
+        raise AttributeError(f"{self.__class__.__name__!s} has no attribute {name!r}")
+
+    def __dir__(self):
+        if self._module_name:
+            module = importlib.import_module(self._module_name)
+            module_names = getattr(module, "__all__", None)
+            if module_names is None:
+                module_names = [name for name in dir(module) if not name.startswith("_")]
+        else:
+            module_names = []
+        return sorted(
+            set(dir(self.__class__))
+            | set(self.__dict__.keys())
+            | set(module_names)
+        )
 
 
 class TreeModAPI(SubPackageAPI):
     """API to acess methods from `toytree.mod` as `tree.mod.{function}`"""
+    _module_name = "toytree.mod"
 
 
 class TreeDistanceAPI(SubPackageAPI):
     """API to acess methods from `toytree.distance` as `tree.distance.{function}`"""
+    _module_name = "toytree.distance"
 
 
 class TreeEnumAPI(SubPackageAPI):
     """API to acess methods from `toytree.pcm` as `tree.enum.{function}`"""
+    _module_name = "toytree.enum"
 
 
 class PhyloCompAPI(SubPackageAPI):
     """API to acess methods from `toytree.pcm` as `tree.pcm.{function}`"""
+    _module_name = "toytree.pcm"
 
 
 class AnnotationAPI(SubPackageAPI):
     """API to acess methods from `toytree.annotate` as `tree.annotate.{function}`"""
+    _module_name = "toytree.annotate"
 
 
 def add_subpackage_method(cls):

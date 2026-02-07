@@ -8,11 +8,8 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Tuple, Union
 import re
 
-from loguru import logger
 import toytree
 from toytree.io.src.parse import replace_whitespace
-
-logger = logger.bind(name="toytree")
 
 
 @dataclass(frozen=True)
@@ -130,8 +127,7 @@ def parse_major_tree_and_admixture_events(
     """Return the major tree and admixture events parsed from a network."""
     net_string = _load_network_string(net)
     net_string = _inject_gamma_into_labels(net_string)
-    tree = toytree.tree(net_string)
-
+    tree = toytree.tree(net_string, internal_labels="name")
     events: Dict[str, AdmixtureEvent] = {}
 
     while True:

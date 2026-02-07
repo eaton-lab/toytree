@@ -16,7 +16,6 @@ easily in annotation functions.
 """
 
 from typing import Mapping, Any, TypeVar
-from loguru import logger
 
 from toytree.style import TreeStyle
 
@@ -38,7 +37,6 @@ from toytree.style.src.validate_edges import (
 )
 
 # from toytree.style.src.validate_edges import validate_edge_widths
-logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
 NON_VALIDATED = [
     "height",

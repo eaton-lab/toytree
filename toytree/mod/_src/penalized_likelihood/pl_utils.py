@@ -8,7 +8,6 @@ import numpy as np
 from loguru import logger
 from toytree.core import ToyTree
 
-logger = logger.bind(name="toytree")
 Calibrations = Dict[int, Tuple[float, float]]
 PARAM_MIN = 1e-8
 PARAM_MAX = 1e8

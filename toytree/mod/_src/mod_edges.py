@@ -19,7 +19,6 @@ import numpy as np
 from toytree import Node
 from toytree.core.apis import TreeModAPI, add_subpackage_method
 
-logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
 Query = TypeVar("Query", str, int, Node)
 

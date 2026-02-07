@@ -23,10 +23,8 @@ from __future__ import annotations
 from typing import Union, Sequence, TypeVar, Tuple, Optional, Iterator, Any, List
 from dataclasses import dataclass, field
 from copy import deepcopy
-from loguru import logger
 from toytree.utils import ToytreeError
 
-logger = logger.bind(name="toytree")
 Color = TypeVar("Color")
 ToyTree = TypeVar("ToyTree")
 

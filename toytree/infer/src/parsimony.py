@@ -41,7 +41,7 @@ import pandas as pd
 from toytree.core import ToyTree
 
 __all__ = [
-    "consistency_and_retention_index",
+    "consistency_and_retention_indices",
 ]
 
 
@@ -227,7 +227,7 @@ def fitch_parsimony_score(tree: ToyTree, trait: Dict[int,Any]) -> int:
     return nchanges
 
 
-def consistency_and_retention_indices(tree: ToyTree, trait: Dict[str,Any], npermutations: int = 10_000, left_tailed: bool = False, rng: int = None) -> pd.Series:
+def consistency_and_retention_indices(tree: ToyTree, trait: Dict[str, Any], npermutations: int = 10_000, left_tailed: bool = False, rng: int = None) -> pd.Series:
     """Return the consistency (CI), retention (RI), and rescaled
     consistency index (RCI) for a discrete trait.
 
@@ -239,7 +239,7 @@ def consistency_and_retention_indices(tree: ToyTree, trait: Dict[str,Any], nperm
 
     If the observed CI > null (left-tailed=False) at p<0.05 it is
     evidence of phylogenetic signal; if observed CI < null (left-tailed
-    True) at p<0.05 it is evidence of homplasy. If RI is high (1.0)
+    True) at p<0.05 it is evidence of homoplasy. If RI is high (1.0)
     there is no homoplasy; if ~0.5 half is due to shared ancestry; if
     0.0 it is as homoplasious as possible. The RCI rescales the CI
     for comparing characters on trees of different sizes or shapes.
@@ -278,7 +278,7 @@ def consistency_and_retention_indices(tree: ToyTree, trait: Dict[str,Any], nperm
 
     # get CI and RI for trait
     nstates = len(set(trait.values()))
-    min_changes = max(1, nstates - 1)
+    min_changes = max(0, nstates - 1)
     max_changes = tree.ntips - 1
     ci = min_changes / score if score > 0 else 1.0
     ri = 1.0 if min_changes == max_changes else (max_changes - score) / (max_changes - min_changes)
@@ -306,15 +306,16 @@ def consistency_and_retention_indices(tree: ToyTree, trait: Dict[str,Any], nperm
         permuted_rcis[i] = rci_
         permuted_score[i] = score_
 
-    # number of tests > than observed
+    # number of tests <= or >= the observed statistic
     if left_tailed:
-        count_ci = np.sum(permuted_cis >= ci)
-        count_ri = np.sum(permuted_ris >= ri)
-        count_rci = np.sum(permuted_rcis >= rci)
-    else:
         count_ci = np.sum(permuted_cis <= ci)
         count_ri = np.sum(permuted_ris <= ri)
         count_rci = np.sum(permuted_rcis <= rci)
+    else:
+        count_ci = np.sum(permuted_cis >= ci)
+        count_ri = np.sum(permuted_ris >= ri)
+        count_rci = np.sum(permuted_rcis >= rci)
+
     ci_pvalue = (count_ci + 1) / (npermutations + 1)
     ri_pvalue = (count_ri + 1) / (npermutations + 1)
     rci_pvalue = (count_rci + 1) / (npermutations + 1)

@@ -71,7 +71,6 @@ Examples
 >>> );
 """
 from typing import Optional, Sequence, TypeVar, Set, Union
-# from loguru import logger
 import numpy as np
 from toytree.core.node import Node
 from toytree.core.tree import ToyTree
@@ -80,7 +79,6 @@ from toytree.core.apis import (
 )
 from toytree.utils import ToytreeError, NON_MONOPHYLETIC_OUTGROUP
 
-# logger = logger.bind(name="toytree")
 Query = TypeVar("Query", int, str, Node)
 
 __all__ = ["root", "unroot"]

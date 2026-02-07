@@ -10,8 +10,6 @@ from loguru import logger
 from toytree.layout.src.layout_base import BaseLayout
 
 
-logger = logger.bind(name="toytree")
-
 
 class CircularLayout(BaseLayout):
     """Layout for circular tree projection."""
