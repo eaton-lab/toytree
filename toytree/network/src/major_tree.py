@@ -111,7 +111,7 @@ def parse_major_tree_and_admixture_events(
     """Return the major tree and admixture events parsed from a network."""
     net_string = _load_network_string(net)
     net_string = _inject_gamma_into_labels(net_string)
-    tree = toytree.tree(net_string)
+    tree = toytree.tree(net_string, internal_labels="name")
     tree = _pseudo_unroot(tree)
 
     events: Dict[str, AdmixtureEvent] = {}
