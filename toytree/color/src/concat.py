@@ -8,10 +8,7 @@ ToyColor objects to separate the opacity.
 """
 
 from typing import Dict
-# from loguru import logger
 from toytree.color.src.toycolor import ToyColor
-
-# logger = logger.bind(name="toytree")
 
 
 # def concat_style_to_str(style: Dict[str, str]) -> str:
