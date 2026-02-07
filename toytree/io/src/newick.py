@@ -27,16 +27,15 @@ References
 
 from typing import (
     Optional, List, Any, Sequence, Tuple, Callable, Dict, Iterator, Set)
+import sys
 import re
 from functools import partial
-from loguru import logger
 import numpy as np
 from toytree.core.node import Node
 from toytree.core.tree import ToyTree
 from toytree.utils import ToytreeError
 
 
-logger = logger.bind(name="toytree")
 PAIRS = {'(': '()', '[': '[]', '{': "{}"}
 COLON_OUTSIDE_SQUARE_BRACKETS = re.compile(r'(?<!\[):|:(?!\])')
 RESERVED_FEATURE_NAMES = ["idx", "height", "dist"]
@@ -303,7 +302,7 @@ def meta_parser(
             features,
             *(f"\"{i}\"" for i in (prefix, assignment, delim))
         )
-        logger.error(msg)
+        # print(msg, file=sys.stderr)
         raise ToytreeError(msg) from exc
     return meta
 
@@ -422,7 +421,7 @@ def node_aggregator(
     for key, value in features.items():
         if key in RESERVED_FEATURE_NAMES:
             key = f"__{key}"
-            # logger.warning(f"NHX feature name {key} is reserved and has been changed to __{key}")
+            print(f"NHX feature name {key} is reserved and has been changed to __{key}", file=sys.stderr)
         setattr(node, key, value)
     return node
 
@@ -496,9 +495,13 @@ def _infer_internal_label_type(tree: ToyTree, internal_labels: Optional[str]) ->
         # internal Node labels are inferred to be string name labels or other.
         except ValueError:
             if any(names):
-                logger.info(
-                    "empty or non-numeric node labels detected and set "
-                    "as 'name' feature, not 'support'")
+                print(
+                    "Warning: Because internal node labels either contain >1 empty value, or are of mixed\n"
+                    "type, the data's feature cannot be auto-detected as 'name' (str) or 'support' (numeric).\n"
+                    "Setting to 'name' by default. Use arg 'internal_labels={feature_name}' in toytree.tree()\n"
+                    "to suppress this message and manually set data to: 'name', 'support', or {feature_name}",
+                    file=sys.stderr,
+                )
     return tree
 
 

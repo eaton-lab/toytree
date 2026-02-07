@@ -12,7 +12,7 @@ Example
 -------
 >>> tree = toytree.rtree.unittree(ntips=24, seed=123)
 >>> trait = tree.pcm.simulate_continuous_brownian([1.0], tips_only=True, seed=123)
->>> kstat = phylogenetic_signal_k(tree=tree, data=trait, test=True)
+>>> kstat = phylogenetic_signal_k(tree=tree, data=trait, nsims=1000)
 >>> # {'K': 0.9857885, 'P-value': 0.002, 'permutations': 1000}
 
 References
@@ -53,7 +53,6 @@ from toytree.pcm.src.utils import _validate_features
 from toytree.core.apis import add_subpackage_method, PhyloCompAPI
 
 
-logger = logger.bind(name="toytree")
 __all__ = ["phylogenetic_signal_k"]
 
 
@@ -257,19 +256,16 @@ def _likelihood_k(theta: float, V: np.ndarray, E: np.ndarray, y: np.ndarray) -> 
     n = y.size
     a = np.sum(IC @ y) / np.sum(IC)
 
-    # get log determinant of variance covariance matrix
-    det = np.linalg.det(C)
-    if det <= 0:
-        logdet2 = np.nan # np.log(1e-12)
-    else:
-        logdet2 = np.log(det) / 2.
+    # slogdet is more stable than det for large/small values; when sign>0,
+    # Note: log(det(C)) == logdet from slogdet.
+    sign, logdet = np.linalg.slogdet(C)
+    logdet2 = logdet / 2. if sign > 0 else np.nan  # np.log(1e-12)
 
     # compute log likelihood
     term = (y - a)
     logL = (
         -term.T @ IC @ term / 2. - n * np.log(2 * np.pi) / 2. - logdet2
     )
-    # print(theta, -logL)
     return -logL        
 
 

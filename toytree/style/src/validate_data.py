@@ -7,7 +7,6 @@
 from typing import Union, Sequence, Mapping, Any, Dict, TypeVar, Tuple, Optional, List
 import numpy as np
 import toyplot
-from loguru import logger
 
 from toytree.color import ToyColor
 from toytree.utils import ToytreeError, ToyColorError
@@ -17,7 +16,6 @@ from toytree.style import get_range_mapped_feature, get_color_mapped_feature
 
 ToyTree = TypeVar("ToyTree")
 Color = TypeVar("Color", str, tuple, np.ndarray)
-logger = logger.bind(name="toytree")
 
 __all__ = [
     "validate_mask",

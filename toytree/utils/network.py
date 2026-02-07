@@ -44,8 +44,6 @@ from loguru import logger
 import toytree
 from toytree.io.src.utils import replace_whitespace
 
-logger = logger.bind(name="toytree")
-
 
 class Network:
     """Child class of ToyTree that stores and draws network edges.

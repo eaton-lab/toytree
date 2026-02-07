@@ -30,7 +30,6 @@ from typing import Union
 from math import factorial
 from functools import reduce
 import operator
-# import numpy as np
 from scipy.special import comb as scipy_comb
 from toytree.core import ToyTree
 from toytree.core.apis import TreeEnumAPI, add_subpackage_method

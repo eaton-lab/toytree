@@ -28,9 +28,6 @@ import numpy as np
 from toytree.utils.src.toytree_sequence_drawing import ToyTreeSequenceDrawing
 import toytree
 
-
-logger = logger.bind(name="toytree")
-
 ToyTree = TypeVar("toytree.ToyTree")
 TskitTree = TypeVar("tskit.trees")
 TreeSequence = TypeVar("tskit.trees.TreeSequence")

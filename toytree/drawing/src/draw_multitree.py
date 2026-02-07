@@ -13,7 +13,6 @@ import toytree
 from loguru import logger
 
 MultiTree = TypeVar("MultiTree")
-logger = logger.bind(name="toytree")
 
 
 def draw_multitree(

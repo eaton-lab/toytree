@@ -11,13 +11,12 @@ saving canvases.
 
 from typing import Union
 from pathlib import Path
-from toytree.core import Canvas
 
 
 SUFFIXES = (".html", ".svg", ".pdf", ".png")
 
 
-def save(canvas: Canvas, path: Union[str, Path]):
+def save(canvas: 'Canvas', path: Union[str, Path]):
     """Save a Canvas to a file path.
 
     A Canvas can be saved in a variety of formats. If no recognized

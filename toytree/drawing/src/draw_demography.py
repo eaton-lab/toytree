@@ -25,7 +25,6 @@ from __future__ import annotations
 from typing import List, Dict, Optional, Mapping, Sequence, Union, Tuple
 from functools import cached_property
 from dataclasses import dataclass, field
-from loguru import logger
 import numpy as np
 from pandas import DataFrame
 
@@ -35,7 +34,6 @@ from toytree.utils.src.embedding import get_genealogy_embedding_table
 from toytree.core import ToyTree, Canvas, Cartesian, Mark, Node
 from toytree.color import ColorType
 
-logger = logger.bind(name="toytree")
 # ToyTree = TypeVar("ToyTree")
 
 

@@ -7,7 +7,6 @@ the html+css size we use a custom render function?
 """
 
 from typing import Sequence, TypeVar
-from loguru import logger
 # from toytree import MultiTree
 from toytree.drawing import ToyTreeMark
 # from toytree.core import Canvas, Cartesian
@@ -20,7 +19,6 @@ from toytree.drawing.src.draw_toytree import (
 
 Mark = TypeVar("Mark")
 MultiTree = TypeVar("MultiTree")
-logger = logger.bind(name="toytree")
 
 
 def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:

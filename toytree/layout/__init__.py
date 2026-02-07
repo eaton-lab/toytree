@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""...
+"""Module for projecting node coordinates and tip angles for a tree drawing
 
 """
 

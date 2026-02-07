@@ -8,11 +8,8 @@ from pathlib import Path
 from typing import Dict, Iterable, List, Tuple, Union
 import re
 
-from loguru import logger
 import toytree
 from toytree.io.src.parse import replace_whitespace
-
-logger = logger.bind(name="toytree")
 
 
 @dataclass(frozen=True)

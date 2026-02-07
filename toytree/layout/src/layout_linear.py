@@ -12,16 +12,13 @@ style dict.
 """
 
 from typing import TypeVar, Optional, Sequence
-# from enum import Enum
 import numpy as np
-from loguru import logger
 from toytree.utils import ToytreeError
 from toytree.style import TreeStyle
 from toytree.layout.src.layout_base import BaseLayout
 
 ToyTree = TypeVar("ToyTree")
 Node = TypeVar("Node")
-logger = logger.bind(name="toytree")
 
 # pylint: disable=too-many-branches, too-many-statements
 

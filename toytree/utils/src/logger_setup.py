@@ -7,14 +7,15 @@ be filtered here to only show for toytree and not for other Python
 packages.
 """
 
+from typing import Optional
 import sys
 from contextlib import contextmanager
 from loguru import logger
 import toytree
-# from toytree.utils import ToytreeError
 
 
 LOGGERS = [0]
+logger.disable("toytree")
 
 
 def colorize():
@@ -30,12 +31,11 @@ def colorize():
     return False
 
 
-def set_log_level(log_level="INFO"):
+def set_log_level(log_level: Optional[str] = None):
     """Set the log level for loguru logger bound to toytree.
 
     This removes default loguru handler, but leaves any others in place,
-    and adds a new one that will filter to only print logs from
-    toytree modules, which should use `logger.bind(name='toytree')`.
+    and adds a new one.
 
     Examples
     --------
@@ -44,8 +44,12 @@ def set_log_level(log_level="INFO"):
     >>>
     >>> # write a log message from the toytree logger
     >>> from loguru import logger
-    >>> logger.bind(name="toytree").info("logged message from toytree")
+    >>> logger.info("logged message from toytree")
     """
+    if log_level is None:
+        logger.disable("toytree")
+        return
+
     for idx in LOGGERS:
         try:
             logger.remove(idx)
@@ -56,13 +60,10 @@ def set_log_level(log_level="INFO"):
         level=log_level,
         colorize=colorize(),
         format="{level.icon} toytree | {module}:{function} | {message}",
-        filter=lambda x: x['extra'].get("name") == "toytree",
+        # filter=lambda x: x['extra'].get("name") == "toytree",
     )
     LOGGERS.append(idx)
     logger.enable("toytree")
-    logger.bind(name="toytree").debug(
-        f"toytree v.{toytree.__version__} logging enabled"
-    )
 
 
 @contextmanager
@@ -77,11 +78,12 @@ def capture_logs(level="INFO", format="{level}:{name}:{message}"):
 if __name__ == "__main__":
 
     toytree.set_log_level("DEBUG")
-    logger.bind(name="toytree").info("THIS IS A TEST.")
+    logger.info("HI")
+    logger.info("THIS IS A TEST.")
 
     with capture_logs("INFO") as cap:
-        logger.bind(name="toytree").debug("Hello")
-        logger.bind(name="toytree").info("Hello2")
+        logger.debug("Hello")
+        logger.info("Hello2")
     print(f"Captured: {cap}")
 
     # logger.error("HO")

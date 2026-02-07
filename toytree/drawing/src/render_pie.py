@@ -82,6 +82,8 @@ def render_pie_chart(axes: Cartesian, mark: Mark, context: toyplot.html.RenderCo
 
     # render the pies as a group of path elements.
     for nidx in range(mark.coordinates.shape[0]):
+
+        # make a group and position it correctly
         group = xml.SubElement(
             mark_xml, "g",
             attrib={'id': f'pie-{nidx}'},
@@ -94,6 +96,7 @@ def render_pie_chart(axes: Cartesian, mark: Mark, context: toyplot.html.RenderCo
             f"rotate({mark.rotate})"
         )
         group.set("transform", transform)
+
 
         # iterate over slices: e.g., [0.3, 0.5, 0.2]
         # sums = [0, 0.3, 0.8, 1.0]
@@ -127,7 +130,6 @@ def render_pie_chart(axes: Cartesian, mark: Mark, context: toyplot.html.RenderCo
             )
 
         # add a circle to outline the node and
-        # TODO: provide optional title hover
         ostyle = {
             "fill": (0, 0, 0, 0),
             "stroke-width": mark.ostroke_width,

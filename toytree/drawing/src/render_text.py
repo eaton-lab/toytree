@@ -8,13 +8,11 @@ This is used in `render_tree` to add tip labels and node labels.
 
 from typing import Dict, Union
 from xml.etree import ElementTree as xml
-from loguru import logger
 import toyplot.style
 import toyplot.font
 import toyplot.text
 from toytree.color.src.concat import concat_style_fix_color
 
-logger = logger.bind(name="toytree")
 POP_STYLES = [
     "font-size",
     "font-weight",
