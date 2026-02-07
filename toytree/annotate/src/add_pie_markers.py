@@ -91,7 +91,7 @@ def add_node_pie_charts(
     size: int or Sequence[int]
         Size of markers as single int or Sequence of ints, in px units.
     colors: None, str, tuple, or array, or Sequence
-        Color for each category/trait or the name of a colormap.
+        Sequence of colors for each category/trait or the name of a colormap.
     ostroke: Color
         Color of the stroke on the outside of the Mark.
     ostroke_width: float
@@ -139,7 +139,7 @@ def add_node_pie_charts(
 
     # expand colormap to an array of colors
     if colors is None:
-        colors = "Set2"
+        colors = "Spectral"
     if isinstance(colors, (tuple, list, np.ndarray)):
         pass
     else:
@@ -159,7 +159,7 @@ def add_node_pie_charts(
     data = data[mask, :]
     coords = mark.ntable[mask, :]
 
-    # plot edge markers as scatterplot markers
+    # plot edge markers as scatterplot markers (see render_pie.py)
     mark = PieChartMark(
         coordinates=coords,
         data=data,
