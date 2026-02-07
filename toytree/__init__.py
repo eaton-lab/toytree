@@ -22,7 +22,7 @@ _LAZY_SUBMODULES = {
     "data": "toytree.data",
     "distance": "toytree.distance",
     "enum": "toytree.enum",
-    # "infer": "toytree.infer",
+    "infer": "toytree.infer",
     "rtree": "toytree.rtree",
     "io": "toytree.io",
     "mod": "toytree.mod",
