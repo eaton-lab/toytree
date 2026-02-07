@@ -13,20 +13,21 @@ __version__ = "3.0.12"
 __author__ = "Deren Eaton"
 
 # toytree v3 supported subpackages (lazy-loaded for faster imports)
-import importlib
+import importlib as _importlib
 
 # submodules mapped to module-API available at toytree.[submodule]
 _LAZY_SUBMODULES = {
-    "rtree": "toytree.rtree",
+    "annotate": "toytree.annotate",
+    "color": "toytree.color",
+    "data": "toytree.data",
     "distance": "toytree.distance",
+    "enum": "toytree.enum",
+    # "infer": "toytree.infer",
+    "rtree": "toytree.rtree",
     "io": "toytree.io",
     "mod": "toytree.mod",
-    "color": "toytree.color",
-    "enum": "toytree.enum",
+    # "network": "toytree.network",
     "pcm": "toytree.pcm",
-    "network": "toytree.network",
-    "annotate": "toytree.annotate",
-    "data": "toytree.data",
 }
 
 # attrs mapped to module-API available at toytree.[attr]
@@ -44,12 +45,12 @@ _LAZY_ATTRS = {
 def __getattr__(name):
     """lazy-load module level submodule or attr on first call if not yet loaded."""
     if name in _LAZY_SUBMODULES:
-        module = importlib.import_module(_LAZY_SUBMODULES[name])
+        module = _importlib.import_module(_LAZY_SUBMODULES[name])
         globals()[name] = module
         return module
     if name in _LAZY_ATTRS:
         module_name, attr_name = _LAZY_ATTRS[name]
-        module = importlib.import_module(module_name)
+        module = _importlib.import_module(module_name)
         attr = getattr(module, attr_name)
         globals()[name] = attr
         return attr
