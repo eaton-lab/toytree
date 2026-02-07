@@ -4,9 +4,12 @@
 
 Currently developed for parsing, analyzing and plotting network
 output files in newick-like format produced by the SNAQ program in
-PhyloNetworks. TODO: test BPP networks.
+PhyloNetworks.
 
-Toytree default is to draw networks in "majortree" mode.
+This module aims to extract the 'major' tree from the network -- the
+one composing the larger inheritance value at each split -- and to
+store the minor edges as admixture events to plot onto the major
+tree.
 
 Extended newick network format
 ------------------------------
