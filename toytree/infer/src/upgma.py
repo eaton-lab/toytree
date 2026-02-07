@@ -10,6 +10,7 @@ import pandas as pd
 import toytree
 
 
+__all__ = ["upgma_tree"]
 
 
 def upgma_tree(data: pd.DataFrame | np.ndarray) -> toytree.ToyTree:
