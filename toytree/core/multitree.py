@@ -57,7 +57,6 @@ Canvas = TypeVar("Canvas")
 Cartesian = TypeVar("Cartesian")
 Mark = TypeVar("Mark")
 Query = TypeVar("Query", str, int, Node)
-logger = logger.bind(name="toytree")
 
 
 class MultiTree:

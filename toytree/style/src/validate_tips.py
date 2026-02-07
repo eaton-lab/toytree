@@ -11,17 +11,14 @@ Problem
 [ ] all substyles as dicts w/ keys converted to css style: (fill-opacity, -toyplot-anchor-shift)
 """
 
-from typing import Union, Sequence, Mapping, Any, Dict, TypeVar
+from typing import Union, Any, Dict, TypeVar
 import numpy as np
-from loguru import logger
 import toyplot
 from toytree.color import ToyColor
-from toytree.utils import ToytreeError
 from toytree.style.src.validate_utils import check_arr
 from toytree.style.src.style_base import TipLabelStyle, TreeStyle
 from toytree.style.src.map_colors import get_color_mapped_values
 
-logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
 Color = TypeVar("Color", str, tuple, np.ndarray)
 

@@ -1,4 +1,6 @@
+#!/usr/bin/env python
 
+"""Helpers for placing and resizing images on a Toyplot canvas."""
 
 """Helpers for placing and resizing images on a Toyplot canvas."""
 

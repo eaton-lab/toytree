@@ -6,12 +6,8 @@
 
 from typing import Union, Tuple, List
 from pathlib import Path
-import re
-from loguru import logger
 import toytree
 #from toytree.io.src.parse import WHITE_SPACE
-
-logger = logger.bind(name="toytree")
 
 
 class Network:

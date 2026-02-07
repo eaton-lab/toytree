@@ -52,7 +52,6 @@ import toyplot
 from toytree.core import ToyTree, Node
 from toytree.core.multitree import MultiTree
 from loguru import logger
-logger = logger.bind(name="toytree")
 
 # __all__ = [
 #     # "get_supertree_from_quartets_by_qmc"

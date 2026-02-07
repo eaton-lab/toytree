@@ -5,15 +5,13 @@ import sys
 import textwrap
 import tempfile
 from argparse import ArgumentParser, RawDescriptionHelpFormatter
-from .make_wide import make_wide
-# from loguru import logger
 
 
 KWARGS = dict(
     prog="draw",
     usage="draw [options]",
     help="return ...",
-    formatter_class=make_wide(RawDescriptionHelpFormatter, 120, 140),
+    formatter_class=lambda prog: RawDescriptionHelpFormatter(prog, width=120, max_help_position=120),
     description=textwrap.dedent("""
         -------------------------------------------------------------------
         | draw: generate tree drawing as ascii or ...
@@ -192,8 +190,5 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    # except ToytreeError as exc:
-    #     logger.bind(name="toytree").error(exc)
     except Exception as exc:
         raise exc
-        # logger.bind(name="toytree").exception(exc)

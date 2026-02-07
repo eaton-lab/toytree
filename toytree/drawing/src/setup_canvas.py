@@ -3,13 +3,11 @@
 """Canvas setup functions for single or grids of trees."""
 
 from typing import Optional, Tuple, TypeVar, Union
-from loguru import logger
 
 from toyplot.canvas import Canvas
 from toyplot.coordinates import Cartesian
 from toyplot.mark import Mark
 
-logger = logger.bind(name="toytree")
 ToyTree = TypeVar("ToyTree")
 
 

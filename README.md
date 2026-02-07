@@ -5,15 +5,22 @@ Tree plotting with **Toytree** in Python
 ----------------------------------------
 Welcome to toytree, a Python library for tree object data parsing, visualization,
 manipulation, and numerical and evolutionary analyses. If you are new to toytree, head to 
-the [User Guide](https://eaton-lab.org/toytree/quick_guide/) to see examples and learn about its features.
+the [User Guide](https://eaton-lab.org/toytree/quick_guide/) to see examples and learn
+about its features.
 
 The goal of toytree is to provide a light-weight Python equivalent to widely used tree analysis
 and plotting libraries in R, and in doing so, to promote further development of phylogenetic and
-evolutionary analysis methods in Python.
+evolutionary methods in Python.
 
-Toytree generates rich interactive figures (SVG+HTML+JS) that render in jupyter-notebooks or webpages,
-and can be exported as high quality SVG, PDF, or PNG figures for publications. The library is minimal
-dependencies, is easy to install, and can be easily incorporated into other projects. 
+Toytree generates rich interactive figures (SVG+HTML+JS) that render in jupyter-notebooks
+or webpages, and can be exported as high quality SVG, PDF, or PNG figures for publications.
+It has minimal dependencies, is easy to install, and can be easily incorporated
+into other projects.
+
+In addition to visualization, toytree includes several modules supporting a suite
+of methods to: generate trees (`rtree`); modify trees (`mod`); enumerate
+over trees or treespace (`enum`); perform phylogenetic comparative methods (`pcm`);
+infer phylogenetic trees using (`infer`); and more.
 
 
 Current release info
@@ -38,22 +45,25 @@ Documentation
 See the full documentation at [http://eaton-lab.org/toytree](http://eaton-lab.org/toytree).
 
 
-Example code
-------------
+Example code blocks
+-------------------
 
 ```python
-# import toyplot and load a newick file from a public URL
 import toytree
+
+# parse newick data from a string, file, or public URL
 tre = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
 
-# root the tree using a wildcard string matching and draw a tree figure.
+# root a tree by selecting an outgroup by name, or regular expression
 rtre = tre.root('~prz')
+
+# generate a simple tree drawing
 rtre.draw(width=400, tip_labels_align=True);
 
-# or chain a few functions together
+# or, chain a few functions together to root, modify, and draw a tree
 tre.root('~prz').drop_tips("~tham").ladderize().draw();
 
-# extensive styling options are available
+# or, apply more styling options to tree drawings
 rtre.draw(
     tip_labels_colors='pink',
     node_labels='support',
@@ -66,7 +76,16 @@ rtre.draw(
 )
 ```
 
-Example plots
-------------
+```python
+
+```
+
+Example visualizations
+----------------------
 
 ![./manuscript/ToyTree-figure.svg](./manuscripts/toytree-1.0/ToyTree-figure.svg)
+
+
+Reference
+----------
+ Eaton DAR. Toytree: A minimalist tree visualization and manipulation library for Python. Methods Ecol Evol. 2020; 11: 187–191. https://doi.org/10.1111/2041-210X.13313

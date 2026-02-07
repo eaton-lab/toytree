@@ -35,16 +35,13 @@ References
 
 from __future__ import annotations
 from typing import List, Optional, Union, Iterator, Tuple  # Set, Any
+import sys
 from functools import total_ordering
 from copy import deepcopy
 from collections import deque
 
-from loguru import logger
 import numpy as np
 from toytree.utils import TreeNodeError
-
-# register the logger
-logger = logger.bind(name="toytree")
 
 
 class Node:
@@ -408,7 +405,7 @@ class Node:
         # get parent node
         grandparent = self.up
         if not grandparent:
-            logger.warning("cannot delete root Node.")
+            print("cannot delete root Node. It was retained as a unary node", file=sys.stderr)
             return
 
         # each child inherits deleted Node's dist
