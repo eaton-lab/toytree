@@ -31,9 +31,9 @@ Examples
 >>> tree.distance.get_node_distance_matrix
 """
 
-# Note
-# -----
+# methods here will be available at submodule-level (toytree.distance.[method])
+# imported methods from each module are listed in its __all__ str.
+from ._src.nodedist import *
+from ._src.quartet_dist import *
+from ._src.treedist import *
 
-from toytree.distance._src.nodedist import *
-from toytree.distance._src.treedist import *
-from toytree.distance._src.quartet_dist import *
