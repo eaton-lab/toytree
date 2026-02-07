@@ -238,12 +238,6 @@ def _likelihood_λ_w_se(params: tuple[float, float], V: np.ndarray, y: float, E:
     sign, logdet = np.linalg.slogdet(V)
     logdet2 = logdet / 2. if sign > 0 else np.nan  # np.log(1e-12)
 
-    det = np.linalg.det(V)
-    if det <= 0:
-        logdet2 = np.nan # np.log(1e-12)
-    else:
-        logdet2 = np.log(det) / 2.
-
     # compute log-likelihood
     logL = (
         -term.T @ IC @ term / 2. - n * np.log(2 * np.pi) / 2. - logdet2
