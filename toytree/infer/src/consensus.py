@@ -95,7 +95,7 @@ def get_clade_frequencies(trees: Union[MultiTree, List[ToyTree]]) -> Dict[frozen
             dist = node._dist
             if not node._up.is_root():
                 if tre.is_rooted():
-                    dist = sum(node._dist for i in node._up.children)
+                    dist = sum(i._dist for i in node._up.children)
 
             # store the partition count and dist
             part = bipart[0]
@@ -171,7 +171,12 @@ def build_consensus_tree(clades: Dict[frozenset, float]) -> ToyTree:
 
         # create the Node
         name = str(*clade) if len(clade) == 1 else ""
-        node = Node(name=name, support=clades[clade]["freq"], dist=np.mean(clades[clade]["dist"]))
+        dist_values = clades[clade]["dist"]
+        dist_mean = float(np.mean(dist_values))
+        node = Node(name=name, support=clades[clade]["freq"], dist=dist_mean)
+        setattr(node, "dist_mean", dist_mean)
+        setattr(node, "dist_median", float(np.median(dist_values)))
+        setattr(node, "dist_std", float(np.std(dist_values)))
 
         # connect node to smallest clade parent
         # TODO: probably faster not to have to sort here
@@ -190,6 +195,9 @@ def build_consensus_tree(clades: Dict[frozenset, float]) -> ToyTree:
     tree[-1].support = np.nan
     for nidx in range(tree.ntips):
         tree[nidx].support = np.nan
+    tree.edge_features.add("dist_mean")
+    tree.edge_features.add("dist_median")
+    tree.edge_features.add("dist_std")
     return tree
 
 
@@ -420,6 +428,7 @@ def map_unrooted_tree_supports_and_dists_to_unrooted_tree(
         if bipart in data:
             node.support = data[bipart]["count"] / len(trees)
             setattr(node, "dist_mean", np.mean(data[bipart]["dist"]))
+            setattr(node, "dist_median", np.median(data[bipart]["dist"]))
             setattr(node, "dist_min", np.min(data[bipart]["dist"]))
             setattr(node, "dist_max", np.max(data[bipart]["dist"]))
             setattr(node, "dist_std", np.std(data[bipart]["dist"]))
@@ -429,6 +438,7 @@ def map_unrooted_tree_supports_and_dists_to_unrooted_tree(
     for name in tips:
         node = tree.get_nodes(name)[0]
         setattr(node, "dist_mean", np.mean(tips[node.name]["dist"]))
+        setattr(node, "dist_median", np.median(tips[node.name]["dist"]))
         setattr(node, "dist_min", np.min(tips[node.name]["dist"]))
         setattr(node, "dist_max", np.max(tips[node.name]["dist"]))
         setattr(node, "dist_std", np.std(tips[node.name]["dist"]))
@@ -436,6 +446,7 @@ def map_unrooted_tree_supports_and_dists_to_unrooted_tree(
 
     # set as edge features in case user re-roots the tree
     tree.edge_features.add("dist_mean")
+    tree.edge_features.add("dist_median")
     tree.edge_features.add("dist_min")
     tree.edge_features.add("dist_max")
     tree.edge_features.add("dist_std")
