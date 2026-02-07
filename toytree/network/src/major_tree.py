@@ -66,7 +66,7 @@ def _pseudo_unroot(tree: toytree.ToyTree) -> toytree.ToyTree:
                     opt.remove(desc)
     if not opt:
         return tree
-    return tree.root(opt[0]).mod.ladderize().mod.unroot()
+    return tree.root(opt[0])
 
 
 def _group_hybrid_nodes(nodes: Iterable[toytree.Node]) -> Dict[str, List[toytree.Node]]:
@@ -105,6 +105,22 @@ def _remove_unary_nodes(tree: toytree.ToyTree) -> None:
     tree._update()
 
 
+def _resolve_polytomies(tree: toytree.ToyTree) -> None:
+    """Resolve polytomies by pairing children in order into binary nodes."""
+    for node in list(tree.traverse("postorder")):
+        while len(node.children) > 2:
+            children = list(node.children)
+            left = children.pop(0)
+            right = children.pop(0)
+            new_internal = toytree.Node(name="")
+            new_internal._add_child(left)
+            new_internal._add_child(right)
+            node._remove_child(left)
+            node._remove_child(right)
+            node._add_child(new_internal)
+    tree._update()
+
+
 def parse_major_tree_and_admixture_events(
     net: Union[str, Path],
 ) -> Tuple[toytree.ToyTree, Dict[str, AdmixtureEvent]]:
@@ -112,8 +128,6 @@ def parse_major_tree_and_admixture_events(
     net_string = _load_network_string(net)
     net_string = _inject_gamma_into_labels(net_string)
     tree = toytree.tree(net_string, internal_labels="name")
-    tree = _pseudo_unroot(tree)
-
     events: Dict[str, AdmixtureEvent] = {}
 
     while True:
@@ -123,6 +137,7 @@ def parse_major_tree_and_admixture_events(
             hnodes = []
         if not hnodes:
             _remove_unary_nodes(tree)
+            _resolve_polytomies(tree)
             return tree, events
 
         grouped = _group_hybrid_nodes(hnodes)
