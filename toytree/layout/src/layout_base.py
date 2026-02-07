@@ -64,4 +64,4 @@ class BaseLayout(ABC):
 
     def run(self):
         """BaseLayout has no run function."""
-        raise ToytreeError(f"Use a subclass of {self.__class__}")
+        raise ToytreeError(f"Use a subclass of {self.__class__} such as LinearLayout")
