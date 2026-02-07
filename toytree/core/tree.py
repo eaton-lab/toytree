@@ -13,32 +13,30 @@ Examples
 from __future__ import annotations
 from typing import (
     Sequence, Dict, List, Optional, Iterator, Any, Union, Tuple,
-    TypeVar, Set,  # Callable,
+    TypeVar, Set, TYPE_CHECKING,
 )
 import re
 from pathlib import Path
 from copy import deepcopy
 from hashlib import md5
-# from collections.abc import Sequence as SequenceType
 
-# from loguru import logger
 import numpy as np
-from toyplot import Canvas
-from toyplot.coordinates import Cartesian
 
 # subpackage object APIs
 from toytree.core.apis import (
     TreeModAPI, TreeDistanceAPI, TreeEnumAPI, PhyloCompAPI, AnnotationAPI)
 from toytree.core.node import Node
 from toytree.style import TreeStyle
-from toytree.drawing import draw_toytree, ToyTreeMark
-from toytree.utils.src.exceptions import (
-    ToytreeError, NODE_NOT_IN_TREE_ERROR, NODE_INDEXING_ERROR)
-import toytree
-# from toytree.io.src.writer import write_newick
 
-# toytree logger
-# logger = logger.bind(name="toytree")
+if TYPE_CHECKING:
+    from toyplot import Canvas
+    from toyplot.coordinates import Cartesian
+    from toytree.drawing import ToyTreeMark
+
+from toytree.utils.src.exceptions import (
+    ToytreeError, NODE_NOT_IN_TREE_ERROR, NODE_INDEXING_ERROR, NodeDataError)
+import toytree
+
 
 # Type alias for Node selection
 Query = TypeVar("Query", str, int, Node)
@@ -49,7 +47,37 @@ Use unpacking on collections:
 >>> tree.method(*query_list, ...)"""
 
 
-class ToyTree:
+# methods mapped to Object-API imported from [submodule]/src.__init__.py
+_TOYTREE_METHOD_MODULES = (
+    "toytree.data._src",
+    "toytree.enum.src",
+    "toytree.mod._src.mod_topo",
+    "toytree.mod._src.root_unroot",
+    "toytree.io.src.writer",
+    "toytree.utils.src.exceptions",
+)
+
+
+def _ensure_toytree_methods_loaded():
+    from importlib import import_module
+    for module_name in _TOYTREE_METHOD_MODULES:
+        import_module(module_name)
+
+
+class ToyTreeMeta(type):
+    def __getattr__(cls, name):
+        _ensure_toytree_methods_loaded()
+        try:
+            return super().__getattribute__(name)
+        except AttributeError as exc:
+            raise AttributeError(f"{cls.__name__!s} has no attribute {name!r}") from exc
+
+    def __dir__(cls):
+        _ensure_toytree_methods_loaded()
+        return sorted(super().__dir__())
+
+
+class ToyTree(metaclass=ToyTreeMeta):
     """ToyTree class for manipulating and drawing trees.
 
     ToyTrees should generally be created using a constructor function
@@ -124,31 +152,6 @@ class ToyTree:
         """ToyTree is iterable, returning Nodes in idx order."""
         return (self[i] for i in range(self.nnodes))
 
-    # def __getitem__(self, idx: int) -> Node:
-    #     """Nodes can be accessed by indexing or slicing by idx label"""
-    #     # allow indexing by int, e.g., [3]
-    #     try:
-    #         return self._idx_dict[idx]
-    #     except Exception:
-    #         pass
-    #     # allow slicing by ints, e.g., [3:10:2]
-    #     try:
-    #         return [self._idx_dict[idx] for idx in range(*idx.indices(self.nnodes))]
-    #     except Exception:
-    #         pass
-    #     # allow indexing by a Sequence, e.g., [3, 10, 2, 4]
-    #     try:
-    #         return [self._idx_dict[i] for i in idx]
-    #     except Exception:
-    #         pass
-    #     # if a negative number then get positive and reindex
-    #     try:
-    #         if isinstance(idx, int) and idx < 0:
-    #             return self._idx_dict[self.nnodes + idx]  # idx is negative
-    #     # raise a helpful error message.
-    #     except Exception as exc:
-    #         raise ToytreeError(NODE_INDEXING_ERROR) from exc
-
     def __getitem__(self, idx: int) -> Node:
         """Nodes can be accessed by indexing or slicing by idx label"""
         # allow indexing by int, e.g., [3]
@@ -181,6 +184,16 @@ class ToyTree:
     def __repr__(self) -> str:
         """Short object representation for toytree.core.tree.ToyTree"""
         return f"<toytree.ToyTree at {hex(id(self))}>"
+
+    def __dir__(self):
+        return sorted(set(dir(type(self))) | set(self.__dict__.keys()))
+
+    def __getattr__(self, name):
+        _ensure_toytree_methods_loaded()
+        try:
+            return getattr(type(self), name).__get__(self, type(self))
+        except AttributeError as exc:
+            raise AttributeError(f"{type(self).__name__!s} has no attribute {name!r}") from exc
 
     # def __str__(self) -> str:
     #     """Return ascii representation of tree."""
@@ -274,7 +287,7 @@ class ToyTree:
         tree = self if inplace else self.copy()
         for feat in feature:
             if feat in ("idx", "name", "height", "dist", "support"):
-                raise toytree.utils.NodeDataError(
+                raise NodeDataError(
                     f"Cannot remove required Node feature: {feature}")
             for node in tree.traverse():
                 delattr(node, feat)
@@ -963,9 +976,9 @@ class ToyTree:
         Or, maybe make this at toytree level as `toytree.draw(canvas)`
         also make a `toytree.save()` shortcut to saving in formats.
         """
-        # import toyplot.browser
+        from toytree.utils import show
         canvas, axes, mark = self.draw(**kwargs)
-        toytree.utils.show([canvas], new=new, tmpdir=tmpdir)
+        show([canvas], new=new, tmpdir=tmpdir)
         return canvas, axes, mark
 
     def draw(
@@ -1172,6 +1185,7 @@ class ToyTree:
         >>> import toyplot.svg
         >>> toyplot.svg.render(canvas, "saved-plot.svg")
         """
+        from toytree.drawing import draw_toytree
         kwargs = dict(
             # toytree=self,
             tree_style=tree_style,
@@ -1228,10 +1242,28 @@ class ToyTree:
         except Exception as exc:
             raise exc
 
+    def get_ascii(self, compact: bool = False) -> None:
+        """Return ASCII drawing of tree topology.
+
+        Parameters
+        ----------
+        compact: bool
+            Return more compact representation.
+
+        Example
+        -------
+        >>> astr = tree.get_ascii()
+        >>> print(astr)
+        """
+        lines, _ = self.treenode._get_ascii(compact=compact)
+        tree_lines = "\n".join(lines)
+        return tree_lines
+
+
 
 if __name__ == "__main__":
 
-    # import toytree
+    import toytree
     tree_ = toytree.rtree.unittree(12, treeheight=1232344, seed=123)
     # tree = tree_.mod.edges_slider(0.5)
     # c, a, m = tree_._draw_browser(tree_style='s', layout='d', new=False)
