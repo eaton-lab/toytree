@@ -39,7 +39,6 @@ from toytree.core import ToyTree, Node
 from loguru import logger
 
 MultiTree = TypeVar("MultiTree")
-logger = logger.bind(name="toytree")
 
 __all__ = [
     "get_consensus_tree",     # (trees)
@@ -95,7 +94,7 @@ def get_clade_frequencies(trees: Union[MultiTree, List[ToyTree]]) -> Dict[frozen
             dist = node._dist
             if not node._up.is_root():
                 if tre.is_rooted():
-                    dist = sum(node._dist for i in node._up.children)
+                    dist = sum(i._dist for i in node._up.children)
 
             # store the partition count and dist
             part = bipart[0]
@@ -171,7 +170,12 @@ def build_consensus_tree(clades: Dict[frozenset, float]) -> ToyTree:
 
         # create the Node
         name = str(*clade) if len(clade) == 1 else ""
-        node = Node(name=name, support=clades[clade]["freq"], dist=np.mean(clades[clade]["dist"]))
+        dist_values = clades[clade]["dist"]
+        dist_mean = float(np.mean(dist_values))
+        node = Node(name=name, support=clades[clade]["freq"], dist=dist_mean)
+        setattr(node, "dist_mean", dist_mean)
+        setattr(node, "dist_median", float(np.median(dist_values)))
+        setattr(node, "dist_std", float(np.std(dist_values)))
 
         # connect node to smallest clade parent
         # TODO: probably faster not to have to sort here
@@ -190,116 +194,10 @@ def build_consensus_tree(clades: Dict[frozenset, float]) -> ToyTree:
     tree[-1].support = np.nan
     for nidx in range(tree.ntips):
         tree[nidx].support = np.nan
+    tree.edge_features.add("dist_mean")
+    tree.edge_features.add("dist_median")
+    tree.edge_features.add("dist_std")
     return tree
-
-
-# def get_clade_frequencies2(trees: MultiTree, rooted: bool) -> dict[tuple, float]:
-#     """Return a dict mapping bipartitions to their frequencies and dists.
-
-#     This performs one pass through each tree to get its bipartitions
-#     and records the count of each split and stores the dist or height
-#     associated with the clade. If trees are rooted and ultrametric then
-#     heights are stored.
-
-#     Parameters
-#     ----------
-#     trees: MultiTree
-#         A MultiTree containing multiple ToyTree objects.
-#     rooted: bool
-#         If True node heights are stored instead of dists.
-#     """
-#     clades = {}
-#     ntrees = len(trees)
-
-#     def feat(node: Node) -> float:
-#         if rooted:
-#             return getattr(node, "_height")
-#         return getattr(node, "_dist")
-
-#     # iterate over splits in input trees. If the tree is rooted then
-#     # store clades of both descendants from root, not just the split.
-#     for tre in trees:
-#         iter_biparts = tre.iter_bipartitions("name", True, False, type=frozenset, sort=True)
-#         for node, bipart in zip(tre, iter_biparts):
-#             part = bipart[0]
-#             if part not in clades:
-#                 clades[part] = {feature: [feat(node)], "count": 1}
-#             else:
-#                 clades[part]["count"] += 1
-#                 clades[part][feature].append(feat(node))
-
-#             # for rooted trees store other root child
-#             if rooted and node.up.is_root():
-#                 node = node.get_sisters()[0]
-#                 part = bipart[1]
-#                 if part not in clades:
-#                     clades[part] = {feature: [feat(node)], "count": 1}
-#                 else:
-#                     clades[part]["count"] += 1
-#                     clades[part][feature].append(feat(node))
-
-#         # add full clade
-#         part = frozenset(tre.get_tip_labels())
-#         if part not in clades:
-#             clades[part] = {feature: [feat(tre.treenode)], "count": 1}
-#         else:
-#             clades[part]["count"] += 1
-#             clades[part][feature].append(feat(tre.treenode))
-
-#     # sort clades by occurrence
-#     sclades = sorted(clades, key=lambda x: clades[x]["count"], reverse=True)
-
-#     # sort and convert counts to (frequency of trees containing the split)
-#     clades = {i: clades[i] for i in sclades}
-#     for clade in clades:
-#         clades[clade]["freq"] = clades[clade]["count"] / ntrees
-#     clades[part]["freq"] = np.nan
-#     return clades
-
-# def build_consensus_tree2(clades: dict[frozenset, float], rooted: bool) -> ToyTree:
-#     """Return a majority-rule consensus tree constructed from non-
-#     conflicting clades.
-#     """
-#     # dict mapping {clade-set: Node} in order they are added.
-#     sets_to_nodes = {}
-
-#     # sort clades by size
-#     sclades = sorted(clades, key=len, reverse=True)
-#     for clade in sclades:
-#         if clade in sets_to_nodes:
-#             continue
-
-#         # create the Node
-#         name = str(*clade) if len(clade) == 1 else ""
-#         node = Node(name=name, support=clades[clade]["freq"])
-#         # feats[node.idxname] = clades[clade][feature]
-#         node.feat = clades[clade][feature]
-
-#         # connect nodes (visit existing smallest to largest)
-#         for eclade in sorted(sets_to_nodes, key=len):
-#             if clade.issubset(eclade):
-#                 enode = sets_to_nodes[eclade]
-#                 enode._add_child(node)
-#                 break
-#         # store this {clade: node}
-#         sets_to_nodes[clade] = node
-
-#     # convert to ToyTree
-#     tree = ToyTree(sets_to_nodes[sclades[0]])
-
-#     # set node dist and height attrs
-#     if rooted:
-#         tree.set_node_data("height", {i: np.mean(i.feat) for i in tree}, inplace=True)
-#         tree.set_node_data("height_min", {i: np.min(i.feat) for i in tree}, inplace=True)
-#         tree.set_node_data("height_max", {i: np.max(i.feat) for i in tree}, inplace=True)
-#         tree.set_node_data("height_std", {i: np.std(i.feat) for i in tree}, inplace=True)
-#     else:
-#         tree.set_node_data("dist", {i: np.mean(i.feat) for i in tree}, inplace=True)
-#         tree.set_node_data("dist_min", {i: np.min(i.feat) for i in tree}, inplace=True)
-#         tree.set_node_data("dist_max", {i: np.max(i.feat) for i in tree}, inplace=True)
-#         tree.set_node_data("dist_std", {i: np.std(i.feat) for i in tree}, inplace=True)
-#     tree.remove_features(feature, inplace=True)
-#     return tree
 
 
 def get_consensus_features(
@@ -420,6 +318,7 @@ def map_unrooted_tree_supports_and_dists_to_unrooted_tree(
         if bipart in data:
             node.support = data[bipart]["count"] / len(trees)
             setattr(node, "dist_mean", np.mean(data[bipart]["dist"]))
+            setattr(node, "dist_median", np.median(data[bipart]["dist"]))
             setattr(node, "dist_min", np.min(data[bipart]["dist"]))
             setattr(node, "dist_max", np.max(data[bipart]["dist"]))
             setattr(node, "dist_std", np.std(data[bipart]["dist"]))
@@ -429,6 +328,7 @@ def map_unrooted_tree_supports_and_dists_to_unrooted_tree(
     for name in tips:
         node = tree.get_nodes(name)[0]
         setattr(node, "dist_mean", np.mean(tips[node.name]["dist"]))
+        setattr(node, "dist_median", np.median(tips[node.name]["dist"]))
         setattr(node, "dist_min", np.min(tips[node.name]["dist"]))
         setattr(node, "dist_max", np.max(tips[node.name]["dist"]))
         setattr(node, "dist_std", np.std(tips[node.name]["dist"]))
@@ -436,6 +336,7 @@ def map_unrooted_tree_supports_and_dists_to_unrooted_tree(
 
     # set as edge features in case user re-roots the tree
     tree.edge_features.add("dist_mean")
+    tree.edge_features.add("dist_median")
     tree.edge_features.add("dist_min")
     tree.edge_features.add("dist_max")
     tree.edge_features.add("dist_std")

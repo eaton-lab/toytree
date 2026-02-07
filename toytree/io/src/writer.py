@@ -14,14 +14,13 @@ References
 """
 
 from typing import Optional, Tuple, Sequence, Callable
+import sys
 import numpy as np
-from loguru import logger
 from toytree.core import ToyTree, Node
 from toytree.utils import ToytreeError
 from toytree.core.apis import add_toytree_method
 
 DISALLOWED_FEATURES = set(['idx', 'dist', 'up', 'children'])  # 'support', 'height'])
-logger = logger.bind(name="toytree")
 
 
 def get_float_formatter(formatting_str: str) -> Callable:
@@ -196,7 +195,6 @@ def tree_reduce(
     ]
     reduced_children = [tree_reduce(child, *args) for child in node.children]
     newick = node_to_newick(node, reduced_children, *args)
-    # logger.warning([node, newick])
     return newick
 
 
@@ -311,7 +309,7 @@ def write(
     >>> '((r0[&X=10]:0.5,r1[&X=10]:0.5)100[&X=10]:0.5,(r2[&X=10]:...
     """
     if kwargs:
-        logger.warning(f"Deprecated args to write(): {list(kwargs)}. See docs.")
+        print(f"Deprecated args to write(): {list(kwargs)}. See docs.", file=sys.stderr)
 
     # separate node and edge features
     if features is None:

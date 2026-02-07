@@ -9,7 +9,6 @@ Examples
 
 from typing import Tuple, Sequence, Mapping, Any, Union, TypeVar
 import numpy as np
-from loguru import logger
 
 from toytree.core import ToyTree, Cartesian, Mark
 from toytree.color import ToyColor
@@ -28,8 +27,6 @@ from toytree.style.src.validate_data import (
 from toytree.style.src.validate_node_labels import validate_node_labels_style
 from toytree.style.src.validate_nodes import validate_node_style
 
-
-logger = logger.bind(name="toytree")
 Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = [
     "add_node_markers",

@@ -2,8 +2,8 @@
 
 from typing import Any, Union
 from itertools import cycle
-from loguru import logger
 import numpy as np
+from loguru import logger
 from scipy.optimize import minimize
 from scipy.special import factorial
 from toytree.core import ToyTree
@@ -11,10 +11,13 @@ from toytree.mod._src.penalized_likelihood.pl_utils import (
     _get_init_ages, _get_params_bounds,
     get_tree_with_categorical_rates, Calibrations
 )
+from toytree.core.apis import TreeModAPI, add_subpackage_method
 
-logger = logger.bind(name="toytree")
+
+__all__ = ["edges_make_ultrametric_pl_discrete"]
 
 
+@add_subpackage_method(TreeModAPI)
 def edges_make_ultrametric_pl_discrete(
     tree: ToyTree,
     ncategories: int,
@@ -294,5 +297,6 @@ if __name__ == "__main__":
     res = edges_make_ultrametric_pl_discrete(tree, calibrations={-1: 1}, ncategories=2, full=True, max_fun=1e6, max_iter=1e6, max_refine=50)
     print(res)
     tree._draw_browser(tmpdir="~")
+    res['tree']._draw_browser(tmpdir="~")
     # c1, _, _ = tree.draw(ts='s', use_edge_lengths=True, scale_bar=True)
     # tree.write("/tmp/test.nwk")

@@ -11,9 +11,7 @@ and is thus used for both single and multitree nexus files.
 
 from typing import List, Tuple, Dict, Iterator, Mapping
 import re
-from loguru import logger
 
-logger = logger.bind(name="toytree")
 WHITE_SPACE = re.compile(r"[\n\r\t ]+")
 
 

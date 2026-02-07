@@ -15,8 +15,6 @@ from loguru import logger
 from toyplot.mark import Mark
 import toyplot.text
 
-logger = logger.bind(name="toytree")
-
 
 # Note: see toytree/drawing/src/render_tree.py for rendering code.
 class ToyTreeMark(Mark):

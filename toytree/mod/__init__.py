@@ -21,13 +21,12 @@
 >>> tree.unroot()
 """
 
+# methods here will be available at submodule-level (toytree.mod.[method])
 from toytree.mod._src.mod_edges import *
 from toytree.mod._src.mod_topo import *
 from toytree.mod._src.root_unroot import *
 from toytree.mod._src.root_funcs import *
+from toytree.mod._src.penalized_likelihood.pl_clock import *
+from toytree.mod._src.penalized_likelihood.pl_discrete import *
+from toytree.mod._src.penalized_likelihood.pl_relaxed import *
 # from toytree.mod._src.tree_move import *
-#     move_spr,
-#     move_spr_iter,
-#     move_nni,
-#     move_nni_iter,
-# )

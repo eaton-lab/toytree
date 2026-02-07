@@ -10,14 +10,13 @@ import xml.etree.ElementTree as xml
 from multipledispatch import dispatch
 import toyplot.html
 from toyplot.coordinates import Cartesian
-from loguru import logger
 
 from toytree.drawing.src.render_marker import render_marker
 from toytree.color.src.concat import concat_style_fix_color
 from toytree.drawing.src.mark_annotation import (
-    AnnotationMarker, AnnotationRect)
-
-logger = logger.bind(name="toytree")
+    AnnotationMarker,
+    AnnotationRect,
+)
 
 # ---------------------------------------------------------------------
 # Register multipledispatch to use the toyplot.html namespace

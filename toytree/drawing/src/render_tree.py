@@ -26,7 +26,6 @@ from typing import List, Dict, Tuple
 import functools
 import xml.etree.ElementTree as xml
 from multipledispatch import dispatch
-from loguru import logger
 import numpy as np
 import toyplot
 from toytree.drawing import ToyTreeMark
@@ -45,7 +44,6 @@ PATH_FORMAT = {
     'pc': "M {cx:.1f} {cy:.1f} L {dx:.1f} {dy:.1f} A {rr:.1f} {rr:.1f} 0 0 {sweep} {px:.1f} {py:.1f}",  # phylo for circular
 }
 
-logger = logger.bind(name="toytree")
 
 # ---------------------------------------------------------------------
 # Register multipledispatch to use the toyplot.html namespace

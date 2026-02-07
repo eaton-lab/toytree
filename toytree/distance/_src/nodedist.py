@@ -10,14 +10,12 @@ from typing import TypeVar, Tuple, Union, Dict, Iterator
 import itertools
 import numpy as np
 import pandas as pd
-from loguru import logger
 from toytree import Node, ToyTree
 from toytree.core.apis import TreeDistanceAPI, add_subpackage_method
 # from toytree.utils import ToytreeError
 
 # type aliases
 Query = TypeVar("Query", str, int, Node, None)
-logger = logger.bind(name="toytree")
 
 # put functions here to have then exposed to 'distance' subpackage API
 __all__ = [
@@ -127,9 +125,7 @@ def get_node_distance(
     if len(nodes) > 2:
         q0 = tree.get_nodes(node0)
         q1 = tree.get_nodes(node1)
-        msg = f"Bad Node queries: node0 matched {q0}; node1 matched {q1}"
-        logger.error(msg)
-        raise ValueError(msg)
+        raise ValueError(f"Bad Node queries: node0 matched {q0}; node1 matched {q1}")
     node0, node1 = nodes
 
     # get mrca of the query
