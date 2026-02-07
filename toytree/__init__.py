@@ -12,34 +12,63 @@ standard Python data science libs (e.g., numpy, scipy, pandas).
 __version__ = "3.0.11"
 __author__ = "Deren Eaton"
 
-# core class objects
-from toytree.core.node import Node
-from toytree.core.tree import ToyTree
-from toytree.core.multitree import MultiTree
+# core class objects (lazy-loaded for faster imports)
+# convenience functions (lazy-loaded for faster imports)
 
-# convenience functions
-from toytree.io.src.treeio import tree
-from toytree.io.src.mtreeio import mtree
-from toytree.io.src.save import save
+# toytree v3 supported subpackages (lazy-loaded for faster imports)
+import importlib
 
-# toytree v3 supported subpackages
-import toytree.rtree
-import toytree.distance
-import toytree.io
-import toytree.mod
-import toytree.color
-import toytree.enum
-import toytree.pcm
-import toytree.network
-import toytree.annotate
-import toytree.data
+_LAZY_SUBMODULES = {
+    "rtree": "toytree.rtree",
+    "distance": "toytree.distance",
+    "io": "toytree.io",
+    "mod": "toytree.mod",
+    "color": "toytree.color",
+    "enum": "toytree.enum",
+    "pcm": "toytree.pcm",
+    "network": "toytree.network",
+    "annotate": "toytree.annotate",
+    "data": "toytree.data",
+}
+
+_LAZY_ATTRS = {
+    "Node": ("toytree.core.node", "Node"),
+    "ToyTree": ("toytree.core.tree", "ToyTree"),
+    "MultiTree": ("toytree.core.multitree", "MultiTree"),
+    "tree": ("toytree.io.src.treeio", "tree"),
+    "mtree": ("toytree.io.src.mtreeio", "mtree"),
+    "save": ("toytree.io.src.save", "save"),
+    "set_log_level": ("toytree.utils.src.logger_setup", "set_log_level"),
+}
+
+
+def __getattr__(name):
+    if name in _LAZY_SUBMODULES:
+        module = importlib.import_module(_LAZY_SUBMODULES[name])
+        globals()[name] = module
+        return module
+    if name in _LAZY_ATTRS:
+        module_name, attr_name = _LAZY_ATTRS[name]
+        module = importlib.import_module(module_name)
+        attr = getattr(module, attr_name)
+        globals()[name] = attr
+        return attr
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
+
+
+def __dir__():
+    return sorted(
+        list(globals().keys())
+        + list(_LAZY_SUBMODULES.keys())
+        + list(_LAZY_ATTRS.keys())
+    )
 
 
 # container trees... container
 
-# start the logger at log_level WARNING
-from toytree.utils.src.logger_setup import set_log_level
-set_log_level("WARNING")
+# turn off the logger by default; expose set_log_level for manual enable
+from loguru import logger
+logger.disable("toytree")
 
 
 # AN IDEA TO STORE WHETHER WE ARE IN AN IDE OR NOT.
