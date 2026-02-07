@@ -14,6 +14,9 @@ logger = logger.bind(name="toytree")
 Array: TypeVar = Union[np.ndarray, pd.DataFrame]
 
 
+__all__ = ["neighbor_joining_tree"]
+
+
 def neighbor_joining_tree(data: Array) -> toytree.ToyTree:
     """Return a ToyTree inferred by neighbor-joining from a distance matrix.
 

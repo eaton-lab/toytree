@@ -4,13 +4,12 @@
 
 """
 
+import sys
 import numpy as np
 import pandas as pd
-from loguru import logger
 import toytree
 
 
-logger = logger.bind(name="toytree")
 
 
 def upgma_tree(data: pd.DataFrame | np.ndarray) -> toytree.ToyTree:
@@ -42,7 +41,7 @@ def upgma_tree(data: pd.DataFrame | np.ndarray) -> toytree.ToyTree:
     # get names index from df or arr, do not allow replicate names
     index = data.index if isinstance(data, pd.DataFrame) else range(data.shape[0])
     if len(index) != len(set(index)):
-        logger.warning("identical names found in data, using int indices for upgma tree")
+        print("identical names found in data, using int indices for upgma tree", file=sys.stderr)
         index = range(data.shape[0])
 
     # store tip Nodes, and add ntips attribute.
@@ -151,8 +150,7 @@ if __name__ == "__main__":
     #     tmpdir="~",
     # )
 
-    toytree.set_log_level("DEBUG")
-
+    # toytree.set_log_level("DEBUG")
 
     DATA = pd.DataFrame(
         index=list("abcde"),
