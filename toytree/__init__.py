@@ -22,6 +22,7 @@ _LAZY_SUBMODULES = {
     "color": "toytree.color",
     "data": "toytree.data",
     "distance": "toytree.distance",
+    # we purposely do not load 'drawing' here
     "enum": "toytree.enum",
     "infer": "toytree.infer",
     "rtree": "toytree.rtree",

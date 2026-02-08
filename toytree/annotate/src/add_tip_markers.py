@@ -10,9 +10,8 @@ Examples
 from typing import Tuple, Sequence, Mapping, Any, Union, TypeVar
 import numpy as np
 from toyplot.mark import Mark
-from toyplot.coordinates import Cartesian
-
-from toytree import ToyTree
+from toytree.drawing import Cartesian
+from toytree.core import ToyTree
 from toytree.color import ToyColor
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
 from toytree.style.src.validate_utils import substyle_dict_to_css_dict

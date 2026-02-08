@@ -26,6 +26,6 @@ from toytree.core.node import Node
 # from toytree.core.multitree import MultiTree
 
 # easier acces to the main toyplot types
-from toyplot.canvas import Canvas
-from toyplot.coordinates import Cartesian
-from toyplot.mark import Mark
+# from toyplot.canvas import Canvas
+# from toyplot.coordinates import Cartesian
+# from toyplot.mark import Mark

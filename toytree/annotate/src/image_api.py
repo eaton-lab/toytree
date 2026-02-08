@@ -2,8 +2,6 @@
 
 """Helpers for placing and resizing images on a Toyplot canvas."""
 
-"""Helpers for placing and resizing images on a Toyplot canvas."""
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -12,8 +10,9 @@ from typing import Tuple
 
 import numpy as np
 import requests
-import toyplot
-from PIL import Image
+from PIL import Image as PILImage
+from toytree.drawing import Canvas, Mark
+from toyplot.mark import Image as MarkImage
 from toyplot.html import RenderContext, dispatch, xml
 
 
@@ -44,16 +43,14 @@ def generate_example_image(width: int = 96, height: int = 96) -> np.ndarray:
 @dataclass(frozen=True)
 class FetchedImage:
     """Container for fetched image bytes and metadata."""
-
     data: bytes
     format: str
     content_type: str | None
 
 
 @dataclass(frozen=True)
-class SvgMark(toyplot.mark.Mark):
+class SvgMark(Mark):
     """Render SVG content directly onto a Toyplot canvas."""
-
     svg_text: str
     xmin: float
     ymin: float
@@ -120,13 +117,13 @@ def image_to_array(image: np.ndarray | FetchedImage, *, svg_scale: float = 1.0) 
         data = image.data
         if image.format == "svg":
             data = _convert_svg_to_png_bytes(data, scale=svg_scale)
-        pil_image = Image.open(BytesIO(data)).convert("RGBA")
+        pil_image = PILImage.open(BytesIO(data)).convert("RGBA")
         return np.asarray(pil_image)
     return image
 
 
 def place_svg_on_canvas(
-    canvas: toyplot.Canvas,
+    canvas: Canvas,
     svg: str | bytes | FetchedImage,
     *,
     x: float = 50,
@@ -149,7 +146,7 @@ def place_svg_on_canvas(
 
 
 def place_image_on_canvas(
-    canvas: toyplot.Canvas,
+    canvas: Canvas,
     image: np.ndarray | FetchedImage,
     *,
     x: float = 50,
@@ -157,7 +154,7 @@ def place_image_on_canvas(
     width: float = 120,
     height: float = 120,
     svg_scale: float = 1.0,
-) -> toyplot.mark.Image:
+) -> MarkImage:
     """Place an image at a position and size on a Toyplot canvas.
 
     Parameters
@@ -187,13 +184,13 @@ def minimal_working_example(
     canvas_size: Tuple[int, int] = (400, 300),
     image_size: Tuple[int, int] = (140, 140),
     image_position: Tuple[int, int] = (40, 60),
-) -> Tuple[toyplot.Canvas, toyplot.mark.Image]:
+) -> Tuple[Canvas, MarkImage]:
     """Build a minimal canvas with a movable/resizable image.
 
     Adjust ``image_size`` and ``image_position`` to resize and reposition the
     image on the canvas.
     """
-    canvas = toyplot.Canvas(width=canvas_size[0], height=canvas_size[1])
+    canvas = Canvas(width=canvas_size[0], height=canvas_size[1])
     image = generate_example_image(width=image_size[0], height=image_size[1])
     mark = place_image_on_canvas(
         canvas,
@@ -212,9 +209,9 @@ def svg_embed_example(
     canvas_size: Tuple[int, int] = (400, 300),
     image_size: Tuple[int, int] = (140, 140),
     image_position: Tuple[int, int] = (40, 60),
-) -> Tuple[toyplot.Canvas, SvgMark]:
+) -> Tuple[Canvas, SvgMark]:
     """Fetch an SVG and embed it directly in the canvas XML."""
-    canvas = toyplot.Canvas(width=canvas_size[0], height=canvas_size[1])
+    canvas = Canvas(width=canvas_size[0], height=canvas_size[1])
     svg_image = fetch_image_from_url(url)
     mark = place_svg_on_canvas(
         canvas,

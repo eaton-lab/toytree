@@ -6,9 +6,9 @@
 
 from typing import Optional
 import numpy as np
-import toyplot
-from toyplot.coordinates import Cartesian
-from toytree import ToyTree
+from toyplot import locator
+from toytree.drawing import Cartesian
+from toytree.core import ToyTree
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
 from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
 
@@ -81,7 +81,7 @@ def add_axes_scale_bar(
 
     # get tick locator
     # lct = toyplot.locator.Extended(count=nticks, only_inside=only_inside)
-    lct = toyplot.locator.Extended(count=nticks, only_inside=False)
+    lct = locator.Extended(count=nticks, only_inside=False)
 
     # get root tree height
     if not tree_height:
@@ -108,17 +108,17 @@ def add_axes_scale_bar(
 
     # set the ticks locator
     if mark.layout in "rl":
-        axes.x.ticks.locator = toyplot.locator.Explicit(
+        axes.x.ticks.locator = locator.Explicit(
             locations=locs + mark.xbaseline,
             labels=labels,
         )
     elif mark.layout in "ud":
-        axes.y.ticks.locator = toyplot.locator.Explicit(
+        axes.y.ticks.locator = locator.Explicit(
             locations=locs + mark.ybaseline,
             labels=labels,
         )
     else:
-        axes.x.ticks.locator = toyplot.locator.Explicit(
+        axes.x.ticks.locator = locator.Explicit(
             locations=locs + mark.xbaseline,
             labels=labels,
         )

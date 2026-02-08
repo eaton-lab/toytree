@@ -7,7 +7,8 @@
 from typing import Tuple, Sequence, Mapping, Any, Union, TypeVar
 import numpy as np
 
-from toytree.core import ToyTree, Cartesian, Mark
+from toytree.core import ToyTree
+from toytree.drawing import Cartesian, Mark
 from toytree.color import ToyColor
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
 from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
@@ -20,12 +21,8 @@ from toytree.style.src.validate_data import (
     validate_mask,
     validate_labels,
 )
-from toytree.style.src.validate_nodes import (
-    validate_node_style,
-)
-from toytree.style.src.validate_node_labels import (
-    validate_node_labels_style,
-)
+from toytree.style.src.validate_nodes import validate_node_style
+from toytree.style.src.validate_node_labels import validate_node_labels_style
 from toytree.layout.src.get_edge_midpoints import get_edge_midpoints
 
 Color = TypeVar("Color", str, tuple, np.ndarray)

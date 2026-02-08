@@ -6,8 +6,8 @@ Set margin to 60.
 """
 
 from typing import Union, Sequence
-from toytree import ToyTree
-from toytree.core import Cartesian
+from toytree.core import ToyTree
+from toytree.drawing import Cartesian
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
 # from toytree.annotate.src.annotation_mark import (
 #     get_last_toytree_mark_from_cartesian,

@@ -4,6 +4,10 @@
 
 """
 
+from toyplot import Canvas
+from toyplot.coordinates import Cartesian
+from toyplot.mark import Mark
+
 # main tree drawing Mark and .draw() function lazy-imported inside tree.py
 from .src.mark_toytree import ToyTreeMark
 from .src.draw_toytree import draw_toytree

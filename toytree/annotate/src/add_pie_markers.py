@@ -7,7 +7,8 @@
 from typing import Sequence, Union, TypeVar
 
 import numpy as np
-from toytree.core import ToyTree, Cartesian, Mark
+from toytree.core import ToyTree
+from toytree.drawing import Cartesian, Mark
 from toytree.style import check_arr, get_color_mapped_values
 from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
 from toytree.core.apis import add_subpackage_method, AnnotationAPI

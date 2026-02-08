@@ -5,7 +5,6 @@
 """
 
 from typing import Tuple, Optional, Sequence, Union, List, TypeVar
-from toytree.core import Canvas, Cartesian, Mark
 from toytree.drawing.src.setup_grid import Grid
 from toytree.style import get_base_tree_style_by_name
 from toytree.annotate import add_axes_scale_bar
@@ -13,6 +12,9 @@ import toytree
 from loguru import logger
 
 MultiTree = TypeVar("MultiTree")
+Canvas = TypeVar("Canvas")
+Cartesian = TypeVar("Cartesian")
+Mark = TypeVar("Mark")
 
 
 def draw_multitree(

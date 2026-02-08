@@ -4,10 +4,8 @@
 """
 
 # from toyplot.canvas import Canvas
-from toyplot.coordinates import Cartesian
-from toyplot.mark import Mark
-from toytree import ToyTree
-from toytree.drawing import ToyTreeMark
+from toytree.core import ToyTree
+from toytree.drawing import ToyTreeMark, Cartesian, Mark
 from toytree.utils import ToytreeError
 
 CARTESIAN_TYPE_ERROR = """\

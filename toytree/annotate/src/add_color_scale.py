@@ -17,9 +17,9 @@ tree.annotate.add_legend(axes, *, x, y, ...)
 """
 
 from typing import Optional, Mapping, Any
-import toyplot
-from toytree import ToyTree
-from toytree.core import Cartesian
+from toyplot.color import Map
+from toytree.core import ToyTree
+from toytree.drawing import Cartesian
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
 from toytree.style.src.validate_utils import substyle_dict_to_css_dict
 # from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
@@ -42,7 +42,7 @@ def add_color_scale_from_feature(
     tree: ToyTree,
     axes: Cartesian,
     feature: str,
-    colormap: toyplot.color.Map = None,
+    colormap: Map = None,
     width: Optional[int] = None,
     angle: float = 0.,
     style: Mapping[str, Any] = None,
@@ -65,7 +65,7 @@ def add_color_scale(
     axes: Cartesian,
     xpos: float = 50,
     ypos: float = -50,
-    colormap: toyplot.color.Map = None,
+    colormap: Map = None,
     min: float = 0.,
     max: float = 1.,
     width: Optional[int] = None,

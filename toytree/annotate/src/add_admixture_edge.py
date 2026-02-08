@@ -15,9 +15,9 @@ Creates and draws an admixture edge between two tree tips
 
 import numpy as np
 import toyplot
-from toyplot.coordinates import Cartesian
 from loguru import logger
-from toytree import ToyTree, Node
+from toytree.drawing import Cartesian
+from toytree.core import ToyTree, Node
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
 from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
 
