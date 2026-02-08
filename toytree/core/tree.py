@@ -19,23 +19,20 @@ import re
 from pathlib import Path
 from copy import deepcopy
 from hashlib import md5
-
 import numpy as np
 
 # subpackage object APIs
+from toytree.core.node import Node
+from toytree.style.src.style_base import TreeStyle
 from toytree.core.apis import (
     TreeModAPI, TreeDistanceAPI, TreeEnumAPI, PhyloCompAPI, AnnotationAPI)
-from toytree.core.node import Node
-from toytree.style import TreeStyle
-
+from toytree.utils.src.exceptions import (
+    ToytreeError, NODE_NOT_IN_TREE_ERROR, NODE_INDEXING_ERROR, NodeDataError)
 if TYPE_CHECKING:
     from toyplot import Canvas
     from toyplot.coordinates import Cartesian
     from toytree.drawing import ToyTreeMark
-
-from toytree.utils.src.exceptions import (
-    ToytreeError, NODE_NOT_IN_TREE_ERROR, NODE_INDEXING_ERROR, NodeDataError)
-import toytree
+# import toytree
 
 
 # Type alias for Node selection

@@ -36,6 +36,7 @@ _LAZY_ATTRS = {
     "Node": ("toytree.core.node", "Node"),
     "ToyTree": ("toytree.core.tree", "ToyTree"),
     "MultiTree": ("toytree.core.multitree", "MultiTree"),
+    "AdmixtureEvent": ("toytree.network", "AdmixtureEvent"),
     "tree": ("toytree.io.src.treeio", "tree"),
     "mtree": ("toytree.io.src.mtreeio", "mtree"),
     "save": ("toytree.io.src.save", "save"),

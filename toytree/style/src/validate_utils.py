@@ -6,7 +6,7 @@
 
 from typing import Mapping, Any, Dict, Sequence
 import numpy as np
-from toytree.style import TreeStyle, SubStyle
+from toytree.style.src.style_base import TreeStyle, SubStyle
 from toytree.utils import ToytreeError
 
 

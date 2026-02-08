@@ -17,8 +17,7 @@ easily in annotation functions.
 
 from typing import Mapping, Any, TypeVar
 
-from toytree.style import TreeStyle
-
+from toytree.style.src.style_base import TreeStyle
 from toytree.style.src.validate_data import (
     validate_numeric,
     validate_mask,

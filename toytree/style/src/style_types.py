@@ -6,8 +6,7 @@
 
 from typing import Tuple, TypeVar
 from dataclasses import dataclass
-from toytree.style import TreeStyle
-
+from toytree.style.src.style_base import TreeStyle
 Color = TypeVar("Color")
 
 

@@ -37,25 +37,23 @@ from __future__ import annotations
 from typing import Union, List, Sequence, Optional, Tuple, TypeVar, Iterator
 from copy import deepcopy
 import numpy as np
-# import pandas as pd
 from loguru import logger
 from toytree.utils import ToytreeError
-from toytree.core import ToyTree, Node
-from toytree.style import TreeStyle, get_base_tree_style_by_name, tree_style_to_css_dict
+from toytree.style import TreeStyle
 from toytree.drawing.src.setup_canvas import get_canvas_and_axes
-from toytree.drawing.src.setup_grid import Grid
 from toytree.drawing.src.draw_cloudtree import draw_cloudtree
 from toytree.drawing.src.draw_multitree import draw_multitree
-from toytree.annotate import add_axes_scale_bar
+# from toytree.drawing.src.setup_grid import Grid
+# from toytree.annotate import add_axes_scale_bar
 # from toytree.core.drawing.render import ToytreeMark
-import toytree.infer
 
-# from toytree.utils import ToytreeError
 
 # aliases of Toyplot types returned by draw functions
 Canvas = TypeVar("Canvas")
 Cartesian = TypeVar("Cartesian")
 Mark = TypeVar("Mark")
+ToyTree = TypeVar("ToyTree")
+Node = TypeVar("Node")
 Query = TypeVar("Query", str, int, Node)
 
 
@@ -312,9 +310,10 @@ class MultiTree:
         >>> ctree2 = mtree.get_consensus_tree(trees, majority_rule_min=0.5)
         >>> toytree.mtree([ctree1, ctree2]).draw();
         """
+        from toytree.infer import get_consensus_tree
         if kwargs:
             logger.warning(f"Deprecated args to get_consensus_tree(): {list(kwargs.values())}. See docs.")
-        return toytree.infer.get_consensus_tree(self.treelist, min_freq=min_freq)
+        return get_consensus_tree(self.treelist, min_freq=min_freq)
 
 
     def get_consensus_features(self, tree: ToyTree, features: list[str] = None, ultrametric: bool = False, conditional: bool = True) -> ToyTree:
@@ -360,7 +359,8 @@ class MultiTree:
         --------
         ...
         """
-        return toytree.infer.get_consensus_features(
+        from toytree.infer import get_consensus_features
+        return get_consensus_features(
             tree=tree, trees=self.treelist,
             features=features, ultrametric=ultrametric, conditional=True)
 

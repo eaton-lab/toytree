@@ -5,14 +5,17 @@
 """
 
 from typing import Union, Sequence, Mapping, Any, Dict, TypeVar, Tuple, Optional, List
+from copy import deepcopy
 import numpy as np
 import toyplot
-
 from toytree.color import ToyColor
 from toytree.utils import ToytreeError, ToyColorError
 from toytree.style.src.validate_utils import check_arr
 from toytree.style.src.style_base import NodeStyle, NodeLabelStyle, TreeStyle
-from toytree.style import get_range_mapped_feature, get_color_mapped_feature
+from toytree.style.src.map_values import get_range_mapped_feature
+from toytree.style.src.map_colors import get_color_mapped_feature
+from toytree.network.src.parse_network import AdmixtureEvent
+
 
 ToyTree = TypeVar("ToyTree")
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -482,37 +485,59 @@ def validate_node_style(
     return style
 
 
-def validate_admixture_edges(tree: ToyTree, **kwargs) -> List[Tuple]:
+def validate_admixture_edges(
+    tree: ToyTree,
+    **kwargs,
+) -> List[Tuple]:
     """Return the aedges list with src,dest expanded to Nodes.
     """
     admixture_edges = kwargs['style'].get("admixture_edges")
     if admixture_edges is None:
         return []
-
     if not admixture_edges:
         return []
 
-    # ((2,3),(2,4)) or (2,3)
+    # must be a list[AdmixtureEvent] or list[tuple[int,int]]
     if isinstance(admixture_edges, tuple):
-        if isinstance(admixture_edges[0], tuple):
-            admixture_edges = list(admixture_edges)
-        else:
-            admixture_edges = [admixture_edges]
+        admixture_edges = [admixture_edges]
+    elif isinstance(admixture_edges, AdmixtureEvent):
+        admixture_edges = [admixture_edges]
+    if not isinstance(admixture_edges, list):
+        raise TypeError("admixture_edges must be a list[AdmixtureEvent] or List[tuple[int,int]]")
 
-    # [(2,3),]
-    # [((2,3), 4, ...), (...)]
+    # convert each one to a tuple (int, int, float, float, float, {}, str)
     aedges = []
-    for aedge in admixture_edges:
-        # user can enter multiple Nodes to get mrca or a single node
-        if isinstance(aedge[0], (tuple, list)):
-            src = tree.get_mrca_node(*aedge[0]).idx
+    for idx, aedge in enumerate(admixture_edges):
+        if isinstance(aedge, tuple):
+
+            # create object
+            aedge = AdmixtureEvent(
+                src=aedge[0],
+                dst=aedge[1],
+                src_dist=None if len(aedge) < 3 else aedge[2][0],
+                dst_dist=None if len(aedge) < 3 else aedge[2][1],
+                style={} if len(aedge) < 5 else aedge[4],
+                # label=None if len(aedge) < 4 else aedge[3],
+                # gamma=None if len(aedge) < 6 else aedge[5],
+            )
         else:
-            src = tree.get_nodes(aedge[0])[0].idx
-        if isinstance(aedge[1], (tuple, list)):
-            dst = tree.get_mrca_node(*aedge[1]).idx
+            aedge = deepcopy(aedge)
+        aedges.append(aedge)
+
+    # convert src and dist to node idxs
+    for ae in aedges:
+        if isinstance(ae.src, int):
+            pass
+        elif hasattr(ae.src, "idx"):
+            ae.src = ae.src.idx
         else:
-            dst = tree.get_nodes(aedge[1])[0].idx
-        aedges.append((src, dst) + tuple(aedge[2:]))
+            ae.src = tree.get_mrca_node(*ae.src).idx
+        if isinstance(ae.dst, int):
+            pass
+        elif hasattr(ae.dst, "idx"):
+            ae.dst = ae.dst.idx
+        else:
+            ae.dst = tree.get_mrca_node(*ae.dst).idx
     return aedges
 
 
@@ -525,8 +550,8 @@ if __name__ == "__main__":
     # node_labels = validate_node_labels(tree, "idx")
     # print(node_labels)
 
-    node_mask = validate_mask(tree, tree.style, {"node_mask": False})
-    print(node_mask)
+    # node_mask = validate_mask(tree, tree.style, {"node_mask": False})
+    # print(node_mask)
 
     # node_sizes = validate_node_sizes(tree, False)
     # print(node_sizes)
@@ -543,4 +568,6 @@ if __name__ == "__main__":
     # colors = validate_node_colors(tree, ('idx', "Spectral"))
     # print(colors)
 
-
+    tree.style.admixture_edges = [(3, 4)]
+    aedges = validate_admixture_edges(tree, **{"style": {"admixture_edges": (2, 3)}})
+    print(aedges)

@@ -2,6 +2,18 @@
 
 """Add a color_scale to Cartesian axes.
 
+
+Plan
+----
+
+toytree.annotate.add_legend(tree, axes, *, x, y, ...)
+tree.annotate.add_legend(axes, *, x, y, ...)
+
+1. fetches style of tree drawing from axes
+2. if not x,y then auto-infers placement of legend from axes.project('x', node[-1].x...)
+3. min_value, max_value, colormap
+...?
+
 """
 
 from typing import Optional, Mapping, Any

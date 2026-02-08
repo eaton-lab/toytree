@@ -33,6 +33,7 @@ from toytree.drawing.src.render.render_text import render_text
 from toytree.drawing.src.render.render_marker import render_marker
 from toytree.color.src.concat import concat_style_fix_color
 from toytree.layout.src.get_edge_midpoints import get_edge_midpoints
+from loguru import logger
 
 # SVG path formats for creating edges in tree drawings
 PATH_FORMAT = {
@@ -495,10 +496,6 @@ class RenderToytree:
 
     def mark_admixture_edges(self):
         """Create SVG paths for admixture edges.
-
-        The edge takes the same style as the edge_type of the tree.
-
-        (SRC, DEST, PROP, {STYLE}, TEXT)
         """
         if self.mark.admixture_edges is None:
             return
@@ -513,14 +510,15 @@ class RenderToytree:
             "font-size": "14px"
         }
 
-        # create edge group element
+        # create new group in the tree xml element for AdmixEdges
         self.admix_xml = xml.SubElement(
             self.mark_xml, 'g',
             attrib={'class': 'toytree-AdmixEdges'},
             style=concat_style_fix_color(default_admix_edge_style)
         )
 
-        # get position of 15% tipward from source point
+        # path format for admix edge
+        # branch1-start -> branch1-admix-event -> branch2-admix-event -> branch2-end
         path_format = [
             "M {sdx:.2f} {sdy:.2f}",
             "L {sux:.2f} {suy:.2f}",
@@ -528,165 +526,118 @@ class RenderToytree:
             "L {dux:.2f} {duy:.2f}",
         ]
 
-        # ensure admixture_edges is a list of tuples
-        if not isinstance(self.mark.admixture_edges, list):
-            self.mark.admixture_edges = [self.mark.admixture_edges]
-
-        # drwa each edge
+        # create path subelement for each admixture edge
         for aedge in self.mark.admixture_edges:
 
-            # check if nodes have an overlapping interval
-            src, dest, *details = aedge
+            # int idx labels
+            c_src, p_src = self.mark.etable[aedge.src]
+            c_dst, p_dst = self.mark.etable[aedge.dst]
 
-            # parse optional prop float, edgestyle dict, and label text
-            aprop = 0.5
-            estyle = {}
-            label = ""
-            if len(details) == 1:
-                aprop = details[0]
-            elif len(details) == 2:
-                aprop, estyle = details
-            elif len(details) == 3:
-                aprop, estyle, label = details
+            # get path px coordinates for right-facing layout
+            if self.mark.layout == "r":
 
-            # get their parents coord positions
-            try:
-                psrc = self.mark.etable[self.mark.etable[:, 0] == src, 1][0]
-            except IndexError:
-                psrc = self.mark.nnodes - 1
-            try:
-                pdest = self.mark.etable[self.mark.etable[:, 0] == dest, 1][0]
-            except IndexError:
-                pdest = self.mark.nnodes - 1
+                # get px coordinates of the src and dst nodes
+                c_src_x, c_src_y = self.nodes_y[c_src], self.nodes_x[c_src]
+                c_dst_x, c_dst_y = self.nodes_y[c_dst], self.nodes_x[c_dst]
 
-            # if only one midpoint then expand to use same for both edges.
-            shared = False
-            if isinstance(aprop, (int, float)):
-                shared = True
-                aprop = (aprop, aprop)
+                # get px coords of their parents
+                p_src_x, p_src_y = self.nodes_y[p_src], self.nodes_x[p_src]
+                p_dst_x, p_dst_y = self.nodes_y[p_dst], self.nodes_x[p_dst]
 
-            # separate for each layout b/c its haaaard.
-            if self.mark.layout in ("r", "l"):
-                src_x, src_y = self.nodes_y[src], self.nodes_x[src]
-                dst_x, dst_y = self.nodes_y[dest], self.nodes_x[dest]
-                p_src_x, p_src_y = self.nodes_y[psrc], self.nodes_x[psrc]
-                p_dst_x, p_dst_y = self.nodes_y[pdest], self.nodes_x[pdest]
-
-                # ...
-                if self.mark.layout == 'r':
-                    disjoint = (p_src_y >= dst_y) or (src_y <= p_dst_y)
-                    sign = 1
+                # get pos of admix on src edge from src_dist else select midpoint on src edge
+                if aedge.src_dist is None:
+                    a_src_x, a_src_y = self.mid_y[c_src], self.mid_x[c_src]
                 else:
-                    disjoint = (p_src_y >= dst_y) or (src_y <= p_dst_y)
-                    sign = -1
+                    Δx = abs(p_src_x - c_src_x) if self.mark.edge_type == "c" else 0.0
+                    Δy = abs(p_src_y - c_src_y)
+                    nudge = Δx * (aedge.src_dist / Δy)
+                    a, b = self.axes.project('x', [0.0, nudge])
+                    a_src_x = c_src_x + abs(a - b)
+                    a, b = self.axes.project('x', [0.0, aedge.src_dist])
+                    a_src_y = c_src_y - abs(a - b)
 
-                # ...
-                if disjoint or (not shared):
-                    src_mid_y = src_y - sign * (abs(src_y - p_src_y) * aprop[0])
-                    dest_mid_y = dst_y - sign * (abs(dst_y - p_dst_y) * aprop[1])
+                # get ypos of admix on dst edge from dst_dist else select midpoint on dst edge
+                if aedge.dst_dist is None:
+                    a_dst_x, a_dst_y = self.mid_y[c_dst], self.mid_x[c_dst]
                 else:
-                    # get height of the admix line at midshared.
-                    amin = min([src_y, dst_y])
-                    amax = max([p_src_y, p_dst_y])
-                    admix_ymid = amin + (amax - amin) * aprop[0]
-                    dest_mid_y = src_mid_y = admix_ymid
+                    Δx = abs(p_dst_x - c_dst_x) if self.mark.edge_type == "c" else 0.0
+                    Δy = abs(p_dst_y - c_dst_y)
+                    nudge = Δx * (aedge.dst_dist / Δy)
+                    a, b = self.axes.project('x', [0.0, nudge])
+                    a_dst_x = c_dst_x + abs(a - b)
+                    a, b = self.axes.project('x', [0.0, aedge.dst_dist])
+                    a_dst_y = c_dst_y - abs(a - b)
 
-            elif self.mark.layout in ("u", "d"):
-                # get x and y of source and destination nodes
-                src_x, src_y = self.nodes_x[src], self.nodes_y[src]
-                dst_x, dst_y = self.nodes_x[dest], self.nodes_y[dest]
+            elif self.mark.layout == "l":
+                pass
 
-                # get x and y of PARENTS of source and destination nodes
-                p_src_x, p_src_y = self.nodes_x[psrc], self.nodes_y[psrc]
-                p_dst_x, p_dst_y = self.nodes_x[pdest], self.nodes_y[pdest]
+            elif self.mark.layout == "u":
+                pass
 
-                # check whether the edges overlap, in which case we will
-                # draw a straight line between them, otherwise the line
-                # will be angled. Straight it preferred.
-                if self.mark.layout == "d":
-                    disjoint = (dst_y <= p_src_y) or (src_y <= p_dst_y)
-                    sign = 1
-                else:
-                    disjoint = (dst_y >= p_src_y) or (src_y >= p_dst_y)
-                    sign = -1
-
-                if disjoint or (not shared):
-                    src_mid_y = src_y - sign * (abs(src_y - p_src_y) * aprop[0])
-                    dest_mid_y = dst_y - sign * (abs(dst_y - p_dst_y) * aprop[1])
-                else:
-                    amin = min([src_y, dst_y])
-                    amax = max([p_src_y, p_dst_y])
-                    admix_ymid = amin - sign * abs(amax - amin) * aprop[0]
-                    dest_mid_y = src_mid_y = admix_ymid
-
-            # project angle of up/down lines towards parent nodes.
-            if self.mark.edge_type == "c":
-
-                # angle from src to src parent
-                if (p_src_x - src_x) == 0:
-                    x_shift_src_mid = 0
-                else:
-                    theta = np.arctan((p_src_y - src_y) / (p_src_x - src_x))
-                    x_shift_src_mid = (src_mid_y - src_y) / np.tan(theta)
-
-                # angle from dest to dest parent
-                if (p_dst_x - dst_x) == 0:
-                    x_shift_dest_mid = 0
-                else:
-                    theta = np.arctan((p_dst_y - dst_y) / (p_dst_x - dst_x))
-                    x_shift_dest_mid = (dest_mid_y - dst_y) / np.tan(theta)
-                xend = p_dst_x
+            elif self.mark.layout == "d":
+                pass
 
             else:
-                x_shift_dest_mid = 0
-                x_shift_src_mid = 0
-                xend = dst_x
+                raise ValueError(f"admixture_edges drawing not supported for layout={self.mark.layout}")
 
-            # build the SVG path
-            if self.mark.layout in ("r", "l"):
+
+
+        #     elif self.mark.layout in ("u", "d"):
+        #         # get x and y of source and destination nodes
+        #         src_x, src_y = self.nodes_x[src], self.nodes_y[src]
+        #         dst_x, dst_y = self.nodes_x[dest], self.nodes_y[dest]
+
+        #         # get x and y of PARENTS of source and destination nodes
+        #         p_src_x, p_src_y = self.nodes_x[psrc], self.nodes_y[psrc]
+        #         p_dst_x, p_dst_y = self.nodes_x[pdest], self.nodes_y[pdest]
+
+        #         # check whether the edges overlap, in which case we will
+        #         # draw a straight line between them, otherwise the line
+        #         # will be angled. Straight it preferred.
+        #         if self.mark.layout == "d":
+        #             disjoint = (dst_y <= p_src_y) or (src_y <= p_dst_y)
+        #             sign = 1
+        #         else:
+        #             disjoint = (dst_y >= p_src_y) or (src_y >= p_dst_y)
+        #             sign = -1
+
+        #         if disjoint or (not shared):
+        #             src_mid_y = src_y - sign * (abs(src_y - p_src_y) * aprop[0])
+        #             dest_mid_y = dst_y - sign * (abs(dst_y - p_dst_y) * aprop[1])
+        #         else:
+        #             amin = min([src_y, dst_y])
+        #             amax = max([p_src_y, p_dst_y])
+        #             admix_ymid = amin - sign * abs(amax - amin) * aprop[0]
+        #             dest_mid_y = src_mid_y = admix_ymid
+
+            # build the SVG path from top of src node edge to src-admix to dst-admix to dst node.
+            if self.mark.layout == "r":
                 edge_dict = {
-                    'sdy': src_x,  # + x_shift_src_tip + snudge,
-                    'sdx': src_y,  # src_tip_y,
-                    'suy': src_x + x_shift_src_mid,
-                    'sux': src_mid_y,  # admix_ymid,
-                    'ddy': dst_x + x_shift_dest_mid,
-                    'ddx': dest_mid_y,  # admix_ymid,
-                    'duy': xend,
-                    'dux': p_dst_y,  # dest_tip_y,
+                    'sdy': c_src_x if self.mark.edge_type == "p" else p_src_x,
+                    'sdx': p_src_y,
+                    'suy': a_src_x,
+                    'sux': a_src_y,
+                    'ddy': a_dst_x,
+                    'ddx': a_dst_y,
+                    'duy': c_dst_x,
+                    'dux': c_dst_y,
                 }
-                # tri_dict = {
-                #     'x0': admix_ymid - 6,
-                #     'x1': admix_ymid + 6,
-                #     'x2': admix_ymid,
-                #     'y0': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
-                #     'y1': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
-                #     'y2': np.mean([edge_dict['suy'], edge_dict['ddy']]) + 8,
-                # }
+                logger.warning(edge_dict)
 
-            else:
-                edge_dict = {
-                    'sdx': src_x,  # + x_shift_src_tip + snudge,
-                    'sdy': src_y,  # src_tip_y,
+        #     else:
+        #         edge_dict = {
+        #             'sdx': src_x,  # + x_shift_src_tip + snudge,
+        #             'sdy': src_y,  # src_tip_y,
 
-                    'sux': src_x + x_shift_src_mid,
-                    'suy': src_mid_y,  # admix_ymid,
+        #             'sux': src_x + x_shift_src_mid,
+        #             'suy': src_mid_y,  # admix_ymid,
 
-                    'ddx': dst_x + x_shift_dest_mid,
-                    'ddy': dest_mid_y,  # admix_ymid,
+        #             'ddx': dst_x + x_shift_dest_mid,
+        #             'ddy': dest_mid_y,  # admix_ymid,
 
-                    'dux': xend,
-                    'duy': p_dst_y,  # dest_tip_y,
-                }
-
-                # TODO: not finished aligning triangle/arrow
-                # tri_dict = {
-                #     'y0': admix_ymid - 6,
-                #     'y1': admix_ymid + 6,
-                #     'y2': admix_ymid,
-                #     'x0': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
-                #     'x1': np.mean([edge_dict['suy'], edge_dict['ddy']]) - 6,
-                #     'x2': np.mean([edge_dict['suy'], edge_dict['ddy']]) + 8,
-                # }
+        #             'dux': xend,
+        #             'duy': p_dst_y,  # dest_tip_y,
+        #         }
 
             # EDGE path
             path = " ".join(path_format).format(**edge_dict)
@@ -696,35 +647,8 @@ class RenderToytree:
             xml.SubElement(
                 self.admix_xml, "path",
                 d=path,
-                style=concat_style_fix_color(estyle),
+                style=concat_style_fix_color(aedge.style),
             )
-
-            lstyle = estyle.copy()
-            # LABEL
-            if label is not None:
-
-                # RENDER edge label
-                lstyle['fill'] = '#262626'
-                lstyle['fill-opacity'] = '1.0'
-                lstyle['stroke'] = "none"
-                lstyle['text-anchor'] = 'middle'
-
-                # position
-                if self.mark.layout in ("r", "l"):
-                    xtext = np.mean([src_x + x_shift_src_mid, dst_x + x_shift_dest_mid])
-                    ytext = np.mean([src_mid_y, dest_mid_y])
-                    xtext += 12
-                else:
-                    ytext = np.mean([src_x + x_shift_src_mid, dst_x + x_shift_dest_mid])
-                    xtext = np.mean([src_mid_y, dest_mid_y])
-
-                xml.SubElement(
-                    self.admix_xml,
-                    "text",
-                    x=f"{ytext:.2f}",
-                    y=f"{xtext:.2f}",
-                    style=concat_style_fix_color(lstyle),
-                ).text = str(label)
 
 
 # HELPER FUNCTIONS ----------------------
@@ -779,7 +703,7 @@ def test1():
         ts='p',
         layout='r', #'c0-95',
         tip_labels_align=True,
-        edge_type='p',
+        edge_type='c',
         width=400,
         height=400,
         node_sizes=18,
@@ -791,10 +715,16 @@ def test1():
         edge_style={"stroke-width": 3.5},
         node_style={"stroke-width": 2},
         tip_labels_style={"font-size": 15, "-toyplot-anchor-shift": 15},
+        admixture_edges=[
+            (4, 2, (0.5, 0.5)),
+            (10, 5),
+            toytree.AdmixtureEvent("", 6, 9, 0.2, 0.2, gamma=0.4, label="HI", style={'stroke': 'green'}),
+        ],
+        # admixture_edges=[(4, 2)],
         # tip_labels_colors=[toytree.color.COLORS1[i] for i in range(tree.ntips)],
         # edge_colors=['red'] + [toytree.color.COLORS1[0]] + ['black'] * (tree.nnodes - 2),
     )
-    tree._draw_browser(**kwargs)
+    tree._draw_browser(tmpdir="~", **kwargs)
 
 
 def test2():
@@ -813,4 +743,4 @@ if __name__ == "__main__":
 
     import toytree
     toytree.set_log_level("DEBUG")
-    test2()
+    test1()
