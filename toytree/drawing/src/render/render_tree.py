@@ -31,6 +31,7 @@ import toyplot
 from toytree.drawing import ToyTreeMark
 from toytree.drawing.src.render.render_text import render_text
 from toytree.drawing.src.render.render_marker import render_marker
+from toytree.color import COLORS2
 from toytree.color.src.concat import concat_style_fix_color
 from toytree.layout.src.get_edge_midpoints import get_edge_midpoints
 from loguru import logger
@@ -527,7 +528,7 @@ class RenderToytree:
         ]
 
         # create path subelement for each admixture edge
-        for aedge in self.mark.admixture_edges:
+        for idx, aedge in enumerate(self.mark.admixture_edges):
 
             # int idx labels
             c_src, p_src = self.mark.etable[aedge.src]
@@ -552,17 +553,24 @@ class RenderToytree:
 
             depth_sign = -1 if self.mark.layout in ("r", "d") else 1
 
+            # offset admixture edges by the branch stroke-width to avoid overlap
+            if self.mark.edge_widths is None:
+                base_width = self.mark.edge_style["stroke-width"]
+            else:
+                base_width = float(np.nanmax([self.mark.edge_widths[c_src], self.mark.edge_widths[c_dst]]))
+            span_offset = (idx + 1) * base_width
+
             # get px coordinates of the src and dst nodes
-            c_src_span, c_src_depth = span_coords[c_src], depth_coords[c_src]
-            c_dst_span, c_dst_depth = span_coords[c_dst], depth_coords[c_dst]
+            c_src_span, c_src_depth = span_coords[c_src] + span_offset, depth_coords[c_src]
+            c_dst_span, c_dst_depth = span_coords[c_dst] + span_offset, depth_coords[c_dst]
 
             # get px coords of their parents
-            p_src_span, p_src_depth = span_coords[p_src], depth_coords[p_src]
-            p_dst_span, p_dst_depth = span_coords[p_dst], depth_coords[p_dst]
+            p_src_span, p_src_depth = span_coords[p_src] + span_offset, depth_coords[p_src]
+            p_dst_span, p_dst_depth = span_coords[p_dst] + span_offset, depth_coords[p_dst]
 
             # get pos of admix on src edge from src_dist else select midpoint on src edge
             if aedge.src_dist is None:
-                a_src_span, a_src_depth = span_mid[c_src], depth_mid[c_src]
+                a_src_span, a_src_depth = span_mid[c_src] + span_offset, depth_mid[c_src]
             else:
                 Δspan = abs(p_src_span - c_src_span) if self.mark.edge_type == "c" else 0.0
                 Δdepth = abs(p_src_depth - c_src_depth)
@@ -574,7 +582,7 @@ class RenderToytree:
 
             # get ypos of admix on dst edge from dst_dist else select midpoint on dst edge
             if aedge.dst_dist is None:
-                a_dst_span, a_dst_depth = span_mid[c_dst], depth_mid[c_dst]
+                a_dst_span, a_dst_depth = span_mid[c_dst] + span_offset, depth_mid[c_dst]
             else:
                 Δspan = abs(p_dst_span - c_dst_span) if self.mark.edge_type == "c" else 0.0
                 Δdepth = abs(p_dst_depth - c_dst_depth)
@@ -611,12 +619,16 @@ class RenderToytree:
             # EDGE path
             path = " ".join(path_format).format(**edge_dict)
 
+            aedge_style = aedge.style.copy()
+            if aedge_style.get("stroke") is None:
+                aedge_style["stroke"] = COLORS2[idx % len(COLORS2)]
+
             # TODO: split style not needed.
             # estyle['stroke'] = split_rgba_style(estyle['stroke'])
             xml.SubElement(
                 self.admix_xml, "path",
                 d=path,
-                style=concat_style_fix_color(aedge.style),
+                style=concat_style_fix_color(aedge_style),
             )
 
 
