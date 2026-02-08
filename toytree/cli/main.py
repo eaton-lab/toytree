@@ -19,8 +19,7 @@ Chain commands
 import sys
 from typing import Optional
 import textwrap
-import argparse
-from .make_wide import make_wide
+from argparse import ArgumentParser, RawDescriptionHelpFormatter
 from .cli_draw import get_parser_draw, run_draw
 from .cli_root import get_parser_root, run_root
 from .cli_get_node_data import get_parser_get_node_data, run_get_node_data
@@ -32,15 +31,15 @@ EPILOG = "EXAMPLE:\n$ toytree draw TREE -ts o -d 400 400 -v"
 VERSION = "..."
 
 
-def setup_parsers() -> argparse.ArgumentParser:
+def setup_parsers() -> ArgumentParser:
     """Setup and return an ArgumentParser w/ subcommands."""
-    parser = argparse.ArgumentParser(
+    parser = ArgumentParser(
         "toytree",
         # usage="%(prog)s",
         usage="toytree [subcommand] --help",
         #  description = '%(prog)s: testing help mods',
         # help="toytree...",
-        formatter_class=make_wide(argparse.RawDescriptionHelpFormatter, 120, 120),
+        formatter_class=lambda prog: RawDescriptionHelpFormatter(prog, width=120, max_help_position=120),
         # formatter_class=CustomHelpFormatter,
         description=textwrap.dedent("""
             ----------------------------------------------------------
