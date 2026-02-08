@@ -57,4 +57,5 @@ from toytree.utils.src.toytree_sequence import ToyTreeSequence as toytree_sequen
 from toytree.utils.src.style_axes import (
     set_axes_ticks_external,
     set_axes_box_outline,
+    debug_toyplot_canvas,
 )
