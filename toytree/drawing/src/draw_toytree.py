@@ -121,7 +121,7 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
     )
 
     # make range symmetric for circular trees
-    if style.layout == "c":
+    if style.layout[0] == "c":
         axes.aspect = "fit-range"
 
     # add ToyTreeMark to Cartesian axes.

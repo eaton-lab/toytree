@@ -35,8 +35,10 @@ def get_edge_midpoints(
             elif layout in ("r", "l"):
                 midx = (cx + px) / 2.
                 midy = cy
-            elif layout == "c":
-                raise NotImplementedError("TODO. For now, use w/ edge_type='c'.")
+            elif layout[0] == "c":
+                midx = (px + cx) / 2.
+                midy = (py + cy) / 2.
+                # raise NotImplementedError("TODO. For now, use w/ edge_type='c'.")
             else:  # "unrooted":
                 raise NotImplementedError("TODO. For now, use w/ edge_type='c'.")
         midpoints[cidx] = (midx, midy)

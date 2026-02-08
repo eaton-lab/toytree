@@ -176,8 +176,51 @@ def set_tip_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndar
 
     # add layout-based angles and styles.
     angles = mark.tip_labels_angles
+    tip_style = mark.tip_labels_style
     if mark.layout in ['u', 'l']:
         angles = mark.tip_labels_angles - 180
+        tip_style = mark.tip_labels_style.copy()
+        offset = toyplot.units.convert(
+            tip_style["-toyplot-anchor-shift"], "px", "px",
+        )
+        tip_style["text-anchor"] = "end"
+        tip_style["-toyplot-anchor-shift"] = -offset
+
+    # only concerned with tip Nodes
+    ntips = len(mark.tip_labels)
+
+    # set extents for unrooted layout
+    is_unrooted = mark.layout not in ['r', 'l', 'u', 'd'] and mark.layout[0] != "c"
+    if is_unrooted:
+        left = np.zeros(ntips)
+        right = np.zeros(ntips)
+        top = np.zeros(ntips)
+        bottom = np.zeros(ntips)
+        for idx, tip in enumerate(mark.tip_labels):
+            angle = mark.tip_labels_angles[idx]
+            style = mark.tip_labels_style.copy()
+            offset = toyplot.units.convert(
+                style["-toyplot-anchor-shift"], "px", "px",
+            )
+            if 90 < angle < 270:
+                style["text-anchor"] = "end"
+                style["-toyplot-anchor-shift"] = -offset
+                angle -= 180
+            ext = toyplot.text.extents(
+                text=[tip],
+                angle=[angle],
+                style=style,
+            )
+            left[idx] = ext[0][0]
+            right[idx] = ext[1][0]
+            top[idx] = ext[2][0]
+            bottom[idx] = ext[3][0]
+
+        extents[0][:ntips] = np.min([extents[0][:ntips], left], axis=0)
+        extents[1][:ntips] = np.max([extents[1][:ntips], right], axis=0)
+        extents[2][:ntips] = np.min([extents[2][:ntips], top], axis=0)
+        extents[3][:ntips] = np.max([extents[3][:ntips], bottom], axis=0)
+        return extents
 
     # else return the calculated text extents
     ext = toyplot.text.extents(
@@ -185,9 +228,6 @@ def set_tip_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndar
         angle=angles,
         style=mark.tip_labels_style
     )
-
-    # only concerned with tip Nodes
-    ntips = len(mark.tip_labels)
 
     # TEMPORARY HACK: until toyplot extents is fixed.
     # extend the tip label direction extra space.

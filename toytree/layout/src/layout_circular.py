@@ -20,12 +20,42 @@ class CircularLayout(BaseLayout):
         self.tcoords = self.coords[:self.tree.ntips, :].copy()
         self.set_fan_coords()
 
+
+    def _get_root_and_node_heights(self) -> Tuple[float, np.ndarray]:
+        """Return root height and node heights for layout projection.
+
+        Circular layouts need non-zero radial distances. If edge lengths
+        are disabled or all dists are zero, fall back to unit edge depths
+        without mutating the tree.
+        """
+        if self.style.use_edge_lengths and not np.isclose(
+            self.tree.treenode.height, 0.0
+        ):
+            node_heights = np.array([node.height for node in self.tree])
+            return self.tree.treenode.height, node_heights
+
+        root = self.tree.treenode
+        depths = {root: 0}
+        queue = list(root._children)
+        while queue:
+            node = queue.pop()
+            depths[node] = depths[node._up] + 1
+            queue.extend(node._children)
+
+        max_depth = max(depths.values()) if depths else 0
+        node_heights = np.zeros(self.tree.nnodes)
+        for node, depth in depths.items():
+            node_heights[node.idx] = max_depth - depth
+        return float(max_depth), node_heights
+
+
     def set_fan_coords(self):
         """Return array with x, y Node coordinates."""
 
         # position of the *aligned* tips on the fan circumference, the
         # first tips will be at 'start' (e.g., 0) and the final will be
         # at 'end' (e.g., 360 - unit) where unit is space between tips.
+        root_height, node_heights = self._get_root_and_node_heights()
         start, end = self._get_start_and_end_angles()
         endpoint = end - start != 360
 
@@ -43,12 +73,14 @@ class CircularLayout(BaseLayout):
         for idx in range(self.tree.ntips):
             node = self.tree[idx]
             theta = radians[idx]
-            hypo = self.tree.treenode.height - node.height
+            # hypo = self.tree.treenode.height - node.height
+            hypo = root_height - node_heights[node.idx]
             delta_y = hypo * np.sin(theta)
             delta_x = hypo * np.cos(theta)
             self.coords[idx, :] = (hub[0] + delta_x, hub[1] + delta_y)
             # set ttable tip heights
-            hypo = self.tree.treenode.height
+            # hypo = self.tree.treenode.height
+            hypo = root_height
             delta_y = hypo * np.sin(theta)
             delta_x = hypo * np.cos(theta)
             self.tcoords[idx, :] = (hub[0] + delta_x, hub[1] + delta_y)
@@ -57,7 +89,8 @@ class CircularLayout(BaseLayout):
         # circumferal position intermediate between its children's.
         for idx in range(self.tree.ntips, self.tree.nnodes - 1):
             node = self.tree[idx]
-            hypo = self.tree.treenode.height - node.height
+            # hypo = self.tree.treenode.height - node.height
+            hypo = root_height - node_heights[node.idx]
             theta = np.mean([radians[i.idx] for i in node.children])
             radians[idx] = theta
             delta_y = hypo * np.sin(theta)
