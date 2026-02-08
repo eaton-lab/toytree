@@ -89,13 +89,15 @@ def render_text(
 
             # draw textbox <text ...>
             if isinstance(box, toyplot.text.TextBox):
+                text_style = toyplot.style.combine(sty, box.style)
                 xml.SubElement(
                     group, "text",
                     x=str(box.left),
                     y=str(box.baseline),
                     # style=toyplot.style.to_css(box.style),
                     # style=concat_style_to_str2(sty)
-                    style=concat_style_fix_color(sty),
+                    style=concat_style_fix_color(text_style),
+                    # style=concat_style_fix_color(sty),
                 ).text = box.text
 
             # NOT TESTED

@@ -533,91 +533,61 @@ class RenderToytree:
             c_src, p_src = self.mark.etable[aedge.src]
             c_dst, p_dst = self.mark.etable[aedge.dst]
 
-            if self.mark.layout in ("r", "l", "u", "d"):
-                if self.mark.layout in ("r", "l"):
-                    depth_coords = self.nodes_x
-                    span_coords = self.nodes_y
-                    depth_mid = self.mid_x
-                    span_mid = self.mid_y
-                    depth_axis = "x"
-                else:
-                    depth_coords = self.nodes_y
-                    span_coords = self.nodes_x
-                    depth_mid = self.mid_y
-                    span_mid = self.mid_x
-                    depth_axis = "y"
-
-                depth_sign = -1 if self.mark.layout in ("r", "u") else 1
-
-                # get px coordinates of the src and dst nodes
-                c_src_span, c_src_depth = span_coords[c_src], depth_coords[c_src]
-                c_dst_span, c_dst_depth = span_coords[c_dst], depth_coords[c_dst]
-
-                # get px coords of their parents
-                p_src_span, p_src_depth = span_coords[p_src], depth_coords[p_src]
-                p_dst_span, p_dst_depth = span_coords[p_dst], depth_coords[p_dst]
-
-                # get pos of admix on src edge from src_dist else select midpoint on src edge
-                if aedge.src_dist is None:
-                    a_src_span, a_src_depth = span_mid[c_src], depth_mid[c_src]
-                else:
-                    Δspan = abs(p_src_span - c_src_span) if self.mark.edge_type == "c" else 0.0
-                    Δdepth = abs(p_src_depth - c_src_depth)
-                    nudge = 0.0 if Δdepth == 0 else Δspan * (aedge.src_dist / Δdepth)
-                    a, b = self.axes.project(depth_axis, [0.0, nudge])
-                    a_src_span = c_src_span + abs(a - b)
-                    a, b = self.axes.project(depth_axis, [0.0, aedge.src_dist])
-                    a_src_depth = c_src_depth + (depth_sign * abs(a - b))
-
-                # get ypos of admix on dst edge from dst_dist else select midpoint on dst edge
-                if aedge.dst_dist is None:
-                    a_dst_span, a_dst_depth = span_mid[c_dst], depth_mid[c_dst]
-                else:
-                    Δspan = abs(p_dst_span - c_dst_span) if self.mark.edge_type == "c" else 0.0
-                    Δdepth = abs(p_dst_depth - c_dst_depth)
-                    nudge = 0.0 if Δdepth == 0 else Δspan * (aedge.dst_dist / Δdepth)
-                    a, b = self.axes.project(depth_axis, [0.0, nudge])
-                    a_dst_span = c_dst_span + abs(a - b)
-                    a, b = self.axes.project(depth_axis, [0.0, aedge.dst_dist])
-                    a_dst_depth = c_dst_depth + (depth_sign * abs(a - b))
-
-                def to_screen(depth_value, span_value):
-                    if self.mark.layout in ("r", "l"):
-                        return depth_value, span_value
-                    return span_value, depth_value
-
-            else:
+            if self.mark.layout not in ("r", "l", "u", "d"):
                 raise ValueError(f"admixture_edges drawing not supported for layout={self.mark.layout}")
 
 
+            if self.mark.layout in ("r", "l"):
+                depth_coords = self.nodes_x
+                span_coords = self.nodes_y
+                depth_mid = self.mid_x
+                span_mid = self.mid_y
+                depth_axis = "x"
+            else:
+                depth_coords = self.nodes_y
+                span_coords = self.nodes_x
+                depth_mid = self.mid_y
+                span_mid = self.mid_x
+                depth_axis = "y"
 
-        #     elif self.mark.layout in ("u", "d"):
-        #         # get x and y of source and destination nodes
-        #         src_x, src_y = self.nodes_x[src], self.nodes_y[src]
-        #         dst_x, dst_y = self.nodes_x[dest], self.nodes_y[dest]
+            depth_sign = -1 if self.mark.layout in ("r", "d") else 1
 
-        #         # get x and y of PARENTS of source and destination nodes
-        #         p_src_x, p_src_y = self.nodes_x[psrc], self.nodes_y[psrc]
-        #         p_dst_x, p_dst_y = self.nodes_x[pdest], self.nodes_y[pdest]
+            # get px coordinates of the src and dst nodes
+            c_src_span, c_src_depth = span_coords[c_src], depth_coords[c_src]
+            c_dst_span, c_dst_depth = span_coords[c_dst], depth_coords[c_dst]
 
-        #         # check whether the edges overlap, in which case we will
-        #         # draw a straight line between them, otherwise the line
-        #         # will be angled. Straight it preferred.
-        #         if self.mark.layout == "d":
-        #             disjoint = (dst_y <= p_src_y) or (src_y <= p_dst_y)
-        #             sign = 1
-        #         else:
-        #             disjoint = (dst_y >= p_src_y) or (src_y >= p_dst_y)
-        #             sign = -1
+            # get px coords of their parents
+            p_src_span, p_src_depth = span_coords[p_src], depth_coords[p_src]
+            p_dst_span, p_dst_depth = span_coords[p_dst], depth_coords[p_dst]
 
-        #         if disjoint or (not shared):
-        #             src_mid_y = src_y - sign * (abs(src_y - p_src_y) * aprop[0])
-        #             dest_mid_y = dst_y - sign * (abs(dst_y - p_dst_y) * aprop[1])
-        #         else:
-        #             amin = min([src_y, dst_y])
-        #             amax = max([p_src_y, p_dst_y])
-        #             admix_ymid = amin - sign * abs(amax - amin) * aprop[0]
-        #             dest_mid_y = src_mid_y = admix_ymid
+            # get pos of admix on src edge from src_dist else select midpoint on src edge
+            if aedge.src_dist is None:
+                a_src_span, a_src_depth = span_mid[c_src], depth_mid[c_src]
+            else:
+                Δspan = abs(p_src_span - c_src_span) if self.mark.edge_type == "c" else 0.0
+                Δdepth = abs(p_src_depth - c_src_depth)
+                nudge = 0.0 if Δdepth == 0 else Δspan * (aedge.src_dist / Δdepth)
+                a, b = self.axes.project(depth_axis, [0.0, nudge])
+                a_src_span = c_src_span + abs(a - b)
+                a, b = self.axes.project(depth_axis, [0.0, aedge.src_dist])
+                a_src_depth = c_src_depth + (depth_sign * abs(a - b))
+
+            # get ypos of admix on dst edge from dst_dist else select midpoint on dst edge
+            if aedge.dst_dist is None:
+                a_dst_span, a_dst_depth = span_mid[c_dst], depth_mid[c_dst]
+            else:
+                Δspan = abs(p_dst_span - c_dst_span) if self.mark.edge_type == "c" else 0.0
+                Δdepth = abs(p_dst_depth - c_dst_depth)
+                nudge = 0.0 if Δdepth == 0 else Δspan * (aedge.dst_dist / Δdepth)
+                a, b = self.axes.project(depth_axis, [0.0, nudge])
+                a_dst_span = c_dst_span + abs(a - b)
+                a, b = self.axes.project(depth_axis, [0.0, aedge.dst_dist])
+                a_dst_depth = c_dst_depth + (depth_sign * abs(a - b))
+
+            def to_screen(depth_value, span_value):
+                if self.mark.layout in ("r", "l"):
+                    return depth_value, span_value
+                return span_value, depth_value
 
             # build the SVG path from top of src node edge to src-admix to dst-admix to dst node.
             sdx, sdy = to_screen(
@@ -637,21 +607,6 @@ class RenderToytree:
                 "dux": dux,
                 "duy": duy,
             }
-
-        #     else:
-        #         edge_dict = {
-        #             'sdx': src_x,  # + x_shift_src_tip + snudge,
-        #             'sdy': src_y,  # src_tip_y,
-
-        #             'sux': src_x + x_shift_src_mid,
-        #             'suy': src_mid_y,  # admix_ymid,
-
-        #             'ddx': dst_x + x_shift_dest_mid,
-        #             'ddy': dest_mid_y,  # admix_ymid,
-
-        #             'dux': xend,
-        #             'duy': p_dst_y,  # dest_tip_y,
-        #         }
 
             # EDGE path
             path = " ".join(path_format).format(**edge_dict)
