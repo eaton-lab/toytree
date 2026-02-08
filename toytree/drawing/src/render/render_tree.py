@@ -29,8 +29,8 @@ from multipledispatch import dispatch
 import numpy as np
 import toyplot
 from toytree.drawing import ToyTreeMark
-from toytree.drawing.src.render_text import render_text
-from toytree.drawing.src.render_marker import render_marker
+from toytree.drawing.src.render.render_text import render_text
+from toytree.drawing.src.render.render_marker import render_marker
 from toytree.color.src.concat import concat_style_fix_color
 from toytree.layout.src.get_edge_midpoints import get_edge_midpoints
 

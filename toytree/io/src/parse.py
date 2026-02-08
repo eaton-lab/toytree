@@ -10,8 +10,6 @@ import re
 from pathlib import Path
 import requests
 
-from toytree.core import ToyTree
-from toytree.core.multitree import MultiTree
 from toytree.io.src.newick import parse_newick_string
 from toytree.io.src.nexus import get_newicks_and_translation_from_nexus
 from toytree.io.src.utils import replace_whitespace
@@ -22,6 +20,8 @@ ILLEGAL_NEWICK_CHARS = re.compile(r"[:;(),\[\]\t\n\r=]")
 
 # PEP 484 recommend capitalizing alias names
 Url = TypeVar("Url")
+ToyTree = TypeVar("ToyTree")
+MultiTree = TypeVar("MultiTree")
 
 
 def parse_generic_to_str(data: Union[str, Url, Path]) -> str:

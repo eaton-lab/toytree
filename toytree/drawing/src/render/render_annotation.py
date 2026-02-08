@@ -11,7 +11,7 @@ from multipledispatch import dispatch
 import toyplot.html
 from toyplot.coordinates import Cartesian
 
-from toytree.drawing.src.render_marker import render_marker
+from toytree.drawing.src.render.render_marker import render_marker
 from toytree.color.src.concat import concat_style_fix_color
 from toytree.drawing.src.mark_annotation import (
     AnnotationMarker,
