@@ -180,7 +180,7 @@ if __name__ == "__main__":
     c, a, m = TREE.draw(width=400, height=600, node_sizes=5)
     DATA = np.array([[0.5, 0.3, 0.2]] * (TREE.nnodes))
     COLORS = toytree.color.COLORS1
-    TREE.annotate.add_node_pie_charts(axes=a, data=DATA, colors="Greys", mask=False)
+    TREE.annotate.add_node_pie_markers(axes=a, data=DATA, colors="Greys", mask=False)
 
     import toyplot.browser
     toyplot.browser.show(c)

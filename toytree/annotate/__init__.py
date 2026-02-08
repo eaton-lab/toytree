@@ -10,7 +10,7 @@ Examples
 --------
 >>> tree = toytree.rtree.bdtree(10, seed=123)
 >>> c, a, m = tree.draw(layout='d')
->>> toytree.annotate.add_node_pie_charts(axes=a, **kwargs)
+>>> toytree.annotate.add_node_pie_markers(axes=a, **kwargs)
 
 >>> tree = toytree.rtree.bdtree(10, seed=123)
 >>> c, a, m = tree.draw(layout='d', xbaseline=10)
@@ -24,11 +24,11 @@ Functions
 ---------
 - add_node_markers()
 - add_node_labels()
-- add_node_pie_charts()
+- add_node_pie_markers()
 
 - add_edge_markers()
 - add_edge_labels()
-- add_edge_pie_charts()
+- add_edge_pie_markers()
 - add_edge_root()
 
 - add_scale_bar()

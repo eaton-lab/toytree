@@ -35,7 +35,7 @@ __all__ = [
     "add_node_bars",
     # "add_node_histograms",
     # "add_node_densigrams",
-    # "add_node_pie_charts",  # see add_pie_markers.py
+    # "add_node_pie_markers",  # see add_pie_markers.py
 ]
 
 

@@ -30,7 +30,7 @@ Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = [
     "add_edge_markers",
     "add_edge_labels",
-    # "add_edge_pie_charts",  # see add_pie_markers.py
+    # "add_edge_pie_markers",  # see add_pie_markers.py
 ]
 
 

@@ -386,10 +386,11 @@ def simulate_discrete_data(
     rate_scalar: Optional[float] = 1.0,
     nreplicates: int = 1,
     tips_only: bool = False,
+    trait_name: Optional[str] = None,
     state_names: Optional[List[Any]] = None,
     seed: Optional[int] = None,
     inplace: bool = False,
-) -> Union[pd.DataFrame, None]:
+) -> Union[pd.DataFrame, pd.Series, None]:
     """Return trait values simulated under a discrete Markov model.
 
     The number of states and model type can be entered without any
@@ -434,9 +435,14 @@ def simulate_discrete_data(
         State names will be substituted for simulated discrete integer
         states in the entered order.
     nreplicates: int
-        If nreplicates is > 0 then the returned object is a DataFrame
-        with replicate numbers as columns labels, otherwise a single
-        Series is returned.
+        If nreplicates is > 1 then a DataFrame is returned with
+        replicate numbers as columns. If nreplicates is <= 1 then a
+        single Series is returned.
+    trait_name: Optional[str]
+        Name for the returned trait(s). If provided and nreplicates is
+        1, the Series name is set to this value. If nreplicates is > 1,
+        columns are named `{trait_name}_0`, `{trait_name}_1`, etc. If
+        None, traits are named `t0`, `t1`, ... (current default).
     inplace: bool
         If False a DataFrame is returned, if True a ToyTree is returned
         with data stored to Nodes.
@@ -488,6 +494,9 @@ def simulate_discrete_data(
         seed=seed,
     )
 
+    if nreplicates < 1:
+        nreplicates = 1
+
     # get DataFrame or Series result
     traits = simulator.run(nreplicates)
 
@@ -499,6 +508,23 @@ def simulate_discrete_data(
     if state_names is not None:
         for idx, value in enumerate(state_names):
             traits.replace(to_replace=idx, value=value, inplace=True)
+
+    # rename traits if user provided a trait_name
+    if trait_name is not None:
+        if nreplicates == 1:
+            traits.columns = [trait_name]
+        else:
+            traits.columns = [f"{trait_name}_{i}" for i in range(nreplicates)]
+
+    # return a Series if only one replicate
+    if nreplicates == 1:
+        series = traits.iloc[:, 0].copy()
+        if series.name is None:
+            series.name = traits.columns[0]
+        if not inplace:
+            return series
+        tree.set_node_data_from_dataframe(series.to_frame(), inplace=True)
+        return None
 
     # store data to ToyTree or return as DataFrame
     if not inplace:

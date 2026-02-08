@@ -51,17 +51,21 @@ class TestDiscreteMarkovModelFit(unittest.TestCase):
             seed=2,
         )
         data.index = tree.get_tip_labels()
-        result, prob_df, state_df = infer_ancestral_states_discrete_mk(
+        out = infer_ancestral_states_discrete_mk(
             tree=tree,
             data=data,
             nstates=2,
             model="ER",
         )
+        result = out["model_fit"]
+        df = out["data"]
         self.assertTrue(np.isfinite(result.log_likelihood))
-        self.assertEqual(prob_df.shape[0], tree.nnodes)
-        prob_sums = prob_df.sum(axis=1).to_numpy()
+        self.assertEqual(df.shape[0], tree.nnodes)
+        prob_col = f"{data.name}_anc_posterior"
+        prob_sums = pd.DataFrame(df[prob_col].tolist()).sum(axis=1).to_numpy()
         np.testing.assert_allclose(prob_sums, np.ones(tree.nnodes))
-        self.assertEqual(state_df.shape[0], tree.nnodes)
+        state_col = f"{data.name}_anc"
+        self.assertEqual(df[state_col].shape[0], tree.nnodes)
 
     def test_default_fixed_rates_allow_sym_model(self):
         """Default fixed rates should not error for SYM models."""

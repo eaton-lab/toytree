@@ -116,6 +116,7 @@ nav:
       - rooting trees: rooting.ipynb
       - topology changes: mod-topology.ipynb
       - edge/dist changes: mod-edges.ipynb
+      - make ultrametric: make-ultrametric.ipynb
       # - Tree moves: ...
 
     - <i>.enum</i> - tree enumeration:
@@ -130,7 +131,8 @@ nav:
 
     - <i>.pcm</i> - evol analyses:
       - sim cont. traits BM: sim_continuous_bm.ipynb
-      # - sim discrete traits: sim_discrete.ipynb      
+      - sim discrete traits: pcm-simulate-discrete.ipynb
+      - fit discrete traits: pcm-fit-discrete.ipynb
       # - sim/fit continuous:
       # - sim/fit discrete: 
       - vcv matrix, etc: vcv.ipynb
@@ -141,8 +143,11 @@ nav:
       # - Root inference: ...
 
     # - <i>.infer</i> - inference:
-      # - MulTree analysis: ...
-      # - Tree inference: ...
+    - <i>.infer</i> - inference:
+      - UPGMA: infer-upgma.ipynb
+      - Neighbor-joining: infer-neighbor-joining.ipynb
+      - Consensus trees: infer-consensus.ipynb
+      - Parsimony indices: infer-parsimony.ipynb
 
     - <i>.annotate</i> - add to drawings: annotate-intro.ipynb
       # - annotations: 

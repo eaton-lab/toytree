@@ -4,9 +4,10 @@
 
 """
 
-from typing import Sequence, Union, TypeVar
+from typing import Sequence, Union, TypeVar, Mapping, Any, Optional
 
 import numpy as np
+import pandas as pd
 from toytree.core import ToyTree
 from toytree.drawing import Cartesian, Mark
 from toytree.style import check_arr, get_color_mapped_values
@@ -14,6 +15,7 @@ from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_match
 from toytree.core.apis import add_subpackage_method, AnnotationAPI
 from toytree.annotate.src.add_edge_markers import get_edge_midpoints
 from toytree.drawing.src.mark_pie import PieChartMark
+from toytree.data._src.expand_node_mapping import expand_node_mapping
 from toytree.style.src.validate_data import (
     validate_numeric,
     validate_mask,
@@ -21,14 +23,15 @@ from toytree.style.src.validate_data import (
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = [
-    "add_node_pie_charts",
-    "add_edge_pie_charts",
+    "add_node_pie_markers",
+    "add_edge_pie_markers",
 ]
 
 
 def validate_pie_data(
     tree: ToyTree,
-    data: np.ndarray,
+    data: Union[np.ndarray, Sequence, Mapping],
+    mask: Optional[np.ndarray] = None,
     # min_size: float = 1e-9,
     # mask: np.ndarray = None,
 ) -> np.ndarray:
@@ -42,7 +45,50 @@ def validate_pie_data(
     - 1-D array -> 2-D array
     - 2-D array -> 2-D array sums to 1
     """
-    assert data.min() >= 0, "negative values are not allowed in pie chart data."
+    if isinstance(data, pd.Series):
+        data = data.to_dict()
+
+    if isinstance(data, Mapping):
+        mapping = expand_node_mapping(tree, dict(data))
+        if mask is None and len(mapping) != tree.nnodes:
+            raise ValueError(
+                f"pie chart data dict must include all nnodes={tree.nnodes} "
+                f"when no mask is provided; found {len(mapping)} entries."
+            )
+        rows = []
+        ncols = None
+        for node in tree:
+            if mask is not None and not mask[node._idx]:
+                rows.append(None)
+                continue
+            value = mapping.get(node)
+            if value is None:
+                raise ValueError(
+                    "pie chart data dict is missing values for masked nodes. "
+                    "Provide values for all nodes included by the mask."
+                )
+            if np.isscalar(value):
+                if value > 1:
+                    raise ValueError(
+                        "scalar pie chart values must be <= 1 to infer two categories."
+                    )
+                row = [value, 1 - value]
+            else:
+                row = list(value)
+            if ncols is None:
+                ncols = len(row)
+            rows.append(row)
+        if ncols is None:
+            raise ValueError("pie chart data dict contained no usable values.")
+        rows = [([np.nan] * ncols) if row is None else row for row in rows]
+        data = np.array(rows, dtype=float)
+    else:
+        data = np.array(data, dtype=float)
+
+    if mask is None:
+        assert data.min() >= 0, "negative values are not allowed in pie chart data."
+    else:
+        assert np.nanmin(data) >= 0, "negative values are not allowed in pie chart data."
     assert data.shape[0] in (tree.nnodes, tree.nnodes - 1), (
         f"pie chart data must be shape (nnodes, nvalues), your data is {data.shape}.")
 
@@ -56,15 +102,20 @@ def validate_pie_data(
 
     # 2D arrays represent (ntips, ntraits) data.
     else:
-        assert np.allclose(data.sum(axis=1), 1), "pie chart data row values must sum to 1."
+        if mask is None:
+            assert np.allclose(data.sum(axis=1), 1), "pie chart data row values must sum to 1."
+        else:
+            rowsum = np.nansum(data, axis=1)
+            rowsum = rowsum[mask]
+            assert np.allclose(rowsum, 1), "pie chart data row values must sum to 1."
     return data
 
 
 @add_subpackage_method(AnnotationAPI)
-def add_node_pie_charts(
+def add_node_pie_markers(
     tree: ToyTree,
     axes: Cartesian,
-    data: np.ndarray,
+    data: Union[np.ndarray, Sequence, Mapping],
     size: Union[int, Sequence[int]] = 10,
     colors: Union[Sequence[Color], Color] = None,
     ostroke: Color = "#262626",
@@ -76,7 +127,7 @@ def add_node_pie_charts(
     xshift: int = 0,
     yshift: int = 0,
 ) -> Mark:
-    """Return a toyplot Mark of node markers added to a tree plot.
+    """Return a toyplot Mark of node pie markers added to a tree plot.
 
     This adds node markers to the last tree drawn on the Cartesian
     axes. The shape, size, color, and style of markers can be modified.
@@ -85,8 +136,10 @@ def add_node_pie_charts(
     ----------
     axes: Cartesian
         A toyplot Cartesian axes object containing a tree drawing.
-    data: numpy.ndarray
-        Array of shape(ncategories, nnodes) with rows summing to 1. 
+    data: numpy.ndarray, Sequence, Mapping, or str
+        Array / sequence of shape (nnodes, ncategories) with rows summing to 1,
+        or a mapping of node queries -> category weights. A str is treated
+        as a node feature name.
     size: int or Sequence[int]
         Size of markers as single int or Sequence of ints, in px units.
     colors: None, str, tuple, or array, or Sequence
@@ -120,7 +173,7 @@ def add_node_pie_charts(
     >>> arr = (arr.T / arr.sum(axis=1)).T
 
     >>> # add pie charts to all internal Nodes
-    >>> tree.annotate.add_node_pie_charts(
+    >>> tree.annotate.add_node_pie_markers(
     >>>     axes=axes, data=arr, size=20, mask=(0, 1, 1),
     >>>     istroke_width=0.75, istroke="black", rotate=-45,
     >>> )
@@ -134,7 +187,9 @@ def add_node_pie_charts(
 
     # check and cleanup data input.
     # TODO: option to collapse categories below a minimum percentage
-    data = validate_pie_data(tree, data)
+    if isinstance(data, str):
+        data = tree.get_node_data(data, missing=float("nan"))
+    data = validate_pie_data(tree, data, mask=mask)
 
     # expand colormap to an array of colors
     if colors is None:
@@ -177,10 +232,10 @@ def add_node_pie_charts(
 
 
 @add_subpackage_method(AnnotationAPI)
-def add_edge_pie_charts(
+def add_edge_pie_markers(
     tree: ToyTree,
     axes: Cartesian,
-    data: np.ndarray,
+    data: Union[np.ndarray, Sequence, Mapping],
     size: Union[int, Sequence[int]] = 10,
     colors: Union[Sequence[Color], Color] = None,
     ostroke: Color = "#262626",
@@ -192,7 +247,7 @@ def add_edge_pie_charts(
     xshift: int = 0,
     yshift: int = 0,
 ) -> Mark:
-    """Return a toyplot Mark of edge pie charts added to a tree plot.
+    """Return a toyplot Mark of edge pie markers added to a tree plot.
 
     This adds edge pie chart markers to the last tree drawn on the
     Cartesian axes.
@@ -201,8 +256,10 @@ def add_edge_pie_charts(
     ----------
     axes: Cartesian
         A toyplot Cartesian axes object containing a tree drawing.
-    data: numpy.ndarray
-        Array of shape(ncategories, nnodes) with rows summing to 1. 
+    data: numpy.ndarray, Sequence, Mapping, or str
+        Array / sequence of shape (nnodes, ncategories) with rows summing to 1,
+        or a mapping of node queries -> category weights. A str is treated
+        as a node feature name.
     size: int or Sequence[int]
         Size of markers as single int or Sequence of ints, in px units.
     colors: None, str, tuple, or array, or Sequence
@@ -236,7 +293,7 @@ def add_edge_pie_charts(
     >>> arr = (arr.T / arr.sum(axis=1)).T
 
     >>> # add pie charts to all internal Nodes
-    >>> tree.annotate.add_edge_pie_charts(
+    >>> tree.annotate.add_edge_pie_markers(
     >>>     axes=axes, data=arr, size=20, mask=False,
     >>>     istroke_width=0.75, istroke="black", rotate=-45,
     >>> )
@@ -250,11 +307,14 @@ def add_edge_pie_charts(
     #coords = _get_edge_midpoints(tree, mark.ntable, mark.layout, mark.edge_type)
     coords = get_edge_midpoints(mark.etable, mark.ntable, mark.layout, mark.edge_type)
 
-    mask = validate_mask(tree, style={"node_mask": mask})[:nedges]
+    full_mask = validate_mask(tree, style={"node_mask": mask})
+    mask = full_mask[:nedges]
 
     # validate data.
     # TODO: option to collapse categories below a minimum percentage
-    data = validate_pie_data(tree, data)
+    if isinstance(data, str):
+        data = tree.get_node_data(data, missing=float("nan"))
+    data = validate_pie_data(tree, data, mask=full_mask)
 
     # expand colormap to ncolor (note: not nedges)
     if colors is None:
@@ -309,7 +369,7 @@ if __name__ == "__main__":
     arr = (arr.T / arr.sum(axis=1)).T
 
     # add pie charts to all internal Nodes
-    tree.annotate.add_node_pie_charts(
+    tree.annotate.add_node_pie_markers(
         axes=axes,
         data=arr,
         size=20,
@@ -319,4 +379,7 @@ if __name__ == "__main__":
         rotate=0,
         colors="Greys"
     )
+
+
+# Backwards-compatible aliases with warnings
     toytree.utils.show(canvas)
