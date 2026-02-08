@@ -843,54 +843,15 @@ class ToyTree(metaclass=ToyTreeMeta):
 
     ###################################################
     # COORDINATE LAYOUT FUNCTIONS
-    # push to .layout subpackage
+    # see .layout submodule for methods to fetch drawing coordinates
+    # while taking into account drawing style args like edge type and
+    # layout style (e.g., up, down, etc)
     ###################################################
 
     def _iter_node_coordinates(self) -> Iterator[Tuple[float, float]]:
         """Generator of 'unstyled' cached node coordinates."""
         for node in self:
             yield node._x, node._height
-
-    # def get_node_coordinates(self, **kwargs) -> pd.DataFrame:
-    #     """Return a DataFrame with xy coordinates for plotting nodes.
-
-    #     This returns coordinates that could be used when adding
-    #     additional annotations to plots, such as scatterplot points,
-    #     or error bars on top of nodes. By default Node idx=0 will be
-    #     located at coordinate position (0, 0), which can be modified
-    #     using the `xbaseline` and `ybaseline` args.
-
-    #     Take care when calling this function that the coordinates
-    #     will be different depending on the *style* arguments applied.
-    #     The style args come from the `.style` dict-like object of the
-    #     ToyTree, and can be overriden by additional args to this func,
-    #     the same as in the `.draw()` function. For example, layout
-    #     facing down ('d') will yield different coordinates than layout
-    #     facing up ('u').
-
-    #     Examples
-    #     --------
-    #     >>> style = {'layout': 'd', 'xbaseline': 10}
-    #     >>> canvas, axes, mark = tree.draw(**style)
-    #     >>> node_coords = tree.get_node_coordinates(**style)
-    #     >>> axes.scatterplot(coords.x, coords.y, size=10);
-    #     """
-    #     style = get_tree_style_base(self, **kwargs)
-    #     style = validate_style(self, style, **kwargs)
-    #     coords = get_layout(self, style).coords
-    #     data = pd.DataFrame(
-    #         columns=('x', 'y'),
-    #         index=range(self.nnodes),
-    #         data=coords,
-    #     )
-    #     return data
-
-    # def get_tip_coordinates(self, **kwargs) -> pd.DataFrame:
-    #     """Return a DataFrame with xy coordinates for tip nodes.
-
-    #     See `ToyTree.get_node_coordinates` for details.
-    #     """
-    #     return self.get_node_coordinates(**kwargs).iloc[:self.ntips]
 
     ###################################################
     # FULL TREE DATA GET/SET
@@ -900,9 +861,10 @@ class ToyTree(metaclass=ToyTreeMeta):
     # - set_node_data_from_dataframe
     # - get_node_data
     # - get_tip_data
+    # - get_feature_dict
     ###################################################
 
-    def get_feature_dict(self, keys: str = None, values: str = None) -> Dict[str, Any]:
+    def get_feature_dict(self, keys: str = None, values: str = None, tips_only: bool = False) -> Dict[str, Any]:
         """Return a dict mapping selected Node features as keys, values.
 
         This can be used to return a dict mapping any two arbitrary
@@ -933,7 +895,9 @@ class ToyTree(metaclass=ToyTreeMeta):
         """
         ndict = {}
         try:
-            for _, node in self._idx_dict.items():
+            # _, node in self._idx_dict.items():
+            visit = self[:self.ntips] if tips_only else self
+            for node in visit:
                 if keys is not None:
                     key = getattr(node, keys)
                 else:
@@ -952,11 +916,16 @@ class ToyTree(metaclass=ToyTreeMeta):
             ) from exc
 
         # check that keys were not duplicated
-        if len(ndict) != self.nnodes:
-            raise ToytreeError(
-                f"feature_dict cannot be built because {keys} "
-                "does not have unique values, and thus Nodes with the "
-                "same value cannot be represented as keys in the dict.")
+        msg = (
+            f"feature_dict cannot be built because {keys} "
+            "does not have unique values, and thus Nodes with the "
+            "same value cannot be represented as keys in the dict.")
+        if tips_only:
+            if len(ndict) != self.ntips:
+                raise ToytreeError(msg)
+        else:
+            if len(ndict) != self.nnodes:
+                raise ToytreeError(msg)
         return ndict
 
     ###################################################
