@@ -43,3 +43,5 @@ and phylogenetic algorithms.
 - **reproducibility**: simple and readable code.
 - **minimalism**: few dependencies, easy installation, organized modular code base.
 - **and more**: Have a feature request? Raise a ticket on [GitHub](http://github.com/eaton-lab/toytree).
+
+## [User Guide](/toytree/quick_guide/)
