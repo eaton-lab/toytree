@@ -8,3 +8,24 @@ build-backend = "setuptools.build_meta"
 #dependencies = [
 #    "mkdocstrings[python]>=0.18",
 #]
+
+[tool.ruff]
+# Target Python version
+target-version = "py310"
+line-length = 88
+
+[tool.ruff.lint]
+# Enable Pyflakes (F), Autopep8 (E, W), and Isort (I)
+select = ["F", "E", "W", "I", "D"]
+# D: Enables pydocstyle to enforce documentation rules
+ignore = ["D100", "D104"] # Ignore missing docstrings in public modules/packages if preferred
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.format]
+# Use Black-style formatting
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
