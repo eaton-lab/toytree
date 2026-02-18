@@ -1,16 +1,167 @@
 #!/usr/bin/env python
 
-"""General utilities for penalized likehood functions and testing.
-"""
+"""General utilities for penalized likehood functions and testing."""
 
-from typing import Dict, Tuple
+from concurrent.futures import ProcessPoolExecutor, as_completed
+from typing import Any, Callable, Dict, Tuple
+
 import numpy as np
 from loguru import logger
+
 from toytree.core import ToyTree
 
 Calibrations = Dict[int, Tuple[float, float]]
 PARAM_MIN = 1e-8
 PARAM_MAX = 1e8
+
+
+def _pack_log_rates(rates: np.ndarray, rate_floor: float = 1e-12) -> np.ndarray:
+    """Pack positive rate vector in log-space."""
+    return np.log(np.clip(np.asarray(rates, dtype=float), rate_floor, None))
+
+
+def _unpack_log_rates(log_rates: np.ndarray) -> np.ndarray:
+    """Unpack positive rate vector from log-space."""
+    return np.exp(np.asarray(log_rates, dtype=float))
+
+
+def _run_multistart(
+    worker: Callable[[dict[str, Any]], dict[str, Any]],
+    payloads: list[dict[str, Any]],
+    ncores: int = 1,
+) -> list[dict[str, Any]]:
+    """Run multistart fits serially or in parallel and collect results.
+
+    Worker must return a dict containing at least:
+    - start: int
+    - objective: float
+    - converged: bool
+    - message: str
+    """
+    if not payloads:
+        return []
+    workers = max(1, min(int(ncores), len(payloads)))
+    results: list[dict[str, Any]] = []
+
+    if workers == 1:
+        for payload in payloads:
+            try:
+                results.append(worker(payload))
+            except Exception as exc:  # pragma: no cover
+                results.append(
+                    {
+                        "start": int(payload.get("start", -1)),
+                        "objective": float("inf"),
+                        "converged": False,
+                        "message": f"{type(exc).__name__}: {exc}",
+                        "error": True,
+                    }
+                )
+        return sorted(results, key=lambda x: x["start"])
+
+    try:
+        with ProcessPoolExecutor(max_workers=workers) as pool:
+            fut_to_start = {pool.submit(worker, payload): int(payload.get("start", -1)) for payload in payloads}
+            for fut in as_completed(fut_to_start):
+                start = fut_to_start[fut]
+                try:
+                    results.append(fut.result())
+                except Exception as exc:
+                    results.append(
+                        {
+                            "start": start,
+                            "objective": float("inf"),
+                            "converged": False,
+                            "message": f"{type(exc).__name__}: {exc}",
+                            "error": True,
+                        }
+                    )
+        return sorted(results, key=lambda x: x["start"])
+    except (PermissionError, OSError) as exc:
+        logger.warning(f"ProcessPool unavailable; falling back to serial multistart: {exc}")
+        return _run_multistart(worker, payloads, ncores=1)
+
+
+def _select_best_multistart(results: list[dict[str, Any]]) -> dict[str, Any]:
+    """Return best multistart result preferring converged finite objectives."""
+    if not results:
+        raise ValueError("no multistart results were produced")
+    finite = [i for i in results if np.isfinite(i.get("objective", float("inf")))]
+    if not finite:
+        msgs = "; ".join(i.get("message", "unknown failure") for i in results[:3])
+        raise RuntimeError(f"all starts failed with non-finite objective: {msgs}")
+    conv = [i for i in finite if i.get("converged", False)]
+    pool = conv if conv else finite
+    return min(pool, key=lambda x: float(x["objective"]))
+
+
+def _get_children_map_from_edges(edges: np.ndarray) -> Dict[int, np.ndarray]:
+    """Return mapping parent_idx -> child_idxs from edge array."""
+    children_map: Dict[int, list[int]] = {}
+    for child, parent in edges:
+        children_map.setdefault(int(parent), []).append(int(child))
+    return {k: np.array(v, dtype=int) for k, v in children_map.items()}
+
+
+def _sigmoid(x: np.ndarray) -> np.ndarray:
+    return 1.0 / (1.0 + np.exp(-x))
+
+
+def _logit(p: np.ndarray) -> np.ndarray:
+    return np.log(p / (1.0 - p))
+
+
+def _age_has_upper(lo: float, hi: float, dist_floor: float, age_upper_switch: float) -> bool:
+    return np.isfinite(hi) and (hi < age_upper_switch) and (hi > lo + dist_floor)
+
+
+def _encode_age_params(
+    ages: np.ndarray,
+    ages_idxs: np.ndarray,
+    ages_bounds: list[tuple[float, float]],
+    children_map: Dict[int, np.ndarray],
+    dist_floor: float = 1e-12,
+    age_upper_switch: float = 1e6,
+) -> np.ndarray:
+    """Encode ages as unconstrained parameters using monotone transforms."""
+    params = []
+    ages_hat = np.asarray(ages, dtype=float).copy()
+    for nidx, (lo, hi) in zip(ages_idxs, ages_bounds):
+        child_idxs = children_map.get(int(nidx), np.array([], dtype=int))
+        child_max = float(ages_hat[child_idxs].max()) if child_idxs.size else 0.0
+        lo_eff = max(float(lo), child_max + dist_floor)
+        age = max(float(ages_hat[int(nidx)]), lo_eff + dist_floor)
+        if _age_has_upper(lo_eff, float(hi), dist_floor, age_upper_switch):
+            p = np.clip((age - lo_eff) / (float(hi) - lo_eff), 1e-8, 1 - 1e-8)
+            z = float(_logit(np.array([p]))[0])
+        else:
+            z = float(np.log(max(age - lo_eff, dist_floor)))
+        params.append(z)
+        ages_hat[int(nidx)] = age
+    return np.array(params, dtype=float)
+
+
+def _decode_age_params(
+    age_params: np.ndarray,
+    ages_base: np.ndarray,
+    ages_idxs: np.ndarray,
+    ages_bounds: list[tuple[float, float]],
+    children_map: Dict[int, np.ndarray],
+    dist_floor: float = 1e-12,
+    age_upper_switch: float = 1e6,
+) -> np.ndarray:
+    """Decode unconstrained age params to valid ages in postorder."""
+    ages_hat = np.asarray(ages_base, dtype=float).copy()
+    for z, nidx, (lo, hi) in zip(age_params, ages_idxs, ages_bounds):
+        child_idxs = children_map.get(int(nidx), np.array([], dtype=int))
+        child_max = float(ages_hat[child_idxs].max()) if child_idxs.size else 0.0
+        lo_eff = max(float(lo), child_max + dist_floor)
+        if _age_has_upper(lo_eff, float(hi), dist_floor, age_upper_switch):
+            age = lo_eff + (float(hi) - lo_eff) * float(_sigmoid(np.array([z]))[0])
+        else:
+            age = lo_eff + float(np.exp(z))
+        ages_hat[int(nidx)] = age
+    return ages_hat
 
 
 def _get_init_ages(tree: ToyTree, calibrations: Calibrations, mult: float = 1.5) -> Tuple[np.ndarray, np.ndarray]:
@@ -45,7 +196,7 @@ def _get_init_ages(tree: ToyTree, calibrations: Calibrations, mult: float = 1.5)
             calib = (float(calib), float(calib))
         span = calib[1] - calib[0]
         ages[nidx] = calib[0] + span / 2.
-        logger.debug(f"setting calibration: node {nidx} age to {ages[nidx]}")
+        # logger.debug(f"setting calibration: node {nidx} age to {ages[nidx]}")
 
     # set root age (if not calibrated) to mult of max internal age
     if np.isnan(ages[-1]):
@@ -81,7 +232,7 @@ def _get_init_ages(tree: ToyTree, calibrations: Calibrations, mult: float = 1.5)
                 # divide span into nnodes on path intervals
                 span = max_age - min_age
                 ages[nidx] = max_age - span / nsplits
-                logger.debug(f"{path}, nidx={nidx}, cidx={cidx}, pidx={pidx}, nsplits={nsplits}, min_age={min_age:.2f}, max_age={max_age:.2f} | set {nidx} to {ages[nidx]:.2f}")
+                # logger.debug(f"{path}, nidx={nidx}, cidx={cidx}, pidx={pidx}, nsplits={nsplits}, min_age={min_age:.2f}, max_age={max_age:.2f} | set {nidx} to {ages[nidx]:.2f}")
 
     # get age edge lengths
     children = edges[:, 0]
@@ -97,8 +248,7 @@ def _get_init_ages(tree: ToyTree, calibrations: Calibrations, mult: float = 1.5)
 
 
 def _get_params_bounds(tree: ToyTree, calibrations: Dict[int, Tuple[float, float]]) -> Tuple[dict[int, Tuple[float, float]]]:
-    """Return a list of tuples of (min, max) for every parameter that
-    must be estimated.
+    """Return a list of tuples of (min, max) for every parameter that must be estimated.
 
     The num parameters is (2 * ninternal_nodes - 1) = ninodes ages and
     ninodes - 1 rates. For nodes with a fixed age from calibrations the

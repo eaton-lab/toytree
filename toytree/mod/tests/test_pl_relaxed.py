@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from toytree.mod._src.penalized_likelihood.pl_relaxed_test import (
+from toytree.mod._src.penalized_likelihood.pl_relaxed import (
     edges_make_ultrametric_pl_relaxed,
 )
 from toytree.mod._src.penalized_likelihood.pl_utils import (

@@ -29,4 +29,6 @@ from toytree.mod._src.root_funcs import *
 from toytree.mod._src.penalized_likelihood.pl_clock import *
 from toytree.mod._src.penalized_likelihood.pl_discrete import *
 from toytree.mod._src.penalized_likelihood.pl_relaxed import *
+from toytree.mod._src.penalized_likelihood.pl_correlated import *
+from toytree.mod._src.penalized_likelihood.pl_make_ultrametric import *
 # from toytree.mod._src.tree_move import *

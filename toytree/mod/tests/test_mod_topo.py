@@ -12,11 +12,8 @@
 """
 
 import unittest
-from loguru import logger
 from toytree.utils.src.logger_setup import capture_logs
 import toytree
-
-logger.bind(name="toytree")
 
 
 class TestModLadderize(unittest.TestCase):
