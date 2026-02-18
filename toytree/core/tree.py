@@ -11,33 +11,70 @@ Examples
 """
 
 from __future__ import annotations
-from typing import (
-    Sequence, Dict, List, Optional, Iterator, Any, Union, Tuple,
-    TypeVar, Set, TYPE_CHECKING,
-)
+
 import re
-from pathlib import Path
 from copy import deepcopy
 from hashlib import md5
+from pathlib import Path
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Dict,
+    Iterator,
+    List,
+    Literal,
+    Mapping,
+    Sequence,
+    Set,
+    Tuple,
+    TypeAlias,
+)
+
 import numpy as np
+
+from toytree.color.src.colorkit import ColorType
+from toytree.core.apis import (
+    AnnotationAPI,
+    PhyloCompAPI,
+    TreeDistanceAPI,
+    TreeEnumAPI,
+    TreeModAPI,
+)
 
 # subpackage object APIs
 from toytree.core.node import Node
+from toytree.network.src.parse_network import AdmixtureEvent
 from toytree.style.src.style_base import TreeStyle
-from toytree.core.apis import (
-    TreeModAPI, TreeDistanceAPI, TreeEnumAPI, PhyloCompAPI, AnnotationAPI)
 from toytree.utils.src.exceptions import (
-    ToytreeError, NODE_NOT_IN_TREE_ERROR, NODE_INDEXING_ERROR, NodeDataError)
+    NODE_INDEXING_ERROR,
+    NODE_NOT_IN_TREE_ERROR,
+    NodeDataError,
+    ToytreeError,
+)
+
 if TYPE_CHECKING:
     from toyplot import Canvas
     from toyplot.coordinates import Cartesian
+
     from toytree.drawing import ToyTreeMark
-# import toytree
 
 
 # Type alias for Node selection
-Query = TypeVar("Query", str, int, Node)
-Color = TypeVar("Color", str, np.ndarray, tuple)  # toyplot.ColorMap, ...
+Query: TypeAlias = (str, int, Node)
+Color: TypeAlias = (str, np.ndarray, tuple)  # toyplot.ColorMap, ...
+TupleRangeMap: TypeAlias = (
+    tuple[str]
+    | tuple[str, int | float]
+    | tuple[str, int | float, int | float]
+    | tuple[str, int | float, int | float, int | float]
+)
+TupleColorMap: TypeAlias = (
+    tuple[str]
+    | tuple[str, Any]
+    | tuple[str, Any, int | float]
+    | tuple[str, Any, int | float, int | float]
+    | tuple[str, Any, int | float, int | float, int | float]
+)
 UNPACKING_MSG = """\
 Use unpacking on collections:
 >>> query_list = [0, 1, 2]
@@ -114,9 +151,9 @@ class ToyTree(metaclass=ToyTreeMeta):
     >>> isinstance(tree, toytree.ToyTree)
     >>> # True
     """
+
     def __init__(self, treenode: Node) -> ToyTree:
         """Initialize a ToyTree from a Node instance."""
-
         self.treenode = treenode
         self.nnodes: int = 0
         self.ntips: int = 0
@@ -125,7 +162,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         self._idx_dict: Dict[int, Node] = {}
         """Private dict mapping Node idx labels to Node instances."""
 
-        # toytree subpackage library API (mod, pcm, distance, layout)"""
+        # toytree subpackage library API (mod, pcm, distance, ...)"""
         self.mod = TreeModAPI(self)
         self.distance = TreeDistanceAPI(self)
         self.pcm = PhyloCompAPI(self)
@@ -148,7 +185,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         return (self[i] for i in range(self.nnodes))
 
     def __getitem__(self, idx: int) -> Node:
-        """Nodes can be accessed by indexing or slicing by idx label"""
+        """Nodes can be accessed by indexing or slicing by idx label."""
         # allow indexing by int, e.g., [3]
         try:
             # try casting to int, to support int, np.int64, np.int32, etc
@@ -177,27 +214,29 @@ class ToyTree(metaclass=ToyTreeMeta):
             raise ToytreeError(NODE_INDEXING_ERROR) from exc
 
     def __repr__(self) -> str:
-        """Short object representation for toytree.core.tree.ToyTree"""
+        """Short object representation for toytree.core.tree.ToyTree."""
         return f"<toytree.ToyTree at {hex(id(self))}>"
 
     def __dir__(self):
+        """Lazy loading."""
         return sorted(set(dir(type(self))) | set(self.__dict__.keys()))
 
     def __getattr__(self, name):
+        """Lazy loading."""
         _ensure_toytree_methods_loaded()
         try:
             return getattr(type(self), name).__get__(self, type(self))
         except AttributeError as exc:
             raise AttributeError(f"{type(self).__name__!s} has no attribute {name!r}") from exc
 
+    # DECIDED NOT TO DO THIS
     # def __str__(self) -> str:
     #     """Return ascii representation of tree."""
     #     return "\n".join(self.treenode._get_ascii()[0])
 
     @property
     def nedges(self) -> int:
-        """Return the number of edges in the tree, *not including the
-        root edge if the tree is rooted*.
+        """Return nedges *not including the root edge if tree is rooted*.
 
                         |  <- (not counted)
                        _T_
@@ -247,7 +286,8 @@ class ToyTree(metaclass=ToyTreeMeta):
         of Nodes (e.g., dist, support) they are also listed in
         ToyTree.edge_features.
 
-        Notes:
+        Notes
+        -----
         This function finds node features dynamically by visiting every
         Node in the tree. It is thus not performant for speed sensitive
         code.
@@ -283,9 +323,12 @@ class ToyTree(metaclass=ToyTreeMeta):
         for feat in feature:
             if feat in ("idx", "name", "height", "dist", "support"):
                 raise NodeDataError(
-                    f"Cannot remove required Node feature: {feature}")
+                    f"Cannot remove required Node feature: {feat}")
             for node in tree.traverse():
-                delattr(node, feat)
+                if hasattr(node, feat):
+                    delattr(node, feat)
+            if feat in tree.edge_features:
+                tree.edge_features.discard(feat)
         return tree
 
     #####################################################
@@ -313,16 +356,13 @@ class ToyTree(metaclass=ToyTreeMeta):
         return all(tris[:-1])
 
     def is_ultrametric(self, tol: float = 1e-9) -> bool:
-        """Return True if tree is ultrametric (all tips align) within
-        an allowed tolerance (default=1e-9).
-        """
+        """Return True if tree is ultrametric (all tips align within tolerance)."""
         heights = [i._height for i in self[:self.ntips]]
         return np.allclose(heights, 0., atol=tol)
 
     def copy(self) -> ToyTree:
         """Return a deepcopy of the ToyTree."""
         return deepcopy(self)
-        # return ToyTree(self.treenode.copy())
 
     #####################################################
     # TRAVERSAL
@@ -677,40 +717,41 @@ class ToyTree(metaclass=ToyTreeMeta):
 
     def get_node_mask(
         self,
-        *unmask: Query,
+        *show: Query,
         show_tips: bool = False,
         show_internal: bool = False,
         show_root: bool = False,
     ) -> np.ndarray:
-        """Return a boolean array masking all Nodes except selected.
+        """Return a boolean array selecting which Node markers are shown.
 
-        Creates a boolean mask to hide a set of selected Nodes.
-        The array is in Node idxorder (from 0-nnodes) where boolean
-        True will *mask* Nodes, and False will *show* Nodes. Additional
-        Nodes can be selected to be *unmasked* by entering Node int idx
-        labels or name strings. The default mask is an array that
-        masks tip Nodes but unmasks all internal Nodes.
+        This returns a boolean array in Node idx order (0..nnodes-1)
+        for use with ``draw(node_mask=...)``. In draw semantics:
+        True values are shown and False values are hidden.
+
+        By default all values are False. You can set broad visibility
+        groups using ``show_tips``, ``show_internal``, and ``show_root``,
+        and/or pass specific node queries in ``*show``.
 
         Parameters
         ----------
-        *unmask: int, str or Node
-            Select Nodes using a Query (int or str labels, including
-            regular expressions) that will be unmasked (shown).
+        *show: int, str or Node
+            Select Nodes to show using a Query (int or str labels,
+            including regular expressions).
         show_tips: bool
-            If True all tip Nodes will be masked.
+            If True all tip Nodes are shown.
         show_internal: bool
-            If True all internal Nodes will be masked.
+            If True all internal Nodes are shown.
         show_root: bool
-            If True the root Node will be masked.
+            If True the root Node is shown.
 
         Examples
         --------
         >>> tree = toytree.rtree.unittree(10, seed=123)
-        >>> # create a mask that only shows tips & Nodes 15 and 16
+        >>> # show only tips plus Nodes 15 and 16
         >>> mask = tree.get_node_mask(15, 16, show_tips=True)
         >>> tree.draw(ts='s', node_mask=mask);
         """
-        # default is all False (mask all)
+        # default is all False (show none)
         arr = np.zeros(self.nnodes, dtype=np.bool_)
         if show_tips:
             arr[:self.ntips] = True
@@ -718,10 +759,10 @@ class ToyTree(metaclass=ToyTreeMeta):
             arr[self.ntips:-1] = True
         if show_root:
             arr[-1] = True
-        # check unmask this way because 0 matches a Node.
-        if unmask != ():
+        # check show this way because 0 matches a Node.
+        if show != ():
             # supports regex expansion
-            for node in self.get_nodes(*unmask):
+            for node in self.get_nodes(*show):
                 arr[node.idx] = True
         return arr
 
@@ -771,7 +812,7 @@ class ToyTree(metaclass=ToyTreeMeta):
     # access nodes or features ...
     ###################################################
     def iter_tip_labels(self) -> Iterator[str]:
-        """Generator of tip labels in idx order."""
+        """Return generator of tip labels in idx order."""
         for node in self[:self.ntips]:
             yield node._name
 
@@ -846,7 +887,7 @@ class ToyTree(metaclass=ToyTreeMeta):
     ###################################################
 
     def _iter_node_coordinates(self) -> Iterator[Tuple[float, float]]:
-        """Generator of 'unstyled' cached node coordinates."""
+        """Return generator of 'unstyled' cached node coordinates."""
         for node in self:
             yield node._x, node._height
 
@@ -947,44 +988,45 @@ class ToyTree(metaclass=ToyTreeMeta):
 
     def draw(
         self,
-        tree_style: Optional[str] = None,
-        height: int = None,
-        width: int = None,
-        axes: Cartesian = None,
-        layout: str = None,
-        tip_labels: Union[bool, Sequence] = None,
-        tip_labels_colors: Union[Color, Sequence[Color]] = None,
-        tip_labels_angles: Union[float, Sequence[float]] = None,
-        tip_labels_style: Dict[str, Any] = None,
-        tip_labels_align: bool = None,
-        node_mask: Union[bool, Sequence[bool]] = None,
-        node_labels: Union[bool, Sequence[str]] = None,
-        node_labels_style: Dict[str, Any] = None,
-        node_sizes: Union[int, Sequence[int]] = None,
-        node_colors: Union[str, Sequence[str]] = None,
-        node_style: Dict[str, Any] = None,
-        node_hover: bool = None,
-        node_markers: Sequence[str] = None,
+        tree_style: Literal["n", "s", "p", "o", "c", "d", "b", "u", "r"] | None = None,
+        height: int | None = None,
+        width: int | None = None,
+        axes: Cartesian | None = None,
+        layout: str | None = None,
+        tip_labels: bool | str | Sequence[Any] | tuple[str, Any] | None = None,
+        tip_labels_colors: ColorType | Sequence[ColorType] | str | TupleColorMap | None = None,
+        tip_labels_angles: int | float | Sequence[int | float] | None = None,
+        tip_labels_style: Mapping[str, Any] | None = None,
+        tip_labels_align: bool | None = None,
+        node_mask: bool | Sequence[bool] | tuple[bool, bool, bool] | None = None,
+        node_labels: bool | str | Sequence[Any] | tuple[str, Any] | None = None,
+        node_labels_style: Mapping[str, Any] | None = None,
+        node_sizes: int | float | Sequence[int | float] | str | TupleRangeMap | None = None,
+        node_colors: ColorType | Sequence[ColorType] | str | TupleColorMap | None = None,
+        node_style: Mapping[str, Any] | None = None,
+        node_hover: bool | str | Sequence[str] | None = None,
+        node_markers: str | Sequence[Any] | None = None,
         node_as_edge_data: bool = False,
-        edge_colors: Union[str, Sequence[str]] = None,
-        edge_widths: float = None,
-        edge_type: str = None,
-        edge_style: Dict[str, Any] = None,
-        edge_align_style: Dict[str, Any] = None,
-        edge_markers: Sequence[str] = None,
-        edge_labels: Union[bool, Sequence[str]] = None,
-        use_edge_lengths: bool = None,
-        scale_bar: bool = None,
-        padding: float = None,
-        xbaseline: float = None,
-        ybaseline: float = None,
-        admixture_edges: List[Tuple[int, int]] = None,
-        shrink: float = None,
-        fixed_order: Sequence[str] = None,
-        fixed_position: Sequence[float] = None,
-        label: Optional[str] = None,
+        edge_colors: ColorType | Sequence[ColorType] | str | TupleColorMap | None = None,
+        edge_widths: int | float | Sequence[int | float] | str | TupleRangeMap | None = None,
+        edge_type: Literal["p", "c", "b"] | None = None,
+        edge_style: Mapping[str, Any] | None = None,
+        edge_align_style: Mapping[str, Any] | None = None,
+        edge_markers: Sequence[str] | None = None,
+        edge_labels: bool | Sequence[str] | None = None,
+        use_edge_lengths: bool | None = None,
+        scale_bar: bool | int | float | None = None,
+        padding: float | None = None,
+        xbaseline: float | None = None,
+        ybaseline: float | None = None,
+        admixture_edges: AdmixtureEvent | Sequence[AdmixtureEvent] | None = None,
+        shrink: float | None = None,
+        fixed_order: Sequence[str] | None = None,
+        fixed_position: Sequence[int | float] | None = None,
+        interior_algorithm: int = 0,
+        label: str | None = None,
         **kwargs,
-    ) -> Tuple[Canvas, Cartesian, ToyTreeMark]:
+    ) -> tuple[Canvas, Cartesian, ToyTreeMark]:
         """Return a drawing of the tree as a Toyplot figure.
 
         Drawings are returned as Tuple[Canvas, Cartesian, ToytreeMark]
@@ -1044,11 +1086,13 @@ class ToyTree(metaclass=ToyTreeMeta):
             If True tip names will be aligned and dashed edges will
             drawn to extend from tree edges to the tip names.
         node_mask: bool or Sequence[bool]
-            Masks nodes (size, color, shape, label) if True, shows
-            nodes if False. An iterable can be entered to selectively
-            hide some nodes. The convenience function .get_node_mask()
-            can be used to generate mask arrays. Default options
-            vary among tree styles, but usually hide tip nodes.
+            Controls which node markers / node labels are shown.
+            Options from simple to complex:
+            - bool: `False` shows all nodes, `True` hides all nodes.
+            - 3-item bool tuple: `(show_tips, show_internal, show_root)`.
+            - bool array: length `nnodes` in node idx order, where
+              `True` values are shown and `False` values are hidden.
+            - helper method: `.get_node_mask(...)` to build the array.
         node_labels: bool, str, or Sequence[str]
             Labels associated with nodes. True shows node idx labels,
             False hides node labels (sets to ""). A string or
@@ -1056,29 +1100,39 @@ class ToyTree(metaclass=ToyTreeMeta):
             An iterable of string values can be generated from node
             features using .get_node_data() or .get_node_labels(),
             the latter includes string formatting options.
-        node_sizes: int or Sequence[int]
-            Size of node markers can be set as an integer or Iterable
-            of integers in node order 0-nnodes. Node size 0 is hidden.
-            The node_mask argument sets nodes to size 0 when masked,
-            and overrides this argument.
-        node_colors: str or Sequence[str]
-            Color of node markers can be a single color or Iterable
-            of colors in node order 0-nnodes. Any valid toyplot color
-            (str, rgb array, rgba array, hex, etc) is accepted. See
-            the toyplot.color module. The default color palette is
-            accessible from toytree.colors. If all nodes will be set
-            to the same color it is more efficient to use the
-            node_style dictionary (node_style={"fill": 'red'}). If
-            used, node_colors overrides 'fill' in node_style.
-        node_style: Dict[str, str]
-            A dict of valid CSS styles to apply to node markers, such
-            as 'fill', 'stroke'. See tree.style for options.
-        node_hover: True, False, or Sequence[str]
-            Default is True in which case node hover will show the
-            node values. If False then no hover is shown. If a list or
-            dict is provided (which should be in node order) then the
-            values will be shown in order. If a dict then labels can
-            be provided as well.
+        node_sizes: float, Sequence[float], str, or tuple
+            Controls node marker sizes. Options from simple to complex:
+            - scalar number: apply one size to all nodes.
+            - numeric sequence: per-node sizes in node idx order.
+            - feature name (str): map a node feature to a size range.
+            - tuple: `(feature, min, max[, nan])` for explicit mapping.
+            Node size 0 is hidden. Nodes hidden by `node_mask` are not
+            drawn regardless of size.
+        node_colors: Color, Sequence[Color], str, or tuple
+            Controls node marker fill colors. Options from simple to
+            complex:
+            - single color: apply one color to all nodes.
+            - color sequence: per-node colors in node idx order.
+            - feature name (str): map a node feature to colors.
+            - tuple: `(feature, colormap[, domain_min, domain_max])`
+              for explicit feature-to-colormap mapping.
+            Any valid toyplot color type is accepted. If all nodes
+            share one color, using `node_style={"fill": ...}` is more
+            efficient. `node_colors` overrides `node_style["fill"]`.
+        node_style: Dict[str, Any]
+            CSS-like style dict applied to node markers (e.g.,
+            `"fill"`, `"stroke"`, `"stroke-width"`, `"fill-opacity"`).
+            Use this for shared marker styling across all nodes.
+            Per-node arguments such as `node_colors` and `node_sizes`
+            override corresponding style fields when both are set.
+        node_hover: bool, str, or Sequence[str]
+            Controls tooltip text shown when hovering nodes (HTML).
+            Options:
+            - `None` or `False`: disable node hover text.
+            - `True`: include default feature hover text.
+            - `str`: include one named node feature.
+            - `Sequence[str]`: include multiple named node features.
+            Note: node markers must have size > 0 to be hoverable.
         node_markers: str or Sequence[str]
             The shape of node markers: 'o'=circle, 's'=square. See
             toyplot documentation for all available options:
@@ -1105,12 +1159,11 @@ class ToyTree(metaclass=ToyTreeMeta):
             If True edge lengths ('dist' features of TreeNodes) are
             represented in drawings. If False all terminal edges are
             extended to align tips at 0.
-        scale_bar: bool
-            If True then the axis corresponding to the height of the
-            tree will be set to visible and tick marks will be auto-
-            generated to span from time=0 to root height. The style
-            of the axes can be further modified from the axes object
-            after the draw function is called.
+        scale_bar: bool | int | float
+            If True, show a scale axis in raw tree distance units.
+            If False, hide the scale axis. If numeric, tick labels are
+            divided by that value (unit scaling). For example,
+            `scale_bar=1e6` divides labels by `1e6` (millions).
         padding: float
             Padding space between the drawing and the visible axes. This
             is a setting of the Cartesian axes and can be modified more
@@ -1119,11 +1172,19 @@ class ToyTree(metaclass=ToyTreeMeta):
             Shift the position of the tree along x-axis.
         ybaseline: float
             Shift the position of the tree along y-axis.
-        admixture_edges: Tuple, List[Tuple]
-            Admixture edges add colored edges to the plot in the
-            style of the 'edge_align_style'. These will be drawn
-            from (source, dest, height, width, color). Example:
-            `>>> [(4, 3, 50000, 3, 'red')]`.
+        shrink: float
+            Adds extra fitting extent in the tip-label direction
+            (pixel extent space), which makes the tree body take up
+            relatively less of the canvas compared with label space.
+            This applies only when tip labels are shown and is mainly
+            useful on linear layouts (`r`, `l`, `u`, `d`). It does not
+            change node coordinates or branch lengths.
+        admixture_edges: toytree.AdmixtureEvent or List[toytree.AdmixtureEvent]
+            One or more ``toytree.AdmixtureEvent`` objects describing
+            source and destination lineages for admixture arrows.
+            Styling can be set per event using each object's ``style``
+            dict (e.g., ``{"stroke": "red", "stroke-width": 2}``),
+            which is used to render that event.
         fixed_order: Sequence[str]
             An Iterable of tip labels in the order they should be
             plotted. The default is the node names in idx order
@@ -1138,6 +1199,12 @@ class ToyTree(metaclass=ToyTreeMeta):
             spaced to better show discordance, or extinct taxa, or
             morphology. The order of positions applies to tips in
             order of the 'fixed_order' arg.
+        interior_algorithm: int
+            Internal-node placement mode on linear layouts.
+            0 (recommended default) uses midpoint of immediate children;
+            1 mean of descendant tips; 2 robust weighted-child midpoint;
+            3 descendant-tip median; 4 descendant-tip trimmed mean.
+            Effects are most visible with `fixed_order` / `fixed_position`.
 
         Examples
         --------
@@ -1190,6 +1257,7 @@ class ToyTree(metaclass=ToyTreeMeta):
             shrink=shrink,
             fixed_order=fixed_order,
             fixed_position=fixed_position,
+            interior_algorithm=interior_algorithm,
             label=label,
             kwargs=kwargs,
         )
