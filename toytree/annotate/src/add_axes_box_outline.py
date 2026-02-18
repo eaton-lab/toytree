@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
-"""Apply styling to toyplot Cartesian axes objects.
+"""Add outline annotations around Cartesian axes regions."""
 
-Set margin to 60.
-"""
+from __future__ import annotations
 
-from typing import Union, Sequence
+from typing import Any, Literal
+
 from toytree.core import ToyTree
+from toytree.core.apis import AnnotationAPI, add_subpackage_method
 from toytree.drawing import Cartesian
-from toytree.core.apis import add_subpackage_method, AnnotationAPI
+
 # from toytree.annotate.src.annotation_mark import (
 #     get_last_toytree_mark_from_cartesian,
 #     assert_tree_matches_mark,
@@ -17,76 +18,122 @@ from toytree.core.apis import add_subpackage_method, AnnotationAPI
 __all__ = ["add_axes_box_outline"]
 
 
+def _stroke_width(style: dict[str, Any]) -> float:
+    """Extract numeric stroke-width from a style mapping."""
+    value = style.get("stroke-width", 1.0)
+    if isinstance(value, (int, float)):
+        return float(value)
+    text = str(value).strip().lower()
+    if text.endswith("px"):
+        text = text[:-2]
+    try:
+        return float(text)
+    except ValueError:
+        return 1.0
+
+
 @add_subpackage_method(AnnotationAPI)
 def add_axes_box_outline(
     tree: ToyTree,
     axes: Cartesian,
-    margin: Union[int, Sequence[int]] = 60,
-    padding: Union[int, Sequence[int]] = None,
-    **kwargs,
+    region: Literal["canvas", "axes"] = "canvas",
+    style: dict[str, Any] | None = None,
+    expand: None | int | tuple[int, int, int, int] = None,
+    behind: bool = False,
 ) -> Cartesian:
-    """Adds a box outline to plots.
-
-    This is achieved by creating new axes objects that ignore the data
-    domain and extend their spines all the way to the extent of the
-    axes padding.
+    """Return an overlay Cartesian with a box outline around a plot region.
 
     Parameters
     ----------
-    ...
+    region: "canvas" or "axes"
+        Select the region to outline.
+        - "canvas": full canvas bounds.
+        - "axes": outer axes bounds including padding.
+    style: dict[str, Any] | None
+        Optional style updates for the rectangle. Both stroke and fill
+        can be styled, e.g., ``{"stroke": "red", "fill": "none"}``.
+    expand: None | int | tuple[int, int, int, int]
+        Additive expansion on (left, right, top, bottom) bounds. If int,
+        applies the same value to all four sides. Positive values expand
+        outward; negative values contract inward.
+    behind: bool
+        If True, place the overlay behind the provided `axes` in canvas
+        render order.
 
     Note
     ----
-    To easily set the stroke-width of ALL spines, ticks, etc you can
-    use the canvas.style['stroke-width'] setting. Also, note that if
-    the axes.padding is changed AFTER this function is called then the
-    axes can be separated from the box outline (i.e., this func uses
-    the current padding value to align the two).
+    This function does not mutate the input axes. It returns a new
+    overlay axes object used only to render the box rectangle.
     """
-    # mark = get_last_toytree_mark_from_cartesian(axes)
-    # assert_tree_matches_mark(tree, mark)
+    _ = tree
+    if region not in ("canvas", "axes"):
+        raise ValueError("region must be one of: 'canvas', 'axes'.")
 
-    # get padding and margin from axes, or override with new values
-    padding = padding if padding is not None else axes._padding
-    margin = margin if margin is not None else axes._xmin_range
+    # set default style and update with user args
+    style_ = {
+        "stroke": "#262626",
+        "stroke-width": 2.0,
+        "fill": "none",
+    }
+    if style is not None:
+        style_.update(style)
 
-    # set data domain [margin][pad][ data ][pad][margin] of Cartesian
-    #                  label | ax | data  | ax  | label
-    x_width = axes._xmax_range - axes._xmin_range
-    axes._set_xmin_range(margin)
-    axes._set_xmax_range(margin + x_width)
-    axes._padding = padding
+    # nudge stroke from edges to ensure fully visible
+    inset = _stroke_width(style_) / 2.0
 
-    # create new axis opposite of original y
-    newy = axes.share("x", xlabel=axes.x.label.text)
-    # newy.y.spine.style['stroke'] = stroke
-    newy.y.ticks.show = False
-    newy.y.ticks.labels.show = False
-    newy._ymin_range -= axes.padding
-    newy._ymax_range += axes.padding
+    # fetch the canvas
+    canvas = axes._scenegraph.sources("render", axes)[0]
 
-    # on top of original y, inherits the ymin,max range from newy
-    newy = newy.share("x", xlabel=axes.x.label.text)
-    # newy.y.spine.style['stroke'] = stroke
-    newy.y.spine.position = "low"
-    newy.y.ticks.show = False
-    newy.y.ticks.labels.show = False
+    # get boundaries from selected region
+    if region == "canvas":
+        # Outer drawable bounds of the canvas, inset by half stroke width
+        # so the full stroke remains visible.
+        left = float(inset)
+        right = float(canvas.width - inset)
+        top = float(inset)
+        bottom = float(canvas.height - inset)
+    else:
+        pad = float(axes.padding)
+        left = float(axes._xmin_range) - pad
+        right = float(axes._xmax_range) + pad
+        top = float(axes._ymin_range) - pad
+        bottom = float(axes._ymax_range) + pad
 
-    # opposite of original x
-    newx = axes.share("y", ylabel=axes.y.label.text)
-    # newx.x.spine.style['stroke'] = stroke
-    newx.x.ticks.show = False
-    newx.x.ticks.labels.show = False
-    newx._xmin_range -= axes.padding
-    newx._xmax_range += axes.padding
+    # Apply optional outward / inward expansion.
+    if expand is not None:
+        if isinstance(expand, (int, float)):
+            eml = emr = emt = emb = float(expand)
+        else:
+            if len(expand) != 4:
+                raise ValueError("expand tuple must be (left, right, top, bottom).")
+            eml, emr, emt, emb = [float(i) for i in expand]
+        left -= eml
+        right += emr
+        top -= emt
+        bottom += emb
+    if not (left < right and top < bottom):
+        raise ValueError("Outline region collapsed; reduce padding / stroke-width.")
 
-    # on top of original x
-    newx = newx.share("y", ylabel=axes.y.label.text)
-    # newx.x.spine.style['stroke'] = stroke
-    newx.x.spine.position = "low"
-    newx.x.ticks.show = False
-    newx.x.ticks.labels.show = False
-    return axes
+    overlay = canvas.cartesian(
+        margin=0,
+        padding=0,
+        show=False,
+        xshow=False,
+        yshow=False,
+        xmin=0,
+        xmax=canvas.width,
+        ymin=canvas.height,
+        ymax=0,
+    )
+
+    overlay.rectangle(left, right, top, bottom, style=style_)
+
+    if behind:
+        render_targets = canvas._scenegraph._relationships["render"]._targets[canvas]
+        if overlay in render_targets and axes in render_targets:
+            render_targets.remove(overlay)
+            render_targets.insert(render_targets.index(axes), overlay)
+    return overlay
 
 
 @add_subpackage_method(AnnotationAPI)
