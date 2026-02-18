@@ -4,10 +4,9 @@
 """
 
 # from typing import List
-import sys
 import textwrap
 from pathlib import Path
-from argparse import ArgumentParser, RawDescriptionHelpFormatter
+from argparse import SUPPRESS, ArgumentParser, RawDescriptionHelpFormatter
 
 
 KWARGS = dict(
@@ -40,16 +39,10 @@ KWARGS = dict(
         $ prune -i TREE.nwk -n A B C D --preserve-dists --require-root > PRUNED.nwk
         $ prune -i TREE.nwk -n A B C D -o PRUNED.nwk
         $ prune -i TREE.nwk -n '~prefixA' '~prefixB' > PRUNED.nwk
+        $ prune -i TREE.nwk -n A B -b | set-node-data -i - -f score -s a=1 b=2 > OUT.nwk
     """)
 )
 
-
-
-def string_or_stdin_parse(intree: str) -> str:
-    """If TREE is stdin then return the string from stdin."""
-    if intree == "-":
-        return sys.stdin.read().strip()
-    return intree
 
 
 def get_parser_prune(parser: ArgumentParser | None = None) -> ArgumentParser:
@@ -57,37 +50,56 @@ def get_parser_prune(parser: ArgumentParser | None = None) -> ArgumentParser:
     """
     # create parser or connect as subparser to cli parser
     if parser:
-        KWARGS['name'] = KWARGS.pop("prog")
-        parser = parser.add_parser(**KWARGS)
+        kwargs = dict(KWARGS)
+        kwargs["name"] = kwargs.pop("prog")
+        kwargs["add_help"] = False
+        parser = parser.add_parser(**kwargs)
     else:
-        KWARGS.pop("help")
-        parser = ArgumentParser(**KWARGS)
+        kwargs = dict(KWARGS)
+        kwargs.pop("help", None)
+        kwargs["add_help"] = False
+        parser = ArgumentParser(**kwargs)
 
-    # path args
-    parser.add_argument("-i", "--input", type=string_or_stdin_parse, metavar="path", required=True, help="input CDS sequence (aligned or unaligned)")
-    parser.add_argument("-o", "--output", type=Path, metavar="path", help="optional outfile path name. If None prints to STDOUT")
-    parser.add_argument("-n", "--nodes", type=str, metavar="str", nargs="*", help="One or more names or regular expressions to select nodes")
-    # options
-    parser.add_argument("-r", "--require-root", action="store_true", help="keep root node even if unary after pruning children")
-    parser.add_argument("-p", "--not-preserve-dists", action="store_true", help="if not preserved then children do not inherit parent dists")
-    parser.add_argument("-I", "--internal-labels", type=str, metavar="str", help="parse internal node feature (e.g., support) [auto]")
-    parser.add_argument("-x", "--exclude-features", action="store_true", help="do not preserve node feature data")
-    # parser.add_argument("-f", "--force", action="store_true", help="overwrite existing result files in outdir")
-    # parser.add_argument("-l", "--log-level", type=str, metavar="level", default="INFO", help="stderr logging level (DEBUG, [INFO], WARNING, ERROR)")
-    # parser.add_argument("-L", "--log-file", type=Path, metavar="path", help="append stderr log to a file")
+    io_group = parser.add_argument_group(title="Input / Output")
+    io_group.add_argument("-i", "--input", type=str, metavar="path", required=True, help="input tree path/url/newick string, or '-' for stdin")
+    io_group.add_argument("-o", "--output", type=Path, metavar="path", help="optional outfile path name. If None prints to STDOUT")
+    io_group.add_argument("-b", "--binary-out", action="store_true", help="write output as binary pickled ToyTree for fast piping between commands")
+    io_group.add_argument("-I", "--internal-labels", type=str, metavar="str", help="Parse internal labels as this feature (overrides auto-detect)")
+    io_group.add_argument("-x", "--exclude-features", action="store_true", help="do not preserve node feature data")
+
+    edit_group = parser.add_argument_group(title="Prune")
+    edit_group.add_argument("-n", "--nodes", type=str, metavar="str", nargs="*", help="One or more names or regular expressions to select nodes")
+    edit_group.add_argument("-r", "--require-root", action="store_true", help="keep root node even if unary after pruning children")
+    edit_group.add_argument("-p", "--not-preserve-dists", action="store_true", help="if not preserved then children do not inherit parent dists")
+    options_group = parser.add_argument_group(title="Options")
+    options_group.add_argument(
+        "-l",
+        "--log-level",
+        type=str,
+        metavar="level",
+        default=None,
+        help="set toytree logger level (DEBUG, INFO, WARNING, ERROR)",
+    )
+    options_group.add_argument(
+        "-h",
+        "--help",
+        action="help",
+        default=SUPPRESS,
+        help="show this help message and exit",
+    )
     return parser
 
 
 def run_prune(args):
-    from toytree.io.src.treeio import tree
+    from toytree.cli._tree_transport import read_tree_auto, write_tree_output
     from toytree.mod._src.mod_topo import prune
+    from toytree.utils.src.logger_setup import set_log_level
+
+    if args.log_level is not None:
+        set_log_level(args.log_level)
 
     # parse the tree
-    if args.input == Path("-"):
-        data = sys.stdin.read()
-        tre = tree(data, internal_labels=args.internal_labels)
-    else:
-        tre = tree(args.input, internal_labels=args.internal_labels)
+    tre = read_tree_auto(args.input, internal_labels=args.internal_labels)
 
     # operate
     tre = prune(tre, *args.nodes, preserve_dists=(not args.not_preserve_dists), require_root=args.require_root)
@@ -97,10 +109,12 @@ def run_prune(args):
         features = None
     else:
         features = set(tre.features) - {'name', 'height', 'dist', 'support'}
-    if args.output:
-        tre.write(args.output, features=features)
-    else:
-        sys.stdout.write(tre.write(None, features=features) + "\n")
+    write_tree_output(
+        tre,
+        output=args.output,
+        binary_out=args.binary_out,
+        features=features,
+    )
 
 
 def main():
