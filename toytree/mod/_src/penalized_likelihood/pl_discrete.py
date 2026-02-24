@@ -1,28 +1,31 @@
 #!/usr/bin/env python
 
-from typing import Any, Union
 from itertools import cycle
+from typing import Any, Union
+
 import numpy as np
 from loguru import logger
 from scipy.optimize import minimize
 from scipy.special import gammaln
+
 from toytree.core import ToyTree
-from toytree.mod._src.penalized_likelihood.pl_clock import edges_make_ultrametric_pl_clock
+from toytree.core.apis import TreeModAPI, add_subpackage_method
+from toytree.mod._src.penalized_likelihood.pl_clock import (
+    edges_make_ultrametric_pl_clock,
+)
 from toytree.mod._src.penalized_likelihood.pl_utils import (
+    Calibrations,
+    _decode_age_params,
+    _encode_age_params,
+    _get_children_map_from_edges,
     _get_init_ages,
     _get_params_bounds,
     _pack_log_rates,
-    _unpack_log_rates,
-    _get_children_map_from_edges,
-    _encode_age_params,
-    _decode_age_params,
     _run_multistart,
     _select_best_multistart,
+    _unpack_log_rates,
     get_tree_with_categorical_rates,
-    Calibrations,
 )
-from toytree.core.apis import TreeModAPI, add_subpackage_method
-
 
 __all__ = ["edges_make_ultrametric_pl_discrete"]
 RATE_FLOOR = 1e-12
