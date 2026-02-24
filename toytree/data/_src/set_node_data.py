@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-"""Function to set data to all Node objects in a tree.
+"""Function to set data to all Node objects in a tree."""
 
-"""
+from numbers import Integral
+from typing import Any, Mapping, Sequence, TypeVar, Union
 
-from typing import Union, Mapping, Sequence, Any, TypeVar
-from loguru import logger
 import pandas as pd
-from toytree import ToyTree, Node
+
+from toytree import Node, ToyTree
 from toytree.core.apis import add_toytree_method
 from toytree.data._src.expand_node_mapping import expand_node_mapping
 from toytree.utils import ToytreeError
@@ -33,6 +33,7 @@ def set_node_data(
     data: Union[Mapping[Query, Any], Sequence[Any]] = None,
     default: Any = None,
     inherit: bool = False,
+    allow_unmatched_queries: bool = False,
     inplace: bool = False,
     edge: bool = False,
 ) -> ToyTree:
@@ -47,7 +48,7 @@ def set_node_data(
     Note that a modified tree copy is returned unless `inplace=True`.
 
     Parameters
-    -----------
+    ----------
     tree: ToyTree
         The tree on which to set node data.
     feature: str
@@ -62,6 +63,9 @@ def set_node_data(
         If inherit is True then feature values entered as a mapping to
         internal Nodes will also be applied to their descendant Nodes,
         allowing for easy assignment of values to clades.
+    allow_unmatched_queries: bool
+        If True, query strings that match no node names are ignored.
+        Unmatched queries are logged to logger.debug.
     inplace: bool
         If True the tree data is modified inplace and returned, else
         the original tree data is unchanged and a copy is returned.
@@ -116,18 +120,28 @@ def set_node_data(
     if data is None:
         mapping = {}
     else:
+        # mapping-like data
         try:
             mapping = dict(data)
-            mapping = expand_node_mapping(tree, mapping)
-        except (ValueError, TypeError):
+            mapping = expand_node_mapping(
+                tree,
+                mapping,
+                allow_unmatched=allow_unmatched_queries,
+            )
+        except TypeError:
+            # series-like data in idx order
             if not len(data) == tree.nnodes:
                 msg = INVALID_SET_NODE_DATA_TYPE.format(len(data), tree.nnodes)
-                logger.error(msg)
                 raise ToytreeError(msg)
             mapping = dict(zip(range(tree.nnodes), data))
-            mapping = expand_node_mapping(tree, mapping)
-
-        # report non-TypeError mapping exception
+            mapping = expand_node_mapping(
+                tree,
+                mapping,
+                allow_unmatched=allow_unmatched_queries,
+            )
+        except ValueError as exc:
+            # preserve specific node-query mismatch errors
+            raise ToytreeError(str(exc)) from exc
         except Exception as exc:
             raise ToytreeError(INVALID_SET_NODE_DATA_TYPE) from exc
 
@@ -186,19 +200,23 @@ def set_node_data(
 def set_node_data_from_dataframe(
     tree: ToyTree,
     table: pd.DataFrame,
+    query_column: Union[int, str, None] = None,
+    query_is_regex: bool = False,
+    table_headers: Sequence[str] | None = None,
+    allow_unmatched_queries: bool = False,
     inplace: bool = False,
 ) -> ToyTree:
     """Set new features on Nodes of a ToyTree from a DataFrame.
 
-    The DataFrame should have column names corresponding to features
-    that you wish to apply to Nodes of the ToyTree. The index can
-    be composed of either strings that match to .name attributes
-    of Nodes in the ToyTree, or can be integers, which match to the
-    .idx labels of Nodes. Note: to set data to internal Nodes that
-    usually do not have unique name labels you will likely need to
-    use the numeric idx labels. Be aware that idx labels are
-    unique to each topology, and will change if the tree topology
-    is modified.
+    The DataFrame can store node queries in either the index or one
+    selected column. By default, if table.index is a RangeIndex then
+    the first column is treated as queries and all remaining columns
+    are treated as node features. Otherwise the index is used as
+    queries and all columns are treated as features.
+
+    Query values can be idx labels (integers), exact names, or regular
+    expressions (toytree convention: strings prefixed with "~"). Regex
+    queries can match multiple nodes.
 
     This function parses the DataFrame and applies the function
     `set_node_data()` for each column.
@@ -207,6 +225,18 @@ def set_node_data_from_dataframe(
     ----------
     table: pd.DataFrame
         A DataFrame with data to be applied to Nodes of a ToyTree.
+    query_column: int | str | None
+        Optional query source column. If None, query source is inferred
+        as described above. Set to "index" to force index queries.
+    query_is_regex: bool
+        If True, string queries not already prefixed with "~" are
+        converted to regex queries by prepending "~".
+    table_headers: Sequence[str] | None
+        Optional feature names to apply to parsed feature columns.
+        Length must match the number of parsed feature columns.
+    allow_unmatched_queries: bool
+        If True, query strings that match no node names are ignored.
+        Unmatched queries are logged to logger.debug.
     inplace: bool
 
     Returns
@@ -228,11 +258,58 @@ def set_node_data_from_dataframe(
     >>> tree = tree.set_node_data_from_dataframe(data)
     >>> tree.get_node_data()
     """
+    # make a copy of input
+    table = table.copy()
+
+    # choose query source and feature columns
+    if query_column is None:
+        query_series = pd.Series(table.index, index=table.index)
+        feature_table = table.copy()
+    elif isinstance(query_column, Integral):
+        qidx = int(query_column)
+        query_series = table.iloc[:, qidx]
+        feature_table = table.drop(columns=[table.columns[qidx]])
+    else:
+        query_series = table[query_column]
+        feature_table = table.drop(columns=[query_column])
+
+    # assign user-provided feature names
+    if table_headers is not None:
+        if len(table_headers) != feature_table.shape[1]:
+            raise ToytreeError(
+                "table_headers length must match parsed feature columns "
+                f"({len(table_headers)} != {feature_table.shape[1]})."
+            )
+        feature_table.columns = list(table_headers)
+
     # make a copy of ToyTree to return
     tree = tree if inplace else tree.copy()
-    for key in table.columns:
-        mapping = table[key].to_dict()
-        tree.set_node_data(feature=key, data=mapping, inplace=True, default=float("nan"))
+
+    queries = list(query_series)
+    for key in feature_table.columns:
+        mapping = {}
+        for query, value in zip(queries, feature_table[key]):
+            if pd.isna(query) or pd.isna(value):
+                continue
+
+            # keep integer-like queries as idx labels
+            if isinstance(query, Integral) and not isinstance(query, bool):
+                qval = int(query)
+            else:
+                qval = query
+
+            # toytree regex convention: '~' prefix
+            if isinstance(qval, str):
+                if query_is_regex and not qval.startswith("~"):
+                    qval = f"~{qval}"
+            mapping[qval] = value
+        tree.set_node_data(
+            feature=str(key),
+            data=mapping,
+            allow_unmatched_queries=allow_unmatched_queries,
+            inplace=True,
+            default=float("nan"),
+        )
     return tree
 
 
