@@ -166,7 +166,11 @@ def draw_multitree(
             mark.width = canvas.width / ncols
             mark.height = canvas.height / nrows
             mark.scale_bar = kwargs.get("scale_bar", False)
-            add_axes_scale_bar(treelist[idx], grid.axes[idx], ymax=ymax)
+            if mark.layout in ("r", "u"):
+                srange = (-ymax, 0)
+            else:
+                srange = (0, ymax)
+            add_axes_scale_bar(treelist[idx], grid.axes[idx], range=srange)
             # set_axes_ticks_style(ymax, grid.axes[idx], mark, only_inside=True)
 
             # add an invisible spacer point. This does a much
