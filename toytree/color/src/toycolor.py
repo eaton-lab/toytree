@@ -35,6 +35,7 @@ class ToyColor(np.ndarray):
     color, but it can init from any valid color input type and
     convert to any other.
     """
+
     def __new__(cls, color):
         color = ColorKit(color)
         obj = np.array(color.rgba, dtype=DTYPE).view(cls)
@@ -42,7 +43,7 @@ class ToyColor(np.ndarray):
 
     @property
     def css(self):
-        """Returns a name or hex value of a color"""
+        """Return a name or hex value of a color."""
         return ColorKit(self).css
 
     @property
@@ -56,6 +57,11 @@ class ToyColor(np.ndarray):
         return ColorKit(self).rgb
 
     @property
+    def rgb_css(self):
+        """Returns a tuple of (r,g,b) as floats."""
+        return ColorKit(self).rgb_css
+
+    @property
     def hex(self):
         """Returns a hexadecimal color string (no opacity handling)."""
         r, g, b = [int(i * 100) for i in self.rgb]
@@ -67,7 +73,7 @@ class ToyColor(np.ndarray):
         return ColorKit(self)
 
     def get_style_str(self, stroke: bool = False, opacity: float = None) -> str:
-        """Returns a color style string, e.g., 'fill=...; stroke=...'."""
+        """Return a color style string, e.g., 'fill=...; stroke=...'."""
         return self.colorkit.get_style_str(stroke, opacity)
 
     def __str__(self):
