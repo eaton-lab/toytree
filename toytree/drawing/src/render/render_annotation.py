@@ -1,21 +1,27 @@
 #!/usr/bin/env python
 
-"""...
-
-"""
+"""Render methods for custom Annotation Marks."""
 
 import functools
 import xml.etree.ElementTree as xml
 
-from multipledispatch import dispatch
 import toyplot.html
+from multipledispatch import dispatch
 from toyplot.coordinates import Cartesian
 
-from toytree.drawing.src.render.render_marker import render_marker
+from toytree.color import ToyColor
 from toytree.color.src.concat import concat_style_fix_color
 from toytree.drawing.src.mark_annotation import (
+    AnnotationGradientLine,
+    AnnotationLine,
     AnnotationMarker,
     AnnotationRect,
+)
+from toytree.drawing.src.render.render_marker import render_marker
+from toytree.drawing.src.render.svg_defs import (
+    LinearGradient,
+    LinearGradientStop,
+    ensure_linear_gradients,
 )
 
 # ---------------------------------------------------------------------
@@ -32,6 +38,16 @@ def _render(axes, mark, context):
 @dispatch(toyplot.coordinates.Cartesian, AnnotationRect, toyplot.html.RenderContext)
 def _render(axes, mark, context):
     render_rect(axes, mark, context)
+
+
+@dispatch(toyplot.coordinates.Cartesian, AnnotationLine, toyplot.html.RenderContext)
+def _render(axes, mark, context):
+    render_lines(axes, mark, context)
+
+
+@dispatch(toyplot.coordinates.Cartesian, AnnotationGradientLine, toyplot.html.RenderContext)
+def _render(axes, mark, context):
+    render_gradient_lines(axes, mark, context)
 # ---------------------------------------------------------------------
 
 
@@ -40,9 +56,7 @@ def render_markers(
     mark: AnnotationMarker,
     context: toyplot.html.RenderContext,
 ) -> None:
-    """...
-
-    """
+    """Dispatched method to insert markers into XML."""
     # create a <g ..> to group markers into.
     axml = xml.SubElement(
         context.parent, "g",
@@ -94,7 +108,7 @@ def render_rect(
     mark: AnnotationRect,
     context: toyplot.html.RenderContext,
 ) -> None:
-    """Render rectangle Mark and append to HTML.
+    """Dispatched method to insert rectangle Mark into XML.
 
     custom rect render function to allow transform in px units and
     curved edge styling.
@@ -147,6 +161,157 @@ def render_rect(
             ry="1",
         )
         _ = xml.SubElement(marker_xml, "rect", **kwargs)
+
+
+def render_lines(
+    axes: Cartesian,
+    mark: AnnotationLine,
+    context: toyplot.html.RenderContext,
+) -> None:
+    """Dispatched method to insert polyline Mark (e.g., tree edge) into XML."""
+    group_style = dict(mark.style)
+
+    # group-level opacity mode for edge annotations.
+    if mark.use_group_opacity and (mark.group_opacity is not None):
+        group_style.pop("stroke-opacity", None)
+        group_style["opacity"] = mark.group_opacity
+
+    # create the <g> group element for a set of Annotation Edges
+    group_xml = xml.SubElement(
+        context.parent,
+        "g",
+        id=context.get_id(mark),
+        attrib={"class": "toytree-Annotation-Lines"},
+        style=concat_style_fix_color(group_style),
+    )
+
+    # iterate over (x, y) path coordinates
+    for idx, (xdat, ydat) in enumerate(zip(mark.xpaths, mark.ypaths)):
+        # get positions in px units
+        xpx = axes.project("x", xdat)
+        ypx = axes.project("y", ydat)
+
+        # build the path
+        parts = [f"M {xpx[0]:.8g} {ypx[0]:.8g}"]
+        for jdx in range(1, xpx.size):
+            parts.append(f"L {xpx[jdx]:.8g} {ypx[jdx]:.8g}")
+        path = " ".join(parts)
+
+        # Start from shared line style, no-fill, then layer per-edge channels.
+        path_style = dict(mark.style)
+        path_style["fill"] = "none"
+        if mark.colors is not None:
+            col = ToyColor(mark.colors[idx])
+            path_style["stroke"] = col.rgb
+            if mark.opacity[idx] in (None, False):
+                path_style["stroke-opacity"] = col.rgba[-1]
+            else:
+                path_style["stroke-opacity"] = mark.opacity[idx]
+        else:
+            path_style["opacity"] = mark.opacity[idx]
+
+        # set width
+        path_style["stroke-width"] = mark.widths[idx]
+
+        # if using group-level opacity then remove edge-level opacity
+        if mark.use_group_opacity:
+            path_style.pop("opacity", None)
+            path_style.pop("stroke-opacity", None)
+
+        # create line element
+        xml.SubElement(
+            group_xml,
+            "path",
+            id=f"Line-{idx}",
+            d=path,
+            style=concat_style_fix_color(path_style),
+        )
+
+
+def render_gradient_lines(
+    axes: Cartesian,
+    mark: AnnotationGradientLine,
+    context: toyplot.html.RenderContext,
+) -> None:
+    """Render polylines with per-edge linear gradients."""
+    group_style = dict(mark.style)
+
+    # group-level opacity mode for edge annotations.
+    if mark.use_group_opacity and (mark.group_opacity is not None):
+        group_style.pop("stroke-opacity", None)
+        group_style["opacity"] = mark.group_opacity
+
+    # create group tag
+    group_xml = xml.SubElement(
+        context.parent,
+        "g",
+        id=context.get_id(mark),
+        attrib={"class": "toytree-Annotation-GradientLines"},
+        style=concat_style_fix_color(group_style),
+    )
+
+    # get mark_id apply same name to lines and defs
+    mark_id = context.get_id(mark)
+
+    # Use compact, deterministic gradient ids to keep SVG smaller while
+    # remaining unique across marks in the same render context.
+    short_mark_id = mark_id[-8:]
+    gradients = []
+    paths = []
+    for idx, (xdat, ydat) in enumerate(zip(mark.xpaths, mark.ypaths)):
+        xpx = axes.project("x", xdat)
+        ypx = axes.project("y", ydat)
+        paths.append((xpx, ypx))
+        gradients.append(
+            LinearGradient(
+                id=f"g{short_mark_id}-{idx}",
+                attrs={
+                    "gradientUnits": "userSpaceOnUse",
+                    "x1": f"{xpx[0]:.8g}",
+                    "y1": f"{ypx[0]:.8g}",
+                    "x2": f"{xpx[-1]:.8g}",
+                    "y2": f"{ypx[-1]:.8g}",
+                },
+                stops=[
+                    LinearGradientStop(offset="0%", color=ToyColor(mark.start_colors[idx]).rgb_css),
+                    LinearGradientStop(offset="100%", color=ToyColor(mark.end_colors[idx]).rgb_css),
+                ],
+            )
+        )
+
+    refs = ensure_linear_gradients(context, gradients)
+
+    # create the path elements
+    for idx, (xpx, ypx) in enumerate(paths):
+        parts = [f"M {xpx[0]:.8g} {ypx[0]:.8g}"]
+        for jdx in range(1, xpx.size):
+            parts.append(f"L {xpx[jdx]:.8g} {ypx[jdx]:.8g}")
+        path = " ".join(parts)
+
+        # get copy of path style
+        path_style = dict(mark.style)
+
+        # remove all core paint properties
+        for key in ("stroke", "fill", "opacity", "stroke-opacity"):
+            path_style.pop(key, None)
+
+        # set styles
+        path_style["fill"] = "none"
+        path_style["stroke-width"] = f"{mark.widths[idx]:.8g}"
+
+        # per-edge opacity
+        if not mark.use_group_opacity:
+            path_style["opacity"] = f"{mark.opacity[idx]:.8g}"
+
+        # create path element using defined gradient color
+        xml.SubElement(
+            group_xml,
+            "path",
+            id=f"GradientLine-{idx}",
+            d=path,
+            stroke=refs[f"g{short_mark_id}-{idx}"],
+            style=concat_style_fix_color(path_style),
+        )
 
 
 if __name__ == "__main__":
