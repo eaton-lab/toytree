@@ -6,16 +6,22 @@ This function is pretty fast while also allowing for regex matching
 in Node queries. It is used in many places.
 """
 
-from typing import TypeVar, Mapping, Any
+from typing import Any, Mapping, TypeVar
+
 import numpy as np
+from loguru import logger
+
 from toytree import Node, ToyTree
 from toytree.utils.src.exceptions import NODE_NOT_IN_TREE_ERROR
-
 
 Query = TypeVar("Query", Node, int, str)
 
 
-def expand_node_mapping(tree: ToyTree, mapping: Mapping[Query, Any]) -> Mapping[Node, Any]:
+def expand_node_mapping(
+    tree: ToyTree,
+    mapping: Mapping[Query, Any],
+    allow_unmatched: bool = False,
+) -> Mapping[Node, Any]:
     """Return a mapping of {Nodes: feature} by expanding Node queries.
 
     This function is similar to `get_nodes`, but in addition to
@@ -79,7 +85,13 @@ def expand_node_mapping(tree: ToyTree, mapping: Mapping[Query, Any]) -> Mapping[
     # match Node names as a group so we only need to perform one
     # tree traversal. Each query can return multiple regex hits.
     for name, feature in names.items():
-        matched = set(tree._iter_nodes_by_name_match(name))
+        try:
+            matched = set(tree._iter_nodes_by_name_match(name))
+        except ValueError:
+            if allow_unmatched:
+                logger.debug(f"No Node names match query: {name}")
+                continue
+            raise
         for node in matched:
             nodes[node] = feature
     # return expanded mapping
