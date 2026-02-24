@@ -45,6 +45,7 @@ Functions
 
 # from toytree.annotate.src.node_pie_charts import draw_node_pie_charts
 from toytree.annotate.src.add_edge_markers import *
+from toytree.annotate.src.add_edges import *
 from toytree.annotate.src.add_node_markers import *
 from toytree.annotate.src.add_tip_markers import *
 from toytree.annotate.src.add_axes_box_outline import *
