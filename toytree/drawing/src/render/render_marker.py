@@ -1,10 +1,8 @@
 #!/usr/bin/env python
 
-"""Use toyplot html functions to add markers
+"""Use toyplot html functions to add markers."""
 
-"""
-
-from toyplot.html import (_draw_bar, _draw_triangle, _draw_circle, _draw_rect)
+from toyplot.html import _draw_bar, _draw_circle, _draw_rect, _draw_triangle
 
 
 def render_marker(marker_xml, marker) -> None:
