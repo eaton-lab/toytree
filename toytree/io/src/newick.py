@@ -460,48 +460,64 @@ def _infer_internal_label_type(tree: ToyTree, internal_labels: Optional[str]) ->
             if internal_labels != "name":
                 node.name = ""
 
-    # infer types, any errors cause internal labels to be str names.
-    # To save support values there must be a numeric label for every
-    # internal non-root Node.
+    # infer types. Numeric-with-missing labels are treated as support,
+    # which is common for unrooted trees serialized around a pseudo-root.
     else:  # elif internal_labels is None:
-        try:
-            # try to convert all internal node 'names' to floats (raises ValueError if str)
-            names = [i.name for i in tree[tree.ntips:-1]]
-            supports = [float(i.name) for i in tree[tree.ntips:-1]]
+        inodes = list(tree[tree.ntips:-1])
+        labels = [node.name for node in inodes]
+        n_internal = len(labels)
+        n_numeric = 0
+        n_non_numeric = 0
+        numeric_values: list[Optional[float]] = [None] * n_internal
 
-            # try to convert floats to ints if no floating points
-            if all(i.is_integer() for i in supports):
-                supports = [int(i) for i in supports]
+        for idx, value in enumerate(labels):
+            sval = "" if value is None else str(value).strip()
+            if not sval:
+                continue
+            try:
+                numeric_values[idx] = float(sval)
+                n_numeric += 1
+            except ValueError:
+                n_non_numeric += 1
 
-            # store internal node values as 'support' and set 'name' to empty.
-            for idx, inode in enumerate(tree[tree.ntips:-1]):
-                inode.support = supports[idx]
+        # allow up to 2 missing labels near pseudo-root for unrooted trees
+        numeric_threshold = max(1, n_internal - 2)
+        infer_support = (
+            n_non_numeric == 0 and
+            n_numeric > 0 and
+            n_numeric >= numeric_threshold
+        )
+
+        if infer_support:
+            for idx, inode in enumerate(inodes):
+                value = numeric_values[idx]
+                if value is None:
+                    inode.support = np.nan
+                else:
+                    inode.support = int(value) if value.is_integer() else value
                 inode.name = ""
+        elif n_non_numeric and n_numeric:
+            print(
+                "Warning: Because internal node labels are mixed numeric and non-numeric values,\n"
+                "the data's feature cannot be auto-detected as 'name' (str) or 'support' (numeric).\n"
+                "Setting to 'name' by default. Use arg 'internal_labels={feature_name}' in toytree.tree()\n"
+                "to suppress this message and manually set data to: 'name', 'support', or {feature_name}",
+                file=sys.stderr,
+            )
 
-            # root Node is likely empty, but may have a name or even support
-            # value. If so, we will try to store it numeric first, then string.
-            tree.treenode.support = np.nan
-            if not tree.treenode.name:
+        # root Node is likely empty, but may have a name or even support
+        # value. If so, we will try to store it numeric first, then string.
+        tree.treenode.support = np.nan
+        if not tree.treenode.name:
+            tree.treenode.name = ""
+        else:
+            try:
+                tree.treenode.support = float(tree.treenode.name)
+                if tree.treenode.support.is_integer():
+                    tree.treenode.support = int(tree.treenode.support)
                 tree.treenode.name = ""
-            else:
-                try:
-                    tree.treenode.support = float(tree.treenode.name)
-                    if tree.treenode.support.is_integer():
-                        tree.treenode.support = int(tree.treenode.support)
-                    tree.treenode.name = ""
-                except ValueError:
-                    pass
-
-        # internal Node labels are inferred to be string name labels or other.
-        except ValueError:
-            if any(names):
-                print(
-                    "Warning: Because internal node labels either contain >1 empty value, or are of mixed\n"
-                    "type, the data's feature cannot be auto-detected as 'name' (str) or 'support' (numeric).\n"
-                    "Setting to 'name' by default. Use arg 'internal_labels={feature_name}' in toytree.tree()\n"
-                    "to suppress this message and manually set data to: 'name', 'support', or {feature_name}",
-                    file=sys.stderr,
-                )
+            except ValueError:
+                pass
     return tree
 
 
