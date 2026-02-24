@@ -1,12 +1,15 @@
 #!/usr/bin/env python
 
-"""Builtin tree styles.
+"""Builtin tree styles."""
 
-"""
+from __future__ import annotations
 
-from typing import Tuple, TypeVar
 from dataclasses import dataclass
+from typing import Literal, Tuple, TypeVar
+
 from toytree.style.src.style_base import TreeStyle
+from toytree.utils import ToytreeError
+
 Color = TypeVar("Color")
 
 
@@ -142,9 +145,16 @@ class TreeStyleU(TreeStyle):
         self.node_style.fill = "white"  # do not set defaults that override
 
 
-def get_base_tree_style_by_name(tree_style: str = "n") -> TreeStyle:
-    """Return a base TreeStyle indexed by unique str name prefix"""
-    tree_style = tree_style.lower()[0]
+def get_base_tree_style_by_name(
+    tree_style: Literal["n", "s", "p", "o", "c", "d", "b", "u", "r"] = "n"
+) -> TreeStyle:
+    """Return a base TreeStyle from a supported one-letter style name."""
+    tree_style = tree_style.lower().strip()
+    if tree_style not in STYLE_DICTS:
+        raise ToytreeError(
+            f"tree_style '{tree_style}' not recognized. "
+            f"Use one of: {tuple(STYLE_DICTS)}."
+        )
     style = STYLE_DICTS[tree_style]
     return (style)()
 
