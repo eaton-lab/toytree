@@ -95,8 +95,7 @@ class ToyTreeMark(Mark):
 
 
 def set_node_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndarray]:
-    """Return extents of node label text string extents.
-    """
+    """Return extents of node label text string extents."""
     # return if no labels
     if mark.node_labels is None:
         return extents
@@ -115,8 +114,7 @@ def set_node_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.nda
 
 
 def set_marker_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndarray]:
-    """Return extents of node label text string extents.
-    """
+    """Return extents of node label text string extents."""
     # return if no nodes
     if not any(mark.node_sizes):
         return extents
