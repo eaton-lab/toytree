@@ -174,7 +174,7 @@ class TreeStyle:
     # self.show_root_edge: bool = None
     use_edge_lengths: bool = True
     """: Plot topology with transformed edge lengths for easier viewing."""
-    scale_bar: Union[bool, float] = False
+    scale_bar: bool | int | float = False
     """: Modify Cartesian axes to show scale in 'dist' feature units."""
     padding: float = 15.0
     """: Modify Cartesian axes to set padding between Mark and axes in px units."""
@@ -183,7 +183,7 @@ class TreeStyle:
     ybaseline: float = 0.0
     """: Shift tree on Cartesian axes so Node 0 is at (xbaseline, ybaseline)."""
     shrink: float = 0.0
-    """: Add additional space to fit tip names relative to tree."""
+    """: Add extra tip-label-direction fitting extent (px space)."""
     admixture_edges: List[Tuple] = None
 
     def __repr__(self):
