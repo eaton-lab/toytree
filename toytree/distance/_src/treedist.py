@@ -247,7 +247,7 @@ def get_treedist_rfi(
 def get_treedist_rfg_ms(
     tree1: ToyTree,
     tree2: ToyTree,
-    normalize: bool = True,
+    normalize: bool = False,
 ) -> float:
     """Return the Matching Split Distance.
 
@@ -291,7 +291,7 @@ def get_treedist_rfg_msi(
     - Bogdanowicz & Giaro (2012)
     - Martin Smith (2020)
     """
-    return get_trees_mutual_clust_info_dist(tree1, tree2, normalize)
+    return get_trees_matching_split_info_dist(tree1, tree2, normalize)
 
 
 @add_subpackage_method(TreeDistanceAPI)
