@@ -274,7 +274,7 @@ class MultiTree:
         return None
 
     # ---------------------------------------------------------------#
-    # see toytree.infer.get_consensus_tree()
+    # see toytree.infer.consensus_tree()
     # ---------------------------------------------------------------#
     def get_consensus_tree(self, min_freq: float = 0.0, **kwargs) -> ToyTree:
         """Return an exteded majority-rule consensus tree from a list of trees.
@@ -310,13 +310,20 @@ class MultiTree:
         >>> ctree2 = mtree.get_consensus_tree(trees, majority_rule_min=0.5)
         >>> toytree.mtree([ctree1, ctree2]).draw();
         """
-        from toytree.infer import get_consensus_tree
+        from toytree.infer import consensus_tree
         if kwargs:
             logger.warning(f"Deprecated args to get_consensus_tree(): {list(kwargs.values())}. See docs.")
-        return get_consensus_tree(self.treelist, min_freq=min_freq)
+        return consensus_tree(self.treelist, min_freq=min_freq)
 
 
-    def get_consensus_features(self, tree: ToyTree, features: list[str] = None, ultrametric: bool = False, conditional: bool = True) -> ToyTree:
+    def get_consensus_features(
+        self,
+        tree: ToyTree,
+        features: list[str] = None,
+        edge_features: list[str] = None,
+        ultrametric: bool = False,
+        conditional: bool = True,
+    ) -> ToyTree:
         """Return tree with feature data mapped to each bipartition from
         a set of trees that may or may not share the same bipartitions.
 
@@ -359,10 +366,15 @@ class MultiTree:
         --------
         ...
         """
-        from toytree.infer import get_consensus_features
-        return get_consensus_features(
-            tree=tree, trees=self.treelist,
-            features=features, ultrametric=ultrametric, conditional=True)
+        from toytree.infer import consensus_features
+        return consensus_features(
+            tree=tree,
+            trees=self.treelist,
+            features=features,
+            edge_features=edge_features,
+            ultrametric=ultrametric,
+            conditional=conditional,
+        )
 
 
     ################################################################
@@ -696,7 +708,11 @@ class MultiTree:
         # bar for the tallest tree in the bunch
         if kwargs.get("scale_bar", False):
             tree = max(self, key=lambda x: x.treenode.height)
-            tree.annotate.add_axes_scale_bar(axes, ymax=tree.treenode.height)
+            if tree.style.layout in ("r", "u"):
+                srange = (-tree.treenode.height, 0)
+            else:
+                srange = (0, tree.treenode.height)
+            tree.annotate.add_axes_scale_bar(axes, range=srange)
         else:
             if canvas is not None:
                 axes.x.show = False
