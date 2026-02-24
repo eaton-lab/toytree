@@ -54,9 +54,11 @@ class LinearLayout(BaseLayout):
         """Fills the .coords array with x, y coordinates.
 
         mode: int
-            0 = intermediate (mean of children; default)
-            1 = centered (mean of descendant tips; used in cloud trees)
-            2 = weighted (TODO: not implemented)
+            0 = midpoint of immediate children (default)
+            1 = mean of descendant tip positions
+            2 = weighted midpoint of immediate children (robust)
+            3 = median of descendant tip positions
+            4 = trimmed mean of descendant tip positions
         """
         # generate new (x, y) linear coordinates
         if bool(self.interior_algorithm) | (self.fixed_order is not None) | (self.fixed_position is not None):
@@ -168,22 +170,46 @@ class LinearLayout(BaseLayout):
                         coords[max(node.children).idx][0],
                     ]) / 2
                     # newx = np.mean([coords[i.idx][0] for i in node.children])
-                # intermediate placement
+                # mean placement over all descendant tip positions
                 elif self.interior_algorithm == 1:
                     tips = node.get_leaves()
-                    newx = sum([
-                        coords[min(tips).idx][0],
-                        coords[max(tips).idx][0],
-                    ]) / 2
-                # weighted
-                else:
+                    newx = float(np.mean([coords[i.idx][0] for i in tips]))
+                # robust weighted midpoint of immediate children
+                elif self.interior_algorithm == 2:
                     minc = min(node.children)
                     maxc = max(node.children)
                     mind = minc.dist
                     maxd = maxc.dist
                     minx = coords[minc.idx][0]
                     maxx = coords[maxc.idx][0]
-                    newx = (((1 / mind) * minx) + ((1 / maxd) * maxx)) / ((1 / mind) + (1 / maxd))
+                    eps = 1e-12
+                    if (mind <= eps) and (maxd <= eps):
+                        newx = (minx + maxx) / 2
+                    elif mind <= eps:
+                        newx = minx
+                    elif maxd <= eps:
+                        newx = maxx
+                    else:
+                        newx = (((1 / mind) * minx) + ((1 / maxd) * maxx)) / ((1 / mind) + (1 / maxd))
+                # median over descendant tip x positions
+                elif self.interior_algorithm == 3:
+                    tips = node.get_leaves()
+                    newx = float(np.median([coords[i.idx][0] for i in tips]))
+                # trimmed mean over descendant tip x positions
+                elif self.interior_algorithm == 4:
+                    tips = node.get_leaves()
+                    vals = np.sort(np.array([coords[i.idx][0] for i in tips], dtype=float))
+                    nvals = vals.size
+                    k = int(np.floor(0.1 * nvals))
+                    if nvals >= 3 and (2 * k) < nvals:
+                        vals = vals[k:nvals - k]
+                    newx = float(np.mean(vals))
+                # unknown mode -> fallback to default midpoint
+                else:
+                    newx = sum([
+                        coords[min(node.children).idx][0],
+                        coords[max(node.children).idx][0],
+                    ]) / 2
 
                 coords.append((newx, node._height))
         return np.array(coords)
