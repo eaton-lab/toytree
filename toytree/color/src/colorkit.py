@@ -7,10 +7,12 @@ not intended for users. Instead, users should use the ToyColor object,
 which uses ColorKit as its parser.
 """
 
-from typing import Union, Tuple
 from copy import copy
+from typing import Tuple, Union
+
 import numpy as np
 import toyplot.color
+
 from toytree.utils import ToyColorError
 
 ColorType = Union[str, np.ndarray, Tuple[float, float, float, float]]
@@ -27,6 +29,7 @@ class ColorKit:
     - css = "cornflowerblue"
     - array = np.array((1.0, 0.0, 0.0, 0.5), dtype=toyplot.color.dtype)
     """
+
     def __init__(self, color: ColorType):
 
         # store color as css, rgba, and ndarray
@@ -64,6 +67,11 @@ class ColorKit:
         """Return tuple with float for (r,g,b) percentages, no a."""
         return tuple(float(self.array[i]) for i in 'rgb')
 
+    @property
+    def rgb_css(self):
+        """Return color as rgb(%,%,%)."""
+        return f"rgb({self.css[5:].rsplit(',', 1)[0]})"
+
     def set_opacity(self, value: float) -> None:
         """Set opacity to a new value."""
         rgba = list(self._rgba)
@@ -90,11 +98,12 @@ class ColorKit:
         # if opacity if False then do not set.
         elif opacity is False:
             opacity = ""
-        # if opacity if a value then use it.
+        # if opacity is a value then use it to override 'a'
         else:
             opacity = f";{coltype}-opacity:{opacity}"
         # return style string
         return color + opacity
+
 
     def _parse_color(self, color: ColorType) -> None:
         """Parse input color to three stored formats."""
@@ -164,7 +173,7 @@ class ColorKit:
             raise ToyColorError(
                 f"Color arg '{color}' not recognized as a valid color input.")
 
-    # Colorkit doesn't need a repr, but this one was pretty nice, so 
+    # Colorkit doesn't need a repr, but this one was pretty nice, so
     # I'll leave it here for now. But I commented it b/c I was encountering
     # a circular import error and didn't feel like fixing it.
     # def _repr_html_(self):
