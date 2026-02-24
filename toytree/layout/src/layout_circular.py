@@ -1,21 +1,19 @@
 #!/usr/bin/env python
 
-"""...
-
-"""
+"""Get circular layout coordinates."""
 
 from typing import Tuple
-import numpy as np
-from loguru import logger
-from toytree.layout.src.layout_base import BaseLayout
 
+import numpy as np
+
+from toytree.layout.src.layout_base import BaseLayout
 
 
 class CircularLayout(BaseLayout):
     """Layout for circular tree projection."""
 
     def run(self):
-        """Fills .coords array with x, y values."""
+        """Fill .coords array with x, y values."""
         self.coords = np.zeros(shape=(self.tree.nnodes, 2))
         self.tcoords = self.coords[:self.tree.ntips, :].copy()
         self.set_fan_coords()
@@ -51,7 +49,6 @@ class CircularLayout(BaseLayout):
 
     def set_fan_coords(self):
         """Return array with x, y Node coordinates."""
-
         # position of the *aligned* tips on the fan circumference, the
         # first tips will be at 'start' (e.g., 0) and the final will be
         # at 'end' (e.g., 360 - unit) where unit is space between tips.
@@ -140,7 +137,6 @@ class CircularLayout(BaseLayout):
         assert end > start, msg
         if end - start > 360:
             end = start + 359
-        logger.debug(f"{start}-{end}")
         return start, end
 
     # def get_radial_coords(self, use_edge_lengths=True):
@@ -197,6 +193,7 @@ if __name__ == "__main__":
     import toyplot
     import toytree
     from toytree.drawing.src.draw_toytree import get_tree_style_base, get_layout
+
     toytree.set_log_level("DEBUG")
 
     tre = toytree.rtree.unittree(8)
@@ -204,6 +201,7 @@ if __name__ == "__main__":
     sty.layout = 'c'
     lay = CircularLayout(tre, sty)
     print(lay.coords)
+    # print(tre.get_edges())
 
     canvases = []
     for lay in ["c0-360", "c90-180", "c0-90", "c0-180", "c180-0"]:
@@ -215,11 +213,11 @@ if __name__ == "__main__":
         canvas = toyplot.Canvas(400, 300)
         axes = canvas.cartesian()
         axes.graph(
-            tre.get_edges(),
+            tre.get_edges('idx'),
             vcoordinates=LAY.coords,
             # vsize=16,
-            estyle={"stroke-width": 2},
+            # estyle={"stroke-width": 2},
         )
         canvases.append(canvas)
 
-    toytree.utils.show(canvases)
+    toytree.utils.show(canvases, tmpdir="~")
