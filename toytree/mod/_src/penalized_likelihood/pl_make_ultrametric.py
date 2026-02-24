@@ -22,6 +22,8 @@ from toytree.mod._src.penalized_likelihood.pl_relaxed import (
 )
 from toytree.utils import ToytreeError
 
+__all__ = ["edges_make_ultrametric"]
+
 
 def _validate_method(method: str) -> str:
     method = str(method).lower()
