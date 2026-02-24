@@ -10,13 +10,6 @@ expanded.
 - vectorize to be faster.
 - vectorize RI/CI to apply over trait matrix
 
-JIT-compiled version
----------------------
-- jit supports sets now, but they are being deprecated to introduce
-a new numba typed.set, but which does not yet exist. So until it does
-its not really worth spending time on...
-- https://numba.pydata.org/numba-doc/dev/reference/pysupported.html#set
-
 References
 ----------
 - Xia, Xuhua. 2018. “Maximum Parsimony Method in Phylogenetics.”
@@ -228,9 +221,10 @@ def fitch_parsimony_score(tree: ToyTree, trait: Dict[int,Any]) -> int:
 
 
 def consistency_and_retention_indices(tree: ToyTree, trait: Dict[str, Any], npermutations: int = 10_000, left_tailed: bool = False, rng: int = None) -> pd.Series:
-    """Return the consistency (CI), retention (RI), and rescaled
-    consistency index (RCI) for a discrete trait.
+    """Return CI, RI, and RCI indices for a discrete trait.
 
+    Computes the consistency (CI), retention (RI), and rescaled
+    consistency index(RCI) for a discrete trait.
     The CI and RI compare the observed changes in a trait across a tree
     topology to the minimum and maximum changes as a measure of homoplasy.
     To assess significance, trait values are randomly permuted across
@@ -268,7 +262,7 @@ def consistency_and_retention_indices(tree: ToyTree, trait: Dict[str, Any], nper
     >>> consistency_and_retention_indices(tree, traits.t0)
 
     References
-    -----------
+    ----------
     - Fitch, Walter M. (1971) Systematic Biology 20 (4)
     - Klingenberg and Gidaszewski (2010) Systematic Biology 59 (3)
     """
