@@ -6,21 +6,23 @@ This module implements a discrete trait simulator based on a Markov
 model. The root state is either randomly sampled, or assigned, and
 transitions among states occur probabilistiically along the edges of
 a phylogeny. Transition rates can be specified for models with
-unequal transition rates.   
+unequal transition rates.
 
 References
 ----------
 - Yang...
 """
 
-from typing import Optional, List, Any, Union
 from dataclasses import dataclass, field
 from enum import Enum
+from typing import Any, List, Optional, Union
+
 import numpy as np
 import pandas as pd
 import scipy.linalg
+
 from toytree import ToyTree
-from toytree.core.apis import add_subpackage_method, PhyloCompAPI
+from toytree.core.apis import PhyloCompAPI, add_subpackage_method
 
 __all__ = [
     "get_markov_model",
@@ -34,6 +36,7 @@ class ModelType(Enum):
     This will raise an exception is user tries to enter a value not
     supported in this class.
     """
+
     ER = "ER"
     SYM = "SYM"
     ARD = "ARD"
@@ -50,6 +53,7 @@ class MarkovModel:
     >>> model = MarkovModel(3, "ARD")
     >>> print(model.qmatrix)
     """
+
     nstates: int
     """: Number of possible character states."""
     mtype: ModelType
@@ -80,7 +84,7 @@ class MarkovModel:
         self._set_transition_matrix()
 
     def _check_rates(self):
-        """Checks the relative rates matrix given mtype and nstates.
+        """Check the relative rates matrix given mtype and nstates.
 
         If a user entered the matrix it is checked to be appropriate
         given the model type. If no matrix is entered then a random
@@ -93,7 +97,7 @@ class MarkovModel:
         """
         # user entered rate matrix
         rates = self.relative_rates
-        
+
         # if no user-entered rates then sample random rates constrained
         # by the model type.
         if rates is None:
@@ -109,32 +113,34 @@ class MarkovModel:
             else:
                 rates = np.ones((self.nstates, self.nstates))
             np.fill_diagonal(rates, 0)
-        
+
         # if user entered rates then check that they are valid.
         else:
             rates = np.array(rates)
             # check if singular for ER model
             if self.mtype.name == "ER":
                 if rates.size == 1:
-                    rates = (
-                        np.repeat(rates, self.nstates * self.nstates)
-                        .reshape((self.nstates, self.nstates))
+                    rates = np.repeat(rates, self.nstates * self.nstates).reshape(
+                        (self.nstates, self.nstates)
                     )
-                assert len(set(rates[rates != 0])) == 1, (
-                    "all rates should be equal in ER model. See SYM model.")
+                assert (
+                    len(set(rates[rates != 0])) == 1
+                ), "all rates should be equal in ER model. See SYM model."
             # check if symmetric for SYM models
             elif self.mtype.name == "SYM":
-                assert np.allclose(rates, rates.T, rtol=1e-5, atol=1e-8), (
-                    "rates should be symmetric in SYM model. See ARD model.")
+                assert np.allclose(
+                    rates, rates.T, rtol=1e-5, atol=1e-8
+                ), "rates should be symmetric in SYM model. See ARD model."
             # check shape
             assert rates.shape == (self.nstates, self.nstates), (
                 f"given nstates={self.nstates} the rates matrix should "
-                f"be shape ({self.nstates}, {self.nstates}).")
+                f"be shape ({self.nstates}, {self.nstates})."
+            )
             np.fill_diagonal(rates, 0)
         self.relative_rates = rates
 
     def _check_freqs(self):
-        """Checks stationary frequencies array given model and nstates.
+        """Check stationary frequencies array given model and nstates.
 
         Entered values are checked for correct size and that they
         sum to one. If no values are entered then a uniform frequency
@@ -156,20 +162,23 @@ class MarkovModel:
         else:
             freqs = np.array(freqs)
             if self.mtype.name in ("SYM", "ARD"):
-                assert freqs.size == self.nstates, (
-                    f"states_frequencies should be len={self.nstates}.")
+                assert (
+                    freqs.size == self.nstates
+                ), f"states_frequencies should be len={self.nstates}."
             else:
                 fixed = np.repeat(1.0 / self.nstates, self.nstates)
                 assert np.allclose(freqs, fixed), (
                     f"ER model with nstates={self.nstates} has fixed state "
-                    f"frequences: {fixed}. See SYM or ARD models.")
+                    f"frequences: {fixed}. See SYM or ARD models."
+                )
                 freqs = fixed
-        assert np.allclose(sum(freqs), 1.0), (
-            f"state_frequencies must sum to 1. You entered: {freqs}")
+        assert np.allclose(
+            sum(freqs), 1.0
+        ), f"state_frequencies must sum to 1. You entered: {freqs}"
         self.state_frequencies = freqs
 
     def _set_transition_matrix(self):
-        """Sets the instantaneous rate matrix (Q) using relative rates.
+        """Set the instantaneous rate matrix (Q) using relative rates.
 
         The instantaneous rate matrix has off-diagonal entries defined as:
         q_ij = rate_scalar * r_ij * pi_j
@@ -244,7 +253,7 @@ class MarkovModel:
     def __repr__(self):
         """Return a str representation of the Markov model."""
         return f"MarkovModel(nstates={self.nstates}, model={self.mtype.name})"
-        # ,\nT matrix\n{self.transition_matrix}\nQ matrix\n{self.qmatrix}\nTransition Probabilities (t=1)\n{self.get_transition_probability_matrix(time=1)}"
+        # Debug repr expansion omitted for readability.
 
 
 @dataclass
@@ -256,6 +265,7 @@ class DiscreteMarkovSimulator:
     like :meth:`simulate_discrete_data`. This takes as input a
     ToyTree and MarkModel instances
     """
+
     tree: ToyTree
     """: ToyTree with edge lengths in units of ..."""
     model: MarkovModel
@@ -390,7 +400,7 @@ def simulate_discrete_data(
     state_names: Optional[List[Any]] = None,
     seed: Optional[int] = None,
     inplace: bool = False,
-) -> Union[pd.DataFrame, pd.Series, None]:
+) -> Union[pd.DataFrame, pd.Series]:
     """Return trait values simulated under a discrete Markov model.
 
     The number of states and model type can be entered without any
@@ -444,8 +454,8 @@ def simulate_discrete_data(
         columns are named `{trait_name}_0`, `{trait_name}_1`, etc. If
         None, traits are named `t0`, `t1`, ... (current default).
     inplace: bool
-        If False a DataFrame is returned, if True a ToyTree is returned
-        with data stored to Nodes.
+        If True, simulated trait data are also written to the input tree as
+        node features. The simulated data object is still returned.
 
     Examples
     --------
@@ -502,7 +512,7 @@ def simulate_discrete_data(
 
     # subsample to return only tips
     if tips_only:
-        traits = traits.iloc[:tree.ntips]
+        traits = traits.iloc[: tree.ntips]
 
     # rename data from numeric to user defined
     if state_names is not None:
@@ -521,16 +531,14 @@ def simulate_discrete_data(
         series = traits.iloc[:, 0].copy()
         if series.name is None:
             series.name = traits.columns[0]
-        if not inplace:
-            return series
-        tree.set_node_data_from_dataframe(series.to_frame(), inplace=True)
-        return None
+        if inplace:
+            tree.set_node_data(series.name, series, inplace=True, default=np.nan)
+        return series
 
     # store data to ToyTree or return as DataFrame
-    if not inplace:
-        return traits
-    tree.set_node_data_from_dataframe(traits, inplace=True)
-    return None
+    if inplace:
+        tree.set_node_data_from_dataframe(traits, inplace=True)
+    return traits
 
 
 # def draw_markov_model():
@@ -541,7 +549,6 @@ def simulate_discrete_data(
 
 
 if __name__ == "__main__":
-
     import toytree
 
     # get a single tree with trait values
@@ -550,12 +557,12 @@ if __name__ == "__main__":
         tree=tre,
         nstates=3,
         model="SYM",
-        rate_scalar=1.,
+        rate_scalar=1.0,
         state_frequencies=[0.1, 0.3, 0.6],
         tips_only=True,
         root_state=0,
         nreplicates=10,
-        state_names=['a', 'b', 'c'],
+        state_names=["a", "b", "c"],
     )
     # print(data.T)
     # data = simulate_discrete_data(tre, nstates=2, inplace=True)
@@ -570,6 +577,11 @@ if __name__ == "__main__":
     # get an array of many replicate sim data
     # ...
 
-    model = get_markov_model(model="SYM", nstates=3, state_frequencies=[0.1, 0.2, 0.7], rate_scalar=0.1)
+    model = get_markov_model(
+        model="SYM",
+        nstates=3,
+        state_frequencies=[0.1, 0.2, 0.7],
+        rate_scalar=0.1,
+    )
     print(model)
     print(model.get_transition_probability_matrix(time=10))
