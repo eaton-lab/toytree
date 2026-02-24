@@ -98,6 +98,7 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
         style=style,
         fixed_order=kwargs.pop("fixed_order"),
         fixed_position=kwargs.pop("fixed_position"),
+        interior_algorithm=kwargs.pop("interior_algorithm", 0),
     )
 
     # set tip angles on 'c' or unrooted layouts
@@ -158,11 +159,11 @@ def get_tree_style_base(tree: ToyTree, **kwargs) -> TreeStyle:
 
     # get new TreeStyle from user-entered arg (e.g., 's')
     if tree_style is not None:
-        style = get_base_tree_style_by_name(tree_style[0])
+        style = get_base_tree_style_by_name(tree_style)
 
     # get new TreeStyle from tree.style.tree_style (e.g., 'n')
     elif tree.style.tree_style is not None:
-        style = get_base_tree_style_by_name(tree.style.tree_style[0])
+        style = get_base_tree_style_by_name(tree.style.tree_style)
 
     # get deepcopy of current TreeStyle in tree.style
     else:
