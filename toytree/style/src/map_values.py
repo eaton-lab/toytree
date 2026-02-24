@@ -86,7 +86,7 @@ def get_range_mapped_values(
     This funtion uses `scipy.interpolate.interp1d` for interpolation.
 
     See Also
-    ---------
+    --------
     - toytree.color.get_color_mapped_feature
 
     Examples
