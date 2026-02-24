@@ -1,69 +1,71 @@
 #!/usr/env/bin python
 
-"""Tree distance metrics for measuring differences between trees.
+"""Tree distance metrics for comparing phylogenetic tree topologies.
 
-Tree distance methods decompose trees into sets of bipartitions or
-quartets, and use one of several methods for measuring differences
-based on these sets, or additional features of the sets.
+This module implements split- (bipartition-) based tree distance metrics
+exposed through ``ToyTree.distance`` and module-level helpers. Implemented
+methods include the Robinson-Foulds (RF) distance and several generalized
+Robinson-Foulds variants that compare trees using split matching and
+information-based scores.
 
-bipartition = {0, 1} | {2, 3, 4}
-quartets = {0, 1} | {2, 3}; {0, 1} | {2, 4}; {0, 1} | {3, 4},
+Most public functions require that the compared trees share identical tip
+labels. Core matching and information calculations are delegated to helper
+functions in :mod:`toytree.distance._src.treedist_utils`.
 
-Authors
--------
-- Deren Eaton, Scarlet Ming-sha Au
+Tree distance methods are often described using either bipartitions (splits)
+or quartets. A split is the bipartition induced by an edge (for example,
+``{0, 1} | {2, 3, 4}``), whereas quartets summarize induced relationships for
+4-taxon subsets. This module currently emphasizes split-based metrics; some
+additional distance interfaces in this file remain placeholders.
 
-Note
-----
-If there was a real need for speed with tree distance functions
-they could be easily sped up by adding jit decorators to various
-set comparison functions, but this has not been done yet.
+Notes
+-----
+Some metrics spend most of their time in set operations and split-matching
+steps. The current implementation prioritizes correctness and readability.
+Compiled / JIT-accelerated variants could improve performance in the future.
 
-TODO: clean up references
 References
 ----------
-- https://en.wikipedia.org/wiki/Robinson%E2%80%93Foulds_metric
-- Robinson, D.F. and Foulds, L.R. (1981) "Comparison of phylogenetic
-  trees". Mathematical Biosciences. 53 (1–2): 131–147.
-  doi:10.1016/0025-5564(81)90043-2.
-- Smith, Martin R. (2020). "Information theoretic Generalized
-  Robinson-Foulds metrics for comparing phylogenetic trees".
-  Bioinformatics. 36 (20): 5007–5013. doi:10.1093/bioinformatics/btaa614.
-- Mercè Llabrés, Francesc Rosselló, and Gabriel Valiente (2021)
-  "The Generalized Robinson-Foulds Distance for Phylogenetic Trees"
-  Journal of Computational Biology. http://doi.org/10.1089/cmb.2021.0342
-- Sand, A, Holt, M., Johansen, J., Brodal, G., Mailund, T., Pedersen, C.,
-  (2014) "tqDist: a library for computing the quartet and triplet
-  distances between binary or general trees", Bioinformatics, Volume
-  30, 14, 2079–2080, https://doi.org/10.1093/bioinformatics/btu157.
-- Brodal 2013
-- Estabrook 1985
-- Holt 2014
-- Sand 2014
-- https://cran.r-project.org/web/packages/TreeDist/vignettes/Robinson-Foulds.html
-- Meila M (2007). “Comparing clusterings-an information based
-  distance.” _Journal of Multivariate Analysis_, *98*(5), 873-895.
-  doi: 10.1016/j.jmva.2006.11.013 (URL:
-  https://doi.org/10.1016/j.jmva.2006.11.013).
+- Robinson, D. F., & Foulds, L. R. (1981). Comparison of phylogenetic trees.
+  *Mathematical Biosciences*, 53(1-2), 131-147.
+  https://doi.org/10.1016/0025-5564(81)90043-2
+- Smith, M. R. (2020). Information theoretic Generalized Robinson-Foulds
+  metrics for comparing phylogenetic trees. *Bioinformatics*, 36(20),
+  5007-5013. https://doi.org/10.1093/bioinformatics/btaa614
+- Llabrés, M., Rosselló, F., & Valiente, G. (2021). The Generalized
+  Robinson-Foulds Distance for Phylogenetic Trees. *Journal of Computational
+  Biology*. https://doi.org/10.1089/cmb.2021.0342
+- Sand, A., Holt, M. K., Johansen, J., Brodal, G. S., Mailund, T., &
+  Pedersen, C. N. S. (2014). tqDist: a library for computing the quartet and
+  triplet distances between binary or general trees. *Bioinformatics*,
+  30(14), 2079-2080. https://doi.org/10.1093/bioinformatics/btu157
+- Meila, M. (2007). Comparing clusterings—an information based distance.
+  *Journal of Multivariate Analysis*, 98(5), 873-895.
+  https://doi.org/10.1016/j.jmva.2006.11.013
+- TreeDist vignette (Robinson-Foulds metrics):
+  https://cran.r-project.org/web/packages/TreeDist/vignettes/Robinson-Foulds.html
+- TreeDist vignette (information-based metrics):
+  https://cran.r-project.org/web/packages/TreeDist/vignettes/information.html
+- Robinson-Foulds metric overview (background):
+  https://en.wikipedia.org/wiki/Robinson%E2%80%93Foulds_metric
 """
 
-from typing import Set, Callable, Union, Iterator, Tuple, Optional
+from typing import Callable, Iterator, Optional, Set, Tuple, Union
 
 import numpy as np
 import pandas as pd
-from toytree.distance._src.treedist_utils import (
-    _get_split_phylo_info,
-    get_trees_nye_dist,
-    get_trees_matching_split_dist,
-    get_trees_matching_split_info_dist,
-    get_trees_shared_phylo_info_dist,
-    get_trees_mutual_clust_info_dist,
-    get_trees_shared_phylo_info_dist_from_biparts,
-    get_trees_mutual_clust_info_dist_from_biparts,
-)
+
 from toytree import ToyTree, ToytreeError
 from toytree.core.apis import TreeDistanceAPI, add_subpackage_method
-
+from toytree.distance._src.treedist_utils import (
+    _get_split_phylo_info,
+    get_trees_matching_split_dist,
+    get_trees_matching_split_info_dist,
+    get_trees_mutual_clust_info_dist,
+    get_trees_mutual_clust_info_dist_from_biparts,
+    get_trees_shared_phylo_info_dist,
+    get_trees_shared_phylo_info_dist_from_biparts,
+)
 
 TIPS_IDENTICAL = "Treedist methods require that trees share identical tip names."
 
@@ -76,6 +78,7 @@ __all__ = [
     "get_treedist_rfg_msi",
     "get_treedist_rfg_spi",
     "get_treedist_rfg_mci",
+    "get_treedist_kf_branch_score",
 ]
 
 
@@ -83,8 +86,11 @@ __all__ = [
 # Get distance metrics from bipartition sets and additional info
 ###################################################################
 
+
 def _get_rf_distance(
-    set1: Set, set2: Set, normalize: bool = True,
+    set1: Set,
+    set2: Set,
+    normalize: bool = True,
 ) -> float:
     """Return RF distance between two bipartition sets.
 
@@ -114,7 +120,9 @@ def _get_rf_distance(
 
 
 def _get_rf_distance_information_corrected(
-    set1: Set, set2: Set, normalize: bool = True,
+    set1: Set,
+    set2: Set,
+    normalize: bool = True,
 ) -> float:
     """Return the information-corrected Robinson-Foulds distance (rfi).
 
@@ -160,11 +168,29 @@ def _get_rf_distance_information_corrected(
     return total_info - shared_info
 
 
+def _get_unrooted_bipartition_length_map(tree: ToyTree) -> dict:
+    """Return branch lengths keyed by canonical unrooted bipartitions."""
+    utree = tree if not tree.is_rooted() else tree.unroot()
+    biparts = utree.iter_bipartitions(
+        feature="name",
+        include_singleton_partitions=True,
+        type=tuple,
+        sort=True,
+    )
+    data = {}
+    # iter_bipartitions() yields one split per non-root node in idx order.
+    # On an unrooted tree this aligns with utree[:-1], which stores edge lengths.
+    for node, bipart in zip(utree[:-1], biparts):
+        data[bipart] = float(node.dist)
+    return data
+
+
 ##############################################################
 #
 #  PUBLIC METHODS
 #
 ##############################################################
+
 
 @add_subpackage_method(TreeDistanceAPI)
 def get_treedist_rf(
@@ -174,33 +200,50 @@ def get_treedist_rf(
 ) -> float:
     """Return the Robinson-Foulds (RF) distance between two trees.
 
-    The Robinson-Foulds distance is a normalized count of the
-    bipartitions induced by one tree, but not the other tree, i.e.,
-    it is the symmetric difference between two bipart sets divided
-    by the total number of (internal) bipartitions in both sets.
-    Larger values indicate that two trees are more different.
+    The RF distance measures topological disagreement as the symmetric
+    difference between the sets of internal bipartitions (splits) induced by
+    two trees. Larger values indicate greater topological difference.
 
-    Parameters:
-        tree1: ToyTree
-            An input ToyTree to compare to tree2.
-        tree2: ToyTree
-            An input ToyTree to compare to tree1.
-        normalize: bool
-            Normalize distance score by the total number of splits in
-            both trees (the max number of possible differences).
+    This implementation compares canonical split sets generated with
+    ``iter_bipartitions(type=frozenset, sort=True)`` and requires the two trees
+    to share identical tip labels.
 
-    Examples:
-        >>> t0 = toytree.rtree.unittree(ntips=10, seed=123)
-        >>> t1 = toytree.rtree.unittree(ntips=10, seed=321)
-        >>> t0.distance.get_treedist_rf(t1, normalize=False)
-        ...
-        >>> t0.distance.get_treedist_rf(t1, normalize=True)
-        ...
+    Parameters
+    ----------
+    tree1 : ToyTree
+        First tree to compare.
+    tree2 : ToyTree
+        Second tree to compare.
+    normalize : bool, default=False
+        If ``True``, divide the RF count by the total number of internal splits
+        across both trees (the denominator used by this implementation). If
+        ``False``, return the raw symmetric-difference count.
 
-    References:
-        1. Robinson, D.F. and Foulds, L.R. (1981) "Comparison of phylogenetic
-        trees". Mathematical Biosciences. 53 (1–2): 131–147.
-        doi:10.1016/0025-5564(81)90043-2.
+    Returns
+    -------
+    float
+        The RF distance. This is an integer-valued count when
+        ``normalize=False`` and a normalized score when ``normalize=True``.
+
+    Raises
+    ------
+    AssertionError
+        If the two trees do not share identical tip labels.
+
+    Examples
+    --------
+    >>> t1 = toytree.tree("((a,b),(c,d));")
+    >>> t2 = toytree.tree("((a,c),(b,d));")
+    >>> t1.distance.get_treedist_rf(t2, normalize=False)
+    2.0
+    >>> t1.distance.get_treedist_rf(t2, normalize=True)
+    1.0
+
+    References
+    ----------
+    Robinson, D. F., & Foulds, L. R. (1981). Comparison of phylogenetic
+    trees. *Mathematical Biosciences*, 53(1-2), 131-147.
+    https://doi.org/10.1016/0025-5564(81)90043-2
     """
     assert set(tree1.get_tip_labels()) == set(tree2.get_tip_labels()), TIPS_IDENTICAL
     set1 = set(tree1.iter_bipartitions(type=frozenset, sort=True))
@@ -214,28 +257,57 @@ def get_treedist_rfi(
     tree2: ToyTree,
     normalize: bool = False,
 ) -> float:
-    """Return the information-corrected Robinson-Foulds distance (rfi).
+    """Return the information-corrected Robinson-Foulds distance (RFI).
 
-    This distance measure is the sum of of the phylogenetic information
-    of edges that are different between two trees, where information
-    is calculated as the probability that a randomly sampled binary
-    tree of the same size contains the split. Splits that contain less
-    information (e.g., a cherry vs a deep split) are more likely to
-    arise by chance, and thus contribute less to the metric.
+    The RFI distance is an RF-like split distance that weights disagreement by
+    the phylogenetic information content of splits. Splits that are more likely
+    to occur by chance (for example, some shallow splits) contribute less than
+    more informative splits.
+
+    This implementation computes information-weighted disagreement from the
+    union and intersection of canonical split sets generated with
+    ``iter_bipartitions(type=frozenset, sort=True)`` and requires the two trees
+    to share identical tip labels.
 
     Parameters
     ----------
-    tree1: ToyTree
-        A ToyTree to compare to tree2.
-    tree2: ToyTree
-        A ToyTree to compare to tree1.
-    normalize: bool
-        Normalize score relative to the sum of phylogenetic info
-        present in both subtrees.
+    tree1 : ToyTree
+        First tree to compare.
+    tree2 : ToyTree
+        Second tree to compare.
+    normalize : bool, default=False
+        If ``True``, divide by the sum of phylogenetic information in the split
+        sets of both trees (the default ``"sum"`` normalization used by this
+        implementation). If ``False``, return the raw information-weighted
+        disagreement.
+
+    Returns
+    -------
+    float
+        The information-corrected Robinson-Foulds distance.
+
+    Raises
+    ------
+    AssertionError
+        If the two trees do not share identical tip labels.
+
+    Examples
+    --------
+    >>> t1 = toytree.tree("((a,b),(c,d));")
+    >>> t2 = toytree.tree("((a,c),(b,d));")
+    >>> round(t1.distance.get_treedist_rfi(t2, normalize=False), 6)
+    3.169925
+    >>> t1.distance.get_treedist_rfi(t2, normalize=True)
+    1.0
 
     References
     ----------
-    - Martin Smith: https://cran.r-project.org/web/packages/TreeDist/vignettes/information.html
+    Smith, M. R. (2020). Information theoretic Generalized Robinson-Foulds
+    metrics for comparing phylogenetic trees. *Bioinformatics*, 36(20),
+    5007-5013. https://doi.org/10.1093/bioinformatics/btaa614
+
+    TreeDist information vignette:
+    https://cran.r-project.org/web/packages/TreeDist/vignettes/information.html
     """
     assert set(tree1.get_tip_labels()) == set(tree2.get_tip_labels()), TIPS_IDENTICAL
     set1 = set(tree1.iter_bipartitions(type=frozenset, sort=True))
@@ -249,21 +321,50 @@ def get_treedist_rfg_ms(
     tree2: ToyTree,
     normalize: bool = False,
 ) -> float:
-    """Return the Matching Split Distance.
+    """Return the Matching Split Distance (MS).
+
+    The Matching Split Distance is a generalized Robinson-Foulds-style metric
+    that compares trees by optimally matching splits between trees, rather than
+    counting only exact split matches and mismatches. This wrapper delegates to
+    :func:`toytree.distance._src.treedist_utils.get_trees_matching_split_dist`.
 
     Parameters
     ----------
-    tree1: ToyTree
-        A ToyTree to compare to tree2.
-    tree2: ToyTree
-        A ToyTree to compare to tree1.
-    normalize: bool
-        Normalize score relative to the sum of phylogenetic info
-        present in both subtrees.
+    tree1 : ToyTree
+        First tree to compare.
+    tree2 : ToyTree
+        Second tree to compare.
+    normalize : bool, default=False
+        Normalization flag passed to the underlying implementation. Only
+        ``False`` is currently supported; ``True`` raises ``ToytreeError``.
+
+    Returns
+    -------
+    float
+        The raw matching split distance.
+
+    Raises
+    ------
+    ToytreeError
+        If ``normalize=True`` is requested (currently unsupported by the
+        underlying matching-split implementation).
+
+    Examples
+    --------
+    >>> t1 = toytree.tree("((a,b),(c,d));")
+    >>> t2 = toytree.tree("((a,c),(b,d));")
+    >>> t1.distance.get_treedist_rfg_ms(t2, normalize=False)
+    2.0
+
+    Notes
+    -----
+    The ``normalize`` argument is part of the public signature for API
+    consistency with related tree-distance functions, but normalization is not
+    currently implemented for this metric in the underlying routine.
 
     References
     ----------
-    - Bogdanowicz & Giaro (2012)
+    Bogdanowicz, D., & Giaro, K. (2012).
     """
     return get_trees_matching_split_dist(tree1, tree2, normalize)
 
@@ -274,22 +375,56 @@ def get_treedist_rfg_msi(
     tree2: ToyTree,
     normalize: bool = True,
 ) -> float:
-    """Return the Matching Split Information Distance.
+    """Return the Matching Split Information distance (MSI).
+
+    MSI is a generalized Robinson-Foulds-style metric that compares trees by
+    optimally matching splits and then scoring disagreement using split
+    information content. Relative to a count-based matching-split distance,
+    mismatches involving more informative splits contribute more strongly.
 
     Parameters
     ----------
-    tree1: ToyTree
-        A ToyTree to compare to tree2.
-    tree2: ToyTree
-        A ToyTree to compare to tree1.
-    normalize: bool
-        Normalize score relative to the sum of phylogenetic info
-        present in both subtrees.
+    tree1 : ToyTree
+        First tree to compare.
+    tree2 : ToyTree
+        Second tree to compare.
+    normalize : bool, default=True
+        If ``True``, return the normalized MSI score from the underlying
+        implementation. If ``False``, return the raw information-weighted
+        distance.
+
+    Returns
+    -------
+    float
+        The matching split information distance (raw or normalized).
+
+    Raises
+    ------
+    Exception
+        Propagated validation errors from the underlying matching-split
+        information implementation (for example, incompatible tree inputs).
+
+    Examples
+    --------
+    >>> t1 = toytree.tree("((a,b),(c,d));")
+    >>> t2 = toytree.tree("((a,c),(b,d));")
+    >>> round(t1.distance.get_treedist_rfg_msi(t2, normalize=False), 6)
+    3.169925
+    >>> t1.distance.get_treedist_rfg_msi(t2, normalize=True)
+    1.0
+
+    Notes
+    -----
+    This metric supports normalization (unlike ``get_treedist_rfg_ms``), and
+    ``normalize=True`` is the default.
 
     References
     ----------
-    - Bogdanowicz & Giaro (2012)
-    - Martin Smith (2020)
+    Bogdanowicz, D., & Giaro, K. (2012).
+
+    Smith, M. R. (2020). Information theoretic Generalized Robinson-Foulds
+    metrics for comparing phylogenetic trees. *Bioinformatics*, 36(20),
+    5007-5013. https://doi.org/10.1093/bioinformatics/btaa614
     """
     return get_trees_matching_split_info_dist(tree1, tree2, normalize)
 
@@ -300,27 +435,55 @@ def get_treedist_rfg_spi(
     tree2: ToyTree,
     normalize: bool = False,
 ) -> float:
-    """Return generalized Robinson-Foulds Distance between two trees
-    based on Shared Phylogenetic Information (SPI).
+    """Return the Shared Phylogenetic Information distance (SPI).
 
-    Generalized Robinson–Foulds distances calculate tree similarity by
-    finding an optimal matching of splits between two trees, even
-    among non-identical splits, on which to compute shared information.
-    Here the 'shared phylogenetic information' metric is used to
-    meausure the information that two trees hold in common, following
-    Martin Smith (2020).
+    SPI is a generalized Robinson-Foulds-style metric that compares trees by
+    optimally matching splits and scoring disagreement using shared
+    phylogenetic information. Relative to count-based split metrics,
+    disagreements involving more informative splits contribute more strongly.
 
     Parameters
     ----------
+    tree1 : ToyTree
+        First tree to compare.
+    tree2 : ToyTree
+        Second tree to compare.
+    normalize : bool, default=False
+        If ``True``, return the normalized SPI distance from the underlying
+        implementation. If ``False``, return the raw SPI-based distance.
 
-    See Also
+    Returns
+    -------
+    float
+        The shared phylogenetic information distance (raw or normalized).
+
+    Raises
+    ------
+    AssertionError
+        If the two trees do not share identical tip labels.
+
+    Examples
     --------
+    >>> t1 = toytree.tree("((a,b),(c,d));")
+    >>> t2 = toytree.tree("((a,c),(b,d));")
+    >>> round(t1.distance.get_treedist_rfg_spi(t2, normalize=False), 6)
+    3.169925
+    >>> t1.distance.get_treedist_rfg_spi(t2, normalize=True)
+    1.0
+
+    Notes
+    -----
+    This metric supports normalization, but unlike ``get_treedist_rfg_msi`` the
+    default for this wrapper is ``normalize=False``.
 
     References
     ----------
-    - Smith, Martin R. (2020). "Information theoretic Generalized
-      Robinson-Foulds metrics for comparing phylogenetic trees".
-      Bioinformatics. 36 (20): 5007–5013. doi:10.1093/bioinformatics/btaa614.
+    Smith, M. R. (2020). Information theoretic Generalized Robinson-Foulds
+    metrics for comparing phylogenetic trees. *Bioinformatics*, 36(20),
+    5007-5013. https://doi.org/10.1093/bioinformatics/btaa614
+
+    TreeDist information vignette:
+    https://cran.r-project.org/web/packages/TreeDist/vignettes/information.html
     """
     assert set(tree1.get_tip_labels()) == set(tree2.get_tip_labels()), TIPS_IDENTICAL
     return get_trees_shared_phylo_info_dist(tree1, tree2, normalize)
@@ -332,141 +495,177 @@ def get_treedist_rfg_mci(
     tree2: ToyTree,
     normalize: bool = False,
 ) -> float:
-    """Return generalized Robinson-Foulds Distance between two trees
-    based on Mutual Clustering Information (MCI).
+    """Return the Mutual Clustering Information distance (MCI).
 
-    Generalized Robinson–Foulds distances calculate tree similarity by
-    finding an optimal matching of splits between two trees, even
-    among non-identical splits, on which to compute shared information.
-    Here the 'mutual clustering information' metric is used to
-    meausure the information that two trees hold in common.
+    MCI is a generalized Robinson-Foulds-style metric that compares trees by
+    optimally matching splits and scoring disagreement using a mutual
+    clustering-information criterion. Relative to split-count metrics, it
+    provides an information-theoretic view of topological difference.
 
-    This is the recommended metric for tree comparisons by Martin
-    Smith (2020).
+    This wrapper delegates to
+    :func:`toytree.distance._src.treedist_utils.get_trees_mutual_clust_info_dist`.
 
     Parameters
     ----------
-    tree1: ToyTree
-        A tree that will be compared to the second.
-    tree2: ToyTree
-        A tree that will be compared to the first.
-    normalize: bool
-        ...
+    tree1 : ToyTree
+        First tree to compare.
+    tree2 : ToyTree
+        Second tree to compare.
+    normalize : bool, default=False
+        If ``True``, return the normalized MCI distance from the underlying
+        implementation. If ``False``, return the raw MCI-based distance.
 
-    See Also
+    Returns
+    -------
+    float
+        The mutual clustering information distance (raw or normalized).
+
+    Raises
+    ------
+    AssertionError
+        If the two trees do not share identical tip labels.
+
+    Examples
     --------
+    >>> t1 = toytree.tree("((a,b),(c,d));")
+    >>> t2 = toytree.tree("((a,c),(b,d));")
+    >>> t1.distance.get_treedist_rfg_mci(t2, normalize=False)
+    2.0
+    >>> t1.distance.get_treedist_rfg_mci(t2, normalize=True)
+    1.0
+
+    Notes
+    -----
+    This metric supports normalization, but the wrapper default is
+    ``normalize=False``. TreeDist-related documentation often recommends MCI
+    for general tree comparison use cases.
 
     References
     ----------
-    - https://cran.r-project.org/web/packages/TreeDist/vignettes/Robinson-Foulds.html
+    Smith, M. R. (2020). Information theoretic Generalized Robinson-Foulds
+    metrics for comparing phylogenetic trees. *Bioinformatics*, 36(20),
+    5007-5013. https://doi.org/10.1093/bioinformatics/btaa614
+
+    TreeDist Robinson-Foulds vignette:
+    https://cran.r-project.org/web/packages/TreeDist/vignettes/Robinson-Foulds.html
     """
     assert set(tree1.get_tip_labels()) == set(tree2.get_tip_labels()), TIPS_IDENTICAL
     return get_trees_mutual_clust_info_dist(tree1, tree2, normalize)
 
 
+# @add_subpackage_method(TreeDistanceAPI)
+# def get_treedist_rfg_jac(
+#     tree1: ToyTree,
+#     tree2: ToyTree,
+#     k=1,
+#     allow_conflict: bool = True,
+#     normalize: bool = False,
+# ) -> float:
+#     """Return generalized Robinson-Foulds Distance between two trees
+#     based on Nye Similarity metric.
+
+#     The Jaccard Robinson Foulds distance is a Generalized
+#     Robinson-Foulds metric based on the tree comparison method of
+#     Nye et al. (2006), and extended by Böcker et al. (2013).
+
+#     An optimal matching of bipartitions is found between two trees
+#     where pair scores represent the size of the largest split that is
+#     consistent with both them, normalized against the Jaccard index.
+
+#     Parameters
+#     ----------
+#     k: int
+#         An arbitrary exponent to which to raise the Jaccard Index. The
+#         Nye metric uses k=1; as k increases to infinity the metric
+#         converges on the standard RF metric.
+#     allow_conflict: bool
+#         If True conflicting splits that be paired, else they are given
+#         a score of zero.
+#     normalize: bool
+#         If True the score is normalized by the ...
+
+#     Notes
+#     -----
+
+#     See Also
+#     --------
+#     `toytree.distance.visualize_matching`
+
+#     Examples
+#     --------
+#     >>> tree1 = toytree.rtree.unittree(10, seed=123)
+#     >>> tree2 = toytree.rtree.unittree(10, seed=321)
+#     >>> tree1.distance.get_treedist_rfg_jac(tree2)   # ...
+#     >>> tree1.distance.get_treedist_rfg_jac(tree2, k=2)   # ...
+#     >>> tree1.distance.get_treedist_rfg_jac(tree2, k=2, allow_conflict=False)  # ...
+
+#     References
+#     ----------
+#     - Nye et al. (2006)
+#     - Böcker et al. 2013)
+#     - https://ms609.github.io/TreeDist/reference/JaccardRobinsonFoulds.html
+#     """
+#     raise NotImplementedError("TODO")
+
+
 @add_subpackage_method(TreeDistanceAPI)
-def get_treedist_rfg_jac(
-    tree1: ToyTree,
-    tree2: ToyTree,
-    k=1,
-    allow_conflict: bool = True,
-    normalize: bool = False,
-) -> float:
-    """Return generalized Robinson-Foulds Distance between two trees
-    based on Nye Similarity metric.
-
-    The Jaccard Robinson Foulds distance is a Generalized
-    Robinson-Foulds metric based on the tree comparison method of
-    Nye et al. (2006), and extended by Böcker et al. (2013).
-
-    An optimal matching of bipartitions is found between two trees
-    where pair scores represent the size of the largest split that is
-    consistent with both them, normalized against the Jaccard index.
-
-    Parameters
-    ----------
-    k: int
-        An arbitrary exponent to which to raise the Jaccard Index. The
-        Nye metric uses k=1; as k increases to infinity the metric
-        converges on the standard RF metric.
-    allow_conflict: bool
-        If True conflicting splits that be paired, else they are given
-        a score of zero.
-    normalize: bool
-        If True the score is normalized by the ...
-
-    Notes
-    -----
-
-    See Also
-    --------
-    `toytree.distance.visualize_matching`
-
-    Examples
-    --------
-    >>> tree1 = toytree.rtree.unittree(10, seed=123)
-    >>> tree2 = toytree.rtree.unittree(10, seed=321)
-    >>> tree1.distance.get_treedist_rfg_jac(tree2)   # ...
-    >>> tree1.distance.get_treedist_rfg_jac(tree2, k=2)   # ...
-    >>> tree1.distance.get_treedist_rfg_jac(tree2, k=2, allow_conflict=False)  # ...
-
-    References
-    ----------
-    - Nye et al. (2006)
-    - Böcker et al. 2013)
-    - https://ms609.github.io/TreeDist/reference/JaccardRobinsonFoulds.html
-    """
-    raise NotImplementedError("TODO")
-
-
 def get_treedist_kf_branch_score(
     tree1: ToyTree,
     tree2: ToyTree,
 ) -> float:
-    """Return the Kune-Felsenstein metric...
+    """Return the Kuhner-Felsenstein branch score distance.
 
     The Branch Score Distance of Kuhner and Felsenstein (1994) compares
-    two trees using information of their branch lengths. It finds all
-    bipartitions in the tree, and their branch lengths, as well as all
-    possible alternative bipartitions that are not in the tree, which
-    are assigned branch lenghts of zero.
+    two trees using branch lengths on the union of their induced splits.
+    Splits absent from one tree are assigned branch length 0, and the
+    returned value is the square root of the summed squared branch-length
+    differences across all splits.
 
-    Reference
-    ---------
-    - Kuhner, M. K. and Felsenstein, J. (1994) Simulation comparison of
-      phylogeny algorithms under equal and unequal evolutionary rates.
-      Molecular Biology and Evolution, 11, 459–468.
-    """
-    raise NotImplementedError("TODO")
-    utree = tree.unroot()
-    iter_biparts = tree.iter_bipartitions(include_singleton_partitions=True)
-    for node, bipart in zip(tree, iter_biparts):
-        if node._up.is_root():
-            "add dist to ..."
-        print((node, node.up), node._dist, bipart)
-
-
-def get_treedist_matrix(
-    *trees: ToyTree,
-    metric: Callable,
-    normalize: bool = True,
-    **kwargs,
-) -> pd.DataFrame:
-    """Return ...
-
-    This is a generalization of `get_treedist_x` methods that
-    arranges results for multiple tree comparisons into a dataframe.
+    Trees are unrooted internally before comparison, so root placement
+    alone does not affect the result. Terminal branches (singleton splits)
+    are included.
 
     Parameters
     ----------
+    tree1 : ToyTree
+        A tree to compare to ``tree2``.
+    tree2 : ToyTree
+        A tree to compare to ``tree1``.
+
+    Returns
+    -------
+    float
+        The Kuhner-Felsenstein branch score distance.
+
+    Raises
+    ------
+    AssertionError
+        If the trees do not share identical tip labels.
 
     Examples
     --------
-    >>> tree1 = toytree.rtree.unittree(ntips=10, seed=123)
-    >>> tree2 = toytree.rtree.unittree(ntips=10, seed=321)
-    >>> ...
+    >>> t1 = toytree.tree("((a:1,b:1):1,(c:1,d:1):1);")
+    >>> t2 = toytree.tree("((a:1,b:2):1,(c:1,d:1):1);")
+    >>> t1.distance.get_treedist_kf_branch_score(t2)
+    1.0
+
+    References
+    ----------
+    Kuhner, M. K., and Felsenstein, J. (1994). Simulation comparison of
+    phylogeny algorithms under equal and unequal evolutionary rates.
+    Molecular Biology and Evolution, 11, 459-468.
     """
-    raise NotImplementedError("TODO")
+    assert set(tree1.get_tip_labels()) == set(tree2.get_tip_labels()), TIPS_IDENTICAL
+    dists1 = _get_unrooted_bipartition_length_map(tree1)
+    dists2 = _get_unrooted_bipartition_length_map(tree2)
+
+    total = 0.0
+    # Compare branch lengths across the union of splits, using zero for any
+    # split missing from one tree (the standard branch-score definition).
+    for split in set(dists1) | set(dists2):
+        diff = dists1.get(split, 0.0) - dists2.get(split, 0.0)
+        total += diff * diff
+    return float(np.sqrt(total))
 
 
 ##############################################################
@@ -475,11 +674,12 @@ def get_treedist_matrix(
 #
 ##############################################################
 
+
 def _expected_variation(
     tree1: ToyTree,
     tree2: ToyTree,
     metric: str,
-    nsamples: int = 1e+4,
+    nsamples: int = 1e4,
     normalize: bool = False,
     seed: Optional[int] = None,
     **kwargs,
@@ -541,10 +741,10 @@ def _expected_variation(
         biparts2 = set(_iter_random_biparts(btable, names, rng))
         reps[idx] = metric(biparts1, biparts2, normalize=normalize, **kwargs)
 
-    data['estimate'] = reps.mean()
-    data['stdev'] = reps.std()
-    data['stderr'] = data.stdev / np.sqrt(nsamples)
-    data['nsamples'] = nsamples
+    data["estimate"] = reps.mean()
+    data["stdev"] = reps.std()
+    data["stderr"] = data.stdev / np.sqrt(nsamples)
+    data["nsamples"] = nsamples
     return data
 
 
@@ -568,8 +768,8 @@ def _iter_random_biparts(
 
 
 if __name__ == "__main__":
-
     import toytree
+
     t1 = toytree.rtree.baltree(10)
     t2 = toytree.rtree.imbtree(10)
     # print(_expected_variation(t1, t2, 'rf'))

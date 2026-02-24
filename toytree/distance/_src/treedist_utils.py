@@ -8,7 +8,6 @@ References
 """
 
 from typing import Tuple, Sequence, Set
-import sys
 # FIXME: support backup method old Python does not support
 # from functools import cache
 import itertools
@@ -222,6 +221,12 @@ def _get_two_splits_shared_phylo_info(
     >>> _get_two_splits_shared_phylo_info(split1, split1)  # 5.044
     >>> _get_two_splits_shared_phylo_info(split2, split2)  #
     """
+    # identical splits (including swapped sides) share all split info.
+    s1a, s1b = set(split1[0]), set(split1[1])
+    s2a, s2b = set(split2[0]), set(split2[1])
+    if (s1a == s2a and s1b == s2b) or (s1a == s2b and s1b == s2a):
+        return _get_split_phylo_info(split1)
+
     subset, superset = _get_subset_superset(split1, split2)
     if not superset:
         return 0
@@ -505,7 +510,7 @@ def get_trees_matching_split_dist(
     arr, indices = _get_split_matching(biparts1, biparts2, "ms")
     msd = arr[indices].sum()
     if normalize:
-        print("no normalization method for matching split distance.", file=sys.stderr)
+        raise ToytreeError("normalize=True is not supported for matching split distance.")
     return msd
 
 
@@ -650,8 +655,10 @@ def get_trees_mutual_clust_info_dist_from_biparts(
     info2 = sum(_get_split_entropy(b) for b in biparts2)
     ind_info = info1 + info2
     if normalize:
-        return mci / (ind_info / 2)
-    return mci
+        if not ind_info:
+            return 0.
+        return (ind_info - (2 * mci)) / ind_info
+    return ind_info - (2 * mci)
 
 
 if __name__ == "__main__":
