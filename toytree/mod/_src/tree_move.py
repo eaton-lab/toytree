@@ -9,30 +9,41 @@ algorithms.
 
 TODO
 ----
-could implement using only .mod topo funcs on ToyTrees?
+- needs to be simplified...
+- faster methods that do not require building full tree sets
+- ...
 
 UNDER DEVELOPMENT
 -----------------
 - rooted tree moves need to iterate over placements of the root?
-
-See also eSPR and eTBR moves used in Bayesian phylogenetics. These
-modify the probability of proposed pruning points by updating a
-'distance' parameter as part of the MCMC process. For example in
-mrbayes. Not implemented here.
 """
 
-from typing import Optional, TypeVar, Iterator
-from loguru import logger
+from typing import Iterator, Literal, Optional, TypeAlias
+
 import numpy as np
+from loguru import logger
+
 import toytree
+from toytree.core.apis import TreeModAPI, add_subpackage_method
+from toytree.core.node import Node
+from toytree.core.tree import ToyTree
 from toytree.utils import ToytreeError
 
-ToyTree = TypeVar("ToyTree")
+Query: TypeAlias = int | str | Node
+
+__all__ = [
+    "move_nni_n",
+    "iter_nni_n",
+    "move_spr_n",
+    "iter_spr_n",
+    "move_nni",
+    "move_spr",
+]
 
 
 # FIXME: needs further work.
 def move_spr_iter(tree: ToyTree, highlight: bool = False) -> Iterator[ToyTree]:
-    """Generator to yield all trees within 1 SPR move of input tree.
+    """Yield all trees within 1 SPR move of input tree.
 
     Returns a generator function to iterate through each of the
     unrooted trees that are within 1 subprune and regraft (SPR)
@@ -64,7 +75,6 @@ def move_spr_iter(tree: ToyTree, highlight: bool = False) -> Iterator[ToyTree]:
 
         # iterate over each possible insertion point of this edge
         for iedge in edges:
-            logger.info(f"{subtree} -> {tree[iedge]}")
 
             # create copy of unrooted starting tree
             ntree = tree.copy()
@@ -141,8 +151,53 @@ def move_spr_iter(tree: ToyTree, highlight: bool = False) -> Iterator[ToyTree]:
             yield ntree
 
 
-def move_nni_iter(tree: ToyTree, highlight: bool = False) -> Iterator[ToyTree]:
-    """Generator to yield all trees within one NNI of input tree.
+def move_nni_iter(tree: ToyTree, node: Query):
+    """Yield trees one NNI move involving selected edge from input tree.
+
+    Parameters
+    ----------
+    tree:
+        ...
+    node:
+        ...
+    """
+    # swap each child with one sister of selected Node
+    node = tree.get_mrca_node(node)
+    children = node.children
+    sister = node.get_sisters()[0]
+    for pick in children:
+
+        # make COPY of the tree
+        ntree = tree.copy()
+
+        # select Nodes from the COPIED tree.
+        nnode = ntree[node._idx]
+        nparent = ntree[node._up._idx]
+        npick = ntree[pick._idx]
+        nsister = ntree[sister._idx]
+        nchildren = nnode.children
+
+        # collapse node (connect children to parent, remove self from parent)
+        for child in nchildren:
+            nparent._add_child(child)
+        nparent._remove_child(nnode)
+
+        # re-insert node
+        new_node = toytree.Node()
+        # new_node.label = "new"
+        nparent._add_child(new_node)
+        nparent._remove_child(npick)
+        new_node._add_child(npick)
+        nparent._remove_child(nsister)
+        new_node._add_child(nsister)
+
+        # update Node idxs and coordinates
+        ntree._update()
+    yield ntree
+
+
+def move_nni_iter_old(tree: ToyTree, highlight: bool = False) -> Iterator[ToyTree]:
+    """Yield all trees within one NNI of input tree.
 
     Returns a generator function to iterate through each of the
     `2 * (ntips - 3)` unrooted trees that are within one nearest-
@@ -257,10 +312,7 @@ def move_nni(
     """
     # work with unrooted tree, optionally as a copy (much slower).
     # TODO: can this be done without requiring unrooting?
-    if inplace:
-        tree.unroot(inplace=True)
-    else:
-        tree = tree.unroot()
+    tree = tree.unroot(inplace=True) if inplace else tree.unroot()
 
     # create the random generator
     rng = np.random.default_rng(seed)
@@ -445,7 +497,7 @@ def move_spr(
 
 
 def highlight_edges(tree: ToyTree, *edges: toytree.Node) -> ToyTree:
-    """Color edges"""
+    """Set colors to highlight edges in tree style dict."""
     tree.style.edge_colors = ['black'] * tree.nnodes
     tree.style.edge_widths = [2] * tree.nnodes
     tree.style.node_colors = 'white'
@@ -456,8 +508,7 @@ def highlight_edges(tree: ToyTree, *edges: toytree.Node) -> ToyTree:
 
 
 def style_tree(tree: ToyTree) -> ToyTree:
-    """Add style to show parts of tree that moved.
-    """
+    """Add style to show parts of tree that moved."""
     tree.style.layout = "unroot"
     tree.style.use_edge_lengths = False
     tree.style.node_style.stroke_width = 1.5
@@ -470,6 +521,206 @@ def style_tree(tree: ToyTree) -> ToyTree:
     tree.style.tip_labels_style.baseline_shift = 8
     tree.style.tip_labels_style.font_size = 14
     return tree
+
+
+def _validate_n_moves(n: int) -> None:
+    """Validate N-step move depth."""
+    if not isinstance(n, int):
+        raise ToytreeError("'n' must be an int.")
+    if n < 0:
+        raise ToytreeError("'n' must be >= 0.")
+
+
+def _iter_move_neighborhood_exact_n(
+    tree: ToyTree,
+    n: int,
+    move: Literal["nni", "spr"],
+    order: Literal["random", "sorted"] = "random",
+    seed: int | None = None,
+    highlight: bool = False,
+) -> Iterator[ToyTree]:
+    """Yield unique trees exactly n moves from input in unrooted space."""
+    _validate_n_moves(n)
+    if order not in {"random", "sorted"}:
+        raise ToytreeError("order must be one of {'random', 'sorted'}.")
+
+    # Work in unrooted tree space for canonical NNI/SPR neighborhoods.
+    base = tree.unroot()
+    if n == 0:
+        yield base
+        return
+
+    # store the frontier tree and set of visited topology_ids
+    rng = np.random.default_rng(seed)
+    frontier: dict[str, ToyTree] = {base.get_topology_id(): base}
+    seen = set(frontier)
+
+    # Breadth-first expansion ensures the frontier holds exact-depth neighbors.
+    for depth in range(1, n + 1):
+        next_frontier: dict[str, ToyTree] = {}
+        parents = list(frontier.values())
+        if order == "random":
+            rng.shuffle(parents)
+        else:
+            parents.sort(key=lambda i: i.get_topology_id())
+
+        for parent in parents:
+            # Only the last expansion depth adds optional edge highlighting.
+            do_highlight = bool(highlight and depth == n)
+            if move == "nni":
+                neighbors = move_nni_iter_old(parent, highlight=do_highlight)
+            else:
+                neighbors = move_spr_iter(parent, highlight=do_highlight)
+            for ntree in neighbors:
+                tid = ntree.get_topology_id()
+                if tid in seen:
+                    continue
+                seen.add(tid)
+                next_frontier[tid] = ntree
+        frontier = next_frontier
+        if not frontier:
+            break
+
+    # Return exact-depth neighbors in requested output order.
+    final = list(frontier.values())
+    if order == "random":
+        rng.shuffle(final)
+    else:
+        final.sort(key=lambda i: i.get_topology_id())
+    for ntree in final:
+        yield ntree
+
+
+@add_subpackage_method(TreeModAPI)
+def iter_nni_n(
+    tree: ToyTree,
+    n: int = 1,
+    *,
+    order: Literal["random", "sorted"] = "random",
+    seed: int | None = None,
+    highlight: bool = False,
+) -> Iterator[ToyTree]:
+    """Yield unique trees that are exactly ``n`` NNI moves from input."""
+    yield from _iter_move_neighborhood_exact_n(
+        tree=tree,
+        n=n,
+        move="nni",
+        order=order,
+        seed=seed,
+        highlight=highlight,
+    )
+
+
+@add_subpackage_method(TreeModAPI)
+def iter_spr_n(
+    tree: ToyTree,
+    n: int = 1,
+    *,
+    order: Literal["random", "sorted"] = "random",
+    seed: int | None = None,
+    highlight: bool = False,
+) -> Iterator[ToyTree]:
+    """Yield unique trees that are exactly ``n`` SPR moves from input."""
+    yield from _iter_move_neighborhood_exact_n(
+        tree=tree,
+        n=n,
+        move="spr",
+        order=order,
+        seed=seed,
+        highlight=highlight,
+    )
+
+
+def _sample_tree_from_iter(trees: list[ToyTree], seed: int | None = None) -> ToyTree:
+    """Sample one tree uniformly from a non-empty list."""
+    if not trees:
+        raise ToytreeError("No valid moved trees were generated for requested n.")
+    rng = np.random.default_rng(seed)
+    return trees[int(rng.integers(len(trees)))]
+
+
+@add_subpackage_method(TreeModAPI)
+def move_nni_n(
+    tree: ToyTree,
+    n: int = 1,
+    *,
+    seed: int | None = None,
+    mode: Literal["walk", "sample"] = "walk",
+    highlight: bool = False,
+    inplace: bool = False,
+) -> ToyTree:
+    """Return one tree exactly ``n`` NNI moves from input."""
+    _validate_n_moves(n)
+    if mode not in {"walk", "sample"}:
+        raise ToytreeError("mode must be one of {'walk', 'sample'}.")
+    if n == 0:
+        return tree if inplace else tree.unroot()
+
+    # Random-walk mode scales better by avoiding full neighborhood enumeration.
+    if mode == "walk":
+        rng = np.random.default_rng(seed)
+        current = tree.unroot(inplace=True) if inplace else tree.unroot()
+        for step in range(n):
+            neighbors = list(move_nni_iter_old(current, highlight=highlight and step == n - 1))
+            if not neighbors:
+                raise ToytreeError("No valid NNI neighbors were generated.")
+            current = neighbors[int(rng.integers(len(neighbors)))]
+        if inplace:
+            tree.treenode = current.treenode
+            tree._update()
+            return tree
+        return current
+
+    # Sampling mode enumerates exact-depth neighborhood then samples one.
+    neighborhood = list(iter_nni_n(tree, n=n, order="random", seed=seed, highlight=highlight))
+    sample = _sample_tree_from_iter(neighborhood, seed=seed)
+    if inplace:
+        tree.treenode = sample.treenode
+        tree._update()
+        return tree
+    return sample
+
+
+@add_subpackage_method(TreeModAPI)
+def move_spr_n(
+    tree: ToyTree,
+    n: int = 1,
+    *,
+    seed: int | None = None,
+    mode: Literal["walk", "sample"] = "walk",
+    highlight: bool = False,
+    inplace: bool = False,
+) -> ToyTree:
+    """Return one tree exactly ``n`` SPR moves from input."""
+    _validate_n_moves(n)
+    if mode not in {"walk", "sample"}:
+        raise ToytreeError("mode must be one of {'walk', 'sample'}.")
+    if n == 0:
+        return tree if inplace else tree.unroot()
+
+    # Random-walk mode scales better by avoiding full neighborhood enumeration.
+    if mode == "walk":
+        rng = np.random.default_rng(seed)
+        current = tree.unroot(inplace=True) if inplace else tree.unroot()
+        for step in range(n):
+            neighbors = list(move_spr_iter(current, highlight=highlight and step == n - 1))
+            if not neighbors:
+                raise ToytreeError("No valid SPR neighbors were generated.")
+            current = neighbors[int(rng.integers(len(neighbors)))]
+        if inplace:
+            tree.treenode = current.treenode
+            tree._update()
+            return tree
+        return current
+
+    # Sampling mode enumerates exact-depth neighborhood then samples one.
+    neighborhood = list(iter_spr_n(tree, n=n, order="random", seed=seed, highlight=highlight))
+    sample = _sample_tree_from_iter(neighborhood, seed=seed)
+    if inplace:
+        tree.treenode = sample.treenode
+        tree._update()
+        return tree
+    return sample
 
 
 # def move_nni_search(
