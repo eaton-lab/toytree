@@ -31,21 +31,10 @@ import toyplot
 from toytree.drawing import ToyTreeMark
 from toytree.drawing.src.render.render_text import render_text
 from toytree.drawing.src.render.render_marker import render_marker
+from toytree.drawing.src.path_edges import PATH_FORMAT, get_tree_edge_svg_paths
 from toytree.color import COLORS2
 from toytree.color.src.concat import concat_style_fix_color
 from toytree.layout.src.get_edge_midpoints import get_edge_midpoints
-from loguru import logger
-
-# SVG path formats for creating edges in tree drawings
-PATH_FORMAT = {
-    'c': "M {px:.1f} {py:.1f} L {cx:.1f} {cy:.1f}",  # angular /\ format, good for any layout
-    'b1': "M {px:.1f} {py:.1f} C {px:.1f} {cy:.1f}, {px:.1f} {cy:.1f}, {cx:.1f} {cy:.3f}",  # bezier 1 format
-    'b2': "M {px:.1f} {py:.1f} C {cx:.1f} {py:.1f}, {cx:.1f} {py:.1f}, {cx:.1f} {cy:.3f}",  # bezier 2 format
-    'p1': "M {px:.1f} {py:.1f} L {px:.1f} {cy:.1f} L {cx:.1f} {cy:.1f}",  # |_| phylo/angular format 1
-    'p2': "M {px:.1f} {py:.1f} L {cx:.1f} {py:.1f} L {cx:.1f} {cy:.1f}",  # |_| phylo/angular format 2
-    'pc': "M {cx:.1f} {cy:.1f} L {dx:.1f} {dy:.1f} A {rr:.1f} {rr:.1f} 0 0 {sweep} {px:.1f} {py:.1f}",  # phylo for circular
-}
-
 
 # ---------------------------------------------------------------------
 # Register multipledispatch to use the toyplot.html namespace
@@ -119,101 +108,11 @@ class RenderToytree:
         self.mark_tip_labels()
 
     def get_paths(self) -> Tuple[List[str], List[str]]:
-        """Return paths and keys in idx order.
-
-        This will build the d="..." path string for the SVG lines
-        for edges of the tree. Depending on the edge_type this can be
-        relatively simple or more complex.
-        """
-        # modify order of x or y shift of edges for p,b types.
-        if self.mark.edge_type in ('p', 'b'):
-
-            # phylo |_| edge type for cirular trees:
-            if self.mark.layout[0] == 'c':
-                path_format = PATH_FORMAT["pc"]
-
-                # get differences of nodes relative to root. Note: this is
-                # b/c origin is not at (0, 0) if [x,y]baseline was used.
-                xdiffs = self.mark.ntable[:, 0] - self.mark.ntable[-1, 0]
-                ydiffs = self.mark.ntable[:, 1] - self.mark.ntable[-1, 1]
-                radii = np.sqrt(xdiffs ** 2 + ydiffs ** 2)
-
-                # get angles of nodes relative to root in radians (0, 2pi)
-                radians = np.arctan2(ydiffs, xdiffs)
-                radians[radians < 0] = (2 * np.pi) + radians[radians < 0]
-
-            # phylo or bezier type for non-circular trees. Select the
-            # appropriate type given orientation: p1, p2, or b1, b2
-            elif self.mark.layout in ('u', 'd'):
-                path_format = PATH_FORMAT[f"{self.mark.edge_type}2"]
-            else:
-                path_format = PATH_FORMAT[f"{self.mark.edge_type}1"]
-
-        # cladogram (\/) style, simplest for any layout
-        else:
-            path_format = PATH_FORMAT[self.mark.edge_type]
-
-        # store paths here
-        paths = []
-        keys = []
-
-        # TODO: change here if you want to show the root edge...
-        for idx in range(self.mark.nnodes - 1):
-            cidx, pidx = self.mark.etable[idx]
-            child_x, child_y = self.nodes_x[cidx], self.nodes_y[cidx]
-            parent_x, parent_y = self.nodes_x[pidx], self.nodes_y[pidx]
-
-            # for simple edge format (e.g., 'c', 'b')
-            if "A" not in path_format:
-                keys.append(f"{pidx},{cidx}")
-                paths.append(
-                    path_format.format(**{
-                        'cx': child_x, 'cy': child_y,
-                        'px': parent_x, 'py': parent_y,
-                    })
-                )
-
-            # for 'p' edge format
-            else:
-                # get radius at parent's level
-                xdiff = parent_x - self.nodes_x[-1]
-                ydiff = parent_y - self.nodes_y[-1]
-                parent_radius = np.sqrt(xdiff ** 2 + ydiff ** 2)
-
-                mid_x = radii[pidx] * np.cos(radians[cidx])
-                mid_y = radii[pidx] * np.sin(radians[cidx])
-
-                # project mid points into coordinate space
-                px_mid_x = self.axes.project('x', mid_x)
-                px_mid_y = self.axes.project('y', mid_y)
-
-                # logger.warning(f"{cidx} {radians[pidx]:.2f} {radians[cidx]:.2f} sweep={int(radians[pidx] < radians[cidx])}")
-                keys.append(f"{pidx},{cidx}")
-                paths.append(
-                    path_format.format(**{
-                        'cx': child_x,
-                        'cy': child_y,
-                        'px': parent_x,
-                        'py': parent_y,
-                        'dx': px_mid_x,
-                        'dy': px_mid_y,
-                        'rr': parent_radius,
-                        'sweep': int(radians[pidx] < radians[cidx]),  # 1=counter-clockwise, 0=clockwise
-                    })
-                )
-            # keys.append('root-edge')
-            # paths.append(
-            #     path_format.format(**{
-            #         'cx': self.nodes_x[-1],
-            #         'cy': self.nodes_y[-1],
-            #         'px': self.nodes_x[-1],
-            #         'py': self.nodes_y[-1] + self.mark.root_dist,
-            #     })
-            # )
-        return paths, keys
+        """Return edge SVG paths and node-id keys in idx order."""
+        return get_tree_edge_svg_paths(self.axes, self.mark)
 
     def mark_edges(self) -> None:
-        """Create SVG paths for each tree edge as class toytree-Edges"""
+        """Create SVG paths for each tree edge as class toytree-Edges."""
         # get paths based on edge type and layout
         paths, keys = self.get_paths()
 
@@ -324,7 +223,7 @@ class RenderToytree:
             render_marker(marker_xml, marker)
 
     def mark_node_labels(self) -> None:
-        """Create Node labels in toytree-NodeLabels using render_text"""
+        """Create Node labels in toytree-NodeLabels using render_text."""
         if self.mark.node_labels is None:
             return
 
@@ -537,7 +436,6 @@ class RenderToytree:
             if self.mark.layout not in ("r", "l", "u", "d"):
                 raise ValueError(f"admixture_edges drawing not supported for layout={self.mark.layout}")
 
-
             if self.mark.layout in ("r", "l"):
                 depth_coords = self.nodes_x
                 span_coords = self.nodes_y
@@ -553,24 +451,17 @@ class RenderToytree:
 
             depth_sign = -1 if self.mark.layout in ("r", "d") else 1
 
-            # offset admixture edges by the branch stroke-width to avoid overlap
-            if self.mark.edge_widths is None:
-                base_width = self.mark.edge_style["stroke-width"]
-            else:
-                base_width = float(np.nanmax([self.mark.edge_widths[c_src], self.mark.edge_widths[c_dst]]))
-            span_offset = (idx + 1) * base_width
-
             # get px coordinates of the src and dst nodes
-            c_src_span, c_src_depth = span_coords[c_src] + span_offset, depth_coords[c_src]
-            c_dst_span, c_dst_depth = span_coords[c_dst] + span_offset, depth_coords[c_dst]
+            c_src_span, c_src_depth = span_coords[c_src], depth_coords[c_src]
+            c_dst_span, c_dst_depth = span_coords[c_dst], depth_coords[c_dst]
 
             # get px coords of their parents
-            p_src_span, p_src_depth = span_coords[p_src] + span_offset, depth_coords[p_src]
-            p_dst_span, p_dst_depth = span_coords[p_dst] + span_offset, depth_coords[p_dst]
+            p_src_span, p_src_depth = span_coords[p_src], depth_coords[p_src]
+            p_dst_span, p_dst_depth = span_coords[p_dst], depth_coords[p_dst]
 
             # get pos of admix on src edge from src_dist else select midpoint on src edge
             if aedge.src_dist is None:
-                a_src_span, a_src_depth = span_mid[c_src] + span_offset, depth_mid[c_src]
+                a_src_span, a_src_depth = span_mid[c_src], depth_mid[c_src]
             else:
                 Δspan = abs(p_src_span - c_src_span) if self.mark.edge_type == "c" else 0.0
                 Δdepth = abs(p_src_depth - c_src_depth)
@@ -582,7 +473,7 @@ class RenderToytree:
 
             # get ypos of admix on dst edge from dst_dist else select midpoint on dst edge
             if aedge.dst_dist is None:
-                a_dst_span, a_dst_depth = span_mid[c_dst] + span_offset, depth_mid[c_dst]
+                a_dst_span, a_dst_depth = span_mid[c_dst], depth_mid[c_dst]
             else:
                 Δspan = abs(p_dst_span - c_dst_span) if self.mark.edge_type == "c" else 0.0
                 Δdepth = abs(p_dst_depth - c_dst_depth)
