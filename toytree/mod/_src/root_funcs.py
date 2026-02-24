@@ -22,17 +22,20 @@ References
 from typing import TypeVar, Dict, Union, Optional, Sequence
 import itertools
 import numpy as np
+import pandas as pd
 from loguru import logger
 from toytree import ToyTree, Node
 from toytree.core.apis import TreeModAPI, add_subpackage_method
+from toytree.infer.src.dlc_reconcile import reconcile_gene_tree_dlc
 from toytree.utils import ToytreeError
 
 Query = TypeVar("Query", str, int, Node)
 
 __all__ = [
     "root_on_midpoint",
-    "root_on_balanced_midpoint",    
+    "root_on_balanced_midpoint",
     "root_on_minimal_ancestor_deviation",
+    "root_on_minimal_dlc",
 ]
 
 
@@ -485,6 +488,156 @@ def root_on_minimal_ancestor_deviation(
     if return_stats:
         return tree, stats
     return tree
+
+
+@add_subpackage_method(TreeModAPI)
+def root_on_minimal_dlc(
+    tree: ToyTree,
+    species_tree: ToyTree,
+    imap: Optional[Dict[str, str]] = None,
+    *,
+    inplace: bool = False,
+    return_stats: bool = False,
+    store_scores: bool = False,
+    weight_duplications: float = 3.0,
+    weight_losses: float = 1.0,
+    weight_coalescences: float = 0.0,
+    edge_features: Optional[Sequence[str]] = None,
+) -> Union[ToyTree, tuple[ToyTree, Dict[str, object]]]:
+    """Return gene tree rooted on edge minimizing weighted DLC reconciliation score.
+
+    This method roots the input gene tree by testing all rootable edges on the
+    unrooted gene topology and selecting the edge with minimal weighted DLC
+    cost against a rooted species tree.
+
+    Parameters
+    ----------
+    tree: ToyTree
+        Gene tree to root. The tree can be rooted or unrooted; rooting search
+        is always done on the unrooted topology.
+    species_tree: ToyTree
+        Rooted species tree used for reconciliation scoring.
+    imap: Dict[str, str] or None
+        Mapping from gene-tree tip labels to species-tree tip labels. If None,
+        exact tip-name matching is used when possible.
+    inplace: bool
+        If True modify and return the input tree, else return a modified copy.
+    return_stats: bool
+        If True return `(tree, stats)` where `stats` includes per-edge scores.
+    store_scores: bool
+        If True write per-edge score features (`DLC`, `DLC_root_prob`) onto
+        the returned tree as edge features.
+    weight_duplications: float
+        Weight on duplication count in objective.
+    weight_losses: float
+        Weight on loss count in objective.
+    weight_coalescences: float
+        Weight on extra-lineage (coalescence) count in objective.
+    edge_features: Sequence[str]
+        Additional edge features to preserve/re-polarize on rooting.
+    """
+    # Validate weights up front to avoid ambiguous optimization behavior.
+    weights = np.array([weight_duplications, weight_losses, weight_coalescences], dtype=float)
+    if not np.isfinite(weights).all():
+        raise ToytreeError("DLC rooting weights must be finite.")
+    if (weights < 0).any():
+        raise ToytreeError("DLC rooting weights must be non-negative.")
+
+    # We always search on unrooted topology, regardless of current root state.
+    search_tree = tree.unroot()
+
+    # Candidate edges are represented by descendant-node idx labels.
+    candidates = list(range(search_tree.nnodes - 1))
+    rows = []
+    best_score = np.inf
+    for edge_idx in candidates:
+        rooted = search_tree.root(edge_idx, root_dist=None, inplace=False)
+        recon = reconcile_gene_tree_dlc(
+            rooted,
+            species_tree,
+            imap=imap,
+            inplace=False,
+            return_data=False,
+        )
+        summ = recon["summary"]
+        dups = float(summ["duplications"])
+        losses = float(summ["losses"])
+        coals = float(summ["coalescences"])
+        score = (
+            weight_duplications * dups
+            + weight_losses * losses
+            + weight_coalescences * coals
+        )
+
+        # Secondary tie-break criterion: minimize root-to-tip CV (clock-likeness).
+        dmat = rooted.distance.get_node_distance_matrix()
+        rdists = np.array([dmat[i, rooted.treenode.idx] for i in range(rooted.ntips)], dtype=float)
+        if rdists.mean() == 0:
+            cv = 0.0
+        else:
+            cv = float(100.0 * rdists.std(ddof=0) / rdists.mean())
+
+        rows.append(
+            {
+                "edge_idx": int(edge_idx),
+                "duplications": int(dups),
+                "losses": int(losses),
+                "coalescences": int(coals),
+                "score": float(score),
+                "root_clock_cv": cv,
+            }
+        )
+        best_score = min(best_score, score)
+
+    table = pd.DataFrame(rows).sort_values(
+        by=["score", "root_clock_cv", "edge_idx"],
+        ascending=[True, True, True],
+    ).reset_index(drop=True)
+    best_rows = table[np.isclose(table["score"].to_numpy(dtype=float), best_score)]
+    best_rows = best_rows.sort_values(["root_clock_cv", "edge_idx"], ascending=[True, True]).reset_index(drop=True)
+    best_edge_idx = int(best_rows.iloc[0]["edge_idx"])
+    tied_best_edge_idxs = [int(i) for i in best_rows["edge_idx"].to_list()]
+
+    # Apply chosen root to the return tree (inplace or copied).
+    retree = tree if inplace else tree.copy()
+    retree.unroot(inplace=True)
+
+    # Optionally cache all candidate edge scores before rooting so feature
+    # values can be re-polarized as edge features by root().
+    if store_scores:
+        dlc_scores = {int(r.edge_idx): float(r.score) for r in table.itertuples(index=False)}
+        prob = 1.0 / float(len(tied_best_edge_idxs))
+        dlc_probs = {idx: (prob if idx in tied_best_edge_idxs else 0.0) for idx in dlc_scores}
+        retree.set_node_data("DLC", dlc_scores, inplace=True)
+        retree.set_node_data("DLC_root_prob", dlc_probs, inplace=True)
+        retree.edge_features = retree.edge_features | {"DLC", "DLC_root_prob"}
+
+    ef = set(edge_features or [])
+    if store_scores:
+        ef |= {"DLC", "DLC_root_prob"}
+    retree.root(best_edge_idx, root_dist=None, edge_features=list(ef), inplace=True)
+
+    stats = {
+        "weights": {
+            "duplications": float(weight_duplications),
+            "losses": float(weight_losses),
+            "coalescences": float(weight_coalescences),
+        },
+        "best_edge_idx": best_edge_idx,
+        "best_score": float(best_rows.iloc[0]["score"]),
+        "best_counts": {
+            "duplications": int(best_rows.iloc[0]["duplications"]),
+            "losses": int(best_rows.iloc[0]["losses"]),
+            "coalescences": int(best_rows.iloc[0]["coalescences"]),
+        },
+        "n_candidates": int(table.shape[0]),
+        "n_tied_best": int(best_rows.shape[0]),
+        "tied_best_edge_idxs": tied_best_edge_idxs,
+        "score_table": table,
+    }
+    if return_stats:
+        return retree, stats
+    return retree
 
 
 if __name__ == "__main__":
