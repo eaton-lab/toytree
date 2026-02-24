@@ -131,6 +131,7 @@ nav:
 
     - <i>.pcm</i> - evol analyses:
       - sim cont. traits BM: sim_continuous_bm.ipynb
+      - fit continuous traits: pcm-fit-continuous.ipynb
       - sim discrete traits: pcm-simulate-discrete.ipynb
       - fit discrete traits: pcm-fit-discrete.ipynb
       # - sim/fit continuous:
@@ -159,9 +160,9 @@ nav:
 
     - <i>.rtree</i> - random trees: random-trees.ipynb
 
-    # - networks:
-    #   - drawing admixture edges: ...
-    #   - parsing networks: ...
+    - networks:
+      - parsing networks: network_parse.ipynb
+      - drawing networks: network_draw.ipynb
     
     # - tree sequences:
     #   - draw tree sequences: ...
