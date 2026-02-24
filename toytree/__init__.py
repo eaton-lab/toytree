@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""A minimalist Python package for representing tree objects, performing
-operations on trees, and performing tree visualization.
+"""A library for tree operations and visualizations in Python.
 
 Toytree's primary use if for visualizing and manipulating tree data
 structures. It includes a number of additional subpackages for working
@@ -9,20 +8,21 @@ with trees as data, or data on trees. All subpackages make use only of
 standard Python data science libs (e.g., numpy, scipy, pandas).
 """
 
-__version__ = "3.0.12"
+__version__ = "3.0.13"
 __author__ = "Deren Eaton"
 
 # toytree v3 supported subpackages (lazy-loaded for faster imports)
 import importlib as _importlib
 
-
 # submodules mapped to module-API available at toytree.[submodule]
+# we purposely do not load 'color' or 'drawing' here so they are both
+# only available as dirs but not API modules.
 _LAZY_SUBMODULES = {
     "annotate": "toytree.annotate",
-    "color": "toytree.color",
+    # "color": "toytree.color",
     "data": "toytree.data",
     "distance": "toytree.distance",
-    # we purposely do not load 'drawing' here
+    # "drawing": "toytree.drawing",
     "enum": "toytree.enum",
     "infer": "toytree.infer",
     "rtree": "toytree.rtree",
@@ -62,7 +62,7 @@ def __getattr__(name):
 
 
 def __dir__():
-    """set attr and submodule dir names to toytree module to be lazy-loaded on first use"""
+    """Set attr and submodule dir names to toytree.<...>  lazy-loaded on first use."""
     return sorted(
         list(globals().keys())
         + list(_LAZY_SUBMODULES.keys())
