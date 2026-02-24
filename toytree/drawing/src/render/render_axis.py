@@ -9,11 +9,9 @@ an Axis object to center the label on the spine-domain midpoint.
 import functools
 from xml.etree import ElementTree as xml
 
-from multipledispatch import dispatch
-import numpy
 import toyplot
+from multipledispatch import dispatch
 from toyplot.html import RenderContext, _axis_transform, _css_style, _draw_text
-
 
 # Register multipledispatch to use the toyplot.html namespace.
 dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
