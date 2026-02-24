@@ -289,6 +289,7 @@ def run_set_node_data(args):
     if not use_table and not use_mapping:
         raise ToytreeError("must provide either --table or mapping mode args (--feature and optional --set)")
 
+    # parse a tabular file to assign features
     if use_table:
         sep = _normalize_sep(args.table_sep)
         df = pd.read_csv(args.table, sep=sep, header=None if args.table_headers else 0)
@@ -300,6 +301,8 @@ def run_set_node_data(args):
             allow_unmatched_queries=args.table_allow_unmatched,
             inplace=False,
         )
+
+    # parse the user's --feature arg to assign features
     else:
         if not args.feature:
             raise ToytreeError("--feature is required in mapping mode")
