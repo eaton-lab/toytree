@@ -15,9 +15,9 @@ Examples
 >>> pic_x = get_phylogenetic_independent_contrasts(TREE, "X")
 >>> pic_y = get_phylogenetic_independent_contrasts(TREE, "Y")
 >>> 
->>> # fit linear model to contrasts through the origin (could use scipy...)
+>>> # fit linear model to contrasts through the origin
 >>> import statsmodels.api as sm
->>> traits = 
+>>> traits = ...
 >>> sm.OLS.from_model("Y ~ X - 1", Y=pic_y, X=pic_x).summary()
 >>> # 0.4319
 >>> sm.OLS.from_model("X ~ Y - 1", Y=pic_y, X=pic_x).summary()
@@ -31,13 +31,14 @@ _American Naturalist_, *125*, 1-15.
 ape:::pic
 """
 
-from typing import Union, Sequence
+from typing import Dict, List, Tuple, Union
+import numpy as np
 import pandas as pd
 from toytree.core import ToyTree
 from toytree.core.apis import add_subpackage_method, PhyloCompAPI
 
 
-feature = Union[str, Sequence[float]]
+trait_t = Union[str, pd.Series]
 __all__ = [
     "get_phylogenetic_independent_contrasts",
     "get_ancestral_states_pic",
@@ -45,120 +46,66 @@ __all__ = [
 
 
 @add_subpackage_method(PhyloCompAPI)
-def get_phylogenetic_independent_contrasts(tree: ToyTree, feature: feature) -> pd.DataFrame:
-    """Return a dictionary of {idx: standardized-contrasts}.
+def get_phylogenetic_independent_contrasts(
+    tree: ToyTree,
+    trait: trait_t,
+    epsilon: float = 1e-12,
+) -> pd.DataFrame:
+    """Return standardized PICs and ancestral estimates in long format.
 
     Independent contrasts are calculated for every internal node
-    of a tree for a selected continuous feature (trait) 
+    of a tree for a selected continuous feature (trait)
     under a Brownian motion model of evolution.
-
-    Modified from IVY interactive (https://github.com/rhr/ivy/)
 
     Parameters
     ----------
-    feature: str | Sequence[float]
-        A feature stored to the tree object or a Sequence of floats
-        of length ntips.
+    trait: str | pandas.Series
+        Trait values as a feature name stored on the tree, or a Series
+        indexed by tip names and / or tip idx labels.
+    epsilon: float
+        Small positive floor used to stabilize variance terms when
+        branch lengths are zero or near-zero.
 
     Returns
     -------
-    pandas.DataFrame with columns for [ancestral state, ancestral state
-    variance, independent contrast, independent contrast variance] for
-    all internal nodes.
+    pandas.DataFrame
+        One row per independent contrast with columns:
+        `node`, `contrast_id`, `anc`, `anc_var`, `contrast_raw`,
+        `contrast_var`, and `contrast` (standardized).
+
+        `contrast_id` is the within-node contrast index. For bifurcating
+        nodes there is one contrast and `contrast_id` is always 0. For
+        a polytomy with `k` children there are `k - 1` contrasts with
+        `contrast_id` values `0..k-2`.
 
     Examples
     --------
     >>> tree = toytree.rtree.unittree(ntips=10, treeheight=1)
     >>> tree.pcm.simulate_continuous_bm({"trait": 1.0}, inplace=True)
-    >>> pics = toytree.pcm.get_phylogenetic_independent_contrasts(tree, "trait")
+    >>> pics = toytree.pcm.get_phylogenetic_independent_contrasts(tree, trait="trait")
     """
-    # get current node features at the tips
-    tips = [tree[i] for i in range(tree.ntips)]
-    fdict = {i.name: getattr(i, feature) for i in tips}
-    data = {i: fdict[i] for i in fdict if i in tree.get_tip_labels()}
-
-    # apply dynamic function from ivy to return dict results
-    results = _dynamic_pic(tree.treenode, data, results={})
-
-    # return dictionary mapping nodes to (mean, var, contrast, cvar)
-    # return results
-    return pd.DataFrame(
-        index=[i.idx for i in results],
-        columns=["anc", "anc_var", "contrast", "contrast_var"],
-        data=list(results.values())
-    )
-
-
-def _dynamic_pic(node, data, results):
-    """Used internally by get_independent_contrasts.
-
-    Phylogenetic independent contrasts. Recursively calculate 
-    independent contrasts of a bifurcating node given a dictionary
-    of trait values.
-
-    Modified from IVY interactive (https://github.com/rhr/ivy/)
-
-    Parameters
-    ----------
-    node: 
-        A node object
-    data: dict
-        Mapping of leaf names to character values
-
-    Returns
-    -------
-    dict
-        Mapping of internal nodes to tuples containing ancestral
-        state, its variance (error), the contrast, and the
-        contrasts's variance.
-
-    TODO: modify to accommodate polytomies.
-    """
-    # store in lists to support flexible number of children (e.g. polytomies)
-    means = []
-    variances = []
-
-    # recursively does children until X and v are full
-    for child in node.children:
-
-        # child has children, do those first
-        if child.children:
-
-            # update results dict with children values
-            _dynamic_pic(child, data, results)
-            child_results = results[child]
-
-            # store childrens values
-            means.append(child_results[0])
-            variances.append(child_results[1])
-
-        # no child of child, so just do child
-        else:
-            means.append(data[child.name])
-            variances.append(child.dist)
-
-    # Xi - Xj is the contrast value
-    means_i, means_j = means
-
-    # vi + vj is the contrast variance
-    vars_i, vars_j = variances
-
-    # Xk is the reconstructed state at the node
-    means_k = (
-        ((1.0 / vars_i) * means_i + (1 / vars_j) * means_j) / (1.0 / vars_i + 1.0 / vars_j)
-    )
-
-    # vk is the variance
-    vars_k = node.dist + (vars_i * vars_j) / (vars_i + vars_j)
-
-    # store in dictionary and return
-    results[node] = (means_k, vars_k, means_i - means_j, vars_i + vars_j)
-    return results
+    if epsilon <= 0:
+        raise ValueError("epsilon must be > 0")
+    trait_name, tip_map = _normalize_trait_to_tip_map(tree, trait)
+    rows, _ = _compute_pic(tree, tip_map, epsilon)
+    df = pd.DataFrame(rows)
+    if df.empty:
+        return pd.DataFrame(
+            columns=["node", "contrast_id", "anc", "anc_var", "contrast_raw", "contrast_var", "contrast"]
+        )
+    df = df.sort_values(["node", "contrast_id"]).reset_index(drop=True)
+    df.attrs["trait"] = trait_name
+    return df
 
 
 @add_subpackage_method(PhyloCompAPI)
-def get_ancestral_states_pic(tree: ToyTree, feature: feature, inplace: bool = False) -> Union[pd.Series, ToyTree]:
-    """Return feature with ancestral states inferred at internal nodes.
+def get_ancestral_states_pic(
+    tree: ToyTree,
+    trait: trait_t,
+    inplace: bool = False,
+    epsilon: float = 1e-12,
+) -> pd.Series:
+    """Return trait with ancestral states inferred at internal nodes.
 
     Trait must be continuous without missing value for tip nodes.
 
@@ -166,14 +113,16 @@ def get_ancestral_states_pic(tree: ToyTree, feature: feature, inplace: bool = Fa
     ----------
     tree: ToyTree
         A tree with branch lengths.
-    feature: str | Sequence[float]
-        A continous trait for each tip node in the tree entered as a
-        sequence of floats or ints, or as a str name of a feature stored
-        to the tree object.
+    trait: str | pandas.Series
+        Trait as a feature name or a Series indexed by tip names and / or
+        tip idx labels.
     inplace: bool
-        If True the result is stored as a feature to the tree data and
-        the tree is returned, else a pandas Series is returned with the
-        inferred trait values.
+        If True, inferred states are stored on the input tree under the
+        feature name `{trait}_anc`. In all cases this function returns
+        a pandas Series with that same name.
+    epsilon: float
+        Small positive floor used to stabilize variance terms when
+        branch lengths are zero or near-zero.
 
     See Also
     --------
@@ -183,19 +132,128 @@ def get_ancestral_states_pic(tree: ToyTree, feature: feature, inplace: bool = Fa
     -------
     >>> tree = toytree.rtree.unittree(ntips=10, treeheight=1.0)
     >>> tree.pcm.simulate_continuous_bm({"X": 1.0}, tips_only=True, inplace=True)
-    >>> tree.pcm.get_ancestral_state_pic("X", inplace=True)
-    >>> print(tree.get_node_data("X"))
+    >>> anc = tree.pcm.get_ancestral_states_pic(trait="X", inplace=True)
+    >>> print(tree.get_node_data("X_anc"))
     """
-    pics = get_phylogenetic_independent_contrasts(tree, feature)
+    if epsilon <= 0:
+        raise ValueError("epsilon must be > 0")
+    trait_name, tip_map = _normalize_trait_to_tip_map(tree, trait)
+    _, anc_by_idx = _compute_pic(tree, tip_map, epsilon)
+
+    if isinstance(trait, str):
+        values = tree.get_node_data(trait_name, missing=float("nan"))
+        values = values.reindex(range(tree.nnodes)).astype(float).copy()
+    else:
+        values = pd.Series(np.nan, index=range(tree.nnodes), name=trait_name, dtype=float)
+        for idx in range(tree.ntips):
+            node = tree[idx]
+            if idx in trait.index:
+                values.loc[idx] = float(trait.loc[idx])
+            elif node.name in trait.index:
+                values.loc[idx] = float(trait.loc[node.name])
+    for nidx, anc in anc_by_idx.items():
+        values.loc[nidx] = anc
+    anc_feature = f"{trait_name}_anc"
+    values.name = anc_feature
+
     if inplace:
-        tip_traits = list(tree.get_node_data(feature)[:tree.ntips])
-        int_traits = list(pics["anc"])
-        tree.set_node_data(feature, tip_traits + int_traits, inplace=True)
-        return tree
-    trait = tree.get_node_data(feature)
-    trait.iloc[tree.ntips:] = pics["anc"]
-    trait.name = feature
-    return trait
+        tree.set_node_data(anc_feature, values, inplace=True)
+    return values
+
+
+def _normalize_trait_to_tip_map(tree: ToyTree, trait: trait_t) -> Tuple[str, Dict[str, float]]:
+    """Return (trait_name, {tip_name: float_value}) with input validation."""
+    if isinstance(trait, str):
+        trait_name = trait
+        series = tree.get_node_data(trait_name, missing=float("nan"))
+    elif isinstance(trait, pd.Series):
+        trait_name = trait.name if trait.name else "trait"
+        series = trait.copy()
+    else:
+        raise TypeError("trait must be a str feature name or pandas.Series")
+
+    tip_map: Dict[str, float] = {}
+    tip_names = tree.get_tip_labels()
+    for idx in range(tree.ntips):
+        node = tree[idx]
+        value = np.nan
+        if idx in series.index:
+            value = series.loc[idx]
+        elif node.name in series.index:
+            value = series.loc[node.name]
+        if pd.isna(value):
+            raise ValueError(f"missing trait value for tip '{node.name}' (idx={idx})")
+        try:
+            value = float(value)
+        except Exception as exc:
+            raise TypeError(f"trait values must be numeric; failed at tip '{node.name}'") from exc
+        if not np.isfinite(value):
+            raise ValueError(f"trait value for tip '{node.name}' is not finite")
+        tip_map[node.name] = value
+
+    # keep explicit check so error is clear if tip labels are weird / duplicated
+    if len(tip_map) != len(tip_names):
+        raise ValueError("could not map trait values to all unique tip names")
+    return trait_name, tip_map
+
+
+def _safe_var(value: float, epsilon: float) -> float:
+    """Return variance clamped to a positive floor for stability."""
+    return value if value > epsilon else epsilon
+
+
+def _compute_pic(
+    tree: ToyTree,
+    tip_map: Dict[str, float],
+    epsilon: float,
+) -> Tuple[List[dict], Dict[int, float]]:
+    """Compute PIC rows and ancestral states for all internal nodes."""
+    rows: List[dict] = []
+    anc_by_idx: Dict[int, float] = {}
+
+    def recurse(node) -> Tuple[float, float]:
+        # leaf: return observed trait and variance contribution to parent.
+        if not node.children:
+            x = tip_map[node.name]
+            v = _safe_var(float(node.dist), epsilon)
+            return x, v
+
+        child_pairs = [recurse(child) for child in node.children]
+        means = np.array([i[0] for i in child_pairs], dtype=float)
+        vars_ = np.array([_safe_var(i[1], epsilon) for i in child_pairs], dtype=float)
+        precisions = 1.0 / vars_
+        anc = float(np.sum(means * precisions) / np.sum(precisions))
+        anc_var = float(_safe_var(float(node.dist), epsilon) + (1.0 / np.sum(precisions)))
+        anc_by_idx[node.idx] = anc
+
+        # Generate k-1 independent contrasts for k-child nodes.
+        if len(means) >= 2:
+            running_x = means[0]
+            running_w = precisions[0]
+            running_v = 1.0 / running_w
+            for cidx in range(1, len(means)):
+                xj = means[cidx]
+                vj = vars_[cidx]
+                contrast_raw = running_x - xj
+                contrast_var = running_v + vj
+                contrast = contrast_raw / np.sqrt(contrast_var)
+                rows.append({
+                    "node": node.idx,
+                    "contrast_id": cidx - 1,
+                    "anc": anc,
+                    "anc_var": anc_var,
+                    "contrast_raw": contrast_raw,
+                    "contrast_var": contrast_var,
+                    "contrast": contrast,
+                })
+                wj = 1.0 / vj
+                running_x = (running_x * running_w + xj * wj) / (running_w + wj)
+                running_w = running_w + wj
+                running_v = 1.0 / running_w
+        return anc, anc_var
+
+    recurse(tree.treenode)
+    return rows, anc_by_idx
 
 
 # single test
