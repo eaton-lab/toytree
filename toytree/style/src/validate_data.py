@@ -39,17 +39,13 @@ def validate_mask(
     tree_style: Optional[TreeStyle] = None,
     style: Optional[Mapping[str, Any]] = None
 ) -> np.ndarray:
-    """Sets node_mask to ndarray[bool] size=nnodes.
+    """Return a draw-ready boolean array controlling shown nodes.
 
-    Mask is a bool array in idx order where False hides node markers.
-
-    Supported args
-    --------------
-    None: Use default
-    True: mask all nodes (return False array)
-    False: show all nodes (return True array)
-    Sequence: custom boolean mask
-    Tuple: (bool, bool, bool) for show (tips, internal, root).
+    Accepted values for ``style['node_mask']`` (simple to complex):
+    - ``False``: show all nodes.
+    - ``True``: hide all nodes.
+    - ``(show_tips, show_internal, show_root)`` tuple.
+    - boolean array in node idx order where True means show.
     """
     # get user value or, if None, use style base value
     mask = style.get("node_mask")
@@ -255,15 +251,13 @@ def validate_hover(
     tree_style: Optional[TreeStyle] = None,
     style: Optional[Mapping[str, Any]] = None,
 ) -> np.ndarray:
-    """Return node_hover as an ndarray of dtype str w/ float formatted vals.
+    """Return hover labels as an ``ndarray[str]`` in node idx order.
 
-    node_hover: Union[None, bool, str, Sequence[str]],
-
-    None: no hover
-    False: no hover
-    True: hover with all features
-    str: hover w/ just this feature
-    Series[str]: hover w/ just these features
+    Accepted values for ``node_hover``:
+    - ``None`` or ``False``: disable hover labels.
+    - ``True``: include a default set of node features.
+    - ``str``: include one named feature.
+    - ``Sequence[str]``: include multiple named features.
     """
     # get user value or style base value
     node_hover = style.get(key)
