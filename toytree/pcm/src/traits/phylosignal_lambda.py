@@ -12,19 +12,22 @@ from root to tips.
 Example
 -------
 >>> tree = toytree.rtree.unittree(ntips=25, treeheight=1.0, seed=123)
->>> traits = tree.pcm.simulate_continuous_bm(rates=[0.1, 0.001], seed=123, tips_only=True)
+>>> traits = tree.pcm.simulate_continuous_bm(sigma2=[0.1, 0.001], seed=123, tips_only=True)
 >>> phylogenetic_signal_lambda(tree, traits.t0, traits.t1)
 >>> # {'lambda': 1.095589, 'sig2': 0.004051, 'P-value': 0.041663, 'LR_test': 4.148850, ...}
 """
 
-from typing import Union, Sequence
+from typing import Sequence, Union
+
 import numpy as np
+from scipy.linalg import LinAlgError, cho_factor, cho_solve
+from scipy.optimize import minimize, minimize_scalar
 from scipy.stats import chi2
-from scipy.optimize import minimize_scalar, minimize
+
 from toytree.core import ToyTree
+from toytree.core.apis import PhyloCompAPI, add_subpackage_method
 from toytree.pcm import get_vcv_matrix_from_tree
 from toytree.pcm.src.utils import _validate_features
-from toytree.core.apis import add_subpackage_method, PhyloCompAPI
 
 __all__ = [
     "phylogenetic_signal_lambda",
@@ -41,7 +44,9 @@ def phylogenetic_signal_lambda(
 ) -> dict[str, float]:
     """Return Pagel's lambda measurement of phylogenetic signal.
 
-    The lambda statistic ranges between 0 and 1 where ...
+    The lambda statistic is estimated by ML on a transformed
+    variance-covariance matrix. By default the search bounds are
+    [0, max_λ(tree)], and thus the estimate can be >1 on some trees.
 
     Parameters
     ----------
@@ -57,14 +62,15 @@ def phylogenetic_signal_lambda(
     Returns
     -------
     dict[str, float]
-        A dict with keys: ["lambda", "P-value", "permutations"]. It can
-        also include additional items if standard errors are included 
-        which will estimate the variance parameter "sig2".
+        A dict with keys:
+        ["lambda", "P-value", "LR_test", "log-likelihood_λ", "log-likelihood_λ0"].
+        If standard errors are included then a fitted process variance
+        parameter "sig2" is also returned.
 
     Example
     -------
     >>> tree = toytree.rtree.unittree(ntips=25, treeheight=1.0, seed=123)
-    >>> traits = tree.pcm.simulate_continuous_bm(rates=[0.1, 0.001], seed=123, tips_only=True)
+    >>> traits = tree.pcm.simulate_continuous_bm(sigma2=[0.1, 0.001], seed=123, tips_only=True)
     >>> phylogenetic_signal_lambda(tree, traits.t0, traits.t1)
     >>> # {'lambda': 1.095589, 'sig2': 0.004051, 'P-value': 0.041663, 'LR_test': 4.148850, ...}
     """
@@ -97,13 +103,15 @@ def _phylogenetic_signal_λ(tree: ToyTree, x: np.ndarray, intervals: int = 20) -
     maxλ = max_λ(tree)
     res = _estimate_λ(x, V, maxλ, intervals=intervals)
     λ = res.x
-    λ_loglik = res.fun
+    λ_nll = float(res.fun)
 
-    # calculate logLik at λ=0
-    λ_0_loglik = _likelihood_λ(0.0, V, x)
+    # calculate logLik at λ=0 exactly
+    λ_0_nll = _likelihood_λ(0.0, V, x)
 
-    # likelihood-ratio test 
-    lr_stat = -2 * (λ_loglik - λ_0_loglik)
+    # likelihood-ratio test
+    λ_loglik = -λ_nll
+    λ_0_loglik = -λ_0_nll
+    lr_stat = max(0.0, 2.0 * (λ_loglik - λ_0_loglik))
     df_diff = 1
     pval = chi2.sf(lr_stat, df_diff)
 
@@ -137,14 +145,16 @@ def _phylogenetic_signal_λ_w_se(tree: ToyTree, x: np.ndarray, e: np.ndarray, in
     # estimate optimal λ that maximizes loglik with measure error
     res = _estimate_λ_and_e(x, V, E, maxλ, intervals=intervals)
     λ, sigma2 = res.x
-    λ_loglik = res.fun
+    λ_nll = float(res.fun)
 
-    # calculate logLik at λ=0
-    res = _estimate_λ_and_e(x, V, E, 1e-9, intervals=intervals)    
-    λ_0_loglik = res.fun
+    # calculate logLik at λ=0 exactly while optimizing sigma2 only.
+    res0 = _estimate_sigma2_given_λ(x, V, E, λ=0.0)
+    λ_0_nll = float(res0.fun)
 
-    # likelihood-ratio test 
-    lr_stat = -2 * (λ_loglik - λ_0_loglik)
+    # likelihood-ratio test
+    λ_loglik = -λ_nll
+    λ_0_loglik = -λ_0_nll
+    lr_stat = max(0.0, 2.0 * (λ_loglik - λ_0_loglik))
     df_diff = 1
     pval = chi2.sf(lr_stat, df_diff)
 
@@ -183,26 +193,8 @@ def _likelihood_λ(theta: float, V: np.ndarray, y: float) -> float:
     y: np.ndarray
         The trait data in idx order.
     """
-    # ...
     C = _λ_transform(V, theta)
-    IC = np.linalg.inv(C)
-    n = C.shape[0]
-    a = np.sum(IC @ y) / np.sum(IC)
-
-    # get rate
-    term = (y - a)
-    sig2 = (term.T @ IC @ term) / n
-
-    # slogdet is more stable than det for large/small values; when sign>0,
-    # log(det(V)) == logdet from slogdet
-    sign, logdet = np.linalg.slogdet(C)
-    logdet2 = logdet / 2. if sign > 0 else np.nan  # np.log(1e-12)
-
-    # compute log-likelihood
-    logL = (
-        -term.T @ (1 / sig2 * IC) @ term / 2. - n * np.log(2 * np.pi) / 2. - logdet2
-    )
-    return -logL
+    return _profiled_gaussian_nll(y, C)
 
 
 def _likelihood_λ_w_se(params: tuple[float, float], V: np.ndarray, y: float, E: np.ndarray) -> float:
@@ -219,35 +211,67 @@ def _likelihood_λ_w_se(params: tuple[float, float], V: np.ndarray, y: float, E:
     y: np.ndarray
         The trait data in idx order.
     """
-    # get lambda transformed V
     theta, sigma = params
-    Cl = sigma * _λ_transform(V, theta)
-    # get V with E
-    V = Cl + E
-    # invert it
-    IC = np.linalg.inv(V)
-    # 
-    n = V.shape[0]
-    a = np.sum(IC @ y) / np.sum(IC)
-    # get rate
-    term = (y - a)
+    if not np.isfinite(sigma) or sigma <= 0:
+        return np.inf
+    C = sigma * _λ_transform(V, theta) + E
+    return _profiled_gaussian_nll(y, C)
 
-    # get log determinant of variance covariance matrix
-    # slogdet is more stable than det for large/small values; when sign>0,
-    # log(det(V)) == logdet from slogdet
-    sign, logdet = np.linalg.slogdet(V)
-    logdet2 = logdet / 2. if sign > 0 else np.nan  # np.log(1e-12)
 
-    # compute log-likelihood
-    logL = (
-        -term.T @ IC @ term / 2. - n * np.log(2 * np.pi) / 2. - logdet2
-    )
-    return -logL
+def _likelihood_sigma2_given_λ(sigma: float, λ: float, V: np.ndarray, y: np.ndarray, E: np.ndarray) -> float:
+    """Return NLL with λ fixed and sigma2 free."""
+    if not np.isfinite(sigma) or sigma <= 0:
+        return np.inf
+    C = sigma * _λ_transform(V, λ) + E
+    return _profiled_gaussian_nll(y, C)
+
+
+def _profiled_gaussian_nll(y: np.ndarray, C: np.ndarray) -> float:
+    """Return profiled Gaussian NLL with GLS mean and sigma2 MLE."""
+    y = np.asarray(y, dtype=float)
+    C = np.asarray(C, dtype=float)
+    n = y.size
+    if C.shape != (n, n):
+        return np.inf
+
+    sigma2_min = 1e-12
+    jitter = 0.0
+    for _ in range(6):
+        try:
+            if jitter:
+                Cj = C + np.eye(n) * jitter
+            else:
+                Cj = C
+            cho, lower = cho_factor(Cj, lower=True, check_finite=False)
+            break
+        except (LinAlgError, ValueError):
+            jitter = 1e-12 if jitter == 0.0 else jitter * 10.0
+    else:
+        return np.inf
+
+    ones = np.ones(n, dtype=float)
+    ic_y = cho_solve((cho, lower), y, check_finite=False)
+    ic_1 = cho_solve((cho, lower), ones, check_finite=False)
+    denom = float(ones @ ic_1)
+    if (not np.isfinite(denom)) or denom <= 0:
+        return np.inf
+
+    mu_hat = float((ones @ ic_y) / denom)
+    resid = y - mu_hat
+    quad = float(resid @ cho_solve((cho, lower), resid, check_finite=False))
+    if (not np.isfinite(quad)) or quad < 0:
+        return np.inf
+
+    sigma2_hat = max(quad / n, sigma2_min)
+    logdet = 2.0 * np.sum(np.log(np.diag(cho)))
+    if not np.isfinite(logdet):
+        return np.inf
+    # Profiled NLL includes n*log(sigma2_hat), unlike the old implementation.
+    return 0.5 * (n * np.log(2.0 * np.pi) + logdet + n * np.log(sigma2_hat) + n)
 
 
 def _estimate_λ(x: np.ndarray, V: np.ndarray, maxλ: float, intervals: int) -> float:
-    """Return best fitting λ estimated in intervals by ML.
-    """
+    """Return best fitting λ estimated in intervals by ML."""
     # get intervals between 0-max(λ)
     ivals = np.linspace(0, maxλ, intervals)
 
@@ -271,20 +295,19 @@ def _estimate_λ(x: np.ndarray, V: np.ndarray, maxλ: float, intervals: int) -> 
 
 
 def _estimate_λ_and_e(x: np.ndarray, V: np.ndarray, E: np.ndarray, maxλ: float, intervals: int) -> float:
-    """Return best fitting λ estimated in intervals by ML.
-    """
+    """Return best fitting λ estimated in intervals by ML."""
     # get intervals between 0-max(λ)
     ivals = np.linspace(0, maxλ, intervals)
 
     # get max λ in each interval
     lim = 1e-12
-    emean = np.mean(E)
+    sigma0 = max(float(np.var(x)), 1e-6)
     fits = []
     for i, _ in enumerate(ivals[:-1]):
-        midλ = ivals[i:i + 1].mean()           
+        midλ = ivals[i:i + 1].mean()
         fit = minimize(
             fun=_likelihood_λ_w_se,
-            x0=np.array([midλ, emean]),
+            x0=np.array([midλ, sigma0]),
             args=(V, x, E),
             bounds=[(lim, maxλ - lim), (lim, np.inf)],
             method='L-BFGS-B',
@@ -297,17 +320,28 @@ def _estimate_λ_and_e(x: np.ndarray, V: np.ndarray, E: np.ndarray, maxλ: float
     return fits[lidx]
 
 
+def _estimate_sigma2_given_λ(x: np.ndarray, V: np.ndarray, E: np.ndarray, λ: float) -> float:
+    """Return best fitting sigma2 with λ fixed."""
+    upper = max(float(np.var(x)) * 1e4, 1.0)
+    return minimize_scalar(
+        _likelihood_sigma2_given_λ,
+        args=(λ, V, x, E),
+        bounds=(1e-12, upper),
+        method="bounded",
+    )
+
+
 ####################################################################
 def max_λ(tree: ToyTree) -> float:
     """Return the max lambda for a given tree.
 
-    The max value is a >1 lambda value at which the new internal 
+    The max value is a >1 lambda value at which the new internal
     node dists contain a dist value that leaves no room for a tip
     (untransformed) edge to still be positive, creating a neg. edge.
     """
     root_to_tip_dists = tree.distance.get_node_distance_matrix()[-1]
     internal_dists = root_to_tip_dists[tree.ntips:]
-    return tree.treenode.height / max(internal_dists)    
+    return tree.treenode.height / max(internal_dists)
 
 
 def edges_transform_lambda(tree: ToyTree, λ: float, inplace: bool = False) -> ToyTree:
