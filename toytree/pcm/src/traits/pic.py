@@ -14,7 +14,7 @@ Examples
 >>> # get pic's
 >>> pic_x = get_phylogenetic_independent_contrasts(TREE, "X")
 >>> pic_y = get_phylogenetic_independent_contrasts(TREE, "Y")
->>> 
+>>>
 >>> # fit linear model to contrasts through the origin
 >>> import statsmodels.api as sm
 >>> traits = ...
@@ -31,11 +31,17 @@ _American Naturalist_, *125*, 1-15.
 ape:::pic
 """
 
-from typing import Dict, List, Tuple, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Dict, List, Tuple, Union
+
 import numpy as np
 import pandas as pd
-from toytree.core import ToyTree
-from toytree.core.apis import add_subpackage_method, PhyloCompAPI
+
+from toytree.core.apis import PhyloCompAPI, add_subpackage_method
+
+if TYPE_CHECKING:
+    from toytree.core import ToyTree
 
 
 trait_t = Union[str, pd.Series]
@@ -81,7 +87,7 @@ def get_phylogenetic_independent_contrasts(
     Examples
     --------
     >>> tree = toytree.rtree.unittree(ntips=10, treeheight=1)
-    >>> tree.pcm.simulate_continuous_bm({"trait": 1.0}, inplace=True)
+    >>> tree.pcm.simulate_continuous_trait("bm", params=1.0, name="trait", inplace=True)
     >>> pics = toytree.pcm.get_phylogenetic_independent_contrasts(tree, trait="trait")
     """
     if epsilon <= 0:
@@ -91,7 +97,15 @@ def get_phylogenetic_independent_contrasts(
     df = pd.DataFrame(rows)
     if df.empty:
         return pd.DataFrame(
-            columns=["node", "contrast_id", "anc", "anc_var", "contrast_raw", "contrast_var", "contrast"]
+            columns=[
+                "node",
+                "contrast_id",
+                "anc",
+                "anc_var",
+                "contrast_raw",
+                "contrast_var",
+                "contrast",
+            ]
         )
     df = df.sort_values(["node", "contrast_id"]).reset_index(drop=True)
     df.attrs["trait"] = trait_name
@@ -131,7 +145,9 @@ def get_ancestral_states_pic(
     Example
     -------
     >>> tree = toytree.rtree.unittree(ntips=10, treeheight=1.0)
-    >>> tree.pcm.simulate_continuous_bm({"X": 1.0}, tips_only=True, inplace=True)
+    >>> tree.pcm.simulate_continuous_trait(
+    ...     "bm", params=1.0, name="X", tips_only=True, inplace=True
+    ... )
     >>> anc = tree.pcm.get_ancestral_states_pic(trait="X", inplace=True)
     >>> print(tree.get_node_data("X_anc"))
     """
@@ -144,7 +160,9 @@ def get_ancestral_states_pic(
         values = tree.get_node_data(trait_name, missing=float("nan"))
         values = values.reindex(range(tree.nnodes)).astype(float).copy()
     else:
-        values = pd.Series(np.nan, index=range(tree.nnodes), name=trait_name, dtype=float)
+        values = pd.Series(
+            np.nan, index=range(tree.nnodes), name=trait_name, dtype=float
+        )
         for idx in range(tree.ntips):
             node = tree[idx]
             if idx in trait.index:
@@ -161,7 +179,9 @@ def get_ancestral_states_pic(
     return values
 
 
-def _normalize_trait_to_tip_map(tree: ToyTree, trait: trait_t) -> Tuple[str, Dict[str, float]]:
+def _normalize_trait_to_tip_map(
+    tree: ToyTree, trait: trait_t
+) -> Tuple[str, Dict[str, float]]:
     """Return (trait_name, {tip_name: float_value}) with input validation."""
     if isinstance(trait, str):
         trait_name = trait
@@ -186,7 +206,9 @@ def _normalize_trait_to_tip_map(tree: ToyTree, trait: trait_t) -> Tuple[str, Dic
         try:
             value = float(value)
         except Exception as exc:
-            raise TypeError(f"trait values must be numeric; failed at tip '{node.name}'") from exc
+            raise TypeError(
+                f"trait values must be numeric; failed at tip '{node.name}'"
+            ) from exc
         if not np.isfinite(value):
             raise ValueError(f"trait value for tip '{node.name}' is not finite")
         tip_map[node.name] = value
@@ -223,7 +245,9 @@ def _compute_pic(
         vars_ = np.array([_safe_var(i[1], epsilon) for i in child_pairs], dtype=float)
         precisions = 1.0 / vars_
         anc = float(np.sum(means * precisions) / np.sum(precisions))
-        anc_var = float(_safe_var(float(node.dist), epsilon) + (1.0 / np.sum(precisions)))
+        anc_var = float(
+            _safe_var(float(node.dist), epsilon) + (1.0 / np.sum(precisions))
+        )
         anc_by_idx[node.idx] = anc
 
         # Generate k-1 independent contrasts for k-child nodes.
@@ -237,15 +261,17 @@ def _compute_pic(
                 contrast_raw = running_x - xj
                 contrast_var = running_v + vj
                 contrast = contrast_raw / np.sqrt(contrast_var)
-                rows.append({
-                    "node": node.idx,
-                    "contrast_id": cidx - 1,
-                    "anc": anc,
-                    "anc_var": anc_var,
-                    "contrast_raw": contrast_raw,
-                    "contrast_var": contrast_var,
-                    "contrast": contrast,
-                })
+                rows.append(
+                    {
+                        "node": node.idx,
+                        "contrast_id": cidx - 1,
+                        "anc": anc,
+                        "anc_var": anc_var,
+                        "contrast_raw": contrast_raw,
+                        "contrast_var": contrast_var,
+                        "contrast": contrast,
+                    }
+                )
                 wj = 1.0 / vj
                 running_x = (running_x * running_w + xj * wj) / (running_w + wj)
                 running_w = running_w + wj
@@ -258,8 +284,8 @@ def _compute_pic(
 
 # single test
 if __name__ == "__main__":
-
     import toyplot
+
     import toytree
 
     CMAP = toyplot.color.brewer.map("BlueRed", reverse=True)
@@ -267,11 +293,10 @@ if __name__ == "__main__":
     TREE = toytree.rtree.imbtree(ntips=5, treeheight=1)
     TREE = TREE.set_node_data("g", data={i: 5 for i in (2, 3, 4)}, default=1)
     TREE.draw(
-        ts='p', 
+        ts="p",
         node_labels=TREE.get_node_data("g"),
-        node_colors=[
-            CMAP.colors(i, 0, 5) for i in TREE.get_node_data('g')]
-        )
+        node_colors=[CMAP.colors(i, 0, 5) for i in TREE.get_node_data("g")],
+    )
 
     # apply reconstruction
     # pics = get_phylogenetic_independent_contrasts(TREE, "g")
@@ -279,16 +304,15 @@ if __name__ == "__main__":
     #     print(node, pics[node])
     # print(ntree)#.get_node_data())
 
-
     # # new values are stored as -mean, -var, -contrasts, ...
     # evals = ntree.get_edge_values("g-mean")
 
     # # draw new tree
     # ntree.draw(
-    #     ts='p', 
+    #     ts='p',
     #     node_labels=ntree.get_node_values("g-mean", 1, 1),
     #     node_colors=[
-    #         colormap.colors(i, 0, 5) for i in 
+    #         colormap.colors(i, 0, 5) for i in
     #         ntree.get_node_values('g-mean', 1, 1)]
     # )
 
@@ -298,18 +322,20 @@ if __name__ == "__main__":
     X = pd.Series([4.09434, 3.61092, 2.37024, 2.02815, -1.46968], index=names)
     Y = pd.Series([4.74493, 3.33220, 3.36730, 2.89037, 2.30259], index=names)
     TRE = TRE.set_node_data("X", X)
-    TRE = TRE.set_node_data("Y", Y)    
+    TRE = TRE.set_node_data("Y", Y)
     # print(TRE.get_node_data())
     # PICX = get_phylogenetic_independent_contrasts(TRE, "X")
     get_ancestral_states_pic(TRE, "X", inplace=True)
     print(TRE.get_node_data())
 
     tree = toytree.rtree.unittree(ntips=10, treeheight=1)
-    tree.pcm.simulate_continuous_bm({"trait": 1.0}, inplace=True)
+    tree.pcm.simulate_continuous_trait("bm", params=1.0, name="trait", inplace=True)
     pics = toytree.pcm.get_phylogenetic_independent_contrasts(tree, "trait")
     print(pics)
 
     tree = toytree.rtree.unittree(ntips=10, treeheight=1.0)
-    tree.pcm.simulate_continuous_bm({"X": 1.0}, tips_only=True, inplace=True)
+    tree.pcm.simulate_continuous_trait(
+        "bm", params=1.0, name="X", tips_only=True, inplace=True
+    )
     tree.pcm.get_ancestral_states_pic("X", inplace=True)
     print(tree.get_node_data("X"))

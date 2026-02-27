@@ -28,9 +28,11 @@ References
 - https://telliott99.blogspot.com/2010/03/fitch-and-sankoff-algorithms-for.html
 """
 
-from typing import Dict, Any
+from typing import Any, Dict
+
 import numpy as np
 import pandas as pd
+
 from toytree.core import ToyTree
 
 __all__ = [
@@ -109,24 +111,22 @@ class Parsimony:
     """Return a phylogenetic tree inferred by Maximum Parsimony.
 
     Examples
-    ---------
+    --------
     >>> toytree.set_log_level("DEBUG")  # print verbose information
     >>> data = ...
     >>> starting_tree = ... distance tree.
     >>> tool = Parsimony(data)
     >>> tool.get_score(tree=tree, )
     """
+
     def __init__(self, data: ...):
         self.data = data
 
     def get_score(self, tree):
         """Return parsimony score"""
 
-
     def _fitch_algorithm(self):
-        """Implement the fitch algorithm.
-
-        """
+        """Implement the fitch algorithm."""
 
     def _sankoff_algorithm(self):
         """Implement the Sankoff algorithm.
@@ -158,8 +158,7 @@ class Parsimony:
 
 
 def convert_trait_to_idx_dict(tree: ToyTree, trait: Dict[str, Any]) -> Dict[int, Any]:
-    """
-    """
+    """ """
     if isinstance(trait, str):
         trait = tree.get_node_data(trait).to_dict()
     else:
@@ -174,8 +173,7 @@ def convert_trait_to_idx_dict(tree: ToyTree, trait: Dict[str, Any]) -> Dict[int,
     return trait
 
 
-
-def fitch_parsimony_score(tree: ToyTree, trait: Dict[int,Any]) -> int:
+def fitch_parsimony_score(tree: ToyTree, trait: Dict[int, Any]) -> int:
     """Return Fitch parsimony score given a tree and single trait.
 
     For didactic purposes this function will also store a feature named
@@ -198,14 +196,12 @@ def fitch_parsimony_score(tree: ToyTree, trait: Dict[int,Any]) -> int:
 
     # iterate over Nodes in idxorder (postorder sorted) traversal
     for node in tree:
-
         # leaves are visited first, and converted to a set type
         if node.is_leaf():
             node.fitch = set((trait[node.idx],))
 
         # internal Nodes examine the sets of their children's states
         else:
-
             # check for shared (intersecting) states
             shared = set.intersection(*(i.fitch for i in node.children))
 
@@ -220,7 +216,13 @@ def fitch_parsimony_score(tree: ToyTree, trait: Dict[int,Any]) -> int:
     return nchanges
 
 
-def consistency_and_retention_indices(tree: ToyTree, trait: Dict[str, Any], npermutations: int = 10_000, left_tailed: bool = False, rng: int = None) -> pd.Series:
+def consistency_and_retention_indices(
+    tree: ToyTree,
+    trait: Dict[str, Any],
+    npermutations: int = 10_000,
+    left_tailed: bool = False,
+    rng: int = None,
+) -> pd.Series:
     """Return CI, RI, and RCI indices for a discrete trait.
 
     Computes the consistency (CI), retention (RI), and rescaled
@@ -258,7 +260,7 @@ def consistency_and_retention_indices(tree: ToyTree, trait: Dict[str, Any], nper
     -------
     >>> # generate random tree, simulate 4-state traits, calculate CI
     >>> tree = toytree.rtree.unittree(ntips=40)
-    >>> traits = tree.pcm.simulate_discrete_data(nstates=4, tips_only=True, nreplicates=10)
+    >>> traits = tree.pcm.simulate_discrete_trait(nstates=4, tips_only=True, nreplicates=10)
     >>> consistency_and_retention_indices(tree, traits.t0)
 
     References
@@ -275,7 +277,11 @@ def consistency_and_retention_indices(tree: ToyTree, trait: Dict[str, Any], nper
     min_changes = max(0, nstates - 1)
     max_changes = tree.ntips - 1
     ci = min_changes / score if score > 0 else 1.0
-    ri = 1.0 if min_changes == max_changes else (max_changes - score) / (max_changes - min_changes)
+    ri = (
+        1.0
+        if min_changes == max_changes
+        else (max_changes - score) / (max_changes - min_changes)
+    )
     ri = max(0.0, min(1.0, ri))
     rci = ci * ri
 
@@ -292,7 +298,11 @@ def consistency_and_retention_indices(tree: ToyTree, trait: Dict[str, Any], nper
         ptrait = dict(zip(keys, rng.choice(values, size=nsamp, replace=False)))
         score_ = fitch_parsimony_score(tree, ptrait)
         ci_ = min_changes / score_ if score_ > 0 else 1.0
-        ri_ = 1.0 if min_changes == max_changes else (max_changes - score_) / (max_changes - min_changes)
+        ri_ = (
+            1.0
+            if min_changes == max_changes
+            else (max_changes - score_) / (max_changes - min_changes)
+        )
         ri_ = max(0.0, min(1.0, ri_))
         rci_ = ci_ * ri_
         permuted_cis[i] = ci_
@@ -315,28 +325,30 @@ def consistency_and_retention_indices(tree: ToyTree, trait: Dict[str, Any], nper
     rci_pvalue = (count_rci + 1) / (npermutations + 1)
 
     # return as series
-    return pd.Series({
-        "CI": ci,
-        "CI_permuted_mean": permuted_cis.mean(),
-        "CI_p-value": ci_pvalue,
-        "RI": ri,
-        "RI_permuted_mean": permuted_ris.mean(),
-        "RI_p-value": ri_pvalue,
-        "RCI": rci,
-        "RCI_permuted_mean": permuted_rcis.mean(),
-        "RCI_p-value": rci_pvalue,
-        "fitch_parsimony_score": score,
-        "fitch_parsimony_score_permuted_mean": permuted_score.mean(),
-        "npermutations": npermutations,
-    })
+    return pd.Series(
+        {
+            "CI": ci,
+            "CI_permuted_mean": permuted_cis.mean(),
+            "CI_p-value": ci_pvalue,
+            "RI": ri,
+            "RI_permuted_mean": permuted_ris.mean(),
+            "RI_p-value": ri_pvalue,
+            "RCI": rci,
+            "RCI_permuted_mean": permuted_rcis.mean(),
+            "RCI_p-value": rci_pvalue,
+            "fitch_parsimony_score": score,
+            "fitch_parsimony_score_permuted_mean": permuted_score.mean(),
+            "npermutations": npermutations,
+        }
+    )
 
 
 if __name__ == "__main__":
-
     # test parsimony score and inference against Bio
     import toytree
+
     tree = toytree.rtree.unittree(40, treeheight=1000, seed=123)
-    data = tree.pcm.simulate_discrete_data(nstates=4, tips_only=True, nreplicates=4)
+    data = tree.pcm.simulate_discrete_trait(nstates=4, tips_only=True, nreplicates=4)
     print(data)
     # print(fitch_parsimony_single(tree, data.t0))
     print(consistency_and_retention_indices(tree, data.t0))
