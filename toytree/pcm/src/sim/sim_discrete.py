@@ -13,20 +13,24 @@ References
 - Yang...
 """
 
+from __future__ import annotations
+
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 
 import numpy as np
 import pandas as pd
 import scipy.linalg
 
-from toytree import ToyTree
 from toytree.core.apis import PhyloCompAPI, add_subpackage_method
+
+if TYPE_CHECKING:
+    from toytree.core import ToyTree
 
 __all__ = [
     "get_markov_model",
-    "simulate_discrete_data",
+    "simulate_discrete_trait",
 ]
 
 
@@ -262,7 +266,7 @@ class DiscreteMarkovSimulator:
 
     This is intended primarily for internal use by toytree.pcm,
     with the user-facing functions available from factory functions
-    like :meth:`simulate_discrete_data`. This takes as input a
+    like :meth:`simulate_discrete_trait`. This takes as input a
     ToyTree and MarkModel instances
     """
 
@@ -331,7 +335,7 @@ def get_markov_model(
     rate matrix (Q) for calculating the probabilities of transitions
     between discrete character states in a Markov model. This
     is used primarily for didactic purposes, and is also used
-    internally in functions such as :meth:`~toytree.pcm.simulate_discrete_data`.
+    internally in functions such as :meth:`~toytree.pcm.simulate_discrete_trait`.
 
     It checks that the user input for rates and state_frequencies
     is valid given the model type and number of states, and can
@@ -340,8 +344,9 @@ def get_markov_model(
     Parameters
     ----------
     nstates: int
-        The number of states to simulate. States will be names as
-        integers 0-nstates, unless you use `state_names` to rename.
+        The number of states to simulate. By default, output states are
+        labeled as numeric strings ``"0"`` to ``"{nstates - 1}"`` unless
+        you use ``state_names`` to provide custom labels.
     model: str
         The Markov model name ("ER", "SYM", or "ARD"). This is used
         to either sample random valid parameters for a model of the
@@ -386,7 +391,7 @@ def get_markov_model(
 
 
 @add_subpackage_method(PhyloCompAPI)
-def simulate_discrete_data(
+def simulate_discrete_trait(
     tree: ToyTree,
     nstates: int,
     model: str = "ER",
@@ -442,8 +447,8 @@ def simulate_discrete_data(
         If True values are only returned for tip Nodes, else values are
         returned for all Nodes in the tree.
     state_names: Optional[List[Any]]
-        State names will be substituted for simulated discrete integer
-        states in the entered order.
+        Labels to substitute for simulated integer state indices in the
+        entered order. If None, default labels are numeric strings.
     nreplicates: int
         If nreplicates is > 1 then a DataFrame is returned with
         replicate numbers as columns. If nreplicates is <= 1 then a
@@ -462,17 +467,17 @@ def simulate_discrete_data(
     >>> tree = toytree.rtree.unittree(10)
     >>>
     >>> # simulate a single trait
-    >>> toytree.pcm.simulate_discrete_data(tree, 2, "ER")
-    >>> # 0    1
-    >>> # 1    0
-    >>> # 2    1
-    >>> # 3    0
-    >>> # 4    0
-    >>> # 5    0
-    >>> # Name: trait, dtype: int64
+    >>> toytree.pcm.simulate_discrete_trait(tree, 2, "ER")
+    >>> # 0    "1"
+    >>> # 1    "0"
+    >>> # 2    "1"
+    >>> # 3    "0"
+    >>> # 4    "0"
+    >>> # 5    "0"
+    >>> # Name: t0, dtype: object
     >>>
     >>> # simulate multiple replicate simulations
-    >>> toytree.pcm.simulate_discrete_data(
+    >>> toytree.pcm.simulate_discrete_trait(
     >>>     tree=tree, nstates=2, model="ARD",
     >>>     rate=0.1,
     >>>     relative_rates=[[0, 2], [1, 0]],
@@ -514,10 +519,12 @@ def simulate_discrete_data(
     if tips_only:
         traits = traits.iloc[: tree.ntips]
 
-    # rename data from numeric to user defined
-    if state_names is not None:
-        for idx, value in enumerate(state_names):
-            traits.replace(to_replace=idx, value=value, inplace=True)
+    # convert internal integer state indices to user-facing labels. Defaults
+    # are numeric strings to encourage categorical treatment downstream.
+    if state_names is None:
+        state_names = [str(i) for i in range(nstates)]
+    for idx, value in enumerate(state_names):
+        traits.replace(to_replace=idx, value=value, inplace=True)
 
     # rename traits if user provided a trait_name
     if trait_name is not None:
@@ -553,7 +560,7 @@ if __name__ == "__main__":
 
     # get a single tree with trait values
     tre = toytree.rtree.unittree(10, treeheight=10, seed=123)
-    data = simulate_discrete_data(
+    data = simulate_discrete_trait(
         tree=tre,
         nstates=3,
         model="SYM",
@@ -565,7 +572,7 @@ if __name__ == "__main__":
         state_names=["a", "b", "c"],
     )
     # print(data.T)
-    # data = simulate_discrete_data(tre, nstates=2, inplace=True)
+    # data = simulate_discrete_trait(tre, nstates=2, inplace=True)
     print(data)
 
     # get many trees with traits simulated

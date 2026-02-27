@@ -2,15 +2,15 @@
 
 """Phylogenetic comparative methods (pcm) subpackage.
 
-All `pcm` source code is located in `toytree.pcm.src`, with user-facing 
-functions exposed in the `api` and `tree_api` submodules. In this 
-way, all functions that a user is meant to interact with can be 
-accessed from top-level locations at either :mod:`toytree.pcm` 
+All `pcm` source code is located in `toytree.pcm.src`, with user-facing
+functions exposed in the `api` and `tree_api` submodules. In this
+way, all functions that a user is meant to interact with can be
+accessed from top-level locations at either :mod:`toytree.pcm`
 (package-level usage) or the `.pcm` attribute of :class:`ToyTree`
 instances (instance-level usage).
 
 Package level API usage
->>> tree = toytree.rtree.unittree(ntips=10, treeheight=100, seed=123)   
+>>> tree = toytree.rtree.unittree(ntips=10, treeheight=100, seed=123)
 >>> toytree.pcm.simulate_discrete_markov_data(tree, 3, "ER")
 
 Instance level API usage
@@ -27,17 +27,22 @@ as it grows, such as `toytree.pcm.markov`, `toytree.pcm.phylocom`.
 # from .src.api_tree import PhyloCompAPI
 
 # import the package-api functions: tree.pcm.functions
-from toytree.pcm.src.vcv import *
 from toytree.pcm.src.diversification.diversification import *
 from toytree.pcm.src.diversification.red import *
-from toytree.pcm.src.traits.discrete_markov_model_sim import *
-from toytree.pcm.src.traits.discrete_markov_model_fit import *
-from toytree.pcm.src.traits.stochastic_mapping import *
-from toytree.pcm.src.traits.continuous_bm_sim import *
+from toytree.pcm.src.phylolinalg import *
+from toytree.pcm.src.sim.sim_continuous import *
+from toytree.pcm.src.sim.sim_continuous_mvn import *
+from toytree.pcm.src.sim.sim_discrete import *
+from toytree.pcm.src.sim.sim_pglm import *
+from toytree.pcm.src.sim.sim_pgls import *
+from toytree.pcm.src.traits.aic_table import aic_table
 from toytree.pcm.src.traits.continuous_bm_fit import *
-from toytree.pcm.src.traits.pic import *
+from toytree.pcm.src.traits.discrete_markov_model_fit import *
+from toytree.pcm.src.traits.pgls_matrix import *
 from toytree.pcm.src.traits.phylosignal_k import *
 from toytree.pcm.src.traits.phylosignal_lambda import *
-from toytree.pcm.src.traits.aic_table import aic_table
+from toytree.pcm.src.traits.pic import *
+from toytree.pcm.src.traits.stochastic_mapping import *
+from toytree.pcm.src.vcv import *
 
 # from toytree.pcm.src.phylocom import simulate_community_data

@@ -7,11 +7,11 @@ Phylogenetic comparative methods functions made accessible at
 """
 
 from typing import List, Optional
-import pandas as pd
-import numpy as np
 
-from toytree.pcm.src.utils import get_vcv_matrix_from_tree
-# from toytree.pcm.src.discrete_markov_model_sim import 
+import numpy as np
+import pandas as pd
+
+# from toytree.pcm.src.discrete_markov_model_sim import
 # from toytree.pcm.src.discrete_markov_model_sim import (
 #     DiscreteMarkovModelSim,
 #     DiscreteMarkovModelQMatrix,

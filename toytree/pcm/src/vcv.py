@@ -8,20 +8,25 @@ TODO
 2. Estimate covariance structure using statsmodels.
 
 References
------------
+----------
 - Garland, T. Jr. and Ives, A. R. (2000) Using the past to predict the
   present: confidence intervals for regression equations in phylogenetic
   comparative methods. American Naturalist, 155, 346-364.
 
 """
 
-from typing import Union
+from __future__ import annotations
+
 import itertools
+from typing import TYPE_CHECKING, Union
+
 import numpy as np
 import pandas as pd
-import toytree
-from toytree import ToyTree
-from toytree.core.apis import add_subpackage_method, PhyloCompAPI
+
+from toytree.core.apis import PhyloCompAPI, add_subpackage_method
+
+if TYPE_CHECKING:
+    from toytree.core import ToyTree
 
 
 __all__ = [
@@ -41,32 +46,39 @@ def get_vcv_matrix_from_tree(
     tree: ToyTree,
     df: bool = False,
 ) -> Union[np.ndarray, pd.DataFrame]:
-    """Return a variance-covariance matrix (DataFrame) from a ToyTree.
+    """Return the Brownian-motion variance-covariance matrix for tree tips.
 
-    The VCV represents the sum lengths of shared edges between
-    pairs of samples as covariances (off-diagonals) and sum
-    root-to-tip edge lengths of each sample as variances (diagonals)
-    This matrix is often useful as it provides the expected variances
-    and covariances of a continuous trait evolving on a tree under
-    Brownian motion.
+    The returned matrix is ``(ntips, ntips)`` and describes the expected
+    covariance structure among tip values under Brownian motion on the input
+    tree. Off-diagonal entries are the shared path length from the root to the
+    MRCA of each tip pair, and diagonal entries are root-to-tip path lengths.
 
     Parameters
     ----------
-    tree: toytree.ToyTree
-        A tree on which to compute the VCV.
-    df: bool
-        True returns pandas DataFrame, else returns numpy ndarray.
+    tree : ToyTree
+        Tree with edge lengths.
+    df : bool, default=False
+        If ``True``, return a labeled ``pandas.DataFrame`` with tip labels as
+        both index and columns. If ``False``, return a ``numpy.ndarray``.
 
-    Example
+    Returns
     -------
+    numpy.ndarray or pandas.DataFrame
+        Tip-by-tip variance-covariance matrix in tree tip order. If ``df=True``,
+        row and column labels are ``tree.get_tip_labels()``.
+
+    Raises
+    ------
+    Exception
+        Propagated from tree methods if the tree structure or edge lengths are
+        invalid for distance calculations.
+
+    Examples
+    --------
     >>> tree = toytree.rtree.unittree(ntips=5, seed=123, treeheight=3)
-    >>> vcv = get_vcv_matrix_from_tree(tree, df=True)
-    >>> #      r0   r1   r2   r3   r4
-    >>> # r0  3.0  2.0  1.0  0.0  0.0
-    >>> # r1  2.0  3.0  1.0  0.0  0.0
-    >>> # r2  1.0  1.0  3.0  0.0  0.0
-    >>> # r3  0.0  0.0  0.0  3.0  1.0
-    >>> # r4  0.0  0.0  0.0  1.0  3.0
+    >>> vcv = tree.pcm.get_vcv_matrix_from_tree(df=True)
+    >>> vcv.shape
+    (5, 5)
     """
     # get node distance matrix
     dmat = tree.distance.get_node_distance_matrix()
@@ -74,14 +86,13 @@ def get_vcv_matrix_from_tree(
     # fill vcv array with shared dists (mrca to root)
     vcv = np.zeros((tree.ntips, tree.ntips))
     for tip1, tip2 in itertools.combinations(range(tree.ntips), 2):
-
         # get mrca node and its dist to root (co-variances)
         mrca = tree.get_mrca_node(tip1, tip2)
         vcv[tip1, tip2] = dmat[mrca.idx, tree.treenode.idx]
         vcv[tip2, tip1] = vcv[tip1, tip2]
 
     # fill diagonal with each tips dist from the root
-    for node in tree[:tree.ntips]:
+    for node in tree[: tree.ntips]:
         vcv[node._idx, node._idx] = dmat[node._idx, -1]
 
     # return as ndarray or dataframe
@@ -98,35 +109,45 @@ def get_corr_matrix_from_tree(
     tree: ToyTree,
     df: bool = False,
 ) -> Union[np.ndarray, pd.DataFrame]:
-    r"""Return a correlation matrix (DataFrame) from a ToyTree.
+    """Return the tip correlation matrix implied by the tree VCV matrix.
 
-    The correlation matrix is computed from the variance-covariance
-    matrix. The relationship between the VCV (C) and the correlation
-    matrix (R) is:
-    $$ R_{ij} = \frac{C_{ij}}{\sqrt{C_{ii} * C_{jj}}} $$
+    This converts the Brownian-motion variance-covariance matrix to a
+    correlation matrix by dividing each entry by the product of the
+    corresponding tip standard deviations.
 
     Parameters
     ----------
-    tree: toytree.ToyTree
-        A tree on which to compute the correlation matrix.
+    tree : ToyTree
+        Tree with edge lengths.
+    df : bool, default=False
+        If ``True``, return a labeled ``pandas.DataFrame``. Otherwise return a
+        ``numpy.ndarray``.
 
-    Example
+    Returns
     -------
+    numpy.ndarray or pandas.DataFrame
+        Tip-by-tip correlation matrix. Entries that should be zero by the VCV
+        structure are explicitly set to ``0.0`` to avoid floating-point noise.
+
+    Raises
+    ------
+    Exception
+        Propagated from ``get_vcv_matrix_from_tree()`` or downstream numeric
+        operations if the input tree is invalid.
+
+    Examples
+    --------
     >>> tree = toytree.rtree.unittree(ntips=5, seed=123, treeheight=3)
-    >>> corr = get_corr_matrix_from_tree(tree, df=True)
-    >>> #           r0        r1        r2        r3        r4
-    >>> # r0  1.000000  0.666667  0.333333  0.000000  0.000000
-    >>> # r1  0.666667  1.000000  0.333333  0.000000  0.000000
-    >>> # r2  0.333333  0.333333  1.000000  0.000000  0.000000
-    >>> # r3  0.000000  0.000000  0.000000  1.000000  0.333333
-    >>> # r4  0.000000  0.000000  0.000000  0.333333  1.000000
+    >>> corr = tree.pcm.get_corr_matrix_from_tree(df=True)
+    >>> corr.shape
+    (5, 5)
     """
     vcv = get_vcv_matrix_from_tree(tree)
     diag_std = np.sqrt(np.diag(vcv))
     outer = np.outer(diag_std, diag_std)
     corr = vcv / outer
     # correct rounding point errors
-    corr[vcv == 0] = 0.
+    corr[vcv == 0] = 0.0
     if not df:
         return corr
     names = tree.get_tip_labels()
@@ -134,11 +155,39 @@ def get_corr_matrix_from_tree(
 
 
 @add_subpackage_method(PhyloCompAPI)
-def get_distance_matrix_from_vcv_matrix(vcv: Union[np.ndarray, pd.DataFrame]) -> Union[np.ndarray, pd.DataFrame]:
-    """Returns the Euclidean distance between tips from a VCV matrix.
+def get_distance_matrix_from_vcv_matrix(
+    vcv: Union[np.ndarray, pd.DataFrame],
+) -> Union[np.ndarray, pd.DataFrame]:
+    """Return a tip distance matrix derived from a VCV matrix.
 
-    The Euclidean distance is computed as:
-        V[i, i] + V[j, j] - (2 * V[i, j])
+    Distances are computed from a variance-covariance matrix ``V`` using
+    ``d(i, j) = V[i, i] + V[j, j] - 2 * V[i, j]``. This corresponds to the
+    pairwise path-length distance implied by the Brownian-motion VCV.
+
+    Parameters
+    ----------
+    vcv : numpy.ndarray or pandas.DataFrame
+        Square variance-covariance matrix. If a DataFrame is provided, its
+        labels are preserved on the returned DataFrame.
+
+    Returns
+    -------
+    numpy.ndarray or pandas.DataFrame
+        Square pairwise distance matrix with the same shape as ``vcv``.
+
+    Raises
+    ------
+    Exception
+        Propagated if the input cannot be converted to an array or does not
+        support the required indexing operations.
+
+    Examples
+    --------
+    >>> tree = toytree.rtree.unittree(ntips=5, seed=123, treeheight=3)
+    >>> vcv = tree.pcm.get_vcv_matrix_from_tree(df=True)
+    >>> dmat = tree.pcm.get_distance_matrix_from_vcv_matrix(vcv)
+    >>> dmat.shape
+    (5, 5)
     """
     names = None
     if isinstance(vcv, pd.DataFrame):
@@ -175,10 +224,13 @@ def get_tree_from_vcv_matrix(vcv: Union[np.ndarray, pd.DataFrame]) -> ToyTree:
         A variance-covariance matrix as a np.ndarray or pd.DataFrame.
     """
     dist_mat = get_distance_matrix_from_vcv_matrix(vcv)
+    import toytree
+
     return toytree.infer.infer_neighbor_joining_tree(dist_mat)
 
 
 if __name__ == "__main__":
+    import toytree
 
     tre = toytree.rtree.unittree(ntips=10, seed=123, treeheight=3)
     # print(tre.write())

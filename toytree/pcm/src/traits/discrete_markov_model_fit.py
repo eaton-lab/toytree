@@ -26,9 +26,9 @@ from scipy.optimize import minimize
 # from loguru import logger
 from toytree.core.apis import PhyloCompAPI, add_subpackage_method
 from toytree.data._src.expand_node_mapping import expand_node_mapping
+from toytree.pcm.src.sim.sim_discrete import MarkovModel
 from toytree.pcm.src.traits.aic_table import ModelResult
-from toytree.pcm.src.traits.discrete_markov_model_sim import MarkovModel
-from toytree.utils import ToytreeError
+from toytree.utils.src.exceptions import ToytreeError
 
 __all__ = [
     # "FitMarkovModelResult",
@@ -624,7 +624,7 @@ def infer_ancestral_states_discrete_ctmc(
     Examples
     --------
     >>> tree = toytree.rtree.unittree(8, seed=123)
-    >>> data = toytree.pcm.simulate_discrete_data(
+    >>> data = toytree.pcm.simulate_discrete_trait(
     ...     tree=tree, nstates=3, model="ER", tips_only=True, seed=123
     ... )
     >>> tree = tree.set_node_data("X", dict(data), default=np.nan, inplace=False)

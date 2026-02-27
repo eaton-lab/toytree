@@ -19,7 +19,7 @@ from scipy.optimize import minimize_scalar
 from toytree.core.apis import PhyloCompAPI, add_subpackage_method
 from toytree.data._src.expand_node_mapping import expand_node_mapping
 from toytree.pcm.src.traits.aic_table import ModelResult, aic_table
-from toytree.utils import ToytreeError
+from toytree.utils.src.exceptions import ToytreeError
 
 __all__ = [
     "fit_continuous_bm_model",
@@ -91,9 +91,7 @@ class ContinuousBMModelFit:
             list(range(self.tree.nnodes))
         )
 
-    def _coerce_models(
-        self, models: Sequence[Literal["BM", "OU", "EB"]]
-    ) -> list[str]:
+    def _coerce_models(self, models: Sequence[Literal["BM", "OU", "EB"]]) -> list[str]:
         if not models:
             raise ToytreeError("models cannot be empty.")
         out: list[str] = []
@@ -146,7 +144,9 @@ class ContinuousBMModelFit:
     def _kernel_bm(self, shared: np.ndarray) -> np.ndarray:
         return shared.copy()
 
-    def _kernel_ou(self, shared: np.ndarray, times: np.ndarray, alpha: float) -> np.ndarray:
+    def _kernel_ou(
+        self, shared: np.ndarray, times: np.ndarray, alpha: float
+    ) -> np.ndarray:
         if alpha <= 0:
             return shared.copy()
         ti = times[:, None]
@@ -196,9 +196,7 @@ class ContinuousBMModelFit:
         quad = max(quad, 1e-15)
         sigma2 = max(quad / n, 1e-15)
         logdetR = float(2.0 * np.log(np.diag(L)).sum())
-        loglik = -0.5 * (
-            n * np.log(2.0 * np.pi) + n * np.log(sigma2) + logdetR + n
-        )
+        loglik = -0.5 * (n * np.log(2.0 * np.pi) + n * np.log(sigma2) + logdetR + n)
         return {"mu": mu, "sigma2": sigma2, "loglik": float(loglik)}
 
     def _fit_bm(self) -> tuple[dict[str, float], bool, str]:
@@ -278,7 +276,9 @@ class ContinuousBMModelFit:
             except np.linalg.LinAlgError:
                 continue
         if L is None:
-            raise ToytreeError("failed to condition ancestral states: tip covariance not PD.")
+            raise ToytreeError(
+                "failed to condition ancestral states: tip covariance not PD."
+            )
 
         def solve(v: np.ndarray) -> np.ndarray:
             return np.linalg.solve(L.T, np.linalg.solve(L, v))
