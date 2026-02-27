@@ -12,28 +12,35 @@ from root to tips.
 Example
 -------
 >>> tree = toytree.rtree.unittree(ntips=25, treeheight=1.0, seed=123)
->>> traits = tree.pcm.simulate_continuous_bm(sigma2=[0.1, 0.001], seed=123, tips_only=True)
+>>> traits = tree.pcm.simulate_multivariate_continuous_trait(
+...     model="bm", params=np.diag([0.1, 0.001]), seed=123, tips_only=True
+... )
 >>> phylogenetic_signal_lambda(tree, traits.t0, traits.t1)
 >>> # {'lambda': 1.095589, 'sig2': 0.004051, 'P-value': 0.041663, 'LR_test': 4.148850, ...}
 """
 
-from typing import Sequence, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Sequence, Union
 
 import numpy as np
 from scipy.linalg import LinAlgError, cho_factor, cho_solve
 from scipy.optimize import minimize, minimize_scalar
 from scipy.stats import chi2
 
-from toytree.core import ToyTree
 from toytree.core.apis import PhyloCompAPI, add_subpackage_method
-from toytree.pcm import get_vcv_matrix_from_tree
 from toytree.pcm.src.utils import _validate_features
+from toytree.pcm.src.vcv import get_vcv_matrix_from_tree
+
+if TYPE_CHECKING:
+    from toytree.core import ToyTree
 
 __all__ = [
     "phylogenetic_signal_lambda",
     # "max_λ",
     # "edges_scale_by_lambda"
 ]
+
 
 @add_subpackage_method(PhyloCompAPI)
 def phylogenetic_signal_lambda(
@@ -53,9 +60,9 @@ def phylogenetic_signal_lambda(
     tree: ToyTree
         A tree with edge lengths.
     data: str | Sequence[float]
-        Continuous trait values. 
+        Continuous trait values.
     error: str | Sequence[float]
-        Optional standard errors measured on trait values. 
+        Optional standard errors measured on trait values.
     intervals: int
         Number of random start trials to optimize parameters by ML.
 
@@ -70,20 +77,22 @@ def phylogenetic_signal_lambda(
     Example
     -------
     >>> tree = toytree.rtree.unittree(ntips=25, treeheight=1.0, seed=123)
-    >>> traits = tree.pcm.simulate_continuous_bm(sigma2=[0.1, 0.001], seed=123, tips_only=True)
+    >>> traits = tree.pcm.simulate_multivariate_continuous_trait(
+    ...     model="bm", params=np.diag([0.1, 0.001]), seed=123, tips_only=True
+    ... )
     >>> phylogenetic_signal_lambda(tree, traits.t0, traits.t1)
     >>> # {'lambda': 1.095589, 'sig2': 0.004051, 'P-value': 0.041663, 'LR_test': 4.148850, ...}
     """
     # [optional] get data as features from the tree
-    if isinstance(data, str): 
-        data = tree.get_node_data(data)[:tree.ntips]
+    if isinstance(data, str):
+        data = tree.get_node_data(data)[: tree.ntips]
     if isinstance(error, str):
-        error = tree.get_node_data(error)[:tree.ntips]
+        error = tree.get_node_data(error)[: tree.ntips]
 
     # validate proper trait format returned as float array
     x = _validate_features(data, max_dim=1, size=tree.ntips)
     if error is not None:
-        e = _validate_features(error, max_dim=1, size=tree.ntips)        
+        e = _validate_features(error, max_dim=1, size=tree.ntips)
 
     if error is None:
         return _phylogenetic_signal_λ(tree, x, intervals)
@@ -91,7 +100,9 @@ def phylogenetic_signal_lambda(
         return _phylogenetic_signal_λ_w_se(tree, x, e, intervals)
 
 
-def _phylogenetic_signal_λ(tree: ToyTree, x: np.ndarray, intervals: int = 20) -> dict[str, float]:
+def _phylogenetic_signal_λ(
+    tree: ToyTree, x: np.ndarray, intervals: int = 20
+) -> dict[str, float]:
     """Return Pagel's λ measurement of phylogenetic signal.
 
     See docstring in `phylogenetic_signal_lambda`.
@@ -125,7 +136,9 @@ def _phylogenetic_signal_λ(tree: ToyTree, x: np.ndarray, intervals: int = 20) -
     }
 
 
-def _phylogenetic_signal_λ_w_se(tree: ToyTree, x: np.ndarray, e: np.ndarray, intervals: int = 20) -> dict[str, float]:
+def _phylogenetic_signal_λ_w_se(
+    tree: ToyTree, x: np.ndarray, e: np.ndarray, intervals: int = 20
+) -> dict[str, float]:
     """Return Pagel's λ measurement of phylogenetic signal.
 
     See docstring in `phylogenetic_signal_lambda`.
@@ -138,8 +151,8 @@ def _phylogenetic_signal_λ_w_se(tree: ToyTree, x: np.ndarray, e: np.ndarray, in
     x = _validate_features(x, max_dim=1, size=ntips)
     error = _validate_features(e, max_dim=1, size=ntips)
 
-    # 
-    E = np.diag(error ** 2)
+    #
+    E = np.diag(error**2)
     maxλ = max_λ(tree)
 
     # estimate optimal λ that maximizes loglik with measure error
@@ -173,7 +186,7 @@ def _λ_transform(V: np.ndarray, λ: float) -> np.ndarray:
     """Scale VCV by a lambda parameter (in place!)
 
     The internal edges (off-diagonals) are multipled by lambda, while
-    the terminal edges are 
+    the terminal edges are
     """
     V = V.copy()
     mask = ~np.eye(V.shape[0], dtype=np.bool_)
@@ -197,7 +210,9 @@ def _likelihood_λ(theta: float, V: np.ndarray, y: float) -> float:
     return _profiled_gaussian_nll(y, C)
 
 
-def _likelihood_λ_w_se(params: tuple[float, float], V: np.ndarray, y: float, E: np.ndarray) -> float:
+def _likelihood_λ_w_se(
+    params: tuple[float, float], V: np.ndarray, y: float, E: np.ndarray
+) -> float:
     """Return -log likelihood given a test lambda parameter.
 
     Parameters
@@ -218,7 +233,9 @@ def _likelihood_λ_w_se(params: tuple[float, float], V: np.ndarray, y: float, E:
     return _profiled_gaussian_nll(y, C)
 
 
-def _likelihood_sigma2_given_λ(sigma: float, λ: float, V: np.ndarray, y: np.ndarray, E: np.ndarray) -> float:
+def _likelihood_sigma2_given_λ(
+    sigma: float, λ: float, V: np.ndarray, y: np.ndarray, E: np.ndarray
+) -> float:
     """Return NLL with λ fixed and sigma2 free."""
     if not np.isfinite(sigma) or sigma <= 0:
         return np.inf
@@ -294,7 +311,9 @@ def _estimate_λ(x: np.ndarray, V: np.ndarray, maxλ: float, intervals: int) -> 
     return fits[lidx]
 
 
-def _estimate_λ_and_e(x: np.ndarray, V: np.ndarray, E: np.ndarray, maxλ: float, intervals: int) -> float:
+def _estimate_λ_and_e(
+    x: np.ndarray, V: np.ndarray, E: np.ndarray, maxλ: float, intervals: int
+) -> float:
     """Return best fitting λ estimated in intervals by ML."""
     # get intervals between 0-max(λ)
     ivals = np.linspace(0, maxλ, intervals)
@@ -304,13 +323,13 @@ def _estimate_λ_and_e(x: np.ndarray, V: np.ndarray, E: np.ndarray, maxλ: float
     sigma0 = max(float(np.var(x)), 1e-6)
     fits = []
     for i, _ in enumerate(ivals[:-1]):
-        midλ = ivals[i:i + 1].mean()
+        midλ = ivals[i : i + 1].mean()
         fit = minimize(
             fun=_likelihood_λ_w_se,
             x0=np.array([midλ, sigma0]),
             args=(V, x, E),
             bounds=[(lim, maxλ - lim), (lim, np.inf)],
-            method='L-BFGS-B',
+            method="L-BFGS-B",
         )
         fits.append(fit)
 
@@ -320,7 +339,9 @@ def _estimate_λ_and_e(x: np.ndarray, V: np.ndarray, E: np.ndarray, maxλ: float
     return fits[lidx]
 
 
-def _estimate_sigma2_given_λ(x: np.ndarray, V: np.ndarray, E: np.ndarray, λ: float) -> float:
+def _estimate_sigma2_given_λ(
+    x: np.ndarray, V: np.ndarray, E: np.ndarray, λ: float
+) -> float:
     """Return best fitting sigma2 with λ fixed."""
     upper = max(float(np.var(x)) * 1e4, 1.0)
     return minimize_scalar(
@@ -340,7 +361,7 @@ def max_λ(tree: ToyTree) -> float:
     (untransformed) edge to still be positive, creating a neg. edge.
     """
     root_to_tip_dists = tree.distance.get_node_distance_matrix()[-1]
-    internal_dists = root_to_tip_dists[tree.ntips:]
+    internal_dists = root_to_tip_dists[tree.ntips :]
     return tree.treenode.height / max(internal_dists)
 
 
@@ -358,14 +379,14 @@ def edges_transform_lambda(tree: ToyTree, λ: float, inplace: bool = False) -> T
     dists1 = tree.distance.get_node_distance_matrix()[-1]
 
     # multiply internal edges by lambda
-    for node in tree[tree.ntips:]:
+    for node in tree[tree.ntips :]:
         node._dist *= λ
 
     # get node distances on new transformed tree
     dists2 = tree.distance.get_node_distance_matrix()[-1]
 
     # extend tips to original distance from root
-    for node in tree[:tree.ntips]:
+    for node in tree[: tree.ntips]:
         node._dist += dists1[node._idx] - dists2[node._idx]
 
     # update new tree heights
@@ -373,14 +394,14 @@ def edges_transform_lambda(tree: ToyTree, λ: float, inplace: bool = False) -> T
     return tree
 
 
-
 if __name__ == "__main__":
-
     import toytree
 
     # generate test data
     tree = toytree.rtree.unittree(ntips=50, treeheight=1.0, seed=123)
-    traits = tree.pcm.simulate_continuous_bm(1.0, seed=123, tips_only=True)
+    traits = tree.pcm.simulate_continuous_trait(
+        "bm", params=1.0, seed=123, tips_only=True
+    )
     traits["se"] = np.random.default_rng(seed=123).uniform(0, 0.01, tree.ntips)
 
     # write data
