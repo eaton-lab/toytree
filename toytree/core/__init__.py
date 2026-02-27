@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""
+"""Core subpackage for tree and node objects.
 The core subpackage contains modules for manipulating and drawing
 ToyTree and MultiTree objects.
 
@@ -21,9 +21,28 @@ Generate a MultiTree object
 >>> mtree = toytree.mtree(trees)
 """
 
-from toytree.core.tree import ToyTree
-from toytree.core.node import Node
-# from toytree.core.multitree import MultiTree
+from __future__ import annotations
+
+import importlib
+
+__all__ = ["ToyTree", "Node"]
+
+_LAZY_ATTRS = {
+    "ToyTree": ("toytree.core.tree", "ToyTree"),
+    "Node": ("toytree.core.node", "Node"),
+}
+
+
+def __getattr__(name: str):
+    """Lazily import core objects to avoid eager drawing/color imports."""
+    if name not in _LAZY_ATTRS:
+        raise AttributeError(name)
+    module_name, attr_name = _LAZY_ATTRS[name]
+    module = importlib.import_module(module_name)
+    value = getattr(module, attr_name)
+    globals()[name] = value
+    return value
+
 
 # easier acces to the main toyplot types
 # from toyplot.canvas import Canvas

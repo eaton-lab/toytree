@@ -4,13 +4,10 @@
 
 """
 
-from typing import TypeVar, Callable, Optional
 from dataclasses import dataclass
-from numpy.typing import ArrayLike
-import numpy as np
-import pandas as pd
-import toytree
+from typing import Callable, TypeVar
 
+from numpy.typing import ArrayLike
 
 ToyTree = TypeVar("ToyTree")
 
@@ -60,9 +57,10 @@ class NullModel:
 
 class ShuffleTips(NullModel):
     """Shuffle tip labels on tree and recompute statistic."""
+
     def _sample_from_null(self):
         for rep in range(self.size):
-            pass 
+            pass
 
 class Richness(NullModel):
     """Randomize community abundances while maintaining species richness"""
@@ -71,12 +69,13 @@ class Frequency(NullModel):
     """Randomize community abundances while maintaining species frequencies"""
 
 class SamplePool(NullModel):
-    """Randomize community by sampling species from pool of species 
+    """Randomize community by sampling species from pool of species
     occurring in at least one community (sample pool) with equal 
-    probability."""
+    probability.
+    """
 
 class PhyloPool(NullModel):
-    """Randomize community by sampling species from pool of species 
+    """Randomize community by sampling species from pool of species
     occurring in at least one community (sample pool) with equal 
     probability.
     
@@ -84,14 +83,16 @@ class PhyloPool(NullModel):
     """
 
 class IndependentSwap(NullModel):
-    """Randomizes community data matrix with the independent swap 
+    """Randomizes community data matrix with the independent swap
     algorithm (Gotelli 2000) maintaining species occurrence frequency
-    and sample species richness."""
+    and sample species richness.
+    """
 
 class TrialSwap(NullModel):
     """Randomizes community data matrix with the trial-swap algorithm
     (Miklos & Podani 2004) maintaining species occurrence frequency
-    and sample species richness."""
+    and sample species richness.
+    """
 
 
 

@@ -15,7 +15,11 @@ from toytree.core.apis import AnnotationAPI, add_subpackage_method
 from toytree.drawing import Cartesian, Mark
 from toytree.drawing.src.mark_annotation import AnnotationGradientLine, AnnotationLine
 from toytree.drawing.src.path_edges import get_tree_edge_polylines
-from toytree.style.src.validate_data import validate_colors, validate_mask, validate_numeric
+from toytree.style.src.validate_data import (
+    validate_colors,
+    validate_mask,
+    validate_numeric,
+)
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
 ALLOWED_STROKE_LINEJOIN = {"miter", "round", "bevel", "arcs", "miter-clip"}
@@ -93,7 +97,7 @@ def add_edges(
     Examples
     --------
     >>> tree = toytree.rtree.bdtree(20, seed=123)
-    >>> tree.pcm.simulate_discrete_data(3, trait_name="X", state_names="ABC", inplace=True)
+    >>> tree.pcm.simulate_discrete_trait(3, trait_name="X", state_names="ABC", inplace=True)
     >>> c, a, m = tree.draw(layout="c", edge_type="p")
     >>> tree.annotate.add_edges(
     ...     a,
@@ -128,12 +132,18 @@ def add_edges(
         stroke = colors[:nedges][show]
         per_edge_color = True
     else:
-        stroke = ToyColor(single_color) if single_color is not None else ToyColor("#262626")
+        stroke = (
+            ToyColor(single_color) if single_color is not None else ToyColor("#262626")
+        )
         per_edge_color = False
 
     # Resolve width and opacity as per-edge arrays and trim to shown edges.
-    widths = validate_numeric(tree, key="size", size=tree.nnodes, style={"size": width})[:nedges][show]
-    opacs = validate_numeric(tree, key="opacity", size=tree.nnodes, style={"opacity": opacity})[:nedges][show]
+    widths = validate_numeric(
+        tree, key="size", size=tree.nnodes, style={"size": width}
+    )[:nedges][show]
+    opacs = validate_numeric(
+        tree, key="opacity", size=tree.nnodes, style={"opacity": opacity}
+    )[:nedges][show]
 
     # Build data-space edge polylines from the shared drawing utility.
     xpaths, ypaths, _ = get_tree_edge_polylines(axes, mark, space="data")
