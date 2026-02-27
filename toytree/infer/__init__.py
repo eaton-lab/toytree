@@ -6,10 +6,10 @@
 """
 
 # methods here will be available at submodule-level (toytree.infer.[method])
+from .src.consensus import *  # consensus_tree, consensus_features
+from .src.neighbor_joining import *  # neighbor_joining_tree
+from .src.parsimony import *  # consistency_and_retention_indices
 from .src.upgma import *  # upgma_tree
-from .src.neighbor_joining import * # neighbor_joining_tree
-from .src.consensus import * # consensus_tree, consensus_features
-from .src.parsimony import * # consistency_and_retention_indices
 
 # requires sympy which is not yet in conda recipe, so for now
 # you need to call the following to access the likelihood code:
