@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# ruff: noqa: F403
 
 """Add additional Marks to annotate toytree drawings.
 
@@ -30,6 +31,7 @@ Functions
 - add_edge_labels()
 - add_edge_pie_markers()
 - add_edge_root()
+- add_edge_stochastic_map()
 
 - add_scale_bar()
 - add_confidence_intervals()
@@ -44,14 +46,15 @@ Functions
 """
 
 # from toytree.annotate.src.node_pie_charts import draw_node_pie_charts
+from toytree.annotate.src.add_axes_box_outline import *
 from toytree.annotate.src.add_edge_markers import *
+from toytree.annotate.src.add_edge_stochastic_map import *
 from toytree.annotate.src.add_edges import *
 from toytree.annotate.src.add_node_markers import *
-from toytree.annotate.src.add_tip_markers import *
-from toytree.annotate.src.add_axes_box_outline import *
-from toytree.annotate.src.add_scale_bar import *
 from toytree.annotate.src.add_pie_markers import *
+from toytree.annotate.src.add_scale_bar import *
 from toytree.annotate.src.add_tip_labels import *
+from toytree.annotate.src.add_tip_markers import *
 
 # ... edge_labels
 # ... node_labels

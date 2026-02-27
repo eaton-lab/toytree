@@ -3,8 +3,8 @@
 """Metrics to calculate phylogenetic signal in trait values.
 
 Blomberg's K is used to quantify phylogenetic signal in trait evolution
-relative to a Brownian motion model. Values of K>1 indicate samples 
-are less similar than expected, whereas K<1 indicates that they are 
+relative to a Brownian motion model. Values of K>1 indicate samples
+are less similar than expected, whereas K<1 indicates that they are
 more similar than expected. Permutations can be used to perform
 a significance test.
 
@@ -17,40 +17,45 @@ Example
 
 References
 ----------
-The original description of the K statistic:  
+The original description of the K statistic:
 __Blomberg, S. P., T. Garland Jr., and A. R. Ives (2003) Testing for
 phylogenetic signal in comparative data: Behavioral traits are more
 labile. Evolution, *57*, 717-745.__
 
-Extension to conduct hypothesis tests and incorporate sampling error:  
+Extension to conduct hypothesis tests and incorporate sampling error:
 __Ives, A. R., P. E. Midford, and T. Garland Jr. (2007) Within-species
 variation and measurement error in phylogenetic comparative biology.
 Systematic Biology, *56*, 252-270.__
 
 Extension to multivariate measure of K:
-__Dean C. Adams, A Generalized K Statistic for Estimating Phylogenetic 
-Signal from Shape and Other High-Dimensional Multivariate Data, 
-Systematic Biology, Volume 63, Issue 5, September 2014, Pages 685–697, 
+__Dean C. Adams, A Generalized K Statistic for Estimating Phylogenetic
+Signal from Shape and Other High-Dimensional Multivariate Data,
+Systematic Biology, Volume 63, Issue 5, September 2014, Pages 685–697,
 https://doi.org/10.1093/sysbio/syu030__
 
 __Philipp Mitteroecker, Michael L Collyer, Dean C Adams, Exploring Phylogenetic
-Signal in Multivariate Phenotypes by Maximizing Blomberg’s K, Systematic 
+Signal in Multivariate Phenotypes by Maximizing Blomberg’s K, Systematic
 Biology, 2024;, syae035, https://doi.org/10.1093/sysbio/syae035__
 
-__Adams, D. C. (2014). A generalized K statistic for estimating 
+__Adams, D. C. (2014). A generalized K statistic for estimating
 phylogenetic signal from shape and other high-dimensional multivariate
 data. Systematic biology, 63(5), 685-697.__
 """
 
+from __future__ import annotations
 
-from typing import Union, Sequence
-from loguru import logger
+from typing import TYPE_CHECKING, Sequence, Union
+
 import numpy as np
+from loguru import logger
 from scipy.optimize import minimize_scalar
-from toytree.core import ToyTree
-from toytree.pcm import get_vcv_matrix_from_tree
+
+from toytree.core.apis import PhyloCompAPI, add_subpackage_method
 from toytree.pcm.src.utils import _validate_features
-from toytree.core.apis import add_subpackage_method, PhyloCompAPI
+from toytree.pcm.src.vcv import get_vcv_matrix_from_tree
+
+if TYPE_CHECKING:
+    from toytree.core import ToyTree
 
 
 __all__ = ["phylogenetic_signal_k"]
@@ -76,9 +81,9 @@ def phylogenetic_signal_k(
     tree: ToyTree
         A tree with edge lengths.
     data: str | Sequence[float]
-        Continuous trait values. 
+        Continuous trait values.
     error: str | Sequence[float]
-        Optional standard errors measured on trait values. 
+        Optional standard errors measured on trait values.
     nsims: int
         Number of permutations to perform to calculate significance.
 
@@ -92,15 +97,15 @@ def phylogenetic_signal_k(
     Example
     -------
     >>> tree = toytree.rtree.unittree(ntips=10, seed=123, treeheight=2.0)
-    >>> data = tree.pcm.simulate_continuous_bm(1.0, tips_only=True)
+    >>> data = tree.pcm.simulate_continuous_trait("bm", params=1.0, tips_only=True)
     >>> tree.pcm.phylogenetic_signal_k(tree, data)
     >>> # {"K": ..., "P-value": ..., ...}
     """
     # [optional] get data as features from the tree
     if isinstance(data, str):
-        data = tree.get_node_data(data)[:tree.ntips]
+        data = tree.get_node_data(data)[: tree.ntips]
     if isinstance(error, str):
-        error = tree.get_node_data(error)[:tree.ntips]
+        error = tree.get_node_data(error)[: tree.ntips]
 
     # validate proper trait format returned as float array
     x = _validate_features(data, max_dim=1, size=tree.ntips)
@@ -114,7 +119,9 @@ def phylogenetic_signal_k(
         return _phylogenetic_signal_k_with_se(tree, x, e, nsims)
 
 
-def _phylogenetic_signal_k(tree: ToyTree, x: np.ndarray, nsims: int) -> dict[str, float]:
+def _phylogenetic_signal_k(
+    tree: ToyTree, x: np.ndarray, nsims: int
+) -> dict[str, float]:
     """Return Blomberg's K measurement of phylogenetic signal.
 
     See docstring in `phylogenetic_signal_k`.
@@ -137,7 +144,9 @@ def _phylogenetic_signal_k(tree: ToyTree, x: np.ndarray, nsims: int) -> dict[str
     }
 
 
-def _phylogenetic_signal_k_with_se(tree: ToyTree, x: np.ndarray, e: np.ndarray, nsims: int) -> dict[str, float]:
+def _phylogenetic_signal_k_with_se(
+    tree: ToyTree, x: np.ndarray, e: np.ndarray, nsims: int
+) -> dict[str, float]:
     """Calculate phylogenetic signal (K) with measurement error.
 
     This involves fitting a ML model to estimate the rate ...
@@ -146,8 +155,8 @@ def _phylogenetic_signal_k_with_se(tree: ToyTree, x: np.ndarray, e: np.ndarray, 
     V = get_vcv_matrix_from_tree(tree)
 
     # calculate K stat w/ error
-    IV = np.linalg.inv(V)    
-    E = np.diag(e ** 2)
+    IV = np.linalg.inv(V)
+    E = np.diag(e**2)
     kstat, sig2, loglik, conv = _calculate_k_with_se(x, V, IV, E)
     loglik = _likelihood_k(sig2, V, E, x)
 
@@ -157,7 +166,7 @@ def _phylogenetic_signal_k_with_se(tree: ToyTree, x: np.ndarray, e: np.ndarray, 
 
     # return as a dict
     return {
-        "K": kstat, 
+        "K": kstat,
         "P-value": pval if nsims else np.nan,
         "permutations": nsims if nsims else np.nan,
         "log-likelihood": -loglik,
@@ -168,21 +177,23 @@ def _phylogenetic_signal_k_with_se(tree: ToyTree, x: np.ndarray, e: np.ndarray, 
 
 def _calculate_k(x: np.ndarray, V: np.ndarray, IV: np.ndarray = None) -> float:
     """Return K statistic calculated for data x and variance-covariance
-    matrix V."""
+    matrix V.
+    """
     # compute PGLS mean (root state)
     n = x.size
     IV = IV if IV is not None else np.linalg.inv(V)
     a = np.sum(IV @ x) / np.sum(IV)
 
     # calculate K statistic
-    num = ((x - a).T @ (x - a) / ((x - a).T @ IV @ (x - a)))
-    dnm = ((np.sum(V.diagonal()) - n / np.sum(IV)) / (n - 1))
+    num = (x - a).T @ (x - a) / ((x - a).T @ IV @ (x - a))
+    dnm = (np.sum(V.diagonal()) - n / np.sum(IV)) / (n - 1)
     return num / dnm
 
 
-def _calculate_k_with_se(x: np.ndarray, V: np.ndarray, IV: np.ndarray, E: np.ndarray) -> tuple[float, float]:
-    """
-    """
+def _calculate_k_with_se(
+    x: np.ndarray, V: np.ndarray, IV: np.ndarray, E: np.ndarray
+) -> tuple[float, float]:
+    """ """
     # start using no error vcv
     a = np.sum(IV @ x) / np.sum(IV)
     n = x.size
@@ -211,14 +222,13 @@ def _calculate_k_with_se(x: np.ndarray, V: np.ndarray, IV: np.ndarray, E: np.nda
     # calculate K using optimized Ve
     IVe = np.linalg.inv(Ve)
     a = np.sum(IVe @ x) / np.sum(IVe)
-    num = ((x - a).T @ (x - a) / ((x - a).T @ IVe @ (x - a)))
-    dnm = ((np.sum(Ve.diagonal()) - n / np.sum(IVe)) / (n - 1))
+    num = (x - a).T @ (x - a) / ((x - a).T @ IVe @ (x - a))
+    dnm = (np.sum(Ve.diagonal()) - n / np.sum(IVe)) / (n - 1)
     return num / dnm, sig2, res.fun, res.success
 
 
 def _permutation_test_k(size: int, x: np.ndarray, V: np.ndarray, k: float):
-    """Return p-value from permutations as a test statistic. 
-    """
+    """Return p-value from permutations as a test statistic."""
     kstats = np.zeros(size)
     rng = np.random.default_rng()
     for i in range(size):
@@ -229,16 +239,17 @@ def _permutation_test_k(size: int, x: np.ndarray, V: np.ndarray, k: float):
     return np.sum(kstats >= k) / kstats.size
 
 
-def _permutation_test_k_with_se(size: int, x: np.ndarray, V: np.ndarray, IV: np.ndarray, error: np.ndarray, k: float):
-    """Return p-value from permutations as a test statistic. 
-    """
+def _permutation_test_k_with_se(
+    size: int, x: np.ndarray, V: np.ndarray, IV: np.ndarray, error: np.ndarray, k: float
+):
+    """Return p-value from permutations as a test statistic."""
     kstats = np.zeros(size)
     rng = np.random.default_rng()
     for i in range(size):
         order = rng.choice(range(x.size), size=x.size, replace=False)
         _x = x[order]
         _e = error[order]
-        _E = np.diag(_e ** 2)
+        _E = np.diag(_e**2)
         kstats[i], _, _, _ = _calculate_k_with_se(_x, V, IV, _E)
 
     # the proportion of permutations w/ k_ > k
@@ -246,8 +257,7 @@ def _permutation_test_k_with_se(size: int, x: np.ndarray, V: np.ndarray, IV: np.
 
 
 def _likelihood_k(theta: float, V: np.ndarray, E: np.ndarray, y: np.ndarray) -> float:
-    """Estimate theta by maximizing the likelihood.
-    """
+    """Estimate theta by maximizing the likelihood."""
     # weight variances by theta and add Error variance
     C = theta * V + E
 
@@ -259,39 +269,36 @@ def _likelihood_k(theta: float, V: np.ndarray, E: np.ndarray, y: np.ndarray) -> 
     # slogdet is more stable than det for large/small values; when sign>0,
     # Note: log(det(C)) == logdet from slogdet.
     sign, logdet = np.linalg.slogdet(C)
-    logdet2 = logdet / 2. if sign > 0 else np.nan  # np.log(1e-12)
+    logdet2 = logdet / 2.0 if sign > 0 else np.nan  # np.log(1e-12)
 
     # compute log likelihood
-    term = (y - a)
-    logL = (
-        -term.T @ IC @ term / 2. - n * np.log(2 * np.pi) / 2. - logdet2
-    )
-    return -logL        
-
+    term = y - a
+    logL = -term.T @ IC @ term / 2.0 - n * np.log(2 * np.pi) / 2.0 - logdet2
+    return -logL
 
 
 if __name__ == "__main__":
-
     import toytree
+
     toytree.set_log_level("DEBUG")
 
     # generate test data
     tree = toytree.rtree.unittree(ntips=50, treeheight=1.0, seed=123)
-    traits = tree.pcm.simulate_continuous_bm(1.0, seed=123, tips_only=True)
+    traits = tree.pcm.simulate_continuous_trait("bm", params=1.0, seed=123, tips_only=True)
     traits["se"] = np.random.default_rng(seed=123).uniform(0, 0.01, tree.ntips)
 
     # write data
     tree.write("/tmp/test.nwk")
     traits.to_csv("/tmp/test.csv")
 
-    # 
+    #
     k = phylogenetic_signal_k(tree=tree, data=traits.t0, nsims=1000)
     logger.info(k)
 
     k = phylogenetic_signal_k(tree=tree, data=traits.t0, error=traits.se, nsims=1000)
     logger.info(k)
 
-    # 
+    #
     k = phylogenetic_signal_k(tree=tree, data=traits.se, nsims=1000)
     logger.info(k)
 

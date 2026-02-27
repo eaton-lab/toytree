@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Mapping, Sequence, Tuple, TypeVar, Union
+from typing import Literal, Sequence, Tuple, TypeVar, Union
 
 import numpy as np
 
@@ -22,7 +22,8 @@ from toytree.style.src.validate_data import (
 )
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
-ALLOWED_STROKE_LINEJOIN = {"miter", "round", "bevel", "arcs", "miter-clip"}
+ALLOWED_STROKE_LINECAP = {"round", "butt", "square"}
+ALLOWED_STROKE_LINEJOIN = {"miter", "round", "bevel"}
 
 __all__ = ["add_edges"]
 
@@ -38,7 +39,9 @@ def add_edges(
     xshift: float = 0.0,
     yshift: float = 0.0,
     use_color_gradient: bool = False,
-    style: Mapping[str, Any] | None = None,
+    stroke_linecap: Literal["round", "butt", "square"] = "round",
+    stroke_linejoin: Literal["miter", "round", "bevel"] | None = None,
+    stroke_dasharray: str | tuple[int, int] | None = None,
 ) -> Mark:
     """Add line overlays on top of currently drawn tree edges.
 
@@ -78,11 +81,14 @@ def add_edges(
         stroked with a linear gradient from parent-node color (rootward end)
         to child-node color (tipward end). If ``color`` is None (or resolves to
         a single shared color), the function falls back to solid strokes.
-    style: Mapping[str, Any] or None
-        Shared SVG/CSS line style keys (e.g., ``stroke-linecap``,
-        ``stroke-linejoin``, ``stroke-dasharray``). If
-        ``stroke-linejoin`` is provided it must be one of:
-        ``miter``, ``round``, ``bevel``, ``arcs``, or ``miter-clip``.
+    stroke_linecap: {"round", "butt", "square"}, default="round"
+        SVG line-cap style applied to all rendered edge overlay paths.
+    stroke_linejoin: {"miter", "round", "bevel"} or None, default=None
+        SVG line-join style applied to all rendered edge overlay paths.
+        If None, renderer defaults are used.
+    stroke_dasharray: str or tuple[int, int] or None, default=None
+        SVG dash pattern applied to all rendered edge overlay paths.
+        A tuple is converted to ``"on,off"`` string format.
 
     Returns
     -------
@@ -92,12 +98,14 @@ def add_edges(
     Raises
     ------
     ValueError
-        If ``style["stroke-linejoin"]`` is provided but not a supported value.
+        If a stroke style argument is invalid.
 
     Examples
     --------
     >>> tree = toytree.rtree.bdtree(20, seed=123)
-    >>> tree.pcm.simulate_discrete_trait(3, trait_name="X", state_names="ABC", inplace=True)
+    >>> tree.pcm.simulate_discrete_trait(
+    ...     3, trait_name="X", state_names="ABC", inplace=True
+    ... )
     >>> c, a, m = tree.draw(layout="c", edge_type="p")
     >>> tree.annotate.add_edges(
     ...     a,
@@ -106,7 +114,9 @@ def add_edges(
     ...     width=6,
     ...     opacity=0.35,
     ...     use_color_gradient=True,
-    ...     style={"stroke-linejoin": "miter", "stroke-linecap": "butt"},
+    ...     stroke_linejoin="miter",
+    ...     stroke_linecap="butt",
+    ...     stroke_dasharray=(2, 2),
     ... )
     """
     # Validate that the tree and target axes correspond to the same drawn mark.
@@ -149,12 +159,11 @@ def add_edges(
     xpaths, ypaths, _ = get_tree_edge_polylines(axes, mark, space="data")
 
     # Set default stroke style for nicer overlays, then apply user updates.
-    line_style = {
-        "stroke-linecap": "round",
-    }
-    if style is not None:
-        line_style.update(style)
-    _validate_linejoin(line_style)
+    line_style = _make_line_style(
+        stroke_linecap=stroke_linecap,
+        stroke_linejoin=stroke_linejoin,
+        stroke_dasharray=stroke_dasharray,
+    )
 
     # Build a line annotation mark and add to axes using the custom renderer,
     # which supports SVG line styles (including stroke-linejoin).
@@ -249,14 +258,52 @@ def add_edges(
     return outmark
 
 
-def _validate_linejoin(style: Mapping[str, Any]) -> None:
-    """Validate stroke-linejoin if provided."""
-    linejoin = style.get("stroke-linejoin")
-    if linejoin is None:
-        return
-    if linejoin not in ALLOWED_STROKE_LINEJOIN:
-        allowed = ", ".join(sorted(ALLOWED_STROKE_LINEJOIN))
+def _make_line_style(
+    stroke_linecap: str,
+    stroke_linejoin: str | None,
+    stroke_dasharray: str | tuple[int, int] | None,
+) -> dict[str, str]:
+    """Return validated line-style keys for edge overlay marks."""
+    if stroke_linecap not in ALLOWED_STROKE_LINECAP:
+        allowed = ", ".join(sorted(ALLOWED_STROKE_LINECAP))
         raise ValueError(
-            f"Invalid 'stroke-linejoin' value '{linejoin}'. "
+            f"Invalid 'stroke_linecap' value '{stroke_linecap}'. "
             f"Expected one of: {allowed}"
         )
+
+    if (stroke_linejoin is not None) and (
+        stroke_linejoin not in ALLOWED_STROKE_LINEJOIN
+    ):
+        allowed = ", ".join(sorted(ALLOWED_STROKE_LINEJOIN))
+        raise ValueError(
+            f"Invalid 'stroke_linejoin' value '{stroke_linejoin}'. "
+            f"Expected one of: {allowed}"
+        )
+
+    dash = _coerce_dasharray(stroke_dasharray)
+
+    style: dict[str, str] = {"stroke-linecap": stroke_linecap}
+    if stroke_linejoin is not None:
+        style["stroke-linejoin"] = stroke_linejoin
+    if dash is not None:
+        style["stroke-dasharray"] = dash
+    return style
+
+
+def _coerce_dasharray(value: str | tuple[int, int] | None) -> str | None:
+    """Normalize a dasharray value to SVG string syntax or None."""
+    if value is None:
+        return None
+
+    if isinstance(value, str):
+        return value
+
+    if not isinstance(value, tuple) or len(value) != 2:
+        raise ValueError(
+            "stroke_dasharray must be a string like '2,2' or a tuple[int, int]."
+        )
+    if not all(isinstance(i, int) for i in value):
+        raise ValueError("stroke_dasharray tuple values must be integers.")
+    if value[0] < 0 or value[1] < 0:
+        raise ValueError("stroke_dasharray tuple values must be non-negative.")
+    return f"{value[0]},{value[1]}"
