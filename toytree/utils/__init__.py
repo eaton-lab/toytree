@@ -28,11 +28,11 @@ Notes
 Organization of code in the utils submodule.
 
 utils/src/
-    A folder with the utils source code organized into subsubmodules. 
-    The functions intended for use by users are accessible from the 
-    top level `toytree.utils`. 
+    A folder with the utils source code organized into subsubmodules.
+    The functions intended for use by users are accessible from the
+    top level `toytree.utils`.
 utils/src/tree_sequences/
-    The ToyTreeSequence class for working with and visualizing 
+    The ToyTreeSequence class for working with and visualizing
     tree_sequence class objects produced by msprime or SLiM, including
     subsampling, simplifying, and showing mutations on edges.
 utils/src/exceptions/
@@ -44,18 +44,37 @@ utils/src/networks/
     function, and is accessible at `toytree.utils.parse_network`.
 utils/src/logging/
     The logger setup. Users can set the log level from the top level
-    module with `toytree.set_log_level`, or turn it on/off with 
+    module with `toytree.set_log_level`, or turn it on/off with
     `from loguru import logger; logger.disable('toytree')`.
 utils/src/constants/
     A file with some constants that users should not need to access.
 """
 
+from __future__ import annotations
+
+import importlib
+
 from toytree.utils.src.exceptions import *
-from toytree.utils.src.scrollable_canvas import ScrollableCanvas
-from toytree.utils.src.browser import show
-from toytree.utils.src.toytree_sequence import ToyTreeSequence as toytree_sequence
-from toytree.utils.src.style_axes import (
-    set_axes_ticks_external,
-    set_axes_box_outline,
-    debug_toyplot_canvas,
-)
+
+_LAZY_ATTRS = {
+    "ScrollableCanvas": ("toytree.utils.src.scrollable_canvas", "ScrollableCanvas"),
+    "show": ("toytree.utils.src.browser", "show"),
+    "toytree_sequence": ("toytree.utils.src.toytree_sequence", "ToyTreeSequence"),
+    "set_axes_ticks_external": (
+        "toytree.utils.src.style_axes",
+        "set_axes_ticks_external",
+    ),
+    "set_axes_box_outline": ("toytree.utils.src.style_axes", "set_axes_box_outline"),
+    "debug_toyplot_canvas": ("toytree.utils.src.style_axes", "debug_toyplot_canvas"),
+}
+
+
+def __getattr__(name: str):
+    """Lazily import utility helpers that depend on optional plotting libs."""
+    if name not in _LAZY_ATTRS:
+        raise AttributeError(name)
+    module_name, attr_name = _LAZY_ATTRS[name]
+    module = importlib.import_module(module_name)
+    value = getattr(module, attr_name)
+    globals()[name] = value
+    return value

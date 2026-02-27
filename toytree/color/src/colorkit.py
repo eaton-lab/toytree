@@ -11,11 +11,17 @@ from copy import copy
 from typing import Tuple, Union
 
 import numpy as np
-import toyplot.color
 
-from toytree.utils import ToyColorError
+from toytree.utils.src.exceptions import ToyColorError
 
 ColorType = Union[str, np.ndarray, Tuple[float, float, float, float]]
+
+
+def _toyplot_color():
+    """Import and return toyplot.color lazily."""
+    import toyplot.color as toyplot_color
+
+    return toyplot_color
 
 
 class ColorKit:
@@ -31,7 +37,6 @@ class ColorKit:
     """
 
     def __init__(self, color: ColorType):
-
         # store color as css, rgba, and ndarray
         self._css: str = None
         self._rgba: Tuple[float, float, float, float] = None
@@ -65,7 +70,7 @@ class ColorKit:
     @property
     def rgb(self) -> Tuple[float, float, float]:
         """Return tuple with float for (r,g,b) percentages, no a."""
-        return tuple(float(self.array[i]) for i in 'rgb')
+        return tuple(float(self.array[i]) for i in "rgb")
 
     @property
     def rgb_css(self):
@@ -104,25 +109,25 @@ class ColorKit:
         # return style string
         return color + opacity
 
-
     def _parse_color(self, color: ColorType) -> None:
         """Parse input color to three stored formats."""
+        toyplot_color = _toyplot_color()
         # input is a css string (parse input based on type
 
         if isinstance(color, str):
             if color == "none":
                 self._rgba = (0, 0, 0, 0)
-                self._array = toyplot.color.rgba(*self._rgba)
-                self._css = toyplot.color.to_css(self._array)
+                self._array = toyplot_color.rgba(*self._rgba)
+                self._css = toyplot_color.to_css(self._array)
             else:
-                self._array = toyplot.color.css(color)
+                self._array = toyplot_color.css(color)
                 if self._array is None:
                     raise ToyColorError(f"CSS color '{color}' not recognized")
-                self._css = toyplot.color.to_css(self._array)
-                self._rgba = tuple(float(self._array[i]) for i in 'rgba')
+                self._css = toyplot_color.to_css(self._array)
+                self._rgba = tuple(float(self._array[i]) for i in "rgba")
 
         # input is an ndarray (e.g., toyplot.color ndarray, 1-d 4 floats)
-        elif isinstance(color, np.ndarray) and color.dtype == toyplot.color.dtype:
+        elif isinstance(color, np.ndarray) and color.dtype == toyplot_color.dtype:
             if color.size > 1:
                 raise ToyColorError(
                     "Cannot parse a multi-color array to a ToyColor. "
@@ -130,20 +135,20 @@ class ColorKit:
                     "to convert it to a List[ToyColor]."
                 )
             self._array = color.copy()
-            self._css = toyplot.color.to_css(color)
+            self._css = toyplot_color.to_css(color)
             if not self._css:
                 raise ToyColorError(f"color array {color} not recognized")
-            self._rgba = tuple(float(self._array[i]) for i in 'rgba')
+            self._rgba = tuple(float(self._array[i]) for i in "rgba")
 
         elif isinstance(color, tuple) and len(color) == 4:
             self._rgba = color
-            self._array = toyplot.color.rgba(*self._rgba)
-            self._css = toyplot.color.to_css(self._array)
+            self._array = toyplot_color.rgba(*self._rgba)
+            self._css = toyplot_color.to_css(self._array)
 
         elif isinstance(color, tuple) and len(color) == 3:
             self._rgba = color + (1.0,)
-            self._array = toyplot.color.rgba(*self._rgba)
-            self._css = toyplot.color.to_css(self._array)
+            self._array = toyplot_color.rgba(*self._rgba)
+            self._css = toyplot_color.to_css(self._array)
 
         elif isinstance(color, ColorKit):
             self._array = copy(color._array)
@@ -152,26 +157,28 @@ class ColorKit:
 
         elif isinstance(color, np.void):
             self._rgba = copy(color.item())
-            self._array = toyplot.color.rgba(*self._rgba)
-            self._css = toyplot.color.to_css(self._array)
+            self._array = toyplot_color.rgba(*self._rgba)
+            self._css = toyplot_color.to_css(self._array)
 
         elif isinstance(color, float):
             if np.isnan(color):
                 self._rgba = (0, 0, 0, 0)
-                self._array = toyplot.color.rgba(*self._rgba)
-                self._css = toyplot.color.to_css(self._array)
+                self._array = toyplot_color.rgba(*self._rgba)
+                self._css = toyplot_color.to_css(self._array)
             else:
                 raise ToyColorError(
-                    f"Color arg '{color}' not recognized as a valid color input.")
+                    f"Color arg '{color}' not recognized as a valid color input."
+                )
 
         elif color is None:
             self._rgba = (0, 0, 0, 0)
-            self._array = toyplot.color.rgba(*self._rgba)
-            self._css = toyplot.color.to_css(self._array)
+            self._array = toyplot_color.rgba(*self._rgba)
+            self._css = toyplot_color.to_css(self._array)
 
         else:
             raise ToyColorError(
-                f"Color arg '{color}' not recognized as a valid color input.")
+                f"Color arg '{color}' not recognized as a valid color input."
+            )
 
     # Colorkit doesn't need a repr, but this one was pretty nice, so
     # I'll leave it here for now. But I commented it b/c I was encountering
@@ -196,6 +203,7 @@ class ColorKit:
 
 
 if __name__ == "__main__":
+    toyplot_color = _toyplot_color()
 
     COLORS = [
         "RED",
@@ -205,7 +213,7 @@ if __name__ == "__main__":
         "rgb(100%,50%,25%)",
         (1.0, 0.5, 0.25, 0.5),
         (1.0, 0.5, 0.25),
-        np.array((1.0, 0.5, 0.25, 0.5), dtype=toyplot.color.dtype),
+        np.array((1.0, 0.5, 0.25, 0.5), dtype=toyplot_color.dtype),
         ColorKit("red"),
     ]
     for i in COLORS:
