@@ -19,12 +19,12 @@ class AnnotationMarker(Mark):
         shapes: np.ndarray,
         colors: np.ndarray,
         opacity: float,
-        xshift: float, # pixel units left/right
-        yshift: float, # pixel units up/down
+        xshift: float,  # pixel units left/right
+        yshift: float,  # pixel units up/down
         style: Mapping[str, Any],
     ):
         Mark.__init__(self, annotation=True)
-        self._coordinate_axes = ['x', 'y']
+        self._coordinate_axes = ["x", "y"]
         self.ntable = ntable
         self.sizes = sizes
         self.shapes = shapes
@@ -43,10 +43,10 @@ class AnnotationMarker(Mark):
     def extents(self, axis: str) -> Tuple[Tuple[np.ndarray], Tuple[np.ndarray]]:
         """Return extents defined by the marker shape and size."""
         coords = ()
-        if 'x' in axis:
-            coords += (self.ntable[:, 0], )
-        if 'y' in axis:
-            coords += (self.ntable[:, 1], )
+        if "x" in axis:
+            coords += (self.ntable[:, 0],)
+        if "y" in axis:
+            coords += (self.ntable[:, 1],)
 
         # get marker/label extents and update minmax for each feature
         extents = [np.zeros(self.ntable.shape[0])] * 4
@@ -75,7 +75,7 @@ class AnnotationRect(Mark):
         style: Mapping[str, Any],
     ):
         Mark.__init__(self, annotation=True)
-        self._coordinate_axes = ['x', 'y']
+        self._coordinate_axes = ["x", "y"]
         self.ntable = ntable
         """: array of (nmarks, 2) ..."""
         self.xtable = xtable
@@ -192,6 +192,32 @@ class AnnotationGradientLine(AnnotationLine):
         self.end_colors = end_colors
 
 
+class AnnotationStochasticMapLine(AnnotationLine):
+    """Polyline annotation mark for stochastic-map edge segments."""
+
+    def __init__(
+        self,
+        xpaths: Sequence[np.ndarray],
+        ypaths: Sequence[np.ndarray],
+        colors: np.ndarray,
+        widths: np.ndarray,
+        opacity: np.ndarray,
+        map_id: int,
+        style: Mapping[str, Any],
+    ):
+        super().__init__(
+            xpaths=xpaths,
+            ypaths=ypaths,
+            colors=colors,
+            widths=widths,
+            opacity=opacity,
+            use_group_opacity=False,
+            group_opacity=None,
+            style=style,
+        )
+        self.map_id = int(map_id)
+
+
 def set_marker_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndarray]:
     """Return extents of node label text string extents."""
     # markers are symmetrical NxN unless 'rNxM'
@@ -209,8 +235,8 @@ def set_marker_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndarray
 
     # extent is half the markers dimension in either direction
     width = mark.style.get("stroke-width", 0)
-    xext = xext / 2. + width
-    yext = yext / 2. + width
+    xext = xext / 2.0 + width
+    yext = yext / 2.0 + width
 
     # set extents (implement shift)
     extents[0] = np.min([extents[0], -xext + mark.xshift], axis=0)
