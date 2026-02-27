@@ -2,17 +2,15 @@
 functions for determining the Blomberg's K phylogenetic signal metric
 
 References
----------
-Blomberg, Simon P., Theodore Garland, and Anthony R. Ives. 
-“TESTING FOR PHYLOGENETIC SIGNAL IN COMPARATIVE DATA: BEHAVIORAL TRAITS ARE MORE LABILE.” 
+----------
+Blomberg, Simon P., Theodore Garland, and Anthony R. Ives.
+“TESTING FOR PHYLOGENETIC SIGNAL IN COMPARATIVE DATA: BEHAVIORAL TRAITS ARE MORE LABILE.”
 Evolution 57, no. 4 (April 2003): 717–45. https://doi.org/10.1111/j.0014-3820.2003.tb00285.x.
 """
 
 import numpy as np
+
 import toytree
-
-
-
 
 
 def compute_D(V):
@@ -25,6 +23,7 @@ def compute_D(V):
     D = Lambda_sqrt_inv @ eigvecs.T  # Compute D
 
     return D
+
 
 def generalized_least_squares(X, V):
     """
@@ -60,7 +59,7 @@ def calculate_blomberg_k(tree, data):
 
     # Compute expected MSE under Brownian motion
     V_inv = np.linalg.inv(V)
-    expected_MSE = (1 / (n - 1)) * ((np.trace(V) - n / (np.sum(V_inv))))
+    expected_MSE = (1 / (n - 1)) * (np.trace(V) - n / (np.sum(V_inv)))
 
     # Compute Blomberg's K
     K = (MSE_0 / MSE) / expected_MSE
@@ -68,25 +67,28 @@ def calculate_blomberg_k(tree, data):
 
 
 if __name__ == "__main__":
-
-
     import toytree
+
     tree = toytree.rtree.unittree(ntips=25, treeheight=10.0, seed=123)
-    features = tree.pcm.simulate_continuous_bm(rates=[1.0, 2.0], tips_only=True, seed=123)
+    features = tree.pcm.simulate_multivariate_continuous_trait(
+        model="bm",
+        params=np.diag([1.0, 2.0]),
+        tips_only=True,
+        seed=123,
+    )
     t0, t1 = features
 
     vcv = tree.pcm.get_vcv_matrix_from_tree()
     print(vcv)
 
     # print(calculate_blomberg_k(tree, t0))
-    #print(calculate_blomberg_k(tree, t1))
+    # print(calculate_blomberg_k(tree, t1))
 
-
-    #purposefully high signal
-    # tip_data_1 = np.array([3.45, 6.78, 7.32, 16.43, 16.94, 25.56, 35.66, 37.55, 67.43, 68.78]) 
-    # mu, sigma = 0, 0.1 
-    #random data (should be low signal)
-    # tip_data_2 = np.random.normal(mu, sigma, 10) 
+    # purposefully high signal
+    # tip_data_1 = np.array([3.45, 6.78, 7.32, 16.43, 16.94, 25.56, 35.66, 37.55, 67.43, 68.78])
+    # mu, sigma = 0, 0.1
+    # random data (should be low signal)
+    # tip_data_2 = np.random.normal(mu, sigma, 10)
 
     # print(calculate_blomberg_k(tree, tip_data_1))
     # print(calculate_blomberg_k(tree, tip_data_2))

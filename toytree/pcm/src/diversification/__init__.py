@@ -5,6 +5,6 @@
 """
 
 from .diversification import (
-	get_tip_level_diversification,
 	get_equal_splits,
+	get_tip_level_diversification,
 )
