@@ -16,22 +16,26 @@ References
   evolution. _Nature_, *401*,877-884.
 """
 
+from __future__ import annotations
+
 import os
-from typing import Union, Callable, Sequence
 from concurrent.futures import ProcessPoolExecutor
+from typing import TYPE_CHECKING, Callable, Sequence, Union
+
 import numpy as np
 import pandas as pd
-import toytree
-from toytree import ToyTree, MultiTree
+
 # from toytree.core.apis import add_subpackage_method, PhyloCompAPI
+
+if TYPE_CHECKING:
+    from toytree.core import MultiTree, ToyTree
 
 # Define a feature TypeAlias for type hints
 feature = Union[str, Sequence[float], pd.Series, pd.DataFrame]
 
 
 def _validate_features(x: feature, max_dim: int, size: int) -> np.ndarray:
-    """Validate data has correct dimensions and size.
-    """
+    """Validate data has correct dimensions and size."""
     # if DataFrame w/ only 1 column convert to Series
     if isinstance(x, pd.DataFrame):
         if x.shape[1] == 1:
@@ -39,7 +43,9 @@ def _validate_features(x: feature, max_dim: int, size: int) -> np.ndarray:
     # force to array
     x = np.asarray(x)
     # check dimensions and size
-    assert x.ndim <= max_dim, f"feature ndim ({x.ndim}) exceeds max allowed ndim ({max_dim})."
+    assert (
+        x.ndim <= max_dim
+    ), f"feature ndim ({x.ndim}) exceeds max allowed ndim ({max_dim})."
     assert x.shape[0] == size, "feature cannot exceed ntips"
     return x
 
@@ -72,6 +78,10 @@ def calculate_posterior(
     --------
     >>> ...
     """
+    # Import lazily so importing pcm utilities does not eagerly import the
+    # full toytree package (which pulls in drawing/color modules).
+    import toytree
+
     # load data and metadata from newick, toytree, or multitree
     if isinstance(trees, list):
         trees = toytree.mtree(trees)
@@ -83,7 +93,7 @@ def calculate_posterior(
             ntips = tre.ntips
             ntrees = sum(1 for i in tree_generator) + 1
             tiporder = tre.get_tip_labels()
-        itertree = open(trees, 'r')
+        itertree = open(trees, "r")
 
     # if it is a ToyTree
     elif isinstance(trees, toytree.ToyTree):
@@ -131,7 +141,6 @@ def calculate_posterior(
 
             # store results and append new job to the engine
             for job in finished:
-
                 # store result
                 result = rasyncs[job].result()
                 tarr[:, tidx] = result[tiporder]
@@ -157,19 +166,20 @@ def calculate_posterior(
 
     # calculate summary of DR across the distribution of trees.
     arr = pd.DataFrame(tarr, index=tiporder)
-    data = pd.DataFrame({
-        'mean': arr.mean(1),
-        # 'harmMean': hmean(arr, axis=1),
-        'median': arr.median(1),
-        'std': arr.std(1),
-        '2.5%': np.percentile(arr, 0.025, axis=1),
-        '97.5%': np.percentile(arr, 0.975, axis=1),
-        'min': arr.min(1),
-        'max': arr.max(1),
-    })
+    data = pd.DataFrame(
+        {
+            "mean": arr.mean(1),
+            # 'harmMean': hmean(arr, axis=1),
+            "median": arr.median(1),
+            "std": arr.std(1),
+            "2.5%": np.percentile(arr, 0.025, axis=1),
+            "97.5%": np.percentile(arr, 0.975, axis=1),
+            "min": arr.min(1),
+            "max": arr.max(1),
+        }
+    )
     return data
 
 
 if __name__ == "__main__":
-
     pass
