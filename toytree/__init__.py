@@ -24,6 +24,7 @@ _LAZY_SUBMODULES = {
     "distance": "toytree.distance",
     # "drawing": "toytree.drawing",
     "enum": "toytree.enum",
+    "external": "toytree.external",
     "infer": "toytree.infer",
     "rtree": "toytree.rtree",
     "io": "toytree.io",
