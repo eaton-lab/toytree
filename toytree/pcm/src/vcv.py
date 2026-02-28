@@ -226,7 +226,7 @@ def get_tree_from_vcv_matrix(vcv: Union[np.ndarray, pd.DataFrame]) -> ToyTree:
     dist_mat = get_distance_matrix_from_vcv_matrix(vcv)
     import toytree
 
-    return toytree.infer.infer_neighbor_joining_tree(dist_mat)
+    return toytree.infer.neighbor_joining_tree(dist_mat)
 
 
 if __name__ == "__main__":
