@@ -1,6 +1,6 @@
 import unittest
 
-from toytree.network.src.major_tree import parse_major_tree_and_admixture_events
+from toytree.network.src.parse_network import parse_network
 
 
 class TestMajorTreeParser(unittest.TestCase):

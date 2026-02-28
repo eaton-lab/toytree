@@ -25,10 +25,13 @@ TODO
 
 import math
 import unittest
+import io
+import numpy as np
+from contextlib import redirect_stderr
 import toytree
 from toytree.infer import (
-    get_consensus_tree,
-    get_consensus_features,
+    consensus_tree,
+    consensus_features,
 )
 
 
@@ -66,7 +69,7 @@ class TestConsensusTree(unittest.TestCase):
 
     def test_get_majority_rule_topology(self):
         """..."""
-        tree = get_consensus_tree(self.utrees)
+        tree = consensus_tree(self.utrees)
         self.assertEqual(tree.get_topology_id(), self.utrees[0].get_topology_id())
         self.assertFalse(tree.is_rooted())
         self.assertEqual(tree.nedges, 5 + 2)
@@ -76,7 +79,7 @@ class TestConsensusTree(unittest.TestCase):
 
     def test_get_majority_rule_topology_minfreq(self):
         """..."""
-        tree = get_consensus_tree(self.utrees, min_freq=0.51)
+        tree = consensus_tree(self.utrees, min_freq=0.51)
         self.assertFalse(tree.is_rooted())
         self.assertEqual(tree.nedges, 5 + 1)        
         self.assertTrue(math.isnan(tree[-1].support))
@@ -86,12 +89,78 @@ class TestConsensusTree(unittest.TestCase):
     def test_get_majority_rule_topology_equal_freq_collapsed(self):
         """..."""
         treelist = self.utrees.treelist + [self.utrees[-1]]
-        tree = get_consensus_tree(treelist)
+        tree = consensus_tree(treelist)
         self.assertFalse(tree.is_rooted())
         self.assertEqual(tree.nedges, 5 + 1)
         self.assertTrue(math.isnan(tree[-1].support))
         self.assertEqual(tree.get_mrca_node("a", "b").support, 1.0)
         self.assertEqual(tree.get_mrca_node("e", "d"), tree.get_mrca_node("c", "e", "d"))
+
+    def test_get_consensus_features_requires_requested_features(self):
+        ctree = consensus_tree(self.utrees)
+        with self.assertRaises(ValueError):
+            consensus_features(ctree, self.utrees, conditional=False)
+
+    def test_get_consensus_features_edge_dist(self):
+        ctree = consensus_tree(self.utrees)
+        ftree = consensus_features(ctree, self.utrees, edge_features=["dist"], conditional=False)
+        node = ftree.get_mrca_node("a", "b")
+        self.assertTrue(hasattr(node, "dist_mean"))
+        self.assertTrue(hasattr(node, "dist_median"))
+        self.assertTrue(hasattr(node, "dist_std"))
+        self.assertTrue(hasattr(node, "dist_min"))
+        self.assertTrue(hasattr(node, "dist_max"))
+        self.assertTrue(hasattr(node, "dist_range"))
+
+    def test_get_consensus_features_additional_feature(self):
+        trees = [i.copy() for i in self.utrees]
+        vals = [1, 2, 3, 4, 5, 6]
+        for tree, val in zip(trees, vals):
+            tree = tree.set_node_data("rate", {tree.get_mrca_node("a", "b").idx: val}, inplace=True)
+        ctree = consensus_tree(trees)
+        ftree = consensus_features(ctree, trees, features=["rate"])
+        node = ftree.get_mrca_node("a", "b")
+        self.assertAlmostEqual(node.rate_mean, float(np.mean(vals)))
+        self.assertAlmostEqual(node.rate_median, float(np.median(vals)))
+        self.assertAlmostEqual(node.rate_min, float(np.min(vals)))
+        self.assertAlmostEqual(node.rate_max, float(np.max(vals)))
+
+    def test_get_consensus_features_ultrametric_includes_height(self):
+        ctree = consensus_tree(self.rtrees)
+        rtree = ctree.root("a", "b")
+        ftree = consensus_features(rtree, self.rtrees, features=["height"], ultrametric=True)
+        node = ftree.get_mrca_node("a", "b")
+        self.assertTrue(hasattr(node, "height_mean"))
+        self.assertTrue(hasattr(node, "height_median"))
+        self.assertTrue(hasattr(node, "height_std"))
+        self.assertTrue(hasattr(node, "height_min"))
+        self.assertTrue(hasattr(node, "height_max"))
+
+    def test_get_consensus_features_raises_on_missing_feature(self):
+        ctree = consensus_tree(self.utrees)
+        with self.assertRaises(ValueError):
+            consensus_features(ctree, self.utrees, features=["not_a_feature"])
+
+    def test_get_consensus_features_warns_and_remaps_wrong_feature_class(self):
+        ctree = consensus_tree(self.rtrees).root("a", "b")
+        err = io.StringIO()
+        with redirect_stderr(err):
+            ftree = consensus_features(
+                ctree,
+                self.rtrees,
+                features=["dist"],
+                edge_features=["height"],
+                ultrametric=True,
+            )
+        msg = err.getvalue()
+        self.assertIn("'dist' was provided in features", msg)
+        self.assertIn("'height' was provided in edge_features", msg)
+        self.assertTrue(hasattr(ftree.get_mrca_node("a", "b"), "dist_mean"))
+        self.assertTrue(hasattr(ftree.get_mrca_node("a", "b"), "height_mean"))
+
+    def test_get_consensus_tree_rejects_min_freq_out_of_bounds(self):
+        with self.assertRaises(ValueError):
+            consensus_tree(self.utrees, min_freq=1.1)
 
 
 
