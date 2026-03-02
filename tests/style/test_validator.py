@@ -8,20 +8,23 @@ when the tree is drawn.
 """
 
 import unittest
+
 import numpy as np
 import toyplot
+
 import toytree
 from toytree.style import (
-    TreeStyle,
     validate_style,
-    get_color_mapped_values,
-    get_color_mapped_feature,
 )
+
 # from toytree.utils import ToytreeError
+
 
 class Devnull(object):
     """Fake stream to test repr"""
-    def write(self, *_): pass
+
+    def write(self, *_):
+        pass
 
 
 class TestValidator(unittest.TestCase):
@@ -68,7 +71,7 @@ class TestValidator(unittest.TestCase):
     def test_node_style_opacity_overrule(self):
         """... opacity should overrule orig fill color opacity."""
         tree = self.itree
-        tree.style.node_colors = ['red'] + ['blue'] * (tree.nnodes - 1)
+        tree.style.node_colors = ["red"] + ["blue"] * (tree.nnodes - 1)
         tree.style.node_style.fill_opacity = 0.2
         style = tree.style.copy()
         validate_style(tree, style)
@@ -76,7 +79,7 @@ class TestValidator(unittest.TestCase):
 
         tree.style.node_colors = ("dist", "BlueRed")
         tree.style.node_style.fill_opacity = 0.2
-        # self.assertEqual()        
+        # self.assertEqual()
 
     # def test_edge_style_opacity_overrule_2(self):
     #     """..."""
@@ -90,8 +93,8 @@ class TestValidator(unittest.TestCase):
     # def test_set_nan_node_labels_empty_string(self):
     #     """np.nan values on node labels should validate to empty strings."""
     #     self.itree.style.node_colors = "red"
-        # style = self.itree.style._validate()
-        # self.assertEqual(style, dict...)
+    # style = self.itree.style._validate()
+    # self.assertEqual(style, dict...)
 
     # def test_node_size_to_zeros_for_empty_labels(self):
     #     """Do this?"""
@@ -104,15 +107,12 @@ class TestValidator(unittest.TestCase):
     # def test_anchor_shift_legacy_support(self):
     #     """Support -toyplot-anchor-shift as legacy to anchor-shift."""
 
-        # assert warning message is reported on -toyplot-anchor-shift
+    # assert warning message is reported on -toyplot-anchor-shift
 
+    # assert tip_labels support for anchor-shift
 
-        # assert tip_labels support for anchor-shift
-
-
-        # assert node_labels support for anchor-shift
+    # assert node_labels support for anchor-shift
 
 
 if __name__ == "__main__":
-
     unittest.main()

@@ -1,92 +1,59 @@
 #!/usr/bin/env python
 
-"""Unittests for UPGMA tree inference."""
+"""Tests for UPGMA tree inference."""
 
+from __future__ import annotations
 
-
-import unittest
-import toytree
 import numpy as np
 import pandas as pd
 
-
-class TestUPGMA(unittest.TestCase):
-
-
-    def test_binary_tree_arr(self):
-        dist = np.array([
-            [0, 3, 4, 6, 6],
-            [3, 0, 4, 6, 6],
-            [4, 4, 0, 6, 6],
-            [6, 6, 6, 0, 2],
-            [6, 6, 6, 2, 0],
-        ], dtype=float)
-        tree = toytree.infer.upgma_tree(dist)
-        distr = tree.distance.get_tip_distance_matrix()
+import toytree
 
 
-    def test_binary_tree_df(self):
-        dist = np.array([
-            [0, 3, 4, 6, 6],
-            [3, 0, 4, 6, 6],
-            [4, 4, 0, 6, 6],
-            [6, 6, 6, 0, 2],
-            [6, 6, 6, 2, 0],
-        ], dtype=float)
-        df = pd.DataFrame(dist, index=list("abcde"))
-        tree = toytree.infer.upgma_tree(df)
+def test_upgma_binary_tree_arr(distance_matrix_5taxa_additive: pd.DataFrame) -> None:
+    """Build a UPGMA tree from ndarray input."""
+    dist = distance_matrix_5taxa_additive.to_numpy()
+    tree = toytree.infer.upgma_tree(dist)
+    assert isinstance(tree, toytree.ToyTree)
+    assert tree.ntips == dist.shape[0]
+    assert all(float(node.dist) >= 0.0 for node in tree if not node.is_root())
 
 
-    def test_equal_dists_tree(self):
-        # two clades with equal distances
-        dist = np.array([
-            [0, 3, 4, 6, 6],
-            [3, 0, 4, 6, 6],
-            [4, 4, 0, 6, 6],
-            [6, 6, 6, 0, 3],
-            [6, 6, 6, 3, 0],
-        ], dtype=float)
-        df = pd.DataFrame(dist, index=list("abcde"))
-        tree = toytree.infer.upgma_tree(df)
+def test_upgma_binary_tree_df(distance_matrix_5taxa_additive: pd.DataFrame) -> None:
+    """Build a UPGMA tree from DataFrame input and preserve labels."""
+    tree = toytree.infer.upgma_tree(distance_matrix_5taxa_additive)
+    assert isinstance(tree, toytree.ToyTree)
+    assert set(tree.get_tip_labels()) == set(distance_matrix_5taxa_additive.index)
 
 
-    def test_polytomy_tree(self):
-        dist = np.array([
-            [0, 2, 2, 4, 4],
-            [2, 0, 2, 4, 4],
-            [2, 2, 0, 4, 4],
-            [4, 4, 4, 0, 2],
-            [4, 4, 4, 2, 0],
-        ], dtype=float)
-        tree = toytree.infer.upgma_tree(dist)
+def test_upgma_equal_dists_tree(distance_matrix_5taxa_equal_tie: pd.DataFrame) -> None:
+    """UPGMA should return a valid tree when ties occur."""
+    tree = toytree.infer.upgma_tree(distance_matrix_5taxa_equal_tie)
+    assert isinstance(tree, toytree.ToyTree)
+    assert tree.ntips == distance_matrix_5taxa_equal_tie.shape[0]
 
 
-    def test_polytomy_and_equal_dists_tree(self):
-        dist = np.array([
-            [0, 2, 2, 4, 4],
-            [2, 0, 2, 4, 4],
-            [2, 2, 0, 4, 4],
-            [4, 4, 4, 0, 2],
-            [4, 4, 4, 2, 0],
-        ], dtype=float)
-        tree = toytree.infer.upgma_tree(dist)
+def test_upgma_polytomy_tree(distance_matrix_5taxa_polytomy_like: np.ndarray) -> None:
+    """UPGMA should return a valid tree for polytomy-like distances."""
+    tree = toytree.infer.upgma_tree(distance_matrix_5taxa_polytomy_like)
+    assert isinstance(tree, toytree.ToyTree)
+    assert tree.ntips == distance_matrix_5taxa_polytomy_like.shape[0]
 
 
-    def test_identical_names(self):
-        dist = np.array([
-            [0, 3, 4, 6, 6],
-            [3, 0, 4, 6, 6],
-            [4, 4, 0, 6, 6],
-            [6, 6, 6, 0, 2],
-            [6, 6, 6, 2, 0],
-        ], dtype=float)
-        df = pd.DataFrame(dist, index=list("abcdd"))
-        tree = toytree.infer.upgma_tree(df)
+def test_upgma_polytomy_and_equal_dists_tree(
+    distance_matrix_5taxa_polytomy_like: np.ndarray,
+) -> None:
+    """Repeated call on polytomy-like matrix should still return valid tree."""
+    tree = toytree.infer.upgma_tree(distance_matrix_5taxa_polytomy_like)
+    assert isinstance(tree, toytree.ToyTree)
+    assert tree.ntips == distance_matrix_5taxa_polytomy_like.shape[0]
 
 
-if __name__ == "__main__":
-    toytree.set_log_level("CRITICAL")
-    unittest.main()
-
-
-
+def test_upgma_identical_names(distance_matrix_5taxa_additive: pd.DataFrame) -> None:
+    """Duplicate labels should fallback to integer tip labels."""
+    data = distance_matrix_5taxa_additive.copy()
+    dup = list("abcdd")
+    data.index = dup
+    data.columns = dup
+    tree = toytree.infer.upgma_tree(data)
+    assert set(tree.get_tip_labels()) == {str(i) for i in range(data.shape[0])}
