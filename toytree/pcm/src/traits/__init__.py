@@ -2,4 +2,4 @@
 
 """Trait evolution subpackage."""
 
-from toytree.pcm.src.traits.continuous_bm_fit import *  # noqa: F403
+from toytree.pcm.src.traits.fit_continuous_ml import *  # noqa: F403
