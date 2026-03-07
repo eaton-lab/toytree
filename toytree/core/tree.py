@@ -98,7 +98,10 @@ def _ensure_toytree_methods_loaded():
 
 
 class ToyTreeMeta(type):
+    """Parent of ToyTree class to enable lazy loading of drawing elements."""
+
     def __getattr__(cls, name):
+        """Only load attrs when they are first fetched."""
         _ensure_toytree_methods_loaded()
         try:
             return super().__getattribute__(name)
@@ -106,6 +109,7 @@ class ToyTreeMeta(type):
             raise AttributeError(f"{cls.__name__!s} has no attribute {name!r}") from exc
 
     def __dir__(cls):
+        """Only load dir to tab-complete when first fetched."""
         _ensure_toytree_methods_loaded()
         return sorted(super().__dir__())
 
@@ -1081,8 +1085,6 @@ class ToyTree(metaclass=ToyTreeMeta):
         edge_type: Literal["p", "c", "b"] | None = None,
         edge_style: Mapping[str, Any] | None = None,
         edge_align_style: Mapping[str, Any] | None = None,
-        edge_markers: Sequence[str] | None = None,
-        edge_labels: bool | Sequence[str] | None = None,
         use_edge_lengths: bool | None = None,
         scale_bar: bool | int | float | None = None,
         padding: float | None = None,
@@ -1114,8 +1116,9 @@ class ToyTree(metaclass=ToyTreeMeta):
         ----------
         tree_style: str or None
             Select a builtin base TreeStyle on top of which to add other
-            style modifications. Options include "n", "c", "p", "o",
-            "r", "m", "d"; you can alo create your own (see docs).
+            style modifications. Options include "n", "s", "p", "o",
+            "c", "d", "b", "u", and "r"; you can also create your own
+            style combinations (see docs).
             Using a tree_style overrides any `ToyTree.style` dict.
         ts: str or None
             A shorter alias that can be used for `tree_style`.
@@ -1139,8 +1142,11 @@ class ToyTree(metaclass=ToyTreeMeta):
             drawn. Options are 'r' 'l', 'u', 'd' for 'right', 'left',
             'up', or 'down' respectively. 'c' draws circular trees from
             angle 0-360 degrees, or cX-Y draws circular trees on an arc
-            from X degrees to Y degrees. Finally, any other entry, such
-            as None, draws an 'unrooted' layout. Default='r'.
+            from X degrees to Y degrees. Strings beginning with 'un'
+            (e.g., 'un', 'unrooted') draw an unrooted layout, and any
+            other unrecognized string also falls back to unrooted.
+            None means no draw-time override, so the base tree style
+            layout is used.
         tip_labels: bool or Sequence[str]
             If True, tip labels ('name' features on tip Nodes) are
             added to the plot; if False, no tip labels are added. If a
@@ -1210,9 +1216,10 @@ class ToyTree(metaclass=ToyTreeMeta):
             toyplot documentation for all available options:
             https://toyplot.readthedocs.io/en/stable/markers.html
         node_as_edge_data: bool
-            If True then node_markers and node_labels are instead
-            plotted as edge_markers and edge_labels. For more fine
-            control see `toytree.annotate`.
+            If True then node markers / labels are drawn at edge midpoints
+            instead of node coordinates. For separate edge annotation marks
+            see `toytree.annotate.add_edge_markers` and
+            `toytree.annotate.add_edge_labels`.
         edge_colors: str or Sequence[str]
             A color or collection of colors nnodes in length to apply
             to edges in node idx order.
@@ -1318,11 +1325,6 @@ class ToyTree(metaclass=ToyTreeMeta):
             edge_widths=edge_widths,
             edge_style=edge_style,
             edge_align_style=edge_align_style,
-            # edge_labels=edge_labels,                 # test
-            # edge_markers=edge_markers,               # test
-            # edge_marker_colors=edge_marker_colors,   # test
-            # edge_marker_sizes=edge_marker_size,      # test
-            # edge_marker_mask=edge_marker_mask,       # test
             use_edge_lengths=use_edge_lengths,
             scale_bar=scale_bar,
             padding=padding,
