@@ -27,16 +27,21 @@ Return a ToyTree with some tip Nodes removed.
 Return ToyTree with one or more polytomies randomly resolved.
 >>> resolve_polytomies(tree, ...)
 
+Resolve one selected polytomy from user-defined split groups.
+>>> resolve_node(tree, ...)
+
 Add an internal node by splitting an edge to create new node.
 >>> add_internal_node(tree, ...)
 
 Add a tip node as a child of an existing Node.
 >>> add_child_node()
 
-Add a sister node as a child of the same existing parent Node (synonymous w/ add_child() called on parent)
+Add a sister node as a child of the same existing parent Node
+(synonymous with ``add_child()`` called on the parent).
 >>> add_sister_node(tree, ...)
 
-Add a parent-child pair to split an existing branch into two children (new child Node, old child clade)
+Add a parent-child pair to split an existing branch into two children
+(new child Node, old child clade).
 >>> add_internal_node_and_child()
 
 Add a parent-child clade pair to split an existing branch.
@@ -44,9 +49,11 @@ Add a parent-child clade pair to split an existing branch.
 
 """
 
-from typing import Optional, TypeVar, Tuple, Callable, Union
 import sys
+from typing import Callable, Optional, Sequence, Tuple, TypeVar, Union
+
 import numpy as np
+
 from toytree.core.apis import TreeModAPI, add_subpackage_method, add_toytree_method
 from toytree.core.node import Node
 from toytree.core.tree import ToyTree
@@ -64,6 +71,7 @@ __all__ = [
     "drop_tips",
     "bisect",
     "resolve_polytomies",
+    "resolve_node",
     "add_internal_node",
     "add_child_node",
     "add_sister_node",
@@ -77,7 +85,7 @@ __all__ = [
 @add_toytree_method(ToyTree)
 @add_subpackage_method(TreeModAPI)
 def ladderize(tree: ToyTree, direction: bool = False, inplace: bool = False) -> ToyTree:
-    """Return a ladderized tree (ordered descendants)
+    """Return a ladderized tree (ordered descendants).
 
     In a ladderized tree nodes are rotated so that the left/
     right child always has fewer/more descendants.
@@ -103,11 +111,13 @@ def ladderize(tree: ToyTree, direction: bool = False, inplace: bool = False) -> 
             sizes[node.idx] = 1
         else:
             sizes[node.idx] = sum(sizes[child.idx] for child in node.children)
-            node._children = tuple(sorted(
-                node._children,
-                key=lambda x: sizes[x.idx],
-                reverse=direction,
-            ))
+            node._children = tuple(
+                sorted(
+                    node._children,
+                    key=lambda x: sizes[x.idx],
+                    reverse=direction,
+                )
+            )
 
     # update idx labels for new tree ladderization
     nself._update()
@@ -167,7 +177,7 @@ def collapse_nodes(
         nodes = [tree[i.idx] for i in nodes]
 
     # iterate over all internal nodes
-    for node in tree[tree.ntips:-1]:
+    for node in tree[tree.ntips : -1]:
         if (node.dist < min_dist) | (node.support < min_support) | (node in nodes):
             node._delete(preserve_dists=True, prevent_unary=True)
     tree._update()
@@ -229,13 +239,18 @@ def merge_nodes(
     # are the same.
     if isinstance(merge_method, str):
         feat = merge_method
+
         def merge_method(node: Node) -> bool:
             nvals = set(getattr(i, feat) for i in node.iter_leaves())
             return len(nvals) == 1
 
     # check Callables
-    assert isinstance(merge_method(tree[0]), bool), "merge_method should return a boolean"
-    assert len(selection_method(tree[:3])) == 1, "selection_method should retain only one Node"
+    assert isinstance(
+        merge_method(tree[0]), bool
+    ), "merge_method should return a boolean"
+    assert (
+        len(selection_method(tree[:3])) == 1
+    ), "selection_method should retain only one Node"
 
     # iterate over tree from root to tips
     for node in tree[::-1][1:]:
@@ -251,7 +266,12 @@ def merge_nodes(
 
 
 @add_subpackage_method(TreeModAPI)
-def remove_nodes(tree: ToyTree, *query: Query, preserve_dists: bool = True, inplace: bool = False) -> ToyTree:
+def remove_nodes(
+    tree: ToyTree,
+    *query: Query,
+    preserve_dists: bool = True,
+    inplace: bool = False,
+) -> ToyTree:
     """Return ToyTree with one or more Nodes removed.
 
     If multiple Nodes are entered they are removed in a postorder
@@ -320,17 +340,19 @@ def remove_unary_nodes(tree: ToyTree, inplace: bool = False) -> ToyTree:
     >>> tree = toytree.mod.remove_unary_nodes(tree)
     """
     tree = tree if inplace else tree.copy()
-    tipset = set(tree[i] for i in range(tree.ntips))
     for node in tree.traverse("postorder"):
-        if len(node.children) == 2:
-            tipset.add(node)
-        if node not in tipset:
-            new_parent = node._up
-            if new_parent:
-                true_node = node._children[0]
-                new_parent._add_child(true_node)
-                new_parent._remove_child(node)
-                true_node._dist += node._dist
+        # Only collapse true unary nodes. Polytomies (nchildren > 2) are valid
+        # and must be retained unchanged.
+        if len(node.children) != 1:
+            continue
+        new_parent = node._up
+        # Skip unary root; tree._update() handles root normalization.
+        if new_parent is None:
+            continue
+        true_node = node._children[0]
+        new_parent._add_child(true_node)
+        new_parent._remove_child(node)
+        true_node._dist += node._dist
     tree._update()
     return tree
 
@@ -410,7 +432,12 @@ def extract_subtree(tree: ToyTree, *query: Query) -> ToyTree:
 
 
 @add_subpackage_method(TreeModAPI)
-def bisect(tree: ToyTree, *query: Query, reroot: bool = False, dist_partition: float = 1.0) -> Tuple[ToyTree, ToyTree]:
+def bisect(
+    tree: ToyTree,
+    *query: Query,
+    reroot: bool = False,
+    dist_partition: float = 1.0,
+) -> Tuple[ToyTree, ToyTree]:
     r"""Return a tree bisected into two subtrees on a selected edge.
 
     This returns two bisected subsets of the original tree. It does not
@@ -503,7 +530,10 @@ def bisect(tree: ToyTree, *query: Query, reroot: bool = False, dist_partition: f
 
     # if treenode selected on an unrooted tree raise error
     if node.is_root() and not tree.is_rooted():
-        msg = "cannot bisect on treenode of an unrooted tree. Select one of its children."
+        msg = (
+            "cannot bisect on treenode of an unrooted tree. "
+            "Select one of its children."
+        )
         raise ToytreeError(msg)
 
     # if treenode selected on a rooted tree return child subtrees
@@ -515,7 +545,7 @@ def bisect(tree: ToyTree, *query: Query, reroot: bool = False, dist_partition: f
         if dist_partition:
             total_dist = left.treenode.dist + right.treenode.dist
             left.treenode._dist = total_dist * dist_partition
-            right.treenode._dist = total_dist * (1. - dist_partition)
+            right.treenode._dist = total_dist * (1.0 - dist_partition)
         return left, right
 
     # ...
@@ -725,7 +755,11 @@ def drop_tips(
             internal.append(node)
     # warn user that internal nodes were ignored.
     if internal:
-        print("Warning: Your query included internal nodes, but only tip Nodes were removed. See `mod.remove_nodes`", file=sys.stderr)
+        print(
+            "Warning: Your query included internal nodes, but only tip Nodes "
+            "were removed. See `mod.remove_nodes`",
+            file=sys.stderr,
+        )
     tree._update()
     return tree
 
@@ -774,8 +808,182 @@ def resolve_polytomies(
 
     for node in nodes:
         _resolve_nodes(
-            node=node, dist=dist, support=support,
-            rng=rng, recursive=recursive)
+            node=node, dist=dist, support=support, rng=rng, recursive=recursive
+        )
+    tree._update()
+    return tree
+
+
+@add_subpackage_method(TreeModAPI)
+def resolve_node(
+    tree: ToyTree,
+    *query: Query,
+    splits: Sequence[Sequence[Query]],
+    dist: float = 1.0,
+    support: float = np.nan,
+    inplace: bool = False,
+) -> ToyTree:
+    """Resolve one selected polytomy using user-defined descendant splits.
+
+    This function restructures the immediate children of one selected
+    Node into one or more grouped clades according to `splits`. Existing
+    relationships below each current child are preserved exactly. If a
+    requested split would divide descendants of an existing child clade,
+    a ToytreeError is raised.
+
+    Parameters
+    ----------
+    *query: str, int, or Node
+        One or more Node selectors used to find a single target Node by
+        MRCA. The selected Node is the polytomy to resolve.
+    splits: Sequence[Sequence[Query]]
+        Split specification as groups of Query tokens. Each inner group
+        is expanded to descendant tip Nodes. Groups must be disjoint.
+        Any descendant tips under the target not covered by user groups
+        are added as one trailing remainder group.
+    dist: float
+        Edge length assigned to newly created internal grouping Nodes.
+        Default is 1.0.
+    support: float
+        Support value assigned to newly created internal grouping Nodes.
+        Default is np.nan.
+    inplace: bool
+        If True, modify and return the input tree. If False, return a
+        modified copy.
+
+    Returns
+    -------
+    ToyTree
+        A tree with the selected Node resolved according to `splits`.
+
+    Raises
+    ------
+    ToytreeError
+        Raised if split groups overlap, include tips outside the target
+        clade, fail to produce two-or-more groups, or conflict with
+        existing deeper child clades.
+
+    Examples
+    --------
+    >>> tree = toytree.tree("((a,b,c,d,e)X,f)R;")
+    >>> tree2 = tree.mod.resolve_node(
+    ...     "X",
+    ...     splits=[["a", "b"], ["~[cd]$"]],
+    ... )
+    """
+    if not query:
+        raise ToytreeError("resolve_node requires a Node query selector.")
+    if not splits:
+        raise ToytreeError("resolve_node requires one-or-more split groups.")
+
+    # Select the target Node to resolve.
+    node = tree.get_mrca_node(*query)
+
+    # Follow mod-method semantics: modify copy unless inplace=True.
+    if not inplace:
+        tree = tree.copy()
+        node = tree[node.idx]
+
+    # No-op for non-polytomies.
+    if len(node.children) <= 2:
+        return tree
+
+    # Cache original child order and tip descendants under the target.
+    orig_children = list(node.children)
+    target_tips = set(node.iter_leaves())
+    child_tipsets = {child: set(child.iter_leaves()) for child in orig_children}
+
+    group_tipsets: list[set[Node]] = []
+    for gidx, group in enumerate(splits):
+        if isinstance(group, (str, bytes)):
+            raise ToytreeError(
+                f"splits[{gidx}] must be a sequence of Query tokens, not a string."
+            )
+        tokens = list(group)
+        if not tokens:
+            raise ToytreeError(f"splits[{gidx}] is empty.")
+        try:
+            matched_nodes = tree.get_nodes(*tokens)
+        except Exception as exc:
+            raise ToytreeError(
+                f"splits[{gidx}] contains invalid Query tokens."
+            ) from exc
+
+        tips: set[Node] = set()
+        for mnode in matched_nodes:
+            tips.update(mnode.iter_leaves())
+        if not tips:
+            raise ToytreeError(f"splits[{gidx}] did not match any tips.")
+        outside = tips - target_tips
+        if outside:
+            names = sorted(str(i.name) for i in outside)
+            raise ToytreeError(
+                f"splits[{gidx}] includes tips outside selected clade: {names!r}"
+            )
+        group_tipsets.append(tips)
+
+    # Split groups must be disjoint.
+    seen: set[Node] = set()
+    for gidx, tips in enumerate(group_tipsets):
+        overlap = seen.intersection(tips)
+        if overlap:
+            names = sorted(str(i.name) for i in overlap)
+            raise ToytreeError(
+                f"splits[{gidx}] overlaps previously selected tips: {names!r}"
+            )
+        seen.update(tips)
+
+    # Add uncovered descendants as one trailing remainder group.
+    remainder = target_tips - seen
+    if remainder:
+        group_tipsets.append(remainder)
+
+    # Must define at least two groups to resolve a polytomy.
+    if len(group_tipsets) < 2:
+        raise ToytreeError(
+            "split specification produced fewer than two effective groups."
+        )
+
+    # Map each tip to its split group index.
+    tip_to_group: dict[Node, int] = {}
+    for gidx, tips in enumerate(group_tipsets):
+        for tip in tips:
+            tip_to_group[tip] = gidx
+
+    # Conflict check: each existing child clade must map to exactly one group.
+    child_to_group: dict[Node, int] = {}
+    for child, c_tips in child_tipsets.items():
+        groups = {tip_to_group[i] for i in c_tips if i in tip_to_group}
+        if len(groups) != 1:
+            raise ToytreeError(
+                "split specification conflicts with deeper relationships: "
+                "an existing child clade would be divided across groups."
+            )
+        child_to_group[child] = next(iter(groups))
+
+    # Preserve original child order within groups.
+    group_children: list[list[Node]] = [[] for _ in range(len(group_tipsets))]
+    for child in orig_children:
+        group_children[child_to_group[child]].append(child)
+
+    # Build the new target children in user-specified split order.
+    new_children: list[Node] = []
+    for children in group_children:
+        if not children:
+            continue
+        if len(children) == 1:
+            new_children.append(children[0])
+            continue
+        inode = Node(name="", dist=max(0.0, float(dist)), support=float(support))
+        for child in children:
+            inode._add_child(child)
+        new_children.append(inode)
+
+    # Reset target children tuple and parent pointers.
+    node._children = tuple(new_children)
+    for child in node._children:
+        child._up = node
+
     tree._update()
     return tree
 
@@ -855,7 +1063,7 @@ def add_internal_node(
         return tree
 
     # NORMAL: parent is not root.
-    dist = dist if dist is not None else node.dist / 2.
+    dist = dist if dist is not None else node.dist / 2.0
     if not node.dist >= dist >= 0:
         msg = f"the new Node dist must be >=0 and <={node.dist:.12g} (dist of {node})"
         raise ValueError(msg)
@@ -871,7 +1079,7 @@ def add_internal_node(
     parent._remove_child(node)
     parent._add_child(new_node)
     new_node._up = parent
-    new_node._children = (node, )
+    new_node._children = (node,)
     node._up = new_node
     tree._update()
     return tree
@@ -992,8 +1200,9 @@ def add_sister_node(
         tree = tree.copy()
         node = tree[node.idx]
 
-    assert not node.is_root(), (
-        "Cannot add sister to root, it has no parent. See `add_child_node()`.")
+    assert (
+        not node.is_root()
+    ), "Cannot add sister to root, it has no parent. See `add_child_node()`."
     # simply call add_child to the parent of the selected Node.
     parent = node._up
     return add_child_node(tree, parent, name=name, dist=dist, inplace=inplace)
@@ -1069,6 +1278,7 @@ def add_internal_node_and_child(
     tree.get_nodes(pname)[0].name = parent_name if parent_name else ""
     return tree
 
+
 @add_subpackage_method(TreeModAPI)
 def add_internal_node_and_subtree(
     tree: ToyTree,
@@ -1080,7 +1290,8 @@ def add_internal_node_and_subtree(
     parent_name: Optional[str] = None,
     inplace: bool = False,
 ) -> ToyTree:
-    r"""Add a subtree by splitting an edge to create a new parent
+    r"""Add a subtree by splitting an edge to create a new parent.
+
     Node and inserting the subtree as a child (i.e., tree-grafting).
 
     Splits a branch spanning from node (A) to its parent (C) to
@@ -1165,7 +1376,7 @@ def add_internal_node_and_subtree(
 
     # get STEM dist for the subtree parent Node
     if subtree_stem_dist is None:
-        subtree_stem_dist = max(i.dist for i in parent.children) / 2.
+        subtree_stem_dist = max(i.dist for i in parent.children) / 2.0
 
     # optional: scale subtree edges to fit in same dist as sister.
     if subtree_rescale:
@@ -1389,14 +1600,13 @@ def _resolve_nodes(
 
     # update children by recursively operating on right nodes
     if recursive:
-        right._children = _resolve_nodes(
-            right, dist, support, rng, recursive)
+        right._children = _resolve_nodes(right, dist, support, rng, recursive)
     return left, right
 
 
 if __name__ == "__main__":
-
     import toytree
+
     t = toytree.rtree.unittree(16, treeheight=10)
     x = t.mod.prune("~r[1-4]$", inplace=True)
     x.treenode.draw_ascii()
