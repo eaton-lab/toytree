@@ -1,14 +1,20 @@
 #!/usr/bin/env python
 
-"""Split trees into bipartitions and return in a variety of formats.
+"""Bipartition enumeration utilities.
 
-Methods
--------
-iter_bipartitions
+Bipartitions are edge-induced splits of a tree into two node sets.
+This module provides iterators that return those splits in configurable
+formats for downstream comparison and distance calculations.
 
+Examples
+--------
+>>> tree = toytree.tree("(a,b,((c,d),(e,f)));")
+>>> next(tree.iter_bipartitions())
+({'c', 'd'}, {'a', 'b', 'e', 'f'})
 """
 
-from typing import TypeVar, Iterator, Tuple, Optional, Set, Callable, Sequence
+from typing import Callable, Iterator, Optional, Sequence, Set, Tuple, TypeVar
+
 from toytree import Node, ToyTree
 from toytree.core.apis import TreeEnumAPI, add_subpackage_method, add_toytree_method
 
@@ -26,51 +32,42 @@ def _iter_bipartition_sets(
     feature: Optional[str] = "name",
     include_singleton_partitions: bool = False,
     include_internal_nodes: bool = False,
-    normalize: bool = False,
 ) -> Iterator[Tuple[Set[Node], Set[Node]]]:
-    """Generator to yield bipartitions as tuples of two sets of Nodes.
+    """Yield bipartitions as ``(below, other)`` pairs of sets.
 
-    Bipartitions are yielded in idxorder as Tuple[set, set] objects
-    where each represents nodes on either side of an edge. Each is
-    ordered as (child, parent) pairs such that the first set contains
-    Nodes below the edge and the second Nodes above the edge.
-
-    The order in which bipartitions are yielded, as well as the order
-    of the two partitions within each bipartition, depends on the tree
-    topology and rooting. To get collections of bipartitions that are
-    the same for a given topology regardless of its rooting see the
-    options in `.iter_bipartitions`.
+    Each yielded tuple represents one edge split where ``below`` is the
+    descendant side of the edge and ``other`` is the complement.
 
     Parameters
     ----------
-    feature: str or None
-        Option to represent Nodes in bipartitions by a feature, such
-        as 'name' or 'idx'. If None then Node objects are returned.
-    include_singleton_partitions: bool
-        If True then singleton splits (e.g., (A | B,C,D)) are included
-        in the result. By default these are excluded since it is
-        implicit that one exists for every tip Node in a tree.
-    include_internal_nodes: bool
-        Default is to only show tip Nodes on either side of a
-        bipartition, but internal Nodes can be included as well. In
-        this case the results are easier to interpret if internal Nodes
-        have names assigned, else you can set the 'feature' arg to
-        None, or 'idx', to return Node objects, or a unique feature.
+    tree : ToyTree
+        Tree from which bipartitions are extracted.
+    feature : str or None, default="name"
+        Feature used to represent nodes in returned partitions, such as
+        ``"name"`` or ``"idx"``. If None, Node objects are returned.
+    include_singleton_partitions : bool, default=False
+        If True, singleton splits (for example, ``A | B,C,D``) are
+        included. By default these are excluded since one singleton split
+        exists for every tip and is often implicit.
+    include_internal_nodes : bool, default=False
+        By default only tips are shown on either side of each split. If
+        True, internal nodes are included as well. In that case, results are
+        easiest to interpret if returned values are unique (for example,
+        ``feature=None`` or ``feature="idx"``).
+
+    Yields
+    ------
+    tuple[set, set]
+        Bipartition as ``(below, other)``.
 
     Examples
     --------
-    >>> newick = "(((a,b)X,((c,d)Y,e)Z)R;"
+    >>> newick = "(a,b,((c,d)Y,e)Z)R;"
     >>> tree = toytree.tree(newick)
-
-    >>> list(tree.enum._iter_bipartition_sets("name""))
-    >>> # [({'c', 'd'}, {'b', 'e', 'f', 'z'}),
-    >>> #  ({'e', 'f'}, {'b', 'c', 'd', 'z'}),
-    >>> #  ({'c', 'd', 'e', 'f'}, {'b', 'z'})]
-
+    >>> list(tree.enum._iter_bipartition_sets("name"))
+    [({'c', 'd'}, {'a', 'b', 'e'}), ({'c', 'd', 'e'}, {'a', 'b'})]
     >>> list(tree.enum._iter_bipartition_sets("idx", include_internal_nodes=True))
-    >>> # [({2, 3, 6}, {0, 1, 4, 5, 7, 8, 9}),
-    >>> #  ({4, 5, 7}, {0, 1, 2, 3, 6, 8, 9}),
-    >>> #  ({2, 3, 4, 5, 6, 7, 8}, {0, 1, 9})]
+    [({2, 3, 5}, {0, 1, 4, 6, 7}), ({2, 3, 4, 5, 6}, {0, 1, 7})]
     """
     # store cache of desc below each node to reduce traversals
     cache = {}
@@ -122,90 +119,75 @@ def iter_bipartitions(
     type: Callable = set,
     sort: bool = False,
 ) -> Iterator[Tuple[Sequence, Sequence]]:
-    """Generator of bipartitions (Nodes on either side of edges).
+    """Yield edge bipartitions in configurable formats.
 
-    Bipartitions represent the splits in a tree. Many algorithms compare
-    tips (or internal Nodes) on either side of each split to compute
-    metrics on trees. This function aims to provide a flexible and fast
-    framework for yielding bipartitions in various formats.
+    Bipartitions represent nodes on either side of an edge split. This method
+    can return split sides as sets, tuples, or lists, and can optionally
+    canonicalize ordering for rooting-invariant comparisons.
 
     Notes
     -----
-    - Bipartitions are generated in Node idx traversal order.
-    - Bipartitions are formatted as a tuple of two items, each of
-    which is referred to as a partition.
-    - The order of partitions, e.g. (part1, part2) can be toggled using
-    the argument `sort`.
-    - The type used to represent a partition can be toggled using the
-    argument `type`. Common formats are `set` or `tuple`.
+    - Results are generated in node-index traversal order.
+    - With ``sort=False`` partitions are returned as ``(child, parent)``.
+    - With ``sort=True`` partitions are canonicalized by size/name.
 
     Parameters
     ----------
-    feature: str
-        Feature to return to represent Nodes on either side of a
-        bipartition. Default is "name". None will return Node objects.
-        Any other Node feature, such as "idx" can also be used. Note
-        the feature arg does not affect the order in which partitions
-        or bipartitions are returned/sorted (see `sort` argument below).
-    include_singleton_partitions: bool
-        If True then singleton splits (e.g., (A | B,C,D)) are included
-        in the result. By default these are excluded since it is
-        implicit that one exists for every tip Node in a tree.
-    include_internal_nodes: bool
-        Default is to only show tip Nodes on either side of a
-        bipartition, but internal Nodes can be included as well. In
-        this case the results are easier to interpret if the returned
-        values have unique features (e.g., feature=None or 'idx').
-    type: Callable
-        The type of collection used to represent a partition. Default
-        is `set` to return a tuple of sets, but another useful option
-        is `tuple`, which returns a tuple of tuples. The latter
-        collection can be converted into a set of bipartitions.
-    sort: bool
-        If False, bipartitions are returned as (child, parent) order
-        given the topology and rooting in Node idx order traversal. If
-        sort=True, bipartitions are instead always sorted first by len,
-        e.g., (fewer, longer) and if the same len, then next by the
-        lowest alphanumeric tip name, e.g., ({'a', 'b'}, {'c', 'd'}).
-        If the requested partition `type` is sortable (i.e., not a set)
-        then items within a partition are also consistently sorted.
+    tree : ToyTree
+        Tree from which bipartitions are extracted.
+    feature : str or None, default="name"
+        Feature used to represent nodes on either side of each split.
+        Default is ``"name"``. If None, Node objects are returned. Any
+        other node feature such as ``"idx"`` can also be used. The chosen
+        feature does not affect ordering of returned partitions (see
+        ``sort``).
+    include_singleton_partitions : bool, default=False
+        If True, singleton splits (for example, ``A | B,C,D``) are
+        included. By default these are excluded since they are often
+        implicit.
+    include_internal_nodes : bool, default=False
+        By default only tips are shown on either side of a split. If True,
+        internal nodes are also included. In that case, returned values are
+        easier to interpret if they are unique (for example,
+        ``feature=None`` or ``feature="idx"``).
+    type : Callable, default=set
+        Collection type used to represent each partition. The default
+        ``set`` returns a tuple of sets. Another common choice is
+        ``tuple``, which returns a tuple of tuples and can be converted into
+        a set of canonicalized bipartitions.
+    sort : bool, default=False
+        If False, bipartitions are returned as ``(child, parent)`` in node
+        index traversal order for the current rooting. If True, partitions
+        are sorted first by size and then by minimum alphanumeric name.
+        When ``type`` is sortable (for example, ``tuple``), items within each
+        partition are also sorted consistently.
+
+    Yields
+    ------
+    tuple[Sequence, Sequence]
+        Bipartition pair formatted according to ``type``, ``feature``,
+        and ``sort``.
 
     Examples
     --------
     >>> tree = toytree.tree("(a,b,((c,d)CD,(e,f)EF)X)AB;")
 
-    >>> # default: biparts w/ tip names as (child, parent) in idx order
+    default: tip names as (child, parent) in idx order
     >>> list(tree.iter_bipartitions())
-    >>> # [({'c', 'd'}, {'a', 'b', 'e', 'f'}),
-    >>> #  ({'e', 'f'}, {'a', 'b', 'c', 'd'}),
-    >>> #  ({'c', 'd', 'e', 'f'}, {'a', 'b'})]
+    ... # [({'c', 'd'}, {'a', 'b', 'e', 'f'}),
+    ... #  ({'e', 'f'}, {'a', 'b', 'c', 'd'}),
+    ... #  ({'c', 'd', 'e', 'f'}, {'a', 'b'})]
 
-    >>> # same order, but as int idx labels including all Nodes
-    >>> list(tree.iter_bipartitions(
-    >>>     feature='idx',
-    >>>     include_internal_nodes=True,
-    >>>     include_singleton_partitions=True,
-    >>> ))
-    >>> # [({0}, {1, 2, 3, 4, 5, 6, 7, 8, 9}),
-    >>> #  ({1}, {0, 2, 3, 4, 5, 6, 7, 8, 9}),
-    >>> #  ({2}, {0, 1, 3, 4, 5, 6, 7, 8, 9}),
-    >>> #  ({3}, {0, 1, 2, 4, 5, 6, 7, 8, 9}),
-    >>> #  ({4}, {0, 1, 2, 3, 5, 6, 7, 8, 9}),
-    >>> #  ({5}, {0, 1, 2, 3, 4, 6, 7, 8, 9}),
-    >>> #  ({2, 3, 6}, {0, 1, 4, 5, 7, 8, 9}),
-    >>> #  ({4, 5, 7}, {0, 1, 2, 3, 6, 8, 9}),
-    >>> #  ({2, 3, 4, 5, 6, 7, 8}, {0, 1, 9})]
-
-    >>> # args to get consistently sorted biparts regardless of rooting
+    consistently sorted output for rooting-invariant comparison
     >>> sorted(tree.iter_bipartitions(type=tuple, sort=True))
-    >>> # [(('a', 'b'), ('c', 'd', 'e', 'f')),
-    >>> #  (('c', 'd'), ('a', 'b', 'e', 'f')),
-    >>> #  (('e', 'f'), ('a', 'b', 'c', 'd'))]
+    ... # [(('a', 'b'), ('c', 'd', 'e', 'f')),
+    ... #  (('c', 'd'), ('a', 'b', 'e', 'f')),
+    ... #  (('e', 'f'), ('a', 'b', 'c', 'd'))]
 
-    >>> # convert consistent bipartitions to sets for easy comparison
-    >>> x = set(tree.root('a').iter_bipartitions(type=tuple, sort=True))
-    >>> y = set(tree.root('e').iter_bipartitions(type=tuple, sort=True))
-    >>> assert x == y
+    >>> x = set(tree.root("a").iter_bipartitions(type=tuple, sort=True))
+    >>> y = set(tree.root("e").iter_bipartitions(type=tuple, sort=True))
+    >>> x == y
+    True
     """
     kwargs = dict(
         tree=tree,
@@ -223,7 +205,7 @@ def iter_bipartitions(
 
     # slower approach sorts bipart alphanumerically by tip Node names.
     # sort requires first getting objects as Nodes so we can access
-    # the Name feature regarldess of what the returned feature will be.
+    # the Name feature regardless of what the returned feature will be.
     else:
         # yield as type(*Nodes) or as type(feature(*Nodes))
         if feature is not None:
@@ -245,7 +227,7 @@ def iter_bipartitions(
 
 
 def _build_node_names_for_sorting(node: Node) -> str:
-    """Returns node name to use while sorting tip and internal nodes."""
+    """Return a stable node-name sort key for tips and internal nodes."""
     if node.is_leaf():
         return node.name
     return "".join(sorted(node.get_leaf_names())[::-1])
@@ -257,20 +239,7 @@ def _format_bipartition(
     type: Callable,
     sort: bool,
 ) -> Tuple[Sequence[Node], Sequence[Node]]:
-    """Sort bipartitions ({Node, Node}, {Node, Node}).
-
-    If sort is True this first sorts the two sides of the split by
-    length, or by lowest alphanumeric name if they are same length.
-    Example: ({Node, Node}, {Node, Node, Node})
-    Example: ({'a', 'z'}, {'b', 'x'})
-    This also requires assigning names to internal nodes when present,
-    based on their descendant tip names.
-    Example: ({'a', 'z', 'za'}, {'b', 'x', 'xb'})
-    If the type is not set then items within partitions are
-    consistently sorted.
-    Example: (['a', 'z', 'za'], ['b', 'x', 'xb']) and can
-    be converted to final type (e.g., tuple) in later steps.
-    """
+    """Format and optionally sort the two sides of a bipartition."""
     blen = len(below)
     olen = len(other)
 

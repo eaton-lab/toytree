@@ -1,46 +1,22 @@
 #!/usr/bin/env python
 
-"""Generators to sample quartets of tips from a tree.
+"""Quartet enumeration utilities.
 
-The primary function `iter_quartets` can be used as a generator to
-yield quartet subtrees from a larger tree. This function is quite
-fast and includes options for sorting the output, and transforming
-its format to return Node objects, names, or any arbitrary feature
-of Nodes. See examples.
+This module provides generators for unresolved and resolved quartets.
+Resolved quartets represent unrooted 4-tip splits, for example ``ab|cd``.
 
-Methods
--------
-Get fast unordered sets of all combinations of 4 tip Nodes in a tree
->>> tree.enum._iter_unresolved_quartet_sets()   # {0, 1, 2, 3}, ...
-
-Get name-ordered tuples of Nodes for each quartet induced by bipartitions in a tree.
->>> tree.enum.iter_quartets()                   # ((0, 1), (2, 3)), ...
-
-See Also
+Examples
 --------
-Get number of quartets induced by the splits in a tree.
->>> tree.enum.get_n_quartets()                  # 5
-
-Format
-------
-Quartets represent a sample from a bipartition or quadripartition
-where there is a split, e.g. `AB|CD`, separating to sets of items.
-The order of the items within each partition of the quartet is not
-often of interest, but it is nice to have a consistent sort option in
-case it is useful.
-
-Supported:
-- ({'a', 'b'}, {'c', 'd'})  # type=set, collapse=False; sort affects order of p1,p2
-- (('a', 'b'), ('c', 'd'))  # type=tuple, collapse=False; sort affects order of p1,p2 and within each p
-- ('a', 'b', 'c', 'd')      # type=tuple, collapse=True; same as above, imagine middle split is still there.
-
-Not supported:
-- ({'a', 'b', 'c', 'd'})    # type=set, collapse=True; split info lost.
+>>> tree = toytree.tree("(a,b,((c,d),(e,f)));")
+>>> next(tree.enum.iter_quartets())
+({'c', 'd'}, {'e', 'f'})
 """
 
-from typing import TypeVar, Iterator, Tuple, Optional, Set, Callable
 import itertools
+from typing import Callable, Iterator, Optional, Set, Tuple, TypeVar
+
 from loguru import logger
+
 from toytree import Node, ToyTree
 from toytree.core.apis import TreeEnumAPI, add_subpackage_method, add_toytree_method
 
@@ -55,12 +31,29 @@ __all__ = [
 
 
 def _iter_unresolved_quartet_sets(tree: ToyTree, feature: str = None) -> Iterator[Set]:
-    """Generator to yield all combinations of four tip Nodes.
+    """Yield unresolved combinations of four tips.
 
-    This is simpler and faster than toytree.enum.iter_quartets because
-    it does not find the resolution of quartets, but rather only finds
-    all possible combinations. Note the intentional use of a set to
-    indicate they are unordered.
+    This returns all ``n choose 4`` tip combinations and does not encode a
+    split relation among the four tips.
+
+    Parameters
+    ----------
+    tree : ToyTree
+        Tree from which tip combinations are sampled.
+    feature : str or None, default=None
+        Node attribute to return for each tip. If None, Node objects are
+        returned.
+
+    Yields
+    ------
+    set
+        Set of four tip values.
+
+    Examples
+    --------
+    >>> tree = toytree.tree("((a,b),c,d);")
+    >>> list(tree.enum._iter_unresolved_quartet_sets("name"))
+    [{'a', 'b', 'c', 'd'}]
     """
     # select function to format returned quartet set
     if feature is None:
@@ -78,45 +71,28 @@ def _iter_quartet_sets(
     feature: Optional[str] = None,
     quadripartitions: bool = False,
 ) -> Iterator[Tuple[Node, Node, Node, Node]]:
-    """Generator to yield quartets induced by edges in a tree.
-
-    This yields all quartets (4-sample subtrees) that exist within
-    a larger tree. The set of possible quartets is not affected by
-    tree rooting, but is affected by collapsed edges (polytomies),
-    which reduce the number of quartets.
-
-    Quartets are returned as Tuple[Node, Node, Node, Node], or Tuple
-    of the requested features of Nodes, where e.g. ('a', 'b', 'c', 'd')
-    implies the quartet `ab|cd`. The order in which quartets are
-    yielded depends on the topology and rooting. The order of yielded
-    quartets is in Node idx traversal order, where the first two Nodes
-    are below the edge, and the second two above.
+    """Yield resolved quartets as 4-tuples in ``ij|xy`` orientation.
 
     Parameters
     ----------
-    feature: str
-        Feature used to represent Nodes on either side of bipartitions.
-        Default is "name". None will return Node objects. Other Node
-        features can be used but be aware if using quartets to compare
-        among trees that 'idx' changes depending on topology, and other
-        features may not be unique among Nodes.
-    quadripartitions: bool
-        If True then quartets are only returned that are induced by
-        quadripartitite splits in a the tree. This is a subset of the
-        quartets induced by bipartitions, since the tip Nodes must come
-        from four different clades from each edge/split.
+    tree : ToyTree
+        Input tree.
+    feature : str or None, default=None
+        Node feature to return. If None, Node objects are returned.
+    quadripartitions : bool, default=False
+        If True, return only quartets induced by quadripartition splits.
+        If False, return quartets induced by bipartitions.
 
-    Example
-    -------
-    >>> tree = toytree.rtree.unittree(5, seed=123)
+    Yields
+    ------
+    tuple
+        Tuple ``(i, j, x, y)`` implying split ``ij|xy``.
 
-    >>> sorted(tree.iter_quartets())
-    >>> # (('r0', 'r1'), ('r2', 'r3'))
-    >>> # (('r0', 'r1'), ('r2', 'r4'))
-    >>> # (('r0', 'r1'), ('r3', 'r4'))
-    >>> # (('r0', 'r2'), ('r3', 'r4'))
-    >>> # (('r1', 'r2'), ('r3', 'r4'))
-
+    Examples
+    --------
+    >>> tree = toytree.tree("(a,b,((c,d),(e,f)));")
+    >>> next(tree.enum._iter_quartet_sets(feature="name"))
+    ('c', 'd', 'e', 'f')
     """
     # find quartets induced by splits in the tree. This is necessary
     # compared to a simple call of `itertools.combinations(names, 4)`
@@ -159,95 +135,50 @@ def iter_quartets(
     collapse: bool = False,
     quadripartitions: bool = False,
 ) -> Iterator:
-    """Generator to yield quartets induced by edges in a tree.
+    """Yield quartets induced by tree splits.
 
-    This yields all quartets (4-sample subtrees) that exist within
-    a larger tree. The set of possible quartets is not affected by
-    tree rooting, but is affected by collapsed edges (polytomies),
-    which reduce the number of quartets.
-
-    Quartets are returned as Tuple[Node, Node, Node, Node], or Tuple
-    of the requested features of Nodes, where e.g. ('a', 'b', 'c', 'd')
-    implies the quartet `ab|cd`. The order in which quartets are
-    yielded depends on the topology and rooting, and is in Node idx
-    traversal order, where the first two Nodes are below the edge, and
-    the second two above. This can be changed to a consistent name
-    sorted order for each split partition using `sort=True`.
+    Quartets encode unrooted 4-tip relationships in split form, e.g.,
+    ``ab|cd``. This function formats those quartets as sets, tuples, or
+    lists, and can optionally collapse partition structure.
 
     Parameters
     ----------
-    feature: str
-        Feature used to represent Nodes on either side of bipartitions.
-        Default is "name". None will return Node objects. Other Node
-        features can be used but be aware if using quartets to compare
-        among trees that 'idx' changes depending on topology, and other
-        features may not be unique among Nodes.
-    type: Callable
-        The type of collection used to represent a partition. Default
-        is `set` to return a tuple of sets, but another useful option
-        is `tuple`, which returns a tuple of tuples.
-    sort: bool
-        If False, quartets are returned with Nodes spanning edges as
-        (below, below, above, above) in idx traversal order given the
-        topology and rooting. If sort=True, partitions are instead
-        always sorted alphanumerically within and between partitions.
-    collapse: bool
-        If True then quartets are returned as a single tuple, e.g.,
-        (0, 1, 2, 3), else they are returned as a tuple of tuples,
-        e.g., ((0, 1), (2, 3)). In either case, the induced split is
-        implied to occur in the middle, e.g., 0,1 vs 2,3. Collapse arg
-        cannot be combined with type=set.
-    quadripartition: bool
-        If True then quartets are only returned that are induced by
-        quadripartitite splits in a the tree. This is a subset of the
-        quartets induced by bipartitions, since the tip Nodes must come
-        from four different clades from each edge/split.
+    tree : ToyTree
+        Input tree.
+    feature : str or None, default="name"
+        Node attribute returned for each sampled tip. If None, Node
+        objects are returned.
+    type : Callable, default=set
+        Collection type used for partitions (e.g., ``set``, ``tuple``,
+        ``list``).
+    sort : bool, default=False
+        If True, sort values within partitions and between partitions
+        by name.
+    collapse : bool, default=False
+        If True, return each quartet as one collection of four values.
+        If False, return two partition collections.
+    quadripartitions : bool, default=False
+        If True, restrict quartets to those induced by quadripartitions.
 
-    Example
-    -------
-    >>> tree = toytree.tree("(a,b,((c,d)CD,(e,f)EF)X)AB;")
+    Yields
+    ------
+    object
+        Quartet representation formatted according to ``type``,
+        ``feature``, ``sort``, and ``collapse``.
 
-    >>> # get quartets for each (child, parent) edge in idx order
-    >>> list(tree.iter_quartets())
-    >>> # [({'c', 'd'}, {'e', 'f'}),
-    >>> #  ({'c', 'd'}, {'a', 'f'}),
-    >>> #  ({'c', 'd'}, {'b', 'f'}),
-    >>> #  ({'c', 'd'}, {'a', 'e'}),
-    >>> #  ({'c', 'd'}, {'b', 'e'}),
-    >>> #  ({'c', 'd'}, {'a', 'b'}),
-    >>> #  ({'e', 'f'}, {'a', 'd'}),
-    >>> #  ({'e', 'f'}, {'c', 'd'}),
-    >>> #  ({'e', 'f'}, {'b', 'd'}),
-    >>> #  ({'e', 'f'}, {'a', 'c'}),
-    >>> #  ({'e', 'f'}, {'a', 'b'}),
-    >>> #  ({'e', 'f'}, {'b', 'c'}),
-    >>> #  ({'d', 'e'}, {'a', 'b'}),
-    >>> #  ({'d', 'f'}, {'a', 'b'}),
-    >>> #  ({'c', 'd'}, {'a', 'b'}),
-    >>> #  ({'e', 'f'}, {'a', 'b'}),
-    >>> #  ({'c', 'e'}, {'a', 'b'}),
-    >>> #  ({'c', 'f'}, {'a', 'b'})]
+    Notes
+    -----
+    ``collapse=True`` cannot be used with ``type=set`` because split
+    orientation would be lost. In this case a warning is logged and
+    ``collapse`` is treated as False.
 
-    >>> # get same quartets consistently ordered and in simpler format
-    >>> sorted(tree.iter_quartets(type=tuple, sort=True, collapse=True))
-    >>> # [('a', 'b', 'c', 'd'),
-    >>> #  ('a', 'b', 'c', 'd'),
-    >>> #  ('a', 'b', 'c', 'e'),
-    >>> #  ('a', 'b', 'c', 'f'),
-    >>> #  ('a', 'b', 'd', 'e'),
-    >>> #  ('a', 'b', 'd', 'f'),
-    >>> #  ('a', 'b', 'e', 'f'),
-    >>> #  ('a', 'b', 'e', 'f'),
-    >>> #  ('a', 'c', 'e', 'f'),
-    >>> #  ('a', 'd', 'e', 'f'),
-    >>> #  ('a', 'e', 'c', 'd'),
-    >>> #  ('a', 'f', 'c', 'd'),
-    >>> #  ('b', 'c', 'e', 'f'),
-    >>> #  ('b', 'd', 'e', 'f'),
-    >>> #  ('b', 'e', 'c', 'd'),
-    >>> #  ('b', 'f', 'c', 'd'),
-    >>> #  ('c', 'd', 'e', 'f'),
-    >>> #  ('c', 'd', 'e', 'f')]
+    Examples
+    --------
+    >>> tree = toytree.tree("(a,b,((c,d),(e,f)));")
+    >>> next(tree.iter_quartets())
+    ({'c', 'd'}, {'e', 'f'})
+    >>> next(tree.iter_quartets(type=tuple, sort=True, collapse=True))
+    ('c', 'd', 'e', 'f')
     """
     # disallowed combinations
     if (type == set) and (collapse is True):  # noqa: E721
@@ -322,12 +253,24 @@ if __name__ == "__main__":
     print("")
 
     print("type=tuple, collapse=False, sort=True")
-    for qrt in iter_quartets(tree, type=tuple, collapse=False, sort=True, quadripartitions=True):
+    for qrt in iter_quartets(
+        tree,
+        type=tuple,
+        collapse=False,
+        sort=True,
+        quadripartitions=True,
+    ):
         print(qrt)
     print("")
 
     print("type=tuple, collapse=True, sort=True")
-    for qrt in iter_quartets(tree, type=tuple, collapse=True, sort=True, quadripartitions=True):
+    for qrt in iter_quartets(
+        tree,
+        type=tuple,
+        collapse=True,
+        sort=True,
+        quadripartitions=True,
+    ):
         print(qrt)
     print("")
 

@@ -1,22 +1,24 @@
 #!/usr/bin/env python
 
-"""Get edges as (child, parent) tuples on a tree.
+"""Edge enumeration utilities.
 
-Methods
--------
-Get tuples of Nodes on either side of each edge creating a bipartition
->>> tree.iter_edges('idx')                # ((0, 4), (1, 4), (2, 5), ...
+This module provides helpers to iterate over tree edges as ``(child, parent)``
+pairs, or collect them as an array / DataFrame table.
 
-Get a table of the edges in a tree as an array or dataframe
->>> tree.get_edges('idx')                 # np.array([(0, 4), ...])
+Examples
+--------
+>>> tree = toytree.tree("(a,b,((c,d),(e,f)));")
+>>> next(tree.iter_edges("idx"))
+(0, 6)
 """
 
-from typing import Iterator, Tuple, Optional, Union
-import pandas as pd
+from typing import Iterator, Optional, Tuple, Union
+
 import numpy as np
+import pandas as pd
+
 from toytree import Node, ToyTree
 from toytree.core.apis import TreeEnumAPI, add_subpackage_method, add_toytree_method
-
 
 __all__ = [
     "iter_edges",
@@ -30,29 +32,33 @@ def iter_edges(
     feature: Optional[str] = None,
     include_root: bool = False,
 ) -> Iterator[Tuple[Node, Node]]:
-    """Generator of (Node, Node) tuples representing edges in tree.
+    """Yield edges in ``(child, parent)`` orientation.
 
-    Given the current tree rooting edges are yielded in idx order
-    as (child, parent). The edges set will include edges connected
-    to the root Node even if the tree is unrooted. To instead view
-    edges as bipartitions of Node sets see `iter_bipartitions`.
+    Edges are produced in node index traversal order for the current rooting.
+    To represent edges as clade splits, use ``iter_bipartitions`` instead.
 
     Parameters
     ----------
-    feature: str
-        An optional feature of a Node returned in place of the Node
-        object to represent it. For example, 'name' or 'idx'.
-    include_root: bool
-        By default the root edge is excluded whether or not the tree
-        is rooted. If this arg is set to True this edge will be
-        included as (treenode, None) where None is the non-existent
-        parent of the treenode. If tree is unrooted this has no effect.
+    feature : str or None, default=None
+        Node feature to return instead of Node objects (e.g., ``"idx"`` or
+        ``"name"``).
+    include_root : bool, default=False
+        If True on rooted trees, append the root edge as ``(root, None)``.
+        On unrooted trees this option has no effect.
 
-    Example
-    -------
+    Yields
+    ------
+    tuple
+        Edge tuple as ``(child, parent)`` where values are Node objects or
+        selected feature values.
+
+    Examples
+    --------
     >>> tree = toytree.rtree.unittree(5, seed=123)
-    >>> list(iter_edges(feature='idx'))
-    >>> # [(0, 5), (1, 5), (2, 6), (3, 7), (4, 7), (5, 6), (6, 8), (7, 8)]
+    >>> list(tree.iter_edges(feature="idx"))[:3]
+    [(0, 5), (1, 5), (2, 6)]
+    >>> list(tree.iter_edges(feature="idx", include_root=True))[-1]
+    (8, None)
     """
     if feature:
         for node in self[:-1]:
@@ -78,23 +84,38 @@ def get_edges(
     df: bool = False,
     include_root: bool = False,
 ) -> Union[np.ndarray, pd.DataFrame]:
-    """Return matrix of (child, parent) edges.
+    """Return all edges as an array or DataFrame.
 
-    Given the current tree rooting edges are yielded in idx order
-    as (child, parent).
+    Edges are collected from ``iter_edges`` and retain the same
+    ``(child, parent)`` orientation and traversal order.
 
     Parameters
     ----------
-    feature: str or None
-        Edges can be represented by Node features such as 'idx' or
-        'name' (default='idx'). None returns Node objects.
-    df: bool
-        If True the matrix is returned as a pd.DataFrame rather
-        than as a np.ndarray.
+    feature : str or None, default=None
+        Node feature to return for edge values. If None, Node objects are
+        returned.
+    df : bool, default=False
+        If True, return a pandas DataFrame with columns ``child`` and
+        ``parent``.
+    include_root : bool, default=False
+        If True on rooted trees, include the root edge as ``(root, None)``.
+
+    Returns
+    -------
+    numpy.ndarray or pandas.DataFrame
+        Edge table in ``(child, parent)`` format.
+
+    Examples
+    --------
+    >>> tree = toytree.rtree.unittree(5, seed=123)
+    >>> tree.get_edges("idx").shape
+    (8, 2)
+    >>> tree.get_edges("idx", df=True).columns.tolist()
+    ['child', 'parent']
 
     See Also
     --------
-    tree.iter_edges
+    ToyTree.iter_edges
     """
     edges = list(self.iter_edges(feature=feature, include_root=include_root))
     if df:
@@ -111,6 +132,6 @@ if __name__ == "__main__":
     print(tree.get_edges('idx', df=1))
 
     # not ideal, but the include_root option is available.
-    # print(tree.get_edges('idx', df=1, include_root=True))    
+    # print(tree.get_edges('idx', df=1, include_root=True))
     # print(tree.get_edges('idx', df=0, include_root=True))
-    # print(tree.get_edges(include_root=True))    
+    # print(tree.get_edges(include_root=True))

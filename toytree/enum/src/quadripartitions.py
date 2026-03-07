@@ -1,26 +1,21 @@
 #!/usr/bin/env python
 
-"""Get quad splits on a tree as (child1, child2, sister, up) tuples.
+"""Quadripartition enumeration utilities.
 
-Methods
--------
-Get sets of Nodes from the four subclades of each edge in a tree.
->>> tree._iter_quadripartition_sets()
-# (({0}, {1}), ({2}, {3, 4})), ...
+Quadripartitions describe four clades around an edge split. This module
+provides iterators that return those clades in configurable formats.
 
-Get tuples of Nodes for each quartet induced by quadripartitions in a tree.
->>> tree.iter_quadripartitions()
-# (((0,), (1,)), ((2,), (3, 4))), ...
-
-Get tuples of Nodes for each quartet induced by quadripartitions in a tree.
->>> tree.iter_quadripartitions('idx', sort=True, collapse=True)
-# ({'c'}, {'d'}, {'a', 'b'}, {'e', 'f'})
+Examples
+--------
+>>> tree = toytree.tree("(a,b,((c,d),(e,f)));")
+>>> next(tree.enum.iter_quadripartitions(type=tuple, sort=True))
+((('a',), ('b',)), (('c', 'd'), ('e', 'f')))
 """
 
 from typing import TypeVar, Iterator, Tuple, Optional, Set, Callable, Sequence
 import itertools
 from toytree import Node, ToyTree
-from toytree.core.apis import TreeEnumAPI, add_subpackage_method, add_toytree_method
+from toytree.core.apis import TreeEnumAPI, add_subpackage_method
 # from toytree.utils import ToytreeError
 
 Query = TypeVar("Query")
@@ -40,57 +35,37 @@ def _iter_quadripartition_sets(
     contract_partitions: bool = False,
     include_internal_nodes: bool = False,
 ) -> Iterator[Tuple[Tuple[Set, Set], Tuple[Set, Set]]]:
-    """Yield a tuple of sets of tips for each quadripartition.
+    """Yield quadripartitions as ``((part1, part2), (part3, part4))``.
 
-    Quadripartitions are yielded in Node idxorder traversal as a tuple
-    of two tuples of two sets, e.g., `(({e0},{e1}), ({e2},{e3}))`,
-    representing sets of (tip) Nodes descending from each of the four
-    edges subtending a focal edge. In this example, the focal edge
-    splits e0,e1 from e2,e3. Note the use of sets to indicate that the
-    items are not sorted.
+    Each yielded value represents the four clades around a focal edge.
+    By default, clades contain tip names as sets.
 
     Notes
     -----
-    - The order of yielded quadripartition sets is in Node idx order.
-    - The order of partitions within a quad is (child-left, child-right,
-    sister, up) unless at root in an unrooted tree, then it is
-    (child-left, child-right, sister-left, sister-right)
+    - Quadripartitions are generated in node index traversal order.
+    - The default orientation is ``(child-left, child-right, sister, up)``.
+      Near the root of an unrooted tree, ``up`` is represented by two sister
+      sides instead.
 
     Parameters
     ----------
-    tree: ToyTree
-        A tree to extract edge sets from.
-    feature: str or None
-        Feature to represent Nodes in returned sets. Default is 'name'
-        to use Node name strings. None will return Node objects.
-    contract_partitions: bool
-        If True then each partition is contracted to show only the
-        first Node closest to the edge.
-    include_internal_nodes: bool
-        If True then all nodes in each partition are shown, whether it
-        is internal or a tip Node. If False then only tips are shown.
-        Note: This option is overriden if contract_partitions=True in
-        which case the closest Node is shown whether or not it is a tip.
+    tree : ToyTree
+        Tree from which quadripartitions are extracted.
+    feature : str or None, default="name"
+        Node feature to return. If None, Node objects are returned.
+    contract_partitions : bool, default=False
+        If True, each partition is represented only by its closest node.
+    include_internal_nodes : bool, default=False
+        If True, include internal nodes along with tips in partitions.
+        Ignored when ``contract_partitions=True``.
 
     Examples
     --------
-    >>> newick = "((a,b)X,((c,d)Y,e)Z)R;"
-    >>> tree = toytree.tree(newick)
-    >>> tree.draw(ts='r');
-
-    >>> sorted(_iter_quadripartition_sets(tree))
-    >>> # (({'a'}, {'b'}), ({'d', 'c'}, {'e'}))
-    >>> # (({'c'}, {'d'}), ({'e'}, {'a', 'b'}))
-
-    >>> kwargs = dict(include_internal_nodes=True)
-    >>> sorted(_iter_quadripartition_sets(tree, **kwargs))
-    >>> # ({'a'}, {'b'}), ({'c', 'Y', 'd'}, {'e'}))
-    >>> # (({'c'}, {'d'}), ({'e'}, {'a', 'X', 'b'}))
-
-    >>> kwargs = dict(contract_partitions=True)
-    >>> sorted(iter_edge_quadripartition_sets(tree, **kwargs))
-    >>> # (({'a'}, {'b'}), ({'Y'}, {'e'}))
-    >>> # (({'c'}, {'d'}), ({'e'}, {'Z'}))
+    >>> tree = toytree.tree("((a,b)X,((c,d)Y,e)Z)R;")
+    >>> next(tree.enum._iter_quadripartition_sets())
+    (({'a'}, {'b'}), ({'c', 'd'}, {'e'}))
+    >>> next(tree.enum._iter_quadripartition_sets(feature="idx"))
+    (({0}, {1}), ({2, 3}, {4}))
     """
     # tree = tree.unroot()
     cache = {}
@@ -133,50 +108,46 @@ def _iter_quadripartition_sets(
         below = [cache[i] for i in node.children]
 
         # if up is root then choose (child, child, sister, sister)
-        if node._up.is_root():
+        if node.up.is_root():
             above = []
             sisters = node.get_sisters()
             if len(sisters) > 1:
                 for sis in sisters:
                     above.append(cache[sis])
             else:
-                for sis_child in sisters[0]._children:
+                for sis_child in sisters[0].children:
                     above.append(cache[sis_child])
 
-            # contract...
-
-            # create generator
-            _below = itertools.combinations(below, 2)
-            _above = itertools.combinations(above, 2)
-            qiter = itertools.product(_below, _above)
+            # create generator from all choose-2 clade pairings on both sides.
+            qiter = itertools.product(
+                itertools.combinations(below, 2),
+                itertools.combinations(above, 2),
+            )
 
         # else choose (child, child, sister, up)
         else:
-            # get >= 1 sets of nodes above edge, sister to children.
+            # collect all clades above the edge: sisters at parent, plus the
+            # remainder of the tree above parent. For multifurcations this
+            # can include >2 clades, so we must take all choose-2 pairings.
             up_down = [cache[sis] for sis in node.get_sisters()]
 
             # get set nodes above edge
-            up_up = [nodes - {node, node._up} - set.union(*up_down + below)]
+            up_up = [nodes - {node, node.up} - set.union(*up_down + below)]
 
             # unless contracting, then just the parent
             if contract_partitions:
-                up_up = [{node._up}]
+                up_up = [{node.up}]
 
-            # create generator
-            _below = itertools.combinations(below, 2)
-            _up_down = itertools.combinations(up_down, 1)
-            _up_up = itertools.combinations(up_up, 1)
-            qiter = itertools.product(_below, _up_down, _up_up)
+            above = up_down + up_up
+            qiter = itertools.product(
+                itertools.combinations(below, 2),
+                itertools.combinations(above, 2),
+            )
 
-        # expand qiter(2, 2) or qiter(2, 1, 1)
-        for below, above, *other in qiter:
-            if len(above) == 1:
-                x1, x2 = below
-                x3 = above[0]
-                x4 = other[0][0]
-            else:
-                x1, x2 = below
-                x3, x4 = above
+        # expand qiter(2, 2)
+        for below, above in qiter:
+            x1, x2 = below
+            x3, x4 = above
 
             # require all to exclude root in unrooted tree: ()
             if feature is None:
@@ -198,87 +169,49 @@ def iter_quadripartitions(
     type: Callable = set,
     sort: bool = False,
 ) -> Iterator[Tuple]:
-    """Generator of quadripartitions (Nodes on four clades of a split)
+    """Yield quadripartitions in configurable formats.
 
-    Quadripartitions represent the splits in a tree. Many algorithms
-    compare tips (or internal Nodes) split into the four parts of a
-    quadripartition to compute metrics on trees. This function aims to
-    provide a flexible and fast framework for yielding quadripartitions
-    in various formats.
+    Quadripartitions represent four clades around an edge split. This method
+    can return clades as sets, tuples, or lists and can optionally collapse
+    output to a 4-part tuple.
 
     Notes
     -----
-    - qparts are generated in Node idx traversal order.
-    - By default qparts are formatted as a tuple of two tuples of sets,
-    e.g., ((set1, set2), (set3, set4)), but can be optionally collapsed
-    into the format (set1, set2, set3, set4) where the split in the
-    middle is implicit.
-    - The partitions can be returned as other types than sets using
-    the `type` arg, in which case the items within a part will be
-    sorted by names.
-    - The order of the two tuples is (below, above) given the traversal
-    order of edges, but can instead be sorted consistently to allow for
-    comparisons by sorting by len and then names using the `sort` arg.
+    - Results are generated in node index traversal order.
+    - The default format is ``((part1, part2), (part3, part4))``.
+    - ``collapse=True`` returns ``(part1, part2, part3, part4)``.
+    - ``sort=True`` provides rooting-independent ordering.
 
     Parameters
     ----------
-    feature: str
-        Feature to return to represent Nodes in partitions. Default is
-        "name". None will return Node objects. Any other Node feature,
-        such as "idx", is also supported. Note the feature arg does not
-        affect the order in which partitions are sorted (see `sort`).
-    include_internal_nodes: bool
-        If True then internal Node names/features are included in
-        addition to tip Nodes.
-    contract_partitions: bool
-        If True then clades are represented only by the Node (internal
-        or tip) closest to the quadripartition edge.
-    collapse: bool
-        If True then the format is simplified from `((a,b),(x,y))`
-        to `(a,b,x,y)` where the split ab|xy is still implicit.
-    type: Callable
-        The type of collection used to represent a partition. Default
-        is `set` to return a tuple of sets, but another useful option
-        is `tuple`, which returns a tuple of tuples. The latter
-        collection can be converted into a set of quadripartitions.
-    sort: bool
-        If False, tuple clades are returned as (child, parent) order
-        given the topology and rooting in Node idx order traversal. If
-        sort=True, qpartitions are instead always sorted first by len,
-        e.g., (fewer, longer) and if the same len, then next by the
-        lowest alphanumeric tip name, e.g., ({'a', 'b'}, {'c', 'd'}).
-        If the requested partition `type` is sortable (i.e., not a set)
-        then items within a partition are also consistently sorted.
+    tree : ToyTree
+        Tree from which quadripartitions are extracted.
+    feature : str or None, default="name"
+        Node feature to return for values in each partition.
+    contract_partitions : bool, default=False
+        If True, each partition is represented by the closest node.
+    include_internal_nodes : bool, default=False
+        If True, include internal nodes in partitions.
+    collapse : bool, default=False
+        If True, return a flat 4-part tuple.
+    type : Callable, default=set
+        Collection type to use for each partition.
+    sort : bool, default=False
+        If True, sort partitions and values for stable comparisons.
+
+    Yields
+    ------
+    tuple
+        Quadripartition formatted according to ``type``, ``collapse``,
+        ``feature``, and ``sort``.
 
     Examples
     --------
     >>> tree = toytree.tree("(a,b,((c,d)CD,(e,f)EF)X)AB;")
-
-    >>> # default: parts w/ tip names as (child, parent) in idx order
-    >>> list(tree.enum.iter_quadripartitions())
-    >>> # [(({'c'}, {'d'}), ({'e', 'f'}, {'b', 'a'}))
-    >>> #  (({'e'}, {'f'}), ({'d', 'c'}, {'b', 'a'}))
-    >>> #  (({'d', 'c'}, {'e', 'f'}), ({'a'}, {'b'}))]
-
-    >>> # same order, but as int idx labels including internal Nodes
-    >>> list(tree.enum.iter_quadripartitions(
-    >>>     feature='idx',
-    >>>     include_internal_nodes=True,
-    >>> ))
-    >>> # [(({2}, {3}), ({4, 5, 7}, {0, 1})),
-    >>> #  (({4}, {5}), ({2, 3, 6}, {0, 1})),
-    >>> #  (({2, 3, 6}, {4, 5, 7}), ({0}, {1}))]
-
-    >>> # args to get consistently sorted qparts regardless of rooting
-    >>> sorted(tree.enum.iter_quadripartitions(type=tuple, sort=True))
-    >>> # ((('a',), ('b',)), (('c', 'd'), ('e', 'f')))
-    >>> # ((('c',), ('d',)), (('a', 'b'), ('e', 'f')))
-    >>> # ((('e',), ('f',)), (('a', 'b'), ('c', 'd')))
-
-    >>> # example: easy comparison of consistently sorted sets
-    >>> x = set(tree.root('a').enum.iter_quadripartitions(type=tuple, sort=True))
-    >>> y = set(tree.root('e').enum.iter_quadripartitions(type=tuple, sort=True))
-    >>> assert x == y
+    >>> next(tree.enum.iter_quadripartitions())
+    (({'c'}, {'d'}), ({'e', 'f'}, {'a', 'b'}))
+    >>> next(tree.enum.iter_quadripartitions(type=tuple, sort=True, collapse=True))
+    (('a',), ('b',), ('c', 'd'), ('e', 'f'))
     """
     kwargs = dict(
         tree=tree,
@@ -338,7 +271,7 @@ def iter_quadripartitions(
 
 
 def _build_node_names_for_sorting(node: Node) -> str:
-    """Returns node name to use while sorting tip and internal nodes."""
+    """Return a stable sort key for tip and internal nodes."""
     if node.is_leaf():
         return node.name
     return "".join(sorted(node.get_leaf_names())[::-1])
@@ -350,16 +283,7 @@ def format_quadripartition(
     type: Callable,
     sort: bool,
 ) -> Tuple[Sequence[Node], Sequence[Node]]:
-    """Sort bipartitions ({Node, Node}, {Node, Node}).
-
-    - First sorted by len: ({Node, Node}, {Node, Node, Node})
-    - Then by min Node name: ({'a', 'z'}, {'b', 'x'})
-    - which also requires assigning names to internal Nodes when present
-    based on their descendant tips: ({'a', 'z', 'za'}, {'b', 'x', 'xb'})
-    - if the type is not set then items within partitions are
-    consistently sorted: (['a', 'z', 'za'], ['b', 'x', 'xb']) and can
-    be converted to final type (e.g., tuple) in later steps.
-    """
+    """Sort a pair of clades for quadripartition output formatting."""
     blen = len(below)
     olen = len(other)
 
