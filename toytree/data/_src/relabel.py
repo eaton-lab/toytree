@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from typing import Callable, Sequence, TypeVar, Union
 
-from toytree import ToyTree, Node
+from toytree import Node, ToyTree
 from toytree.core.apis import add_toytree_method
 from toytree.utils import ToytreeError
 
