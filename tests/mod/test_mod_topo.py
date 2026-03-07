@@ -14,6 +14,7 @@
 import unittest
 
 import toytree
+from toytree.utils import ToytreeError
 from toytree.utils.src.logger_setup import capture_logs
 
 
@@ -65,8 +66,8 @@ class TestModCollapseNodes(unittest.TestCase):
         self.trees = [self.itree, self.btree]
         for tre in self.trees:
             tre.set_node_data(
-                "support",
-                {i: 100. / (i + 10) for i in range(tre.nnodes)})
+                "support", {i: 100.0 / (i + 10) for i in range(tre.nnodes)}
+            )
 
     def test_collapse_nodes_docs_match(self):
         """API and submodule documentations updated to match."""
@@ -126,16 +127,14 @@ class TestModRotateNode(unittest.TestCase):
 
     def test_rotate_one_node_by_mrca(self):
         """Rotate one node."""
-        select = ['r0', 'r4']
+        select = ["r0", "r4"]
         for tre in self.trees:
             new = tre.mod.rotate_node(*select)
             new_cset = [
-                set(i.get_leaf_names()) for i
-                in new.get_mrca_node(*select).children
+                set(i.get_leaf_names()) for i in new.get_mrca_node(*select).children
             ]
             old_cset = [
-                set(i.get_leaf_names()) for i
-                in tre.get_mrca_node(*select).children
+                set(i.get_leaf_names()) for i in tre.get_mrca_node(*select).children
             ]
             self.assertEqual(new_cset, old_cset[::-1])
 
@@ -156,44 +155,46 @@ class TestModPrune(unittest.TestCase):
     def test_prune_require_root(self):
         """Prune maintains root node at original height if require_root=True."""
         tree1 = self.tree.mod.prune(
-            "a", "b",
+            "a",
+            "b",
             require_root=True,
             preserve_dists=True,
         )
-        self.assertAlmostEqual(
-            self.tree.treenode.height,
-            tree1.treenode.height
-        )
+        self.assertAlmostEqual(self.tree.treenode.height, tree1.treenode.height)
 
         tree2 = self.tree.mod.prune(
-            "a", "b",
+            "a",
+            "b",
             require_root=False,
             preserve_dists=True,
         )
         self.assertAlmostEqual(
-            self.tree.get_nodes("ab")[0].height,
-            tree2.treenode.height
+            self.tree.get_nodes("ab")[0].height, tree2.treenode.height
         )
 
     def test_prune_preserve_dists(self):
         """Prune sums removed internal node dists onto retained edges, or not."""
         tree1 = self.tree.mod.prune(
-            "a", "b", "c",
+            "a",
+            "b",
+            "c",
             require_root=False,
             preserve_dists=True,
         )
         self.assertAlmostEqual(
-            toytree.distance.get_node_distance(self.tree, 'a', 'c'),
-            toytree.distance.get_node_distance(tree1, 'a', 'c'),
+            toytree.distance.get_node_distance(self.tree, "a", "c"),
+            toytree.distance.get_node_distance(tree1, "a", "c"),
         )
         tree2 = self.tree.mod.prune(
-            "a", "b", "c",
+            "a",
+            "b",
+            "c",
             require_root=False,
             preserve_dists=False,
         )
         self.assertAlmostEqual(
-            toytree.distance.get_node_distance(self.tree, 'a', 'c') - 1,
-            toytree.distance.get_node_distance(tree2, 'a', 'c'),
+            toytree.distance.get_node_distance(self.tree, "a", "c") - 1,
+            toytree.distance.get_node_distance(tree2, "a", "c"),
         )
 
 
@@ -205,7 +206,9 @@ class TestModRemoveUnaryNodes(unittest.TestCase):
 
     def test_remove_unary_nodes_docs_match(self):
         """API and submodule documentations updated to match."""
-        adoc = [i.strip() for i in self.itree.mod.remove_unary_nodes.__doc__.split("\n")]
+        adoc = [
+            i.strip() for i in self.itree.mod.remove_unary_nodes.__doc__.split("\n")
+        ]
         sdoc = [i.strip() for i in toytree.mod.remove_unary_nodes.__doc__.split("\n")]
         self.assertEqual(adoc, sdoc)
 
@@ -348,7 +351,9 @@ class TestModDropTips(unittest.TestCase):
         """Logger warning if tip Nodes are selected."""
         with capture_logs(format="{message}") as cap:
             self.itree.mod.drop_tips(15)
-        self.assertEqual(cap[0], "Only tip Nodes are removed. See `mod.remove_nodes`.\n")
+        self.assertEqual(
+            cap[0], "Only tip Nodes are removed. See `mod.remove_nodes`.\n"
+        )
 
 
 class TestModExtractSubtree(unittest.TestCase):
@@ -437,8 +442,68 @@ class TestModBisect(unittest.TestCase):
         self.assertEqual(tree[2].dist, 1)
 
 
-if __name__ == '__main__':
+class TestModResolveNode(unittest.TestCase):
+    def setUp(self):
+        self.tree = toytree.tree("((a,b),c,d,e)X;")
+        self.tree2 = toytree.tree("(((a,b),c,d,e)X,(x,y)Y)R;")
 
+    def test_resolve_node_api_exposure(self):
+        """Method is exposed in mod APIs but not on ToyTree directly."""
+        self.assertTrue(hasattr(toytree.mod, "resolve_node"))
+        self.assertTrue(hasattr(self.tree.mod, "resolve_node"))
+        self.assertFalse(hasattr(self.tree, "resolve_node"))
+
+    def test_resolve_node_docs_match(self):
+        """API and submodule documentations updated to match."""
+        adoc = [i.strip() for i in self.tree.mod.resolve_node.__doc__.split("\n")]
+        sdoc = [i.strip() for i in toytree.mod.resolve_node.__doc__.split("\n")]
+        self.assertEqual(adoc, sdoc)
+
+    def test_resolve_node_with_remainder_group(self):
+        """Unspecified tips are auto-added as one trailing remainder group."""
+        out = self.tree.mod.resolve_node("X", splits=[["~[ab]$"], ["c"]])
+        node = out.get_nodes("X")[0]
+        leaves = [{str(i.name) for i in child.iter_leaves()} for child in node.children]
+        self.assertEqual(leaves, [{"a", "b"}, {"c"}, {"d", "e"}])
+
+    def test_resolve_node_raises_on_conflict(self):
+        """Raise if split divides descendants of one existing child clade."""
+        with self.assertRaises(ToytreeError):
+            self.tree.mod.resolve_node("X", splits=[["a", "c"], ["b", "d"]])
+
+    def test_resolve_node_raises_on_overlap(self):
+        """Raise if tip is assigned to multiple user groups."""
+        with self.assertRaises(ToytreeError):
+            self.tree.mod.resolve_node("X", splits=[["a", "b"], ["b", "c"]])
+
+    def test_resolve_node_raises_on_tips_outside_target(self):
+        """Raise if split group includes tips outside selected clade."""
+        with self.assertRaises(ToytreeError):
+            self.tree2.mod.resolve_node("X", splits=[["a", "x"], ["b"]])
+
+    def test_resolve_node_noop_on_non_polytomy(self):
+        """Return unchanged topology when selected node is not a polytomy."""
+        out = self.tree.mod.resolve_node("a", "b", splits=[["a"], ["b"]])
+        self.assertEqual(out.get_topology_id(), self.tree.get_topology_id())
+        self.assertEqual(out.nnodes, self.tree.nnodes)
+
+    def test_resolve_node_inplace_false(self):
+        """Copy mode keeps original tree unchanged."""
+        start = self.tree.nnodes
+        out = self.tree.mod.resolve_node("X", splits=[["~[ab]$"], ["c"]], inplace=False)
+        self.assertEqual(self.tree.nnodes, start)
+        self.assertGreater(out.nnodes, start)
+
+    def test_resolve_node_inplace_true(self):
+        """Inplace mode mutates and returns original tree object."""
+        tree = self.tree.copy()
+        start = tree.nnodes
+        out = tree.mod.resolve_node("X", splits=[["~[ab]$"], ["c"]], inplace=True)
+        self.assertIs(out, tree)
+        self.assertGreater(tree.nnodes, start)
+
+
+if __name__ == "__main__":
     toytree.set_log_level("CRITICAL")
 
     #### RUN INDIVIDUAL TESTS #########################################
@@ -452,15 +517,13 @@ if __name__ == '__main__':
         load.loadTestsFromTestCase(TestModPrune),
         load.loadTestsFromTestCase(TestModDropTips),
         load.loadTestsFromTestCase(TestModBisect),
+        load.loadTestsFromTestCase(TestModResolveNode),
         # l.loadTestsFromTestCase(TestModResolvePolytomies),
-
         load.loadTestsFromTestCase(TestModAddInternalNode),
-
     )
 
     runner = unittest.TextTestRunner()
     runner.run(unittest.TestSuite(tests))
-
 
     #### DO ALL TESTS #########################################
     # unittest.main()
