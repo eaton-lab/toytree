@@ -20,14 +20,15 @@ pytestmark = pytest.mark.skipif(
 )
 
 
-def test_live_resolve_names_smoke():
-    """Resolve one known name against live OTOL."""
-    table = otol.match_names(["Homo sapiens"], on_unresolved="raise")
-    assert int(table.iloc[0]["ott_id"]) > 0
+def test_live_fetch_json_match_names_smoke():
+    """Resolve one known name against live OTOL TNRS."""
+    rows = otol.fetch_json_match_names(["Homo sapiens"])
+    assert isinstance(rows, list)
+    assert rows
 
 
-def test_live_induced_subtree_smoke():
-    """Fetch a tiny induced subtree from live OTOL."""
-    nwk = otol.induced_subtree([770315, 542509], label_format="name")
-    assert isinstance(nwk, str)
-    assert nwk.strip().endswith(";")
+def test_live_fetch_json_induced_subtree_smoke():
+    """Fetch one tiny induced subtree payload from live OTOL."""
+    payload = otol.fetch_json_induced_subtree([770315, 542509], label_format="name")
+    assert isinstance(payload, dict)
+    assert str(payload.get("newick", "")).strip().endswith(";")
