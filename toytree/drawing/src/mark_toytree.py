@@ -18,9 +18,8 @@ import toyplot.text
 
 # Note: see toytree/drawing/src/render_tree.py for rendering code.
 class ToyTreeMark(Mark):
-    """Tree Mark optionally including Node markers and tip labels.
+    """Tree Mark optionally including Node markers and tip labels."""
 
-    """
     def __init__(self, **kwargs):
         Mark.__init__(self, annotation=False)
 
@@ -40,11 +39,11 @@ class ToyTreeMark(Mark):
 
     @property
     def nnodes(self) -> int:
-        """The number of nodes in the tree"""
+        """The number of nodes in the tree."""
         return self.ntable.shape[0]
 
     def domain(self, axis: str) -> Tuple[float, float]:
-        """The Nodes define the domain of data (tip labels not included).
+        """Define the domain of nodes/data (tip labels not included).
 
         The Cartesian axes will only place ticks across the data domain.
         """
@@ -57,7 +56,7 @@ class ToyTreeMark(Mark):
         return domain
 
     def extents(self, axis: Union[str, Sequence[str]]) -> Tuple[Tuple[np.ndarray], Tuple[np.ndarray]]:
-        """The tip labels and Node markers define the extents of the data.
+        """Return extents defined by tip labels and Node markers.
 
         This is extra padding to ensure node markers, e.g., circle doesn't
         get cut off by the axes. But most importantly it is to create
