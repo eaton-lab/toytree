@@ -1,17 +1,16 @@
 #!/usr/bin/env python
 
-"""Testing simple alternative validation
+"""Validation helpers for edge style sub-dicts used by tree drawing."""
 
-"""
-
-from typing import Any, Dict, TypeVar
-import numpy as np
+from typing import TypeVar
 
 from toytree.color import ToyColor
-from toytree.style.src.style_base import TreeStyle, EdgeStyle, EdgeAlignStyle
+from toytree.style.src.style_base import EdgeAlignStyle, EdgeStyle
+from toytree.utils import ToytreeError
 
 ToyTree = TypeVar("ToyTree")
-Color = TypeVar("Color", str, tuple, np.ndarray)
+ALLOWED_STROKE_LINECAP = {"round", "butt", "square"}
+ALLOWED_STROKE_LINEJOIN = {"miter", "round", "bevel"}
 
 __all__ = [
     "validate_edge_style",
@@ -19,81 +18,103 @@ __all__ = [
 ]
 
 
-# STILL USED!
 def validate_edge_style(
     tree: ToyTree,
-    style: TreeStyle = None,
+    style: EdgeStyle | None = None,
     **kwargs,
-) -> Dict[str, Any]:
-    """Return Dict with css style keys and ensure fill and stroke values.
+) -> EdgeStyle:
+    """Return validated edge style settings.
 
     Parameters
     ----------
-    base: TreeStyle or None
-        A base tree style to modify. If None then new NodeLabelStyle is used.
-    style: Mapping
-        A dict of style changes.
+    tree
+        Tree argument kept for API compatibility with other validators.
+    style
+        Existing edge style object. If None, a new default ``EdgeStyle`` is
+        created and updated.
+    **kwargs
+        Style key/value overrides to apply.
     """
-    # get user value or style base value
     if style is None:
         style = EdgeStyle()
 
-    # update default style with user style args
     for key, val in kwargs.items():
         style[key] = val
 
-    # convert stroke to ToyColor
     style.stroke = ToyColor(style.stroke)
-
-    # optionally convert fill and stroke to css string: ??
-    # "fill:{rgb};fill-opacity:{o};stroke:{rgb};stroke-opacity:{o}"
-    # if serialize:
-    #     style['stroke'] = style['stroke'].css
-    #     if not style.get("stroke-opacity"):
-    #         style['stroke-opacity'] = 1.0
+    _validate_stroke_linecap(style.stroke_linecap, label="edge_style")
+    _validate_stroke_linejoin(style.stroke_linejoin, label="edge_style")
+    style.stroke_dasharray = _coerce_stroke_dasharray(
+        style.stroke_dasharray,
+        label="edge_style",
+    )
     return style
 
 
-# STILL USED!
 def validate_edge_align_style(
     tree: ToyTree,
-    style: TreeStyle = None,
+    style: EdgeAlignStyle | None = None,
     **kwargs,
-) -> Dict[str, Any]:
-    """Return Dict with css style keys and ensure fill and stroke values.
+) -> EdgeAlignStyle:
+    """Return validated aligned-edge style settings.
 
     Parameters
     ----------
-    base: TreeStyle or None
-        A base tree style to modify. If None then new NodeLabelStyle is used.
-    style: Mapping
-        A dict of style changes.
+    tree
+        Tree argument kept for API compatibility with other validators.
+    style
+        Existing aligned-edge style object. If None, a new default
+        ``EdgeAlignStyle`` is created and updated.
+    **kwargs
+        Style key/value overrides to apply.
     """
-    # get user value or style base value
     if style is None:
         style = EdgeAlignStyle()
 
-    # update default style with user style args
     for key, val in kwargs.items():
         style[key] = val
 
-    # convert stroke to ToyColor
     style.stroke = ToyColor(style.stroke)
-
-    # check dasharray type
-    assert isinstance(style.stroke_dasharray, str), (
-        "edge_align_style 'stroke-dasharray' value must be a str "
-        "e.g., '2,2'")
-
-    # optionally convert fill and stroke to css string: ??
-    # "fill:{rgb};fill-opacity:{o};stroke:{rgb};stroke-opacity:{o}"
-    # if serialize:
-    #     style['stroke'] = style['stroke'].css
-    #     if not style.get("stroke-opacity"):
-    #         style['stroke-opacity'] = 1.0
+    _validate_stroke_linecap(style.stroke_linecap, label="edge_align_style")
+    _validate_stroke_linejoin(style.stroke_linejoin, label="edge_align_style")
+    style.stroke_dasharray = _coerce_stroke_dasharray(
+        style.stroke_dasharray,
+        label="edge_align_style",
+    )
     return style
 
 
-if __name__ == "__main__":
+def _coerce_stroke_dasharray(
+    value: str | tuple[int | float, int | float] | None,
+    label: str,
+) -> str | None:
+    """Normalize dasharray to SVG string representation."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        return value
+    if isinstance(value, tuple) and len(value) == 2:
+        a, b = value
+        if isinstance(a, (int, float)) and isinstance(b, (int, float)):
+            return f"{a},{b}"
+    raise ToytreeError(
+        f"{label} 'stroke-dasharray' must be str or a 2-item numeric tuple."
+    )
 
+
+def _validate_stroke_linecap(value: str, label: str) -> None:
+    """Validate accepted SVG stroke-linecap values."""
+    if value not in ALLOWED_STROKE_LINECAP:
+        allowed = ", ".join(sorted(ALLOWED_STROKE_LINECAP))
+        raise ToytreeError(f"{label} 'stroke-linecap' must be one of: {allowed}.")
+
+
+def _validate_stroke_linejoin(value: str, label: str) -> None:
+    """Validate accepted SVG stroke-linejoin values."""
+    if value not in ALLOWED_STROKE_LINEJOIN:
+        allowed = ", ".join(sorted(ALLOWED_STROKE_LINEJOIN))
+        raise ToytreeError(f"{label} 'stroke-linejoin' must be one of: {allowed}.")
+
+
+if __name__ == "__main__":
     pass

@@ -1,39 +1,77 @@
 #!/usr/bin/env python
 
-"""...
-
-Priority in color/opacity
--------------------------
-1. color settings can take a single or multiple colors. If multiple
-colors are entered then individual colors are assigned to each item,
-but if only one then the color is set to None and a value will be set
-to fill/stroke instead.
->>> color = [a, b, c, ...]
-
-2. 
->>> fill/stroke = x
-
-
-3. Color rgba value is the default opacity value used. But if user sets
-teh 
-
-"""
+"""Class to store default and built-in tree styles for tree.style."""
 
 from __future__ import annotations
-from typing import Union, Sequence, TypeVar, Tuple, Optional, Iterator, Any, List
-from dataclasses import dataclass, field
+
 from copy import deepcopy
+from dataclasses import dataclass, field
+from typing import Any, ClassVar, Iterator, Literal, Sequence, Tuple, TypeAlias, TypeVar
+
+from toytree.network.src.parse_network import AdmixtureEvent
 from toytree.utils import ToytreeError
 
 Color = TypeVar("Color")
 ToyTree = TypeVar("ToyTree")
+Numeric: TypeAlias = int | float
+NodeMask: TypeAlias = bool | Sequence[bool] | tuple[bool, bool, bool]
+LabelArg: TypeAlias = bool | str | Sequence[Any] | tuple[str, Any]
+RangeMapArg: TypeAlias = (
+    str
+    | tuple[str]
+    | tuple[str, Numeric]
+    | tuple[str, Numeric, Numeric]
+    | tuple[str, Numeric, Numeric, Numeric]
+)
+ColorMapArg: TypeAlias = (
+    str
+    | tuple[str]
+    | tuple[str, Any]
+    | tuple[str, Any, Numeric]
+    | tuple[str, Any, Numeric, Numeric]
+    | tuple[str, Any, Numeric, Numeric, Numeric]
+)
+AdmixtureTupleArg: TypeAlias = tuple[Any, ...]
+AdmixtureArg: TypeAlias = (
+    AdmixtureEvent
+    | AdmixtureTupleArg
+    | Sequence[AdmixtureEvent | AdmixtureTupleArg]
+    | None
+)
+DashArrayArg: TypeAlias = str | tuple[int | float, int | float] | None
 
 
 @dataclass(repr=False, init=True, eq=False)
 class SubStyle:
     """A subclass of Style for CSS on markers."""
 
+    _ALIASES: ClassVar[dict[str, str]] = {
+        "-toyplot-anchor-shift": "anchor_shift",
+        "anchor-shift": "anchor_shift",
+    }
+
+    @classmethod
+    def _normalize_key(cls, key: str) -> str:
+        """Return a canonical style key name."""
+        key = cls._ALIASES.get(key, key)
+        return key.replace("-", "_")
+
+    @classmethod
+    def _allowed_keys(cls) -> set[str]:
+        """Return supported style keys for this dataclass style object."""
+        return set(getattr(cls, "__dataclass_fields__", {}))
+
+    @classmethod
+    def _raise_invalid_key(cls, key: str) -> None:
+        """Raise a consistent error for unsupported style keys."""
+        allowed = ", ".join(sorted(i.replace("_", "-") for i in cls._allowed_keys()))
+        raise ToytreeError(
+            f"Unsupported style key '{key}' for {cls.__name__}. "
+            f"Allowed keys: {allowed}."
+        )
+
     def __delattr__(self, key) -> None:
+        """Do not allow deleting TreeStyle defaults."""
         raise ToytreeError("TreeStyle dict keys cannot be deleted.")
 
     def __repr__(self):
@@ -46,21 +84,24 @@ class SubStyle:
 
     def __getitem__(self, key):
         """Get item using Python name, fetch from dict as CSS name."""
-        if "-" in key:
-            if key == "-toyplot-anchor-shift":
-                key = "anchor_shift"
-            else:
-                key = key.replace("-", "_")
+        key = self._normalize_key(key)
+        if key not in self._allowed_keys():
+            self._raise_invalid_key(key)
         return self.__dict__[key]
 
     def __setitem__(self, key, value):
         """Set item using Python name, set to dict as CSS name."""
-        if "-" in key:
-            if key == "-toyplot-anchor-shift":
-                key = "anchor_shift"
-            else:
-                key = key.replace("-", "_")
-        self.__dict__[key] = value
+        setattr(self, key, value)
+
+    def __setattr__(self, key, value) -> None:
+        """Allow only declared style keys and private internals."""
+        if key.startswith("_"):
+            object.__setattr__(self, key, value)
+            return
+        nkey = self._normalize_key(key)
+        if nkey not in self._allowed_keys():
+            self._raise_invalid_key(key)
+        object.__setattr__(self, nkey, value)
 
     def copy(self) -> SubStyle:
         """Return a deepcopy."""
@@ -69,95 +110,122 @@ class SubStyle:
 
 @dataclass(repr=False, init=True, eq=False)
 class NodeStyle(SubStyle):
+    """Style fields for node marker rendering."""
+
     fill: Color = (0.4, 0.7607843137254902, 0.6470588235294118, 1.0)
-    fill_opacity: float = None
+    fill_opacity: float | None = None
     stroke: Color = "#262626"
     stroke_width: float = 1.5
-    stroke_opacity: float = None
+    stroke_opacity: float | None = None
+    stroke_linecap: Literal["round", "butt", "square"] | None = None
+    stroke_linejoin: Literal["miter", "round", "bevel"] | None = None
+    stroke_dasharray: DashArrayArg = None
+    opacity: float | None = None
 
 
 @dataclass(repr=False, init=True, eq=False)
 class NodeLabelStyle(SubStyle):
+    """Style fields for node label text rendering."""
+
     fill: Color = (0.145, 0.145, 0.145, 1.0)
-    fill_opacity: float = 1.0
-    font_size: Union[int, str] = 9
+    fill_opacity: float | None = 1.0
+    stroke: Color | None = None
+    stroke_opacity: float | None = None
+    stroke_width: float | None = None
+    font_size: int | str = 9
     font_weight: int = 300
     font_family: str = "Helvetica"
-    anchor_shift: Union[str, int] = 0
-    baseline_shift: Union[str, int] = 0
+    anchor_shift: str | int | float = 0
+    baseline_shift: str | int | float = 0
     text_anchor: str = "middle"
+    opacity: float | None = None
 
 
 @dataclass(repr=False, init=True, eq=False)
 class EdgeStyle(SubStyle):
+    """Style fields for tree edge path rendering."""
+
     stroke: Color = (0.145, 0.145, 0.145, 1.0)
     stroke_width: float = 2.0
-    stroke_opacity: Optional[float] = None
-    stroke_linecap: str = "round"
-    stroke_dasharray: Optional[str] = None
+    stroke_opacity: float | None = None
+    stroke_linecap: Literal["round", "butt", "square"] = "round"
+    stroke_linejoin: Literal["miter", "round", "bevel"] = "round"
+    stroke_dasharray: DashArrayArg = None
+    opacity: float | None = None
 
 
 @dataclass(repr=False, init=True, eq=False)
 class EdgeAlignStyle(SubStyle):
+    """Style fields for optional tip-align guide edges."""
+
     stroke: Color = (0.66, 0.66, 0.66, 1)
     stroke_width: int = 2
-    stroke_opacity: Optional[float] = 0.75
-    stroke_linecap: str = "round"
-    stroke_dasharray: str = "2,4"
+    stroke_opacity: float | None = 0.75
+    stroke_linecap: Literal["round", "butt", "square"] = "round"
+    stroke_linejoin: Literal["miter", "round", "bevel"] = "round"
+    stroke_dasharray: DashArrayArg = "2,4"
+    opacity: float | None = None
 
 
 @dataclass(repr=False, init=True, eq=False)
 class TipLabelStyle(SubStyle):
+    """Style fields for tip label text rendering."""
+
     fill: Color = (0.145, 0.145, 0.145, 1.0)
-    fill_opacity: Optional[float] = None
-    font_size: Union[str, float] = 12
+    fill_opacity: float | None = None
+    stroke: Color | None = None
+    stroke_opacity: float | None = None
+    stroke_width: float | None = None
+    font_size: str | float = 12
     font_weight: int = 300
     font_family: str = "Helvetica"
-    anchor_shift: Union[str, float] = 15
-    baseline_shift: Union[str, int] = 0
+    anchor_shift: str | float = 15
+    baseline_shift: str | int | float = 0
     text_anchor: str = "start"
+    opacity: float | None = None
 
 
 @dataclass(repr=False, init=True, eq=False)
 class TreeStyle:
     """The base tree style on top of which other tree_styles are defined."""
-    tree_style: str = None
+
+    tree_style: str | None = None
     """: A tree_style name to set a base style."""
-    height: int = None
+    height: int | None = None
     """: Canvas height in px units."""
-    width: int = None
+    width: int | None = None
     """: Canvas width in px units."""
     layout: str = "r"
     """: Tree layout method name for projecting tree in coordinate space."""
-    edge_type: str = "p"
+    edge_type: Literal["p", "c", "b"] = "p"
     """: Edge type defines straight, diagonal, or curved edges."""
-    edge_colors: Union[Color, Sequence[Color], Tuple[str]] = None
+    edge_colors: Color | Sequence[Color] | ColorMapArg | None = None
     """: Edges can be all the same or different colors."""
-    edge_widths: Union[float, Sequence[float], Tuple[str]] = None
+    edge_widths: Numeric | Sequence[Numeric] | RangeMapArg | None = None
     """: Edges can be all the same or different widths in px units."""
 
-    node_mask: Union[bool, Sequence[bool], Tuple[int, int, int]] = None
+    node_mask: NodeMask | None = None
     """: Node labels are str plotted on top of Node markers."""
-    node_colors: Union[Color, Sequence[Color], Tuple[str]] = None
+    node_colors: Color | Sequence[Color] | ColorMapArg | None = None
     """: Node colors can set different 'fill' to Node markers."""
-    node_sizes: Union[float, Sequence[float], Tuple[str]] = 0.0
+    node_sizes: Numeric | Sequence[Numeric] | RangeMapArg | None = 0.0
     """: Node sizes can set different size to Node markers."""
-    node_markers: Union[str, Sequence[str]] = "o"
+    node_markers: str | Sequence[Any] = "o"
     """: Node markers define the shape of Node markers."""
-    node_hover: Union[bool, str, Sequence[str]] = None
+    node_hover: bool | str | Sequence[str] | None = None
     """: Node hover creates a tooltip for interactive data inspection."""
-    node_labels: Union[bool, str, Sequence[str], Tuple[str]] = False
+    node_labels: LabelArg | None = False
     """: Node labels are str plotted on top of Node markers."""
     node_as_edge_data: bool = False
     """: Node markers and labels are shown as edge markers and labels."""
 
-    tip_labels: Union[bool, Sequence[str], Tuple[str]] = True
+    tip_labels: LabelArg | None = True
     """: Tip labels are str plotted below leaf Node markers."""
-    tip_labels_colors: Union[Color, Sequence[Color], Tuple[str]] = None
+    tip_labels_colors: Color | Sequence[Color] | ColorMapArg | None = None
     """: Tip labels colors can be same or different for each tip."""
-    tip_labels_angles: Union[float, Sequence[float]] = None
+    tip_labels_angles: Numeric | Sequence[Numeric] | None = None
     """: Tip labels angles can be set but are usually auto-generated."""
-    tip_labels_align: bool = None
+    tip_labels_align: bool | None = None
     """: Align tip labels at farthest Node from root."""
 
     edge_style: EdgeStyle = field(default_factory=EdgeStyle)
@@ -184,7 +252,7 @@ class TreeStyle:
     """: Shift tree on Cartesian axes so Node 0 is at (xbaseline, ybaseline)."""
     shrink: float = 0.0
     """: Add extra tip-label-direction fitting extent (px space)."""
-    admixture_edges: List[Tuple] = None
+    admixture_edges: AdmixtureArg = None
 
     def __repr__(self):
         """Return a serialized JSON formatted style dict."""
@@ -210,7 +278,6 @@ class TreeStyle:
 
 
 if __name__ == "__main__":
-
     ts = TreeStyle()
 
     ts.tip_labels_style.font_size = 15

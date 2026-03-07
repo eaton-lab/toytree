@@ -15,25 +15,25 @@ of TreeStyle objects because this allows for re-using these more
 easily in annotation functions.
 """
 
-from typing import Mapping, Any, TypeVar
+from typing import Any, Mapping, TypeVar
 
 from toytree.style.src.style_base import TreeStyle
 from toytree.style.src.validate_data import (
-    validate_numeric,
-    validate_mask,
-    validate_markers,
+    validate_admixture_edges,
     validate_colors,
     validate_hover,
     validate_labels,
-    validate_admixture_edges,
+    validate_markers,
+    validate_mask,
+    validate_numeric,
 )
-from toytree.style.src.validate_nodes import validate_node_style
-from toytree.style.src.validate_node_labels import validate_node_labels_style
-from toytree.style.src.validate_tips import validate_tip_labels_style
 from toytree.style.src.validate_edges import (
-    validate_edge_style,
     validate_edge_align_style,
+    validate_edge_style,
 )
+from toytree.style.src.validate_node_labels import validate_node_labels_style
+from toytree.style.src.validate_nodes import validate_node_style
+from toytree.style.src.validate_tips import validate_tip_labels_style
 
 # from toytree.style.src.validate_edges import validate_edge_widths
 ToyTree = TypeVar("ToyTree")
