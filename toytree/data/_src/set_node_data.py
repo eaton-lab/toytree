@@ -2,6 +2,7 @@
 
 """Function to set data to all Node objects in a tree."""
 
+from collections.abc import Mapping as MappingABC
 from numbers import Integral
 from typing import Any, Mapping, Sequence, TypeVar, Union
 
@@ -30,7 +31,7 @@ of length nnodes. This appears to be a Series of len={} while nnodes={}.\
 def set_node_data(
     tree: ToyTree,
     feature: str,
-    data: Union[Mapping[Query, Any], Sequence[Any]] = None,
+    data: Mapping[Query, Any] | pd.Series | Sequence[Any] = None,
     default: Any = None,
     inherit: bool = False,
     allow_unmatched_queries: bool = False,
@@ -106,7 +107,7 @@ def set_node_data(
     >>> new = tree.set_node_data(feature="Ne", data={'~r[0-5]+': 1e5})
     >>> new = tree.set_node_data("state", {10: "A", 11: "B"}, inherit=True")
 
-    or, set data to Nodes as a Series
+    or, set data to Nodes as a list/ndarray/pd.Series
     >>> new = tree.set_node_data("X", range(tree.nnodes))
     """
     # immutable; do not allow modifying topology attributes
@@ -120,23 +121,25 @@ def set_node_data(
     if data is None:
         mapping = {}
     else:
-        # mapping-like data
+        # for dict, pd.Series, ... but not list-like
+        if isinstance(data, MappingABC):
+            raw_mapping = dict(data)
+        # for list/ndarray like data
+        else:
+            try:
+                raw_mapping = dict(data)
+            except (TypeError, ValueError):
+                # Sequence-like data in idx order (e.g., list/ndarray) should map
+                # directly to node indices when its length matches nnodes.
+                if not len(data) == tree.nnodes:
+                    msg = INVALID_SET_NODE_DATA_TYPE.format(len(data), tree.nnodes)
+                    raise ToytreeError(msg)
+                raw_mapping = dict(zip(range(tree.nnodes), data))
+
         try:
-            mapping = dict(data)
             mapping = expand_node_mapping(
                 tree,
-                mapping,
-                allow_unmatched=allow_unmatched_queries,
-            )
-        except TypeError:
-            # series-like data in idx order
-            if not len(data) == tree.nnodes:
-                msg = INVALID_SET_NODE_DATA_TYPE.format(len(data), tree.nnodes)
-                raise ToytreeError(msg)
-            mapping = dict(zip(range(tree.nnodes), data))
-            mapping = expand_node_mapping(
-                tree,
-                mapping,
+                raw_mapping,
                 allow_unmatched=allow_unmatched_queries,
             )
         except ValueError as exc:
@@ -263,6 +266,31 @@ def set_node_data_from_dataframe(
 
     # choose query source and feature columns
     if query_column is None:
+        # Inferred behavior:
+        # - non-RangeIndex: index contains queries; all columns are features.
+        # - RangeIndex:
+        #   - If table_headers were provided, assume first column is query
+        #     (headerless table usage).
+        #   - If first column label is a common query name, assume first
+        #     column is query.
+        #   - Otherwise use the index as query source.
+        if not isinstance(table.index, pd.RangeIndex):
+            query_series = pd.Series(table.index, index=table.index)
+            feature_table = table.copy()
+        else:
+            first_col = table.columns[0]
+            first_col_l = str(first_col).lower()
+            infer_first_col_query = (
+                (table_headers is not None)
+                or (first_col_l in {"query", "idx", "name"})
+            )
+            if infer_first_col_query:
+                query_series = table.iloc[:, 0]
+                feature_table = table.iloc[:, 1:].copy()
+            else:
+                query_series = pd.Series(table.index, index=table.index)
+                feature_table = table.copy()
+    elif query_column == "index":
         query_series = pd.Series(table.index, index=table.index)
         feature_table = table.copy()
     elif isinstance(query_column, Integral):
@@ -316,11 +344,10 @@ def set_node_data_from_dataframe(
 if __name__ == "__main__":
 
     import toytree
-    import numpy as np
     toytree.set_log_level("INFO")
 
     tree = toytree.rtree.unittree(ntips=10)
-    new_tree = set_node_data(tree, feature="height", data={0: 10, 'r1': 20, tree[3]: 50}, default=5000)    
+    new_tree = set_node_data(tree, feature="height", data={0: 10, 'r1': 20, tree[3]: 50}, default=5000)
     new_tree = set_node_data(tree, feature="Ne", default=5000)
     new_tree = set_node_data(tree, feature="Ne", data={0: 1e5, 1: 1e6, 2: 1e3})
     new_tree = set_node_data(tree, feature="Ne", data={0: 1e5, 1: 1e6}, default=5000)
@@ -345,3 +372,5 @@ if __name__ == "__main__":
     anc = tre.get_ancestors(1, 2, 3)
     tre = tre.set_node_data("color", {i.idx: "red" for i in anc}, default="blue")
     print(tre.get_node_data())
+
+    tre.set_node_data("A", ['a'] * tre.nnodes, )
