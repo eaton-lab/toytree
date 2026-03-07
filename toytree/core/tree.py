@@ -92,6 +92,7 @@ _TOYTREE_METHOD_MODULES = (
 
 def _ensure_toytree_methods_loaded():
     from importlib import import_module
+
     for module_name in _TOYTREE_METHOD_MODULES:
         import_module(module_name)
 
@@ -176,9 +177,9 @@ class ToyTree(metaclass=ToyTreeMeta):
     # DUNDERS
     #####################################################
     # def __len__(self) -> int:
-        # """Ambiguous, does one expect ntips or nnodes? So it is
-        # not supported. See .ntips and .nnodes attrs."""
-        # return self.ntips
+    # """Ambiguous, does one expect ntips or nnodes? So it is
+    # not supported. See .ntips and .nnodes attrs."""
+    # return self.ntips
 
     def __iter__(self) -> Iterator[Node]:
         """ToyTree is iterable, returning Nodes in idx order."""
@@ -206,7 +207,9 @@ class ToyTree(metaclass=ToyTreeMeta):
             # allow slicing by ints, e.g., [3:10:2]
             else:
                 if hasattr(idx, "indices"):
-                    return [self._idx_dict[idx] for idx in range(*idx.indices(self.nnodes))]
+                    return [
+                        self._idx_dict[idx] for idx in range(*idx.indices(self.nnodes))
+                    ]
                 raise ToytreeError("invalid indexing type.")
 
         # raise a helpful error message.
@@ -227,7 +230,9 @@ class ToyTree(metaclass=ToyTreeMeta):
         try:
             return getattr(type(self), name).__get__(self, type(self))
         except AttributeError as exc:
-            raise AttributeError(f"{type(self).__name__!s} has no attribute {name!r}") from exc
+            raise AttributeError(
+                f"{type(self).__name__!s} has no attribute {name!r}"
+            ) from exc
 
     # DECIDED NOT TO DO THIS
     # def __str__(self) -> str:
@@ -322,8 +327,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         tree = self if inplace else self.copy()
         for feat in feature:
             if feat in ("idx", "name", "height", "dist", "support"):
-                raise NodeDataError(
-                    f"Cannot remove required Node feature: {feat}")
+                raise NodeDataError(f"Cannot remove required Node feature: {feat}")
             for node in tree.traverse():
                 if hasattr(node, feat):
                     delattr(node, feat)
@@ -357,8 +361,8 @@ class ToyTree(metaclass=ToyTreeMeta):
 
     def is_ultrametric(self, tol: float = 1e-9) -> bool:
         """Return True if tree is ultrametric (all tips align within tolerance)."""
-        heights = [i._height for i in self[:self.ntips]]
-        return np.allclose(heights, 0., atol=tol)
+        heights = [i._height for i in self[: self.ntips]]
+        return np.allclose(heights, 0.0, atol=tol)
 
     def copy(self) -> ToyTree:
         """Return a deepcopy of the ToyTree."""
@@ -428,7 +432,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         Node objects are immutable.
         """
         # clear depth counters used to get heights during traversal
-        depths = {self.treenode: 0.}
+        depths = {self.treenode: 0.0}
 
         # queue starts with root children, and stack starts with root.
         queue = list(self.treenode._children)
@@ -499,8 +503,9 @@ class ToyTree(metaclass=ToyTreeMeta):
     #################################################
 
     def _iter_nodes_by_name_match(self, *query: str) -> Iterator[Node]:
-        """Return Iterator over Nodes in idxorder matched by leaf names
-        while allowing for regular expression matched of names.
+        """Yield Nodes in idxorder matched by leaf names.
+
+        Allows for regular expression matched of names.
         """
         # compile regex strings
         comps = []
@@ -642,8 +647,8 @@ class ToyTree(metaclass=ToyTreeMeta):
         if len(nodes) == 1:
             return nodes[0]
         # include_self necessary to find ancestor between tip ^ parent
-        nset = set.intersection(*(
-            set(i.iter_ancestors(include_self=True)) for i in nodes)
+        nset = set.intersection(
+            *(set(i.iter_ancestors(include_self=True)) for i in nodes)
         )
         return min(nset)
 
@@ -754,9 +759,9 @@ class ToyTree(metaclass=ToyTreeMeta):
         # default is all False (show none)
         arr = np.zeros(self.nnodes, dtype=np.bool_)
         if show_tips:
-            arr[:self.ntips] = True
+            arr[: self.ntips] = True
         if show_internal:
-            arr[self.ntips:-1] = True
+            arr[self.ntips : -1] = True
         if show_root:
             arr[-1] = True
         # check show this way because 0 matches a Node.
@@ -764,6 +769,45 @@ class ToyTree(metaclass=ToyTreeMeta):
             # supports regex expansion
             for node in self.get_nodes(*show):
                 arr[node.idx] = True
+        return arr
+
+    def get_tip_mask(
+        self,
+        *show: Query,
+        show_tips: bool = False,
+    ) -> np.ndarray:
+        """Return a boolean array selecting which tip markers are shown.
+
+        This returns a boolean array in tip idx order (``0..ntips-1``).
+        True values are shown and False values are hidden.
+
+        Parameters
+        ----------
+        *show: int, str or Node
+            Select tip Nodes to show using a Query (int or str labels,
+            including regular expressions). Queried internal Nodes are
+            ignored.
+        show_tips: bool
+            If True all tip Nodes are shown.
+
+        Returns
+        -------
+        np.ndarray
+            Boolean array of size ``ntips``.
+
+        Examples
+        --------
+        >>> tree = toytree.rtree.unittree(8, seed=123)
+        >>> mask = tree.get_tip_mask("r0", "r3")
+        >>> tree.annotate.add_tip_markers(axes, mask=mask)
+        """
+        arr = np.zeros(self.ntips, dtype=np.bool_)
+        if show_tips:
+            arr[:] = True
+        if show != ():
+            for node in self.get_nodes(*show):
+                if node.is_leaf():
+                    arr[node.idx] = True
         return arr
 
     def is_monophyletic(self, *query: Query) -> bool:
@@ -813,7 +857,7 @@ class ToyTree(metaclass=ToyTreeMeta):
     ###################################################
     def iter_tip_labels(self) -> Iterator[str]:
         """Return generator of tip labels in idx order."""
-        for node in self[:self.ntips]:
+        for node in self[: self.ntips]:
             yield node._name
 
     def get_tip_labels(self) -> List[str]:
@@ -867,17 +911,16 @@ class ToyTree(metaclass=ToyTreeMeta):
         # bipartitions are consistently ordered by alphanumeric names.
         # so we sort so that trees with the same topology but rotated
         # nodes will have the same bipartitions.
-        biparts = sorted(self.iter_bipartitions(
-            feature=feature, sort=True, type=tuple))
+        biparts = sorted(self.iter_bipartitions(feature=feature, sort=True, type=tuple))
 
         # optional: duplicate last bipart to indicate rooting
         if include_root and self.is_rooted():
             biparts += [
-                tuple(sorted(
-                    sorted(i.get_leaf_names()) for i in self.treenode.children
-                ))
+                tuple(
+                    sorted(sorted(i.get_leaf_names()) for i in self.treenode.children)
+                )
             ]
-        return md5(str(biparts).encode('utf-8')).hexdigest()
+        return md5(str(biparts).encode("utf-8")).hexdigest()
 
     ###################################################
     # COORDINATE LAYOUT FUNCTIONS
@@ -902,7 +945,9 @@ class ToyTree(metaclass=ToyTreeMeta):
     # - get_feature_dict
     ###################################################
 
-    def get_feature_dict(self, keys: str = None, values: str = None, tips_only: bool = False) -> Dict[str, Any]:
+    def get_feature_dict(
+        self, keys: str = None, values: str = None, tips_only: bool = False
+    ) -> Dict[str, Any]:
         """Return a dict mapping selected Node features as keys, values.
 
         This can be used to return a dict mapping any two arbitrary
@@ -934,7 +979,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         ndict = {}
         try:
             # _, node in self._idx_dict.items():
-            visit = self[:self.ntips] if tips_only else self
+            visit = self[: self.ntips] if tips_only else self
             for node in visit:
                 if keys is not None:
                     key = getattr(node, keys)
@@ -957,7 +1002,8 @@ class ToyTree(metaclass=ToyTreeMeta):
         msg = (
             f"feature_dict cannot be built because {keys} "
             "does not have unique values, and thus Nodes with the "
-            "same value cannot be represented as keys in the dict.")
+            "same value cannot be represented as keys in the dict."
+        )
         if tips_only:
             if len(ndict) != self.ntips:
                 raise ToytreeError(msg)
@@ -982,6 +1028,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         also make a `toytree.save()` shortcut to saving in formats.
         """
         from toytree.utils import show
+
         canvas, axes, mark = self.draw(**kwargs)
         show([canvas], new=new, tmpdir=tmpdir)
         return canvas, axes, mark
@@ -994,21 +1041,43 @@ class ToyTree(metaclass=ToyTreeMeta):
         axes: Cartesian | None = None,
         layout: str | None = None,
         tip_labels: bool | str | Sequence[Any] | tuple[str, Any] | None = None,
-        tip_labels_colors: ColorType | Sequence[ColorType] | str | TupleColorMap | None = None,
+        tip_labels_colors: ColorType
+        | Sequence[ColorType]
+        | str
+        | TupleColorMap
+        | None = None,
         tip_labels_angles: int | float | Sequence[int | float] | None = None,
         tip_labels_style: Mapping[str, Any] | None = None,
         tip_labels_align: bool | None = None,
         node_mask: bool | Sequence[bool] | tuple[bool, bool, bool] | None = None,
         node_labels: bool | str | Sequence[Any] | tuple[str, Any] | None = None,
         node_labels_style: Mapping[str, Any] | None = None,
-        node_sizes: int | float | Sequence[int | float] | str | TupleRangeMap | None = None,
-        node_colors: ColorType | Sequence[ColorType] | str | TupleColorMap | None = None,
+        node_sizes: int
+        | float
+        | Sequence[int | float]
+        | str
+        | TupleRangeMap
+        | None = None,
+        node_colors: ColorType
+        | Sequence[ColorType]
+        | str
+        | TupleColorMap
+        | None = None,
         node_style: Mapping[str, Any] | None = None,
         node_hover: bool | str | Sequence[str] | None = None,
         node_markers: str | Sequence[Any] | None = None,
         node_as_edge_data: bool = False,
-        edge_colors: ColorType | Sequence[ColorType] | str | TupleColorMap | None = None,
-        edge_widths: int | float | Sequence[int | float] | str | TupleRangeMap | None = None,
+        edge_colors: ColorType
+        | Sequence[ColorType]
+        | str
+        | TupleColorMap
+        | None = None,
+        edge_widths: int
+        | float
+        | Sequence[int | float]
+        | str
+        | TupleRangeMap
+        | None = None,
         edge_type: Literal["p", "c", "b"] | None = None,
         edge_style: Mapping[str, Any] | None = None,
         edge_align_style: Mapping[str, Any] | None = None,
@@ -1037,6 +1106,9 @@ class ToyTree(metaclass=ToyTreeMeta):
         multiple Marks onto the same cartesian coordinates, and to
         style axes ticks and labels (see docs). The Mark object can
         be further modified to edit or access style args.
+        When `scale_bar` is enabled, the scale bar is rendered on a
+        hidden companion Cartesian so tree-depth ticks stay tied to
+        tree geometry even if label or annotation extents expand.
 
         Parameters
         ----------
@@ -1163,7 +1235,9 @@ class ToyTree(metaclass=ToyTreeMeta):
             If True, show a scale axis in raw tree distance units.
             If False, hide the scale axis. If numeric, tick labels are
             divided by that value (unit scaling). For example,
-            `scale_bar=1e6` divides labels by `1e6` (millions).
+            `scale_bar=1e6` divides labels by `1e6` (millions). The
+            returned `axes` remains the main plotting axes; the scale
+            bar itself is drawn on a linked companion axes.
         padding: float
             Padding space between the drawing and the visible axes. This
             is a setting of the Cartesian axes and can be modified more
@@ -1217,6 +1291,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         >>> toyplot.svg.render(canvas, "saved-plot.svg")
         """
         from toytree.drawing import draw_toytree
+
         kwargs = dict(
             # toytree=self,
             tree_style=tree_style,
@@ -1292,10 +1367,9 @@ class ToyTree(metaclass=ToyTreeMeta):
         return tree_lines
 
 
-
 if __name__ == "__main__":
-
     import toytree
+
     tree_ = toytree.rtree.unittree(12, treeheight=1232344, seed=123)
     # tree = tree_.mod.edges_slider(0.5)
     # c, a, m = tree_._draw_browser(tree_style='s', layout='d', new=False)
