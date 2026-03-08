@@ -25,12 +25,17 @@ def sync_scale_cartesian_ranges(axes: Cartesian, scale_axes: Cartesian) -> None:
 
 
 def _ensure_scale_axes_render_order(axes: Cartesian, scale_axes: Cartesian) -> None:
-    """Keep scale axes after host axes so scale graphics render on top."""
+    """Keep companion scale axes before host axes in render order.
+
+    Rendering the companion axes first prevents backend-specific cases
+    (notably reportlab PNG / PDF paths with opaque canvas backgrounds)
+    where later Cartesian groups can visually overpaint tree geometry.
+    """
     canvas = _get_canvas_for_axes(axes)
     targets = axes._scenegraph._relationships["render"]._targets[canvas]
     if (axes in targets) and (scale_axes in targets):
         targets.remove(scale_axes)
-        targets.insert(targets.index(axes) + 1, scale_axes)
+        targets.insert(targets.index(axes), scale_axes)
 
 
 def get_toytree_scale_cartesian(

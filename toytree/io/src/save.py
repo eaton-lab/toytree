@@ -11,13 +11,14 @@ saving canvases.
 
 from __future__ import annotations
 
+from collections.abc import Callable, MutableMapping
 from pathlib import Path
 from typing import Any, Union
 
 SUFFIXES = (".html", ".svg", ".pdf", ".png")
 
 
-def save(canvas: Any, path: Union[str, Path]):
+def save(canvas: Any, path: Union[str, Path]) -> None:
     """Save a Canvas to a file path.
 
     A Canvas can be saved in a variety of formats. If no recognized
@@ -26,20 +27,33 @@ def save(canvas: Any, path: Union[str, Path]):
 
     Parameters
     ----------
-    canvas: toyplot.Canvas
-        A Canvas object created from a toyplot or toytree drawing.
-    path: str | Path
-        A filepath at which to save the canvas. The suffix of the path
-        is used to designate the file type. Default is HTML, but SVG,
-        PDF, and PNG are also supported.
+    canvas : toyplot.Canvas
+        A canvas object created from a Toyplot or ToyTree drawing.
+    path : str | Path
+        Filepath where output will be written. If no filename suffix is
+        provided then ``.html`` is appended by default.
 
-        Note
-        ----
-        Canvases containing toytree linear-gradient edge annotations are
-        currently supported only for HTML and SVG outputs. Attempting to
-        save these canvases directly to PDF or PNG raises a ``ValueError``.
-        Write to SVG first, then export to PDF/PNG using Inkscape or
-        Illustrator.
+    Notes
+    -----
+    Canvases containing toytree linear-gradient edge annotations are
+    currently supported only for HTML and SVG outputs. Attempting to
+    save these canvases directly to PDF or PNG raises a ``ValueError``.
+    Write to SVG first, then export to PDF/PNG using Inkscape or
+    Illustrator.
+
+    PDF and PNG exports currently force canvas background-color to
+    ``transparent`` during render and then restore it immediately
+    afterward. This is a temporary workaround for backend overpaint
+    artifacts with opaque canvas backgrounds.
+
+    Raises
+    ------
+    TypeError
+        If ``canvas`` does not look like a Toyplot canvas object.
+    OSError
+        If the filename suffix is not recognized.
+    ValueError
+        If gradient edge marks are present and output is PDF or PNG.
 
     Example
     -------
@@ -47,20 +61,21 @@ def save(canvas: Any, path: Union[str, Path]):
     canvas, axes, mark = tree.draw(ts='c')
     toytree.save(canvas, "./drawing.svg")
     """
-    # get suffix for path
-    path = Path(path)
-    suffix = path.suffix
+    _validate_canvas_like(canvas)
 
-    # if not suffix (only filename) then use html.
-    if not suffix:
-        suffix = ".html"
+    # normalize path and suffix once.
+    path = Path(path)
+    raw_suffix = path.suffix
+    suffix = (raw_suffix or ".html").lower()
 
     # if suffix not recognized then raise error.
-    if suffix.lower() not in SUFFIXES:
+    if suffix not in SUFFIXES:
         raise OSError(
-            f"File path suffix not recognized ({suffix}). "
+            f"File path suffix not recognized ({raw_suffix or ''}). "
             f"Path should end with one of {SUFFIXES}."
         )
+
+    output_path = path if raw_suffix else path.with_suffix(".html")
 
     # Fast preflight check: inspect toytree marks in the canvas scenegraph
     # instead of triggering an additional HTML/SVG render pass.
@@ -71,27 +86,75 @@ def save(canvas: Any, path: Union[str, Path]):
             "and then export to PDF/PNG in Inkscape or Illustrator."
         )
 
-    # ...
+    renderer = _get_renderer_for_suffix(suffix)
+
+    if suffix in (".pdf", ".png"):
+        _render_with_transparent_background(canvas, renderer, str(output_path))
+    else:
+        renderer(canvas, str(output_path))
+
+
+def _validate_canvas_like(canvas: Any) -> None:
+    """Raise if input is not compatible with toyplot canvas rendering."""
+    missing = []
+    if not hasattr(canvas, "_scenegraph"):
+        missing.append("_scenegraph")
+    if not hasattr(canvas, "style"):
+        missing.append("style")
+    if missing:
+        raise TypeError(
+            "save() expected a toyplot Canvas-like object; missing required "
+            f"attributes: {', '.join(missing)}."
+        )
+
+
+def _get_renderer_for_suffix(suffix: str) -> Callable[[Any, str], Any]:
+    """Return backend render function for a normalized suffix."""
     if suffix == ".html":
         import toyplot.html
 
-        toyplot.html.render(canvas, str(path.with_suffix(suffix)))
+        return toyplot.html.render
 
-    elif suffix == ".svg":
+    if suffix == ".svg":
         import toyplot.svg
 
-        toyplot.svg.render(canvas, str(path.with_suffix(suffix)))
+        return toyplot.svg.render
 
-    elif suffix == ".pdf":
+    if suffix == ".pdf":
         import toyplot.pdf
 
-        toyplot.pdf.render(canvas, str(path.with_suffix(suffix)))
+        return toyplot.pdf.render
 
-    elif suffix == ".png":
+    if suffix == ".png":
         import toyplot.png
 
-        # TODO: accommodate pip installs w/o ghostscript here
-        toyplot.png.render(canvas, str(path.with_suffix(suffix)))
+        return toyplot.png.render
+
+    # Keep a defensive guard here even though save() validates suffix.
+    raise RuntimeError(f"No renderer configured for suffix: {suffix}")
+
+
+def _render_with_transparent_background(
+    canvas: Any,
+    renderer: Callable[[Any, str], Any],
+    output_path: str,
+) -> None:
+    """Render canvas after temporarily forcing transparent background."""
+    style = getattr(canvas, "style", None)
+    if not isinstance(style, MutableMapping):
+        renderer(canvas, output_path)
+        return
+
+    sentinel = object()
+    original = style.get("background-color", sentinel)
+    style["background-color"] = "transparent"
+    try:
+        renderer(canvas, output_path)
+    finally:
+        if original is sentinel:
+            style.pop("background-color", None)
+        else:
+            style["background-color"] = original
 
 
 def _canvas_has_toytree_linear_gradients(canvas: Any) -> bool:
