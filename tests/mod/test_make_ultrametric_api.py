@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import unittest
 
 from toytree.utils import ToytreeError
 from toytree.mod._src.penalized_likelihood.pl_utils import (
@@ -9,7 +8,10 @@ from toytree.mod._src.penalized_likelihood.pl_utils import (
 )
 
 
-class TestMakeUltrametricAPI(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestMakeUltrametricAPI(PytestCompat):
     def test_discrete_estimate_returns_best_and_search(self):
         tree = get_tree_with_categorical_rates(ntips=10, nrates=2, seed=123)
         res = tree.mod.edges_make_ultrametric(
@@ -52,5 +54,3 @@ class TestMakeUltrametricAPI(unittest.TestCase):
             )
 
 
-if __name__ == "__main__":
-    unittest.main()

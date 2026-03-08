@@ -1,14 +1,133 @@
-"""Shared pytest fixtures for repository tests."""
+"""Shared pytest fixtures and helpers for repository tests."""
 
 from __future__ import annotations
 
 from collections.abc import Callable
+from contextlib import contextmanager
+import builtins
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
 import pytest
 
 import toytree
+
+
+class PytestCompat:
+    """Minimal unittest-like assertions for pytest migration.
+
+    This class allows existing unittest-style test classes to run under
+    pytest with minimal logic churn. It also bridges ``setUp`` / ``tearDown``
+    into pytest's xunit hooks.
+    """
+
+    def setup_method(self, _method):
+        """Call legacy ``setUp`` if it exists."""
+        setup = getattr(self, "setUp", None)
+        if callable(setup):
+            setup()
+
+    def teardown_method(self, _method):
+        """Call legacy ``tearDown`` if it exists."""
+        teardown = getattr(self, "tearDown", None)
+        if callable(teardown):
+            teardown()
+
+    class _AssertRaisesContext:
+        """Compat context manager exposing ``.exception`` like unittest."""
+
+        def __init__(self, exc, match=None):
+            self._exc = exc
+            self._match = match
+            self._ctx = None
+            self._excinfo = None
+            self.exception = None
+
+        def __enter__(self):
+            self._ctx = pytest.raises(self._exc, match=self._match)
+            self._excinfo = self._ctx.__enter__()
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            handled = self._ctx.__exit__(exc_type, exc, tb)
+            if handled and self._excinfo is not None:
+                self.exception = self._excinfo.value
+            return handled
+
+    def assertRaises(self, exc):
+        """Context manager equivalent of ``unittest.TestCase.assertRaises``."""
+        return self._AssertRaisesContext(exc)
+
+    def assertRaisesRegex(self, exc, match):
+        """Context manager equivalent of ``assertRaisesRegex``."""
+        return self._AssertRaisesContext(exc, match=match)
+
+    @contextmanager
+    def subTest(self, **_params):
+        """No-op unittest ``subTest`` compatibility context manager."""
+        yield
+
+    def assertEqual(self, left, right, msg=None):
+        assert left == right, msg
+
+    def assertNotEqual(self, left, right, msg=None):
+        assert left != right, msg
+
+    def assertTrue(self, expr, msg=None):
+        assert bool(expr), msg
+
+    def assertFalse(self, expr, msg=None):
+        assert not bool(expr), msg
+
+    def assertIs(self, left, right, msg=None):
+        assert left is right, msg
+
+    def assertIsNot(self, left, right, msg=None):
+        assert left is not right, msg
+
+    def assertIsNone(self, expr, msg=None):
+        assert expr is None, msg
+
+    def assertIsNotNone(self, expr, msg=None):
+        assert expr is not None, msg
+
+    def assertIn(self, member, container, msg=None):
+        assert member in container, msg
+
+    def assertNotIn(self, member, container, msg=None):
+        assert member not in container, msg
+
+    def assertLess(self, left, right, msg=None):
+        assert left < right, msg
+
+    def assertLessEqual(self, left, right, msg=None):
+        assert left <= right, msg
+
+    def assertGreater(self, left, right, msg=None):
+        assert left > right, msg
+
+    def assertGreaterEqual(self, left, right, msg=None):
+        assert left >= right, msg
+
+    def assertIsInstance(self, obj, cls, msg=None):
+        assert isinstance(obj, cls), msg
+
+    def assertAlmostEqual(self, left, right, places=7, msg=None, delta=None):
+        if delta is not None:
+            assert abs(left - right) <= delta, msg
+        else:
+            assert round(abs(left - right), places) == 0, msg
+
+    def assertNotAlmostEqual(self, left, right, places=7, msg=None, delta=None):
+        if delta is not None:
+            assert abs(left - right) > delta, msg
+        else:
+            assert round(abs(left - right), places) != 0, msg
+
+
+# Expose compatibility base globally for test modules during collection.
+builtins.PytestCompat = PytestCompat
 
 
 @pytest.fixture
@@ -33,6 +152,68 @@ def make_unittree() -> Callable[[int, float, int], toytree.ToyTree]:
         return toytree.rtree.unittree(ntips=ntips, treeheight=treeheight, seed=seed)
 
     return _make
+
+
+@pytest.fixture
+def make_imbtree() -> Callable[[int, float, int, bool], toytree.ToyTree]:
+    """Return a helper that creates reproducible imbalanced trees."""
+
+    def _make(
+        ntips: int,
+        treeheight: float = 1.0,
+        seed: int = 123,
+        random_names: bool = False,
+    ) -> toytree.ToyTree:
+        return toytree.rtree.imbtree(
+            ntips=ntips,
+            treeheight=treeheight,
+            seed=seed,
+            random_names=random_names,
+        )
+
+    return _make
+
+
+@pytest.fixture
+def make_baltree() -> Callable[[int, float, int, bool], toytree.ToyTree]:
+    """Return a helper that creates reproducible balanced trees."""
+
+    def _make(
+        ntips: int,
+        treeheight: float = 1.0,
+        seed: int = 123,
+        random_names: bool = False,
+    ) -> toytree.ToyTree:
+        return toytree.rtree.baltree(
+            ntips=ntips,
+            treeheight=treeheight,
+            seed=seed,
+            random_names=random_names,
+        )
+
+    return _make
+
+
+@pytest.fixture
+def parse_tree() -> Callable[..., toytree.ToyTree]:
+    """Return a helper to parse Newick into ``ToyTree``."""
+
+    def _parse(newick: str, **kwargs) -> toytree.ToyTree:
+        return toytree.tree(newick, **kwargs)
+
+    return _parse
+
+
+@pytest.fixture
+def write_text_file(tmp_path: Path) -> Callable[[str, str], Path]:
+    """Return a helper that writes text files under a test tmp directory."""
+
+    def _write(name: str, text: str, encoding: str = "utf-8") -> Path:
+        path = tmp_path / name
+        path.write_text(text, encoding=encoding)
+        return path
+
+    return _write
 
 
 @pytest.fixture

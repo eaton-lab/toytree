@@ -16,13 +16,15 @@ Note
 Uses get_mrca_node(*query) to get new root edge.
 """
 
-import unittest
 import numpy as np
 import toytree
 from toytree.utils import ToytreeError
 
 
-class TestRoot(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestRoot(PytestCompat):
     def setUp(self):
         self.czech = toytree.io.parse_newick_string("((C,D)1,(A,(B,X)3)2,E)R;", internal_labels="name")
         """: Example dataset with inner labels as edge data."""
@@ -229,7 +231,3 @@ class TestRoot(unittest.TestCase):
 
 
 
-if __name__ == "__main__":
-
-    toytree.set_log_level("CRITICAL")
-    unittest.main()

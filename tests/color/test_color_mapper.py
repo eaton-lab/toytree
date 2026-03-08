@@ -70,3 +70,41 @@ def test_get_color_mapped_values_nan_behavior() -> None:
     data = np.array([1.0, np.nan, 2.0])
     colors = get_color_mapped_values(data, "BlueRed")
     assert ToyColor(colors[1]) == ToyColor("transparent")
+
+
+def test_get_color_mapped_values_empty_returns_empty_all_maps() -> None:
+    """Empty inputs should always return empty arrays regardless of cmap type."""
+    for cmap in ("Set2", "BlueRed", "Spectral"):
+        out = get_color_mapped_values([], cmap)
+        assert isinstance(out, np.ndarray)
+        assert out.size == 0
+
+
+def test_get_color_mapped_values_nan_not_counted_in_category_capacity() -> None:
+    """Missing values should not consume categorical-map category slots."""
+    vals = list("ABCDEFGH") + [np.nan]
+    out = get_color_mapped_values(vals, "Set2")
+    assert len(out) == len(vals)
+    assert ToyColor(out[-1]) == ToyColor("transparent")
+
+
+def test_get_color_mapped_values_pdna_treated_as_missing() -> None:
+    """Pandas NA values should map to the missing-value color."""
+    vals = pd.Series(["A", pd.NA, "B"])
+    out = get_color_mapped_values(vals, "Set2")
+    assert len(out) == 3
+    assert ToyColor(out[1]) == ToyColor("transparent")
+
+
+def test_get_color_mapped_values_none_treated_as_missing() -> None:
+    """Python None values should map to the missing-value color."""
+    vals = ["A", None, "B"]
+    out = get_color_mapped_values(vals, "Set2")
+    assert len(out) == 3
+    assert ToyColor(out[1]) == ToyColor("transparent")
+
+
+def test_get_color_mapped_values_series_fractional_index_raises() -> None:
+    """Series index labels must be integer-valued node idx labels."""
+    with pytest.raises(ToytreeError):
+        get_color_mapped_values(pd.Series(["A", "B"], index=[0.5, 1.5]), "Set2")

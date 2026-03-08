@@ -4,13 +4,15 @@
 
 """
 
-import unittest
 import numpy as np
 import toyplot
 from toytree.color import ToyColor
 
 
-class TestColorMethods(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestColorMethods(PytestCompat):
 
     def setUp(self):
 
@@ -69,8 +71,3 @@ class TestColorMethods(unittest.TestCase):
 
     def parse_multi(self):
         pass
-
-
-if __name__ == '__main__':
-
-    unittest.main()

@@ -1,6 +1,5 @@
 #!/usr/bin/env python
 
-import unittest
 
 import numpy as np
 
@@ -15,7 +14,10 @@ from toytree.mod._src.penalized_likelihood.pl_utils import (
 )
 
 
-class TestPenalizedLikelihoodMultistart(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestPenalizedLikelihoodMultistart(PytestCompat):
     def test_clock_multistart_full_fields(self):
         tree = get_tree_with_categorical_rates(ntips=10, nrates=1, seed=123)
         res = edges_make_ultrametric_pl_clock(
@@ -105,5 +107,3 @@ class TestPenalizedLikelihoodMultistart(unittest.TestCase):
         self.assertTrue(res["tree"].is_ultrametric())
 
 
-if __name__ == "__main__":
-    unittest.main()

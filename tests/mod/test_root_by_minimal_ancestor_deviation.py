@@ -6,11 +6,13 @@
 - cases: root, unroot, polytomies, zero-len edges, big trees...
 """
 
-import unittest
 import toytree
 
 
-class TestRootByMinimalAncestorDeviation(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestRootByMinimalAncestorDeviation(PytestCompat):
     def setUp(self):
         self.tree = (
             toytree.rtree.rtree(5, seed=123)
@@ -126,5 +128,3 @@ class TestRootByMinimalAncestorDeviation(unittest.TestCase):
         self.assertEqual(rtree.get_topology_id(), self.tree1.root("a").get_topology_id())
 
 
-if __name__ == "__main__":
-    unittest.main()

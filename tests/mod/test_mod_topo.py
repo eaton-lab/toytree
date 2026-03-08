@@ -11,14 +11,13 @@
 - toytree.mod.drop_tips
 """
 
-import unittest
+from conftest import PytestCompat
 
 import toytree
 from toytree.utils import ToytreeError
-from toytree.utils.src.logger_setup import capture_logs
 
 
-class TestModLadderize(unittest.TestCase):
+class TestModLadderize(PytestCompat):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
         self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)
@@ -59,7 +58,7 @@ class TestModLadderize(unittest.TestCase):
             self.assertEqual(tre.get_topology_id(), new.get_topology_id())
 
 
-class TestModCollapseNodes(unittest.TestCase):
+class TestModCollapseNodes(PytestCompat):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
         self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)
@@ -105,7 +104,7 @@ class TestModCollapseNodes(unittest.TestCase):
     #     pass
 
 
-class TestModRotateNode(unittest.TestCase):
+class TestModRotateNode(PytestCompat):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
         self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)
@@ -139,7 +138,7 @@ class TestModRotateNode(unittest.TestCase):
             self.assertEqual(new_cset, old_cset[::-1])
 
 
-class TestModPrune(unittest.TestCase):
+class TestModPrune(PytestCompat):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
         self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)
@@ -198,7 +197,45 @@ class TestModPrune(unittest.TestCase):
         )
 
 
-class TestModRemoveUnaryNodes(unittest.TestCase):
+class TestModRemoveNodes(PytestCompat):
+    def setUp(self):
+        self.tree = toytree.tree("((a,b),c,d);")
+
+    def test_remove_root_node_when_internal_child_remains(self):
+        """Root can be removed if an internal child can be promoted."""
+        out = self.tree.mod.remove_nodes(self.tree.treenode)
+        self.assertEqual(set(out.get_tip_labels()), {"a", "b", "c", "d"})
+        self.assertEqual(out.nnodes, self.tree.nnodes - 1)
+        self.assertIsNone(out.treenode.up)
+        self.assertEqual(out.treenode.dist, 0.0)
+
+    def test_remove_root_and_other_nodes(self):
+        """Root deletion can be combined with additional node deletions."""
+        out = self.tree.mod.remove_nodes(self.tree.treenode, "d")
+        self.assertEqual(set(out.get_tip_labels()), {"a", "b", "c"})
+        self.assertIsNone(out.treenode.up)
+
+    def test_remove_nodes_raises_if_all_nodes_selected(self):
+        """Removing all connected nodes should raise an exception."""
+        tree = toytree.rtree.unittree(6, seed=123)
+        with self.assertRaises(ToytreeError):
+            tree.mod.remove_nodes(*[i.idx for i in tree])
+
+    def test_remove_root_raises_on_leaf_only_children(self):
+        """Cannot remove root if promotion would require a leaf."""
+        tree = toytree.tree("(a,b);")
+        with self.assertRaises(ToytreeError):
+            tree.mod.remove_nodes(tree.treenode)
+
+    def test_remove_nodes_inplace(self):
+        """Inplace remove_nodes should mutate and return same object."""
+        out = self.tree.mod.remove_nodes(self.tree.treenode, inplace=True)
+        self.assertIs(out, self.tree)
+        self.assertEqual(set(self.tree.get_tip_labels()), {"a", "b", "c", "d"})
+        self.assertIsNone(self.tree.treenode.up)
+
+
+class TestModRemoveUnaryNodes(PytestCompat):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
         self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)
@@ -270,8 +307,30 @@ class TestModRemoveUnaryNodes(unittest.TestCase):
         out = toytree.tree(nwk).mod.remove_unary_nodes()
         self.assertEqual(set(out.get_tip_labels()), expected)
 
+    def test_remove_unary_nodes_collapses_unary_root(self):
+        """Unary roots should be collapsed by promoting the sole child."""
+        tree = toytree.tree("(((a,b),c));")
+        out = tree.mod.remove_unary_nodes()
+        self.assertEqual(set(out.get_tip_labels()), {"a", "b", "c"})
+        self.assertGreaterEqual(len(out.treenode.children), 2)
+        self.assertEqual(out.treenode.dist, 0.0)
 
-class TestModAddInternalNode(unittest.TestCase):
+    def test_remove_unary_nodes_collapses_unary_root_chain(self):
+        """Repeated unary root links should collapse to the first split."""
+        tree = toytree.tree("((((a,b),c)));")
+        out = tree.mod.remove_unary_nodes()
+        self.assertEqual(set(out.get_tip_labels()), {"a", "b", "c"})
+        self.assertGreaterEqual(len(out.treenode.children), 2)
+
+    def test_remove_unary_nodes_single_tip_tree_stable(self):
+        """Single-tip tree remains unchanged."""
+        tree = toytree.tree("a;")
+        out = tree.mod.remove_unary_nodes()
+        self.assertEqual(out.ntips, 1)
+        self.assertEqual(out.nnodes, 1)
+
+
+class TestModAddInternalNode(PytestCompat):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
         self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)
@@ -310,7 +369,7 @@ class TestModAddInternalNode(unittest.TestCase):
             self.itree.mod.add_internal_node("r0", "r3", dist=100)
 
 
-class TestModDropTips(unittest.TestCase):
+class TestModDropTips(PytestCompat):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
         self.btree = toytree.rtree.baltree(ntips=10, treeheight=10, seed=123)
@@ -333,30 +392,30 @@ class TestModDropTips(unittest.TestCase):
         self.assertEqual(self.itree.ntips - 2, tre.ntips)
         self.assertEqual(self.itree.nnodes - 4, tre.nnodes)
 
-    def test_drop_tips_log_warning_and_exception_if_no_selection(self):
-        """Logger warning if tip Nodes are selected."""
-        with capture_logs(format="{message}") as cap:
-            with self.assertRaises(ValueError):
-                self.itree.mod.drop_tips()
-        self.assertEqual(cap[0], "No nodes selected. Enter a node query.\n")
+    def test_drop_tips_exception_if_no_selection(self, capsys):
+        """No-selection error should raise without printing warnings."""
+        with self.assertRaises(ValueError) as exc:
+            self.itree.mod.drop_tips()
+        self.assertEqual(str(exc.exception), "No nodes selected. Enter a node query.")
+        self.assertEqual(capsys.readouterr().err, "")
 
-    def test_drop_tips_log_warning_and_exception_if_all_tips_selected(self):
-        """Logger warning if tip Nodes are selected."""
-        with self.assertRaises(ValueError):
-            with capture_logs(format="{message}") as cap:
-                self.itree.mod.drop_tips("~r*")
-            self.assertEqual(cap[0], "Cannot drop all tips from the tree.\n")
+    def test_drop_tips_exception_if_all_tips_selected(self, capsys):
+        """All-tip selection error should raise without printing warnings."""
+        with self.assertRaises(ValueError) as exc:
+            self.itree.mod.drop_tips("~r*")
+        self.assertEqual(str(exc.exception), "Cannot drop all tips from the tree.")
+        self.assertEqual(capsys.readouterr().err, "")
 
-    def test_drop_tips_log_warning_on_non_tip_selection(self):
-        """Logger warning if tip Nodes are selected."""
-        with capture_logs(format="{message}") as cap:
-            self.itree.mod.drop_tips(15)
+    def test_drop_tips_warning_on_non_tip_selection(self, capsys):
+        """Internal-node selections should warn on stderr and continue."""
+        self.itree.mod.drop_tips(15)
         self.assertEqual(
-            cap[0], "Only tip Nodes are removed. See `mod.remove_nodes`.\n"
+            capsys.readouterr().err,
+            "Only tip Nodes are removed. See `mod.remove_nodes`.\n",
         )
 
 
-class TestModExtractSubtree(unittest.TestCase):
+class TestModExtractSubtree(PytestCompat):
     def setUp(self):
         self.tree = toytree.tree("((a:2,b:1)ab:1,(c:1,d:2)cd:1)r:2;")
 
@@ -401,7 +460,7 @@ class TestModExtractSubtree(unittest.TestCase):
         self.assertEqual(tree[2].dist, 1)
 
 
-class TestModBisect(unittest.TestCase):
+class TestModBisect(PytestCompat):
     def setUp(self):
         self.tree = toytree.tree("((a:2,b:1)ab:1,(c:1,d:2)cd:1)r:2;")
 
@@ -442,7 +501,7 @@ class TestModBisect(unittest.TestCase):
         self.assertEqual(tree[2].dist, 1)
 
 
-class TestModResolveNode(unittest.TestCase):
+class TestModResolveNode(PytestCompat):
     def setUp(self):
         self.tree = toytree.tree("((a,b),c,d,e)X;")
         self.tree2 = toytree.tree("(((a,b),c,d,e)X,(x,y)Y)R;")
@@ -501,29 +560,3 @@ class TestModResolveNode(unittest.TestCase):
         out = tree.mod.resolve_node("X", splits=[["~[ab]$"], ["c"]], inplace=True)
         self.assertIs(out, tree)
         self.assertGreater(tree.nnodes, start)
-
-
-if __name__ == "__main__":
-    toytree.set_log_level("CRITICAL")
-
-    #### RUN INDIVIDUAL TESTS #########################################
-    load = unittest.TestLoader()
-    tests = (
-        load.loadTestsFromTestCase(TestModLadderize),
-        load.loadTestsFromTestCase(TestModCollapseNodes),
-        load.loadTestsFromTestCase(TestModRemoveUnaryNodes),
-        load.loadTestsFromTestCase(TestModRotateNode),
-        load.loadTestsFromTestCase(TestModExtractSubtree),
-        load.loadTestsFromTestCase(TestModPrune),
-        load.loadTestsFromTestCase(TestModDropTips),
-        load.loadTestsFromTestCase(TestModBisect),
-        load.loadTestsFromTestCase(TestModResolveNode),
-        # l.loadTestsFromTestCase(TestModResolvePolytomies),
-        load.loadTestsFromTestCase(TestModAddInternalNode),
-    )
-
-    runner = unittest.TextTestRunner()
-    runner.run(unittest.TestSuite(tests))
-
-    #### DO ALL TESTS #########################################
-    # unittest.main()

@@ -266,4 +266,21 @@ class TestAddScaleBar(PytestCompat):
         after_data = (float(saxes.x._data_min), float(saxes.x._data_max))
         self.assertEqual(before_data, after_data)
 
+    def test_companion_scale_axes_renders_before_host_axes(self):
+        _, axes, _ = self.tree.draw(layout="r", scale_bar=True)
+        saxes = self._scale_axes(axes)
+        canvas = axes._scenegraph.sources("render", axes)[0]
+        targets = axes._scenegraph._relationships["render"]._targets[canvas]
+        self.assertIn(axes, targets)
+        self.assertIn(saxes, targets)
+        self.assertLess(targets.index(saxes), targets.index(axes))
+
+    def test_hidden_companion_axes_renders_before_host_axes(self):
+        _, axes, _ = self.tree.draw(layout="r", scale_bar=False)
+        saxes = self._scale_axes(axes)
+        canvas = axes._scenegraph.sources("render", axes)[0]
+        targets = axes._scenegraph._relationships["render"]._targets[canvas]
+        self.assertIn(axes, targets)
+        self.assertIn(saxes, targets)
+        self.assertLess(targets.index(saxes), targets.index(axes))
 

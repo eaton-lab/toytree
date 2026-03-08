@@ -2,12 +2,14 @@
 
 """Tests for DLC-based gene-tree rooting."""
 
-import unittest
 
 import toytree
 
 
-class TestRootOnMinimalDLC(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestRootOnMinimalDLC(PytestCompat):
     def setUp(self):
         self.sptree = toytree.tree("(((A,B),C),D);")
         self.gtree = toytree.tree("((((a1,a2),b1),c1),d1);")
@@ -49,5 +51,3 @@ class TestRootOnMinimalDLC(unittest.TestCase):
         self.assertIn("DLC_root_prob", ndata.columns)
 
 
-if __name__ == "__main__":
-    unittest.main()

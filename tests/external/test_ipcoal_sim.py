@@ -2,7 +2,6 @@
 
 """Tests for optional ipcoal simulation wrapper."""
 
-import unittest
 from unittest.mock import patch
 
 import pandas as pd
@@ -32,7 +31,10 @@ class _FakeIPCoal:
             )
 
 
-class TestIPCoalSimTrees(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestIPCoalSimTrees(PytestCompat):
     """Validate runtime import and return-shape behavior."""
 
     def setUp(self):
@@ -80,5 +82,3 @@ class TestIPCoalSimTrees(unittest.TestCase):
             ipcoal_sim_trees(self.sptree, Ne=1000, ntrees=0)
 
 
-if __name__ == "__main__":
-    unittest.main()

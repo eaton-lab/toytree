@@ -1,4 +1,3 @@
-import unittest
 import numpy as np
 
 from toytree.mod._src.penalized_likelihood.pl_correlated import (
@@ -9,7 +8,10 @@ from toytree.mod._src.penalized_likelihood.pl_utils import (
 )
 
 
-class TestPenalizedLikelihoodCorrelated(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestPenalizedLikelihoodCorrelated(PytestCompat):
     def test_correlated_pl_makes_ultrametric(self):
         tree = get_tree_with_correlated_relaxed_rates(ntips=12, mean=3, sigma=2, seed=123)
         result = edges_make_ultrametric_pl_correlated(
@@ -29,5 +31,3 @@ class TestPenalizedLikelihoodCorrelated(unittest.TestCase):
         self.assertIn("optimizer_message", result)
 
 
-if __name__ == "__main__":
-    unittest.main()

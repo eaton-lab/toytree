@@ -1,4 +1,3 @@
-import unittest
 
 import numpy as np
 
@@ -10,7 +9,10 @@ from toytree.mod._src.penalized_likelihood.pl_utils import (
 )
 
 
-class TestPenalizedLikelihoodRelaxed(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestPenalizedLikelihoodRelaxed(PytestCompat):
     def test_relaxed_pl_makes_ultrametric(self):
         tree = get_tree_with_uncorrelated_relaxed_rates(ntips=10, mean=3, sigma=3, seed=123)
         result = edges_make_ultrametric_pl_relaxed(
@@ -29,5 +31,3 @@ class TestPenalizedLikelihoodRelaxed(unittest.TestCase):
         self.assertIn("penalty", result)
 
 
-if __name__ == "__main__":
-    unittest.main()

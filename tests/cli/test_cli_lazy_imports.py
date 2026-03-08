@@ -46,9 +46,7 @@ import sys
 import toytree.cli.main  # noqa: F401
 heavy = [i for i in sys.modules if i.startswith(tuple(%s))]
 print("JSON:" + json.dumps(sorted(heavy)))
-""" % (
-        repr(HEAVY_PREFIXES),
-    )
+""" % (repr(HEAVY_PREFIXES),)
     heavy = _parse_heavy_list(_run_python(code))
     assert heavy == []
 
@@ -59,15 +57,13 @@ def test_help_screens_do_not_import_heavy_modules():
 import json
 import sys
 import toytree.cli.main as main
-for cmd in ("-h", "draw -h", "rtree -h"):
+for cmd in ("-h", "draw -h", "rtree -h", "anc-state-discrete -h"):
     try:
         main.main(cmd)
     except SystemExit:
         pass
 heavy = [i for i in sys.modules if i.startswith(tuple(%s))]
 print("JSON:" + json.dumps(sorted(heavy)))
-""" % (
-        repr(HEAVY_PREFIXES),
-    )
+""" % (repr(HEAVY_PREFIXES),)
     heavy = _parse_heavy_list(_run_python(code))
     assert heavy == []

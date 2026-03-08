@@ -1,4 +1,3 @@
-import unittest
 
 import numpy as np
 
@@ -11,7 +10,10 @@ from toytree.mod._src.penalized_likelihood.pl_utils import (
 )
 
 
-class TestPenalizedLikelihoodUtils(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestPenalizedLikelihoodUtils(PytestCompat):
     def test_pack_unpack_log_rates_roundtrip_with_floor(self):
         rates = np.array([0.0, 1e-20, 0.5, 2.0], dtype=float)
         packed = _pack_log_rates(rates, rate_floor=1e-12)
@@ -60,5 +62,3 @@ class TestPenalizedLikelihoodUtils(unittest.TestCase):
         self.assertLessEqual(decoded[4], 0.3)
 
 
-if __name__ == "__main__":
-    unittest.main()

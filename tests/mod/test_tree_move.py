@@ -2,12 +2,14 @@
 
 """Tests for depth-N NNI/SPR move utilities."""
 
-import unittest
 
 import toytree
 
 
-class TestTreeMoveDepthN(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestTreeMoveDepthN(PytestCompat):
     def setUp(self):
         self.tree = toytree.rtree.unittree(ntips=7, seed=123)
 
@@ -43,5 +45,3 @@ class TestTreeMoveDepthN(unittest.TestCase):
         self.assertIsInstance(moved, toytree.ToyTree)
 
 
-if __name__ == "__main__":
-    unittest.main()

@@ -83,6 +83,16 @@ def _has_option(parser, option: str) -> bool:
             },
         ),
         (
+            subparsers.get_parser_anc_state_discrete,
+            {
+                "-i": HELP_INPUT,
+                "-o": HELP_OUTPUT,
+                "-b": HELP_BINARY,
+                "-I": HELP_INTERNAL,
+                "-x": HELP_EXCLUDE,
+            },
+        ),
+        (
             subparsers.get_parser_relabel,
             {
                 "-i": HELP_INPUT,
@@ -117,7 +127,7 @@ def test_distance_parser_does_not_define_internal_labels_option():
 
 
 def test_draw_format_and_view_in_render_mode_group():
-    """draw should list -f/-v options under Render Mode."""
+    """Draw should list -f/-v options under Render Mode."""
     help_text = subparsers.get_parser_draw().format_help()
     io_idx = help_text.index("Input / Output:")
     render_idx = help_text.index("Render Mode:")
@@ -154,7 +164,7 @@ def test_set_node_data_examples_use_from_table_term():
 
 
 def test_rtree_method_help_lists_all_options():
-    """rtree method help should list canonical method options."""
+    """Rtree method help should list canonical method options."""
     parser = subparsers.get_parser_rtree()
     assert (
         _help_text(parser, "--method")
@@ -163,7 +173,7 @@ def test_rtree_method_help_lists_all_options():
 
 
 def test_rtree_bdtree_help_order_and_stop_description():
-    """rtree bdtree args should appear in requested order with expanded stop help."""
+    """Rtree bdtree args should appear in requested order with expanded stop help."""
     help_text = subparsers.get_parser_rtree().format_help()
     bd_idx = help_text.index("Birth-Death (bdtree):")
     coal_idx = help_text.index("Coalescent (coaltree):")
