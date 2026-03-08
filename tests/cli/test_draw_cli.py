@@ -5,7 +5,6 @@ import pickle
 import subprocess
 import sys
 import tempfile
-import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -13,7 +12,10 @@ import toytree
 from toytree.cli.cli_draw import get_parser_draw, parse_node_mask, run_draw
 
 
-class TestDrawCLI(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestDrawCLI(PytestCompat):
     def setUp(self):
         self.parser = get_parser_draw()
         self.tmpdir = Path(tempfile.mkdtemp(prefix="toytree-cli-draw-"))
@@ -78,5 +80,3 @@ class TestDrawCLI(unittest.TestCase):
         self.assertEqual(proc.returncode, 0, msg=proc.stderr.decode("utf-8", errors="replace"))
 
 
-if __name__ == "__main__":
-    unittest.main()

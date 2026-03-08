@@ -3,7 +3,6 @@
 import io
 import pickle
 import tempfile
-import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -11,7 +10,10 @@ import toytree
 from toytree.cli.cli_relabel import get_parser_relabel, run_relabel
 
 
-class TestRelabelCLI(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestRelabelCLI(PytestCompat):
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp(prefix="toytree-cli-relabel-"))
         self.tree_path = self.tmpdir / "tree.nwk"
@@ -80,5 +82,3 @@ class TestRelabelCLI(unittest.TestCase):
         self.assertEqual(tree[2].name, "|z")
 
 
-if __name__ == "__main__":
-    unittest.main()

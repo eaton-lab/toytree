@@ -2,7 +2,6 @@
 
 import pickle
 import tempfile
-import unittest
 from pathlib import Path
 
 import toytree
@@ -11,7 +10,10 @@ from toytree.core.tree import ToyTree
 from toytree.utils import ToytreeError
 
 
-class TestTreeTransport(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestTreeTransport(PytestCompat):
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp(prefix="toytree-cli-transport-"))
         self.tree = toytree.tree("((a:1,b:1):1,c:1);")
@@ -37,5 +39,3 @@ class TestTreeTransport(unittest.TestCase):
             read_tree_auto(str(path))
 
 
-if __name__ == "__main__":
-    unittest.main()

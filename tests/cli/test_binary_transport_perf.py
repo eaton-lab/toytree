@@ -7,17 +7,19 @@ import subprocess
 import sys
 import tempfile
 import time
-import unittest
 from pathlib import Path
 
+import pytest
 import toytree
 
+from conftest import PytestCompat
 
-@unittest.skipUnless(
-    os.environ.get("TOYTREE_RUN_PERF_TESTS") == "1",
-    "set TOYTREE_RUN_PERF_TESTS=1 to run performance tests",
+@pytest.mark.skipif(
+    os.environ.get("TOYTREE_RUN_PERF_TESTS") != "1",
+    reason="set TOYTREE_RUN_PERF_TESTS=1 to run performance tests",
 )
-class TestBinaryTransportPerf(unittest.TestCase):
+
+class TestBinaryTransportPerf(PytestCompat):
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp(prefix="toytree-cli-perf-"))
         self.tree_path = self.tmpdir / "large_tree.nwk"
@@ -73,7 +75,3 @@ class TestBinaryTransportPerf(unittest.TestCase):
                 f"text={text_med:.4f}s binary={binary_med:.4f}s speedup={speedup:.2f}%"
             ),
         )
-
-
-if __name__ == "__main__":
-    unittest.main()

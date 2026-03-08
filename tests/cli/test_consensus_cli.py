@@ -3,7 +3,6 @@
 import io
 import pickle
 import tempfile
-import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -11,7 +10,10 @@ import toytree
 from toytree.cli.cli_consensus import get_parser_consensus, run_consensus
 
 
-class TestConsensusCLI(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestConsensusCLI(PytestCompat):
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp(prefix="toytree-cli-consensus-"))
         self.mtree_path = self.tmpdir / "trees.nwk"
@@ -57,5 +59,3 @@ class TestConsensusCLI(unittest.TestCase):
         self.assertEqual(obj.__class__.__name__, "ToyTree")
 
 
-if __name__ == "__main__":
-    unittest.main()

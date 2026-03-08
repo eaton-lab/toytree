@@ -2,14 +2,16 @@
 
 import io
 import tempfile
-import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 
 from toytree.cli.cli_distance import get_parser_distance, run_distance
 
 
-class TestDistanceCLI(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestDistanceCLI(PytestCompat):
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp(prefix="toytree-cli-distance-"))
         self.t1 = self.tmpdir / "t1.nwk"
@@ -44,7 +46,4 @@ class TestDistanceCLI(unittest.TestCase):
         self.assertIn("symmetric_difference\t", out)
         self.assertIn("steel_and_penny\t", out)
 
-
-if __name__ == "__main__":
-    unittest.main()
 

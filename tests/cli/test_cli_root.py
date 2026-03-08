@@ -4,14 +4,16 @@
 
 import pickle
 import tempfile
-import unittest
 from pathlib import Path
 
 from toytree.cli.cli_root import get_parser_root, run_root
 from toytree.utils import ToytreeError
 
 
-class TestCLIRoot(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestCLIRoot(PytestCompat):
     """Validate root CLI mode selection and DLC option handling."""
 
     def setUp(self):
@@ -120,5 +122,3 @@ class TestCLIRoot(unittest.TestCase):
             run_root(args)
 
 
-if __name__ == "__main__":
-    unittest.main()

@@ -2,7 +2,6 @@
 
 import io
 import tempfile
-import unittest
 from contextlib import redirect_stdout
 from pathlib import Path
 
@@ -17,7 +16,10 @@ from toytree.cli.cli_make_ultrametric import (
 from toytree.utils import ToytreeError
 
 
-class TestMakeUltrametricCLI(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestMakeUltrametricCLI(PytestCompat):
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp(prefix="toytree-cli-make-ultrametric-"))
         self.tree_path = self.tmpdir / "tree.nwk"
@@ -119,5 +121,3 @@ class TestMakeUltrametricCLI(unittest.TestCase):
             run_make_ultrametric(args)
 
 
-if __name__ == "__main__":
-    unittest.main()

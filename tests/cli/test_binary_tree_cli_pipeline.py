@@ -2,7 +2,6 @@
 
 import pickle
 import tempfile
-import unittest
 from pathlib import Path
 
 import toytree
@@ -12,7 +11,10 @@ from toytree.cli.cli_set_node_data import get_parser_set_node_data, run_set_node
 from toytree.core.tree import ToyTree
 
 
-class TestBinaryTreeCLIPipeline(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestBinaryTreeCLIPipeline(PytestCompat):
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp(prefix="toytree-cli-binary-pipe-"))
         self.tree_path = self.tmpdir / "tree.nwk"
@@ -61,5 +63,3 @@ class TestBinaryTreeCLIPipeline(unittest.TestCase):
         self.assertIn("score", obj.features)
 
 
-if __name__ == "__main__":
-    unittest.main()

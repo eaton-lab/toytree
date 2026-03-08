@@ -2,7 +2,6 @@
 
 import io
 import tempfile
-import unittest
 import warnings
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -15,7 +14,10 @@ from toytree.cli.cli_set_node_data import get_parser_set_node_data, run_set_node
 from toytree.utils import ToytreeError
 
 
-class TestSetNodeDataCLI(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestSetNodeDataCLI(PytestCompat):
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp(prefix="toytree-cli-set-node-data-"))
         self.tree_path = self.tmpdir / "tree.nwk"
@@ -187,5 +189,3 @@ class TestSetNodeDataCLI(unittest.TestCase):
         self.assertIn("[&&NHX:trait=1.000]", out_nwk)
 
 
-if __name__ == "__main__":
-    unittest.main()
