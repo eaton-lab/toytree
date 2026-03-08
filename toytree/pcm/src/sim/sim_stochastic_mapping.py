@@ -23,7 +23,7 @@ from scipy.special import gammaln
 
 from toytree.core.apis import PhyloCompAPI, add_subpackage_method
 from toytree.data._src.expand_node_mapping import expand_node_mapping
-from toytree.pcm.src.traits.discrete_markov_model_fit import (
+from toytree.pcm.src.traits.fit_discrete_ctmc import (
     DiscreteMarkovModelFit,
     FitMarkovModelResult,
 )
@@ -517,7 +517,7 @@ def simulate_stochastic_map(
         cannot mix formats. Posterior vectors must be non-negative, finite,
         length ``model_fit.nstates``, and sum to 1.
     model_fit : FitMarkovModelResult
-        A fitted MK model result from ``fit_discrete_markov_model``.
+        A fitted MK model result from ``fit_discrete_ctmc``.
     nreplicates : int, default=1
         Number of map replicates to sample.
     seed : int | None, default=None
@@ -556,7 +556,7 @@ def simulate_stochastic_map(
     ...     seed=1,
     ... )
     >>> tip_data = tree.get_tip_data("X")
-    >>> fit = tree.pcm.fit_discrete_markov_model(data=tip_data, nstates=3, model="ER")
+    >>> fit = tree.pcm.fit_discrete_ctmc(data=tip_data, nstates=3, model="ER")
     >>> maps = tree.pcm.simulate_stochastic_map(data=tip_data, model_fit=fit, seed=2)
 
     Use posterior node constraints from ancestral-state inference:
@@ -571,7 +571,7 @@ def simulate_stochastic_map(
     if not isinstance(model_fit, FitMarkovModelResult):
         raise ToytreeError(
             "model_fit is required and must be a FitMarkovModelResult "
-            "(fit with fit_discrete_markov_model first)."
+            "(fit with fit_discrete_ctmc first)."
         )
     if int(max_branch_attempts) < 1:
         raise ToytreeError("max_branch_attempts must be >= 1")

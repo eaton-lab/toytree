@@ -30,6 +30,7 @@ _LAZY_SUBMODULES = {
     "io": "toytree.io",
     "mod": "toytree.mod",
     "network": "toytree.network",
+    "otol": "toytree.otol",
     "pcm": "toytree.pcm",
 }
 
@@ -70,9 +71,5 @@ def __dir__():
         + list(_LAZY_ATTRS.keys())
     )
 
+
 # _logger.disable("toytree")
-
-
-if __name__ == "__main__":
-
-    import toytree

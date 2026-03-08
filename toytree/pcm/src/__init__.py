@@ -20,4 +20,4 @@ Examples
 >>> toytree.pcm.div_tip_level()
 """
 
-# from .discrete_markov_model_fit import simulate_discrete_markov_data
+# from .fit_discrete_ctmc import simulate_discrete_markov_data

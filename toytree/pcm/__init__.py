@@ -37,8 +37,8 @@ from toytree.pcm.src.sim.sim_pglm import *
 from toytree.pcm.src.sim.sim_pgls import *
 from toytree.pcm.src.sim.sim_stochastic_mapping import *
 from toytree.pcm.src.traits.aic_table import aic_table
-from toytree.pcm.src.traits.continuous_bm_fit import *
-from toytree.pcm.src.traits.discrete_markov_model_fit import *
+from toytree.pcm.src.traits.fit_discrete_ctmc import *
+from toytree.pcm.src.traits.fit_continuous_ml import *
 from toytree.pcm.src.traits.pgls_matrix import *
 from toytree.pcm.src.traits.phylosignal_k import *
 from toytree.pcm.src.traits.phylosignal_lambda import *

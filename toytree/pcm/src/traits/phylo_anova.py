@@ -10,7 +10,7 @@ pseudo-code is written but this is IN DEVELOPMENT, and not yet
 intended for use.
 
 References
------------
+----------
 Adams, D. C., & Collyer, M. L. (2018). Phylogenetic ANOVA: group-clade 
 aggregation, biological challenges, and a refined permutation procedure.
 Evolution, 72(6), 1204-1215.
@@ -29,7 +29,9 @@ permutation procedure. Evolution. 72:1204-1215.
 """
 
 from typing import Sequence
+
 import numpy as np
+
 from toytree.core import ToyTree
 
 
@@ -130,8 +132,8 @@ def phylogenetic_generalized_least_squares(values: Sequence[float], groups: Sequ
     >>> phylogenetic_generalized_least_squares(values, groups, tree)
     >>> # 
     """
+    from pandas import get_dummies
     from scipy.linalg import inv
-    from pandas import get_dummies    
 
     # The response variable (e.g., trait value)
     y = np.array(values)
@@ -236,14 +238,13 @@ if __name__ == "__main__":
     result = anova(values, groups)
     print(f"Standard ANOVA:\n{result}")
 
-    # phylogenetic ANOVA    
+    # phylogenetic ANOVA
 
 
     # phylogenetic GLS
     tree = toytree.rtree.unittree(25, treeheight=1, seed=123).ladderize()
     tree.treenode.draw_ascii()
-    traits = tree.pcm.simulate_continuous_bm(rates=[1, 2, 3], tips_only=True)
+    traits = tree.pcm.simulate_multivariate_continuous_trait(model="bm", params=np.diag([1, 2, 3]), tips_only=True)
     print(traits)
     groups = tree.get_tip_labels()
     vcv = tree.pcm.get_vcv_matrix_from_tree(df=True)
-

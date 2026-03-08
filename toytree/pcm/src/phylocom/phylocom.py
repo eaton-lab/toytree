@@ -11,6 +11,7 @@ References
 ----------
 - https://pedrohbraga.github.io/CommunityPhylogenetics-Workshop/CommunityPhylogenetics-Workshop.html#within-assemblage-phylogenetic-structure
 - https://phylodiversity.net/
+- https://besjournals.onlinelibrary.wiley.com/doi/full/10.1111/2041-210X.13471
 - Cavender‐Bares, J. , Kozak, K. H., Fine, P. V. and Kembel, S. W.
 (2009), The merging of community ecology and phylogenetic biology.
 Ecology Letters, 12: 693-715. doi:10.1111/j.1461-0248.2009.01314.x
@@ -37,14 +38,15 @@ For textbook:
 - Faith: goal is to maximize conservation of features.
 """
 
-from typing import TypeVar, Optional, Union
-from numpy.typing import ArrayLike
+from typing import Optional, Union
+
 import numpy as np
 import pandas as pd
+from numpy.typing import ArrayLike
+
 import toytree
-
-
-ToyTree = TypeVar("ToyTree")
+from toytree.core import ToyTree
+from toytree.pcm import get_vcv_matrix_from_tree
 
 
 # TODO: simulate abundances as lognormally distributed?
@@ -53,8 +55,8 @@ def simulate_community_data(
     scalar: float=0,
     size: int=1,
     seed: Optional[int]=None,
-    ) -> pd.DataFrame:
-    """Return a binary (nsites, nspecies) community data matrix.
+) -> pd.DataFrame:
+    r"""Return a binary (nsites, nspecies) community data matrix.
 
     Simulate communities under phylogenetic attraction or repulsion.
     A VCV is generated from the tree; a scalar (c) is positive
@@ -83,7 +85,7 @@ def simulate_community_data(
         A seed for the numpy random number generator.
     """
     rng = np.random.default_rng(seed)
-    vcv = toytree.pcm.get_vcv_matrix_from_tree(tree)
+    vcv = get_vcv_matrix_from_tree(tree)
     vcv = np.linalg.inv(vcv) if scalar < 0 else vcv
     l_mat = np.linalg.cholesky(vcv)
     communities = []
@@ -93,14 +95,16 @@ def simulate_community_data(
         probs = inner / (1 + inner)
         comm = rng.binomial(n=1, p=probs)
         communities.append(comm)
-    return pd.DataFrame(columns=tree.get_tip_labels(), data=communities)
+    names = tree.get_tip_labels()
+    return pd.DataFrame(columns=names, data=communities)
+
 
 def get_community_metric(
     tree: ToyTree,
     matrix: ArrayLike,
     metric="pd",
     null=None,
-    ) -> Union[float, np.ndarray]:
+) -> Union[float, np.ndarray]:
     """Return a community metric given a tree and matrix.
 
     Supported metrics are also available in individual functions
@@ -129,7 +133,7 @@ def get_community_metric(
     >>>    metric    null_mean    null_std   effect_size    name
     >>> 0    ...         ...          ...        ...        'MPD'
     """
-
+    return 0.5
 
 
 if __name__ == "__main__":

@@ -61,6 +61,8 @@ if TYPE_CHECKING:
 
 __all__ = ["simulate_pgls_trait"]
 
+_SIGMA2_DETERMINISTIC_EPS = 1e-10
+
 
 def _merge_tip_predictor_data(
     tree: ToyTree,
@@ -227,7 +229,8 @@ def simulate_pgls_trait(
     """
     if not isinstance(formula, str) or not formula.strip():
         raise ToytreeError("formula must be a non-empty str.")
-    if not np.isfinite(float(sigma2)) or float(sigma2) <= 0:
+    sigma2_val = float(sigma2)
+    if not np.isfinite(sigma2_val) or sigma2_val <= 0:
         raise ToytreeError("sigma2 must be a finite float > 0.")
     if not np.isfinite(float(lambda_)):
         raise ToytreeError("lambda_ must be a finite float.")
@@ -251,12 +254,14 @@ def simulate_pgls_trait(
     beta_vec = _coerce_beta_vector(xmat, betas)
 
     mu = xmat.to_numpy(dtype=float) @ beta_vec
+    if sigma2_val <= _SIGMA2_DETERMINISTIC_EPS:
+        return pd.Series(mu, index=xmat.index, name=ycol)
 
     sim_tree = edges_transform_lambda(work_tree, lambda_val, inplace=False)
     eps = simulate_continuous_trait(
         sim_tree,
         model="bm",
-        params=float(sigma2),
+        params=sigma2_val,
         root_state=0.0,
         name="epsilon",
         tips_only=True,

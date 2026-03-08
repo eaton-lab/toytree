@@ -17,7 +17,7 @@ stays consistent as more families and links are added.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Any
+from typing import Any, TypeAlias
 
 import numpy as np
 import pandas as pd
@@ -28,6 +28,35 @@ from statsmodels.genmod.families import links as sm_links
 from toytree.utils.src.exceptions import ToytreeError
 
 __all__ = ["GLMFamilySpec", "get_family_spec"]
+
+FamilyParams: TypeAlias = dict[str, float]
+
+# Centralized numeric guards used across inverse-link and derivative code paths.
+LOGIT_ETA_CLIP = (-30.0, 30.0)
+LOG_ETA_CLIP = (-700.0, 700.0)
+MU_OPEN_EPS = 1e-12
+MU_POS_FLOOR = 1e-12
+MU_POS_CEIL = 1e300
+
+
+def _clip_eta_for_link(eta: np.ndarray, link: str) -> np.ndarray:
+    """Return eta clipped for numerically stable inverse-link evaluation."""
+    arr = np.asarray(eta, dtype=float)
+    if link == "logit":
+        return np.clip(arr, *LOGIT_ETA_CLIP)
+    if link == "log":
+        return np.clip(arr, *LOG_ETA_CLIP)
+    return arr
+
+
+def _clip_mu_for_link_domain(mu: np.ndarray, link: str) -> np.ndarray:
+    """Return mu clipped away from numerically induced link boundaries."""
+    arr = np.asarray(mu, dtype=float)
+    if link == "logit":
+        return np.clip(arr, MU_OPEN_EPS, 1.0 - MU_OPEN_EPS)
+    if link == "log":
+        return np.clip(arr, MU_POS_FLOOR, MU_POS_CEIL)
+    return arr
 
 
 @dataclass(frozen=True)
@@ -46,33 +75,23 @@ class GLMFamilySpec:
     def inv_link(self, eta: np.ndarray) -> np.ndarray:
         """Return mean-scale values from linear predictors."""
         if self.family == "beta" and self.link == "logit":
-            eta = np.asarray(eta, dtype=float)
-            eta = np.clip(eta, -30.0, 30.0)
-            return np.clip(expit(eta), 1e-12, 1.0 - 1e-12)
+            eta_eval = _clip_eta_for_link(np.asarray(eta, dtype=float), self.link)
+            return _clip_mu_for_link_domain(expit(eta_eval), self.link)
         if self.sm_family is None:
             raise ToytreeError(
                 f"Family/link math is not implemented for {self.family}/{self.link}."
             )
         eta = np.asarray(eta, dtype=float)
-        eta_eval = eta
-        # For links whose inverse is mathematically bounded/positive, clipping
-        # eta prevents floating-point overflow from fabricating exact boundary
-        # means that trigger strict domain checks.
-        if self.link == "logit":
-            eta_eval = np.clip(eta, -30.0, 30.0)
-        elif self.link == "log":
-            eta_eval = np.clip(eta, -700.0, 700.0)
+        # Clip eta only for bounded/positive links so overflow does not create
+        # artificial boundary means (0, 1) that fail strict family domains.
+        eta_eval = _clip_eta_for_link(eta, self.link)
         mu = np.asarray(self.sm_family.link.inverse(eta_eval), dtype=float)
         # Statsmodels correctly encodes link math, but bounded/positive links can
         # hit exact domain boundaries from floating-point overflow/underflow
         # (e.g., logit -> 0/1, log -> 0). We clip only these numerically induced
         # boundary hits so strict domain checks can remain active for truly
         # invalid links such as identity on positive-mean families.
-        if self.link == "logit":
-            mu = np.clip(mu, 1e-12, 1.0 - 1e-12)
-        elif self.link == "log":
-            mu = np.clip(mu, 1e-12, 1e300)
-        return mu
+        return _clip_mu_for_link_domain(mu, self.link)
 
     def validate_mu(self, mu: np.ndarray) -> None:
         """Raise if response-scale means violate the family domain."""
@@ -116,17 +135,16 @@ class GLMFamilySpec:
             )
         link = self.sm_family.link
         eta = np.asarray(eta, dtype=float)
-        eta_eval = eta
-        if self.link == "logit":
-            eta_eval = np.clip(eta, -30.0, 30.0)
-        elif self.link == "log":
-            eta_eval = np.clip(eta, -700.0, 700.0)
+        eta_eval = _clip_eta_for_link(eta, self.link)
         mu = np.asarray(mu, dtype=float)
         if hasattr(link, "inverse_deriv"):
             out = np.asarray(link.inverse_deriv(eta_eval), dtype=float)
         else:
+            # Statsmodels link APIs differ by version; when only deta/dmu is
+            # exposed we invert it to get the IRLS-required dmu/deta.
             deriv = np.asarray(link.deriv(mu), dtype=float)
             out = 1.0 / deriv
+        # Non-finite derivatives destabilize IRLS weights and should fail early.
         if not np.all(np.isfinite(out)):
             raise ToytreeError(
                 f"Non-finite inverse-link derivative for {self.family}/{self.link}."
@@ -195,7 +213,7 @@ class GLMFamilySpec:
 def _validate_empty_family_params(
     family: str,
     family_params: dict[str, Any] | None,
-) -> dict[str, float] | None:
+) -> FamilyParams | None:
     """Validate that no unsupported family parameters were passed."""
     if family_params in (None, {}):
         return None
@@ -213,7 +231,7 @@ def _validate_positive_param(
     family: str,
     family_params: dict[str, Any] | None,
     key: str,
-) -> dict[str, float]:
+) -> FamilyParams:
     """Validate a single required positive scalar family parameter."""
     if not isinstance(family_params, dict):
         raise ToytreeError(
@@ -241,7 +259,7 @@ def _validate_optional_positive_param(
     family: str,
     family_params: dict[str, Any] | None,
     key: str,
-) -> dict[str, float] | None:
+) -> FamilyParams | None:
     """Validate an optional positive scalar family parameter."""
     if family_params in (None, {}):
         return None
@@ -259,6 +277,8 @@ def _coerce_binomial_response(
         raise ToytreeError("Response variable contains only missing values.")
 
     if pd.api.types.is_bool_dtype(s):
+        # Keep bool handling explicit so downstream summaries can preserve a
+        # stable, human-readable level ordering.
         return s.astype("float").astype("Int64").astype("float"), ("False", "True")
 
     if pd.api.types.is_numeric_dtype(s):
@@ -270,7 +290,8 @@ def _coerce_binomial_response(
             "0/1, bool, or two-level strings."
         )
 
-    # Sort labels so string-coded responses map reproducibly across runs.
+    # Sort labels so string-coded responses map reproducibly across runs and
+    # platforms, regardless of pandas category/order internals.
     labels = sorted({str(i) for i in non_missing.unique().tolist()})
     if len(labels) != 2:
         raise ToytreeError(
@@ -294,7 +315,8 @@ def _coerce_count_response(
         raise ToytreeError("Response variable contains only missing values.")
     if np.any(non_missing.to_numpy() < 0):
         raise ToytreeError(f"family='{family}' requires non-negative count responses.")
-    # Require integer-valued counts; allow float dtype inputs if values are integral.
+    # Require integer-valued counts, but allow float-typed arrays when values
+    # are exactly integral (common in CSV/Parquet round-trips).
     if not np.allclose(non_missing.to_numpy(), np.round(non_missing.to_numpy())):
         raise ToytreeError(
             f"family='{family}' requires integer-valued count responses."
@@ -364,6 +386,158 @@ def _make_sm_family(
     return None
 
 
+def _build_binomial_spec(
+    link: str,
+    family_params: dict[str, Any] | None,
+    response: pd.Series | None,
+    response_name: str,
+) -> tuple[GLMFamilySpec, pd.Series | None]:
+    """Return validated binomial/logit family spec and coerced response."""
+    if link != "logit":
+        raise ToytreeError("family='binomial' currently supports only link='logit'.")
+    params = _validate_empty_family_params("binomial", family_params)
+    levels = None
+    rser = response
+    if response is not None:
+        rser, levels = _coerce_binomial_response(response, response_name)
+    return (
+        GLMFamilySpec(
+            family="binomial",
+            link=link,
+            implemented=True,
+            supports_firth=True,
+            response_kind="binary",
+            family_params=params,
+            sm_family=_make_sm_family("binomial", link, params),
+            response_levels=levels,
+        ),
+        rser,
+    )
+
+
+def _build_poisson_spec(
+    link: str,
+    family_params: dict[str, Any] | None,
+    response: pd.Series | None,
+    response_name: str,
+) -> tuple[GLMFamilySpec, pd.Series | None]:
+    """Return validated poisson/log family spec and coerced response."""
+    if link != "log":
+        raise ToytreeError("family='poisson' currently supports only link='log'.")
+    params = _validate_empty_family_params("poisson", family_params)
+    rser = None
+    if response is not None:
+        rser = _coerce_count_response(response, response_name, "poisson")
+    return (
+        GLMFamilySpec(
+            family="poisson",
+            link=link,
+            implemented=True,
+            supports_firth=True,
+            response_kind="count",
+            family_params=params,
+            sm_family=_make_sm_family("poisson", link, params),
+        ),
+        rser,
+    )
+
+
+def _build_negative_binomial_spec(
+    link: str,
+    family_params: dict[str, Any] | None,
+    response: pd.Series | None,
+    response_name: str,
+) -> tuple[GLMFamilySpec, pd.Series | None]:
+    """Return validated negative-binomial spec and coerced response."""
+    if link != "log":
+        raise ToytreeError(
+            "family='negative_binomial' currently supports only link='log'."
+        )
+    params = _validate_optional_positive_param(
+        "negative_binomial",
+        family_params,
+        "alpha",
+    )
+    rser = None
+    if response is not None:
+        rser = _coerce_count_response(response, response_name, "negative_binomial")
+    return (
+        GLMFamilySpec(
+            family="negative_binomial",
+            link=link,
+            implemented=True,
+            supports_firth=False,
+            response_kind="count",
+            family_params=params,
+            sm_family=_make_sm_family("negative_binomial", link, params),
+        ),
+        rser,
+    )
+
+
+def _build_gamma_spec(
+    link: str,
+    family_params: dict[str, Any] | None,
+    response: pd.Series | None,
+    response_name: str,
+) -> tuple[GLMFamilySpec, pd.Series | None]:
+    """Return validated gamma spec and coerced response."""
+    if link not in {"log", "inverse"}:
+        raise ToytreeError(
+            "family='gamma' currently supports only link='log' or 'inverse'."
+        )
+    # Gamma-log is implemented; gamma-inverse remains scaffolded so callers can
+    # validate inputs with stable error messages before not-implemented paths.
+    if link == "log":
+        params = _validate_optional_positive_param("gamma", family_params, "dispersion")
+        implemented = True
+    else:
+        params = _validate_positive_param("gamma", family_params, "dispersion")
+        implemented = False
+    rser = None
+    if response is not None:
+        rser = _coerce_positive_response(response, response_name, "gamma")
+    return (
+        GLMFamilySpec(
+            family="gamma",
+            link=link,
+            implemented=implemented,
+            supports_firth=False,
+            response_kind="positive",
+            family_params=params,
+            sm_family=_make_sm_family("gamma", link, params),
+        ),
+        rser,
+    )
+
+
+def _build_beta_spec(
+    link: str,
+    family_params: dict[str, Any] | None,
+    response: pd.Series | None,
+    response_name: str,
+) -> tuple[GLMFamilySpec, pd.Series | None]:
+    """Return validated beta/logit spec and coerced response."""
+    if link != "logit":
+        raise ToytreeError("family='beta' currently supports only link='logit'.")
+    params = _validate_optional_positive_param("beta", family_params, "phi")
+    rser = None if response is None else _coerce_beta_response(response, response_name)
+    # Beta currently uses custom likelihood/variance math in GLMFamilySpec,
+    # so no statsmodels family object is attached here.
+    return (
+        GLMFamilySpec(
+            family="beta",
+            link=link,
+            implemented=True,
+            supports_firth=False,
+            response_kind="proportion",
+            family_params=params,
+            sm_family=None,
+        ),
+        rser,
+    )
+
+
 def get_family_spec(
     family: str,
     link: str,
@@ -395,135 +569,24 @@ def get_family_spec(
     lnk = str(link).lower()
     if fam == "bernoulli":
         fam = "binomial"
+    if fam in {"negative-binomial", "nb", "negbin"}:
+        fam = "negative_binomial"
     rname = response_name or "response"
 
-    if fam == "binomial":
-        if lnk != "logit":
-            raise ToytreeError(
-                "family='binomial' currently supports only link='logit'."
-            )
-        params = _validate_empty_family_params(fam, family_params)
-        levels = None
-        rser = response
-        if response is not None:
-            rser, levels = _coerce_binomial_response(response, rname)
-        return (
-            GLMFamilySpec(
-                family=fam,
-                link=lnk,
-                implemented=True,
-                supports_firth=True,
-                response_kind="binary",
-                family_params=params,
-                sm_family=_make_sm_family(fam, lnk, params),
-                response_levels=levels,
-            ),
-            rser,
+    builders = {
+        "binomial": _build_binomial_spec,
+        "poisson": _build_poisson_spec,
+        "negative_binomial": _build_negative_binomial_spec,
+        "gamma": _build_gamma_spec,
+        "beta": _build_beta_spec,
+    }
+    builder = builders.get(fam)
+    if builder is None:
+        raise ToytreeError(
+            "Unsupported family for pglm. Supported now: binomial/bernoulli "
+            "(implemented), poisson (implemented), negative_binomial "
+            "(implemented with log link), gamma (implemented with log link), beta "
+            "(implemented with logit link), and scaffold validation for "
+            "gamma-inverse."
         )
-
-    if fam == "poisson":
-        if lnk != "log":
-            raise ToytreeError("family='poisson' currently supports only link='log'.")
-        params = _validate_empty_family_params(fam, family_params)
-        rser = (
-            None if response is None else _coerce_count_response(response, rname, fam)
-        )
-        return (
-            GLMFamilySpec(
-                family=fam,
-                link=lnk,
-                implemented=True,
-                supports_firth=True,
-                response_kind="count",
-                family_params=params,
-                sm_family=_make_sm_family(fam, lnk, params),
-            ),
-            rser,
-        )
-
-    if fam in {"negative_binomial", "negative-binomial", "nb", "negbin"}:
-        params = _validate_optional_positive_param(
-            "negative_binomial",
-            family_params,
-            "alpha",
-        )
-        if lnk != "log":
-            raise ToytreeError(
-                "family='negative_binomial' currently supports only link='log'."
-            )
-        rser = (
-            None
-            if response is None
-            else _coerce_count_response(response, rname, "negative_binomial")
-        )
-        return (
-            GLMFamilySpec(
-                family="negative_binomial",
-                link=lnk,
-                implemented=True,
-                supports_firth=False,
-                response_kind="count",
-                family_params=params,
-                sm_family=_make_sm_family("negative_binomial", lnk, params),
-            ),
-            rser,
-        )
-
-    if fam == "gamma":
-        if lnk not in {"log", "inverse"}:
-            raise ToytreeError(
-                "family='gamma' currently supports only link='log' or 'inverse'."
-            )
-        if lnk == "log":
-            params = _validate_optional_positive_param(
-                "gamma",
-                family_params,
-                "dispersion",
-            )
-            implemented = True
-        else:
-            params = _validate_positive_param("gamma", family_params, "dispersion")
-            implemented = False
-        rser = (
-            None
-            if response is None
-            else _coerce_positive_response(response, rname, fam)
-        )
-        return (
-            GLMFamilySpec(
-                family="gamma",
-                link=lnk,
-                implemented=implemented,
-                supports_firth=False,
-                response_kind="positive",
-                family_params=params,
-                sm_family=_make_sm_family("gamma", lnk, params),
-            ),
-            rser,
-        )
-
-    if fam == "beta":
-        params = _validate_optional_positive_param("beta", family_params, "phi")
-        if lnk != "logit":
-            raise ToytreeError("family='beta' currently supports only link='logit'.")
-        rser = None if response is None else _coerce_beta_response(response, rname)
-        return (
-            GLMFamilySpec(
-                family="beta",
-                link=lnk,
-                implemented=True,
-                supports_firth=False,
-                response_kind="proportion",
-                family_params=params,
-                sm_family=None,
-            ),
-            rser,
-        )
-
-    raise ToytreeError(
-        "Unsupported family for pglm. Supported now: binomial/bernoulli "
-        "(implemented), poisson (implemented), negative_binomial "
-        "(implemented with log link), gamma (implemented with log link), beta "
-        "(implemented with logit link), and scaffold validation for "
-        "gamma-inverse."
-    )
+    return builder(lnk, family_params, response, rname)

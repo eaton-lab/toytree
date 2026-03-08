@@ -249,15 +249,23 @@ def _eb_covariance_multivariate(
         return np.zeros_like(rmat)
     # Averages pairwise r terms so diagonals reduce to the univariate EB formula.
     ksum = (rvec[:, None] + rvec[None, :]) / 2.0
+    mask_zero = np.isclose(ksum, 0.0, atol=1e-14)
+    ints = np.full(ksum.shape, dt, dtype=float)
     with np.errstate(over="raise", divide="raise", invalid="raise"):
         try:
-            ints = np.where(
-                np.isclose(ksum, 0.0, atol=1e-14),
-                dt,
-                (np.exp(ksum * child_time) - np.exp(ksum * parent_time)) / ksum,
-            )
+            # Use masked evaluation so zero-denominator entries are never
+            # evaluated in the division branch under strict floating-point
+            # error settings. This preserves the exact dt limit for ksum=0.
+            nz = ~mask_zero
+            if np.any(nz):
+                k = ksum[nz]
+                ints[nz] = (
+                    np.exp(k * parent_time) * np.expm1(k * (child_time - parent_time))
+                ) / k
         except FloatingPointError as exc:
             raise ToytreeError("EB covariance overflowed; reduce r values.") from exc
+    if not np.all(np.isfinite(ints)):
+        raise ToytreeError("EB covariance overflowed; reduce r values.")
     return _regularize_covariance(rmat * ints)
 
 
