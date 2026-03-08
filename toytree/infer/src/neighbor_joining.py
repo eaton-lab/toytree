@@ -1,73 +1,132 @@
 #!/usr/bin/env python
 
-"""Distance-based tree inference.
+"""Distance-based tree inference."""
 
-"""
+from __future__ import annotations
 
-from typing import Tuple, Iterator, Union
+import sys
+from typing import TYPE_CHECKING, Iterator
+
 import numpy as np
 import pandas as pd
-from loguru import logger
-import toytree
 
-Array = Union[np.ndarray, pd.DataFrame]
+from toytree.utils import ToytreeError
+
+if TYPE_CHECKING:
+    from toytree import ToyTree
+
+Array = np.ndarray | pd.DataFrame
 
 __all__ = ["neighbor_joining_tree"]
 
 
-def neighbor_joining_tree(data: Array) -> toytree.ToyTree:
-    """Return a ToyTree inferred by neighbor-joining from a distance matrix.
+def _coerce_and_validate_distance_matrix(
+    data: Array,
+) -> tuple[np.ndarray, list[object]]:  # noqa: E501
+    """Coerce and validate input distance matrix and return matrix plus labels."""
+    arr = np.asarray(data, dtype=float)
+    if arr.ndim != 2:
+        raise ToytreeError("distance matrix must be 2-dimensional.")
+    if arr.shape[0] != arr.shape[1]:
+        raise ToytreeError("distance matrix must be square.")
+    if arr.shape[0] < 3:
+        raise ToytreeError("neighbor-joining requires at least 3 taxa.")
+    if not np.isfinite(arr).all():
+        raise ToytreeError("distance matrix must contain only finite values.")
+    if np.any(arr < 0):
+        raise ToytreeError("distance matrix cannot contain negative distances.")
+    if not np.allclose(np.diag(arr), 0.0):
+        raise ToytreeError("distance matrix diagonal must be all zeros.")
+    if not np.allclose(arr, arr.T):
+        raise ToytreeError("distance matrix must be symmetric.")
 
-    Neighbor-joining is a clustering algorithm for building trees from
-    a distance matrix. It does not assume a clock, and is guaranteed
-    to recover the true tree if the distances reflect the distances
-    among samples on the true tree.
+    if isinstance(data, pd.DataFrame):
+        if list(data.index) != list(data.columns):
+            raise ToytreeError(
+                "DataFrame distance matrix must have identical index/columns."
+            )
+        labels = list(data.index)
+    else:
+        labels = list(range(arr.shape[0]))
+
+    return arr, labels
+
+
+def neighbor_joining_tree(data: Array) -> ToyTree:
+    """Return a tree inferred by neighbor-joining from a distance matrix.
+
+    Neighbor-joining (NJ) is a distance-based agglomerative method that does
+    not assume a strict molecular clock. This function validates the input
+    matrix, applies NJ, and returns an unrooted ``ToyTree``.
 
     Parameters
     ----------
-    data: pd.DataFrame | np.ndarray
-        An input dataframe or array representing a symmetric distance
-        matrix. If no labels are provided (e.g., array) then tips are
-        named by their row index.
+    data : numpy.ndarray or pandas.DataFrame
+        Symmetric distance matrix of shape ``(n, n)``.
+        If a DataFrame is provided, index and columns must match.
+        Matrices must be finite, non-negative, and have a zero diagonal.
+        At least 3 taxa are required.
 
-    Example
+    Returns
     -------
-    >>> # example from Felsenstein book
-    >>> names = ["dog", "bear", "raccoon", "weasel", "seal", "sea lion", "cat", "monkey"]
+    ToyTree
+        An unrooted tree inferred by neighbor-joining.
+
+    Raises
+    ------
+    ToytreeError
+        If `data` is not a valid distance matrix (non-square, non-symmetric,
+        non-finite values, negative distances, non-zero diagonal, fewer than
+        three taxa, or mismatched DataFrame index/columns).
+
+    Notes
+    -----
+    If DataFrame labels are duplicated, labels cannot map uniquely to tips.
+    In that case, this function falls back to integer tip names
+    ``0..n-1`` and prints a warning to stderr.
+
+    Examples
+    --------
+    >>> names = [
+    ...     "dog", "bear", "raccoon", "weasel",
+    ...     "seal", "sea lion", "cat", "monkey",
+    ... ]
     >>> data = pd.DataFrame(
-    >>>     index=names,
-    >>>     columns=names,
-    >>>     data=np.array([
-    >>>         [0, 32, 48, 51, 50, 48, 98, 148],
-    >>>         [32, 0, 26, 34, 29, 33, 84, 136],
-    >>>         [48, 26, 0, 42, 44, 44, 92, 152],
-    >>>         [51, 34, 42, 0, 44, 38, 86, 142],
-    >>>         [50, 29, 44, 44, 0, 24, 89, 142],
-    >>>         [48, 33, 44, 38, 24, 0, 90, 142],
-    >>>         [98, 84, 92, 86, 89, 90, 0, 148],
-    >>>         [148, 136, 152, 142, 142, 142, 148, 0],
-    >>>     ])
-    >>> )
-    >>> # run tree inference, root, and draw it.
+    ...     index=names,
+    ...     columns=names,
+    ...     data=np.array([
+    ...         [0, 32, 48, 51, 50, 48, 98, 148],
+    ...         [32, 0, 26, 34, 29, 33, 84, 136],
+    ...         [48, 26, 0, 42, 44, 44, 92, 152],
+    ...         [51, 34, 42, 0, 44, 38, 86, 142],
+    ...         [50, 29, 44, 44, 0, 24, 89, 142],
+    ...         [48, 33, 44, 38, 24, 0, 90, 142],
+    ...         [98, 84, 92, 86, 89, 90, 0, 148],
+    ...         [148, 136, 152, 142, 142, 142, 148, 0],
+    ...     ]),
+    ... )
     >>> tree = neighbor_joining_tree(data)
     >>> tree = tree.mod.root_on_minimal_ancestor_deviation()
-    >>> tree.draw(scale_bar=True, node_sizes=5, tip_labels_align=True)
     """
-    # convert data to an array for faster processing.
-    arr = np.array(data, dtype=float)
+    import toytree
 
-    # get names index from df or arr, do not allow replicate names
-    index = data.index if isinstance(data, pd.DataFrame) else range(data.shape[0])
+    arr, index = _coerce_and_validate_distance_matrix(data)
+
+    # Duplicate labels cannot map cleanly to distinct tips, so fallback to
+    # integer labels while preserving deterministic matrix row order.
     if len(index) != len(set(index)):
-        logger.warning("identical names found in data, using int indices for upgma tree")
-        index = range(data.shape[0])
+        print(
+            "WARNING: duplicate labels found in distance matrix; "
+            "using integer labels for neighbor-joining tree.",
+            file=sys.stderr,
+        )
+        index = list(range(arr.shape[0]))
 
     # dict to store Nodes, starting with tips.
     nodes = {i: toytree.Node(name=i) for i in index}
 
     # iterate generator function to get next pair of Nodes to join.
     for i, j, v_i, v_j in iter_nj_algorithm(arr):
-
         # get ordered Node names from the nodes dict.
         names = list(nodes.keys())
         # print(f"{names[i]}\t{names[j]}\t{v_i:.3f}\t{v_j:.3f}")
@@ -93,18 +152,18 @@ def neighbor_joining_tree(data: Array) -> toytree.ToyTree:
             node_i._dist = v_i
             node_j._add_child(node_i)
 
-    # conver treenode to a ToyTree
+    # convert treenode to a ToyTree
     tree = toytree.ToyTree(node_j)
 
     # collapse polytomies (zero-dist) edges
-    to_collapse = [i for i in tree[tree.ntips:-1] if i._dist == 0]
+    to_collapse = [i for i in tree[tree.ntips : -1] if i._dist == 0]
     if to_collapse:
         toytree.mod.remove_nodes(tree, *to_collapse, inplace=True)
     return tree
 
 
-def iter_nj_algorithm(arr: Array) -> Iterator[Tuple[int, int, float, float]]:
-    """Generator function to yield node indices and branch lengths.
+def iter_nj_algorithm(arr: np.ndarray) -> Iterator[tuple[int, int, float, float]]:
+    """Yield node indices and branch lengths from neighbor-joining updates.
 
     Each iteration of the neighbor-joining algorithm finds the pair
     of samples with the shortest average distance to all other
@@ -114,7 +173,6 @@ def iter_nj_algorithm(arr: Array) -> Iterator[Tuple[int, int, float, float]]:
     """
     # iterate and reduce matrix until all Nodes are joined
     while 1:
-
         # get neighbor values (u_i)
         uvals = arr.sum(axis=0) / (arr.shape[0] - 2)
 
@@ -137,8 +195,8 @@ def iter_nj_algorithm(arr: Array) -> Iterator[Tuple[int, int, float, float]]:
         new_arr = np.zeros(shape=(new_dim, new_dim))
         mask = np.ones(arr.shape[0], dtype=bool)
         mask[[i, j]] = False
-        new_arr[:new_dim - 1, :][:, :new_dim - 1] = arr[mask, :][:, mask]
-        new_arr[-1, :-1] = new_arr[:-1, -1] = (arr[i] + arr[j] - arr[i, j])[mask] / 2.
+        new_arr[: new_dim - 1, :][:, : new_dim - 1] = arr[mask, :][:, mask]
+        new_arr[-1, :-1] = new_arr[:-1, -1] = (arr[i] + arr[j] - arr[i, j])[mask] / 2.0
         arr = new_arr
 
         # if new arr size is 2 yield final pair and end.
@@ -148,22 +206,23 @@ def iter_nj_algorithm(arr: Array) -> Iterator[Tuple[int, int, float, float]]:
 
 
 if __name__ == "__main__":
-
     # example from Felsenstein
     names = ["dog", "bear", "raccoon", "weasel", "seal", "sea lion", "cat", "monkey"]
     data = pd.DataFrame(
         index=names,
         columns=names,
-        data=np.array([
-            [0, 32, 48, 51, 50, 48, 98, 148],
-            [32, 0, 26, 34, 29, 33, 84, 136],
-            [48, 26, 0, 42, 44, 44, 92, 152],
-            [51, 34, 42, 0, 44, 38, 86, 142],
-            [50, 29, 44, 44, 0, 24, 89, 142],
-            [48, 33, 44, 38, 24, 0, 90, 142],
-            [98, 84, 92, 86, 89, 90, 0, 148],
-            [148, 136, 152, 142, 142, 142, 148, 0],
-        ])
+        data=np.array(
+            [
+                [0, 32, 48, 51, 50, 48, 98, 148],
+                [32, 0, 26, 34, 29, 33, 84, 136],
+                [48, 26, 0, 42, 44, 44, 92, 152],
+                [51, 34, 42, 0, 44, 38, 86, 142],
+                [50, 29, 44, 44, 0, 24, 89, 142],
+                [48, 33, 44, 38, 24, 0, 90, 142],
+                [98, 84, 92, 86, 89, 90, 0, 148],
+                [148, 136, 152, 142, 142, 142, 148, 0],
+            ]
+        ),
     )
 
     # run tree inference and draw it.
