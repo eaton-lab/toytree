@@ -1,11 +1,13 @@
 #!/usr/bin/env python
 
-import unittest
 
 import toytree
 
 
-class TestRelabel(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestRelabel(PytestCompat):
     def setUp(self):
         self.tree = toytree.tree("((a-1:1,b-2:1):1,c-3:1);")
         # assign internal names for tests that include non-tip nodes
@@ -78,5 +80,3 @@ class TestRelabel(unittest.TestCase):
         self.assertEqual(new[0].name, "<b><i>a-1</i></b>")
 
 
-if __name__ == "__main__":
-    unittest.main()

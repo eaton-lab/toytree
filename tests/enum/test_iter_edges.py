@@ -4,7 +4,6 @@
 
 """
 
-import unittest
 import numpy as np
 import toytree
 
@@ -20,7 +19,10 @@ ITER_EDGES = np.array([
 ])
 
 
-class TestEdges(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestEdges(PytestCompat):
     def setUp(self):
         """Six tip tree three clades of two."""
         self.tree = toytree.tree("(a,b,((c,d)CD,(e,f)EF)X)AB;")
@@ -51,6 +53,3 @@ class TestEdges(unittest.TestCase):
 
 
 
-if __name__ == "__main__":
-
-    unittest.main()

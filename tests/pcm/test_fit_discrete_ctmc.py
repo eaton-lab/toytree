@@ -1,4 +1,3 @@
-import unittest
 
 import numpy as np
 import pandas as pd
@@ -13,7 +12,10 @@ from toytree.pcm.src.traits.fit_discrete_ctmc import (
 from toytree.utils import ToytreeError
 
 
-class TestDiscreteMarkovModelFit(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestDiscreteMarkovModelFit(PytestCompat):
     """Tests discrete CTMC model fitting and ancestral-state wrappers."""
 
     def test_hard_rename_api_surface(self):
@@ -304,5 +306,3 @@ class TestDiscreteMarkovModelFit(unittest.TestCase):
         self.assertTrue(np.isfinite(result.log_likelihood))
 
 
-if __name__ == "__main__":
-    unittest.main()

@@ -82,6 +82,76 @@ def test_unittree_names_random_assignment() -> None:
     assert set(tree1.get_tip_labels()) == set(names)
 
 
+def _internal_nodes_excluding_root(tree: toytree.ToyTree) -> list:
+    """Return internal nodes excluding the root."""
+    return [node for node in tree if (not node.is_leaf()) and (not node.is_root())]
+
+
+def _find_unittree_seed_with_root_internal_count(
+    ntips: int, ninternal: int, max_seed: int = 2000
+) -> int:
+    """Return first seed where root has exactly ``ninternal`` internal children."""
+    for seed in range(max_seed):
+        tree = toytree.rtree.unittree(ntips, treeheight=1.0, seed=seed)
+        count = sum(int(not child.is_leaf()) for child in tree.treenode.children)
+        if count == ninternal:
+            return seed
+    raise AssertionError(
+        f"No seed in range(0, {max_seed}) produced root internal count {ninternal}."
+    )
+
+
+def test_unittree_root_two_internal_children_get_half_internal_length() -> None:
+    """When root has two internal children, each root edge should be half X."""
+    seed = _find_unittree_seed_with_root_internal_count(8, ninternal=2)
+    tree = toytree.rtree.unittree(8, treeheight=1.0, seed=seed)
+    root = tree.treenode
+    root_internal = [child for child in root.children if not child.is_leaf()]
+    assert len(root_internal) == 2
+
+    non_root_internal = _internal_nodes_excluding_root(tree)
+    baseline = max(node._dist for node in non_root_internal)
+    assert baseline > 0
+
+    for child in root_internal:
+        assert child._dist == pytest.approx(0.5 * baseline)
+
+
+def test_unittree_root_one_tip_child_internal_length_equals_x() -> None:
+    """If one root child is tip, the internal root-child edge should be X."""
+    seed = _find_unittree_seed_with_root_internal_count(8, ninternal=1)
+    tree = toytree.rtree.unittree(8, treeheight=1.0, seed=seed)
+    root = tree.treenode
+    root_internal = [child for child in root.children if not child.is_leaf()]
+    root_tips = [child for child in root.children if child.is_leaf()]
+    assert len(root_internal) == 1
+    assert len(root_tips) == 1
+
+    non_root_internal = _internal_nodes_excluding_root(tree)
+    baseline = max(node._dist for node in non_root_internal)
+    assert baseline > 0
+    assert root_internal[0]._dist == pytest.approx(baseline)
+
+
+def test_unittree_ntips_two_still_ultrametric_and_scaled() -> None:
+    """ntips=2 should remain ultrametric with requested root height."""
+    tree = toytree.rtree.unittree(2, treeheight=3.5, seed=123)
+    assert tree.is_ultrametric()
+    assert tree.treenode.height == pytest.approx(3.5)
+
+
+def test_unittree_cached_heights_match_dist_relationships() -> None:
+    """Cached heights should remain consistent with branch lengths."""
+    for ninternal in (1, 2):
+        seed = _find_unittree_seed_with_root_internal_count(10, ninternal=ninternal)
+        tree = toytree.rtree.unittree(10, treeheight=1.0, seed=seed)
+        for node in tree:
+            if node.is_root():
+                continue
+            expected_dist = node.up.height - node.height
+            assert expected_dist == pytest.approx(node.dist)
+
+
 def test_bdtree_parameter_validation() -> None:
     with pytest.raises(ToytreeError):
         toytree.rtree.bdtree(stop="bad")

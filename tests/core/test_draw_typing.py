@@ -3,14 +3,16 @@
 """Tests for draw() typing surface."""
 
 import inspect
-import unittest
 
 import numpy as np
 import toytree
 from toytree.utils import ToytreeError
 
 
-class TestDrawTyping(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestDrawTyping(PytestCompat):
     def test_draw_exposes_interior_algorithm(self):
         sig = inspect.signature(toytree.ToyTree.draw)
         self.assertIn("interior_algorithm", sig.parameters)
@@ -75,5 +77,3 @@ class TestDrawTyping(unittest.TestCase):
             tree.draw(ts="phylo")
 
 
-if __name__ == "__main__":
-    unittest.main()

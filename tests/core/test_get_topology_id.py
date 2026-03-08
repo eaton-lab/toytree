@@ -4,11 +4,13 @@
 
 """
 
-import unittest
 import toytree
 
 
-class TestGetTopologyID(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestGetTopologyID(PytestCompat):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(ntips=8, treeheight=10, seed=123, random_names=True)
         self.btree = toytree.rtree.baltree(ntips=8, treeheight=10, seed=123, random_names=True)
@@ -42,5 +44,3 @@ class TestGetTopologyID(unittest.TestCase):
                 self.assertEqual(tid, rtree.get_topology_id())
 
 
-if __name__ == "__main__":
-    unittest.main()

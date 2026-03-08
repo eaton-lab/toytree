@@ -2,7 +2,6 @@
 
 """Tests for pruning-based phylogenetic logistic regression."""
 
-import unittest
 
 import numpy as np
 import pandas as pd
@@ -13,7 +12,10 @@ from toytree.pcm.src.phylolinalg.pglm import PGLMResult
 from toytree.utils.src.exceptions import ToytreeError
 
 
-class TestPGLM(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestPGLM(PytestCompat):
     """Tests for phase-1 pruning-based binary phylogenetic GLM."""
 
     def setUp(self):
@@ -429,5 +431,3 @@ class TestPGLM(unittest.TestCase):
         self.assertIn("response_transform", h3)
 
 
-if __name__ == "__main__":
-    unittest.main()

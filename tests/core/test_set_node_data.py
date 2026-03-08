@@ -4,11 +4,13 @@
 
 """
 
-import unittest
 import toytree
 
 
-class TestToyTreeSetNodeData(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestToyTreeSetNodeData(PytestCompat):
     def setUp(self):
         self.tree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
 
@@ -32,6 +34,3 @@ class TestToyTreeSetNodeData(unittest.TestCase):
         """Create tests..."""
 
 
-if __name__ == "__main__":
-
-    unittest.main()

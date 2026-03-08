@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-import unittest
 
 import toytree
 from toytree.enum import _iter_unresolved_quartet_sets, iter_quartets
@@ -99,7 +98,10 @@ TREE1_UNRESOLVED = [
 ]
 
 
-class TestQuartets(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestQuartets(PytestCompat):
     """Validate quartet enumeration options and output ordering."""
 
     def setUp(self):
@@ -336,5 +338,3 @@ class TestQuartets(unittest.TestCase):
         self.assertEqual(parts, TREE1_UNRESOLVED)
 
 
-if __name__ == "__main__":
-    unittest.main()

@@ -7,7 +7,6 @@ values during setting; instead, a validator is run instide of .draw
 when the tree is drawn.
 """
 
-import unittest
 
 import numpy as np
 import toyplot
@@ -27,7 +26,10 @@ class Devnull(object):
         pass
 
 
-class TestValidator(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestValidator(PytestCompat):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(10, seed=123, treeheight=10)
         self.btree = toytree.rtree.baltree(10, seed=123, treeheight=10)
@@ -114,5 +116,3 @@ class TestValidator(unittest.TestCase):
     # assert node_labels support for anchor-shift
 
 
-if __name__ == "__main__":
-    unittest.main()

@@ -4,7 +4,6 @@
 
 """
 
-import unittest
 from math import isnan
 import toytree
 from toytree.utils import ToytreeError
@@ -22,7 +21,10 @@ def get_connected_nodes_ABC():
     nodeABC._add_child(nodeC)
 
 
-class TestToyTreeNodeMethods(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestToyTreeNodeMethods(PytestCompat):
 
     def setUp(self):
         self.node = toytree.Node()
@@ -211,7 +213,3 @@ class TestToyTreeNodeMethods(unittest.TestCase):
     #         self.itree.get_nodes("~*r*")
 
 
-if __name__ == "__main__":
-
-    toytree.set_log_level("CRITICAL")
-    unittest.main()

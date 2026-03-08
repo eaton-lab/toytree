@@ -1,12 +1,14 @@
 #!/usr/bin/env python
 
-import unittest
 
 import pandas as pd
 import toytree
 
 
-class TestSetNodeDataFromDataFrame(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestSetNodeDataFromDataFrame(PytestCompat):
     def setUp(self):
         self.tree = toytree.tree("((aa:1,ab:1):1,c:1);")
 
@@ -117,5 +119,3 @@ class TestSetNodeDataFromDataFrame(unittest.TestCase):
         self.assertEqual(data.iloc[1], "B")
 
 
-if __name__ == "__main__":
-    unittest.main()

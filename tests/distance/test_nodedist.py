@@ -4,12 +4,14 @@
 
 """
 
-import unittest
 import numpy as np
 import toytree
 
 
-class TestRoot(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestRoot(PytestCompat):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(10, seed=123, treeheight=10)
         self.btree = toytree.rtree.baltree(10, seed=123, treeheight=10)
@@ -45,6 +47,3 @@ class TestRoot(unittest.TestCase):
 
 
 
-if __name__ == "__main__":
-
-    unittest.main()

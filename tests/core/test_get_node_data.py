@@ -4,12 +4,14 @@
 
 """
 
-import unittest
 import numpy as np
 import toytree
 
 
-class TestToyTreeGetNodeData(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestToyTreeGetNodeData(PytestCompat):
     def setUp(self):
         self.tree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
 
@@ -32,6 +34,3 @@ class TestToyTreeGetNodeData(unittest.TestCase):
         print(self.tree.get_node_data("complex_types"))
 
 
-if __name__ == "__main__":
-
-    unittest.main()

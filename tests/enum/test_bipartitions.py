@@ -6,12 +6,14 @@
 - iter_quartets
 """
 
-import unittest
 import toytree
 from toytree.enum import iter_bipartitions
 
 
-class TestBipartitions(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestBipartitions(PytestCompat):
     def setUp(self):
         """Six tip tree three clades of two."""
         self.tree1 = toytree.tree("(a,b,((c,d)CD,(e,f)EF)X)AB;")
@@ -135,6 +137,3 @@ class TestBipartitions(unittest.TestCase):
         self.assertEqual(b2, b3)
 
 
-if __name__ == "__main__":
-
-    unittest.main()

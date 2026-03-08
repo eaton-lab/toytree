@@ -4,7 +4,6 @@
 
 """
 
-import unittest
 import numpy as np
 # import toyplot
 import toytree
@@ -23,7 +22,10 @@ from toytree.style.src.validate_data import (
 
 
 
-class TestValidateStyle(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestValidateStyle(PytestCompat):
 
     def setUp(self):
         self.tree = toytree.rtree.unittree(10, seed=123)
@@ -42,7 +44,7 @@ class TestValidateStyle(unittest.TestCase):
             validate_style(self.tree, self.style)
 
 
-class TestValidateMask(unittest.TestCase):
+class TestValidateMask(PytestCompat):
 
     def setUp(self):
         self.tree = toytree.rtree.unittree(5, seed=123)
@@ -70,7 +72,7 @@ class TestValidateMask(unittest.TestCase):
         """..."""
 
 
-class TestValidateNumeric(unittest.TestCase):
+class TestValidateNumeric(PytestCompat):
 
     def setUp(self):
         self.tree = toytree.rtree.unittree(5, seed=123)
@@ -197,5 +199,3 @@ class TestValidateNumeric(unittest.TestCase):
 
 
 
-if __name__ == "__main__":
-    unittest.main()

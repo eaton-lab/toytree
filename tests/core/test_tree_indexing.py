@@ -4,13 +4,15 @@
 
 """
 
-import unittest
 import toytree
 import numpy as np
 from toytree.utils import ToytreeError
 
 
-class TestToyTreeGetNodes(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestToyTreeGetNodes(PytestCompat):
     def setUp(self):
         self.tree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
 
@@ -49,7 +51,3 @@ class TestToyTreeGetNodes(unittest.TestCase):
             _ = self.tree['a']
 
 
-if __name__ == "__main__":
-
-    toytree.set_log_level("CRITICAL")
-    unittest.main()

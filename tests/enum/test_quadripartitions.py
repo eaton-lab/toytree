@@ -5,7 +5,6 @@
 from __future__ import annotations
 
 import itertools
-import unittest
 from collections import Counter
 
 import numpy as np
@@ -131,7 +130,10 @@ def _quadripartition_counter_observed(tree):
     return counter
 
 
-class TestQuadripartitions(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestQuadripartitions(PytestCompat):
     """Validate quadripartition enumeration and formatting options."""
 
     def setUp(self):
@@ -373,5 +375,3 @@ class TestQuadripartitions(unittest.TestCase):
         self.assertGreater(checked, 0)
 
 
-if __name__ == "__main__":
-    unittest.main()

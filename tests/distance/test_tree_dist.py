@@ -3,7 +3,6 @@
 """Tests for tree distance metrics."""
 
 import math
-import unittest
 
 import numpy as np
 
@@ -25,7 +24,10 @@ from toytree.distance._src.treedist_utils import (
 from toytree.utils import ToytreeError
 
 
-class TestTreeDistances(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestTreeDistances(PytestCompat):
     def setUp(self):
         # same tip set, one internal split differs.
         self.t1 = toytree.tree("(((a,b),c),(d,e));")
@@ -143,5 +145,3 @@ class TestTreeDistances(unittest.TestCase):
             get_treedist_kf_branch_score(t1, t2)
 
 
-if __name__ == "__main__":
-    unittest.main()
