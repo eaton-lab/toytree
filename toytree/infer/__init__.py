@@ -1,9 +1,7 @@
 #!/usr/bin/env python
+# ruff: noqa: F403,E501,D200
 
-"""toytree inference subpackage.
-
-
-"""
+"""toytree inference subpackage."""
 
 # methods here will be available at submodule-level (toytree.infer.[method])
 from .src.consensus import *  # consensus_tree, consensus_features
