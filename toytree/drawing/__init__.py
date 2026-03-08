@@ -1,16 +1,17 @@
 #!/usr/bin/env python
+# ruff: noqa: F401, F403
 
-"""Drawing functions for constructing Marks in the toyplot context.
-
-"""
+"""Drawing functions for constructing Marks in the toyplot context."""
 
 from toyplot import Canvas
 from toyplot.coordinates import Cartesian
 from toyplot.mark import Mark
 
+from .src.draw_toytree import draw_toytree
+
 # main tree drawing Mark and .draw() function lazy-imported inside tree.py
 from .src.mark_toytree import ToyTreeMark
-from .src.draw_toytree import draw_toytree
+from .src.mark_tree_domain import TreeDomainMark
 
 # The render modules must be imported to expose multidispatch calls
 from .src.render import *

@@ -4,14 +4,16 @@
 
 import io
 import re
-import unittest
 
 import toyplot.svg
 
 import toytree
 
 
-class TestAddScaleBar(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestAddScaleBar(PytestCompat):
     def setUp(self):
         self.tree = toytree.tree("((a:1,b:1):1,c:2);")
 
@@ -265,5 +267,3 @@ class TestAddScaleBar(unittest.TestCase):
         self.assertEqual(before_data, after_data)
 
 
-if __name__ == "__main__":
-    unittest.main()

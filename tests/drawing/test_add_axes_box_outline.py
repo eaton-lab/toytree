@@ -3,13 +3,15 @@
 """Tests for annotate.add_axes_box_outline."""
 
 import io
-import unittest
 
 import toytree
 import toyplot.svg
 
 
-class TestAddAxesBoxOutline(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestAddAxesBoxOutline(PytestCompat):
     def setUp(self):
         self.tree = toytree.tree("((a:1,b:1):1,c:2);")
 
@@ -196,5 +198,3 @@ class TestAddAxesBoxOutline(unittest.TestCase):
         self.assertLess(targets.index(back), targets.index(axes))
 
 
-if __name__ == "__main__":
-    unittest.main()

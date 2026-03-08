@@ -2,7 +2,6 @@
 
 """Tests for annotate.add_edge_stochastic_map."""
 
-import unittest
 import xml.etree.ElementTree as xml
 
 import numpy as np
@@ -14,7 +13,10 @@ from toytree.style.src.map_colors import get_color_mapped_values
 from toytree.utils import ToytreeError
 
 
-class TestAnnotateAddEdgeStochasticMap(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestAnnotateAddEdgeStochasticMap(PytestCompat):
     """Validate stochastic-map edge annotation behavior."""
 
     def setUp(self):
@@ -226,5 +228,3 @@ class TestAnnotateAddEdgeStochasticMap(unittest.TestCase):
         )
 
 
-if __name__ == "__main__":
-    unittest.main()

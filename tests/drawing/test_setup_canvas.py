@@ -5,15 +5,20 @@
 
 from __future__ import annotations
 
-import unittest
 
 import numpy as np
 
 import toytree
-from toytree.drawing.src.setup_canvas import get_linear_width_and_height
+from toytree.drawing.src.setup_canvas import (
+    get_circular_width_and_height,
+    get_linear_width_and_height,
+)
 
 
-class TestSetupCanvasLinearSizing(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestSetupCanvasLinearSizing(PytestCompat):
     def test_font_family_changes_width_estimate(self):
         tree = toytree.rtree.unittree(12, seed=123)
         labels = {
@@ -71,6 +76,17 @@ class TestSetupCanvasLinearSizing(unittest.TestCase):
         self.assertGreaterEqual(h, 275)
         self.assertLessEqual(h, 1000)
 
+    def test_circular_full_default_is_square(self):
+        tree = toytree.rtree.unittree(20, seed=123)
+        _, _, mark = tree.draw(layout="c", tip_labels=False)
+        width, height = get_circular_width_and_height(mark)
+        self.assertEqual(width, height)
 
-if __name__ == "__main__":
-    unittest.main()
+    def test_circular_fan_default_is_rectangular(self):
+        tree = toytree.rtree.unittree(20, seed=123)
+        _, _, mark = tree.draw(layout="c0-180", tip_labels=False)
+        width, height = get_circular_width_and_height(mark)
+        self.assertNotEqual(width, height)
+        self.assertGreater(width, height)
+
+

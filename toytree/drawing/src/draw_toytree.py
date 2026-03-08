@@ -163,7 +163,7 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
         axes, mark, kwargs.get("width"), kwargs.get("height")
     )
 
-    # make range symmetric for circular trees
+    # Preserve geometry for circular/fan layouts by fitting equal data scales.
     if style.layout.startswith("c"):
         axes.aspect = "fit-range"
 

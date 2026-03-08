@@ -3,7 +3,6 @@
 
 """Tests for annotate.add_tip_markers."""
 
-import unittest
 
 import numpy as np
 import toyplot.html
@@ -11,7 +10,10 @@ import toyplot.html
 import toytree
 
 
-class TestAnnotateAddTipMarkers(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestAnnotateAddTipMarkers(PytestCompat):
     def setUp(self):
         self.tree = toytree.rtree.unittree(ntips=12, seed=123)
 
@@ -130,5 +132,3 @@ class TestAnnotateAddTipMarkers(unittest.TestCase):
         self.assertLess(float(np.ptp(radii)), 1e-8)
 
 
-if __name__ == "__main__":
-    unittest.main()

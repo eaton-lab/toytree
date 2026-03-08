@@ -5,6 +5,7 @@
 import functools
 import xml.etree.ElementTree as xml
 
+import numpy as np
 import toyplot.html
 from multipledispatch import dispatch
 from toyplot.coordinates import Cartesian
@@ -17,8 +18,11 @@ from toytree.drawing.src.mark_annotation import (
     AnnotationMarker,
     AnnotationRect,
     AnnotationStochasticMapLine,
+    AnnotationTipLabelMark,
+    AnnotationTipTileMark,
 )
 from toytree.drawing.src.render.render_marker import render_marker
+from toytree.drawing.src.render.render_text import render_text
 from toytree.drawing.src.render.svg_defs import (
     LinearGradient,
     LinearGradientStop,
@@ -62,6 +66,24 @@ def _render(axes, mark, context):
     render_stochastic_map_lines(axes, mark, context)
 
 
+@dispatch(
+    toyplot.coordinates.Cartesian,
+    AnnotationTipTileMark,
+    toyplot.html.RenderContext,
+)
+def _render(axes, mark, context):
+    render_tip_tiles(axes, mark, context)
+
+
+@dispatch(
+    toyplot.coordinates.Cartesian,
+    AnnotationTipLabelMark,
+    toyplot.html.RenderContext,
+)
+def _render(axes, mark, context):
+    render_tip_labels(axes, mark, context)
+
+
 # ---------------------------------------------------------------------
 
 
@@ -83,6 +105,27 @@ def render_markers(
     # project coordinates from data units to px units
     nodes_x = axes.project("x", mark.ntable[:, 0])
     nodes_y = axes.project("y", mark.ntable[:, 1])
+    shift_x = np.asarray(mark.xshift, dtype=float).copy()
+    shift_y = np.asarray(mark.yshift, dtype=float).copy()
+
+    # Optional local-frame shifts for circular layouts:
+    # span is tangential, depth is radial from the tree root.
+    if (
+        mark.local_span is not None
+        and mark.local_depth is not None
+        and mark.root_xy is not None
+    ):
+        root_x = float(axes.project("x", mark.root_xy[0]))
+        root_y = float(axes.project("y", mark.root_xy[1]))
+        dx = nodes_x - root_x
+        dy = nodes_y - root_y
+        radii = np.hypot(dx, dy)
+        ux = np.divide(dx, radii, out=np.ones_like(dx), where=radii > 0)
+        uy = np.divide(dy, radii, out=np.zeros_like(dy), where=radii > 0)
+        tx = -uy
+        ty = ux
+        shift_x += mark.local_span * tx + mark.local_depth * ux
+        shift_y += mark.local_span * ty + mark.local_depth * uy
 
     # create a marker for each point and add to axml group
     for nidx in range(mark.ntable.shape[0]):
@@ -112,8 +155,8 @@ def render_markers(
 
         # project marker in coordinate space
         transform = "translate({:.6g},{:.6g})".format(
-            nodes_x[nidx] + mark.xshift,
-            nodes_y[nidx] + mark.yshift,
+            nodes_x[nidx] + shift_x[nidx],
+            nodes_y[nidx] + shift_y[nidx],
         )
         marker_xml.set("transform", transform)
 
@@ -325,9 +368,10 @@ def render_gradient_lines(
         path_style["fill"] = "none"
         path_style["stroke-width"] = f"{mark.widths[idx]:.8g}"
 
-        # per-edge opacity
-        if not mark.use_group_opacity:
-            path_style["opacity"] = f"{mark.opacity[idx]:.8g}"
+        # Per-edge opacity is emitted as an SVG attribute for gradient paths.
+        path_attrib: dict[str, str] = {}
+        if (not mark.use_group_opacity) and np.isfinite(mark.opacity[idx]):
+            path_attrib["opacity"] = f"{mark.opacity[idx]:.8g}"
 
         # create path element using defined gradient color
         xml.SubElement(
@@ -337,6 +381,7 @@ def render_gradient_lines(
             d=path,
             stroke=refs[f"g{short_mark_id}-{idx}"],
             style=concat_style_fix_color(path_style),
+            **path_attrib,
         )
 
 
@@ -347,6 +392,297 @@ def render_stochastic_map_lines(
 ) -> None:
     """Render stochastic-map polyline segments with per-segment colors."""
     render_lines(axes, mark, context)
+
+
+def render_tip_tiles(
+    axes: Cartesian,
+    mark: AnnotationTipTileMark,
+    context: toyplot.html.RenderContext,
+) -> None:
+    """Render tip tile path annotations from data-space coords + px parameters."""
+    tips_x_px = axes.project("x", mark.ntable[:, 0])
+    tips_y_px = axes.project("y", mark.ntable[:, 1])
+
+    if mark.layout in ("r", "l", "u", "d"):
+        paths_all, slot_min_all, slot_max_all = _build_rectangular_tile_paths_px(
+            tips_x_px=tips_x_px,
+            tips_y_px=tips_y_px,
+            layout=mark.layout,
+            offset=float(mark.offset),
+            depth=float(mark.depth),
+        )
+        slot_kind = "span"
+    else:
+        root_x_px = float(axes.project("x", float(mark.root_xy[0])))
+        root_y_px = float(axes.project("y", float(mark.root_xy[1])))
+        _, _, is_full_circle = _parse_circular_layout_span(mark.layout)
+        paths_all, slot_min_all, slot_max_all = _build_circular_tile_paths_px(
+            tips_x_px=tips_x_px,
+            tips_y_px=tips_y_px,
+            root_x_px=root_x_px,
+            root_y_px=root_y_px,
+            wrap=is_full_circle,
+            offset=float(mark.offset),
+            depth=float(mark.depth),
+        )
+        slot_kind = "angle"
+
+    tip_indices = np.where(mark.show)[0].astype(int)
+    paths = [paths_all[i] for i in tip_indices]
+    slot_min = slot_min_all[tip_indices]
+    slot_max = slot_max_all[tip_indices]
+
+    # Persist computed geometry for tests / introspection.
+    mark.tip_indices = tip_indices
+    mark.paths = paths
+    mark.slot_min = slot_min
+    mark.slot_max = slot_max
+    mark.slot_kind = slot_kind
+
+    group_xml = xml.SubElement(
+        context.parent,
+        "g",
+        id=context.get_id(mark),
+        attrib={"class": "toytree-Annotation-TipTiles"},
+        style=concat_style_fix_color(mark.style),
+    )
+
+    for idx, path in enumerate(paths):
+        path_style = dict(mark.style)
+        if mark.colors is None:
+            color = mark.fill_color
+        else:
+            color = ToyColor(mark.colors[tip_indices[idx]])
+        path_style["fill"] = color.rgb
+        path_style["fill-opacity"] = float(mark.opacity[tip_indices[idx]])
+        if mark.stroke_color is None:
+            path_style["stroke"] = "none"
+        else:
+            path_style["stroke"] = ToyColor(mark.stroke_color).rgb
+        xml.SubElement(
+            group_xml,
+            "path",
+            id=f"TipTile-{idx}",
+            d=path,
+            style=concat_style_fix_color(path_style),
+        )
+
+
+def render_tip_labels(
+    axes: Cartesian,
+    mark: AnnotationTipLabelMark,
+    context: toyplot.html.RenderContext,
+) -> None:
+    """Render tip label annotation text with per-tip style and angle."""
+    text_xml = xml.SubElement(
+        context.parent,
+        "g",
+        id=context.get_id(mark),
+        attrib={"class": "toytree-Annotation-TipLabels"},
+    )
+
+    xpx = axes.project("x", mark.ntable[:, 0])
+    ypx = axes.project("y", mark.ntable[:, 1])
+    for idx in range(mark.ntable.shape[0]):
+        tstyle = dict(mark.styles[idx])
+        if mark.colors is not None:
+            tstyle["fill"] = ToyColor(mark.colors[idx])
+        tstyle["opacity"] = float(mark.opacity[idx])
+        render_text(
+            root=text_xml,
+            text=str(mark.labels[idx]),
+            xpos=float(xpx[idx]),
+            ypos=float(ypx[idx]),
+            angle=float(mark.angles[idx]),
+            attributes={"class": "toytree-Annotation-TipLabel"},
+            style=tstyle,
+        )
+
+
+def _build_rectangular_tile_paths_px(
+    tips_x_px: np.ndarray,
+    tips_y_px: np.ndarray,
+    layout: str,
+    offset: float,
+    depth: float,
+) -> tuple[list[str], np.ndarray, np.ndarray]:
+    """Build gapless rectangular tile path strings in pixel coordinates."""
+    ntips = int(tips_x_px.size)
+    if layout in ("r", "l"):
+        span = tips_y_px
+        sort_idx = np.argsort(span)
+        bounds = _midpoint_bounds(span[sort_idx])
+        sign = 1.0 if layout == "r" else -1.0
+
+        paths = [""] * ntips
+        slot_min = np.zeros(ntips, dtype=float)
+        slot_max = np.zeros(ntips, dtype=float)
+        for jdx, tidx in enumerate(sort_idx):
+            y0 = float(bounds[jdx])
+            y1 = float(bounds[jdx + 1])
+            slot_min[tidx] = y0
+            slot_max[tidx] = y1
+            x0 = float(tips_x_px[tidx] + sign * offset)
+            x1 = float(x0 + sign * depth)
+            paths[tidx] = (
+                f"M {x0:.8g} {y0:.8g} "
+                f"L {x1:.8g} {y0:.8g} "
+                f"L {x1:.8g} {y1:.8g} "
+                f"L {x0:.8g} {y1:.8g} Z"
+            )
+        return paths, slot_min, slot_max
+
+    span = tips_x_px
+    sort_idx = np.argsort(span)
+    bounds = _midpoint_bounds(span[sort_idx])
+    # Pixel-space y increases downward.
+    sign = -1.0 if layout == "u" else 1.0
+
+    paths = [""] * ntips
+    slot_min = np.zeros(ntips, dtype=float)
+    slot_max = np.zeros(ntips, dtype=float)
+    for jdx, tidx in enumerate(sort_idx):
+        x0 = float(bounds[jdx])
+        x1 = float(bounds[jdx + 1])
+        slot_min[tidx] = x0
+        slot_max[tidx] = x1
+        y0 = float(tips_y_px[tidx] + sign * offset)
+        y1 = float(y0 + sign * depth)
+        paths[tidx] = (
+            f"M {x0:.8g} {y0:.8g} "
+            f"L {x1:.8g} {y0:.8g} "
+            f"L {x1:.8g} {y1:.8g} "
+            f"L {x0:.8g} {y1:.8g} Z"
+        )
+    return paths, slot_min, slot_max
+
+
+def _build_circular_tile_paths_px(
+    tips_x_px: np.ndarray,
+    tips_y_px: np.ndarray,
+    root_x_px: float,
+    root_y_px: float,
+    wrap: bool,
+    offset: float,
+    depth: float,
+) -> tuple[list[str], np.ndarray, np.ndarray]:
+    """Build annular-sector tile paths (as polyline approximations) in px."""
+    dx = tips_x_px - float(root_x_px)
+    dy = tips_y_px - float(root_y_px)
+    radii = np.hypot(dx, dy)
+    if np.any(radii <= 0.0):
+        raise ValueError("tip radii must be positive in circular layout")
+
+    # Use projected coordinates as the geometry source of truth.
+    # This avoids mirrored sectors on circular layouts caused by mixing
+    # data-space text angles with pixel-space rendering coordinates.
+    theta = np.arctan2(dy, dx)
+
+    if wrap:
+        # Full-circle layouts are periodic, so use modulo angles.
+        theta = np.mod(theta, 2.0 * np.pi)
+        order = np.argsort(theta)
+        ts = theta[order]
+        left, right = _midpoint_bounds_periodic(ts)
+    else:
+        # Partial fan layouts are open intervals with a missing arc.
+        # Determine the seam from geometry: cut at the largest circular gap.
+        theta_mod = np.mod(theta, 2.0 * np.pi)
+        order0 = np.argsort(theta_mod)
+        ts0 = theta_mod[order0]
+        gaps = np.diff(np.concatenate([ts0, [ts0[0] + 2.0 * np.pi]]))
+        cut = int(np.argmax(gaps))
+        start = (cut + 1) % ts0.size
+        order = np.roll(order0, -start)
+        ts = np.unwrap(theta_mod[order])
+        bounds = _midpoint_bounds(ts)
+        left = bounds[:-1]
+        right = bounds[1:]
+
+    ntips = int(ts.size)
+
+    paths = [""] * ntips
+    slot_min = np.zeros(ntips, dtype=float)
+    slot_max = np.zeros(ntips, dtype=float)
+    for rank, tidx in enumerate(order):
+        r_inner = float(radii[tidx] + offset)
+        r_outer = float(r_inner + depth)
+        if r_inner <= 0.0 or r_outer <= 0.0:
+            raise ValueError(
+                "offset/depth produce non-positive tile radius in circular layout"
+            )
+
+        t0 = float(left[rank])
+        t1 = float(right[rank])
+        slot_min[tidx] = t0
+        slot_max[tidx] = t1
+        if wrap and (t1 <= t0):
+            t1 += 2.0 * np.pi
+
+        nsteps = max(8, int(np.ceil((t1 - t0) / (np.pi / 18.0))))
+        ang = np.linspace(t0, t1, nsteps)
+        x_outer = root_x_px + r_outer * np.cos(ang)
+        y_outer = root_y_px + r_outer * np.sin(ang)
+        x_inner = root_x_px + r_inner * np.cos(ang[::-1])
+        y_inner = root_y_px + r_inner * np.sin(ang[::-1])
+
+        parts = [f"M {x_outer[0]:.8g} {y_outer[0]:.8g}"]
+        for i in range(1, nsteps):
+            parts.append(f"L {x_outer[i]:.8g} {y_outer[i]:.8g}")
+        for i in range(nsteps):
+            parts.append(f"L {x_inner[i]:.8g} {y_inner[i]:.8g}")
+        parts.append("Z")
+        paths[tidx] = " ".join(parts)
+    return paths, slot_min, slot_max
+
+
+def _midpoint_bounds(values: np.ndarray) -> np.ndarray:
+    """Return slot boundaries from sorted center positions."""
+    nvals = int(values.size)
+    if nvals == 1:
+        span = 1.0
+        return np.array([values[0] - 0.5 * span, values[0] + 0.5 * span], dtype=float)
+
+    bounds = np.zeros(nvals + 1, dtype=float)
+    bounds[1:-1] = 0.5 * (values[:-1] + values[1:])
+    bounds[0] = values[0] - 0.5 * (values[1] - values[0])
+    bounds[-1] = values[-1] + 0.5 * (values[-1] - values[-2])
+    return bounds
+
+
+def _midpoint_bounds_periodic(values: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
+    """Return periodic midpoint bounds for sorted circular values."""
+    nvals = int(values.size)
+    left = np.zeros(nvals, dtype=float)
+    right = np.zeros(nvals, dtype=float)
+    for idx in range(nvals):
+        prev_idx = (idx - 1) % nvals
+        next_idx = (idx + 1) % nvals
+        dprev = (values[idx] - values[prev_idx]) % (2.0 * np.pi)
+        dnext = (values[next_idx] - values[idx]) % (2.0 * np.pi)
+        left[idx] = values[idx] - 0.5 * dprev
+        right[idx] = values[idx] + 0.5 * dnext
+    return left, right
+
+
+def _parse_circular_layout_span(layout: str) -> tuple[int, int, bool]:
+    """Parse circular layout string and report if it is a full 360-degree span."""
+    angles = str(layout[1:]).strip()
+    if not angles:
+        start, end = 0, 360
+    elif "-" not in angles:
+        start, end = 0, int(angles)
+    else:
+        start, end = (int(i) for i in angles.split("-"))
+
+    while start < 0:
+        start += 360
+    while end < start:
+        end += 360
+    if end - start > 360:
+        end = start + 359
+
+    return start, end, (end - start == 360)
 
 
 if __name__ == "__main__":

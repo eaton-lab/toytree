@@ -3,12 +3,11 @@
 """..."""
 
 
-import unittest
 import toytree
 from toytree.utils import ToytreeError
 
 
-# class TestRoot(unittest.TestCase):
+# class TestRoot(PytestCompat):
 #     def setUp(self):
 
 #         self.itree = toytree.rtree.imbtree(10, seed=123, treeheight=10)
@@ -20,6 +19,3 @@ from toytree.utils import ToytreeError
 #         """np.nan values on node labels should validate to empty strings."""
 #         self.assertEqual()
 
-if __name__ == "__main__":
-
-    unittest.main()

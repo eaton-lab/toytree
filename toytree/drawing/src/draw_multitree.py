@@ -1,15 +1,15 @@
 #!/usr/bin/env python
 
-"""Default function for drawing MultiTrees as a grid of trees.
+"""Default function for drawing MultiTrees as a grid of trees."""
 
-"""
+from typing import List, Optional, Sequence, Tuple, TypeVar, Union
 
-from typing import Tuple, Optional, Sequence, Union, List, TypeVar
+from loguru import logger
+
+import toytree
+from toytree.annotate import add_axes_scale_bar
 from toytree.drawing.src.setup_grid import Grid
 from toytree.style import get_base_tree_style_by_name
-from toytree.annotate import add_axes_scale_bar
-import toytree
-from loguru import logger
 
 MultiTree = TypeVar("MultiTree")
 Canvas = TypeVar("Canvas")
@@ -26,7 +26,7 @@ def draw_multitree(
     height: Optional[int] = None,
     margin: Union[float, Tuple[int, int, int, int]] = None,
     **kwargs,
-    ) -> Tuple[Canvas, Cartesian, List[Mark]]:
+) -> Tuple[Canvas, Cartesian, List[Mark]]:
     """Return a toyplot drawing of a grid of ToyTrees.
 
     The grid spacing can be controlled with shape and margin
@@ -68,7 +68,8 @@ def draw_multitree(
     # legacy support: warn user of old deprecated args.
     if kwargs.get("nrows") or kwargs.get("ncols"):
         raise DeprecationWarning(
-            "nrows and ncols args deprecated. Use shape=(nrows, ncols)")
+            "nrows and ncols args deprecated. Use shape=(nrows, ncols)"
+        )
 
     # get indices of trees that will be drawn
     nrows = max(1, shape[0])
@@ -88,11 +89,7 @@ def draw_multitree(
     # if fixed_order=True get the ladderized consensus tree tip order
     # as a List[str] and set that as the fixed_order arg.
     if kwargs.get("fixed_order") is True:
-        fixed_order = (
-            toytree.MultiTree(treelist)
-            .get_consensus_tree()
-            .get_tip_labels()
-        )
+        fixed_order = toytree.MultiTree(treelist).get_consensus_tree().get_tip_labels()
         kwargs["fixed_order"] = fixed_order
 
     # if less than 4 trees reshape ncols,rows to use ntrees
@@ -104,13 +101,16 @@ def draw_multitree(
             nrows = 1
             ncols = len(treelist)
 
-    # get layout first from direct arg then from treestyle
-    if "ts" in kwargs:
-        layout = get_base_tree_style_by_name(kwargs.get("ts")).layout
-    elif "tree_style" in kwargs:
-        layout = get_base_tree_style_by_name(kwargs.get("ts")).layout
-    else:
-        layout = kwargs.get("layout", 'r')
+    # get layout first from explicit arg, else infer from tree_style/ts.
+    layout = kwargs.get("layout")
+    if layout is None:
+        style_key = kwargs.get("ts")
+        if style_key is None:
+            style_key = kwargs.get("tree_style")
+        if style_key is not None:
+            layout = get_base_tree_style_by_name(style_key).layout
+        else:
+            layout = "r"
 
     # get the canvas and axes that can fit the requested trees.
     padding = kwargs.get("padding", 10)
@@ -141,7 +141,6 @@ def draw_multitree(
     # add ToyTree marks
     ncells = grid.nrows * grid.ncols
     for idx in range(ncells):
-
         # get the axis
         axes = grid.axes[idx]
 
@@ -159,7 +158,6 @@ def draw_multitree(
 
     # mod style axes
     for idx in range(grid.nrows * grid.ncols):
-
         # HACK \/\/\/\/\/\/\/\/\/\/\/\
         if shared_axes:
             # grid.axes[idx].y.domain.max = ymax
@@ -175,25 +173,25 @@ def draw_multitree(
 
             # add an invisible spacer point. This does a much
             # better job than setting ticks alone.
-            if mark.layout == 'd':
+            if mark.layout == "d":
                 grid.axes[idx].scatterplot(
                     mark.xbaseline + treelist[idx].ntips / 2,
                     mark.ybaseline + ymax,
                     color="transparent",
                 )
-            elif mark.layout == 'u':
+            elif mark.layout == "u":
                 grid.axes[idx].scatterplot(
                     mark.xbaseline + treelist[idx].ntips / 2,
                     mark.ybaseline - ymax,
                     color="transparent",
                 )
-            elif mark.layout == 'l':
+            elif mark.layout == "l":
                 grid.axes[idx].scatterplot(
                     mark.xbaseline + ymax,
                     mark.ybaseline + treelist[idx].ntips / 2,
                     color="transparent",
                 )
-            elif mark.layout == 'r':
+            elif mark.layout == "r":
                 grid.axes[idx].scatterplot(
                     mark.xbaseline - ymax,
                     mark.ybaseline + treelist[idx].ntips / 2,
@@ -202,7 +200,7 @@ def draw_multitree(
 
         # axes off if not scale_bar
         if kwargs.get("scale_bar", False) is False:
-            if mark.layout in 'du':
+            if mark.layout in "du":
                 grid.axes[idx].y.show = False
                 grid.axes[idx].x.show = False
             else:
@@ -216,12 +214,12 @@ def draw_multitree(
             grid.axes[idx].label.text = label
 
     # add mark to axes
-    return canvas, grid.axes, marks    
+    return canvas, grid.axes, marks
 
 
 if __name__ == "__main__":
+    import toytree
 
-    import toytree    
     trees = [toytree.rtree.unittree(5) for i in range(10)]
     mtree = toytree.mtree(trees)
     c, a, m = draw_multitree(mtree, shape=(2, 8))

@@ -3,7 +3,6 @@
 
 """Tests for annotate.add_tip_tiles."""
 
-import unittest
 import xml.etree.ElementTree as xml
 
 import numpy as np
@@ -13,7 +12,10 @@ import toytree
 from toytree.utils import ToytreeError
 
 
-class TestAnnotateAddTipTiles(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestAnnotateAddTipTiles(PytestCompat):
     def setUp(self):
         self.tree = toytree.rtree.unittree(ntips=10, seed=123)
         vals = {i: i % 3 for i in range(self.tree.ntips)}
@@ -253,5 +255,3 @@ class TestAnnotateAddTipTiles(unittest.TestCase):
         self.assertTrue(np.all(delta < 0.35))
 
 
-if __name__ == "__main__":
-    unittest.main()

@@ -4,7 +4,6 @@
 """Tests for annotate.add_edges."""
 
 import re
-import unittest
 import xml.etree.ElementTree as xml
 
 import numpy as np
@@ -14,7 +13,10 @@ import toytree
 from toytree.drawing.src.path_edges import get_tree_edge_polylines
 
 
-class TestAnnotateAddEdges(unittest.TestCase):
+
+from conftest import PytestCompat
+
+class TestAnnotateAddEdges(PytestCompat):
     def setUp(self):
         self.tree = toytree.rtree.unittree(ntips=8, seed=123)
 
@@ -277,5 +279,3 @@ class TestAnnotateAddEdges(unittest.TestCase):
             self.assertLessEqual(span, np.pi + 1e-6)
 
 
-if __name__ == "__main__":
-    unittest.main()

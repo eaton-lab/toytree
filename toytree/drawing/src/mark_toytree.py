@@ -17,6 +17,27 @@ import toyplot.text
 
 
 # Note: see toytree/drawing/src/render_tree.py for rendering code.
+def _is_full_circle_layout(layout: str) -> bool:
+    """Return ``True`` if a circular layout string spans 360 degrees."""
+    if not layout or layout[0] != "c":
+        return False
+    angles = str(layout[1:]).strip()
+    if not angles:
+        start, end = 0, 360
+    elif "-" not in angles:
+        start, end = 0, int(angles)
+    else:
+        start, end = (int(i) for i in angles.split("-", 1))
+
+    while start < 0:
+        start += 360
+    while end < start:
+        end += 360
+    if end - start > 360:
+        end = start + 359
+    return (end - start) == 360
+
+
 class ToyTreeMark(Mark):
     """Tree Mark optionally including Node markers and tip labels."""
 
@@ -24,7 +45,7 @@ class ToyTreeMark(Mark):
         Mark.__init__(self, annotation=False)
 
         # relevant for Mark domain and extents
-        self._coordinate_axes = ['x', 'y']
+        self._coordinate_axes = ["x", "y"]
         """: names of the Cartesian axes."""
         self.ntable: np.ndarray = kwargs.get("ntable")
         """: coordinates of the Nodes."""
@@ -43,11 +64,14 @@ class ToyTreeMark(Mark):
         return self.ntable.shape[0]
 
     def domain(self, axis: str) -> Tuple[float, float]:
-        """Define the domain of nodes/data (tip labels not included).
+        """Return node-coordinate domain for one Cartesian axis.
 
-        The Cartesian axes will only place ticks across the data domain.
+        For full-circle layouts (e.g., ``c`` or ``c0-360``) this returns a
+        symmetric square domain so x/y scales remain identical. For fan
+        layouts (e.g., ``c0-180``), axis domains use true x/y minimax values
+        to avoid allocating empty space.
         """
-        if self.layout[0] == "c":
+        if self.layout[0] == "c" and _is_full_circle_layout(self.layout):
             domain = toyplot.data.minimax(self.ntable[:, :])
             absdomain = max(abs(i) for i in domain)
             return -absdomain, absdomain
@@ -55,7 +79,9 @@ class ToyTreeMark(Mark):
         domain = toyplot.data.minimax(self.ntable[:, index])
         return domain
 
-    def extents(self, axis: Union[str, Sequence[str]]) -> Tuple[Tuple[np.ndarray], Tuple[np.ndarray]]:
+    def extents(
+        self, axis: Union[str, Sequence[str]]
+    ) -> Tuple[Tuple[np.ndarray], Tuple[np.ndarray]]:
         """Return extents defined by tip labels and Node markers.
 
         This is extra padding to ensure node markers, e.g., circle doesn't
@@ -77,7 +103,7 @@ class ToyTreeMark(Mark):
         # this array can be modified during rendering so grab a copy.
         # get node coords but set tip-align coords.
         coords = self.ntable.copy()
-        coords[:self.ttable.shape[0], :] = self.ttable
+        coords[: self.ttable.shape[0], :] = self.ttable
 
         # select coords on 'x', 'y' or ['x', 'y'] axes.
         coords = (coords[:, 0], coords[:, 1])
@@ -101,9 +127,7 @@ def set_node_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.nda
 
     # else return the calculated text extents
     ext = toyplot.text.extents(
-        text=mark.node_labels,
-        angle=0,
-        style=mark.node_labels_style
+        text=mark.node_labels, angle=0, style=mark.node_labels_style
     )
     extents[0] = np.min([extents[0], ext[0]], axis=0)
     extents[1] = np.max([extents[1], ext[1]], axis=0)
@@ -132,8 +156,8 @@ def set_marker_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndarray
         xext[idx] = width * size
 
     # extent is half the markers dimension in either direction
-    xext = xext / 2. + mark.node_style["stroke-width"]
-    yext = yext / 2. + mark.node_style["stroke-width"]
+    xext = xext / 2.0 + mark.node_style["stroke-width"]
+    yext = yext / 2.0 + mark.node_style["stroke-width"]
 
     # set extents
     extents[0] = np.min([extents[0], -xext], axis=0)
@@ -146,9 +170,9 @@ def set_marker_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndarray
 def set_edge_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndarray]:
     """Return extents of edge stroke widths (usually small)."""
     if mark.edge_widths is None:
-        widths = np.repeat(mark.edge_style["stroke-width"] / 2., mark.nnodes)
+        widths = np.repeat(mark.edge_style["stroke-width"] / 2.0, mark.nnodes)
     else:
-        widths = mark.edge_widths / 2.
+        widths = mark.edge_widths / 2.0
 
     extents[0] = np.min([extents[0], -widths], axis=0)
     extents[1] = np.max([extents[1], widths], axis=0)
@@ -174,11 +198,13 @@ def set_tip_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndar
     # add layout-based angles and styles.
     angles = mark.tip_labels_angles
     tip_style = mark.tip_labels_style
-    if mark.layout in ['u', 'l']:
+    if mark.layout in ["u", "l"]:
         angles = mark.tip_labels_angles - 180
         tip_style = mark.tip_labels_style.copy()
         offset = toyplot.units.convert(
-            tip_style["-toyplot-anchor-shift"], "px", "px",
+            tip_style["-toyplot-anchor-shift"],
+            "px",
+            "px",
         )
         tip_style["text-anchor"] = "end"
         tip_style["-toyplot-anchor-shift"] = -offset
@@ -187,7 +213,7 @@ def set_tip_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndar
     ntips = len(mark.tip_labels)
 
     # set extents for unrooted layout
-    is_unrooted = mark.layout not in ['r', 'l', 'u', 'd'] and mark.layout[0] != "c"
+    is_unrooted = mark.layout not in ["r", "l", "u", "d"] and mark.layout[0] != "c"
     if is_unrooted:
         left = np.zeros(ntips)
         right = np.zeros(ntips)
@@ -197,7 +223,9 @@ def set_tip_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndar
             angle = mark.tip_labels_angles[idx]
             style = mark.tip_labels_style.copy()
             offset = toyplot.units.convert(
-                style["-toyplot-anchor-shift"], "px", "px",
+                style["-toyplot-anchor-shift"],
+                "px",
+                "px",
             )
             if 90 < angle < 270:
                 style["text-anchor"] = "end"
@@ -221,9 +249,7 @@ def set_tip_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndar
 
     # else return the calculated text extents
     ext = toyplot.text.extents(
-        text=mark.tip_labels,
-        angle=angles,
-        style=mark.tip_labels_style
+        text=mark.tip_labels, angle=angles, style=mark.tip_labels_style
     )
 
     # TEMPORARY HACK: until toyplot extents is fixed.
@@ -250,7 +276,7 @@ def set_tip_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndar
         ext[0][:ntips] -= mark.shrink
 
     # elif mark.layout[:3] == "unr":
-        # logger.debug("unrooted layout needs custom tip ext!")
+    # logger.debug("unrooted layout needs custom tip ext!")
 
     # only allow increasing extents
     extents[0][:ntips] = np.min([extents[0][:ntips], ext[0]], axis=0)
@@ -261,11 +287,13 @@ def set_tip_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndar
 
 
 if __name__ == "__main__":
-
     import toytree
     from toytree.style import validate_style
     from toytree.drawing.src.draw_toytree import (
-        get_tree_style_base, get_layout, tree_style_to_css_dict)
+        get_tree_style_base,
+        get_layout,
+        tree_style_to_css_dict,
+    )
 
     toytree.set_log_level("DEBUG")
     tree = toytree.rtree.rtree(5, seed=123)
@@ -275,7 +303,7 @@ if __name__ == "__main__":
         debug=True,
         tip_labels=True,
         tip_labels_angles=0,
-        tip_labels_style={'font-size': 15},
+        tip_labels_style={"font-size": 15},
         node_sizes=16,
         node_mask=False,
     )
@@ -289,15 +317,20 @@ if __name__ == "__main__":
 
     ntable = layout.coords
     etable = tree.get_edges("idx")
-    mark = ToyTreeMark(ntable=ntable, etable=etable, ttable=layout.tcoords, **tree_style_to_css_dict(style))
+    mark = ToyTreeMark(
+        ntable=ntable,
+        etable=etable,
+        ttable=layout.tcoords,
+        **tree_style_to_css_dict(style),
+    )
     logger.info(style.tip_labels_angles)
     print(f"domain x = {mark.domain('x')}")
     print(f"domain y = {mark.domain('y')}")
-    print(mark.extents('x')[0])
-    print(mark.extents('x')[1][0])
-    print(mark.extents('x')[1][1])
-    print(mark.extents('x')[1][2])
-    print(mark.extents(['x', 'y'])[1][3])
+    print(mark.extents("x")[0])
+    print(mark.extents("x")[1][0])
+    print(mark.extents("x")[1][1])
+    print(mark.extents("x")[1][2])
+    print(mark.extents(["x", "y"])[1][3])
 
     # mark = ToyTreeMark2(ntable=ntable, etable=etable, **tree_style_to_css_dict(style))
     # print(f"domain x = {mark.domain('x')}")

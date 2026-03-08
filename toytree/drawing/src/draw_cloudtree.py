@@ -7,14 +7,18 @@ the html+css size we use a custom render function?
 """
 
 from typing import Sequence, TypeVar
-# from toytree import MultiTree
-from toytree.drawing import ToyTreeMark
-# from toytree.core import Canvas, Cartesian
-from toytree.style import tree_style_to_css_dict
+
 from toytree.drawing.src.draw_toytree import (
     get_layout,
     get_tree_style_updated_by_draw_args,
 )
+
+# from toytree import MultiTree
+from toytree.drawing import ToyTreeMark
+
+# from toytree.core import Canvas, Cartesian
+from toytree.style import tree_style_to_css_dict
+
 # from toytree.drawing.src.mark_cloudtree import CloudTreeMark
 
 Mark = TypeVar("Mark")
@@ -35,16 +39,12 @@ def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:
         mtree.treelist = mtree.treelist[idxs]
 
     # TODO: allow jitter options along tip spread axis
-    jitter = kwargs.get("jitter", 0.)
+    jitter = kwargs.get("jitter", 0.0)
 
     # get fixed order of tips from consensus tree if not provided.
     fixed_order = kwargs.get("fixed_order", None)
     if fixed_order in [True, False, None]:
-        fixed_order = (
-            mtree
-            .get_consensus_tree()
-            .get_tip_labels()
-        )
+        fixed_order = mtree.get_consensus_tree().get_tip_labels()
 
     # TODO
     else:
@@ -60,7 +60,6 @@ def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:
     # to override any styles not fixed or from kwargs.
     marks = []
     for tidx, tree in enumerate(mtree):
-
         # only show tips for the first tree
         if tidx:
             kwargs["tip_labels"] = False
@@ -75,7 +74,7 @@ def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:
         # style.fixed_order = [tip_pos[i] for i in tree.get_tip_labels()]
 
         # override styles not set by user
-        style.edge_type = kwargs.get("edge_type", 'c')
+        style.edge_type = kwargs.get("edge_type", "c")
         if style.edge_style.stroke_opacity is None:
             style.edge_style.stroke_opacity = 1 / len(mtree) * 3
 
@@ -94,7 +93,7 @@ def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:
         mark = ToyTreeMark(
             ntable=layout.coords,
             ttable=layout.tcoords,
-            etable=tree.get_edges('idx'),
+            etable=tree.get_edges("idx"),
             **tree_style_to_css_dict(style),
         )
         marks.append(mark)
@@ -104,9 +103,8 @@ def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:
 
 
 if __name__ == "__main__":
-
     import toytree
-    import toyplot
+
     trees = [toytree.rtree.coaltree(k=6, seed=i) for i in range(100)]
     mtree = toytree.mtree(trees)
     c, a, m = mtree.draw_cloud_tree()
