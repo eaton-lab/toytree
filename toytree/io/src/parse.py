@@ -1,27 +1,27 @@
 #!/usr/bin/env python
 
-"""Parse tree data from flexible inputs to pass to a newick parser.
+"""Parse tree data from flexible inputs to pass to newick/nexus parsers."""
 
-"""
-
-from typing import Union, TypeVar, List, Tuple, Mapping
-import sys
 import re
+import sys
 from pathlib import Path
+from typing import List, Mapping, Tuple, TypeVar, Union
+
 import requests
 
+from toytree.core.multitree import MultiTree
+from toytree.core.tree import ToyTree
 from toytree.io.src.newick import parse_newick_string
 from toytree.io.src.nexus import get_newicks_and_translation_from_nexus
 from toytree.io.src.utils import replace_whitespace
+from toytree.utils import ToytreeError
 
 # for removing white_ space from newicks
 # WHITE_SPACE = re.compile(r"[\n\r\t ]+")
 ILLEGAL_NEWICK_CHARS = re.compile(r"[:;(),\[\]\t\n\r=]")
 
-# PEP 484 recommend capitalizing alias names
+# PEP 484 recommends capitalizing alias names.
 Url = TypeVar("Url")
-ToyTree = TypeVar("ToyTree")
-MultiTree = TypeVar("MultiTree")
 
 
 def parse_generic_to_str(data: Union[str, Url, Path]) -> str:
@@ -35,7 +35,7 @@ def parse_generic_to_str(data: Union[str, Url, Path]) -> str:
     # found differently further below in str parsing.
     if isinstance(data, Path):
         if data.exists():
-            with open(data, 'r', encoding='utf-8') as indata:
+            with open(data, "r", encoding="utf-8") as indata:
                 return indata.read()
         raise IOError(f"Path {data} does not exist.")
 
@@ -65,25 +65,24 @@ def parse_generic_to_str(data: Union[str, Url, Path]) -> str:
 
         # check if str is actually Path (fails if filename is large)
         if Path(data).exists():
-            with open(data, 'r', encoding="utf-8") as indata:
+            with open(data, "r", encoding="utf-8") as indata:
                 return indata.read()
         else:
             raise IOError(
-                "Tree input appears to be a file path "
-                f"but does not exist: '{data}'")
+                "Tree input appears to be a file path " f"but does not exist: '{data}'"
+            )
 
     # if entered as bytes convert to str and restart
     elif isinstance(data, bytes):
         data = data.decode()
-        parse_generic_to_str(data)
+        return parse_generic_to_str(data)
 
     # not str or Path then raise TypeError
     raise TypeError(f"Error parsing unrecognized tree data input: {data}.")
 
 
 def parse_data_from_str(strdata: str) -> Tuple[List[str], Mapping[int, str]]:
-    """Return list of newicks and translation dict.
-    """
+    """Return list of newicks and translation dict."""
     # if nexus then parse [nwks] from trees block
     if strdata[:6].upper() == "#NEXUS":
         nwks, tdict = get_newicks_and_translation_from_nexus(strdata)
@@ -108,9 +107,7 @@ def translate_node_names(tree: ToyTree, tdict: Mapping[int, str]) -> ToyTree:
 
 
 def parse_tree(data: Union[str, Url, Path], **kwargs) -> ToyTree:
-    """Return a ToyTree parsed from flexible input types.
-
-    """
+    """Return a ToyTree parsed from flexible input types."""
     strdata = parse_generic_to_str(data)
     nwks, tdict = parse_data_from_str(strdata)
     tree = parse_newick_string(nwks[0], **kwargs)
@@ -118,17 +115,18 @@ def parse_tree(data: Union[str, Url, Path], **kwargs) -> ToyTree:
         msg = (
             f"Data contains ({len(nwks)}) trees.\n"
             "Loading only the first tree using `toytree.tree`. Use `toytree.mtree` "
-            "to instead load a MultiTree.")
+            "to instead load a MultiTree."
+        )
         print(msg, file=sys.stderr)
     return translate_node_names(tree, tdict)
 
 
-def parse_multitree(data: Union[str, Url, Path], **kwargs) -> ToyTree:
-    """Return a MultiTree parsed from flexible input types.
-
-    """
+def parse_multitree(data: Union[str, Url, Path], **kwargs) -> MultiTree:
+    """Return a MultiTree parsed from flexible input types."""
     strdata = parse_generic_to_str(data)
     nwks, tdict = parse_data_from_str(strdata)
+    if not nwks:
+        raise ToytreeError("No trees were found in the input data.")
     mtree = MultiTree([])
     for nwk in nwks:
         tree = parse_newick_string(nwk, **kwargs)
@@ -137,10 +135,10 @@ def parse_multitree(data: Union[str, Url, Path], **kwargs) -> ToyTree:
     return mtree
 
 
-def parse_tree_object(data: Union[str, Url, Path], **kwargs) -> Union[ToyTree, MultiTree]:
-    """Return a ToyTree or MultiTree parsed from flexible input types.
-
-    """
+def parse_tree_object(
+    data: Union[str, Url, Path], **kwargs
+) -> Union[ToyTree, MultiTree]:
+    """Return a ToyTree or MultiTree parsed from flexible input types."""
     strdata = parse_generic_to_str(data)
     nwks, tdict = parse_data_from_str(strdata)
     if len(nwks) > 1:
@@ -154,7 +152,6 @@ def parse_tree_object(data: Union[str, Url, Path], **kwargs) -> Union[ToyTree, M
 
 
 if __name__ == "__main__":
-
     TEST = "/home/deren/Downloads/Clustal_Omega_Dec3.txt"
     TEST1 = "((a,b)c);"
     TEST2 = """(
