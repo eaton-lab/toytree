@@ -121,7 +121,7 @@ def add_edge_markers(
             pass  # node_style.fill overrides
     else:
         colors = colors[:nedges][mask]
-        style.pop("fill")
+        style.pop("fill", None)
 
     # ...
     markers = validate_markers(tree, key="edge_markers", size=tree.nnodes, style={"edge_markers": marker})[:nedges][mask]
@@ -239,7 +239,7 @@ def add_edge_labels(
             pass  # node_style.fill overrides
     else:
         label_colors = label_colors[:nedges][mask]
-        style.pop("fill")
+        style.pop("fill", None)
 
     # mask some nodes
     opacity = validate_numeric(

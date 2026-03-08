@@ -127,7 +127,7 @@ def add_node_markers(
             pass  # node_style.fill overrides
     else:
         colors = colors[mask]
-        style.pop("fill")
+        style.pop("fill", None)
 
     # validate others and trim to mask
     markers = validate_markers(
@@ -278,7 +278,7 @@ def add_node_labels(
             pass  # node_style.fill overrides
     else:
         node_colors = node_colors[mask]
-        style.pop("fill")
+        style.pop("fill", None)
 
     # ...
     opacity = validate_numeric(
@@ -393,7 +393,7 @@ def add_node_bars(
             pass  # node_style.fill overrides
     else:
         colors = colors[mask]
-        style.pop("fill")
+        style.pop("fill", None)
 
     # check values for positions
     bar_min = validate_numeric(

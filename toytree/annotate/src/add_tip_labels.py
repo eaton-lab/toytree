@@ -175,8 +175,8 @@ def add_tip_labels(
         style.pop("fill", None)
 
     # Toyplot expects a numeric fill-opacity whenever fill is set.
-    # Mark defaults can carry fill-opacity=None, so sanitize it here.
-    if style.get("fill-opacity", 1.0) is None:
+    # Style defaults can leave this unset/None, so sanitize both cases.
+    if style.get("fill-opacity") is None:
         style["fill-opacity"] = 1.0
 
     # ...
