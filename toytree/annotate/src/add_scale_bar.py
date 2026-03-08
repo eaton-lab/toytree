@@ -13,6 +13,10 @@ from toytree.annotate.src.checks import assert_tree_matches_mark, get_last_toytr
 from toytree.core import ToyTree
 from toytree.core.apis import AnnotationAPI, add_subpackage_method
 from toytree.drawing import Cartesian
+from toytree.drawing.src.scale_axes import (
+    get_toytree_scale_cartesian,
+    sync_scale_cartesian_ranges,
+)
 
 __all__ = ["add_axes_scale_bar"]
 
@@ -94,10 +98,13 @@ def add_axes_scale_bar(
     padding: float | None = None,
     expand_margin: None | int | tuple[int, int, int, int] = None,
 ) -> Cartesian:
-    """Return Cartesian axes with a configurable scale bar.
+    """Add or update a tree depth scale bar on companion axes.
 
     Parameters
     ----------
+    axes: Cartesian
+        Host axes containing a rendered ``ToyTreeMark``. The scale bar is
+        drawn on a hidden companion Cartesian linked to this host axes.
     axis: "auto", "x", or "y"
         Axis to place the scale bar. "auto" infers from tree layout.
     range: tuple[float, float] or None
@@ -151,6 +158,15 @@ def add_axes_scale_bar(
         and shrink the drawable data area; negative values do the
         opposite.
 
+    Notes
+    -----
+    The input `axes` remains the main plotting axes for tree and annotation
+    marks. The scale bar is rendered on a hidden companion Cartesian linked
+    to `axes`. This keeps tree-depth ticks tied to tree edges while allowing
+    labels / annotations on `axes` to expand display extents independently.
+    You can inspect the companion axes with
+    `toytree.annotate.get_toytree_scale_cartesian(axes)`.
+
     Examples
     --------
     Add a default scale bar after drawing:
@@ -185,14 +201,24 @@ def add_axes_scale_bar(
     >>>     spine_style={"stroke-width": 1.5},
     >>>     ticks_style={"stroke": "black"},
     >>> )
+
+    Access the companion scale axes for additional styling:
+    >>> tree = toytree.rtree.unittree(10, seed=2)
+    >>> canvas, axes, mark = tree.draw(scale_bar=True)
+    >>> saxes = toytree.annotate.get_toytree_scale_cartesian(axes)
+    >>> saxes.x.spine.style["stroke"] = "crimson"
     """
     mark = get_last_toytree_mark(axes)
     assert_tree_matches_mark(tree, mark)
+    scale_axes = get_toytree_scale_cartesian(axes, create=True)
 
     # resolve effective scale from override or mark default.
     effective_scale = mark.scale_bar if scale is None else scale
     # explicit override to disable any changes
     if scale is False:
+        scale_axes.show = False
+        scale_axes.x.show = False
+        scale_axes.y.show = False
         return axes
     # preserve historical behavior: manual annotation still draws a
     # scale bar even if mark.scale_bar is False.
@@ -266,110 +292,138 @@ def add_axes_scale_bar(
     else:
         labels = [formatter(val) for val in labels_data]
 
-    # set axis visibility/style
-    axes.show = show_axis
+    # keep host axes available for marks and extents; render the scale
+    # bar only on the companion scale-axes.
+    axes.x.show = False
+    axes.y.show = False
+
+    # apply spacing edits on the host axes first, then synchronize
+    # scale-axes geometry so projections share the same canvas ranges.
     if padding is not None:
         axes.padding = padding
     _apply_axes_expand_margin(axes, expand_margin)
+    sync_scale_cartesian_ranges(axes, scale_axes)
+    # domain is mirrored from host axes by HostDomainMark, so keep
+    # explicit domain overrides disabled.
+    scale_axes.x.domain.min = None
+    scale_axes.x.domain.max = None
+    scale_axes.y.domain.min = None
+    scale_axes.y.domain.max = None
+
+    # set scale-axes visibility/style
+    scale_axes.show = show_axis
+    if padding is not None:
+        scale_axes.padding = padding
     if axis == "x":
-        axes.x.show = show_axis
-        axes.y.show = False
-        axes.x.ticks.show = show_ticks
-        axes.x.ticks.labels.show = show_tick_labels
+        scale_axes.x.show = show_axis
+        scale_axes.y.show = False
+        scale_axes.x.ticks.show = show_ticks
+        scale_axes.x.ticks.labels.show = show_tick_labels
         if ticks_near is not None:
-            axes.x.ticks.near = ticks_near
+            scale_axes.x.ticks.near = ticks_near
         if ticks_far is not None:
-            axes.x.ticks.far = ticks_far
+            scale_axes.x.ticks.far = ticks_far
         if tick_label_offset is not None:
-            axes.x.ticks.labels.offset = tick_label_offset
+            scale_axes.x.ticks.labels.offset = tick_label_offset
         if label_offset is not None:
             sign = _get_outward_label_sign(mark, "x")
-            axes.x.label.offset = int(sign * label_offset)
+            scale_axes.x.label.offset = int(sign * label_offset)
         if spine_style is not None:
-            axes.x.spine.style = {**axes.x.spine.style, **spine_style}
+            scale_axes.x.spine.style = {**scale_axes.x.spine.style, **spine_style}
         if ticks_style is not None:
-            axes.x.ticks.style = {**axes.x.ticks.style, **ticks_style}
+            scale_axes.x.ticks.style = {**scale_axes.x.ticks.style, **ticks_style}
         if tick_labels_style is not None:
-            axes.x.ticks.labels.style = {**axes.x.ticks.labels.style, **tick_labels_style}
+            scale_axes.x.ticks.labels.style = {
+                **scale_axes.x.ticks.labels.style,
+                **tick_labels_style,
+            }
     else:
-        axes.y.show = show_axis
-        axes.x.show = False
-        axes.y.ticks.show = show_ticks
-        axes.y.ticks.labels.show = show_tick_labels
+        scale_axes.y.show = show_axis
+        scale_axes.x.show = False
+        scale_axes.y.ticks.show = show_ticks
+        scale_axes.y.ticks.labels.show = show_tick_labels
         if ticks_near is not None:
-            axes.y.ticks.near = ticks_near
+            scale_axes.y.ticks.near = ticks_near
         if ticks_far is not None:
-            axes.y.ticks.far = ticks_far
+            scale_axes.y.ticks.far = ticks_far
         if tick_label_offset is not None:
-            axes.y.ticks.labels.offset = tick_label_offset
+            scale_axes.y.ticks.labels.offset = tick_label_offset
         if label_offset is not None:
             sign = _get_outward_label_sign(mark, "y")
-            axes.y.label.offset = int(sign * label_offset)
+            scale_axes.y.label.offset = int(sign * label_offset)
         if spine_style is not None:
-            axes.y.spine.style = {**axes.y.spine.style, **spine_style}
+            scale_axes.y.spine.style = {**scale_axes.y.spine.style, **spine_style}
         if ticks_style is not None:
-            axes.y.ticks.style = {**axes.y.ticks.style, **ticks_style}
+            scale_axes.y.ticks.style = {**scale_axes.y.ticks.style, **ticks_style}
         if tick_labels_style is not None:
-            axes.y.ticks.labels.style = {**axes.y.ticks.labels.style, **tick_labels_style}
+            scale_axes.y.ticks.labels.style = {
+                **scale_axes.y.ticks.labels.style,
+                **tick_labels_style,
+            }
 
     # clear any stale custom renderer attrs from prior calls.
-    axes.x._toytree_label_mode = None
-    axes.y._toytree_label_mode = None
-    axes.x._toytree_label_data_midpoint = None
-    axes.y._toytree_label_data_midpoint = None
+    scale_axes.x._toytree_label_mode = None
+    scale_axes.y._toytree_label_mode = None
+    scale_axes.x._toytree_label_data_midpoint = None
+    scale_axes.y._toytree_label_data_midpoint = None
 
     # set axis label text
     if label is not None:
         if axis == "x":
-            axes.x.label.text = label
+            scale_axes.x.label.text = label
             if mark.layout in ("r", "l"):
-                axes.x.label.location = "below"
+                scale_axes.x.label.location = "below"
             if label_center == "spine":
-                axes.x._toytree_label_mode = "spine"
+                scale_axes.x._toytree_label_mode = "spine"
                 xdom = mark.domain("x")
-                axes.x._toytree_label_data_midpoint = 0.5 * (xdom[0] + xdom[1])
+                scale_axes.x._toytree_label_data_midpoint = 0.5 * (xdom[0] + xdom[1])
         else:
-            axes.y.label.text = label
+            scale_axes.y.label.text = label
             if label_center == "spine":
-                axes.y._toytree_label_mode = "spine"
+                scale_axes.y._toytree_label_mode = "spine"
                 ydom = mark.domain("y")
-                axes.y._toytree_label_data_midpoint = 0.5 * (ydom[0] + ydom[1])
+                scale_axes.y._toytree_label_data_midpoint = 0.5 * (ydom[0] + ydom[1])
     else:
         if axis == "x":
-            axes.x.label.text = ""
+            scale_axes.x.label.text = ""
         else:
-            axes.y.label.text = ""
+            scale_axes.y.label.text = ""
 
     # optional axis label style
     if label_style is not None:
         if axis == "x":
-            axes.x.label.style.update(label_style)
+            scale_axes.x.label.style.update(label_style)
         else:
-            axes.y.label.style.update(label_style)
+            scale_axes.y.label.style.update(label_style)
 
     # place ticks on baseline-aware coordinates
     if axis == "x":
         shifted_locs = locs + mark.xbaseline
-        axes.x.ticks.locator = locator.Explicit(
+        scale_axes.x.ticks.locator = locator.Explicit(
             locations=shifted_locs,
             labels=labels,
         )
     else:
         shifted_locs = locs + mark.ybaseline
-        axes.y.ticks.locator = locator.Explicit(
+        scale_axes.y.ticks.locator = locator.Explicit(
             locations=shifted_locs,
             labels=labels,
         )
 
+    # mark companion axes dirty so toyplot recomputes domains/ticks.
+    scale_axes._finalized = None
     return axes
 
 
 if __name__ == "__main__":
-
     import toytree
+
     orig = toytree.rtree.rtree(5, seed=123)
     orig.set_node_data("orig", {i: i.idx for i in orig}, inplace=True)
     # orig.draw('p', node_labels="orig");
     a, b = orig.mod.bisect(1)
     c, ax, m = a.draw()
-    add_axes_scale_bar(a, ax, )#scale_bar=True);
+    add_axes_scale_bar(
+        a,
+        ax,
+    )  # scale_bar=True);

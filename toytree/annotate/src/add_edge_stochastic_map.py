@@ -165,7 +165,7 @@ def add_edge_stochastic_map(
     ...     inplace=True,
     ...     seed=1,
     ... )
-    >>> fit = tree.pcm.fit_discrete_markov_model("X", nstates=3, model="ER")
+    >>> fit = tree.pcm.fit_discrete_ctmc("X", nstates=3, model="ER")
     >>> maps = tree.pcm.simulate_stochastic_map("X", model_fit=fit, nreplicates=2)
     >>> c, a, m = tree.draw(edge_type="p")
     >>> tree.annotate.add_edge_stochastic_map(a, maps, map_id=1, color="Dark2", width=4)

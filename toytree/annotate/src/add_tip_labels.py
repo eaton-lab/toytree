@@ -7,25 +7,32 @@ Examples
 ...
 """
 
-from typing import Tuple, Sequence, Mapping, Any, Union, TypeVar
-import numpy as np
+from typing import Any, Mapping, Sequence, Tuple, TypeVar, Union
 
-from toytree.core import ToyTree
-from toytree.drawing import Cartesian, Mark
+import numpy as np
+import toyplot.units
+
+from toytree.annotate.src.checks import (
+    assert_tree_matches_mark,
+    get_last_toytree_mark,
+    invalidate_cartesian_fit_cache,
+    normalize_tip_mask,
+)
 from toytree.color import ToyColor
-from toytree.core.apis import add_subpackage_method, AnnotationAPI
-from toytree.style.src.validate_utils import substyle_dict_to_css_dict
-from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
+from toytree.core import ToyTree
+from toytree.core.apis import AnnotationAPI, add_subpackage_method
+from toytree.drawing import Cartesian, Mark
+from toytree.drawing.src.mark_annotation import AnnotationTipLabelMark
 from toytree.style.src.validate_data import (
     validate_colors,
-    validate_numeric,
-    validate_mask,
     validate_labels,
+    validate_numeric,
 )
-from toytree.style.src.validate_node_labels import validate_node_labels_style
+from toytree.style.src.validate_utils import substyle_dict_to_css_dict
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = ["add_tip_labels"]
+
 
 @add_subpackage_method(AnnotationAPI)
 def add_tip_labels(
@@ -34,17 +41,38 @@ def add_tip_labels(
     labels: Union[str, Sequence[str]] = "name",
     color: Union[Color, Sequence[Color]] = None,
     opacity: Union[float, Sequence[float]] = 1.0,
-    font_size: Union[int, None] = 12,
-    angle: Union[int, Sequence[int]] = 0,
+    font_size: Union[int, None] = None,
+    font_family: Union[str, None] = None,
+    font_weight: Union[int, str, None] = None,
+    text_anchor: Union[str, None] = None,
+    angle: Union[int, Sequence[int], None] = None,
     mask: Union[np.ndarray, Tuple[int, int, int], None] = None,
     xshift: int = 0,
     yshift: int = 0,
     style: Mapping[str, Any] = None,
 ) -> Mark:
-    """Return a toyplot Mark of tip labels added to a tree drawing.
+    """Return a Toyplot Mark of tip labels added to a tree drawing.
 
-    This adds text labels to leaf Nodes on the selected tree (or 
+    This adds text labels to leaf Nodes on the selected tree (or
     last tree) drawn on the Cartesian axes.
+
+    Style defaults are copied from the currently drawn ToyTree mark
+    (`mark.tip_labels_style`) so labels inherit the same baseline
+    styling as the active tree drawing.
+
+    Priority order for style values is:
+    1. explicit function args (`font_size`, `font_family`, `font_weight`,
+       `text_anchor`, plus `xshift` / `yshift` adjustments)
+    2. entries in `style`
+    3. defaults from `mark.tip_labels_style`
+
+    The `opacity` argument applies per-tip label opacity. A style-level
+    `fill-opacity` value acts as an additional global alpha multiplier.
+    Any unresolved `fill-opacity=None` is sanitized to `1.0` before
+    rendering so empty opacity values are never emitted.
+
+    Layout-specific orientation is applied per-tip to match tree
+    tip-label rendering conventions.
 
     Parameters
     ----------
@@ -60,21 +88,34 @@ def add_tip_labels(
         A single color or Sequence of colors for node labels.
     opacity: float or Sequence[float]
         A single opacity or Sequence of opacities for node labels.
-    font_size: float
-        Font size in px. Overrides 'font-size' setting in style dict.
-    angle: int or Sequence[int]
+    font_size: int or None
+        Font size in px. Overrides style dict value if provided.
+    font_family: str or None
+        Font family. Overrides style dict value if provided.
+    font_weight: int, str, or None
+        Font weight. Overrides style dict value if provided.
+    text_anchor: str or None
+        Text anchor. Overrides style dict value if provided.
+    angle: int, Sequence[int], or None
         A single angle applied to all labels, or Sequence of angles.
-    mask: np.array or None
-        A boolean array of len nnodes or nnodes - 1 where True masks
-        an node from being shown and False shows the node. None or False
-        shows all nodes. A tuple of 3 booleans can be entered as a
-        shortcut to (show_tips, show_internal, show_root).
+        If None then angles are inherited from the current tree mark
+        tip angles.
+    mask: bool, tuple[int, int, int], np.ndarray, or None
+        Controls shown tips. Accepted values are:
+        - None: show all tips
+        - bool: True shows all tips, False shows none
+        - tuple: (show_tips, show_internal, show_root) shortcut
+        - np.ndarray: boolean array of size ntips
     xshift: int
         Shift label horizontally by px units (+=right, -=left).
     yshift: int
         Shift label vertically by px units (+=down, -=up).
     style: dict
-        Style dict. See `tree.style.node_labels_style` for options.
+        Optional style overrides. Keys can be CSS-style (e.g.
+        ``"font-size"``, ``"text-anchor"``, ``"font-family"``) or
+        pythonic style keys (e.g. ``font_size``, ``text_anchor``).
+        Values in this mapping override mark defaults but are overridden
+        by explicit function arguments.
 
     Examples
     --------
@@ -88,39 +129,40 @@ def add_tip_labels(
     >>> )
     """
     # get mark for coordinates on plotted tree.
-    mark = get_last_toytree_mark(axes)
-    assert_tree_matches_mark(tree, mark)
+    tmark = get_last_toytree_mark(axes)
+    assert_tree_matches_mark(tree, tmark)
 
-    # mask some edges
-    if mask is None:
-        mask = tree.get_node_mask(show_tips=True)[:tree.ntips]
-    else:
-        if mask.size == tree.ntips:
-            # add False for all internal nodes to make the mask = nnodes
-            mask = np.concatenate(mask, np.full(tree.nnodes - tree.ntips), False)
-        if mask.size == tree.nnodes:
-            mask = validate_mask(tree, style={"node_mask": mask})[:tree.ntips]
-        else:
-            raise ValueError("mask should be a boolean array of size ntips or nnodes")
-    coords = mark.ntable[:tree.ntips][mask]
+    # normalize to a tip-level mask
+    mask = normalize_tip_mask(tree, mask)
+    coords = tmark.ntable[: tree.ntips][mask].copy()
+    if bool(getattr(tmark, "tip_labels_align", False)):
+        coords = tmark.ttable[: tree.ntips][mask].copy()
 
     # check length and type of labels
     labels = validate_labels(
-        tree, key="labels", size=tree.ntips, style={"labels": labels})[mask]
+        tree, key="labels", size=tree.ntips, style={"labels": labels}
+    )[mask]
 
-    # set styles on top of defaults
-    style = {} if style is None else style
-    style["text-anchor"] = style.get("text-anchor", "start")
-    style = validate_node_labels_style(tree, style=style, **style)
-    style = substyle_dict_to_css_dict(style.__dict__)
+    # Start from the rendered tree mark style so defaults match the
+    # currently drawn tree labels, then layer user style overrides.
+    base_style = dict(getattr(tmark, "tip_labels_style", {}))
+    user_style = {} if style is None else substyle_dict_to_css_dict(dict(style))
+    style = {**base_style, **user_style}
 
-    # override font size
-    if font_size:
+    # explicit kwargs override style dict keys
+    if font_size is not None:
         style["font-size"] = font_size
+    if font_family is not None:
+        style["font-family"] = font_family
+    if font_weight is not None:
+        style["font-weight"] = font_weight
+    if text_anchor is not None:
+        style["text-anchor"] = text_anchor
 
     # update node colors setting; sets to None if only one color.
     node_colors, fill_color = validate_colors(
-        tree, key="color", size=tree.ntips, style={"color": color})
+        tree, key="color", size=tree.ntips, style={"color": color}
+    )
 
     # if fill_color then set to node_style.fill since node_colors = None
     if node_colors is None:
@@ -130,30 +172,70 @@ def add_tip_labels(
             pass  # node_style.fill overrides
     else:
         node_colors = node_colors[mask]
-        style.pop("fill")
+        style.pop("fill", None)
+
+    # Toyplot expects a numeric fill-opacity whenever fill is set.
+    # Mark defaults can carry fill-opacity=None, so sanitize it here.
+    if style.get("fill-opacity", 1.0) is None:
+        style["fill-opacity"] = 1.0
 
     # ...
     opacity = validate_numeric(
-        tree, key="opacity", size=tree.ntips, style={"opacity": opacity})[mask]
-    angle = validate_numeric(
-        tree, key="angle", size=tree.ntips, style={"angle": angle})[mask]
+        tree, key="opacity", size=tree.ntips, style={"opacity": opacity}
+    )[mask]
+    if angle is None:
+        if hasattr(tmark, "tip_labels_angles") and tmark.tip_labels_angles is not None:
+            angle = np.asarray(tmark.tip_labels_angles, dtype=float)
+            if angle.size != tree.ntips:
+                angle = np.zeros(tree.ntips, dtype=float)
+        else:
+            angle = np.zeros(tree.ntips, dtype=float)
+        angle = angle[mask]
+    else:
+        angle = validate_numeric(
+            tree, key="angle", size=tree.ntips, style={"angle": angle}
+        )[mask]
 
     # expand xshift,yshift args in pixel units
-    style['-toyplot-anchor-shift'] += xshift
-    style['baseline-shift'] -= yshift
-
-    # add text at Node positions + half length of dists.
-    mark = axes.text(
-        coords[:, 0],
-        coords[:, 1],
-        labels,
-        color=node_colors,
-        opacity=opacity,
-        angle=angle,
-        style=style,
-        annotation=True,
+    anchor = toyplot.units.convert(
+        style.get("-toyplot-anchor-shift", 0), target="px", default="px"
     )
-    return mark
+    baseline = toyplot.units.convert(
+        style.get("baseline-shift", 0), target="px", default="px"
+    )
+    style["-toyplot-anchor-shift"] = anchor + xshift
+    style["baseline-shift"] = baseline - yshift
+
+    # match tip label orientation behavior in render_tree.py
+    offset = toyplot.units.convert(
+        style.get("-toyplot-anchor-shift", 0), target="px", default="px"
+    )
+    layout = str(getattr(tmark, "layout", "r"))
+    angles = angle.astype(float).copy()
+    styles = [dict(style) for _ in range(labels.size)]
+
+    if layout in "lu":
+        for idx in range(labels.size):
+            styles[idx]["-toyplot-anchor-shift"] = -offset
+            styles[idx]["text-anchor"] = "end"
+    elif layout not in "rd":
+        flip = (angles > 90.0) & (angles < 270.0)
+        for idx in np.where(flip)[0]:
+            styles[idx]["text-anchor"] = "end"
+            styles[idx]["-toyplot-anchor-shift"] = -offset
+            angles[idx] = angles[idx] - 180.0
+
+    amark = AnnotationTipLabelMark(
+        ntable=coords,
+        labels=labels,
+        angles=angles,
+        colors=node_colors,
+        opacity=opacity.astype(float),
+        styles=styles,
+    )
+    axes.add_mark(amark)
+    invalidate_cartesian_fit_cache(axes)
+    return amark
 
 
 if __name__ == "__main__":

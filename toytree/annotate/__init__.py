@@ -35,6 +35,7 @@ Functions
 
 - add_scale_bar()
 - add_confidence_intervals()
+- get_toytree_scale_cartesian()
 
 - add_tip_markers()
 - add_tip_labels()
@@ -55,6 +56,10 @@ from toytree.annotate.src.add_pie_markers import *
 from toytree.annotate.src.add_scale_bar import *
 from toytree.annotate.src.add_tip_labels import *
 from toytree.annotate.src.add_tip_markers import *
+from toytree.annotate.src.add_tip_tiles import *
+from toytree.annotate.src.checks import (
+    get_toytree_scale_cartesian as get_toytree_scale_cartesian,
+)
 
 # ... edge_labels
 # ... node_labels

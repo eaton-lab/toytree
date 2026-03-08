@@ -34,7 +34,7 @@ def add_edges(
     axes: Cartesian,
     color: Union[Color, Sequence[Color], None] = None,
     width: Union[float, Sequence[float]] = 2.0,
-    opacity: Union[float, Sequence[float]] = 1.0,
+    opacity: Union[float, Sequence[float], None] = 1.0,
     mask: Union[np.ndarray, Tuple[int, int, int], None] = False,
     xshift: float = 0.0,
     yshift: float = 0.0,
@@ -66,9 +66,10 @@ def add_edges(
         If None, a default dark stroke is used.
     width: float or Sequence[float]
         Line width in px, as a scalar or per-edge sequence.
-    opacity: float or Sequence[float]
-        Line opacity as a scalar or per-edge sequence. Opacity is applied to
-        individual edge paths.
+    opacity: float, Sequence[float], or None
+        Line opacity. If a single value (or None), opacity is applied at the
+        group level so overlapping segments do not become visually darker.
+        If a multi-valued sequence is provided, opacity is applied per edge.
     mask: np.ndarray, tuple[int, int, int], or None
         Boolean show-mask for nodes / edges. A 3-item tuple is interpreted as
         ``(show_tips, show_internal, show_root)``. True values are shown.
@@ -148,12 +149,16 @@ def add_edges(
         per_edge_color = False
 
     # Resolve width and opacity as per-edge arrays and trim to shown edges.
+    opacity_input, use_group_opacity, group_opacity = _coerce_opacity_mode(opacity)
     widths = validate_numeric(
         tree, key="size", size=tree.nnodes, style={"size": width}
     )[:nedges][show]
     opacs = validate_numeric(
-        tree, key="opacity", size=tree.nnodes, style={"opacity": opacity}
+        tree, key="opacity", size=tree.nnodes, style={"opacity": opacity_input}
     )[:nedges][show]
+    if use_group_opacity and (group_opacity is None):
+        # None means "do not set opacity" on either group or individual paths.
+        opacs = np.full(opacs.shape[0], np.nan, dtype=float)
 
     # Build data-space edge polylines from the shared drawing utility.
     xpaths, ypaths, _ = get_tree_edge_polylines(axes, mark, space="data")
@@ -198,17 +203,12 @@ def add_edges(
             end_colors[idx] = node_colors[cidx]
         grad_style = dict(line_style)
 
-        # group-level opacity mode. Keep scalar opacity on
-        # individual edges to preserve per-edge blending behavior.
-        use_group_opacity = False
-        group_opacity = None
-        if isinstance(opacity, (int, float, np.integer, np.floating)):
-            use_group_opacity = True
-            grad_style.pop("opacity", None)
-            grad_style.pop("stroke-opacity", None)
-            grad_style["opacity"] = float(opacity)
-        else:
-            grad_style["opacity"] = None
+        grad_style.pop("opacity", None)
+        grad_style.pop("stroke-opacity", None)
+        if use_group_opacity and (group_opacity is not None):
+            # Scalar opacity is intentionally group-level for this mark to
+            # avoid dark overlap artifacts where edge paths cross.
+            grad_style["opacity"] = float(group_opacity)
 
         outmark = AnnotationGradientLine(
             xpaths=gxshow,
@@ -226,17 +226,12 @@ def add_edges(
     else:
         solid_style = dict(line_style)
 
-        # group-level opacity mode. Keep scalar opacity on
-        # individual edges to preserve per-edge blending behavior.
-        use_group_opacity = False
-        group_opacity = None
-        if isinstance(opacity, (int, float, np.integer, np.floating)):
-            use_group_opacity = True
-            solid_style.pop("opacity", None)
-            solid_style.pop("stroke-opacity", None)
-            solid_style["opacity"] = float(opacity)
-        else:
-            solid_style["opacity"] = None
+        solid_style.pop("opacity", None)
+        solid_style.pop("stroke-opacity", None)
+        if use_group_opacity and (group_opacity is not None):
+            # Scalar opacity is intentionally group-level for this mark to
+            # avoid dark overlap artifacts where edge paths cross.
+            solid_style["opacity"] = float(group_opacity)
 
         # set colors
         ecolors = stroke if per_edge_color else None
@@ -307,3 +302,32 @@ def _coerce_dasharray(value: str | tuple[int, int] | None) -> str | None:
     if value[0] < 0 or value[1] < 0:
         raise ValueError("stroke_dasharray tuple values must be non-negative.")
     return f"{value[0]},{value[1]}"
+
+
+def _coerce_opacity_mode(
+    opacity: float | Sequence[float] | None,
+) -> tuple[float | Sequence[float] | None, bool, float | None]:
+    """Normalize opacity input and choose group-vs-edge opacity mode.
+
+    Returns
+    -------
+    tuple
+        `(opacity_input, use_group_opacity, group_opacity)`, where
+        `opacity_input` is safe to pass into numeric validation.
+    """
+    if opacity is None:
+        return None, True, None
+    if isinstance(opacity, (int, float, np.integer, np.floating)):
+        scalar = float(opacity)
+        return scalar, True, scalar
+    if isinstance(opacity, np.ndarray):
+        if opacity.ndim == 0 or opacity.size == 1:
+            scalar = float(opacity.reshape(-1)[0])
+            return scalar, True, scalar
+        return opacity, False, None
+    if isinstance(opacity, Sequence) and not isinstance(opacity, (str, bytes)):
+        if len(opacity) == 1:
+            scalar = float(opacity[0])
+            return scalar, True, scalar
+        return opacity, False, None
+    return opacity, False, None
