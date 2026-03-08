@@ -1,20 +1,20 @@
 #!/usr/bin/env python
 
-"""Generic multitree parsing function.
+"""Generic multitree parsing function."""
 
-"""
-
-from typing import Union, Collection
 from pathlib import Path
+from typing import Collection, Union
+
 import pandas as pd
-from toytree.core.tree import ToyTree
+
 from toytree.core.multitree import MultiTree
+from toytree.core.tree import ToyTree
 from toytree.io.src.parse import parse_multitree, parse_tree
 from toytree.utils import ToytreeError
 
 
 def mtree(data: Union[str, Path, Collection[ToyTree]], **kwargs) -> MultiTree:
-    """General class constructor to parse and return a MultiTree.
+    r"""General class constructor to parse and return a MultiTree.
 
     Input arguments as a multi-newick string, filepath, Url, or
     Collection of Toytree objects.
@@ -34,12 +34,19 @@ def mtree(data: Union[str, Path, Collection[ToyTree]], **kwargs) -> MultiTree:
     # parse the newick object into a list of Toytrees
     treelist = []
 
-    # a single file path containing multline newicks or nexus.
+    # A single file path, newick/nexus string, or URL.
     if isinstance(data, (Path, str)):
+        if isinstance(data, str) and not data.strip():
+            raise ToytreeError("Cannot parse empty input for toytree.mtree().")
         return parse_multitree(data, **kwargs)
 
     # --- Collections of inputs --- #
-    assert len(set(type(i) for i in data)) == 1, "input data cannot be multiple types."
+    # Convert arbitrary collections (including generators/sets) to a list once.
+    data = list(data)
+    if not data:
+        raise ToytreeError("Cannot parse an empty collection in toytree.mtree().")
+    if len(set(type(i) for i in data)) != 1:
+        raise ToytreeError("Input collection cannot contain mixed data types.")
 
     # handle ipcoal sim series
     if isinstance(data, pd.Series):
@@ -57,15 +64,12 @@ def mtree(data: Union[str, Path, Collection[ToyTree]], **kwargs) -> MultiTree:
         raise ToytreeError("mtree input format not recognized.")
 
     mtre = MultiTree(treelist)
-    assert len(mtre.treelist), "MultiTree is empty, parsing failed."
+    if not mtre.treelist:
+        raise ToytreeError("MultiTree is empty, parsing failed.")
     return mtre
 
 
 if __name__ == "__main__":
-
-    import numpy as np
-    import ipcoal
-
     TEST3 = "https://eaton-lab.org/data/densitree.nex"
     URL3 = "https://eaton-lab.org/data/densitree.nex"
     PATHNWK3 = Path("~/Downloads/densitree.nwk").expanduser()
@@ -131,4 +135,3 @@ end;
 
     # import toyplot.browser
     # toyplot.browser.show(c)
-
