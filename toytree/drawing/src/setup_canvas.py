@@ -10,33 +10,59 @@ from toyplot.mark import Mark
 
 ToyTree = TypeVar("ToyTree")
 
+# Heuristic sizing constants for linear layouts.
+SPAN_SCALE = 1.15
+TREE_DEPTH_PER_TIP = 5.0
+TREE_DEPTH_MIN = 100.0
+TREE_DEPTH_MAX = 300.0
+LABEL_SPAN_MIN = 175.0
+LABEL_SPAN_MAX = 900.0
+LABEL_DEPTH_MIN = 0.0
+LABEL_DEPTH_MAX = 600.0
+MARGIN_PAD = 100.0
+
+# Heuristic sizing constants for circular and fan layouts.
+CIRCULAR_BASE_SIZE = 500
+CIRCULAR_MIN_SHORT = 280
+CIRCULAR_MAX_LONG = 900
+_SPAN_EPS = 1e-9
+
 
 def get_linear_width_and_height(mark: Mark) -> Tuple[int, int]:
-    """Get width,height to fit the ToyTree Mark given its extents.
+    """Return (width, height) px units to fit ToyTree Mark.
+
+    Using the calculated extents of the tip labels, and the linear layout
+    direction, and the tree size, calculate a reasonable canvas size to
+    fit the tree -- in the case that user did not enter a height or width
+    override.
     """
-    # get space needed for tip labels to not overlap
-    ext = mark.extents(['x', 'y'])[1]
+    _, ext = mark.extents(["x", "y"])
+    ntips = int(mark.ttable.shape[0])
+
+    # Choose span/depth extents relative to linear layout direction.
     if mark.layout in "rl":
-        exts = ext[3] - ext[2]
+        span_ext = ext[3][:ntips] - ext[2][:ntips]
+        depth_ext = ext[1][:ntips] - ext[0][:ntips]
     else:
-        exts = ext[1] - ext[0]
-    name_vspace = sum(exts[:mark.ttable.shape[0]]) * 1.15
+        span_ext = ext[1][:ntips] - ext[0][:ntips]
+        depth_ext = ext[3][:ntips] - ext[2][:ntips]
 
-    # get space needed for tip labels to fit on canvas
-    ext = mark.extents(['x', 'y'])[1]
-    if mark.layout in "rl":
-        exts = ext[1] - ext[0]
-    else:
-        exts = ext[3] - ext[2]
-    name_hspace = max(exts[:mark.ttable.shape[0]])# 2
+    # first calculate space needed for the labels
+    label_depth_max = float(max(depth_ext)) if ntips else 0.0
 
-    # get depth of tree to show edge, nodes, etc.
-    tree_depth = max(100, 5 * mark.ttable.shape[0])
-    tree_depth = min(300, 5 * mark.ttable.shape[0])
+    # also get the span space needed
+    label_span_total = float(sum(span_ext)) * SPAN_SCALE
 
-    # add 100 to each dimension for margin; limit w,h = (800, 1000)
-    width = tree_depth + name_hspace + 100
-    height = name_vspace + 100
+    # ...
+    tree_depth = TREE_DEPTH_PER_TIP * ntips
+
+    # Apply per-component bounds before combining into width / height.
+    label_span_total = max(LABEL_SPAN_MIN, min(LABEL_SPAN_MAX, label_span_total))
+    label_depth_max = max(LABEL_DEPTH_MIN, min(LABEL_DEPTH_MAX, label_depth_max))
+    tree_depth = max(TREE_DEPTH_MIN, min(TREE_DEPTH_MAX, tree_depth))
+
+    width = tree_depth + label_depth_max + MARGIN_PAD
+    height = label_span_total + MARGIN_PAD
 
     # ... min: (350, 300)
     if mark.layout in "ud":
@@ -52,8 +78,28 @@ def get_linear_width_and_height(mark: Mark) -> Tuple[int, int]:
 
 
 def get_circular_width_and_height(mark: Mark) -> Tuple[int, int]:
-    """TODO."""
-    return 500, 500
+    """Return ``(width, height)`` px units to fit circular / fan layouts.
+
+    The mark domain already encodes whether a circular layout is full
+    circle or partial fan. Full-circle domains are square while fans are
+    rectangular. We keep the long axis at ``CIRCULAR_BASE_SIZE`` and scale
+    the short axis by domain ratio so fan layouts use space efficiently.
+    """
+    xmin, xmax = mark.domain("x")
+    ymin, ymax = mark.domain("y")
+    xspan = max(abs(float(xmax - xmin)), _SPAN_EPS)
+    yspan = max(abs(float(ymax - ymin)), _SPAN_EPS)
+
+    if xspan >= yspan:
+        width = CIRCULAR_BASE_SIZE
+        height = int(round(CIRCULAR_BASE_SIZE * (yspan / xspan)))
+    else:
+        height = CIRCULAR_BASE_SIZE
+        width = int(round(CIRCULAR_BASE_SIZE * (xspan / yspan)))
+
+    width = max(CIRCULAR_MIN_SHORT, min(CIRCULAR_MAX_LONG, width))
+    height = max(CIRCULAR_MIN_SHORT, min(CIRCULAR_MAX_LONG, height))
+    return int(width), int(height)
 
 
 def get_canvas_and_axes(
@@ -81,8 +127,8 @@ def get_canvas_and_axes(
                 height = _height
 
         # create canvas and axes
-	# cast height/width to float to avoid bug with toyplot.Canvas
-	# passing np.float() into the output javascript, which killed rendering
+        # cast height/width to float to avoid bug with toyplot.Canvas
+        # passing np.float() into the output javascript, which killed rendering
         canvas = Canvas(height=float(height), width=float(width))
         axes = canvas.cartesian(padding=padding, margin=margin)
 
@@ -92,164 +138,9 @@ def get_canvas_and_axes(
     return canvas, axes
 
 
-# class CanvasSetup:
-#     """Return Canvas and Cartesian axes objects for drawing size.
-
-#     Sets values to style.height and style.width if not present. If a
-#     Canvas already exists a set of axes can be entered, instead of
-#     being generated anew.
-#     """
-
-#     def __init__(self, tree, axes, style):
-
-#         # args includes axes
-#         self.tree = tree
-#         self.axes = axes
-#         self.style = style
-#         self.canvas = None
-#         self.external_axis = False
-
-#         # get the longest name for dimension fitting
-#         self.lname = 0
-#         if self.style.tip_labels is not None:
-#             self.lname = max([len(str(i)) for i in self.style.tip_labels])
-
-#         # ntips and shape to fit with provided args
-#         self.get_canvas_height_and_width()
-
-#         # fills canvas and axes
-#         self.get_canvas_and_axes()
-
-#         # ticks for tree and scale_bar
-#         if self.style.scale_bar is False:
-#             if not self.external_axis:
-#                 self.axes.x.show = False
-#                 self.axes.y.show = False
-#         else:
-#             if style.use_edge_lengths:
-#                 theight = self.tree.treenode.height
-#             else:
-#                 # get number of nodes from farthest leaf to root
-#                 ndists = self.tree.distance.get_node_distance_matrix(True)
-#                 theight = ndists[self.tree.treenode.idx].max()
-#             set_axes_ticks_style(theight, self.axes, self.style, True)
-
-#     def get_canvas_height_and_width(self):
-#         """Calculate default canvas height&width given N tips and style."""
-#         if self.style.layout[0] == "c":
-#             radius = max([0] + [i for i in [self.style.height, self.style.width] if i])
-#             if not radius:
-#                 radius = 400
-#             self.style.width = self.style.height = radius
-#             return
-
-#         # fit height and width by tree size.
-#         if self.style.layout in ("r", "l"):
-#             if not self.style.height:
-#                 self.style.height = max(275, min(1000, 18 * self.tree.ntips))
-#             if not self.style.width:
-#                 self.style.width = max(250, min(500, 250 + 5 * self.lname))
-#         else:
-#             if not self.style.height:
-#                 self.style.height = max(250, min(500, 250 + 5 * self.lname))
-#             if not self.style.width:
-#                 self.style.width = max(350, min(1000, 18 * self.tree.ntips))
-
-#     def get_canvas_and_axes(self):
-#         """Sets canvas and axes with dimensions and padding."""
-#         if self.axes is not None:
-#             self.canvas = None
-#             self.external_axis = True
-#         else:
-#             self.canvas = toyplot.Canvas(
-#                 height=self.style.height,
-#                 width=self.style.width,
-#             )
-#             self.axes = self.canvas.cartesian(padding=self.style.padding)
-
-
-# def set_axes_ticks_style(
-#     tree_height: float,
-#     axes: Cartesian,
-#     style: TreeStyle,
-#     only_inside: bool = True,
-# ) -> Cartesian:
-#     """Return a toyplot Cartesian object with custom tick marks.
-
-#     This gets tick locations first using toyplot.locator.Extended and
-#     then sets labels on them using toyplot.locator.Explicit, because
-#     we need time scale bar to be non-negative when axes are rotated
-#     for trees facing different directions.
-
-#     Note
-#     -----
-#     Some work is done internally to try to nicely handle floating point
-#     precision.
-
-#     Parameters
-#     ----------
-#     ...
-#     style: TreeStyle
-#         A TreeStyle object with options for styling axes.
-#     only_inside: bool
-#         Option used by toyplot.locator.Extended to automatically find
-#         tick marks given the data range.
-#     """
-#     # the axes is either new or passed as an arg, and the scale_bar
-#     # arg is True or a (float, int), so we need to style the ticks.
-#     if style.layout in ("r", "l"):
-#         nticks = max((4, np.floor(style.width / 75).astype(int)))
-#         axes.y.show = False
-#         axes.x.show = True
-#         axes.x.ticks.show = True
-#     elif style.layout in ("u", "d"):
-#         nticks = max((4, np.floor(style.height / 75).astype(int)))
-#         axes.x.show = False
-#         axes.y.show = True
-#         axes.y.ticks.show = True
-#     # e.g., unrooted layout with axes shown (e.g., ts='p')
-#     else:
-#         # nticks = max((4, np.floor(style.height / 75).astype(int)))
-#         nticks = 5
-#         axes.x.show = False
-#         axes.y.show = False
-
-#     # get tick locator
-#     lct = toyplot.locator.Extended(count=nticks, only_inside=only_inside)
-
-#     # get root tree height
-#     if style.layout in ("r", "u"):
-#         locs = lct.ticks(-tree_height, -0)[0]
-#     else:
-#         locs = lct.ticks(0, tree_height)[0]
-
-#     # apply unit scaling
-#     if style.scale_bar is False:
-#         labels = abs(locs.copy())
-#     elif isinstance(style.scale_bar, (int, float)):
-#         labels = abs(locs / style.scale_bar)
-#     else:
-#         labels = abs(locs.copy())
-#     labels = [np.format_float_positional(i, precision=6, trim="-") for i in labels]
-
-#     # set the ticks locator
-#     if style.layout in ("r", "l"):
-#         axes.x.ticks.locator = toyplot.locator.Explicit(
-#             locations=locs + style.xbaseline,
-#             labels=labels,
-#         )
-#     elif style.layout in ("u", "d"):
-#         axes.y.ticks.locator = toyplot.locator.Explicit(
-#             locations=locs + style.ybaseline,
-#             labels=labels,
-#         )
-#     # print(locs, labels)
-#     return axes
-
-
 if __name__ == "__main__":
-
     import toytree
+
     t0 = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
     t0 = t0.root("~.*prz*")
     c0, _, _ = t0.draw()
@@ -260,4 +151,3 @@ if __name__ == "__main__":
     print(c1.width, c1.height)
 
     toytree.utils.show([c0, c1])
-
