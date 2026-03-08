@@ -306,11 +306,40 @@ def remove_nodes(
     if not inplace:
         tree = tree.copy()
         nodes = [tree[i.idx] for i in nodes]
+    selected = set(nodes)
+
+    # removing every connected node would leave an invalid empty tree
+    if selected and len(selected) == tree.nnodes:
+        raise ToytreeError("Cannot remove all nodes from the tree.")
+
+    root = tree.treenode
+    root_selected = root in selected
 
     # postorder idx traversal
     for node in tree:
-        if node in nodes:
+        if node in selected and node is not root:
             node._delete(preserve_dists, prevent_unary=False)
+
+    # deleting the root requires selecting a remaining internal child to
+    # become the new root. We disallow promoting a leaf to internal here.
+    if root_selected:
+        children = list(root.children)
+        new_root = next((node for node in children if not node.is_leaf()), None)
+        if new_root is None:
+            raise ToytreeError(
+                "Cannot remove root Node when all remaining root children are tips."
+            )
+        for child in children:
+            if child is not new_root:
+                new_root._add_child(child)
+        new_root._up = None
+        new_root._dist = 0.0
+        new_root.support = np.nan
+        root._children = ()
+        root._up = None
+        root._idx = -1
+        tree.treenode = new_root
+
     tree._update()
     return tree
 
@@ -346,13 +375,26 @@ def remove_unary_nodes(tree: ToyTree, inplace: bool = False) -> ToyTree:
         if len(node.children) != 1:
             continue
         new_parent = node._up
-        # Skip unary root; tree._update() handles root normalization.
+        # Root is handled in the separate loop below.
         if new_parent is None:
             continue
         true_node = node._children[0]
         new_parent._add_child(true_node)
         new_parent._remove_child(node)
         true_node._dist += node._dist
+
+    # Promote through any unary root chain so returned trees are normalized.
+    while len(tree.treenode.children) == 1:
+        old_root = tree.treenode
+        new_root = old_root.children[0]
+        new_root._up = None
+        new_root._dist = 0.0
+        new_root.support = np.nan
+        old_root._children = ()
+        old_root._up = None
+        old_root._idx = -1
+        tree.treenode = new_root
+
     tree._update()
     return tree
 
@@ -753,11 +795,11 @@ def drop_tips(
             node._delete(prevent_unary=True)
         else:
             internal.append(node)
-    # warn user that internal nodes were ignored.
+    # Warn only for ignored internal-node selections. Exception branches
+    # above already provide hard failure messages and should not warn.
     if internal:
         print(
-            "Warning: Your query included internal nodes, but only tip Nodes "
-            "were removed. See `mod.remove_nodes`",
+            "Only tip Nodes are removed. See `mod.remove_nodes`.",
             file=sys.stderr,
         )
     tree._update()
