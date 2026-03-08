@@ -5,9 +5,14 @@ import tempfile
 from pathlib import Path
 
 import toytree
-from toytree.cli.cli_prune import get_parser_prune, run_prune
-from toytree.cli.cli_root import get_parser_root, run_root
-from toytree.cli.cli_set_node_data import get_parser_set_node_data, run_set_node_data
+from toytree.cli.cli_prune import run_prune
+from toytree.cli.cli_root import run_root
+from toytree.cli.cli_set_node_data import run_set_node_data
+from toytree.cli.subparsers import (
+    get_parser_prune,
+    get_parser_root,
+    get_parser_set_node_data,
+)
 from toytree.core.tree import ToyTree
 
 
@@ -61,5 +66,4 @@ class TestBinaryTreeCLIPipeline(PytestCompat):
         obj = pickle.loads(payload)
         self.assertIsInstance(obj, ToyTree)
         self.assertIn("score", obj.features)
-
 

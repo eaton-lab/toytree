@@ -7,7 +7,8 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 import toytree
-from toytree.cli.cli_consensus import get_parser_consensus, run_consensus
+from toytree.cli.cli_consensus import run_consensus
+from toytree.cli.subparsers import get_parser_consensus
 
 
 
@@ -57,5 +58,4 @@ class TestConsensusCLI(PytestCompat):
         run_consensus(args)
         obj = pickle.loads(outpath.read_bytes())
         self.assertEqual(obj.__class__.__name__, "ToyTree")
-
 

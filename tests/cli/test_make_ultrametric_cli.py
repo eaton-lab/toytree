@@ -7,10 +7,12 @@ from pathlib import Path
 
 import toytree
 from toytree.cli.cli_make_ultrametric import (
-    NEGATIVE_CAL_QUERY_PREFIX,
-    get_parser_make_ultrametric,
     run_make_ultrametric,
     _parse_calibrations,
+)
+from toytree.cli.subparsers import (
+    NEGATIVE_CAL_QUERY_PREFIX,
+    get_parser_make_ultrametric,
     normalize_calibration_argv,
 )
 from toytree.utils import ToytreeError
@@ -119,5 +121,4 @@ class TestMakeUltrametricCLI(PytestCompat):
         )
         with self.assertRaises(ToytreeError):
             run_make_ultrametric(args)
-
 

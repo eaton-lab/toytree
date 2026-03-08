@@ -5,7 +5,8 @@ import tempfile
 from contextlib import redirect_stdout
 from pathlib import Path
 
-from toytree.cli.cli_distance import get_parser_distance, run_distance
+from toytree.cli.cli_distance import run_distance
+from toytree.cli.subparsers import get_parser_distance
 
 
 
@@ -46,4 +47,15 @@ class TestDistanceCLI(PytestCompat):
         self.assertIn("symmetric_difference\t", out)
         self.assertIn("steel_and_penny\t", out)
 
-
+    def test_internal_labels_option_removed(self):
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args(
+                [
+                    "-i",
+                    str(self.t1),
+                    "-j",
+                    str(self.t2),
+                    "--internal-labels",
+                    "support",
+                ]
+            )

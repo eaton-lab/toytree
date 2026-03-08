@@ -10,7 +10,8 @@ import pandas as pd
 from pandas.errors import ParserWarning
 
 import toytree
-from toytree.cli.cli_set_node_data import get_parser_set_node_data, run_set_node_data
+from toytree.cli.cli_set_node_data import run_set_node_data
+from toytree.cli.subparsers import get_parser_set_node_data
 from toytree.utils import ToytreeError
 
 
@@ -187,5 +188,4 @@ class TestSetNodeDataCLI(PytestCompat):
             ]
         )
         self.assertIn("[&&NHX:trait=1.000]", out_nwk)
-
 

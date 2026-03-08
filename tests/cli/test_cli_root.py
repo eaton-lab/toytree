@@ -6,7 +6,8 @@ import pickle
 import tempfile
 from pathlib import Path
 
-from toytree.cli.cli_root import get_parser_root, run_root
+from toytree.cli.cli_root import run_root
+from toytree.cli.subparsers import get_parser_root
 from toytree.utils import ToytreeError
 
 
@@ -121,4 +122,27 @@ class TestCLIRoot(PytestCompat):
         with self.assertRaises(ToytreeError):
             run_root(args)
 
+    def test_mad_and_dlc_are_parser_mutually_exclusive(self):
+        """Argparse should reject --mad combined with --dlc."""
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args(["-i", str(self.gene_path), "--mad", "--dlc"])
 
+    def test_mad_short_flag_removed(self):
+        """Legacy -m shorthand for MAD should no longer parse."""
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args(["-i", str(self.gene_path), "-m"])
+
+    def test_species_internal_labels_removed(self):
+        """Removed species-tree internal-label parser option should not parse."""
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args(
+                [
+                    "-i",
+                    str(self.gene_path),
+                    "--dlc",
+                    "--species-tree",
+                    str(self.species_path),
+                    "--species-internal-labels",
+                    "support",
+                ]
+            )

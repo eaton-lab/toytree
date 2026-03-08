@@ -7,7 +7,8 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 import toytree
-from toytree.cli.cli_relabel import get_parser_relabel, run_relabel
+from toytree.cli.cli_relabel import run_relabel
+from toytree.cli.subparsers import get_parser_relabel
 
 
 
@@ -80,5 +81,4 @@ class TestRelabelCLI(PytestCompat):
         self.assertEqual(tree[0].name, "|x")
         self.assertEqual(tree[1].name, "b|y")
         self.assertEqual(tree[2].name, "|z")
-
 

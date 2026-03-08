@@ -9,7 +9,9 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 import toytree
-from toytree.cli.cli_draw import get_parser_draw, parse_node_mask, run_draw
+from toytree.cli._subparser_helpers import parse_node_mask
+from toytree.cli.cli_draw import run_draw
+from toytree.cli.subparsers import get_parser_draw
 
 
 
@@ -51,6 +53,10 @@ class TestDrawCLI(PytestCompat):
         self.assertFalse(args.tip_labels_align)
         self.assertTrue(args.tip_labels)
 
+    def test_parser_normalizes_format_case(self):
+        args = self.parser.parse_args(["-i", "((a,b),c);", "-f", "PNG"])
+        self.assertEqual(args.format, "png")
+
     def test_draw_accepts_binary_input_path_ascii_mode(self):
         tree = toytree.tree("((a:1,b:1):1,c:1);")
         bpath = self.tmpdir / "tree.bin"
@@ -78,5 +84,3 @@ class TestDrawCLI(PytestCompat):
         )
         proc = subprocess.run(["bash", "-lc", cmd], capture_output=True)
         self.assertEqual(proc.returncode, 0, msg=proc.stderr.decode("utf-8", errors="replace"))
-
-
