@@ -2,12 +2,73 @@
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
-# PEP 621 dependencies declaration
-# adapt to your dependencies manager
-#[project]
-#dependencies = [
-#    "mkdocstrings[python]>=0.18",
-#]
+[project]
+name = "toytree"
+dynamic = ["version"]
+description = "tree manipulation, plotting, and evolutionary analysis library"
+readme = { file = "README.md", content-type = "text/markdown" }
+requires-python = ">=3.10"
+license = { text = "GPL-3.0-only" }
+authors = [{ name = "Deren Eaton", email = "de2356@columbia.edu" }]
+keywords = [
+    "phylogeny",
+    "tree",
+    "network",
+    "plotting",
+    "toyplot",
+    "svg",
+    "html",
+    "genealogy",
+    "coalescent",
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3 :: Only",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+]
+dependencies = [
+    "numpy",
+    "scipy",
+    "pandas",
+    "toyplot",
+    "loguru",
+    "requests",
+    "statsmodels",
+]
+
+[project.urls]
+Homepage = "https://eaton-lab.org/toytree"
+
+[project.scripts]
+toytree = "toytree.cli.main:main"
+
+[project.optional-dependencies]
+dev = [
+    "ruff",
+    "pytest",
+    "pytest-cov",
+]
+test = [
+    "pytest",
+    "pytest-cov",
+]
+external = [
+    "ipcoal",
+]
+
+[tool.setuptools]
+include-package-data = true
+zip-safe = true
+license-files = ["LICENSE.txt"]
+
+[tool.setuptools.dynamic]
+version = { attr = "toytree.__version__" }
+
+[tool.setuptools.packages.find]
+include = ["toytree*"]
 
 [tool.ruff]
 # Target Python version
@@ -29,3 +90,26 @@ quote-style = "double"
 indent-style = "space"
 skip-magic-trailing-comma = false
 line-ending = "auto"
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+testpaths = ["tests"]
+python_files = ["test_*.py"]
+addopts = "-ra"
+filterwarnings = [
+    "ignore::DeprecationWarning:jupyter_client.*",
+    "ignore::DeprecationWarning:reportlab.*",
+]
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests requiring optional external tools/deps",
+]
+
+[tool.coverage.run]
+source = ["toytree"]
+branch = true
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+omit = ["tests/*"]
