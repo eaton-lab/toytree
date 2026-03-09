@@ -5,13 +5,11 @@
 Parse flexible input types (filepath, str, Url) to ToyTree class.
 """
 
-from typing import Union, TypeVar, Optional
 from pathlib import Path
+from typing import Optional, TypeVar, Union
 
-from toytree.core import ToyTree, Node
+from toytree.core import Node, ToyTree
 from toytree.utils import ToytreeError
-from toytree.io.src.parse import parse_tree
-
 
 # PEP 484 recommend capitalizing alias names
 Url = TypeVar("Url")
@@ -71,6 +69,8 @@ def tree(
         ttree = ToyTree(treenode)
     # load ToyTree from a newick or nexus from str, URL, or filepath
     elif isinstance(data, (str, Path)):
+        from toytree.io.src.parse import parse_tree
+
         ttree = parse_tree(
             data,
             feature_prefix=feature_prefix,
@@ -85,12 +85,12 @@ def tree(
 
 
 if __name__ == "__main__":
-
     URI = "https://eaton-lab.org/data/Cyathophora.tre"
     TREE = tree(URI)
     print(TREE)
     print(TREE.get_node_data())
 
     import toytree
+
     tree = toytree.tree("((a,b),c),d);")
     tree

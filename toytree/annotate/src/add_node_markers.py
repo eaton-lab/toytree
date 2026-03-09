@@ -153,6 +153,9 @@ def add_node_markers(
         opacity=opacity,
         shapes=markers,
         style=style,
+        local_span=None,
+        local_depth=None,
+        root_xy=None,
     )
     axes.add_mark(mark)
     return mark

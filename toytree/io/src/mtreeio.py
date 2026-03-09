@@ -2,15 +2,16 @@
 
 """Generic multitree parsing function."""
 
+from __future__ import annotations
+
 from pathlib import Path
-from typing import Collection, Union
+from typing import TYPE_CHECKING, Collection, Union
 
-import pandas as pd
-
-from toytree.core.multitree import MultiTree
-from toytree.core.tree import ToyTree
-from toytree.io.src.parse import parse_multitree, parse_tree
 from toytree.utils import ToytreeError
+
+if TYPE_CHECKING:
+    from toytree.core.multitree import MultiTree
+    from toytree.core.tree import ToyTree
 
 
 def mtree(data: Union[str, Path, Collection[ToyTree]], **kwargs) -> MultiTree:
@@ -38,6 +39,8 @@ def mtree(data: Union[str, Path, Collection[ToyTree]], **kwargs) -> MultiTree:
     if isinstance(data, (Path, str)):
         if isinstance(data, str) and not data.strip():
             raise ToytreeError("Cannot parse empty input for toytree.mtree().")
+        from toytree.io.src.parse import parse_multitree
+
         return parse_multitree(data, **kwargs)
 
     # --- Collections of inputs --- #
@@ -49,8 +52,13 @@ def mtree(data: Union[str, Path, Collection[ToyTree]], **kwargs) -> MultiTree:
         raise ToytreeError("Input collection cannot contain mixed data types.")
 
     # handle ipcoal sim series
-    if isinstance(data, pd.Series):
+    if data.__class__.__name__ == "Series" and data.__class__.__module__.startswith(
+        "pandas"
+    ):
         data = data.to_list()
+
+    from toytree.core.multitree import MultiTree
+    from toytree.core.tree import ToyTree
 
     # collection of ToyTrees
     if isinstance(data[0], ToyTree):
@@ -58,6 +66,8 @@ def mtree(data: Union[str, Path, Collection[ToyTree]], **kwargs) -> MultiTree:
         treelist = data
 
     elif isinstance(data[0], (str, Path)):
+        from toytree.io.src.parse import parse_tree
+
         treelist = [parse_tree(i) for i in data]
 
     else:

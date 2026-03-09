@@ -21,10 +21,10 @@ class AnnotationMarker(Mark):
         opacity: np.ndarray,
         xshift: float | np.ndarray,  # pixel units left/right
         yshift: float | np.ndarray,  # pixel units up/down
-        local_span: np.ndarray | None,  # pixel units along arc span
-        local_depth: np.ndarray | None,  # pixel units along arc depth
-        root_xy: np.ndarray | None,
         style: Mapping[str, Any],
+        local_span: np.ndarray | None = None,  # pixel units along arc span
+        local_depth: np.ndarray | None = None,  # pixel units along arc depth
+        root_xy: np.ndarray | None = None,
     ):
         Mark.__init__(self, annotation=True)
         self._coordinate_axes = ["x", "y"]

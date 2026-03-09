@@ -24,9 +24,9 @@ References
 https://mgarod.medium.com/dynamically-add-a-method-to-a-class-in-python-c49204b85bd6
 """
 
-from typing import TypeVar
-from functools import wraps
 import importlib
+from functools import wraps
+from typing import TypeVar
 
 ToyTree = TypeVar("ToyTree")
 # Cartesian = TypeVar("Cartesian")
@@ -34,14 +34,24 @@ ToyTree = TypeVar("ToyTree")
 
 class SubPackageAPI:
     """API to acess methods from `toytree.mod` as `tree.mod.{function}`"""
+
     def __init__(self, tree: ToyTree):
         self._tree = tree
         self._module_name = getattr(self, "_module_name", None)
 
     def __getattr__(self, name):
         if self._module_name:
-            importlib.import_module(self._module_name)
+            module = importlib.import_module(self._module_name)
             attr = getattr(self.__class__, name, None)
+            if attr is None:
+                # Some subpackages lazily expose callables; touching the
+                # module attribute triggers imports that register decorated
+                # methods onto this API class.
+                try:
+                    getattr(module, name)
+                except AttributeError:
+                    pass
+                attr = getattr(self.__class__, name, None)
             if attr is not None:
                 return attr.__get__(self, self.__class__)
         raise AttributeError(f"{self.__class__.__name__!s} has no attribute {name!r}")
@@ -51,38 +61,43 @@ class SubPackageAPI:
             module = importlib.import_module(self._module_name)
             module_names = getattr(module, "__all__", None)
             if module_names is None:
-                module_names = [name for name in dir(module) if not name.startswith("_")]
+                module_names = [
+                    name for name in dir(module) if not name.startswith("_")
+                ]
         else:
             module_names = []
         return sorted(
-            set(dir(self.__class__))
-            | set(self.__dict__.keys())
-            | set(module_names)
+            set(dir(self.__class__)) | set(self.__dict__.keys()) | set(module_names)
         )
 
 
 class TreeModAPI(SubPackageAPI):
     """API to acess methods from `toytree.mod` as `tree.mod.{function}`"""
+
     _module_name = "toytree.mod"
 
 
 class TreeDistanceAPI(SubPackageAPI):
     """API to acess methods from `toytree.distance` as `tree.distance.{function}`"""
+
     _module_name = "toytree.distance"
 
 
 class TreeEnumAPI(SubPackageAPI):
     """API to acess methods from `toytree.pcm` as `tree.enum.{function}`"""
+
     _module_name = "toytree.enum"
 
 
 class PhyloCompAPI(SubPackageAPI):
     """API to acess methods from `toytree.pcm` as `tree.pcm.{function}`"""
+
     _module_name = "toytree.pcm"
 
 
 class AnnotationAPI(SubPackageAPI):
     """API to acess methods from `toytree.annotate` as `tree.annotate.{function}`"""
+
     _module_name = "toytree.annotate"
 
 
@@ -96,8 +111,8 @@ def add_subpackage_method(cls):
     >>> @add_subpackage_method(TreeModAPI)
     >>> def method(...):
     """
-    def decorator(func):
 
+    def decorator(func):
         # creates a wrapper for a toytree.mod.{function} that copies
         # its docstring and arg signatures but sets self._tree as the
         # first argument of the function.
@@ -112,6 +127,7 @@ def add_subpackage_method(cls):
         # but does exactly the same as func.
         # returning func means func can still be used normally
         return func
+
     return decorator
 
 
@@ -125,8 +141,8 @@ def add_toytree_method(cls):
     >>> @add_toytree_method(ToyTree)
     >>> def method(...):
     """
-    def decorator(func):
 
+    def decorator(func):
         # creates a wrapper for a toytree.mod.{function} that copies
         # its docstring and arg signatures but sets self._tree as the
         # first argument of the function.
@@ -141,6 +157,7 @@ def add_toytree_method(cls):
         # but does exactly the same as func.
         # returning func means func can still be used normally
         return func
+
     return decorator
 
 

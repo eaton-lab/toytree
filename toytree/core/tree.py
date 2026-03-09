@@ -15,6 +15,7 @@ from __future__ import annotations
 import re
 from copy import deepcopy
 from hashlib import md5
+from numbers import Integral
 from pathlib import Path
 from typing import (
     TYPE_CHECKING,
@@ -30,9 +31,6 @@ from typing import (
     TypeAlias,
 )
 
-import numpy as np
-
-from toytree.color.src.colorkit import ColorType
 from toytree.core.apis import (
     AnnotationAPI,
     PhyloCompAPI,
@@ -43,8 +41,6 @@ from toytree.core.apis import (
 
 # subpackage object APIs
 from toytree.core.node import Node
-from toytree.network.src.parse_network import AdmixtureEvent
-from toytree.style.src.style_base import TreeStyle
 from toytree.utils.src.exceptions import (
     NODE_INDEXING_ERROR,
     NODE_NOT_IN_TREE_ERROR,
@@ -53,15 +49,22 @@ from toytree.utils.src.exceptions import (
 )
 
 if TYPE_CHECKING:
+    import numpy as np
     from toyplot import Canvas
     from toyplot.coordinates import Cartesian
 
+    from toytree.color.src.colorkit import ColorType
     from toytree.drawing import ToyTreeMark
+    from toytree.network.src.parse_network import AdmixtureEvent
+    from toytree.style.src.style_base import TreeStyle
+else:
+    ColorType = Any
+    AdmixtureEvent = Any
 
 
 # Type alias for Node selection
 Query: TypeAlias = (str, int, Node)
-Color: TypeAlias = (str, np.ndarray, tuple)  # toyplot.ColorMap, ...
+Color: TypeAlias = (str, Any, tuple)  # toyplot.ColorMap, numpy arrays, ...
 TupleRangeMap: TypeAlias = (
     tuple[str]
     | tuple[str, int | float]
@@ -88,6 +91,13 @@ _TOYTREE_METHOD_MODULES = (
     "toytree.mod._src",
     "toytree.io.src.writer",
 )
+_TOYTREE_METHOD_MODULES_BY_ATTR = {
+    "get_node_data": "toytree.data._src.get_node_data",
+    "get_tip_data": "toytree.data._src.get_node_data",
+    "set_node_data": "toytree.data._src.set_node_data",
+    "set_node_data_from_dataframe": "toytree.data._src.set_node_data",
+    "relabel": "toytree.data._src.relabel",
+}
 
 
 def _ensure_toytree_methods_loaded():
@@ -97,16 +107,54 @@ def _ensure_toytree_methods_loaded():
         import_module(module_name)
 
 
+def _ensure_toytree_method_loaded(name: str) -> None:
+    """Lazily import specific method modules when a method is requested."""
+    from importlib import import_module
+
+    module_name = _TOYTREE_METHOD_MODULES_BY_ATTR.get(name)
+    if module_name:
+        import_module(module_name)
+
+
+def _new_tree_style() -> "TreeStyle":
+    """Return a default TreeStyle instance, importing style lazily."""
+    from toytree.style.src.style_base import TreeStyle
+
+    return TreeStyle()
+
+
+def _is_numpy_array_query(value: Any) -> bool:
+    """Return True for numpy array-like objects accepted by __getitem__."""
+    cls = value.__class__
+    mod = getattr(cls, "__module__", "")
+    # Match numpy ndarray and its subclasses without importing numpy.
+    return (
+        mod.startswith("numpy")
+        and hasattr(value, "__array_interface__")
+        and hasattr(value, "__iter__")
+    )
+
+
 class ToyTreeMeta(type):
     """Parent of ToyTree class to enable lazy loading of drawing elements."""
 
     def __getattr__(cls, name):
         """Only load attrs when they are first fetched."""
-        _ensure_toytree_methods_loaded()
+        # Fast path: if we know which module defines this attribute, import only
+        # that module to avoid loading unrelated subpackages.
+        _ensure_toytree_method_loaded(name)
         try:
             return super().__getattribute__(name)
-        except AttributeError as exc:
-            raise AttributeError(f"{cls.__name__!s} has no attribute {name!r}") from exc
+        except AttributeError:
+            # Fallback: load all registered method modules for compatibility
+            # with methods that are not explicitly mapped above.
+            _ensure_toytree_methods_loaded()
+            try:
+                return super().__getattribute__(name)
+            except AttributeError as exc:
+                raise AttributeError(
+                    f"{cls.__name__!s} has no attribute {name!r}"
+                ) from exc
 
     def __dir__(cls):
         """Only load dir to tab-complete when first fetched."""
@@ -162,7 +210,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         self.treenode = treenode
         self.nnodes: int = 0
         self.ntips: int = 0
-        self.style = TreeStyle()
+        self._style: TreeStyle | None = None
         self.edge_features: Set = set(("dist", "support"))
         self._idx_dict: Dict[int, Node] = {}
         """Private dict mapping Node idx labels to Node instances."""
@@ -176,6 +224,18 @@ class ToyTree(metaclass=ToyTreeMeta):
 
         # update Node idxs, _idx_dict, nnodes, ntips, and Node heights
         self._update()
+
+    @property
+    def style(self) -> "TreeStyle":
+        """Mutable style object for default tree drawing settings."""
+        if self._style is None:
+            self._style = _new_tree_style()
+        return self._style
+
+    @style.setter
+    def style(self, value: "TreeStyle") -> None:
+        """Set the style object used as defaults for drawing."""
+        self._style = value
 
     #####################################################
     # DUNDERS
@@ -193,28 +253,26 @@ class ToyTree(metaclass=ToyTreeMeta):
         """Nodes can be accessed by indexing or slicing by idx label."""
         # allow indexing by int, e.g., [3]
         try:
-            # try casting to int, to support int, np.int64, np.int32, etc
-            # if isinstance(idx, int):
+            # Fast path for scalar index queries, including np.int64.
             try:
-                idx = int(idx)
-                if idx >= 0:
-                    return self._idx_dict[idx]
+                sidx = int(idx)
+                if sidx >= 0:
+                    return self._idx_dict[sidx]
                 else:
-                    return self._idx_dict[self.nnodes + idx]  # idx is negative
+                    return self._idx_dict[self.nnodes + sidx]  # idx is negative
             except (ValueError, TypeError):
                 pass
 
-            # allow indexing by a Sequence, e.g., [3, 10, 2, 4]
-            if isinstance(idx, (list, np.ndarray)):
-                return [self._idx_dict[i] for i in idx]
+            # Keep historical support for list-based and numpy-array queries.
+            if isinstance(idx, list):
+                return [self._idx_dict[int(i)] for i in idx]
+            if _is_numpy_array_query(idx):
+                return [self._idx_dict[int(i)] for i in idx]
 
             # allow slicing by ints, e.g., [3:10:2]
-            else:
-                if hasattr(idx, "indices"):
-                    return [
-                        self._idx_dict[idx] for idx in range(*idx.indices(self.nnodes))
-                    ]
-                raise ToytreeError("invalid indexing type.")
+            if hasattr(idx, "indices"):
+                return [self._idx_dict[idx] for idx in range(*idx.indices(self.nnodes))]
+            raise ToytreeError("invalid indexing type.")
 
         # raise a helpful error message.
         except Exception as exc:
@@ -230,13 +288,19 @@ class ToyTree(metaclass=ToyTreeMeta):
 
     def __getattr__(self, name):
         """Lazy loading."""
-        _ensure_toytree_methods_loaded()
+        # Fast path: import only the module expected to register this method.
+        _ensure_toytree_method_loaded(name)
         try:
             return getattr(type(self), name).__get__(self, type(self))
-        except AttributeError as exc:
-            raise AttributeError(
-                f"{type(self).__name__!s} has no attribute {name!r}"
-            ) from exc
+        except AttributeError:
+            # Fallback for methods that are not listed in the attr->module map.
+            _ensure_toytree_methods_loaded()
+            try:
+                return getattr(type(self), name).__get__(self, type(self))
+            except AttributeError as exc:
+                raise AttributeError(
+                    f"{type(self).__name__!s} has no attribute {name!r}"
+                ) from exc
 
     # DECIDED NOT TO DO THIS
     # def __str__(self) -> str:
@@ -365,6 +429,8 @@ class ToyTree(metaclass=ToyTreeMeta):
 
     def is_ultrametric(self, tol: float = 1e-9) -> bool:
         """Return True if tree is ultrametric (all tips align within tolerance)."""
+        import numpy as np
+
         heights = [i._height for i in self[: self.ntips]]
         return np.allclose(heights, 0.0, atol=tol)
 
@@ -592,7 +658,7 @@ class ToyTree(metaclass=ToyTreeMeta):
                 nodes.add(que)
             elif isinstance(que, str):
                 names.add(que)  # names are expanded to Nodes below.
-            elif isinstance(que, np.integer):
+            elif isinstance(que, Integral):
                 nodes.add(self[que])
             else:
                 msg = f"query type {type(que)} not supported. "
@@ -730,7 +796,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         show_tips: bool = False,
         show_internal: bool = False,
         show_root: bool = False,
-    ) -> np.ndarray:
+    ) -> "np.ndarray":
         """Return a boolean array selecting which Node markers are shown.
 
         This returns a boolean array in Node idx order (0..nnodes-1)
@@ -761,6 +827,8 @@ class ToyTree(metaclass=ToyTreeMeta):
         >>> tree.draw(ts='s', node_mask=mask);
         """
         # default is all False (show none)
+        import numpy as np
+
         arr = np.zeros(self.nnodes, dtype=np.bool_)
         if show_tips:
             arr[: self.ntips] = True
@@ -779,7 +847,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         self,
         *show: Query,
         show_tips: bool = False,
-    ) -> np.ndarray:
+    ) -> "np.ndarray":
         """Return a boolean array selecting which tip markers are shown.
 
         This returns a boolean array in tip idx order (``0..ntips-1``).
@@ -805,6 +873,8 @@ class ToyTree(metaclass=ToyTreeMeta):
         >>> mask = tree.get_tip_mask("r0", "r3")
         >>> tree.annotate.add_tip_markers(axes, mask=mask)
         """
+        import numpy as np
+
         arr = np.zeros(self.ntips, dtype=np.bool_)
         if show_tips:
             arr[:] = True

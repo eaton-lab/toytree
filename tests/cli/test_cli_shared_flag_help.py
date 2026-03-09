@@ -120,6 +120,19 @@ def test_get_node_data_internal_labels_in_input_output_group():
     assert io_idx < i_idx < options_idx
 
 
+def test_get_node_data_separator_and_human_readable_in_formatting_group():
+    """get-node-data should list -s/-H under Formatting section."""
+    help_text = subparsers.get_parser_get_node_data().format_help()
+    fmt_idx = help_text.index("Formatting:")
+    opt_idx = help_text.index("Options:")
+    s_idx = help_text.index("-s, --separator", fmt_idx)
+    h_idx = help_text.index("-H, --human-readable", fmt_idx)
+    n_idx = help_text.index("-N, --index-by-name", fmt_idx)
+    assert fmt_idx < s_idx < opt_idx
+    assert fmt_idx < h_idx < opt_idx
+    assert fmt_idx < n_idx < opt_idx
+
+
 def test_distance_parser_does_not_define_internal_labels_option():
     """Distance should not expose --internal-labels."""
     parser = subparsers.get_parser_distance()

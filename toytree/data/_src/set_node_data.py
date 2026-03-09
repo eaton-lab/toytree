@@ -94,7 +94,9 @@ def set_node_data(
     be listed in Node idx traversal order. The 'default' arg value will
     still apply to any Nodes given a value of None.
 
-    See Also: `get_node_data`
+    See Also
+    --------
+    `get_node_data`
 
     Examples
     --------

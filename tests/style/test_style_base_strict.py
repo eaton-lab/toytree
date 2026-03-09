@@ -14,7 +14,10 @@ from toytree.style.src.validate_edges import (
     validate_edge_align_style,
     validate_edge_style,
 )
-from toytree.style.src.validate_utils import tree_style_to_css_dict
+from toytree.style.src.validate_utils import (
+    substyle_dict_to_css_dict,
+    tree_style_to_css_dict,
+)
 from toytree.utils import ToytreeError
 
 
@@ -44,6 +47,24 @@ def test_tree_style_to_css_dict_is_non_mutating() -> None:
     assert isinstance(sty.node_style, NodeStyle)
     assert isinstance(css["node_style"], dict)
     assert "stroke-width" in css["node_style"]
+
+
+def test_substyle_dict_to_css_dict_drops_none_values() -> None:
+    """Style serialization should omit unset keys with ``None`` values."""
+    css = substyle_dict_to_css_dict(
+        {
+            "fill": "red",
+            "stroke": None,
+            "fill_opacity": None,
+            "font_size": 12,
+            "anchor_shift": 7,
+        }
+    )
+    assert css["fill"] == "red"
+    assert css["font-size"] == 12
+    assert css["-toyplot-anchor-shift"] == 7
+    assert "stroke" not in css
+    assert "fill-opacity" not in css
 
 
 def test_validate_edge_style_coerces_dasharray_tuple() -> None:

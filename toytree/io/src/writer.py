@@ -13,32 +13,44 @@ References
 
 """
 
-from typing import Optional, Tuple, Sequence, Callable
+import math
 import sys
-import numpy as np
-from toytree.core import ToyTree, Node
-from toytree.utils import ToytreeError
-from toytree.core.apis import add_toytree_method
+from typing import Callable, Optional, Sequence, Tuple
 
-DISALLOWED_FEATURES = set(['idx', 'dist', 'up', 'children'])  # 'support', 'height'])
+from toytree.core import Node, ToyTree
+from toytree.core.apis import add_toytree_method
+from toytree.utils import ToytreeError
+
+DISALLOWED_FEATURES = set(["idx", "dist", "up", "children"])  # 'support', 'height'])
+
+
+def _is_nan(value: float) -> bool:
+    """Return True only for NaN numeric values."""
+    try:
+        return math.isnan(value)
+    except (TypeError, ValueError):
+        return False
 
 
 def get_float_formatter(formatting_str: str) -> Callable:
-    """Return func to format string using % or {} notation.
-    """
+    """Return func to format string using % or {} notation."""
     if formatting_str is None:
+
         def formatter(x):
             return ""
     elif "%" in formatting_str:
+
         def formatter(x):
             return formatting_str % x
     elif formatting_str.startswith("{"):
+
         def formatter(x):
             return formatting_str.format(x)
     else:
         raise ValueError(
             "'features_formatter' is not a proper Python formatting str: "
-            f"{formatting_str}")
+            f"{formatting_str}"
+        )
     return formatter
 
 
@@ -74,7 +86,7 @@ def get_feature_string(
         # try to convert to float and float format the value
         try:
             value = float(value)
-            if np.isnan(value):
+            if _is_nan(value):
                 value = ""
             else:
                 value = formatter(value)
@@ -139,7 +151,7 @@ def node_to_newick(
         else:
             try:
                 internal = float(internal)
-                if np.isnan(internal):
+                if _is_nan(internal):
                     internal = ""
                 else:
                     internal = label_formatter(internal)
@@ -187,9 +199,14 @@ def tree_reduce(
     See `write_newick` for docstring.
     """
     args = [
-        dist_formatter, internal_labels, internal_labels_formatter,
-        node_features, edge_features,
-        features_prefix, features_delim, features_assignment,
+        dist_formatter,
+        internal_labels,
+        internal_labels_formatter,
+        node_features,
+        edge_features,
+        features_prefix,
+        features_delim,
+        features_assignment,
         features_formatter,
         names_as_ints,
     ]
@@ -199,15 +216,13 @@ def tree_reduce(
 
 
 def wrap_nexus(tree: ToyTree, newick: str) -> str:
-    """Wrap a newick string into NEXUS format.
-
-    """
+    """Wrap a newick string into NEXUS format."""
     nexus = "#NEXUS\n"
     nexus += "begin trees;\n"
 
     # add translation using idx
     nexus += "    translate\n"
-    for node in tree[:tree.ntips]:
+    for node in tree[: tree.ntips]:
         nexus += f"        {node.idx} {node.name},\n"
     nexus += "    ;\n"
 
@@ -318,40 +333,42 @@ def write(
     features = set(features) - DISALLOWED_FEATURES
     bad_features = features - set(tree.features)
     if bad_features:
-        raise ToytreeError(
-            f"Cannot write features not present in tree: {bad_features}")
+        raise ToytreeError(f"Cannot write features not present in tree: {bad_features}")
     node_features = {i for i in features if i not in tree.edge_features}
     edge_features = features - node_features
 
     # build newick string from recursive
-    newick = tree_reduce(
-        tree.treenode,
-        dist_formatter,
-        internal_labels,
-        internal_labels_formatter,
-        node_features,
-        edge_features,
-        features_prefix,
-        features_delim,
-        features_assignment,
-        features_formatter,
-        names_as_ints=nexus,
-    ) + ";"
+    newick = (
+        tree_reduce(
+            tree.treenode,
+            dist_formatter,
+            internal_labels,
+            internal_labels_formatter,
+            node_features,
+            edge_features,
+            features_prefix,
+            features_delim,
+            features_assignment,
+            features_formatter,
+            names_as_ints=nexus,
+        )
+        + ";"
+    )
 
     # optionally wrap as nexus
     treestr = wrap_nexus(tree, newick) if nexus else newick
 
     # write to file or return
     if path is not None:
-        with open(path, 'w', encoding="utf-8") as out:
+        with open(path, "w", encoding="utf-8") as out:
             out.write(treestr)
             return None
     return treestr
 
 
 if __name__ == "__main__":
-
     import toytree
+
     NWK = "((a:3[&state=1],b:3[&state=1])D:1[&state=1],c:4[&state=2])E:1[&state=1];"
     TREE = toytree.tree(NWK)
     # TREE = TREE.set_node_data("support", default=100)
@@ -363,11 +380,10 @@ if __name__ == "__main__":
     print(write(TREE, features=["state"]))
     # print(write_nexus(TREE, features=["state"]))
 
-    TREE.set_node_data('test', {'a': 7.8, 4: 5}, inplace=True)
-    TREE.set_node_data('support', default=100, inplace=True)
+    TREE.set_node_data("test", {"a": 7.8, 4: 5}, inplace=True)
+    TREE.set_node_data("support", default=100, inplace=True)
     # print(TREE.edge_features)
     # print(write(TREE, internal_labels=None, features=["support", "test"], nexus=True))
     print(write(TREE, dist_formatter=None, features=["name", "support"]))
-
 
     TREE.write()

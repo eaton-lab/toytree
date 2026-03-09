@@ -9,7 +9,6 @@ in Node queries. It is used in many places.
 from typing import Any, Mapping, TypeVar
 
 import numpy as np
-from loguru import logger
 
 from toytree import Node, ToyTree
 from toytree.utils.src.exceptions import NODE_NOT_IN_TREE_ERROR
@@ -89,7 +88,6 @@ def expand_node_mapping(
             matched = set(tree._iter_nodes_by_name_match(name))
         except ValueError:
             if allow_unmatched:
-                logger.debug(f"No Node names match query: {name}")
                 continue
             raise
         for node in matched:
@@ -99,8 +97,8 @@ def expand_node_mapping(
 
 
 if __name__ == "__main__":
-
     import toytree
+
     tree = toytree.rtree.unittree(8)
     mapping = {"~r[0-3]+": 0, "r4": 1, tree[5]: 2}
     emap = expand_node_mapping(tree, mapping)

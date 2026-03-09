@@ -34,13 +34,17 @@ def substyle_dict_to_css_dict(style: Mapping[str, Any]) -> Dict[str, Any]:
     """Return dict with css style keys, e.g., 'font_size' -> 'font-size'."""
     new = {}
     for key, val in style.items():
+        # Drop unset style keys so downstream renderers never receive
+        # invalid values like `stroke=None` or `fill-opacity=None`.
+        if val is None:
+            continue
         if "_" in key:
             if key == "anchor_shift":
                 css_key = "-toyplot-anchor-shift"
-                new[css_key] = style[key]
+                new[css_key] = val
             else:
                 css_key = key.replace("_", "-")
-                new[css_key] = style[key]
+                new[css_key] = val
         else:
             new[key] = val
     return new

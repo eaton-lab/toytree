@@ -32,15 +32,15 @@ References
 # pylint: disable=too-many-public-methods
 # pylint: disable=no-self-use, unused-argument
 
-
 from __future__ import annotations
-from typing import List, Optional, Union, Iterator, Tuple  # Set, Any
-import sys
-from functools import total_ordering
-from copy import deepcopy
-from collections import deque
 
-import numpy as np
+import math
+import sys
+from collections import deque
+from copy import deepcopy
+from functools import total_ordering
+from typing import Iterator, List, Optional, Tuple, Union  # Set, Any
+
 from toytree.utils import TreeNodeError
 
 
@@ -82,30 +82,30 @@ class Node:
     --------
     >>> # you can create a Node directly, but this is not intended.
     >>> node = toytree.Node(name='root')
-    >>>
+
     >>> # instead, create a ToyTree and access Nodes from it.
     >>> tree = toytree.rtree.unittree(ntips=10, seed=123)
-    >>>
+
     >>> # Nodes can be accessed by traversal from ToyTrees or Nodes
     >>> for node in tree.traverse("postorder"):
-    >>>     print(node)
-    >>>
+    ...     print(node)
+
     >>> # or, Nodes can be indexed from ToyTrees by their idx label.
     >>> node = tree[3]
-    >>>
+
     >>> # other Nodes can be accessed relative to this one by traversal
     >>> parent = node.up
     >>> ancs = node.get_ancestors()
     >>> descs = node.get_descendants()
-    >>>
+
     >>> # Node data/attributes can be accessed from a Node
     >>> print(node.name, node.idx, node.dist)
-    >>>
+
     >>> # but cannot be modified on Nodes (they are immutable)
     >>> node.dist = 10  # raises a TreeNodeError
     """
 
-    def __init__(self, name: str = "", dist: float = 0.0, support: float = np.nan):
+    def __init__(self, name: str = "", dist: float = 0.0, support: float = math.nan):
         self._name = str(name)
         """: name string assigned to Node."""
         self._dist = float(dist)
@@ -157,7 +157,8 @@ class Node:
     @support.setter
     def support(self, value: float) -> None:
         """Set a 'support' attribute. This is like any other feature
-        that can be set on a Node, but defaults to nan for all Nodes."""
+        that can be set on a Node, but defaults to nan for all Nodes.
+        """
         try:
             self._support = float(value)
         except ValueError as err:
@@ -181,7 +182,7 @@ class Node:
 
     @height.setter
     def height(self, value: float) -> None:
-        """height Node attribute cannot be set by user.        """
+        """Height Node attribute cannot be set by user."""
         raise TreeNodeError(
             "Cannot set .height attribute of a Node since it is an emergent "
             "property of multiple Nodes. The prefered method of setting Node "
@@ -405,7 +406,10 @@ class Node:
         # get parent node
         grandparent = self.up
         if not grandparent:
-            print("cannot delete root Node. It was retained as a unary node", file=sys.stderr)
+            print(
+                "cannot delete root Node. It was retained as a unary node",
+                file=sys.stderr,
+            )
             return
 
         # each child inherits deleted Node's dist
@@ -426,7 +430,6 @@ class Node:
         self._idx = -1
         self._up = None
         self._children = ()
-
 
     def _detach(self) -> Node:
         r"""Return this Node as a subtree detached from its ancestor.
@@ -534,7 +537,7 @@ class Node:
         The order is topologically sorted.
 
         See Also
-        ---------
+        --------
         ToyTree._update
             A similar idxorder traversal is performed by ToyTree class
             objects in the private update function, which is called
@@ -546,7 +549,6 @@ class Node:
         inner_stack = []
         outer_stack = []
         while queue:
-
             # get node from end of the queue
             node = queue.pop()
 
@@ -575,7 +577,6 @@ class Node:
         queue = [self]
         stack = []
         while queue:
-
             # push node from queue onto the output stack
             node = queue.pop()
             stack.append(node)
@@ -628,7 +629,6 @@ class Node:
 
         # if both the queue and current node are empty traversal is done
         while queue or node:
-
             # if current node exists then store it until later
             # and select its left child
             if node:
@@ -655,25 +655,29 @@ class Node:
 
     def iter_leaves(self) -> Iterator[Node]:
         """Return a Generator of leaves descended from this node in
-        idxorder."""
+        idxorder.
+        """
         for node in self.traverse(strategy="idxorder"):
             if not node.children:
                 yield node
 
     def get_leaves(self) -> List[Node]:
         """Return a list of leaf nodes descended from this node in
-        idxorder."""
+        idxorder.
+        """
         return list(self.iter_leaves())
 
     def iter_leaf_names(self) -> Iterator[str]:
         """Return a Generator of names of Nodes descended from this
-        node in idxorder."""
+        node in idxorder.
+        """
         for node in self.iter_leaves():
             yield node.name
 
     def get_leaf_names(self) -> List[str]:
         """Return a list of names of Nodes descended from this node
-        in idxorder."""
+        in idxorder.
+        """
         return list(self.iter_leaf_names())
 
     #################################################
@@ -700,7 +704,9 @@ class Node:
         """Return a list of descendant Nodes (including self)."""
         return tuple(self.iter_descendants(strategy=strategy))
 
-    def iter_ancestors(self, root: Optional[Node] = None, include_self: bool = False) -> Iterator[Node]:
+    def iter_ancestors(
+        self, root: Optional[Node] = None, include_self: bool = False
+    ) -> Iterator[Node]:
         """Return a Generator of Nodes on path from this node to root.
 
         Parameters
@@ -737,7 +743,9 @@ class Node:
             yield node
             node = node._up
 
-    def get_ancestors(self, root: Optional[Node] = None, include_self: bool = False) -> Tuple[Node]:
+    def get_ancestors(
+        self, root: Optional[Node] = None, include_self: bool = False
+    ) -> Tuple[Node]:
         """Return a tuple of Nodes on path from this node to root.
 
         Parameters
@@ -783,7 +791,6 @@ class Node:
                 node = node.up
             else:
                 return node
-
 
     #####################################################
     # TO TOYTREE                                        #
@@ -885,7 +892,6 @@ class Node:
 
 
 if __name__ == "__main__":
-
     nodes = {i: Node(name=i) for i in range(20)}
     for idx, n in enumerate(nodes):
         nodes[n]._idx = idx

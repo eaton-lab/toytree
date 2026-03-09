@@ -27,14 +27,18 @@ def _parse_calibration_value(text: str):
     return float(text)
 
 
-def _parse_calibrations(tree, items: list[str] | None) -> dict[int, float | tuple[float, float]]:
+def _parse_calibrations(
+    tree, items: list[str] | None
+) -> dict[int, float | tuple[float, float]]:
     """Parse calibration args as query=value or query=min-max."""
     if not items:
         return {}
     calibrations = {}
     for item in items:
         if "=" not in item:
-            raise ValueError(f"calibration must be query=value or query=min-max, got: '{item}'")
+            raise ValueError(
+                f"calibration must be query=value or query=min-max, got: '{item}'"
+            )
         query, value = item.split("=", 1)
         query = query.strip()
         value = value.strip()
@@ -68,9 +72,12 @@ def run_make_ultrametric(args):
     calibrations = _parse_calibrations(tre, args.calibrations)
     if args.lam is not None and args.lam < 0:
         raise ToytreeError("--lam must be >= 0.")
-    force_full = bool(args.full or (args.estimate is not None))
+    report_full = bool(args.full and args.method != "extend")
+    force_full = bool(report_full or (args.estimate is not None))
     if args.method == "discrete" and args.estimate is None and args.ncat is None:
-        raise ToytreeError("--ncat is required when --method discrete is used without --estimate.")
+        raise ToytreeError(
+            "--ncat is required when --method discrete is used without --estimate."
+        )
 
     result = tre.mod.edges_make_ultrametric(
         method=args.method,
@@ -93,7 +100,10 @@ def run_make_ultrametric(args):
                 cand = rec.get("candidate")
                 phiic = rec.get("PHIIC")
                 conv = rec.get("converged")
-                print(f"estimate candidate={cand} PHIIC={phiic} converged={conv}", file=sys.stderr)
+                print(
+                    f"estimate candidate={cand} PHIIC={phiic} converged={conv}",
+                    file=sys.stderr,
+                )
             print(
                 (
                     "estimated_parameter="
@@ -101,7 +111,7 @@ def run_make_ultrametric(args):
                 ),
                 file=sys.stderr,
             )
-        if args.full:
+        if report_full:
             for key, val in result.items():
                 if key != "tree":
                     print(f"{key}={val}", file=sys.stderr)

@@ -2,13 +2,15 @@
 
 import io
 import tempfile
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+
+from conftest import PytestCompat
 
 import toytree
 from toytree.cli.cli_make_ultrametric import (
-    run_make_ultrametric,
     _parse_calibrations,
+    run_make_ultrametric,
 )
 from toytree.cli.subparsers import (
     NEGATIVE_CAL_QUERY_PREFIX,
@@ -17,9 +19,6 @@ from toytree.cli.subparsers import (
 )
 from toytree.utils import ToytreeError
 
-
-
-from conftest import PytestCompat
 
 class TestMakeUltrametricCLI(PytestCompat):
     def setUp(self):
@@ -43,8 +42,22 @@ class TestMakeUltrametricCLI(PytestCompat):
         tree = toytree.tree(out_nwk)
         self.assertTrue(tree.is_ultrametric())
 
+    def test_extend_method_full_flag_is_silently_ignored(self):
+        args = self.parser.parse_args(
+            ["-i", str(self.tree_path), "--method", "extend", "--full"]
+        )
+        out = io.StringIO()
+        err = io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            run_make_ultrametric(args)
+        tree = toytree.tree(out.getvalue().strip())
+        self.assertTrue(tree.is_ultrametric())
+        self.assertEqual(err.getvalue().strip(), "")
+
     def test_discrete_requires_ncategories(self):
-        args = self.parser.parse_args(["-i", str(self.tree_path), "--method", "discrete"])
+        args = self.parser.parse_args(
+            ["-i", str(self.tree_path), "--method", "discrete"]
+        )
         with self.assertRaises(ToytreeError):
             run_make_ultrametric(args)
 
@@ -121,4 +134,3 @@ class TestMakeUltrametricCLI(PytestCompat):
         )
         with self.assertRaises(ToytreeError):
             run_make_ultrametric(args)
-

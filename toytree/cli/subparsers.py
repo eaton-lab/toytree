@@ -149,6 +149,7 @@ def get_parser_get_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
             $ get-node-data -i TRE.nwk -n A B C
             $ get-node-data -i TRE.nwk -n ~prefix -f name dist support
             $ get-node-data -i TRE.nwk -s ',' -o DATA.csv
+            $ get-node-data -i TRE.nwk -f dist -N
             $ get-node-data -i TRE.nwk --float-format %.6f
             $ cat TRE.nwk | get-node-data -i -
             """
@@ -186,20 +187,6 @@ def get_parser_get_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
         metavar="str",
         help="parse internal newick labels as this feature (overrides auto-detect)",
     )
-    io_group.add_argument(
-        "-s",
-        "--separator",
-        type=str,
-        metavar="str",
-        default="\t",
-        help=r"separator used for delimited output [\t]",
-    )
-    io_group.add_argument(
-        "-H",
-        "--human-readable",
-        action="store_true",
-        help="print pretty aligned table (overrides --separator)",
-    )
 
     select_group = p.add_argument_group(title="Selection")
     select_group.add_argument(
@@ -224,6 +211,20 @@ def get_parser_get_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
 
     format_group = p.add_argument_group(title="Formatting")
     format_group.add_argument(
+        "-s",
+        "--separator",
+        type=str,
+        metavar="str",
+        default="\t",
+        help=r"separator used for delimited output [\t]",
+    )
+    format_group.add_argument(
+        "-H",
+        "--human-readable",
+        action="store_true",
+        help="print pretty aligned table (overrides --separator)",
+    )
+    format_group.add_argument(
         "-m",
         "--missing",
         type=str,
@@ -231,10 +232,17 @@ def get_parser_get_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
         help="value for missing data (replaces NaN)",
     )
     format_group.add_argument(
+        "-F",
         "--float-format",
         type=str,
         metavar="fmt",
         help="printf-style float format (e.g., %%.6f)",
+    )
+    format_group.add_argument(
+        "-N",
+        "--index-by-name",
+        action="store_true",
+        help="set output index to node names; fallback to idx when names are empty",
     )
 
     options_group = p.add_argument_group(title="Options")
@@ -1848,7 +1856,13 @@ def get_parser_rtree(parser: ArgumentParser | None = None) -> ArgumentParser:
         default=10,
         help="number of tips (or k for coaltree) [10]",
     )
-    common_group.add_argument("--seed", type=int, metavar="int", help="random seed")
+    common_group.add_argument(
+        "-s",
+        "--seed",
+        type=int,
+        metavar="int",
+        help="random seed",
+    )
     common_group.add_argument(
         "--random-names", action="store_true", help="assign names in random order"
     )

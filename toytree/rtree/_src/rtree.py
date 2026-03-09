@@ -5,7 +5,6 @@
 from typing import Dict, Iterable, Optional, Union
 
 import numpy as np
-import pandas as pd
 
 from toytree.core.node import Node
 from toytree.core.tree import ToyTree
@@ -37,6 +36,21 @@ def _assign_names(
     else:
         for nidx, name in enumerate(labels):
             tree[nidx].name = name
+
+
+def _edges_scale_to_root_height_inplace(tree: ToyTree, treeheight: float) -> None:
+    """Scale all edge lengths and heights to the requested root height."""
+    ratio = float(treeheight) / float(tree.treenode.height)
+    for node in tree:
+        node._height *= ratio
+        node._dist *= ratio
+
+
+def _edges_extend_tips_to_align_inplace(tree: ToyTree) -> None:
+    """Extend terminal edges so all tip node heights are zero."""
+    for node in tree[:tree.ntips]:
+        node._dist += node._height
+        node._height = 0.0
 
 
 def rtree(
@@ -195,8 +209,8 @@ def unittree(
     tree._update()
 
     # extend terminal edges to align, scale total height
-    tree.mod.edges_scale_to_root_height(treeheight, inplace=True)
-    tree.mod.edges_extend_tips_to_align(inplace=True)
+    _edges_scale_to_root_height_inplace(tree, treeheight)
+    _edges_extend_tips_to_align_inplace(tree)
     return tree
 
 
@@ -258,8 +272,8 @@ def imbtree(
 
     # will ladderize the tree and assign names and idxs
     tree = ToyTree(root)
-    tree.mod.edges_extend_tips_to_align(inplace=True)
-    tree.mod.edges_scale_to_root_height(treeheight, inplace=True)
+    _edges_extend_tips_to_align_inplace(tree)
+    _edges_scale_to_root_height_inplace(tree, treeheight)
 
     # randomize names
     _assign_names(tree, random_names, np.random.default_rng(seed), names=names_seq)
@@ -340,8 +354,8 @@ def baltree(
 
     # align tips, optionally set a to a height, add names, and return
     tree = ToyTree(root)
-    tree.mod.edges_extend_tips_to_align(inplace=True)
-    tree.mod.edges_scale_to_root_height(treeheight, inplace=True)
+    _edges_extend_tips_to_align_inplace(tree)
+    _edges_scale_to_root_height_inplace(tree, treeheight)
     _assign_names(tree, random_names, np.random.default_rng(seed), names=names_seq)
     return tree
 
@@ -594,6 +608,8 @@ def bdtree(
         "retain_extinct": bool(retain_extinct),
     }
     if verbose:
+        import pandas as pd
+
         results = pd.Series(
             {
                 "time": stats["time"],

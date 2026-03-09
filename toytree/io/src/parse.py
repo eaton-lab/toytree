@@ -2,19 +2,21 @@
 
 """Parse tree data from flexible inputs to pass to newick/nexus parsers."""
 
+from __future__ import annotations
+
 import re
 import sys
 from pathlib import Path
-from typing import List, Mapping, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, List, Mapping, Tuple, TypeVar, Union
 
-import requests
-
-from toytree.core.multitree import MultiTree
-from toytree.core.tree import ToyTree
 from toytree.io.src.newick import parse_newick_string
 from toytree.io.src.nexus import get_newicks_and_translation_from_nexus
 from toytree.io.src.utils import replace_whitespace
 from toytree.utils import ToytreeError
+
+if TYPE_CHECKING:
+    from toytree.core.multitree import MultiTree
+    from toytree.core.tree import ToyTree
 
 # for removing white_ space from newicks
 # WHITE_SPACE = re.compile(r"[\n\r\t ]+")
@@ -59,6 +61,8 @@ def parse_generic_to_str(data: Union[str, Url, Path]) -> str:
 
         # check for URI (hack: doesn't support ftp://, etc.)
         if data.startswith("http"):
+            import requests
+
             response = requests.get(data)
             response.raise_for_status()
             return response.text
@@ -123,6 +127,8 @@ def parse_tree(data: Union[str, Url, Path], **kwargs) -> ToyTree:
 
 def parse_multitree(data: Union[str, Url, Path], **kwargs) -> MultiTree:
     """Return a MultiTree parsed from flexible input types."""
+    from toytree.core.multitree import MultiTree
+
     strdata = parse_generic_to_str(data)
     nwks, tdict = parse_data_from_str(strdata)
     if not nwks:
@@ -139,6 +145,8 @@ def parse_tree_object(
     data: Union[str, Url, Path], **kwargs
 ) -> Union[ToyTree, MultiTree]:
     """Return a ToyTree or MultiTree parsed from flexible input types."""
+    from toytree.core.multitree import MultiTree
+
     strdata = parse_generic_to_str(data)
     nwks, tdict = parse_data_from_str(strdata)
     if len(nwks) > 1:

@@ -67,3 +67,115 @@ print("JSON:" + json.dumps(sorted(heavy)))
 """ % (repr(HEAVY_PREFIXES),)
     heavy = _parse_heavy_list(_run_python(code))
     assert heavy == []
+
+
+def test_rtree_runtime_does_not_import_io_stack():
+    """Executing rtree generation should only import lightweight IO writer."""
+    code = r"""
+import contextlib
+import io
+import json
+import sys
+import toytree.cli.main as main
+with contextlib.redirect_stdout(io.StringIO()):
+    main.main("rtree -n 6 -m r --seed 1")
+mods = [i for i in sys.modules if i.startswith("toytree.io")]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    heavy = _parse_heavy_list(_run_python(code))
+    assert heavy == [
+        "toytree.io",
+        "toytree.io.src",
+        "toytree.io.src.writer",
+    ]
+
+
+def test_import_toytree_io_does_not_import_parse_stack():
+    """Importing toytree.io should not eagerly import parse modules."""
+    code = r"""
+import json
+import sys
+import toytree.io  # noqa: F401
+mods = [i for i in sys.modules if i.startswith("toytree.io")]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    mods = _parse_heavy_list(_run_python(code))
+    assert mods == ["toytree.io"]
+
+
+def test_import_io_writer_does_not_import_parse_stack():
+    """Importing io writer should avoid parse/treeio/mtreeio modules."""
+    code = r"""
+import json
+import sys
+import toytree.io.src.writer  # noqa: F401
+mods = [i for i in sys.modules if i.startswith("toytree.io")]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    mods = _parse_heavy_list(_run_python(code))
+    assert mods == [
+        "toytree.io",
+        "toytree.io.src",
+        "toytree.io.src.writer",
+    ]
+
+
+def test_unittree_runtime_does_not_import_penalized_likelihood_stack():
+    """Executing unittree generation should not import PL optimization modules."""
+    code = r"""
+import contextlib
+import io
+import json
+import sys
+import toytree.cli.main as main
+with contextlib.redirect_stdout(io.StringIO()):
+    main.main("rtree -n 6 -m u --seed 1")
+mods = [
+    i for i in sys.modules
+    if i.startswith("toytree.mod._src.penalized_likelihood")
+]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    heavy = _parse_heavy_list(_run_python(code))
+    assert heavy == []
+
+
+def test_rtree_runtime_does_not_import_logger_stack_by_default():
+    """Default rtree runtime should not import logger setup or loguru."""
+    code = r"""
+import contextlib
+import io
+import json
+import sys
+import toytree.cli.main as main
+with contextlib.redirect_stdout(io.StringIO()):
+    main.main("rtree -n 6 -m u --seed 1")
+mods = [
+    i for i in sys.modules
+    if (i == "toytree.utils.src.logger_setup") or i.startswith("loguru")
+]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    mods = _parse_heavy_list(_run_python(code))
+    assert mods == []
+
+
+def test_rtree_runtime_imports_logger_stack_when_log_level_requested():
+    """Logger modules should load only when --log-level is explicitly used."""
+    code = r"""
+import contextlib
+import io
+import json
+import sys
+import toytree.cli.main as main
+with contextlib.redirect_stdout(io.StringIO()):
+    main.main("rtree -n 6 -m u --seed 1 --log-level INFO")
+mods = [
+    i for i in sys.modules
+    if (i == "toytree.utils.src.logger_setup") or i.startswith("loguru")
+]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    mods = _parse_heavy_list(_run_python(code))
+    assert "toytree.utils.src.logger_setup" in mods
+    assert any(i.startswith("loguru") for i in mods)

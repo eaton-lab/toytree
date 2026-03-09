@@ -6,10 +6,24 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import dataclass, field
-from typing import Any, ClassVar, Iterator, Literal, Sequence, Tuple, TypeAlias, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    ClassVar,
+    Iterator,
+    Literal,
+    Sequence,
+    Tuple,
+    TypeAlias,
+    TypeVar,
+)
 
-from toytree.network.src.parse_network import AdmixtureEvent
 from toytree.utils import ToytreeError
+
+if TYPE_CHECKING:
+    from toytree.network.src.parse_network import AdmixtureEvent
+else:
+    AdmixtureEvent = Any
 
 Color = TypeVar("Color")
 ToyTree = TypeVar("ToyTree")

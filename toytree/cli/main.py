@@ -8,18 +8,34 @@ import importlib
 import os
 import sys
 import textwrap
-from argparse import ArgumentParser
-from importlib.metadata import PackageNotFoundError, version
+from argparse import Action, ArgumentParser
 from typing import Optional
 
 from . import subparsers
 
 DESCRIPTION = "toytree command line tool. Select a subcommand."
 EPILOG = "EXAMPLE:\n$ toytree draw -i TREE -ts o -wi 400 -he 400 -v"
-try:
-    VERSION = version("toytree")
-except PackageNotFoundError:
-    VERSION = "unknown"
+
+
+def _get_cli_version() -> str:
+    """Return installed toytree version without eager metadata imports."""
+    try:
+        from importlib.metadata import PackageNotFoundError, version
+
+        return version("toytree")
+    except PackageNotFoundError:
+        return "unknown"
+
+
+class _LazyVersionAction(Action):
+    """Argparse action that resolves package version only when requested."""
+
+    def __init__(self, option_strings, dest, **kwargs):
+        kwargs.setdefault("nargs", 0)
+        super().__init__(option_strings, dest, **kwargs)
+
+    def __call__(self, parser, namespace, values, option_string=None):
+        parser.exit(0, f"toytree {_get_cli_version()}\n")
 
 
 def setup_parsers() -> ArgumentParser:
@@ -45,7 +61,12 @@ def setup_parsers() -> ArgumentParser:
             """
         ),
     )
-    parser.add_argument("-v", "--version", action="version", version=f"toytree {VERSION}")
+    parser.add_argument(
+        "-v",
+        "--version",
+        action=_LazyVersionAction,
+        help="show program's version number and exit",
+    )
     parent = parser.add_subparsers(
         prog="%(prog)s",
         required=True,
@@ -56,6 +77,39 @@ def setup_parsers() -> ArgumentParser:
     return parser
 
 
+def _get_subcommand_names(parser: ArgumentParser) -> tuple[str, ...]:
+    """Return registered top-level subcommand names in parser order."""
+    for action in parser._actions:
+        choices = getattr(action, "choices", None)
+        if choices and getattr(action, "dest", None) == "subcommand":
+            return tuple(choices.keys())
+    return tuple()
+
+
+def _expand_subcommand_prefix(parser: ArgumentParser, argv: list[str]) -> list[str]:
+    """Expand a unique top-level subcommand prefix to its canonical name."""
+    if not argv:
+        return argv
+    token = argv[0]
+    if token.startswith("-"):
+        return argv
+
+    commands = _get_subcommand_names(parser)
+    if token in commands:
+        return argv
+
+    matches = [name for name in commands if name.startswith(token)]
+    if len(matches) == 1:
+        out = list(argv)
+        out[0] = matches[0]
+        return out
+    if len(matches) > 1:
+        parser.error(
+            f"ambiguous subcommand prefix {token!r}; matches: {', '.join(matches)}"
+        )
+    return argv
+
+
 def _load_handler(handler_spec: str):
     """Import and return the runtime handler function for a command."""
     mod_name, fn_name = handler_spec.split(":", 1)
@@ -63,10 +117,17 @@ def _load_handler(handler_spec: str):
     return getattr(module, fn_name)
 
 
+def _format_cli_exception(exc: Exception) -> str:
+    """Return a concise user-facing CLI error message from an exception."""
+    message = str(exc).strip()
+    return message if message else exc.__class__.__name__
+
+
 def main(cmd: Optional[str] = None) -> int:
     """Run CLI command and return exit status."""
     parser = setup_parsers()
     argv = cmd.split() if cmd else sys.argv[1:]
+    argv = _expand_subcommand_prefix(parser, argv)
 
     # protect calibration tokens like '-1=10' before argparse sees them
     if argv and argv[0] == "make-ultrametric":
@@ -89,6 +150,9 @@ def main(cmd: Optional[str] = None) -> int:
         except Exception:
             pass
         return 141
+    except Exception as exc:
+        print(f"Error: {_format_cli_exception(exc)}", file=sys.stderr)
+        return 1
     return 0
 
 

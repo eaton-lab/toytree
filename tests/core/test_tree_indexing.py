@@ -1,16 +1,14 @@
 #!/usr/bin/env python
 
-"""unittest tests for core module.
-
-"""
+"""unittest tests for core module."""
 
 import toytree
 import numpy as np
 from toytree.utils import ToytreeError
 
 
-
 from conftest import PytestCompat
+
 
 class TestToyTreeGetNodes(PytestCompat):
     def setUp(self):
@@ -34,6 +32,10 @@ class TestToyTreeGetNodes(PytestCompat):
         nodes = self.tree[select]
         self.assertEqual([i.idx for i in nodes], list(select))
 
+    def test_index_by_numpy_scalar(self):
+        node = self.tree[np.int64(3)]
+        self.assertEqual(node.idx, 3)
+
     def test_index_by_slice(self):
         nodes = self.tree[2:4]
         self.assertEqual([i.idx for i in nodes], [2, 3])
@@ -48,6 +50,8 @@ class TestToyTreeGetNodes(PytestCompat):
 
     def test_index_by_name_raises_exception(self):
         with self.assertRaises(ToytreeError):
-            _ = self.tree['a']
+            _ = self.tree["a"]
 
-
+    def test_index_by_tuple_raises_exception(self):
+        with self.assertRaises(ToytreeError):
+            _ = self.tree[(0, 1, 2)]

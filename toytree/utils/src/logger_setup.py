@@ -11,7 +11,6 @@ from typing import Optional
 import sys
 from contextlib import contextmanager
 from loguru import logger
-import toytree
 
 
 LOGGERS = [0]
@@ -22,6 +21,7 @@ def colorize():
     """colorize the logger if stderr is IPython/Jupyter or a terminal (TTY)"""
     try:
         import IPython
+
         tty1 = bool(IPython.get_ipython())
     except ImportError:
         tty1 = False
@@ -76,8 +76,7 @@ def capture_logs(level="INFO", format="{level}:{name}:{message}"):
 
 
 if __name__ == "__main__":
-
-    toytree.set_log_level("DEBUG")
+    set_log_level("DEBUG")
     logger.info("HI")
     logger.info("THIS IS A TEST.")
 
