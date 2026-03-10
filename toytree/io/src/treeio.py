@@ -1,84 +1,80 @@
 #!/usr/bin/env python
 
-"""Generic function for parsing trees.
+"""Parse one tree from a `Node`, string, path, or URL."""
 
-Parse flexible input types (filepath, str, Url) to ToyTree class.
-"""
+from __future__ import annotations
 
 from pathlib import Path
-from typing import Optional, TypeVar, Union
+from typing import Optional
 
-from toytree.core import Node, ToyTree
+from toytree.core.node import Node
+from toytree.core.tree import ToyTree
 from toytree.utils.src.exceptions import ToytreeError
-
-# PEP 484 recommend capitalizing alias names
-Url = TypeVar("Url")
 
 
 def tree(
-    data: Union[str, Path, Url],
+    data: Node | str | Path,
     feature_prefix: str = "&",
     feature_delim: str = ",",
     feature_assignment: str = "=",
     feature_unpack: str = "|",
     internal_labels: Optional[str] = None,
 ) -> ToyTree:
-    """Return a ToyTree parsed from variable input types and formats.
-
-    Returns a :class:`ToyTree` object from a variety of optional
-    input types, including a newick or nexus string, or a filepath or
-    Url to a file containing a newick or nexus string. This function
-    will try to auto-detect whether internal node labels are names
-    or support values. If the newick string contains additional
-    metadata as NHX annotations these will be parsed and stored as Node
-    features. A `name{value}` suffix format is also recognized and
-    parsed to a `trait` feature when present on all non-root labels
-    (root curly suffix is optional).
+    """Return a `ToyTree` parsed from one supported tree input.
 
     Parameters
     ----------
-    data: Union[str, Path, Url]
-        One of several allowed input types containing tree data. The
-        str type can be a newick string or valid file path; the Path
-        type must be a pathlib.Path object; the Url type is any string
-        starting with http, from which str data will be fetched.
-    feature_prefix: str
-        If NHX meta data is present in the newick string enter the
-        common prefix contained in each set of square brackets.
-        Common options are "", "&", or "&&NHX:". Default="&".
-    feature_delim: str
-        If NHX meta data is present in the newick string enter the
-        delimiter used to separate key-value pairs. Default=",".
-    feature_assignment: str
-        If NHX meta data is present in the newick string enter the
-        assignment operator between key-value pairs. Default="=".
-    feature_unpack: str
-        Character used to unpack list-like NHX metadata values. With
-        default ``"|"``, values such as ``0.1|0.9`` are parsed as
-        list-like values ``[0.1, 0.9]``.
-    internal_labels: str or None
-        Labels next to internal nodes are often interchangeably used to
-        record node names or support values. Enter "name", "support",
-        or a different feature name to assign the values to. Default
-        is None which mean toytree will infer as 'name' vs 'support'
-        based on whether values are str or numeric type.
+    data : Node, str, or Path
+        Tree input provided as a `Node` root, serialized Newick/NEXUS
+        text, a local file path, or a public HTTP(S) URL.
+    feature_prefix : str, default="&"
+        Prefix expected at the start of metadata comments, such as
+        ``"&"`` or ``"&&NHX:"``.
+    feature_delim : str, default=","
+        Separator between metadata items inside a comment block.
+    feature_assignment : str, default="="
+        Separator between metadata keys and values.
+    feature_unpack : str, default="|"
+        Optional token used to unpack compact list-like metadata
+        values.
+    internal_labels : str or None, default=None
+        Controls how internal labels are interpreted after parsing.
+        Use ``"name"``, ``"support"``, or another feature name to
+        force the assignment.
+
+    Returns
+    -------
+    ToyTree
+        Parsed tree object.
+
+    Raises
+    ------
+    ToytreeError
+        Raised if the input type is unsupported or if string/path/URL
+        input cannot be parsed into a tree.
 
     Examples
     --------
-    >>> tree = toytree.tree("((a,b),c);")
-    >>> tree = toytree.tree("((a:10,b:20)A:100,c:30);")
-    >>> tree = toytree.tree("/tmp/test.nex")
-    >>> tree = toytree.tree("https://eaton-lab.org/data/Cyathophora.tre")
+    >>> tree("((a,b),c);").ntips
+    3
+    >>> root = Node(name="root")
+    >>> tree(root).ntips
+    1
+
+    See Also
+    --------
+    toytree.mtree
+    toytree.io.parse_newick_string
+    toytree.io.parse_newick_string_custom
+    toytree.io.src.parse.parse_tree
     """
-    # load ToyTree from Node, insures detach if Node is not root.
     if isinstance(data, Node):
-        treenode = data.copy(detach=True)
-        ttree = ToyTree(treenode)
-    # load ToyTree from a newick or nexus from str, URL, or filepath
-    elif isinstance(data, (str, Path)):
+        return ToyTree(data.copy(detach=True))
+
+    if isinstance(data, (str, Path)):
         from toytree.io.src.parse import parse_tree
 
-        ttree = parse_tree(
+        return parse_tree(
             data,
             feature_prefix=feature_prefix,
             feature_delim=feature_delim,
@@ -86,19 +82,5 @@ def tree(
             feature_unpack=feature_unpack,
             internal_labels=internal_labels,
         )
-    # raise an error (to make an empty tree you must enter empty Node)
-    else:
-        raise ToytreeError(f"Cannot parse input tree data: {data}")
-    return ttree
 
-
-if __name__ == "__main__":
-    URI = "https://eaton-lab.org/data/Cyathophora.tre"
-    TREE = tree(URI)
-    print(TREE)
-    print(TREE.get_node_data())
-
-    import toytree
-
-    tree = toytree.tree("((a,b),c),d);")
-    tree
+    raise ToytreeError(f"Cannot parse input tree data: {data!r}")

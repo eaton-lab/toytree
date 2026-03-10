@@ -1,147 +1,147 @@
 #!/usr/bin/env python
 
-"""Generic multitree parsing function."""
+"""Parse flexible multitree inputs into a `MultiTree`."""
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
+from os import PathLike
 from pathlib import Path
-from typing import TYPE_CHECKING, Collection, Union
+from typing import TYPE_CHECKING, Any
 
-from toytree.utils import ToytreeError
+from toytree.utils.src.exceptions import ToytreeError
 
 if TYPE_CHECKING:
     from toytree.core.multitree import MultiTree
     from toytree.core.tree import ToyTree
 
 
-def mtree(data: Union[str, Path, Collection[ToyTree]], **kwargs) -> MultiTree:
-    r"""General class constructor to parse and return a MultiTree.
+def _is_serialized_tree_input(data: object) -> bool:
+    """Return True for one parseable serialized tree input."""
+    return isinstance(data, (str, bytes, PathLike))
 
-    Input arguments as a multi-newick string, filepath, Url, or
-    Collection of Toytree objects.
+
+def _normalize_serialized_tree_input(
+    data: str | bytes | PathLike[str],
+) -> str | bytes | Path:
+    """Return one serialized input normalized for parser helpers."""
+    if isinstance(data, bytes):
+        return data
+    if isinstance(data, str):
+        return data
+    return Path(data)
+
+
+def _iter_collection_items(data: Iterable[Any]) -> list[Any]:
+    """Return one ordered collection of multitree input items."""
+    if isinstance(data, Mapping):
+        raise ToytreeError(
+            "Cannot parse mapping input for toytree.mtree(); "
+            "pass an ordered iterable of trees instead."
+        )
+    if isinstance(data, (set, frozenset)):
+        raise ToytreeError(
+            "Cannot parse unordered collections in toytree.mtree(); "
+            "use a list or tuple to preserve tree order."
+        )
+
+    items = list(data)
+    if not items:
+        raise ToytreeError("Cannot parse an empty collection in toytree.mtree().")
+    return items
+
+
+def _parse_collection_input(items: list[Any], **kwargs) -> MultiTree:
+    """Return a `MultiTree` parsed from an ordered collection input."""
+    from toytree.core.multitree import MultiTree
+    from toytree.core.tree import ToyTree
+    from toytree.io.src.parse import parse_tree
+
+    has_trees = False
+    has_serialized = False
+    for idx, item in enumerate(items):
+        if isinstance(item, ToyTree):
+            has_trees = True
+        elif _is_serialized_tree_input(item):
+            has_serialized = True
+        else:
+            raise ToytreeError(
+                "Unsupported item in toytree.mtree() input collection at index "
+                f"{idx}: {item!r}"
+            )
+        if has_trees and has_serialized:
+            raise ToytreeError(
+                "Input collection cannot mix ToyTree objects with serialized "
+                "tree inputs."
+            )
+
+    if has_trees:
+        return MultiTree([tree.copy() for tree in items])
+
+    trees = [
+        parse_tree(_normalize_serialized_tree_input(item), **kwargs) for item in items
+    ]
+    return MultiTree(trees)
+
+
+def mtree(
+    data: str | bytes | PathLike[str] | Iterable[ToyTree | str | bytes | PathLike[str]],
+    **kwargs,
+) -> MultiTree:
+    r"""Return a `MultiTree` parsed from supported multitree input.
 
     Parameters
     ----------
-    data: str, Path, or Collection
-        string, filepath, or URL for a newick or nexus formatted list
-        of trees, or a collection of ToyTree objects.
+    data : str, bytes, os.PathLike[str], or iterable
+        Input provided as serialized multi-tree text, a local file path,
+        an HTTP(S) URL string, UTF-8 encoded bytes, or an ordered iterable
+        of `ToyTree` objects and/or serialized single-tree inputs.
+        Ordered serialized collections may mix `str`, `bytes`, and path-like
+        objects, but they cannot mix `ToyTree` objects with serialized inputs.
+    **kwargs
+        Additional keyword arguments forwarded to
+        :func:`toytree.io.parse_newick_string` when serialized tree text is
+        parsed.
+
+    Returns
+    -------
+    MultiTree
+        Parsed multitree object containing every accepted input tree in order.
+
+    Raises
+    ------
+    ToytreeError
+        Raised if the input is empty, unordered, a mapping, contains unsupported
+        collection items, or cannot be parsed into tree data.
 
     Examples
     --------
-    >>> mtre = toytree.mtree("many_trees.nwk")
-    >>> mtre = toytree.mtree("((a,b),c);\n((c,a),b);")
-    >>> mtre = toytree.mtree([toytree.rtree.rtree(10) for i in range(5)])
+    >>> toytree.mtree("((a,b),c);\\n((a,c),b);").ntrees
+    2
+    >>> toytree.mtree([toytree.tree("((a,b),c);")]).ntrees
+    1
+    >>> toytree.mtree([b"((a,b),c);", "((a,c),b);"]).ntrees
+    2
+
+    See Also
+    --------
+    toytree.tree
+    toytree.io.src.parse.parse_multitree
+    toytree.io.src.parse.parse_tree_object
     """
-    # parse the newick object into a list of Toytrees
-    treelist = []
+    from toytree.io.src.parse import parse_multitree
 
-    # A single file path, newick/nexus string, or URL.
-    if isinstance(data, (Path, str)):
-        if isinstance(data, str) and not data.strip():
+    if isinstance(data, str):
+        if not data.strip():
             raise ToytreeError("Cannot parse empty input for toytree.mtree().")
-        from toytree.io.src.parse import parse_multitree
-
         return parse_multitree(data, **kwargs)
 
-    # --- Collections of inputs --- #
-    # Convert arbitrary collections (including generators/sets) to a list once.
-    data = list(data)
-    if not data:
-        raise ToytreeError("Cannot parse an empty collection in toytree.mtree().")
-    if len(set(type(i) for i in data)) != 1:
-        raise ToytreeError("Input collection cannot contain mixed data types.")
+    if isinstance(data, bytes):
+        if not data.strip():
+            raise ToytreeError("Cannot parse empty input for toytree.mtree().")
+        return parse_multitree(data, **kwargs)
 
-    # handle ipcoal sim series
-    if data.__class__.__name__ == "Series" and data.__class__.__module__.startswith(
-        "pandas"
-    ):
-        data = data.to_list()
+    if isinstance(data, PathLike):
+        return parse_multitree(_normalize_serialized_tree_input(data), **kwargs)
 
-    from toytree.core.multitree import MultiTree
-    from toytree.core.tree import ToyTree
-
-    # collection of ToyTrees
-    if isinstance(data[0], ToyTree):
-        data = [i.copy() for i in data]
-        treelist = data
-
-    elif isinstance(data[0], (str, Path)):
-        from toytree.io.src.parse import parse_tree
-
-        treelist = [parse_tree(i) for i in data]
-
-    else:
-        raise ToytreeError("mtree input format not recognized.")
-
-    mtre = MultiTree(treelist)
-    if not mtre.treelist:
-        raise ToytreeError("MultiTree is empty, parsing failed.")
-    return mtre
-
-
-if __name__ == "__main__":
-    TEST3 = "https://eaton-lab.org/data/densitree.nex"
-    URL3 = "https://eaton-lab.org/data/densitree.nex"
-    PATHNWK3 = Path("~/Downloads/densitree.nwk").expanduser()
-    PATHNEX3 = Path("~/Downloads/densitree.nex").expanduser()
-    STRP3 = "~/Downloads/densitree.nex"
-
-    print(mtree(TEST3))
-
-    # parse a newick file with many trees
-    print(mtree(PATHNWK3))
-
-    # parse a nexus file with many trees
-    print(mtree(PATHNEX3))
-
-    # parse a URL to a file with many trees
-    print(mtree(URL3))
-
-    TEST3 = "https://eaton-lab.org/data/densitree.nex"
-    TEST4 = """\
-#NEXUS
-begin trees;
-    translate
-           1 apple,
-           2 blueberry,
-           3 cantaloupe,
-           4 durian,
-        ;
-    tree tree0 = [&U] ((1,2),(3,4));
-    tree tree1 = [&U] ((1,2),(3,4));
-end;
-"""
-
-    TEST5 = """\
-(((a:1,b:1):1,(d:1.5,e:1.5):0.5):1,c:3);
-(((a:1,d:1):1,(b:1,e:1):1):1,c:3);
-(((a:1.5,b:1.5):1,(d:1,e:1):1.5):1,c:3.5);
-(((a:1.25,b:1.25):0.75,(d:1,e:1):1):1,c:3);
-(((a:1,b:1):1,(d:1.5,e:1.5):0.5):1,c:3);
-(((b:1,a:1):1,(d:1.5,e:1.5):0.5):2,c:4);
-(((a:1.5,b:1.5):0.5,(d:1,e:1):1):1,c:3);
-(((b:1.5,d:1.5):0.5,(a:1,e:1):1):1,c:3);
-"""
-
-    print(mtree(TEST3))
-    print(mtree(TEST4))
-    print(mtree(TEST5))
-    print(mtree(mtree(TEST5).treelist))
-    print(mtree(mtree(TEST5).write()))
-
-    # # set variables
-    # Ne = 10000
-    # nsamples = 8
-    # mut = 1e-7
-    # nloci = 100
-
-    # # simulate sequence data
-    # model = ipcoal.Model(tree=None, Ne=Ne, nsamples=nsamples, mut=mut)
-    # model.sim_loci(nloci=nloci, nsites=20)
-    # model.seqs = np.concatenate(model.seqs, 1)
-
-    # # show some of the genealogies that were produced
-    # c, a, m = model.draw_genealogies(height=200, shared_axes=True);
-
-    # import toyplot.browser
-    # toyplot.browser.show(c)
+    return _parse_collection_input(_iter_collection_items(data), **kwargs)

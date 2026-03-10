@@ -51,6 +51,19 @@ print("JSON:" + json.dumps(sorted(heavy)))
     assert heavy == []
 
 
+def test_import_toytree_does_not_eager_import_heavy_modules():
+    """Importing top-level toytree should not import heavy subpackages."""
+    code = r"""
+import json
+import sys
+import toytree  # noqa: F401
+heavy = [i for i in sys.modules if i.startswith(tuple(%s))]
+print("JSON:" + json.dumps(sorted(heavy)))
+""" % (repr(HEAVY_PREFIXES),)
+    heavy = _parse_heavy_list(_run_python(code))
+    assert heavy == []
+
+
 def test_help_screens_do_not_import_heavy_modules():
     """Help parsing should keep heavy modules unloaded."""
     code = r"""
@@ -118,6 +131,55 @@ print("JSON:" + json.dumps(sorted(mods)))
         "toytree.io.src",
         "toytree.io.src.writer",
     ]
+
+
+def test_import_toytree_utils_stays_lazy():
+    """Importing toytree.utils should not pull in optional helper modules."""
+    code = r"""
+import json
+import sys
+import toytree.utils  # noqa: F401
+mods = [
+    i for i in sys.modules
+    if (
+        i.startswith("toyplot")
+        or i == "toytree.utils.src.browser"
+        or i == "toytree.utils.src.exceptions"
+        or i == "toytree.utils.src.scrollable_canvas"
+        or i == "toytree.utils.src.style_axes"
+    )
+]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    mods = _parse_heavy_list(_run_python(code))
+    assert mods == []
+
+
+def test_plain_newick_parse_avoids_optional_heavy_modules():
+    """Plain Newick parsing should avoid optional heavy imports."""
+    code = r"""
+import json
+import sys
+import toytree
+
+toytree.tree("((a,b),c);")
+mods = [
+    i for i in sys.modules
+    if (
+        i.startswith("numpy")
+        or i.startswith("pandas")
+        or i.startswith("toyplot")
+        or i == "toytree.io.src.nexus"
+        or i == "toytree.utils.src.browser"
+        or i == "toytree.utils.src.logger_setup"
+        or i == "toytree.utils.src.scrollable_canvas"
+        or i == "toytree.utils.src.style_axes"
+    )
+]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    mods = _parse_heavy_list(_run_python(code))
+    assert mods == []
 
 
 def test_unittree_runtime_does_not_import_penalized_likelihood_stack():

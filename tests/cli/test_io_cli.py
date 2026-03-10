@@ -90,6 +90,23 @@ class TestIOCLI(PytestCompat):
         text = outpath.read_text(encoding="utf-8")
         self.assertTrue(text.startswith("#NEXUS"))
 
+    def test_nexus_output_quotes_special_tip_names(self):
+        """Nexus output should quote translated labels that need escaping."""
+        tree = toytree.rtree.unittree(3, seed=123)
+        tree = tree.set_node_data(
+            "name",
+            {0: "alpha beta", 1: "x,y", 2: "q'r"},
+        )
+        binpath = self.tmpdir / "quoted.bin"
+        binpath.write_bytes(serialize_tree_binary(tree))
+
+        out = self._run_capture_stdout(["-i", str(binpath), "--nexus"])
+        self.assertIn("0 'alpha beta',", out)
+        self.assertIn("1 'x,y',", out)
+        self.assertIn("2 'q''r',", out)
+        parsed = toytree.tree(out)
+        self.assertEqual(parsed.get_tip_labels(), ["alpha beta", "x_y", "q'r"])
+
     def test_exclude_features_suppresses_support_and_metadata(self):
         """-x should suppress support labels and metadata comments in text mode."""
         out = self._run_capture_stdout(["-i", str(self.tree_path), "-x"])

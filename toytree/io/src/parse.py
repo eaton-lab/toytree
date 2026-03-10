@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-"""Parse tree data from flexible inputs to pass to newick/nexus parsers."""
+"""Parse tree data from strings, files, and URLs."""
 
 from __future__ import annotations
 
 import re
 import sys
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Mapping, Tuple, TypeVar, Union
+from typing import TYPE_CHECKING, Mapping
 
 from toytree.utils.src.exceptions import ToytreeError
 
@@ -15,195 +15,368 @@ if TYPE_CHECKING:
     from toytree.core.multitree import MultiTree
     from toytree.core.tree import ToyTree
 
-# for removing white_ space from newicks
-# WHITE_SPACE = re.compile(r"[\n\r\t ]+")
 ILLEGAL_NEWICK_CHARS = re.compile(r"[:;(),\[\]\t\n\r=]")
-
-# PEP 484 recommends capitalizing alias names.
-Url = TypeVar("Url")
+WHITE_SPACE = re.compile(r"[\n\r\t ]+")
 
 
-def parse_generic_to_str(data: Union[str, Url, Path]) -> str:
-    """Return str data from input whether it is str, file, or url.
+def _read_tree_path(path: Path) -> str:
+    """Return tree text read from a filesystem path."""
+    path = path.expanduser()
+    try:
+        return path.read_text(encoding="utf-8")
+    except FileNotFoundError as exc:
+        raise ToytreeError(f"Tree file does not exist: '{path}'") from exc
+    except OSError as exc:
+        raise ToytreeError(f"Could not read tree file: '{path}'") from exc
 
-    The returned data string could be any format, it is not yet
-    checked at this point. For example, newick or nexus; one tree
-    or multiple trees; extended NHX or not.
+
+def _warn_multiple_trees(count: int) -> None:
+    """Print a user-facing warning when only the first tree is loaded."""
+    msg = (
+        f"Data contains ({count}) trees.\n"
+        "Loading only the first tree using `toytree.tree`. Use `toytree.mtree` "
+        "to instead load a MultiTree."
+    )
+    print(msg, file=sys.stderr)
+
+
+def _parse_trees(data: str | Path | bytes, **kwargs) -> list[ToyTree]:
+    """Return parsed trees with any NEXUS tip translation applied."""
+    from toytree.io.src.newick import parse_newick_string
+
+    strdata = parse_generic_to_str(data)
+    nwks, tdict = parse_data_from_str(strdata)
+    trees = [parse_newick_string(nwk, **kwargs) for nwk in nwks]
+    return [translate_node_names(tree, tdict) for tree in trees]
+
+
+def replace_whitespace(nwk: str, sub: str = "") -> str:
+    r"""Replace intra-tree whitespace while preserving tree boundaries.
+
+    Parameters
+    ----------
+    nwk : str
+        Serialized Newick text that may contain embedded whitespace.
+    sub : str, default=""
+        Replacement text inserted for matched whitespace.
+
+    Returns
+    -------
+    str
+        Tree text with whitespace removed except for separators between
+        distinct serialized trees.
+
+    Examples
+    --------
+    >>> replace_whitespace("((a, b), c);\\n((a,c),b);")
+    '((a,b),c);\\n((a,c),b);'
+
+    See Also
+    --------
+    parse_data_from_str
     """
-    # Path: read file and yield string. But if a str path then is
-    # found differently further below in str parsing.
+    pattern = r"(?<!;)\s"
+    return re.sub(pattern, sub, nwk).strip()
+
+
+def parse_generic_to_str(data: str | Path | bytes) -> str:
+    """Return serialized tree text from a path, URL, string, or bytes.
+
+    Parameters
+    ----------
+    data : str, Path, or bytes
+        Tree input provided as serialized text, a local file path, a
+        public HTTP(S) URL, or UTF-8 encoded bytes.
+
+    Returns
+    -------
+    str
+        Serialized tree text ready for Newick or NEXUS parsing.
+
+    Raises
+    ------
+    ToytreeError
+        Raised if the input is empty, unreadable, cannot be decoded, or
+        is not recognized as tree text, a path, or an HTTP(S) URL.
+
+    Examples
+    --------
+    >>> parse_generic_to_str("((a,b),c);")
+    '((a,b),c);'
+
+    See Also
+    --------
+    parse_tree
+    parse_multitree
+    """
     if isinstance(data, Path):
-        if data.exists():
-            with open(data, "r", encoding="utf-8") as indata:
-                return indata.read()
-        raise IOError(f"Path {data} does not exist.")
+        return _read_tree_path(data)
 
-    # str: check if it is URI, then Path, then newick.
-    if isinstance(data, str):
-        # is there any scenario (nex?) not to strip by default?...
-        data = data.strip()
-
-        # empty string
-        if ";" in data:
-            return data
-
-        # ...
-        if not data:
-            return "(0);"
-
-        # newick always starts with "(" whereas a filepath and
-        # URI can never start with this, so... easy enough.
-        if data[0] in ("(", "#"):
-            return data
-
-        # check for URI (hack: doesn't support ftp://, etc.)
-        if data.startswith("http"):
-            import requests
-
-            response = requests.get(data)
-            response.raise_for_status()
-            return response.text
-
-        # check if str is actually Path (fails if filename is large)
-        if Path(data).exists():
-            with open(data, "r", encoding="utf-8") as indata:
-                return indata.read()
-        else:
-            raise IOError(
-                "Tree input appears to be a file path " f"but does not exist: '{data}'"
-            )
-
-    # if entered as bytes convert to str and restart
-    elif isinstance(data, bytes):
-        data = data.decode()
+    if isinstance(data, bytes):
+        try:
+            data = data.decode("utf-8")
+        except UnicodeDecodeError as exc:
+            raise ToytreeError("Tree bytes input must be valid UTF-8.") from exc
         return parse_generic_to_str(data)
 
-    # not str or Path then raise TypeError
-    raise TypeError(f"Error parsing unrecognized tree data input: {data}.")
+    if isinstance(data, str):
+        data = data.strip()
+        if not data:
+            raise ToytreeError("Cannot parse empty input for toytree.tree().")
+
+        if data.startswith(("http://", "https://")):
+            try:
+                import requests
+            except ImportError as exc:
+                raise ToytreeError(
+                    "The `requests` package is required to load tree data from URLs."
+                ) from exc
+
+            try:
+                response = requests.get(data, timeout=30)
+                response.raise_for_status()
+            except requests.RequestException as exc:
+                raise ToytreeError(
+                    f"Could not read tree data from URL: '{data}'"
+                ) from exc
+            return response.text
+
+        if data[0] in ("(", "#") or data.endswith(";"):
+            return data
+
+        path = Path(data).expanduser()
+        if path.exists():
+            return _read_tree_path(path)
+
+        raise ToytreeError(
+            "String tree input must be Newick/NEXUS text, an existing file path, "
+            f"or an http(s) URL: '{data}'"
+        )
+
+    raise ToytreeError(f"Cannot parse unrecognized tree data input: {data!r}")
 
 
-def parse_data_from_str(strdata: str) -> Tuple[List[str], Mapping[int, str]]:
-    """Return list of newicks and translation dict."""
-    # if nexus then parse [nwks] from trees block
+def parse_data_from_str(strdata: str) -> tuple[list[str], Mapping[str, str]]:
+    """Return serialized Newick strings and any NEXUS translation table.
+
+    Parameters
+    ----------
+    strdata : str
+        Serialized tree text already loaded into memory.
+
+    Returns
+    -------
+    tuple[list[str], Mapping[str, str]]
+        A list of Newick strings and a translation mapping extracted
+        from NEXUS input when present.
+
+    Raises
+    ------
+    ToytreeError
+        Raised if no trees are found in the serialized input.
+
+    Examples
+    --------
+    >>> parse_data_from_str("((a,b),c);")[0]
+    ['((a,b),c);']
+
+    See Also
+    --------
+    parse_generic_to_str
+    translate_node_names
+    """
+    if not strdata.strip():
+        raise ToytreeError("No trees were found in the input data.")
+
     if strdata[:6].upper() == "#NEXUS":
         from toytree.io.src.nexus import get_newicks_and_translation_from_nexus
 
         nwks, tdict = get_newicks_and_translation_from_nexus(strdata)
-        tdict = tdict
-    # if newick then optionally split into multiple newicks
     else:
-        from toytree.io.src.utils import replace_whitespace
-
-        strdata = replace_whitespace(strdata)
-        nwks = strdata.split("\n")
+        if not any(char in strdata for char in "\n\r\t "):
+            nwks = [strdata]
+        else:
+            strdata = replace_whitespace(strdata)
+            nwks = [item for item in strdata.split("\n") if item]
         tdict = {}
+
+    if not nwks:
+        raise ToytreeError("No trees were found in the input data.")
     return nwks, tdict
 
 
-def translate_node_names(tree: ToyTree, tdict: Mapping[int, str]) -> ToyTree:
-    """Check valid and translate names using nexus translation dictionary."""
-    if tdict:
-        for node in tree:
-            # replace disallowed characters in names with '_'
-            if node.name:
-                clean_name = ILLEGAL_NEWICK_CHARS.sub("_", tdict[node.name])
-                node.name = clean_name
+def translate_node_names(tree: ToyTree, tdict: Mapping[str, str]) -> ToyTree:
+    """Translate NEXUS tip labels using a translation dictionary.
+
+    Parameters
+    ----------
+    tree : ToyTree
+        Parsed tree whose tip labels may require translation.
+    tdict : Mapping[str, str]
+        NEXUS translation mapping from serialized tip tokens to labels.
+
+    Returns
+    -------
+    ToyTree
+        The same tree object with translated tip labels applied.
+
+    Raises
+    ------
+    ToytreeError
+        Raised if a NEXUS translation table is present but a numeric tip
+        token is missing from the table.
+
+    Examples
+    --------
+    >>> tree = parse_tree("((a,b),c);")
+    >>> translate_node_names(tree, {}).get_tip_labels()
+    ['a', 'b', 'c']
+
+    See Also
+    --------
+    parse_tree
+    parse_data_from_str
+    """
+    if not tdict:
+        return tree
+
+    for idx in range(tree.ntips):
+        node = tree[idx]
+        if not node.name:
+            continue
+        label = str(node.name)
+        if label in tdict:
+            node.name = ILLEGAL_NEWICK_CHARS.sub("_", tdict[label])
+        elif label.isdigit():
+            raise ToytreeError(
+                f"NEXUS translate block is missing a tip label for token '{label}'."
+            )
     return tree
 
 
-def parse_tree(data: Union[str, Url, Path], **kwargs) -> ToyTree:
-    """Return a ToyTree parsed from flexible input types."""
-    from toytree.io.src.newick import parse_newick_string
+def parse_tree(data: str | Path | bytes, **kwargs) -> ToyTree:
+    """Return one `ToyTree` parsed from flexible input types.
 
-    strdata = parse_generic_to_str(data)
-    nwks, tdict = parse_data_from_str(strdata)
-    tree = parse_newick_string(nwks[0], **kwargs)
-    if len(nwks) > 1:
-        msg = (
-            f"Data contains ({len(nwks)}) trees.\n"
-            "Loading only the first tree using `toytree.tree`. Use `toytree.mtree` "
-            "to instead load a MultiTree."
-        )
-        print(msg, file=sys.stderr)
-    return translate_node_names(tree, tdict)
+    Parameters
+    ----------
+    data : str, Path, or bytes
+        Tree input provided as serialized Newick/NEXUS text, a local
+        file path, a public HTTP(S) URL, or UTF-8 encoded bytes.
+    **kwargs
+        Additional keyword arguments forwarded to
+        :func:`toytree.io.parse_newick_string`.
+
+    Returns
+    -------
+    ToyTree
+        The parsed tree. If multiple trees are present, only the first
+        tree is returned and a warning is printed to stderr.
+
+    Raises
+    ------
+    ToytreeError
+        Raised if the input cannot be read or does not contain any
+        trees.
+
+    Examples
+    --------
+    >>> parse_tree("((a,b),c);").ntips
+    3
+
+    See Also
+    --------
+    parse_multitree
+    parse_tree_object
+    toytree.tree
+    """
+    trees = _parse_trees(data, **kwargs)
+    if len(trees) > 1:
+        _warn_multiple_trees(len(trees))
+    return trees[0]
 
 
-def parse_multitree(data: Union[str, Url, Path], **kwargs) -> MultiTree:
-    """Return a MultiTree parsed from flexible input types."""
+def parse_multitree(data: str | Path | bytes, **kwargs) -> MultiTree:
+    r"""Return a `MultiTree` parsed from flexible input types.
+
+    Parameters
+    ----------
+    data : str, Path, or bytes
+        Tree input provided as serialized Newick/NEXUS text, a local
+        file path, a public HTTP(S) URL, or UTF-8 encoded bytes.
+    **kwargs
+        Additional keyword arguments forwarded to
+        :func:`toytree.io.parse_newick_string`.
+
+    Returns
+    -------
+    MultiTree
+        Parsed multitree object containing every tree found in the
+        input data.
+
+    Raises
+    ------
+    ToytreeError
+        Raised if the input cannot be read or does not contain any
+        trees.
+
+    Examples
+    --------
+    >>> parse_multitree("((a,b),c);\\n((a,c),b);").ntrees
+    2
+
+    See Also
+    --------
+    parse_tree
+    parse_tree_object
+    toytree.mtree
+    """
     from toytree.core.multitree import MultiTree
-    from toytree.io.src.newick import parse_newick_string
 
-    strdata = parse_generic_to_str(data)
-    nwks, tdict = parse_data_from_str(strdata)
-    if not nwks:
-        raise ToytreeError("No trees were found in the input data.")
-    mtree = MultiTree([])
-    for nwk in nwks:
-        tree = parse_newick_string(nwk, **kwargs)
-        translate_node_names(tree, tdict)
-        mtree.treelist.append(tree)
-    return mtree
+    return MultiTree(_parse_trees(data, **kwargs))
 
 
-def parse_tree_object(
-    data: Union[str, Url, Path], **kwargs
-) -> Union[ToyTree, MultiTree]:
-    """Return a ToyTree or MultiTree parsed from flexible input types."""
+def parse_tree_object(data: str | Path | bytes, **kwargs) -> ToyTree | MultiTree:
+    r"""Return a `ToyTree` or `MultiTree` parsed from flexible input.
+
+    Parameters
+    ----------
+    data : str, Path, or bytes
+        Tree input provided as serialized Newick/NEXUS text, a local
+        file path, a public HTTP(S) URL, or UTF-8 encoded bytes.
+    **kwargs
+        Additional keyword arguments forwarded to
+        :func:`toytree.io.parse_newick_string`.
+
+    Returns
+    -------
+    ToyTree or MultiTree
+        A `ToyTree` when the input contains one tree, otherwise a
+        `MultiTree`.
+
+    Raises
+    ------
+    ToytreeError
+        Raised if the input cannot be read or does not contain any
+        trees.
+
+    Examples
+    --------
+    >>> type(parse_tree_object("((a,b),c);")).__name__
+    'ToyTree'
+    >>> type(parse_tree_object("((a,b),c);\\n((a,c),b);")).__name__
+    'MultiTree'
+
+    See Also
+    --------
+    parse_tree
+    parse_multitree
+    toytree.tree
+    toytree.mtree
+    """
+    trees = _parse_trees(data, **kwargs)
+    if len(trees) == 1:
+        return trees[0]
+
     from toytree.core.multitree import MultiTree
-    from toytree.io.src.newick import parse_newick_string
 
-    strdata = parse_generic_to_str(data)
-    nwks, tdict = parse_data_from_str(strdata)
-    if len(nwks) > 1:
-        mtree = MultiTree([])
-        for nwk in nwks:
-            tree = parse_newick_string(nwk, **kwargs)
-            mtree.treelist.append(translate_node_names(tree, tdict))
-        return mtree
-    tree = parse_newick_string(nwks[0], **kwargs)
-    return translate_node_names(tree, tdict)
-
-
-if __name__ == "__main__":
-    TEST = "/home/deren/Downloads/Clustal_Omega_Dec3.txt"
-    TEST1 = "((a,b)c);"
-    TEST2 = """(
-    (a,b)X,c)
-    ;
-"""
-
-    print(parse_tree_object(TEST))
-    print(parse_tree_object(TEST1))
-    print(parse_tree_object(TEST2))
-    print(parse_tree_object("https://eaton-lab.org/data/Cyathophora.tre"))
-    print(parse_tree_object("https://eaton-lab.org/data/densitree.nex"))
-
-    TEST4 = """\
-#NEXUS
-begin trees;
-    translate
-           1       apple,
-           2       blueberry,
-           3       cantaloupe,
-           4       durian,
-           ;
-    tree tree0 = [&U] ((1,2),(3,4));
-    tree tree1 = [&U] ((1,2),(3,4));
-end;
-"""
-    print(parse_tree_object(TEST4))
-
-    TEST5 = """\
-(((a:1,b:1):1,(d:1.5,e:1.5):0.5):1,c:3);
-(((a:1,d:1):1,(b:1,e:1):1):1,c:3);
-(((a:1.5,b:1.5):1,(d:1,e:1):1.5):1,c:3.5);
-(((a:1.25,b:1.25):0.75,(d:1,e:1):1):1,c:3);
-(((a:1,b:1):1,(d:1.5,e:1.5):0.5):1,c:3);
-(((b:1,a:1):1,(d:1.5,e:1.5):0.5):2,c:4);
-(((a:1.5,b:1.5):0.5,(d:1,e:1):1):1,c:3);
-(((b:1.5,d:1.5):0.5,(a:1,e:1):1):1,c:3);
-"""
-    print(parse_tree_object(TEST5))
-#     tool = TreeIOParser(TEST5)
-#     trees = tool.parse_multitree_auto()
-#     print(trees[0].get_tip_labels())
+    return MultiTree(trees)
