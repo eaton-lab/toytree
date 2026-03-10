@@ -9,10 +9,7 @@ import sys
 from pathlib import Path
 from typing import TYPE_CHECKING, List, Mapping, Tuple, TypeVar, Union
 
-from toytree.io.src.newick import parse_newick_string
-from toytree.io.src.nexus import get_newicks_and_translation_from_nexus
-from toytree.io.src.utils import replace_whitespace
-from toytree.utils import ToytreeError
+from toytree.utils.src.exceptions import ToytreeError
 
 if TYPE_CHECKING:
     from toytree.core.multitree import MultiTree
@@ -89,10 +86,14 @@ def parse_data_from_str(strdata: str) -> Tuple[List[str], Mapping[int, str]]:
     """Return list of newicks and translation dict."""
     # if nexus then parse [nwks] from trees block
     if strdata[:6].upper() == "#NEXUS":
+        from toytree.io.src.nexus import get_newicks_and_translation_from_nexus
+
         nwks, tdict = get_newicks_and_translation_from_nexus(strdata)
         tdict = tdict
     # if newick then optionally split into multiple newicks
     else:
+        from toytree.io.src.utils import replace_whitespace
+
         strdata = replace_whitespace(strdata)
         nwks = strdata.split("\n")
         tdict = {}
@@ -112,6 +113,8 @@ def translate_node_names(tree: ToyTree, tdict: Mapping[int, str]) -> ToyTree:
 
 def parse_tree(data: Union[str, Url, Path], **kwargs) -> ToyTree:
     """Return a ToyTree parsed from flexible input types."""
+    from toytree.io.src.newick import parse_newick_string
+
     strdata = parse_generic_to_str(data)
     nwks, tdict = parse_data_from_str(strdata)
     tree = parse_newick_string(nwks[0], **kwargs)
@@ -128,6 +131,7 @@ def parse_tree(data: Union[str, Url, Path], **kwargs) -> ToyTree:
 def parse_multitree(data: Union[str, Url, Path], **kwargs) -> MultiTree:
     """Return a MultiTree parsed from flexible input types."""
     from toytree.core.multitree import MultiTree
+    from toytree.io.src.newick import parse_newick_string
 
     strdata = parse_generic_to_str(data)
     nwks, tdict = parse_data_from_str(strdata)
@@ -146,6 +150,7 @@ def parse_tree_object(
 ) -> Union[ToyTree, MultiTree]:
     """Return a ToyTree or MultiTree parsed from flexible input types."""
     from toytree.core.multitree import MultiTree
+    from toytree.io.src.newick import parse_newick_string
 
     strdata = parse_generic_to_str(data)
     nwks, tdict = parse_data_from_str(strdata)

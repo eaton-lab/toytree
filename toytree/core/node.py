@@ -41,7 +41,7 @@ from copy import deepcopy
 from functools import total_ordering
 from typing import Iterator, List, Optional, Tuple, Union  # Set, Any
 
-from toytree.utils import TreeNodeError
+from toytree.utils.src.exceptions import TreeNodeError
 
 
 class Node:

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Optional, TypeVar, Union
 
 from toytree.core import Node, ToyTree
-from toytree.utils import ToytreeError
+from toytree.utils.src.exceptions import ToytreeError
 
 # PEP 484 recommend capitalizing alias names
 Url = TypeVar("Url")

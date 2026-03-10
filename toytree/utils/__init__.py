@@ -24,7 +24,7 @@ normalize_values(np.ndarray)
 
 
 Notes
-------
+-----
 Organization of code in the utils submodule.
 
 utils/src/
@@ -54,7 +54,21 @@ from __future__ import annotations
 
 import importlib
 
-from toytree.utils.src.exceptions import *
+_EXCEPTION_NAMES = {
+    "ToytreeError",
+    "ToytreeRegexError",
+    "NodeDataError",
+    "ToyColorError",
+    "StyleSizeMismatchError",
+    "StyleTypeMismatchError",
+    "StyleColorMappingTupleError",
+    "TreeNodeError",
+    "NewickError",
+    "NexusError",
+    "NODE_NOT_IN_TREE_ERROR",
+    "NODE_INDEXING_ERROR",
+    "NON_MONOPHYLETIC_OUTGROUP",
+}
 
 _LAZY_ATTRS = {
     "ScrollableCanvas": ("toytree.utils.src.scrollable_canvas", "ScrollableCanvas"),
@@ -67,14 +81,25 @@ _LAZY_ATTRS = {
     "set_axes_box_outline": ("toytree.utils.src.style_axes", "set_axes_box_outline"),
     "debug_toyplot_canvas": ("toytree.utils.src.style_axes", "debug_toyplot_canvas"),
 }
+__all__ = sorted(_EXCEPTION_NAMES | set(_LAZY_ATTRS))
 
 
 def __getattr__(name: str):
-    """Lazily import utility helpers that depend on optional plotting libs."""
-    if name not in _LAZY_ATTRS:
-        raise AttributeError(name)
-    module_name, attr_name = _LAZY_ATTRS[name]
-    module = importlib.import_module(module_name)
-    value = getattr(module, attr_name)
-    globals()[name] = value
-    return value
+    """Lazily import utility helpers and exception symbols on first access."""
+    if name in _LAZY_ATTRS:
+        module_name, attr_name = _LAZY_ATTRS[name]
+        module = importlib.import_module(module_name)
+        value = getattr(module, attr_name)
+        globals()[name] = value
+        return value
+    if name in _EXCEPTION_NAMES:
+        module = importlib.import_module("toytree.utils.src.exceptions")
+        value = getattr(module, name)
+        globals()[name] = value
+        return value
+    raise AttributeError(name)
+
+
+def __dir__():
+    """Return module attributes plus lazily available public names."""
+    return sorted(set(globals()) | set(__all__))

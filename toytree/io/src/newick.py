@@ -25,19 +25,18 @@ References
 - https://gist.github.com/Ad115/34dfc6560b64779a40c1a929f560511b
 """
 
-from typing import (
-    Optional, List, Any, Sequence, Tuple, Callable, Dict, Iterator, Set)
-import sys
+import math
 import re
+import sys
 from functools import partial
-import numpy as np
+from typing import Any, Callable, Dict, Iterator, List, Optional, Sequence, Set, Tuple
+
 from toytree.core.node import Node
 from toytree.core.tree import ToyTree
-from toytree.utils import ToytreeError
+from toytree.utils.src.exceptions import ToytreeError
 
-
-PAIRS = {'(': '()', '[': '[]', '{': "{}"}
-COLON_OUTSIDE_SQUARE_BRACKETS = re.compile(r'(?<!\[):|:(?!\])')
+PAIRS = {"(": "()", "[": "[]", "{": "{}"}
+COLON_OUTSIDE_SQUARE_BRACKETS = re.compile(r"(?<!\[):|:(?!\])")
 CURLY_TRAIT_PATTERN = re.compile(r"^(.*)\{([^{}]*)\}$")
 RESERVED_FEATURE_NAMES = ["idx", "height", "dist"]
 NHX_ERROR = """\
@@ -53,7 +52,7 @@ Try modifying the parse args to match with your NHX meta data format.
 """
 
 
-def _find_closing(string: str, start: int = 1, pair: Sequence[str] = '()') -> int:
+def _find_closing(string: str, start: int = 1, pair: Sequence[str] = "()") -> int:
     """Find index of next unmatched closing parenth from start position.
 
     Examples
@@ -105,7 +104,6 @@ def _iter_split_non_nested(node_str: str, delim: str = ",") -> Iterator[str]:
     start = 0
     end = 0
     while 1:
-
         # end and yield last chunk if at end of string
         if end == final:
             child = node_str[start:end]
@@ -137,7 +135,7 @@ def _walk_newick_subtrees(
     newick: str,
     aggregator: Callable[[str, Any, float, Any], Any] = None,
     dist_formatter: Callable[[str], float] = None,
-    feat_formatter: Callable[[str], Any] = None
+    feat_formatter: Callable[[str], Any] = None,
 ) -> Tuple[Any, Set[str]]:
     """Recursive func (private) for extracting nested newick subtrees.
 
@@ -169,7 +167,7 @@ def _walk_newick_subtrees(
         # edge_features |= features
 
     # str to float format the dist values
-    distance = 1. if dist is None else dist_formatter(dist)
+    distance = 1.0 if dist is None else dist_formatter(dist)
 
     # str to dict format the meta features
     nmeta = {} if nmeta is None else feat_formatter(nmeta)
@@ -184,14 +182,12 @@ def _walk_newick_subtrees(
 
 
 def _node_str_to_data(newick: str) -> Tuple[str, str, str, str, str]:
-    """Return data from a Node string (inner, label, dist, nmeta, emeta)
-
-    """
+    """Return data from a Node string (inner, label, dist, nmeta, emeta)"""
     # split this node from the rest of tree.
     if newick.startswith("("):
         eidx = _find_closing(newick)
-        outer = newick[eidx + 1:]
-        inner = newick[1: eidx]
+        outer = newick[eidx + 1 :]
+        inner = newick[1:eidx]
     else:
         outer = newick
         inner = ""
@@ -227,7 +223,7 @@ def _split_label_and_meta(substring: str) -> Tuple[str, str]:
     """Return tuple with (label, meta) given an outer newick substring."""
     for i, j in enumerate(substring):
         if j in "[:":
-            return substring[:i], substring[i + 1: -1]
+            return substring[:i], substring[i + 1 : -1]
     return substring, None
 
 
@@ -316,8 +312,7 @@ def meta_parser(
                 meta[key] = _coerce_meta_value(value)
     except ValueError as exc:
         msg = NHX_ERROR.format(
-            features,
-            *(f"\"{i}\"" for i in (prefix, assignment, delim))
+            features, *(f'"{i}"' for i in (prefix, assignment, delim))
         )
         # print(msg, file=sys.stderr)
         raise ToytreeError(msg) from exc
@@ -398,7 +393,7 @@ def parse_newick_string_custom(
     treenode, edge_features = _walk_newick_subtrees(*args)
 
     # set default root dist to 0 (Note: other Node's w/o dist default=1.)
-    treenode._dist = 0.
+    treenode._dist = 0.0
 
     # convert connected Nodes to a ToyTree
     tree = ToyTree(treenode)
@@ -442,21 +437,22 @@ def node_aggregator(
     for key, value in features.items():
         if key in RESERVED_FEATURE_NAMES:
             key = f"__{key}"
-            print(f"NHX feature name {key} is reserved and has been changed to __{key}", file=sys.stderr)
+            print(
+                f"NHX feature name {key} is reserved and has been changed to __{key}",
+                file=sys.stderr,
+            )
         setattr(node, key, value)
     return node
 
 
 def _dict_aggregator(label, children, distance, features):
     """Not Used, only for testing."""
-    return dict(
-        label=label,
-        children=children,
-        features=(distance, features)
-    )
+    return dict(label=label, children=children, features=(distance, features))
 
 
-def _infer_internal_label_type(tree: ToyTree, internal_labels: Optional[str]) -> ToyTree:
+def _infer_internal_label_type(
+    tree: ToyTree, internal_labels: Optional[str]
+) -> ToyTree:
     """Return a ToyTree with Node 'name' and 'support' updated.
 
     Check type of 'name' labels on internal Nodes. If all are numeric
@@ -470,7 +466,7 @@ def _infer_internal_label_type(tree: ToyTree, internal_labels: Optional[str]) ->
             try:
                 node.support = float(node.name)
             except ValueError:
-                node.support = np.nan
+                node.support = math.nan
             node.name = ""
 
     # if user entered a diff name then use that
@@ -484,7 +480,7 @@ def _infer_internal_label_type(tree: ToyTree, internal_labels: Optional[str]) ->
     # infer types. Numeric-with-missing labels are treated as support,
     # which is common for unrooted trees serialized around a pseudo-root.
     else:  # elif internal_labels is None:
-        inodes = list(tree[tree.ntips:-1])
+        inodes = list(tree[tree.ntips : -1])
         labels = [node.name for node in inodes]
         n_internal = len(labels)
         n_numeric = 0
@@ -504,16 +500,14 @@ def _infer_internal_label_type(tree: ToyTree, internal_labels: Optional[str]) ->
         # allow up to 2 missing labels near pseudo-root for unrooted trees
         numeric_threshold = max(1, n_internal - 2)
         infer_support = (
-            n_non_numeric == 0 and
-            n_numeric > 0 and
-            n_numeric >= numeric_threshold
+            n_non_numeric == 0 and n_numeric > 0 and n_numeric >= numeric_threshold
         )
 
         if infer_support:
             for idx, inode in enumerate(inodes):
                 value = numeric_values[idx]
                 if value is None:
-                    inode.support = np.nan
+                    inode.support = math.nan
                 else:
                     inode.support = int(value) if value.is_integer() else value
                 inode.name = ""
@@ -528,7 +522,7 @@ def _infer_internal_label_type(tree: ToyTree, internal_labels: Optional[str]) ->
 
         # root Node is likely empty, but may have a name or even support
         # value. If so, we will try to store it numeric first, then string.
-        tree.treenode.support = np.nan
+        tree.treenode.support = math.nan
         if not tree.treenode.name:
             tree.treenode.name = ""
         else:
@@ -683,6 +677,7 @@ def test2():
 
 def test3():
     import toytree
+
     NWK = """
 (((ADH2:0.1[&&NHX:S=human:E=1.1.1.1],
 ADH1:0.11[&&NHX:S=human:E=1.1.1.1]):0.05[&&NHX:S=Primates:E=1.1.1.1:D=Y:B=100],
@@ -694,19 +689,21 @@ ADH1:0.11[&&NHX:S=yeast:E=1.1.1.1]):0.1[&&NHX:S=Fungi])[&&NHX:E=1.1.1.1:D=N];
 ADH1:0.11[&&NHX:S=yeast:E=1.1.1.1]):0.1[&&NHX:S=Fungi])[&&NHX:E=1.1.1.1:D=N];
 """
     # print(NWK)
-    t = toytree.tree(NWK, feature_delim=":", feature_prefix="&&NHX:", feature_assignment="=")
+    t = toytree.tree(
+        NWK, feature_delim=":", feature_prefix="&&NHX:", feature_assignment="="
+    )
     print(t.get_node_data())
 
 
 def test4():
     import toytree
+
     NWK = "((C,D)1,(A,(B,X)3)2,E)R;"
     print(toytree.tree(NWK).get_node_data())
-    print(toytree.tree(NWK, internal_labels='name').get_node_data())
+    print(toytree.tree(NWK, internal_labels="name").get_node_data())
 
 
 if __name__ == "__main__":
-
     test2()
     # test3()
     # test4()
