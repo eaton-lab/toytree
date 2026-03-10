@@ -56,7 +56,11 @@ def _load_imap(path: Path, sep: str) -> dict[str, str]:
 
 def run_root(args):
     """Run the `root` CLI command."""
-    from toytree.cli._tree_transport import read_tree_auto, write_tree_output
+    from toytree.cli._tree_transport import (
+        read_tree_auto,
+        resolve_input_arg,
+        write_tree_output,
+    )
     from toytree.mod._src.root_funcs import (
         root_on_minimal_ancestor_deviation,
         root_on_minimal_dlc,
@@ -69,7 +73,9 @@ def run_root(args):
         set_log_level(args.log_level)
 
     # parse the tree
-    tre = read_tree_auto(args.input, internal_labels=args.internal_labels)
+    tre = read_tree_auto(
+        resolve_input_arg(args.input), internal_labels=args.internal_labels
+    )
 
     # Normalize optional list args from argparse (`nargs="*"` can be None).
     nodes = args.nodes or []

@@ -10,15 +10,15 @@ import time
 from pathlib import Path
 
 import pytest
+from conftest import PytestCompat
+
 import toytree
 
-from conftest import PytestCompat
 
 @pytest.mark.skipif(
     os.environ.get("TOYTREE_RUN_PERF_TESTS") != "1",
     reason="set TOYTREE_RUN_PERF_TESTS=1 to run performance tests",
 )
-
 class TestBinaryTransportPerf(PytestCompat):
     def setUp(self):
         self.tmpdir = Path(tempfile.mkdtemp(prefix="toytree-cli-perf-"))
@@ -28,6 +28,7 @@ class TestBinaryTransportPerf(PytestCompat):
         self.tree_path.write_text(tree.write(None) + "\n", encoding="utf-8")
         self.exe = f"{shlex.quote(sys.executable)} -m toytree.cli.main"
         self.reps = int(os.environ.get("TOYTREE_PERF_REPS", "3"))
+        self.min_speedup = float(os.environ.get("TOYTREE_PERF_MIN_SPEEDUP", "20.0"))
 
     def _pipeline_cmd(self, binary: bool) -> str:
         ipath = shlex.quote(str(self.tree_path))
@@ -51,7 +52,7 @@ class TestBinaryTransportPerf(PytestCompat):
             raise RuntimeError(f"pipeline failed (binary={binary}):\n{stderr}")
         return elapsed
 
-    def test_binary_pipeline_is_faster_than_text(self):
+    def test_binary_pipeline_has_clear_speedup(self):
         # Warm-up.
         self._run_once(binary=False)
         self._run_once(binary=True)
@@ -67,11 +68,12 @@ class TestBinaryTransportPerf(PytestCompat):
             f"\ntext_median={text_med:.4f}s binary_median={binary_med:.4f}s "
             f"speedup={speedup:.2f}%"
         )
-        self.assertLess(
-            binary_med,
-            text_med,
+        self.assertGreaterEqual(
+            speedup,
+            self.min_speedup,
             msg=(
-                "expected binary transport pipeline to be faster; "
-                f"text={text_med:.4f}s binary={binary_med:.4f}s speedup={speedup:.2f}%"
+                "expected binary transport pipeline to be clearly faster; "
+                f"text={text_med:.4f}s binary={binary_med:.4f}s "
+                f"speedup={speedup:.2f}% target={self.min_speedup:.2f}%"
             ),
         )

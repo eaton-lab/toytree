@@ -38,6 +38,7 @@ from toytree.utils import ToytreeError
 
 PAIRS = {'(': '()', '[': '[]', '{': "{}"}
 COLON_OUTSIDE_SQUARE_BRACKETS = re.compile(r'(?<!\[):|:(?!\])')
+CURLY_TRAIT_PATTERN = re.compile(r"^(.*)\{([^{}]*)\}$")
 RESERVED_FEATURE_NAMES = ["idx", "height", "dist"]
 NHX_ERROR = """\
 Error parsing NHX (extended New Hampshire format) newick meta data.
@@ -235,12 +236,22 @@ def distance_parser(dist: str) -> Optional[float]:
     return float(dist)
 
 
+def _coerce_meta_value(value: str) -> Any:
+    """Return one NHX metadata value coerced to float or str."""
+    sval = value.strip()
+    try:
+        return float(sval)
+    except ValueError:
+        return sval
+
+
 def meta_parser(
     features: str,
     prefix: str = "",
     delim: str = ",",
     assignment: str = "=",
-) -> Dict[str, str]:
+    feature_unpack: str = "|",
+) -> Dict[str, Any]:
     """Return a dict with auto-formatted features.
 
     When using this 'auto' function the dtype of features will be
@@ -261,6 +272,10 @@ def meta_parser(
     assignment: str
         A string assignment character located between keys and values
         in the feature string.
+    feature_unpack: str
+        Character used to unpack list-like values in metadata. If the
+        character occurs in a metadata value, then the value is split
+        and each item is auto-coerced to float or str.
     """
     # remove the prefix (e.g., &&NHX:) and check that prefix was not
     # entered wrongly.
@@ -292,11 +307,13 @@ def meta_parser(
             else:
                 key, value = item.split(assignment)
 
-            # try to treat the value as numeric, else default to str
-            try:
-                meta[key] = float(value)
-            except ValueError:
-                meta[key] = str(value)
+            # Unpack compact list-like values (e.g., "0.1|0.9") before
+            # scalar coercion to preserve expected posterior-like arrays.
+            if feature_unpack and feature_unpack in value:
+                parts = value.split(feature_unpack)
+                meta[key] = [_coerce_meta_value(part) for part in parts]
+            else:
+                meta[key] = _coerce_meta_value(value)
     except ValueError as exc:
         msg = NHX_ERROR.format(
             features,
@@ -388,6 +405,10 @@ def parse_newick_string_custom(
 
     # set edge features to ensure proper polarization if re-rooted
     tree.edge_features.update(edge_features)
+
+    # Parse `name{value}` labels into feature `trait` when all non-root
+    # labels match. Root may omit curly suffix.
+    _extract_curly_trait_labels(tree)
 
     # infer whether labels on internal nodes are names or supports
     tree = _infer_internal_label_type(tree, internal_labels)
@@ -521,11 +542,54 @@ def _infer_internal_label_type(tree: ToyTree, internal_labels: Optional[str]) ->
     return tree
 
 
+def _coerce_curly_trait_value(value: str) -> Any:
+    """Return parsed curly-brace feature value as int/float/str."""
+    sval = value.strip()
+    try:
+        fval = float(sval)
+        if fval.is_integer():
+            return int(fval)
+        return fval
+    except ValueError:
+        return sval
+
+
+def _extract_curly_trait_labels(tree: ToyTree) -> bool:
+    """Extract `name{value}` labels into base names plus `trait` feature.
+
+    This applies when every non-root node label in the tree matches this
+    format. The root label is allowed to omit the curly suffix. If any
+    non-root node fails to match, no changes are made.
+    """
+    parsed = []
+    for node in tree:
+        label = "" if node.name is None else str(node.name)
+        match = CURLY_TRAIT_PATTERN.match(label)
+        if match is None:
+            # Allow missing curly suffix only on root.
+            if node is tree.treenode:
+                continue
+            return False
+        base_name, raw_value = match.groups()
+        parsed.append((node, base_name, _coerce_curly_trait_value(raw_value)))
+
+    # No parsed suffixes means this format was absent, so skip extraction.
+    if not parsed:
+        return False
+
+    # Apply updates only after full-tree validation to avoid partial mutation.
+    for node, base_name, value in parsed:
+        node.name = base_name
+        setattr(node, "trait", value)
+    return True
+
+
 def parse_newick_string(
     newick: str,
     feature_prefix: str = "&",
     feature_delim: str = ",",
     feature_assignment: str = "=",
+    feature_unpack: str = "|",
     internal_labels: Optional[str] = None,
 ) -> ToyTree:
     """Return a ToyTree from a newick string.
@@ -558,12 +622,20 @@ def parse_newick_string(
     feature_assignment: str
         The character separating feature names and values in a comment
         block used for assignment. This is usually "=" or ":".
+    feature_unpack: str
+        Character used to unpack list-like values in metadata value
+        strings. For example, with default ``"|"`` a value such as
+        ``0.1|0.9`` is parsed as ``[0.1, 0.9]``.
     internal_labels: str or None
         The feature that is present on internal node labels. If None
         then it will be inferred from the values present. Internal
         labels are usually either 'support' or 'name'. If only numeric
         values are present then it is parsed as 'support' floats,
         but this can overridden here if set `internal_labels='name'`.
+        In addition, if every non-root node label follows
+        `name{value}` format (with optional root curly suffix), then
+        suffix values are extracted to a node feature called `trait`
+        before internal label inference is applied.
 
     Examples
     --------
@@ -581,6 +653,7 @@ def parse_newick_string(
         prefix=feature_prefix,
         delim=feature_delim,
         assignment=feature_assignment,
+        feature_unpack=feature_unpack,
     )
 
     # parse tree using custom func with custom subfuncs

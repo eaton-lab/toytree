@@ -47,30 +47,39 @@ def _normalize_sep(value: str) -> str:
 
 def run_set_node_data(args):
     """Run the `set-node-data` CLI command."""
-    import pandas as pd
-
-    from toytree.cli._tree_transport import read_tree_auto, write_tree_output
+    from toytree.cli._tree_transport import (
+        read_tree_auto,
+        resolve_input_arg,
+        write_tree_output,
+    )
     from toytree.utils import ToytreeError
-    from toytree.utils.src.logger_setup import set_log_level
 
     if args.log_level is not None:
+        from toytree.utils.src.logger_setup import set_log_level
+
         set_log_level(args.log_level)
 
-    tre = read_tree_auto(args.input, internal_labels=args.internal_labels)
+    tre = read_tree_auto(
+        resolve_input_arg(args.input), internal_labels=args.internal_labels
+    )
 
     use_table = args.table is not None
     use_mapping = args.feature is not None or bool(args.assignments)
     if use_table and use_mapping:
         raise ToytreeError(
-            "choose either table mode (--table) or mapping mode (--feature/--set), not both"
+            "choose either table mode (--table) or mapping mode "
+            "(--feature/--set), not both"
         )
     if not use_table and not use_mapping:
         raise ToytreeError(
-            "must provide either --table or mapping mode args (--feature and optional --set)"
+            "must provide either --table or mapping mode args "
+            "(--feature and optional --set)"
         )
 
     # parse a tabular file to assign features
     if use_table:
+        import pandas as pd
+
         sep = _normalize_sep(args.table_sep)
         df = pd.read_csv(args.table, sep=sep, header=None if args.table_headers else 0)
         tre = tre.set_node_data_from_dataframe(
@@ -79,7 +88,7 @@ def run_set_node_data(args):
             query_is_regex=args.table_query_regex,
             table_headers=args.table_headers,
             allow_unmatched_queries=args.table_allow_unmatched,
-            inplace=False,
+            inplace=True,
         )
 
     # parse the user's --feature arg to assign features
@@ -94,7 +103,7 @@ def run_set_node_data(args):
             default=default,
             inherit=args.inherit,
             edge=args.edge,
-            inplace=False,
+            inplace=True,
         )
 
     if args.exclude_features:
@@ -106,10 +115,4 @@ def run_set_node_data(args):
         output=args.output,
         binary_out=args.binary_out,
         features=features,
-        newick_write_kwargs={
-            "features_prefix": args.features_prefix,
-            "features_delim": args.features_delim,
-            "features_assignment": args.features_assignment,
-            "features_formatter": args.features_formatter,
-        },
     )

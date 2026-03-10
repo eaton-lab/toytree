@@ -20,6 +20,7 @@ def tree(
     feature_prefix: str = "&",
     feature_delim: str = ",",
     feature_assignment: str = "=",
+    feature_unpack: str = "|",
     internal_labels: Optional[str] = None,
 ) -> ToyTree:
     """Return a ToyTree parsed from variable input types and formats.
@@ -30,7 +31,9 @@ def tree(
     will try to auto-detect whether internal node labels are names
     or support values. If the newick string contains additional
     metadata as NHX annotations these will be parsed and stored as Node
-    features.
+    features. A `name{value}` suffix format is also recognized and
+    parsed to a `trait` feature when present on all non-root labels
+    (root curly suffix is optional).
 
     Parameters
     ----------
@@ -49,6 +52,10 @@ def tree(
     feature_assignment: str
         If NHX meta data is present in the newick string enter the
         assignment operator between key-value pairs. Default="=".
+    feature_unpack: str
+        Character used to unpack list-like NHX metadata values. With
+        default ``"|"``, values such as ``0.1|0.9`` are parsed as
+        list-like values ``[0.1, 0.9]``.
     internal_labels: str or None
         Labels next to internal nodes are often interchangeably used to
         record node names or support values. Enter "name", "support",
@@ -76,6 +83,7 @@ def tree(
             feature_prefix=feature_prefix,
             feature_delim=feature_delim,
             feature_assignment=feature_assignment,
+            feature_unpack=feature_unpack,
             internal_labels=internal_labels,
         )
     # raise an error (to make an empty tree you must enter empty Node)

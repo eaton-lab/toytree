@@ -53,14 +53,16 @@ def open_with_default_viewer(path: str) -> bool:
 def run_draw(args):
     """Run draw command."""
     from toytree import save
-    from toytree.cli._tree_transport import read_tree_auto
+    from toytree.cli._tree_transport import read_tree_auto, resolve_input_arg
     from toytree.utils.src.logger_setup import set_log_level
 
     if args.log_level is not None:
         set_log_level(args.log_level)
 
     # read tree from file or stdin pkl
-    tre = read_tree_auto(args.input, internal_labels=args.internal_labels)
+    tre = read_tree_auto(
+        resolve_input_arg(args.input), internal_labels=args.internal_labels
+    )
     if args.ladderize:
         tre = tre.mod.ladderize(inplace=False)
 

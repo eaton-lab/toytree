@@ -1,6 +1,9 @@
+import io
+from contextlib import redirect_stderr
 
 import numpy as np
 import pandas as pd
+from conftest import PytestCompat
 
 import toytree
 from toytree.pcm.src.sim.sim_discrete import MarkovModel
@@ -11,9 +14,6 @@ from toytree.pcm.src.traits.fit_discrete_ctmc import (
 )
 from toytree.utils import ToytreeError
 
-
-
-from conftest import PytestCompat
 
 class TestDiscreteMarkovModelFit(PytestCompat):
     """Tests discrete CTMC model fitting and ancestral-state wrappers."""
@@ -262,6 +262,49 @@ class TestDiscreteMarkovModelFit(PytestCompat):
         self.assertNotIn(f"{data.name}_anc", tree.features)
         self.assertNotIn(f"{data.name}_anc_posterior", tree.features)
 
+    def test_infer_ancestral_states_tip_only_data_emits_no_warning(self):
+        """Tip-only observations should not emit an internal-state warning."""
+        tree = toytree.rtree.unittree(ntips=4, treeheight=1.0, seed=20)
+        data = toytree.pcm.simulate_discrete_trait(
+            tree=tree,
+            nstates=2,
+            model="ER",
+            tips_only=True,
+            seed=20,
+        )
+        data.index = tree.get_tip_labels()
+        err = io.StringIO()
+        with redirect_stderr(err):
+            infer_ancestral_states_discrete_ctmc(
+                tree=tree,
+                data=data,
+                nstates=2,
+                model="ER",
+            )
+        self.assertEqual(err.getvalue(), "")
+
+    def test_infer_ancestral_states_warns_for_internal_node_states(self):
+        """Observed internal states should emit a fixed-constraint warning."""
+        tree = toytree.rtree.unittree(ntips=4, treeheight=1.0, seed=21)
+        tree = tree.set_node_data(
+            "X",
+            {0: "A", 1: "A", 2: "B", 3: "B", 4: "B"},
+            default=np.nan,
+            inplace=False,
+        )
+        err = io.StringIO()
+        with redirect_stderr(err):
+            out = infer_ancestral_states_discrete_ctmc(
+                tree=tree,
+                data="X",
+                nstates=2,
+                model="ER",
+            )
+        self.assertIn("warning:", err.getvalue())
+        self.assertIn("1 non-missing internal node state(s)", err.getvalue())
+        self.assertIn("treated as fixed constraints", err.getvalue())
+        self.assertEqual(out["data"].shape[0], tree.nnodes)
+
     def test_infer_ancestral_states_inplace_mutates_input_tree(self):
         """inplace=True should write ancestral states and posteriors to tree."""
         tree = toytree.rtree.unittree(ntips=4, treeheight=1.0, seed=12)
@@ -304,5 +347,3 @@ class TestDiscreteMarkovModelFit(PytestCompat):
             model="SYM",
         )
         self.assertTrue(np.isfinite(result.log_likelihood))
-
-

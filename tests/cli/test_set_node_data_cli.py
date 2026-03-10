@@ -166,26 +166,17 @@ class TestSetNodeDataCLI(PytestCompat):
         with self.assertRaises(ToytreeError):
             run_set_node_data(args)
 
-    def test_output_feature_formatting_options(self):
-        out_nwk = self._run_capture_stdout(
-            [
-                "-i",
-                str(self.tree_path),
-                "--feature",
-                "trait",
-                "--set",
-                "0=1",
-                "--default",
-                "0",
-                "--features-prefix",
-                "&&NHX:",
-                "--features-delim",
-                ":",
-                "--features-assignment",
-                "=",
-                "--features-formatter",
-                "%.3f",
-            ]
-        )
-        self.assertIn("[&&NHX:trait=1.000]", out_nwk)
-
+    def test_output_feature_formatting_options_are_not_supported(self):
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args(
+                [
+                    "-i",
+                    str(self.tree_path),
+                    "--feature",
+                    "trait",
+                    "--set",
+                    "0=1",
+                    "--features-prefix",
+                    "&&NHX:",
+                ]
+            )

@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 
 
@@ -13,6 +14,12 @@ def _write_result(args, text: str) -> None:
         args.output.write_text(text + "\n", encoding="utf-8")
     else:
         sys.stdout.write(text + "\n")
+
+
+def _write_json_result(args, payload: dict) -> None:
+    """Write JSON payload to file or stdout."""
+    text = json.dumps(payload, ensure_ascii=False, indent=2)
+    _write_result(args, text)
 
 
 def run_distance(args) -> None:
@@ -51,6 +58,16 @@ def run_distance(args) -> None:
 
     if args.metric in scalar_metric_funcs:
         value = scalar_metric_funcs[args.metric](t1, t2, normalize=args.normalize)
+        if args.json:
+            _write_json_result(
+                args,
+                {
+                    "metric": args.metric,
+                    "value": float(value),
+                    "normalize": bool(args.normalize),
+                },
+            )
+            return
         _write_result(args, args.float_format % float(value))
         return
 
@@ -61,10 +78,33 @@ def run_distance(args) -> None:
             metric=args.quartet_metric,
             similarity=args.similarity,
         )
+        if args.json:
+            _write_json_result(
+                args,
+                {
+                    "metric": "quartet",
+                    "quartet_metric": args.quartet_metric,
+                    "similarity": bool(args.similarity),
+                    "value": float(value),
+                },
+            )
+            return
         _write_result(args, args.float_format % float(value))
         return
 
     # quartet-all: emit tabular metric-value lines.
     qseries = get_treedist_quartets(t1, t2, similarity=args.similarity)
-    lines = [f"{name}\t{args.float_format % float(val)}" for name, val in qseries.items()]
+    if args.json:
+        _write_json_result(
+            args,
+            {
+                "metric": "quartet-all",
+                "similarity": bool(args.similarity),
+                "values": {str(name): float(val) for name, val in qseries.items()},
+            },
+        )
+        return
+    lines = [
+        f"{name}\t{args.float_format % float(val)}" for name, val in qseries.items()
+    ]
     _write_result(args, "\n".join(lines))

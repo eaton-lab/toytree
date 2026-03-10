@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 
 import io
-import pickle
 import tempfile
 from contextlib import redirect_stdout
 from pathlib import Path
 
+from conftest import PytestCompat
+
 import toytree
+from toytree.cli._tree_transport import read_tree_auto
 from toytree.cli.cli_relabel import run_relabel
 from toytree.cli.subparsers import get_parser_relabel
 
-
-
-from conftest import PytestCompat
 
 class TestRelabelCLI(PytestCompat):
     def setUp(self):
@@ -62,9 +61,11 @@ class TestRelabelCLI(PytestCompat):
 
     def test_binary_output(self):
         out = self.tmpdir / "out.bin"
-        args = self.parser.parse_args(["-i", str(self.tree_path), "--prepend", "X_", "-b", "-o", str(out)])
+        args = self.parser.parse_args(
+            ["-i", str(self.tree_path), "--prepend", "X_", "-b", "-o", str(out)]
+        )
         run_relabel(args)
-        obj = pickle.loads(out.read_bytes())
+        obj = read_tree_auto(str(out))
         self.assertIsInstance(obj, toytree.ToyTree)
         self.assertEqual(obj[0].name, "X_aa|x")
 
@@ -76,9 +77,10 @@ class TestRelabelCLI(PytestCompat):
         self.assertEqual(tree[3].name, "")  # unchanged internal empty name
 
     def test_stripleft(self):
-        out_nwk = self._run_capture_stdout(["-i", str(self.tree_path), "--stripleft", "ac"])
+        out_nwk = self._run_capture_stdout(
+            ["-i", str(self.tree_path), "--stripleft", "ac"]
+        )
         tree = toytree.tree(out_nwk)
         self.assertEqual(tree[0].name, "|x")
         self.assertEqual(tree[1].name, "b|y")
         self.assertEqual(tree[2].name, "|z")
-

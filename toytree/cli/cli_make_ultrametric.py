@@ -4,9 +4,29 @@
 
 from __future__ import annotations
 
+import json
+import math
 import sys
 
 from .subparsers import NEGATIVE_CAL_QUERY_PREFIX
+
+
+def _jsonify_value(value):
+    """Return value converted to JSON-serializable Python types."""
+    if value is None:
+        return None
+    if hasattr(value, "item"):
+        try:
+            value = value.item()
+        except Exception:
+            pass
+    if isinstance(value, float) and not math.isfinite(value):
+        return None
+    if isinstance(value, (list, tuple)):
+        return [_jsonify_value(i) for i in value]
+    if isinstance(value, dict):
+        return {str(k): _jsonify_value(v) for k, v in value.items()}
+    return value
 
 
 def _parse_calibration_value(text: str):
@@ -54,7 +74,8 @@ def _parse_calibrations(
         nodes = tree.get_nodes(selector)
         if len(nodes) != 1:
             raise ValueError(
-                f"calibration query '{query}' matched {len(nodes)} nodes; must match exactly one node."
+                f"calibration query '{query}' matched {len(nodes)} nodes; "
+                "must match exactly one node."
             )
         calibrations[nodes[0].idx] = _parse_calibration_value(value)
     return calibrations
@@ -62,17 +83,23 @@ def _parse_calibrations(
 
 def run_make_ultrametric(args):
     """Run the `make-ultrametric` CLI command."""
-    from toytree.cli._tree_transport import read_tree_auto, write_tree_output
+    from toytree.cli._tree_transport import (
+        read_tree_auto,
+        resolve_input_arg,
+        write_tree_output,
+    )
     from toytree.utils import ToytreeError
     from toytree.utils.src.logger_setup import set_log_level
 
     if args.log_level is not None:
         set_log_level(args.log_level)
-    tre = read_tree_auto(args.input, internal_labels=args.internal_labels)
+    tre = read_tree_auto(
+        resolve_input_arg(args.input), internal_labels=args.internal_labels
+    )
     calibrations = _parse_calibrations(tre, args.calibrations)
     if args.lam is not None and args.lam < 0:
         raise ToytreeError("--lam must be >= 0.")
-    report_full = bool(args.full and args.method != "extend")
+    report_full = bool((args.full or args.json) and args.method != "extend")
     force_full = bool(report_full or (args.estimate is not None))
     if args.method == "discrete" and args.estimate is None and args.ncat is None:
         raise ToytreeError(
@@ -95,26 +122,43 @@ def run_make_ultrametric(args):
         estimate=args.estimate,
     )
     if force_full:
-        if args.estimate is not None:
-            for rec in result.get("search", []):
-                cand = rec.get("candidate")
-                phiic = rec.get("PHIIC")
-                conv = rec.get("converged")
+        if args.json:
+            payload = {"method": args.method}
+            if args.estimate is not None:
+                payload["search"] = _jsonify_value(result.get("search", []))
+                payload["estimated_parameter"] = _jsonify_value(
+                    result.get("estimated_parameter")
+                )
+                payload["estimated_value"] = _jsonify_value(
+                    result.get("estimated_value")
+                )
+            if report_full:
+                for key, val in result.items():
+                    if key != "tree":
+                        payload[str(key)] = _jsonify_value(val)
+            print(json.dumps(payload, ensure_ascii=False, indent=2), file=sys.stderr)
+        else:
+            if args.estimate is not None:
+                for rec in result.get("search", []):
+                    cand = rec.get("candidate")
+                    phiic = rec.get("PHIIC")
+                    conv = rec.get("converged")
+                    print(
+                        f"estimate candidate={cand} PHIIC={phiic} converged={conv}",
+                        file=sys.stderr,
+                    )
                 print(
-                    f"estimate candidate={cand} PHIIC={phiic} converged={conv}",
+                    (
+                        "estimated_parameter="
+                        f"{result.get('estimated_parameter')} "
+                        f"estimated_value={result.get('estimated_value')}"
+                    ),
                     file=sys.stderr,
                 )
-            print(
-                (
-                    "estimated_parameter="
-                    f"{result.get('estimated_parameter')} estimated_value={result.get('estimated_value')}"
-                ),
-                file=sys.stderr,
-            )
-        if report_full:
-            for key, val in result.items():
-                if key != "tree":
-                    print(f"{key}={val}", file=sys.stderr)
+            if report_full:
+                for key, val in result.items():
+                    if key != "tree":
+                        print(f"{key}={val}", file=sys.stderr)
         tre = result["tree"]
     else:
         tre = result

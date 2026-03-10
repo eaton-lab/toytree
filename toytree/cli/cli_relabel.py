@@ -34,14 +34,23 @@ def _build_transform_fn(
 
 def run_relabel(args):
     """Run the `relabel` CLI command."""
-    from toytree.cli._tree_transport import read_tree_auto, write_tree_output
-    from toytree.utils.src.logger_setup import set_log_level
+    from toytree.cli._tree_transport import (
+        read_tree_auto,
+        resolve_input_arg,
+        write_tree_output,
+    )
 
     if args.log_level is not None:
+        from toytree.utils.src.logger_setup import set_log_level
+
         set_log_level(args.log_level)
 
-    tre = read_tree_auto(args.input, internal_labels=args.internal_labels)
+    tre = read_tree_auto(
+        resolve_input_arg(args.input), internal_labels=args.internal_labels
+    )
     fn = _build_transform_fn(args.strip, args.stripleft, args.prepend, args.append)
+    # The CLI operates on a fresh tree instance, so in-place relabeling avoids
+    # the expensive general-purpose ToyTree deepcopy used by inplace=False.
     tre = tre.relabel(
         queries=args.nodes,
         fn=fn,
@@ -51,7 +60,7 @@ def run_relabel(args):
         italic=args.italic,
         bold=args.bold,
         tips_only=args.tips_only,
-        inplace=False,
+        inplace=True,
     )
     if args.exclude_features:
         features = None

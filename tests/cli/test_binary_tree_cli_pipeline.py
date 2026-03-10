@@ -1,10 +1,12 @@
 #!/usr/bin/env python
 
-import pickle
 import tempfile
 from pathlib import Path
 
+from conftest import PytestCompat
+
 import toytree
+from toytree.cli._tree_transport import read_tree_auto
 from toytree.cli.cli_prune import run_prune
 from toytree.cli.cli_root import run_root
 from toytree.cli.cli_set_node_data import run_set_node_data
@@ -15,9 +17,6 @@ from toytree.cli.subparsers import (
 )
 from toytree.core.tree import ToyTree
 
-
-
-from conftest import PytestCompat
 
 class TestBinaryTreeCLIPipeline(PytestCompat):
     def setUp(self):
@@ -62,8 +61,6 @@ class TestBinaryTreeCLIPipeline(PytestCompat):
             ]
         )
         run_set_node_data(args)
-        payload = out_path.read_bytes()
-        obj = pickle.loads(payload)
+        obj = read_tree_auto(str(out_path))
         self.assertIsInstance(obj, ToyTree)
         self.assertIn("score", obj.features)
-

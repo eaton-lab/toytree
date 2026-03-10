@@ -15,6 +15,7 @@ frequencies. Diagonal elements are set so each row sums to zero.
 
 from __future__ import annotations
 
+import sys
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple, Union
 
@@ -566,9 +567,10 @@ def infer_ancestral_states_discrete_ctmc(
     This function fits a discrete-state CTMC model and computes posterior
     state probabilities for all nodes on a tree. Observations can be provided
     for tip nodes only (typical empirical data) or for a mixture of tips and
-    internal nodes. Any non-missing internal-node observations are treated as
-    hard constraints during pruning (e.g., fossil assignments), which can
-    affect both fitted parameters and ancestral reconstructions.
+    internal nodes. Any non-missing internal-node observations trigger a
+    warning and are treated as hard constraints during pruning (e.g., fossil
+    assignments), which can affect both fitted parameters and ancestral
+    reconstructions.
 
     Parameters
     ----------
@@ -578,8 +580,10 @@ def infer_ancestral_states_discrete_ctmc(
         Trait observations as either a node feature name on ``tree`` or a
         pandas Series. The Series may contain values for all nodes or tips
         only. If only tips are provided, internal nodes are filled with NaN.
-        Observed states must be all ``int`` or all ``str`` (booleans are not
-        allowed and mixed types are rejected).
+        Any non-missing values on internal nodes are treated as fixed
+        constraints and therefore are not inferred. Observed states must be
+        all ``int`` or all ``str`` (booleans are not allowed and mixed types
+        are rejected).
     nstates : int
         Total number of states in the CTMC model (including potentially
         unobserved states).
@@ -655,6 +659,18 @@ def infer_ancestral_states_discrete_ctmc(
         raise ToytreeError("data must be a feature name (str) or pandas Series")
     if not trait_name:
         trait_name = "trait"
+
+    # Internal node observations are valid, but they constrain the pruning
+    # recursion instead of being reconstructed. Warn once so users do not
+    # mistake pre-filled ancestral states for inferred results.
+    ninternal = int(pd.Series(data.iloc[tree.ntips :]).notna().sum())
+    if ninternal:
+        print(
+            "warning: infer_ancestral_states_discrete_ctmc() received "
+            f"{ninternal} non-missing internal node state(s); these are "
+            "treated as fixed constraints and will not be inferred.",
+            file=sys.stderr,
+        )
 
     observed = pd.Series(data).dropna().unique().tolist()
     if observed:

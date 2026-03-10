@@ -2,16 +2,19 @@
 
 """Function to set data to all Node objects in a tree."""
 
+from __future__ import annotations
+
 from collections.abc import Mapping as MappingABC
 from numbers import Integral
-from typing import Any, Mapping, Sequence, TypeVar, Union
-
-import pandas as pd
+from typing import TYPE_CHECKING, Any, Mapping, Sequence, TypeVar, Union
 
 from toytree import Node, ToyTree
 from toytree.core.apis import add_toytree_method
 from toytree.data._src.expand_node_mapping import expand_node_mapping
 from toytree.utils import ToytreeError
+
+if TYPE_CHECKING:
+    import pandas as pd
 
 Query = TypeVar("Query", int, str, Node)
 
@@ -263,6 +266,8 @@ def set_node_data_from_dataframe(
     >>> tree = tree.set_node_data_from_dataframe(data)
     >>> tree.get_node_data()
     """
+    import pandas as pd
+
     # make a copy of input
     table = table.copy()
 
@@ -349,7 +354,12 @@ if __name__ == "__main__":
     toytree.set_log_level("INFO")
 
     tree = toytree.rtree.unittree(ntips=10)
-    new_tree = set_node_data(tree, feature="height", data={0: 10, 'r1': 20, tree[3]: 50}, default=5000)
+    new_tree = set_node_data(
+        tree,
+        feature="height",
+        data={0: 10, "r1": 20, tree[3]: 50},
+        default=5000,
+    )
     new_tree = set_node_data(tree, feature="Ne", default=5000)
     new_tree = set_node_data(tree, feature="Ne", data={0: 1e5, 1: 1e6, 2: 1e3})
     new_tree = set_node_data(tree, feature="Ne", data={0: 1e5, 1: 1e6}, default=5000)

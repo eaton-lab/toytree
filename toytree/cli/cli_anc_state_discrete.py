@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 
+import json
 import math
 import sys
 
@@ -37,8 +38,6 @@ def _print_fit_summary(
     feature: str,
     fit,
     nobs: int,
-    posterior_mode: str,
-    meta_base: str,
 ) -> None:
     """Print model-fit and reconstruction summary statistics to stderr."""
     log_likelihood = float(fit.log_likelihood)
@@ -55,8 +54,6 @@ def _print_fit_summary(
     )
 
     print(f"feature={feature}", file=sys.stderr)
-    print(f"meta_base={meta_base}", file=sys.stderr)
-    print(f"posterior_mode={posterior_mode}", file=sys.stderr)
     print(f"model={fit.model}", file=sys.stderr)
     print(f"nstates={fit.nstates}", file=sys.stderr)
     print(f"nobs={nobs}", file=sys.stderr)
@@ -70,29 +67,78 @@ def _print_fit_summary(
     print(f"qmatrix={fit.qmatrix}", file=sys.stderr)
 
 
+def _fit_summary_payload(
+    *,
+    feature: str,
+    fit,
+    nobs: int,
+) -> dict:
+    """Return model-fit summary values as a JSON-serializable payload."""
+
+    def _jsonify(value):
+        if value is None:
+            return None
+        if hasattr(value, "item"):
+            try:
+                value = value.item()
+            except Exception:
+                pass
+        if isinstance(value, float) and not math.isfinite(value):
+            return None
+        if isinstance(value, (list, tuple)):
+            return [_jsonify(i) for i in value]
+        if hasattr(value, "tolist"):
+            return _jsonify(value.tolist())
+        return value
+
+    log_likelihood = float(fit.log_likelihood)
+    nparams = int(fit.nparams)
+    aic = (2.0 * nparams) - (2.0 * log_likelihood)
+    if (nobs - nparams - 1) > 0:
+        aicc = aic + (2.0 * nparams * (nparams + 1.0)) / (nobs - nparams - 1.0)
+    else:
+        aicc = float("inf")
+    bic = (
+        (math.log(nobs) * nparams) - (2.0 * log_likelihood)
+        if nobs > 0
+        else float("nan")
+    )
+    return {
+        "feature": feature,
+        "model": str(fit.model),
+        "nstates": int(fit.nstates),
+        "nobs": int(nobs),
+        "nparams": nparams,
+        "log_likelihood": log_likelihood,
+        "AIC": float(aic),
+        "AICc": float(aicc),
+        "BIC": float(bic),
+        "state_frequencies": _jsonify(fit.state_frequencies),
+        "relative_rates": _jsonify(fit.relative_rates),
+        "qmatrix": _jsonify(fit.qmatrix),
+    }
+
+
 def run_anc_state_discrete(args):
     """Run the ``anc-state-discrete`` CLI command."""
-    import numpy as np
-
-    from toytree.cli._tree_transport import read_tree_auto, write_tree_output
+    from toytree.cli._tree_transport import (
+        read_tree_auto,
+        resolve_input_arg,
+        write_tree_output,
+    )
     from toytree.utils import ToytreeError
-    from toytree.utils.src.logger_setup import set_log_level
 
     if args.log_level is not None:
+        from toytree.utils.src.logger_setup import set_log_level
+
         set_log_level(args.log_level)
 
-    if args.posterior_mode == "packed":
-        # Packed posterior strings must avoid writer delimiters or key/value
-        # parsing in extended Newick metadata becomes ambiguous.
-        if args.posterior_sep in {args.features_delim, args.features_assignment}:
-            raise ToytreeError(
-                "--posterior-sep cannot match --features-delim or --features-assignment"
-            )
-
-    tre = read_tree_auto(args.input, internal_labels=args.internal_labels)
+    tre = read_tree_auto(
+        resolve_input_arg(args.input), internal_labels=args.internal_labels
+    )
 
     try:
-        observed = tre.get_node_data(args.feature, missing=np.nan)
+        observed = tre.get_node_data(args.feature, missing=math.nan)
     except Exception as exc:
         raise ToytreeError(
             f"feature {args.feature!r} is not present on this tree. "
@@ -108,10 +154,9 @@ def run_anc_state_discrete(args):
     fit = result["model_fit"]
     data = result["data"]
     nobs = int(observed.notna().sum())
-    base = args.meta_base or args.feature
 
     anc_col = f"{args.feature}_anc"
-    anc_out_col = f"{base}_anc"
+    anc_out_col = f"{args.feature}_anc"
     tre.set_node_data(
         feature=anc_out_col,
         data=dict(enumerate(data[anc_col].tolist())),
@@ -120,31 +165,28 @@ def run_anc_state_discrete(args):
 
     posterior_col = f"{args.feature}_anc_posterior"
     rows = data[posterior_col].tolist()
-    if args.posterior_mode == "packed":
-        packed = _pack_posteriors(
-            rows, sep=args.posterior_sep, float_format=args.features_formatter
-        )
+    if args.binary_out:
         tre.set_node_data(
-            feature=f"{base}_anc_posterior",
+            feature=f"{args.feature}_anc_posterior",
+            data=dict(enumerate(rows)),
+            inplace=True,
+        )
+    else:
+        packed = _pack_posteriors(rows, sep="|", float_format="%.12g")
+        tre.set_node_data(
+            feature=f"{args.feature}_anc_posterior",
             data=dict(enumerate(packed)),
             inplace=True,
         )
-    elif args.posterior_mode == "split":
-        post_array = np.vstack([np.asarray(row, dtype=float) for row in rows])
-        for state_idx in range(post_array.shape[1]):
-            tre.set_node_data(
-                feature=f"{base}_anc_p{state_idx}",
-                data=dict(enumerate(post_array[:, state_idx].tolist())),
-                inplace=True,
-            )
 
-    if args.full:
+    if args.json:
+        payload = _fit_summary_payload(feature=args.feature, fit=fit, nobs=nobs)
+        print(json.dumps(payload, ensure_ascii=False, indent=2), file=sys.stderr)
+    elif args.full:
         _print_fit_summary(
             feature=args.feature,
             fit=fit,
             nobs=nobs,
-            posterior_mode=args.posterior_mode,
-            meta_base=base,
         )
 
     if args.exclude_features:
@@ -157,10 +199,4 @@ def run_anc_state_discrete(args):
         output=args.output,
         binary_out=args.binary_out,
         features=features,
-        newick_write_kwargs={
-            "features_prefix": args.features_prefix,
-            "features_delim": args.features_delim,
-            "features_assignment": args.features_assignment,
-            "features_formatter": args.features_formatter,
-        },
     )

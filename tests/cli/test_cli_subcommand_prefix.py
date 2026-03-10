@@ -29,6 +29,16 @@ def test_unique_prefix_get_expands_to_get_node_data_help(capsys):
     assert "return tabular feature data from tree nodes" in out
 
 
+def test_unique_prefix_i_expands_to_io_help(capsys):
+    """`i -h` should expand to the `io` help screen."""
+    with pytest.raises(SystemExit) as exc:
+        main.main("i -h")
+    assert exc.value.code == 0
+    out = capsys.readouterr().out
+    assert "io [options]" in out
+    assert "io: convert tree input/output with extended NHX metadata" in out
+
+
 def test_ambiguous_prefix_raises_error(capsys):
     """Ambiguous prefixes should raise with matching command names."""
     with pytest.raises(SystemExit) as exc:

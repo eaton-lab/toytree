@@ -12,12 +12,11 @@ x- toytree.io.parse_tree_from_bpp_file
 x- toytree.io.parse_tree_from_superbpp_file
 """
 
-from typing import Union, TypeVar, Optional, Union
-import re
 from pathlib import Path
+from typing import Optional, TypeVar, Union
+
 from toytree.core import ToyTree
 from toytree.io.src.parse import parse_tree, parse_tree_object
-from toytree.utils import ToytreeError
 
 # temporary
 # ToyTree = TypeVar("ToyTree")
@@ -29,6 +28,7 @@ def read_newick(
     feature_prefix: str = "&",
     feature_delim: str = ",",
     feature_assignment: str = "=",
+    feature_unpack: str = "|",
     internal_labels: Optional[str] = None,
 ) -> Union[ToyTree, MultiTree]:
     """Return a ToyTree or MultiTree from a newick file.
@@ -59,6 +59,10 @@ def read_newick(
     feature_assignment: str
         The character separating feature names and values in a comment
         block used for assignment. This is usually "=" or ":".
+    feature_unpack: str
+        Character used to unpack list-like NHX metadata values. With
+        default ``"|"``, values such as ``0.1|0.9`` parse as
+        list-like values ``[0.1, 0.9]``.
     internal_labels: str or None
         The feature that is present on internal node labels. If None
         then it will be inferred from the values present. Internal
@@ -80,6 +84,7 @@ def read_newick(
         "feature_prefix": feature_prefix,
         "feature_delim": feature_delim,
         "feature_assignment": feature_assignment,
+        "feature_unpack": feature_unpack,
         "internal_labels": internal_labels,
     }
     return parse_tree(path, **kwargs)
@@ -147,5 +152,8 @@ if __name__ == "__main__":
     newick_string = "(c,(a,b)[&x=3,y=2]:0.1)[&x=4,y=5]:0.5;"
 
     # write/read mrbayes NEXUS
-    # BPP1 = "/home/deren/Downloads/bpp-cacti-res/clades5-nloci1K-sample500K_r3.figtree.nex"
+    # BPP1 = (
+    #   "/home/deren/Downloads/bpp-cacti-res/"
+    #   "clades5-nloci1K-sample500K_r3.figtree.nex"
+    # )
     # read_nexus(BPP1)

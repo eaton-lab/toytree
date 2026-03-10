@@ -22,17 +22,19 @@ embedding = mark (must fit within container?, allow migration?)
 # pylint: disable=invalid-name
 
 from __future__ import annotations
-from typing import List, Dict, Optional, Mapping, Sequence, Union, Tuple
-from functools import cached_property
+
 from dataclasses import dataclass, field
+from functools import cached_property
+from typing import Dict, List, Mapping, Optional, Sequence, Tuple, Union
+
 import numpy as np
+import toyplot
 from pandas import DataFrame
 
-import toyplot
-from toytree.style import get_range_mapped_feature, get_color_mapped_values
-from toytree.utils.src.embedding import get_genealogy_embedding_table
-from toytree.core import ToyTree, Canvas, Cartesian, Mark, Node
 from toytree.color import ColorType
+from toytree.core import Canvas, Cartesian, Mark, Node, ToyTree
+from toytree.style import get_color_mapped_values, get_range_mapped_feature
+from toytree.utils.src.embedding import get_genealogy_embedding_table
 
 # ToyTree = TypeVar("ToyTree")
 
@@ -67,6 +69,7 @@ class Interval:
         If True then interval bottoms are fit to the width of their
         children intervals to make the tree look less blocky.
     """
+
     width: float
     height: float
     xpos: float = 0

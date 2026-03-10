@@ -1,48 +1,120 @@
 #!/usr/bin/env python
 
-"""Phylogenetic comparative methods (pcm) subpackage.
+"""Phylogenetic comparative methods exposed as a lazy-loaded package API.
 
-All `pcm` source code is located in `toytree.pcm.src`, with user-facing
-functions exposed in the `api` and `tree_api` submodules. In this
-way, all functions that a user is meant to interact with can be
-accessed from top-level locations at either :mod:`toytree.pcm`
-(package-level usage) or the `.pcm` attribute of :class:`ToyTree`
-instances (instance-level usage).
+All PCM source code lives under ``toytree.pcm.src``. Public functions are
+exposed here so they can be accessed either from :mod:`toytree.pcm` or from
+the ``tree.pcm`` API on :class:`toytree.ToyTree` instances.
 
-Package level API usage
+Examples
+--------
 >>> tree = toytree.rtree.unittree(ntips=10, treeheight=100, seed=123)
->>> toytree.pcm.simulate_discrete_markov_data(tree, 3, "ER")
+>>> toytree.pcm.simulate_discrete_trait(tree, nstates=3, model="ER")
 
-Instance level API usage
 >>> tree = toytree.rtree.unittree(ntips=10, treeheight=100, seed=123)
->>> tree.pcm.simulate_discrete_markov_data(nstates=3, "ER")
-
-Note
-----
-This package may be split into more subdivided packages in the future,
-as it grows, such as `toytree.pcm.markov`, `toytree.pcm.phylocom`.
+>>> tree.pcm.simulate_discrete_trait(nstates=3, model="ER")
 """
 
-# import the tree-api: tree.pcm.functions
-# from .src.api_tree import PhyloCompAPI
+from __future__ import annotations
 
-# import the package-api functions: tree.pcm.functions
-from toytree.pcm.src.diversification.diversification import *
-from toytree.pcm.src.diversification.red import *
-from toytree.pcm.src.phylolinalg import *
-from toytree.pcm.src.sim.sim_continuous import *
-from toytree.pcm.src.sim.sim_continuous_mvn import *
-from toytree.pcm.src.sim.sim_discrete import *
-from toytree.pcm.src.sim.sim_pglm import *
-from toytree.pcm.src.sim.sim_pgls import *
-from toytree.pcm.src.sim.sim_stochastic_mapping import *
-from toytree.pcm.src.traits.aic_table import aic_table
-from toytree.pcm.src.traits.fit_discrete_ctmc import *
-from toytree.pcm.src.traits.fit_continuous_ml import *
-from toytree.pcm.src.traits.pgls_matrix import *
-from toytree.pcm.src.traits.phylosignal_k import *
-from toytree.pcm.src.traits.phylosignal_lambda import *
-from toytree.pcm.src.traits.pic import *
-from toytree.pcm.src.vcv import *
+import importlib
 
-# from toytree.pcm.src.phylocom import simulate_community_data
+# Keep this mapping explicit so the package-level API remains stable while the
+# implementation stays lazy. This mirrors the existing eager import order.
+_MODULE_EXPORTS = {
+    "toytree.pcm.src.diversification.diversification": [
+        "get_tip_level_diversification",
+        "get_equal_splits",
+    ],
+    "toytree.pcm.src.diversification.red": [
+        "get_relative_evolutionary_divergence",
+    ],
+    "toytree.pcm.src.phylolinalg.pglm": [
+        "PGLMResult",
+        "PGLMPruningModel",
+        "pglm",
+    ],
+    "toytree.pcm.src.phylolinalg.pgls": [
+        "PGLSResult",
+        "PGLSPruningModel",
+        "pgls",
+    ],
+    "toytree.pcm.src.phylolinalg.pgls_infer": [
+        "infer_node_states_pgls",
+    ],
+    "toytree.pcm.src.sim.sim_continuous": [
+        "simulate_continuous_trait",
+    ],
+    "toytree.pcm.src.sim.sim_continuous_mvn": [
+        "simulate_multivariate_continuous_trait",
+    ],
+    "toytree.pcm.src.sim.sim_discrete": [
+        "get_markov_model",
+        "simulate_discrete_trait",
+    ],
+    "toytree.pcm.src.sim.sim_pglm": [
+        "simulate_pglm_trait",
+    ],
+    "toytree.pcm.src.sim.sim_pgls": [
+        "simulate_pgls_trait",
+    ],
+    "toytree.pcm.src.sim.sim_stochastic_mapping": [
+        "simulate_stochastic_map",
+    ],
+    "toytree.pcm.src.traits.aic_table": [
+        "aic_table",
+    ],
+    "toytree.pcm.src.traits.fit_discrete_ctmc": [
+        "fit_discrete_ctmc",
+        "infer_ancestral_states_discrete_ctmc",
+    ],
+    "toytree.pcm.src.traits.fit_continuous_ml": [
+        "fit_continuous_ml",
+        "infer_ancestral_states_continuous_ml",
+        "ContinuousMLModelFit",
+        "FitContinuousMLResult",
+    ],
+    "toytree.pcm.src.traits.pgls_matrix": [
+        "pgls_matrix",
+    ],
+    "toytree.pcm.src.traits.phylosignal_k": [
+        "phylogenetic_signal_k",
+    ],
+    "toytree.pcm.src.traits.phylosignal_lambda": [
+        "phylogenetic_signal_lambda",
+    ],
+    "toytree.pcm.src.traits.pic": [
+        "get_phylogenetic_independent_contrasts",
+        "get_ancestral_states_pic",
+    ],
+    "toytree.pcm.src.vcv": [
+        "get_vcv_matrix_from_tree",
+        "get_corr_matrix_from_tree",
+        "get_distance_matrix_from_vcv_matrix",
+        "get_tree_from_vcv_matrix",
+    ],
+}
+
+_LAZY_ATTRS = {
+    name: (module_name, name)
+    for module_name, names in _MODULE_EXPORTS.items()
+    for name in names
+}
+
+__all__ = list(_LAZY_ATTRS)
+
+
+def __getattr__(name: str):
+    """Lazily import public PCM functions and result classes on first access."""
+    if name not in _LAZY_ATTRS:
+        raise AttributeError(name)
+    module_name, attr_name = _LAZY_ATTRS[name]
+    module = importlib.import_module(module_name)
+    value = getattr(module, attr_name)
+    globals()[name] = value
+    return value
+
+
+def __dir__():
+    """Return module attributes plus lazily available public names."""
+    return sorted(set(globals()) | set(__all__))

@@ -112,12 +112,6 @@ class AnnotationRect(Mark):
         if index == 0:
             return toyplot.data.minimax(self.xtable)
         return toyplot.data.minimax(self.ytable)
-        # domain = toyplot.data.minimax([
-        #     self.ntable[:, index], self.bar_min, self.bar_max,
-        #     self.ntable[:, index] + self.bar_max,
-        # ])
-        # # print(f"X--- {index}, {self.widths}, {self.heights}\n\n")
-        # return domain
 
 
 class AnnotationLine(Mark):

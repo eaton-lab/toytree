@@ -1,16 +1,10 @@
 #!/usr/bin/env python
 
-"""Data sets and data conversion functions.
-
-"""
+"""Data sets and data conversion functions."""
 
 from __future__ import annotations
 
 import importlib
-
-# methods here will be available at object-level (ToyTree.[method])
-# and should have the @add_toytree_method decorator
-from .get_node_data import get_node_data, get_tip_data
 
 __all__ = [
     "get_node_data",
@@ -21,6 +15,8 @@ __all__ = [
 ]
 
 _LAZY_ATTRS = {
+    "get_node_data": ("toytree.data._src.get_node_data", "get_node_data"),
+    "get_tip_data": ("toytree.data._src.get_node_data", "get_tip_data"),
     "set_node_data": ("toytree.data._src.set_node_data", "set_node_data"),
     "set_node_data_from_dataframe": (
         "toytree.data._src.set_node_data",

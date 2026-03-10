@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import io
+import json
 import tempfile
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
@@ -53,6 +54,64 @@ class TestMakeUltrametricCLI(PytestCompat):
         tree = toytree.tree(out.getvalue().strip())
         self.assertTrue(tree.is_ultrametric())
         self.assertEqual(err.getvalue().strip(), "")
+
+    def test_correlated_method_json_summary(self):
+        """Correlated PL mode should emit JSON summary to stderr."""
+        args = self.parser.parse_args(
+            [
+                "-i",
+                str(self.tree_path),
+                "--method",
+                "correlated",
+                "--lam",
+                "0.5",
+                "--max-iter",
+                "200",
+                "--max-fun",
+                "200",
+                "--max-refine",
+                "2",
+                "--json",
+            ]
+        )
+        out = io.StringIO()
+        err = io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            run_make_ultrametric(args)
+        tree = toytree.tree(out.getvalue().strip())
+        self.assertTrue(tree.is_ultrametric())
+        payload = json.loads(err.getvalue().strip())
+        self.assertEqual(payload["method"], "correlated")
+
+    def test_discrete_estimate_json_summary(self):
+        """Discrete estimate mode should emit search payload as JSON to stderr."""
+        args = self.parser.parse_args(
+            [
+                "-i",
+                str(self.tree_path),
+                "--method",
+                "discrete",
+                "--estimate",
+                "3",
+                "--max-iter",
+                "200",
+                "--max-fun",
+                "200",
+                "--max-refine",
+                "2",
+                "--json",
+            ]
+        )
+        out = io.StringIO()
+        err = io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            run_make_ultrametric(args)
+        tree = toytree.tree(out.getvalue().strip())
+        self.assertTrue(tree.is_ultrametric())
+        payload = json.loads(err.getvalue().strip())
+        self.assertEqual(payload["method"], "discrete")
+        self.assertIn("search", payload)
+        self.assertIn("estimated_parameter", payload)
 
     def test_discrete_requires_ncategories(self):
         args = self.parser.parse_args(

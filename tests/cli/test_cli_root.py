@@ -2,17 +2,16 @@
 
 """Tests for root CLI modes and argument validation."""
 
-import pickle
 import tempfile
 from pathlib import Path
 
+from conftest import PytestCompat
+
+from toytree.cli._tree_transport import read_tree_auto
 from toytree.cli.cli_root import run_root
 from toytree.cli.subparsers import get_parser_root
 from toytree.utils import ToytreeError
 
-
-
-from conftest import PytestCompat
 
 class TestCLIRoot(PytestCompat):
     """Validate root CLI mode selection and DLC option handling."""
@@ -72,7 +71,7 @@ class TestCLIRoot(PytestCompat):
             ]
         )
         run_root(args)
-        tree = pickle.loads(outpath.read_bytes())
+        tree = read_tree_auto(str(outpath))
         self.assertTrue(tree.is_rooted())
         self.assertIn("DLC", tree.features)
         self.assertIn("DLC_root_prob", tree.features)
@@ -102,7 +101,7 @@ class TestCLIRoot(PytestCompat):
             ]
         )
         run_root(args)
-        tree = pickle.loads(outpath.read_bytes())
+        tree = read_tree_auto(str(outpath))
         self.assertTrue(tree.is_rooted())
         self.assertNotIn("DLC", tree.features)
         self.assertNotIn("DLC_root_prob", tree.features)

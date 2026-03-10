@@ -3,7 +3,6 @@
 """Tests for rtree CLI generation methods and argument validation."""
 
 import io
-import pickle
 import tempfile
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
@@ -11,6 +10,7 @@ from pathlib import Path
 from conftest import PytestCompat
 
 import toytree
+from toytree.cli._tree_transport import read_tree_auto
 from toytree.cli.cli_rtree import run_rtree
 from toytree.cli.subparsers import get_parser_rtree
 from toytree.utils import ToytreeError
@@ -93,15 +93,14 @@ class TestRTreeCLI(PytestCompat):
         self.assertIn("births=", err)
         self.assertIn("deaths=", err)
 
-    def test_binary_output_writes_pickled_toytree(self):
-        """Binary mode should write a pickled ToyTree payload."""
+    def test_binary_output_writes_transport_payload(self):
+        """Binary mode should write a valid transport payload."""
         outpath = self.tmpdir / "rtree.bin"
         args = self.parser.parse_args(
             ["--method", "rtree", "-n", "6", "-b", "-o", str(outpath)]
         )
         run_rtree(args)
-        payload = outpath.read_bytes()
-        tree = pickle.loads(payload)
+        tree = read_tree_auto(str(outpath))
         self.assertEqual(tree.ntips, 6)
 
     def test_reject_incompatible_N_for_non_coalescent_method(self):

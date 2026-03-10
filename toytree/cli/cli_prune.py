@@ -7,7 +7,11 @@ from __future__ import annotations
 
 def run_prune(args):
     """Run the `prune` CLI command."""
-    from toytree.cli._tree_transport import read_tree_auto, write_tree_output
+    from toytree.cli._tree_transport import (
+        read_tree_auto,
+        resolve_input_arg,
+        write_tree_output,
+    )
     from toytree.mod._src.mod_topo import prune
     from toytree.utils.src.logger_setup import set_log_level
 
@@ -15,7 +19,9 @@ def run_prune(args):
         set_log_level(args.log_level)
 
     # parse the tree
-    tre = read_tree_auto(args.input, internal_labels=args.internal_labels)
+    tre = read_tree_auto(
+        resolve_input_arg(args.input), internal_labels=args.internal_labels
+    )
 
     # operate
     tre = prune(

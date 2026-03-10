@@ -1,16 +1,16 @@
 #!/usr/bin/env python
 
 import io
+import json
 import tempfile
 from contextlib import redirect_stdout
 from pathlib import Path
 
+from conftest import PytestCompat
+
 from toytree.cli.cli_distance import run_distance
 from toytree.cli.subparsers import get_parser_distance
 
-
-
-from conftest import PytestCompat
 
 class TestDistanceCLI(PytestCompat):
     def setUp(self):
@@ -46,6 +46,27 @@ class TestDistanceCLI(PytestCompat):
         )
         self.assertIn("symmetric_difference\t", out)
         self.assertIn("steel_and_penny\t", out)
+
+    def test_rf_distance_json_output(self):
+        payload = json.loads(
+            self._run_capture_stdout(
+                ["-i", str(self.t1), "-j", str(self.t2), "-m", "rf", "--json"]
+            )
+        )
+        self.assertEqual(payload["metric"], "rf")
+        self.assertEqual(payload["value"], 2.0)
+        self.assertFalse(payload["normalize"])
+
+    def test_quartet_all_json_output(self):
+        payload = json.loads(
+            self._run_capture_stdout(
+                ["-i", str(self.t1), "-j", str(self.t2), "-m", "quartet-all", "--json"]
+            )
+        )
+        self.assertEqual(payload["metric"], "quartet-all")
+        self.assertIn("values", payload)
+        self.assertIn("symmetric_difference", payload["values"])
+        self.assertIn("steel_and_penny", payload["values"])
 
     def test_internal_labels_option_removed(self):
         with self.assertRaises(SystemExit):

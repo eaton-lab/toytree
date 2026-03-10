@@ -15,6 +15,7 @@ References
 
 import math
 import sys
+from collections.abc import Sequence as ABCSequence
 from typing import Callable, Optional, Sequence, Tuple
 
 from toytree.core import Node, ToyTree
@@ -60,6 +61,7 @@ def get_feature_string(
     features_prefix: str,
     features_delim: str,
     features_assignment: str,
+    feature_pack: str,
     features_formatter: str,
 ) -> str:
     """Return a string of commented features inside square brackets.
@@ -83,15 +85,34 @@ def get_feature_string(
         if value is None:
             continue
 
-        # try to convert to float and float format the value
-        try:
-            value = float(value)
-            if _is_nan(value):
-                value = ""
-            else:
-                value = formatter(value)
-        except (TypeError, ValueError):
-            value = str(value)
+        # Pack list-like values before scalar formatting so values such as
+        # posterior vectors can be round-tripped via one metadata field.
+        if (
+            isinstance(value, ABCSequence)
+            and not isinstance(value, (str, bytes, bytearray))
+        ):
+            packed_values = []
+            for item in value:
+                try:
+                    item = float(item)
+                    if _is_nan(item):
+                        continue
+                    packed_values.append(formatter(item))
+                except (TypeError, ValueError):
+                    item = str(item)
+                    if item:
+                        packed_values.append(item)
+            value = feature_pack.join(packed_values)
+        else:
+            # try to convert to float and float format the value
+            try:
+                value = float(value)
+                if _is_nan(value):
+                    value = ""
+                else:
+                    value = formatter(value)
+            except (TypeError, ValueError):
+                value = str(value)
 
         # store if a value exists
         if value:
@@ -100,6 +121,40 @@ def get_feature_string(
     if not feature_str:
         return ""
     return f"[{features_prefix}{feature_str}]"
+
+
+def get_single_feature_label_suffixes(
+    tree: ToyTree,
+    feature: str,
+    features_formatter: str,
+) -> dict[int, str]:
+    """Return map of node idx to `{value}` suffix for label serialization."""
+    if feature not in tree.features:
+        raise ToytreeError(f"Cannot write feature not present in tree: {feature!r}")
+
+    formatter = get_float_formatter(features_formatter)
+    suffixes: dict[int, str] = {}
+    for node in tree:
+        value = getattr(node, feature, None)
+        if value is None:
+            raise ToytreeError(
+                f"write_single_feature={feature!r} requires values on all nodes."
+            )
+        try:
+            fval = float(value)
+            if _is_nan(fval):
+                raise ToytreeError(
+                    f"write_single_feature={feature!r} cannot include NaN values."
+                )
+            sval = formatter(fval)
+        except (TypeError, ValueError):
+            sval = str(value)
+            if sval == "":
+                raise ToytreeError(
+                    f"write_single_feature={feature!r} cannot include empty values."
+                )
+        suffixes[node.idx] = f"{{{sval}}}"
+    return suffixes
 
 
 def node_to_newick(
@@ -113,10 +168,12 @@ def node_to_newick(
     features_prefix: str = "&",
     features_delim: str = ",",
     features_assignment: str = "=",
+    feature_pack: str = "|",
     features_formatter: str = "%.12g",
     names_as_ints: bool = False,
+    label_suffixes: Optional[dict[int, str]] = None,
 ) -> str:
-    """Reduce function used in tree_reduce"""
+    """Reduce function used in tree_reduce."""
     # format the comment feature string for extra features
     node_feature_str = get_feature_string(
         node,
@@ -124,6 +181,7 @@ def node_to_newick(
         features_prefix,
         features_delim,
         features_assignment,
+        feature_pack,
         features_formatter,
     )
     edge_feature_str = get_feature_string(
@@ -132,6 +190,7 @@ def node_to_newick(
         features_prefix,
         features_delim,
         features_assignment,
+        feature_pack,
         features_formatter,
     )
 
@@ -158,25 +217,40 @@ def node_to_newick(
             except (TypeError, ValueError):
                 internal = str(internal)
 
+    suffix = ""
+    if label_suffixes is not None:
+        suffix = label_suffixes.get(node.idx, "")
+    if suffix:
+        internal = f"{internal}{suffix}" if internal else suffix
+
     # tip node write N[meta]:E[emeta] if dist else N[nmeta]
     if node.is_leaf():
+        label = str(node.idx) if names_as_ints else str(node.name)
+        if suffix:
+            label = f"{label}{suffix}"
         if names_as_ints:
             if dist:
-                return f"{node.idx}{node_feature_str}{dist}{edge_feature_str}"
-            return f"{node.idx}{node_feature_str}"
+                return f"{label}{node_feature_str}{dist}{edge_feature_str}"
+            return f"{label}{node_feature_str}"
         if dist:
-            return f"{node.name}{node_feature_str}{dist}{edge_feature_str}"
-        return f"{node.name}{node_feature_str}"
+            return f"{label}{node_feature_str}{dist}{edge_feature_str}"
+        return f"{label}{node_feature_str}"
 
     # root node write N[nmeta] unless the root has dist then N[meta]:E[emeta]
     if node.is_root():
         if node.dist:
-            return f"({','.join(children)}){internal}{node_feature_str}{dist}{edge_feature_str}"
+            return (
+                f"({','.join(children)}){internal}"
+                f"{node_feature_str}{dist}{edge_feature_str}"
+            )
         return f"({','.join(children)}){internal}{node_feature_str}"
 
     # other internal nodes write N[nmeta]:E[emeta] if dist else N[nmeta]
     if dist:
-        return f"({','.join(children)}){internal}{node_feature_str}{dist}{edge_feature_str}"
+        return (
+            f"({','.join(children)}){internal}"
+            f"{node_feature_str}{dist}{edge_feature_str}"
+        )
     return f"({','.join(children)}){internal}{node_feature_str}"
 
 
@@ -190,8 +264,10 @@ def tree_reduce(
     features_prefix: str = "&",
     features_delim: str = ",",
     features_assignment: str = "=",
+    feature_pack: str = "|",
     features_formatter: str = "%.12g",
     names_as_ints: bool = False,
+    label_suffixes: Optional[dict[int, str]] = None,
 ) -> str:
     """Return newick string of ToyTree.
 
@@ -207,8 +283,10 @@ def tree_reduce(
         features_prefix,
         features_delim,
         features_assignment,
+        feature_pack,
         features_formatter,
         names_as_ints,
+        label_suffixes,
     ]
     reduced_children = [tree_reduce(child, *args) for child in node.children]
     newick = node_to_newick(node, reduced_children, *args)
@@ -246,8 +324,10 @@ def write(
     features_prefix: str = "&",
     features_delim: str = ",",
     features_assignment: str = "=",
+    feature_pack: str = "|",
     features_formatter: str = "%.12g",
     nexus: bool = False,
+    write_single_feature: Optional[str] = None,
     **kwargs,
 ) -> Optional[str]:
     """Write tree to newick string and return or write to filepath.
@@ -288,12 +368,20 @@ def write(
     features_assignment: str
         A character used to separate feature keys and values. Default
         is "=".
+    feature_pack: str
+        A character used to pack list-like feature values into a
+        single metadata value. Default is "|", which writes values as
+        e.g., ``[0.1, 0.9] -> "0.1|0.9"``.
     features_formatter: str or None
         A formatting string used for float feature metadata. Default
         is "%.12g".
     nexus: bool
         If True the tree data is nested in a "trees" block, names are
         translated to ints, and a #NEXUS header is included.
+    write_single_feature: str or None
+        If provided, appends `{value}` to every emitted node label
+        using values from this one feature. Values must be present on
+        all nodes and cannot be missing.
 
     See Also
     --------
@@ -322,9 +410,21 @@ def write(
     >>> '((r0:0.5,r1:0.5)A:0.5,(r2:0.5,r3:0.5)C:0.5);'
     >>> tree.write(features=["X"])
     >>> '((r0[&X=10]:0.5,r1[&X=10]:0.5)100[&X=10]:0.5,(r2[&X=10]:...
+    >>> tree.write(write_single_feature="X")
+    >>> '((r0{10}:0.5,r1{10}:0.5){10}:0.5,(r2{10}:0.5,r3{10}:0.5){10}:0.5){10};'
     """
     if kwargs:
         print(f"Deprecated args to write(): {list(kwargs)}. See docs.", file=sys.stderr)
+
+    if write_single_feature is not None and nexus:
+        raise ToytreeError(
+            "write_single_feature is not supported with nexus=True."
+        )
+    if feature_pack in {features_delim, features_assignment}:
+        raise ToytreeError(
+            "feature_pack cannot match features_delim or "
+            f"features_assignment: {feature_pack!r}"
+        )
 
     # separate node and edge features
     if features is None:
@@ -336,6 +436,14 @@ def write(
         raise ToytreeError(f"Cannot write features not present in tree: {bad_features}")
     node_features = {i for i in features if i not in tree.edge_features}
     edge_features = features - node_features
+
+    label_suffixes = None
+    if write_single_feature is not None:
+        label_suffixes = get_single_feature_label_suffixes(
+            tree=tree,
+            feature=write_single_feature,
+            features_formatter=features_formatter,
+        )
 
     # build newick string from recursive
     newick = (
@@ -349,8 +457,10 @@ def write(
             features_prefix,
             features_delim,
             features_assignment,
+            feature_pack,
             features_formatter,
             names_as_ints=nexus,
+            label_suffixes=label_suffixes,
         )
         + ";"
     )

@@ -24,6 +24,10 @@ from typing import Any
 from ._subparser_helpers import parse_bool, parse_node_mask
 
 TMPDIR = gettempdir()
+SINGLE_TREE_INPUT_HELP = (
+    "input tree file/path/url/newick string, or '-' for stdin; "
+    "defaults to stdin when piped"
+)
 
 
 class SingleMetavarHelpFormatter(RawDescriptionHelpFormatter):
@@ -151,6 +155,7 @@ def get_parser_get_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
             $ get-node-data -i TRE.nwk -s ',' -o DATA.csv
             $ get-node-data -i TRE.nwk -f dist -N
             $ get-node-data -i TRE.nwk --float-format %.6f
+            $ get-node-data -i TRE.nwk -f name dist --json
             $ cat TRE.nwk | get-node-data -i -
             """
         ),
@@ -170,8 +175,7 @@ def get_parser_get_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
         "--input",
         type=str,
         metavar="path",
-        required=True,
-        help="input tree file/path/url/newick string, or '-' for stdin",
+        help=SINGLE_TREE_INPUT_HELP,
     )
     io_group.add_argument(
         "-o",
@@ -244,6 +248,11 @@ def get_parser_get_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
         action="store_true",
         help="set output index to node names; fallback to idx when names are empty",
     )
+    format_group.add_argument(
+        "--json",
+        action="store_true",
+        help="write structured JSON output (overrides table text formatting)",
+    )
 
     options_group = p.add_argument_group(title="Options")
     options_group.add_argument(
@@ -278,8 +287,9 @@ def get_parser_set_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
             -------------------------------------------------------------------
             | set-node-data: assign feature values to nodes and return tree
             -------------------------------------------------------------------
-            | Apply feature updates using key=value node assignments or a
-            | tabular file, then emit updated Newick with feature data.
+            | Store or update feature data using key=value node assignments or
+            | a tabular file, then emit updated Newick with feature data.
+            | Pipe to `toytree io` to change metadata comment formatting.
             -------------------------------------------------------------------
             """
         ),
@@ -305,9 +315,12 @@ def get_parser_set_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
             # From Table (IMAP): rename tips from TSV <name>\\t<newname>
             $ set-node-data -i TRE.nwk --table IMAP.tsv --table-query-regex --table-allow-unmatched --table-headers 'name'
 
-            # Edge features and NHX-like formatting
+            # Edge features
             $ set-node-data -i TRE.nwk -f rate -s 10=0.1 11=0.2 --edge
-            $ set-node-data -i TRE.nwk -f state -s a=1 b=2 --features-prefix '&&NHX:' --features-delim ':' > OUT.nhx
+
+            # Convert output metadata to NHX-like formatting via `toytree io`
+            $ set-node-data -i TRE.nwk -f state -s a=1 b=2 \\
+                | toytree io -i - -fp '&&NHX:' -fd ':' -fa '=' > OUT.nhx
 
             # Binary piping between commands
             $ set-node-data -i TRE.nwk -f X -s a=1 b=2 -b | draw -i - -nm false -ns 10 -nc 'X' -v
@@ -329,8 +342,7 @@ def get_parser_set_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
         "--input",
         type=str,
         metavar="path",
-        required=True,
-        help="input tree file/path/url/newick string, or '-' for stdin",
+        help=SINGLE_TREE_INPUT_HELP,
     )
     io_group.add_argument(
         "-o",
@@ -394,12 +406,14 @@ def get_parser_set_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
 
     table_group = p.add_argument_group(title="From Table")
     table_group.add_argument(
+        "-t",
         "--table",
         type=Path,
         metavar="path",
         help="tabular file input for set_node_data_from_dataframe mode",
     )
     table_group.add_argument(
+        "-ts",
         "--table-sep",
         type=str,
         default="\t",
@@ -407,17 +421,20 @@ def get_parser_set_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
         help="separator for --table file [\\t]",
     )
     table_group.add_argument(
+        "-tc",
         "--table-query-column",
         type=_parse_int_or_str,
         metavar="idx|name",
         help="table input: query column selector (int position or column name)",
     )
     table_group.add_argument(
+        "-tr",
         "--table-query-regex",
         action="store_true",
         help="table input: treat string queries as regex (prepend '~' when absent)",
     )
     table_group.add_argument(
+        "-th",
         "--table-headers",
         type=str,
         nargs="+",
@@ -425,39 +442,10 @@ def get_parser_set_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
         help="table input: feature names for parsed table columns after query column",
     )
     table_group.add_argument(
+        "-tu",
         "--table-allow-unmatched",
         action="store_true",
         help="table input: ignore unmatched node queries (logged at DEBUG)",
-    )
-
-    out_group = p.add_argument_group(title="Output Features")
-    out_group.add_argument(
-        "--features-prefix",
-        type=str,
-        metavar="str",
-        default="&",
-        help="prefix for features in extended newick [&, use '&&NHX:' for NHX style]",
-    )
-    out_group.add_argument(
-        "--features-delim",
-        type=str,
-        metavar="str",
-        default=",",
-        help="delimiter between feature key/value pairs in output [,]",
-    )
-    out_group.add_argument(
-        "--features-assignment",
-        type=str,
-        metavar="str",
-        default="=",
-        help="assignment token between feature key and value in output [=]",
-    )
-    out_group.add_argument(
-        "--features-formatter",
-        type=str,
-        metavar="fmt",
-        default="%.12g",
-        help="float formatter for feature values in output [%%.12g]",
     )
 
     options_group = p.add_argument_group(title="Options")
@@ -478,6 +466,214 @@ def get_parser_set_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
     )
 
     _set_handler(p, "toytree.cli.cli_set_node_data:run_set_node_data")
+    return p
+
+
+def get_parser_io(parser: ArgumentParser | None = None) -> ArgumentParser:
+    """Return parser for io command."""
+    kwargs = dict(
+        prog="io",
+        usage="io [options]",
+        help="convert tree data between binary/Newick/Nexus with NHX metadata",
+        formatter_class=_formatter(120, 120),
+        description=dedent(
+            """
+            -------------------------------------------------------------------
+            | io: convert tree input/output with extended NHX metadata
+            -------------------------------------------------------------------
+            | Read a single tree from binary or text input, then emit binary,
+            | Newick, or Nexus output while controlling metadata parsing and
+            | serialization settings.
+            -------------------------------------------------------------------
+            """
+        ),
+        epilog=dedent(
+            """
+            Examples
+            --------
+            # pass-through Newick (stdout)
+            $ io -i TRE.nwk
+
+            # parse stdin and write binary for fast metadata-safe piping
+            $ cat TRE.nwk | io -b > TRE.bin
+
+            # convert binary back to Newick text
+            $ io -i TRE.bin > TRE.nwk
+
+            # write Nexus using flag or output suffix
+            $ io -i TRE.bin --nexus -o TRE.nex
+            $ io -i TRE.bin -o TRE.nexus
+
+            # read non-default NHX metadata formatting
+            $ io -i TRE.nhx --in-feature-prefix '&&NHX:' --in-feature-delim ':' --in-feature-assignment '='
+            $ io -i TRE.nhx --in-feature-unpack ';'
+
+            # suppress support labels and metadata comments in text output
+            $ io -i TRE.bin -x
+
+            # write a single node feature in name{value} format
+            $ io -i TRE.bin --write-single-feature X
+
+            # pack list-like metadata values with a custom separator
+            $ io -i TRE.bin --features-pack ';'
+
+            # to extract a TSV table, pipe to get-node-data
+            $ io -i TRE.bin | get-node-data -i - -H
+            """
+        ),
+    )
+    if parser:
+        kwargs["name"] = kwargs.pop("prog")
+        kwargs["add_help"] = False
+        p = parser.add_parser(**kwargs)
+    else:
+        kwargs.pop("help", None)
+        kwargs["add_help"] = False
+        p = ArgumentParser(**kwargs)
+
+    io_group = p.add_argument_group(title="Input / Output")
+    io_group.add_argument(
+        "-i",
+        "--input",
+        type=str,
+        metavar="path",
+        help=SINGLE_TREE_INPUT_HELP,
+    )
+    io_group.add_argument(
+        "-o",
+        "--output",
+        type=Path,
+        metavar="path",
+        help="optional output path; default writes to stdout",
+    )
+    io_group.add_argument(
+        "-b",
+        "--binary-out",
+        action="store_true",
+        help="write binary ToyTree output for efficient piping between commands",
+    )
+    io_group.add_argument(
+        "-I",
+        "--internal-labels",
+        type=str,
+        metavar="str",
+        help="parse internal newick labels as this feature (overrides auto-detect)",
+    )
+    io_group.add_argument(
+        "-x",
+        "--exclude-features",
+        action="store_true",
+        help="omit non-default node features from output Newick",
+    )
+
+    in_features_group = p.add_argument_group(title="Input Features")
+    in_features_group.add_argument(
+        "-ifp",
+        "--in-feature-prefix",
+        type=str,
+        metavar="str",
+        default="&",
+        help="input metadata prefix in NHX-like comments [&]",
+    )
+    in_features_group.add_argument(
+        "-ifd",
+        "--in-feature-delim",
+        type=str,
+        metavar="str",
+        default=",",
+        help="input metadata delimiter between key/value pairs [,]",
+    )
+    in_features_group.add_argument(
+        "-ifa",
+        "--in-feature-assignment",
+        type=str,
+        metavar="str",
+        default="=",
+        help="input metadata assignment token between key and value [=]",
+    )
+    in_features_group.add_argument(
+        "-ifu",
+        "--in-feature-unpack",
+        type=str,
+        metavar="str",
+        default="|",
+        help="input list-value unpack token in metadata values [|]",
+    )
+
+    output_mode_group = p.add_argument_group(title="Output Mode")
+    output_mode_group.add_argument(
+        "--nexus",
+        action="store_true",
+        help="write Nexus text output (also auto-enabled for .nex/.nexus output paths)",
+    )
+
+    out_features_group = p.add_argument_group(title="Output Features")
+    out_features_group.add_argument(
+        "-fp",
+        "--features-prefix",
+        type=str,
+        metavar="str",
+        default="&",
+        help="prefix for features in extended newick [&, use '&&NHX:' for NHX style]",
+    )
+    out_features_group.add_argument(
+        "-fd",
+        "--features-delim",
+        type=str,
+        metavar="str",
+        default=",",
+        help="delimiter between feature key/value pairs in output [,]",
+    )
+    out_features_group.add_argument(
+        "-fa",
+        "--features-assignment",
+        type=str,
+        metavar="str",
+        default="=",
+        help="assignment token between feature key and value in output [=]",
+    )
+    out_features_group.add_argument(
+        "-fk",
+        "--features-pack",
+        type=str,
+        metavar="str",
+        default="|",
+        help="pack list-like feature values using this token [|]",
+    )
+    out_features_group.add_argument(
+        "-ff",
+        "--features-formatter",
+        type=str,
+        metavar="fmt",
+        default="%.12g",
+        help="float formatter for feature values in output [%%.12g]",
+    )
+    out_features_group.add_argument(
+        "--write-single-feature",
+        type=str,
+        metavar="str",
+        default=None,
+        help="write one feature on every node as name{value} labels in Newick text",
+    )
+
+    options_group = p.add_argument_group(title="Options")
+    options_group.add_argument(
+        "-l",
+        "--log-level",
+        type=str,
+        metavar="level",
+        default=None,
+        help="set toytree logger level (DEBUG, INFO, WARNING, ERROR)",
+    )
+    options_group.add_argument(
+        "-h",
+        "--help",
+        action="help",
+        default=SUPPRESS,
+        help="show this help message and exit",
+    )
+
+    _set_handler(p, "toytree.cli.cli_io:run_io")
     return p
 
 
@@ -531,8 +727,7 @@ def get_parser_draw(parser: ArgumentParser | None = None) -> ArgumentParser:
         "--input",
         type=str,
         metavar="path",
-        required=True,
-        help="input tree file/path/url/newick string, or '-' for stdin",
+        help=SINGLE_TREE_INPUT_HELP,
     )
     io_group.add_argument(
         "-o",
@@ -820,8 +1015,7 @@ def get_parser_root(parser: ArgumentParser | None = None) -> ArgumentParser:
         "--input",
         type=str,
         metavar="path",
-        required=True,
-        help="input tree file/path/url/newick string, or '-' for stdin",
+        help=SINGLE_TREE_INPUT_HELP,
     )
     io_group.add_argument(
         "-o",
@@ -873,7 +1067,6 @@ def get_parser_root(parser: ArgumentParser | None = None) -> ArgumentParser:
 
     mad_group = p.add_argument_group(title="MAD Options")
     mad_group.add_argument(
-        "-d",
         "--min-dist",
         type=float,
         metavar="float",
@@ -1034,8 +1227,7 @@ def get_parser_prune(parser: ArgumentParser | None = None) -> ArgumentParser:
         "--input",
         type=str,
         metavar="path",
-        required=True,
-        help="input tree file/path/url/newick string, or '-' for stdin",
+        help=SINGLE_TREE_INPUT_HELP,
     )
     io_group.add_argument(
         "-o",
@@ -1133,6 +1325,7 @@ def get_parser_distance(parser: ArgumentParser | None = None) -> ArgumentParser:
             $ distance -i TREE1.nwk -j TREE2.nwk -m rfg_mci --normalize
             $ distance -i TREE1.nwk -j TREE2.nwk -m quartet --quartet-metric symmetric_difference
             $ distance -i TREE1.nwk -j TREE2.nwk -m quartet-all
+            $ distance -i TREE1.nwk -j TREE2.nwk -m rf --json
             $ cat TREE1.nwk | distance -i - -j TREE2.nwk -m rf
             """
         ),
@@ -1221,6 +1414,11 @@ def get_parser_distance(parser: ArgumentParser | None = None) -> ArgumentParser:
         metavar="fmt",
         help="format string for scalar output [%%.6g]",
     )
+    format_group.add_argument(
+        "--json",
+        action="store_true",
+        help="write structured JSON output",
+    )
 
     options_group = p.add_argument_group(title="Options")
     options_group.add_argument(
@@ -1274,6 +1472,7 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
             $ make-ultrametric -i TREE.nwk -m correlated --lam 0.5 -c -1=1.0 > UTREE.nwk
             $ make-ultrametric -i TREE.nwk -m correlated --lam 0.5 --nstarts 8 --ncores 4 --seed 123 > UTREE.nwk
             $ make-ultrametric -i TREE.nwk -m discrete --estimate 5 -c -1=1.0 > UTREE.nwk
+            $ make-ultrametric -i TREE.nwk -m correlated --lam 0.5 --json > UTREE.nwk 2> fit.json
             $ make-ultrametric -i TREE.nwk -m clock -c AB=0.8-1.2 CD=0.4
             $ cat TREE.nwk | make-ultrametric -i - --method extend
             $ make-ultrametric -i TREE.nwk -m relaxed -b | root -i - --mad > UTREE.nwk
@@ -1295,8 +1494,7 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
         "--input",
         type=str,
         metavar="path",
-        required=True,
-        help="input tree file/path/url/newick string, or '-' for stdin",
+        help=SINGLE_TREE_INPUT_HELP,
     )
     io_group.add_argument(
         "-o",
@@ -1413,6 +1611,11 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
         action="store_true",
         help="PL only: print model-fit summary fields to stderr",
     )
+    opt_group.add_argument(
+        "--json",
+        action="store_true",
+        help="PL only: print model-fit summary as JSON to stderr",
+    )
 
     options_group = p.add_argument_group(title="Options")
     options_group.add_argument(
@@ -1451,9 +1654,11 @@ def get_parser_anc_state_discrete(
             -------------------------------------------------------------------
             | Fits a discrete CTMC model (ER, SYM, ARD) to a feature that
             | is already stored on the input tree, then writes reconstructed MAP
-            | states and optional posterior metadata to output Newick or binary
-            | ToyTree. To produce TSV output, pipe this command into
-            | `toytree get-node-data`.
+            | states and packed posterior metadata to output Newick or binary
+            | ToyTree using feature names {feature}_anc and
+            | {feature}_anc_posterior. Additional NHX metadata formatting can
+            | be applied by piping output to `toytree io`. To produce TSV
+            | output, pipe this command into `toytree get`.
             -------------------------------------------------------------------
             """
         ),
@@ -1461,26 +1666,18 @@ def get_parser_anc_state_discrete(
             """
             Examples
             --------
-            # Fit ER model and write reconstructed metadata into Newick output
             $ anc-state-discrete -i TRE.nwk -f X -n 3 -m ER > TRE.anc.nwk
 
-            # Set trait data first, then infer states and draw colored by MAP states
-            $ set-node-data -i TRE.nwk -f X -s a=0 b=1 c=2 -d nan \\
-                | anc-state-discrete -i - -f X -n 3 -m SYM \\
-                | draw -i - -nc X_anc -v
-
-            # Convert inferred node metadata to TSV by piping to get-node-data
             $ anc-state-discrete -i TRE.nwk -f X -n 3 -m ARD \\
-                | get-node-data -i - -f X_anc X_anc_posterior -s ',' -o anc.csv
+                | toytree get -f X_anc X_anc_posterior -s ',' -o anc.csv
 
-            # Use split posterior metadata features instead of packed strings
-            $ anc-state-discrete -i TRE.nwk -f X -n 3 --posterior-mode split > TRE.anc.nwk
+            $ anc-state-discrete -i TRE.nwk -f X -n 3 -m ER \\
+                | toytree io -fp '&&NHX:' -fd ':' -fa '=' > TRE.anc.nhx
 
-            # Print full fit summary/parameters to stderr
             $ anc-state-discrete -i TRE.nwk -f X -n 3 -m ER --full > TRE.anc.nwk
 
-            # Emit binary ToyTree for efficient downstream CLI piping
-            $ anc-state-discrete -i TRE.nwk -f X -n 3 -b | get-node-data -i - -f X_anc
+            $ anc-state-discrete -i TRE.nwk -f X -n 3 -b | toytree get -f X_anc
+            $ anc-state-discrete -i TRE.nwk -f X -n 3 --json > TRE.anc.nwk 2> fit.json
             """
         ),
     )
@@ -1499,8 +1696,7 @@ def get_parser_anc_state_discrete(
         "--input",
         type=str,
         metavar="path",
-        required=True,
-        help="input tree file/path/url/newick string, or '-' for stdin",
+        help=SINGLE_TREE_INPUT_HELP,
     )
     io_group.add_argument(
         "-o",
@@ -1556,64 +1752,16 @@ def get_parser_anc_state_discrete(
         help="rate model parameterization: ER|SYM|ARD [ER]",
     )
 
-    recon_group = p.add_argument_group(title="Reconstruction Metadata")
-    recon_group.add_argument(
-        "--meta-base",
-        type=str,
-        metavar="feature",
-        help="base feature name for output metadata; MAP is written as {feature}_anc [input feature name]",
-    )
-    recon_group.add_argument(
-        "--posterior-mode",
-        type=str,
-        choices=("packed", "split", "none"),
-        default="packed",
-        metavar="name",
-        help="posterior output mode: packed|split|none [packed]",
-    )
-    recon_group.add_argument(
-        "--posterior-sep",
-        type=str,
-        metavar="str",
-        default="|",
-        help="separator for packed posterior probability strings [|]",
-    )
-
-    out_group = p.add_argument_group(title="Output Features")
-    out_group.add_argument(
-        "--features-prefix",
-        type=str,
-        metavar="str",
-        default="&",
-        help="prefix for features in extended newick [&, use '&&NHX:' for NHX style]",
-    )
-    out_group.add_argument(
-        "--features-delim",
-        type=str,
-        metavar="str",
-        default=",",
-        help="delimiter between feature key/value pairs in output [,]",
-    )
-    out_group.add_argument(
-        "--features-assignment",
-        type=str,
-        metavar="str",
-        default="=",
-        help="assignment token between feature key and value in output [=]",
-    )
-    out_group.add_argument(
-        "--features-formatter",
-        type=str,
-        metavar="fmt",
-        default="%.12g",
-        help="float formatter for feature values in output [%%.12g]",
-    )
-
     options_group = p.add_argument_group(title="Options")
     options_group.add_argument(
         "--full",
         action="store_true",
         help="print fitted model parameters and summary stats to stderr",
+    )
+    options_group.add_argument(
+        "--json",
+        action="store_true",
+        help="print fitted model summary as JSON to stderr",
     )
     options_group.add_argument(
         "-l",
@@ -1989,8 +2137,7 @@ def get_parser_relabel(parser: ArgumentParser | None = None) -> ArgumentParser:
         "--input",
         type=str,
         metavar="path",
-        required=True,
-        help="input tree file/path/url/newick string, or '-' for stdin",
+        help=SINGLE_TREE_INPUT_HELP,
     )
     io_group.add_argument(
         "-o",
@@ -2098,6 +2245,7 @@ def register_subparsers(parent: Any) -> None:
     """Register all command parsers on a subparser parent in display order."""
     get_parser_get_node_data(parent)
     get_parser_set_node_data(parent)
+    get_parser_io(parent)
     get_parser_draw(parent)
     get_parser_rtree(parent)
     get_parser_root(parent)

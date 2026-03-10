@@ -1,18 +1,17 @@
 #!/usr/bin/env python
 
 import io
-import pickle
 import tempfile
 from contextlib import redirect_stdout
 from pathlib import Path
 
+from conftest import PytestCompat
+
 import toytree
+from toytree.cli._tree_transport import read_tree_auto
 from toytree.cli.cli_consensus import run_consensus
 from toytree.cli.subparsers import get_parser_consensus
 
-
-
-from conftest import PytestCompat
 
 class TestConsensusCLI(PytestCompat):
     def setUp(self):
@@ -54,8 +53,9 @@ class TestConsensusCLI(PytestCompat):
 
     def test_binary_output(self):
         outpath = self.tmpdir / "consensus.bin"
-        args = self.parser.parse_args(["-i", str(self.mtree_path), "-b", "-o", str(outpath)])
+        args = self.parser.parse_args(
+            ["-i", str(self.mtree_path), "-b", "-o", str(outpath)]
+        )
         run_consensus(args)
-        obj = pickle.loads(outpath.read_bytes())
+        obj = read_tree_auto(str(outpath))
         self.assertEqual(obj.__class__.__name__, "ToyTree")
-

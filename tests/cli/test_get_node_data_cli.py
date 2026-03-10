@@ -5,7 +5,7 @@
 from __future__ import annotations
 
 import io
-import pickle
+import json
 import tempfile
 from contextlib import redirect_stdout
 from pathlib import Path
@@ -13,6 +13,7 @@ from pathlib import Path
 from conftest import PytestCompat
 
 import toytree
+from toytree.cli._tree_transport import serialize_tree_binary
 from toytree.cli.cli_get_node_data import run_get_node_data
 from toytree.cli.subparsers import get_parser_get_node_data
 
@@ -78,10 +79,24 @@ class TestGetNodeDataCLI(PytestCompat):
         """Binary ToyTree input path should be parsed via shared tree transport."""
         tree = toytree.tree(self.tree_path)
         binary_path = self.tmpdir / "tree.bin"
-        binary_path.write_bytes(pickle.dumps(tree, protocol=pickle.HIGHEST_PROTOCOL))
+        binary_path.write_bytes(serialize_tree_binary(tree))
         out = self._run_capture_stdout(["-i", str(binary_path), "-f", "name"])
         lines = out.splitlines()
         self.assertEqual(lines[0], "\tname")
         self.assertTrue(any(line.endswith("\ta") for line in lines[1:]))
         self.assertTrue(any(line.endswith("\tb") for line in lines[1:]))
         self.assertTrue(any(line.endswith("\tc") for line in lines[1:]))
+
+    def test_json_output_structure(self):
+        """JSON mode should emit dataframe JSON using orient='index'."""
+        out = self._run_capture_stdout(
+            ["-i", str(self.tree_path), "-f", "name", "--json"]
+        )
+        payload = json.loads(out)
+        self.assertNotIn("index", payload)
+        self.assertEqual(payload["0"], {"name": "a"})
+        self.assertEqual(payload["1"], {"name": "b"})
+        self.assertEqual(payload["2"], {"name": "c"})
+        self.assertIn("3", payload)
+        self.assertIn("4", payload)
+        self.assertIn('\n  "0"', out)

@@ -4,21 +4,42 @@
 
 from __future__ import annotations
 
+import math
 import sys
+
+
+def _jsonify_value(value):
+    """Return value converted to JSON-serializable Python types."""
+    if value is None:
+        return None
+    if hasattr(value, "item"):
+        try:
+            value = value.item()
+        except Exception:
+            pass
+    if isinstance(value, float) and math.isnan(value):
+        return None
+    if isinstance(value, (list, tuple)):
+        return [_jsonify_value(i) for i in value]
+    if isinstance(value, dict):
+        return {str(k): _jsonify_value(v) for k, v in value.items()}
+    return value
 
 
 def run_get_node_data(args):
     """Run the `get-node-data` CLI command."""
     import pandas as pd
 
-    from toytree.cli._tree_transport import read_tree_auto
+    from toytree.cli._tree_transport import read_tree_auto, resolve_input_arg
 
     if args.log_level is not None:
         from toytree.utils.src.logger_setup import set_log_level
 
         set_log_level(args.log_level)
 
-    tre = read_tree_auto(args.input, internal_labels=args.internal_labels)
+    tre = read_tree_auto(
+        resolve_input_arg(args.input), internal_labels=args.internal_labels
+    )
 
     if args.tips_only:
         data = tre.get_tip_data(args.features, missing=args.missing)
@@ -48,7 +69,18 @@ def run_get_node_data(args):
         data = data.copy()
         data.index = labels
 
-    if args.human_readable:
+    if args.json:
+        out = data.to_json(
+            orient="index",
+            force_ascii=False,
+            indent=2,
+            default_handler=_jsonify_value,
+        )
+        if args.output:
+            args.output.write_text(f"{out}\n", encoding="utf-8")
+        else:
+            sys.stdout.write(f"{out}\n")
+    elif args.human_readable:
         datastr = data.to_string(float_format=args.float_format)
         if args.output:
             args.output.write_text(f"{datastr}\n", encoding="utf-8")

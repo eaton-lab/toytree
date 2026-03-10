@@ -179,3 +179,73 @@ print("JSON:" + json.dumps(sorted(mods)))
     mods = _parse_heavy_list(_run_python(code))
     assert "toytree.utils.src.logger_setup" in mods
     assert any(i.startswith("loguru") for i in mods)
+
+
+def test_anc_runtime_does_not_import_logger_stack_by_default():
+    """Default anc runtime should not import logger setup or loguru."""
+    code = r"""
+import contextlib
+import io
+import json
+import pathlib
+import sys
+import tempfile
+import toytree.cli.main as main
+
+path = pathlib.Path(tempfile.mkdtemp()) / "tree.nwk"
+path.write_text("((a[&X=A]:1,b[&X=B]:1):1,c[&X=A]:1);\n", encoding="utf-8")
+with contextlib.redirect_stdout(io.StringIO()):
+    main.main(f"anc-state-discrete -i {path} -f X -n 2 -m ER")
+mods = [
+    i for i in sys.modules
+    if (i == "toytree.utils.src.logger_setup") or i.startswith("loguru")
+]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    mods = _parse_heavy_list(_run_python(code))
+    assert mods == []
+
+
+def test_anc_runtime_imports_logger_stack_when_log_level_requested():
+    """Anc runtime should load logger modules only when log-level is requested."""
+    code = r"""
+import contextlib
+import io
+import json
+import pathlib
+import sys
+import tempfile
+import toytree.cli.main as main
+
+path = pathlib.Path(tempfile.mkdtemp()) / "tree.nwk"
+path.write_text("((a[&X=A]:1,b[&X=B]:1):1,c[&X=A]:1);\n", encoding="utf-8")
+with contextlib.redirect_stdout(io.StringIO()):
+    main.main(f"anc-state-discrete -i {path} -f X -n 2 -m ER --log-level INFO")
+mods = [
+    i for i in sys.modules
+    if (i == "toytree.utils.src.logger_setup") or i.startswith("loguru")
+]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    mods = _parse_heavy_list(_run_python(code))
+    assert "toytree.utils.src.logger_setup" in mods
+    assert any(i.startswith("loguru") for i in mods)
+
+
+def test_touching_discrete_pcm_attr_does_not_import_phylolinalg_stack():
+    """Accessing discrete CTMC API should not import PGLS/PGLM dependencies."""
+    code = r"""
+import json
+import sys
+import toytree
+
+tree = toytree.tree("((a,b),c);")
+_ = tree.pcm.infer_ancestral_states_discrete_ctmc
+mods = [
+    i for i in sys.modules
+    if i.startswith("statsmodels") or i.startswith("toytree.pcm.src.phylolinalg")
+]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    mods = _parse_heavy_list(_run_python(code))
+    assert mods == []

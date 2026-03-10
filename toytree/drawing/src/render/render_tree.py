@@ -4,7 +4,7 @@
 
 import functools
 import xml.etree.ElementTree as xml
-from typing import Dict, List, Tuple
+from typing import Dict, List
 
 import numpy as np
 import toyplot
