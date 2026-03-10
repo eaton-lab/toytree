@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-"""Module for projecting node coordinates and tip angles for a tree drawing
+"""Module for projecting node coordinates and tip angles for a tree drawing."""
 
-"""
-
-from toytree.layout.src.layout_tip_angles import get_tip_labels_angles
 from toytree.layout.src.layout_base import BaseLayout
-from toytree.layout.src.layout_linear import LinearLayout
 from toytree.layout.src.layout_circular import CircularLayout
+from toytree.layout.src.layout_linear import LinearLayout
 from toytree.layout.src.layout_unrooted import UnrootedLayout
+
+__all__ = ["BaseLayout", "CircularLayout", "LinearLayout", "UnrootedLayout"]

@@ -1,23 +1,101 @@
 #!/usr/bin/env python
 
-"""Get circular layout coordinates."""
+"""Project tree nodes into full-circle or fan-layout coordinates.
+
+Circular layouts accept three string forms:
+
+- ``"c"`` for a full 360-degree layout.
+- ``"cN"`` for a fan that spans ``N`` degrees starting at 0.
+- ``"cA-B"`` for a fan that starts at ``A`` degrees and ends at ``B``
+  degrees, wrapping across 360 when ``B <= A``.
+
+When edge lengths are disabled, or when all branch lengths are zero,
+radial positions fall back to unit depths from the root so every node
+still receives a non-zero circular projection.
+"""
 
 from typing import Tuple
 
 import numpy as np
 
 from toytree.layout.src.layout_base import BaseLayout
+from toytree.utils import ToytreeError
+
+
+def _parse_circular_layout(layout: str) -> tuple[int, int, int, bool]:
+    """Return normalized circular-layout bounds and full-circle state.
+
+    Parameters
+    ----------
+    layout : str
+        Circular layout string in one of the supported forms: ``"c"``,
+        ``"cN"``, or ``"cA-B"``.
+
+    Returns
+    -------
+    tuple[int, int, int, bool]
+        Normalized ``(start, end, span, is_full_circle)`` where ``start``
+        is in ``[0, 360)``, ``end`` is an unwrapped angle greater than
+        ``start``, ``span`` is in ``(0, 360]``, and ``is_full_circle`` is
+        ``True`` only when the span is exactly 360 degrees.
+
+    Raises
+    ------
+    ToytreeError
+        If ``layout`` is not a supported circular layout string or if the
+        requested angular span is not in ``(0, 360]``.
+    """
+    msg = "circular style malformed. Should be, e.g., 'c', 'c90', 'c0-180'"
+    if not layout or layout[0] != "c":
+        raise ToytreeError(msg)
+
+    angles = str(layout[1:]).strip()
+    if not angles:
+        start = 0
+        span = 360
+    elif "-" not in angles:
+        try:
+            span = int(angles)
+        except ValueError as exc:
+            raise ToytreeError(msg) from exc
+        start = 0
+    else:
+        try:
+            raw_start_str, raw_end_str = angles.split("-", 1)
+            raw_start = int(raw_start_str)
+            raw_end = int(raw_end_str)
+        except ValueError as exc:
+            raise ToytreeError(msg) from exc
+        if raw_start < 0 or raw_end < 0 or raw_start == raw_end:
+            raise ToytreeError(msg)
+        start = raw_start % 360
+        # Convert wrapped fans such as ``c350-10`` into a strictly increasing
+        # angular interval so descendant clades occupy contiguous tip spans.
+        while raw_end <= raw_start:
+            raw_end += 360
+        span = raw_end - raw_start
+
+    if not 0 < span <= 360:
+        raise ToytreeError(msg)
+
+    end = start + span
+    return start, end, span, span == 360
 
 
 class CircularLayout(BaseLayout):
-    """Layout for circular tree projection."""
+    """Layout for circular tree projection.
+
+    This layout places tips on a circumference or fan arc and positions
+    internal nodes on the spoke midway between their descendant clades.
+    Radial distances come from branch lengths when available, otherwise
+    from unit root-to-node depths.
+    """
 
     def run(self):
-        """Fill .coords array with x, y values."""
+        """Fill coordinate tables for node and aligned-tip positions."""
         self.coords = np.zeros(shape=(self.tree.nnodes, 2))
-        self.tcoords = self.coords[:self.tree.ntips, :].copy()
+        self.tcoords = np.zeros(shape=(self.tree.ntips, 2))
         self.set_fan_coords()
-
 
     def _get_root_and_node_heights(self) -> Tuple[float, np.ndarray]:
         """Return root height and node heights for layout projection.
@@ -29,195 +107,53 @@ class CircularLayout(BaseLayout):
         if self.style.use_edge_lengths and not np.isclose(
             self.tree.treenode.height, 0.0
         ):
-            node_heights = np.array([node.height for node in self.tree])
+            node_heights = np.fromiter(
+                (node.height for node in self.tree),
+                dtype=float,
+                count=self.tree.nnodes,
+            )
             return self.tree.treenode.height, node_heights
 
         root = self.tree.treenode
-        depths = {root: 0}
+        depths = np.full(self.tree.nnodes, -1, dtype=int)
+        depths[root.idx] = 0
         queue = list(root._children)
         while queue:
             node = queue.pop()
-            depths[node] = depths[node._up] + 1
+            depths[node.idx] = depths[node._up.idx] + 1
             queue.extend(node._children)
 
-        max_depth = max(depths.values()) if depths else 0
-        node_heights = np.zeros(self.tree.nnodes)
-        for node, depth in depths.items():
-            node_heights[node.idx] = max_depth - depth
+        max_depth = int(depths.max())
+        node_heights = (max_depth - depths).astype(float)
         return float(max_depth), node_heights
 
-
     def set_fan_coords(self):
-        """Return array with x, y Node coordinates."""
-        # position of the *aligned* tips on the fan circumference, the
-        # first tips will be at 'start' (e.g., 0) and the final will be
-        # at 'end' (e.g., 360 - unit) where unit is space between tips.
+        """Fill node and aligned-tip coordinate arrays."""
         root_height, node_heights = self._get_root_and_node_heights()
-        start, end = self._get_start_and_end_angles()
-        endpoint = end - start != 360
+        start, end, _, is_full_circle = _parse_circular_layout(self.style.layout)
+        endpoint = not is_full_circle
 
-        # get angles equally spaced from start to end
         angles = np.linspace(start, end, self.tree.ntips, endpoint=endpoint)
         self.angles = angles
-        radians = dict(zip(range(self.tree.ntips), np.deg2rad(angles)))
+        theta = np.full(self.tree.nnodes, np.nan, dtype=float)
+        theta[: self.tree.ntips] = np.deg2rad(angles)
+        radii = root_height - node_heights
 
-        # the root Node is at position (0, 0), plus any offset style
-        hub = self.style.xbaseline, self.style.ybaseline
+        # Tip coordinates are the dominant work for large trees, so compute
+        # those in one vectorized pass instead of per-tip Python loops.
+        hub = np.array([self.style.xbaseline, self.style.ybaseline], dtype=float)
+        tip_cos = np.cos(theta[: self.tree.ntips])
+        tip_sin = np.sin(theta[: self.tree.ntips])
+        self.coords[: self.tree.ntips, 0] = hub[0] + radii[: self.tree.ntips] * tip_cos
+        self.coords[: self.tree.ntips, 1] = hub[1] + radii[: self.tree.ntips] * tip_sin
+        self.tcoords[:, 0] = hub[0] + root_height * tip_cos
+        self.tcoords[:, 1] = hub[1] + root_height * tip_sin
         self.coords[self.tree.treenode.idx, :] = hub
 
-        # tip node positions will be on a straight lines (spokes) from
-        # the root hub to the circum_points.
-        for idx in range(self.tree.ntips):
-            node = self.tree[idx]
-            theta = radians[idx]
-            # hypo = self.tree.treenode.height - node.height
-            hypo = root_height - node_heights[node.idx]
-            delta_y = hypo * np.sin(theta)
-            delta_x = hypo * np.cos(theta)
-            self.coords[idx, :] = (hub[0] + delta_x, hub[1] + delta_y)
-            # set ttable tip heights
-            # hypo = self.tree.treenode.height
-            hypo = root_height
-            delta_y = hypo * np.sin(theta)
-            delta_x = hypo * np.cos(theta)
-            self.tcoords[idx, :] = (hub[0] + delta_x, hub[1] + delta_y)
-
-        # internal node positions are on a spoke pointing towards a
-        # circumferal position intermediate between its children's.
+        # Internal clades occupy contiguous tip intervals in tree order, so
+        # averaging unwrapped child angles yields the correct spoke midpoint.
         for idx in range(self.tree.ntips, self.tree.nnodes - 1):
             node = self.tree[idx]
-            # hypo = self.tree.treenode.height - node.height
-            hypo = root_height - node_heights[node.idx]
-            theta = np.mean([radians[i.idx] for i in node.children])
-            radians[idx] = theta
-            delta_y = hypo * np.sin(theta)
-            delta_x = hypo * np.cos(theta)
-            self.coords[idx, :] = (hub[0] + delta_x, hub[1] + delta_y)
-            # node.theta = theta
-
-        # coords of tips around a circumference
-        # elif self.mark.layout[0] == 'c':
-        #     self.tips_x = np.zeros(ntips)
-        #     self.tips_y = np.zeros(ntips)
-        #     for idx, angle in enumerate(self.mark.tip_labels_angles):
-        #         radian = np.deg2rad(angle)
-        #         cordx = 0 + max(self.mark.radii) * np.cos(radian)
-        #         cordy = 0 + max(self.mark.radii) * np.sin(radian)
-        #         self.tips_x[idx] = self.axes.project('x', cordx)
-        #         self.tips_y[idx] = self.axes.project('y', cordy)
-        # self.ttable = ....
-
-    def _get_start_and_end_angles(self) -> Tuple[int, int]:
-        """Return a tuple with start and end angles as ints.
-
-        Users can enter style as 'c', 'c90', or 'c0-90'. All values
-        will be converted to range such that the first is in 0-359,
-        and the second is in 1-719.
-        - 90,180  -> 90,180
-        - 300,100 -> 300,460
-        - 359,340 -> 359,609
-        - 359,359 -> 359,719  # equivalent to 0-360 starting at -1.
-        """
-        angles = str(self.style.layout[1:]).strip()
-
-        # if None then use 0-360, if 1 then 0-int, else int-int.
-        if not angles:
-            start, end = 0, 360
-        elif "-" not in angles:
-            start, end = 0, int(angles)
-        else:
-            start, end = (int(i) for i in angles.split("-"))
-
-        # ...
-        msg = "circular style malformed. Should be, e.g., 'c', 'c90', 'c0-180'"
-        while start < 0:
-            start += 360
-        while end < start:
-            end += 360
-        assert end > start, msg
-        if end - start > 360:
-            end = start + 359
-        return start, end
-
-    # def get_radial_coords(self, use_edge_lengths=True):
-    #     """
-    #     Assign .edges and .verts for node positions in a fan tree.
-    #     The farthest tip aligns at the circumference.
-    #     """
-    #     circ = Circle(self.ttree)
-    #     verts = np.zeros((self.ttree.nnodes, 2), dtype=float)
-
-    #     # shortname
-    #     if not use_edge_lengths:
-    #         nbits = self.ttree.treenode.get_farthest_leaf(True)[1]
-
-    #     # use cache to fill edges array
-    #     for idx in range(self.ttree.nnodes):
-    #         node = self.ttree[idx]
-
-    #         # leaves: x positions are evenly spaced around circumference
-    #         if node.is_leaf() and (not node.is_root()):
-
-    #             # store radians (how far around from zero to 2pi)
-    #             node.radians = circ.tip_radians[idx]
-
-    #             # get positions of tips using radians and radius
-    #             if use_edge_lengths:
-    #                 node.radius = circ.radius - node.height
-    #                 node.x, node.y = circ.get_node_coords(node)
-    #             else:
-    #                 node.radius = nbits
-    #                 node.x, node.y = circ.get_node_coords(node)
-
-    #         # internal nodes comes after tips. Inherit position from children.
-    #         else:
-
-    #             # height is either distance or nodes from root
-    #             if use_edge_lengths:
-    #                 node.radius = circ.radius - node.height
-    #             else:
-    #                 node.radius = sum(1 for i in node.iter_ancestors())
-    #                 # max([i.radius for i in node.children]) - 1
-
-    #             # x position is halfway between children x-pos
-    #             node.radians = np.mean([i.radians for i in node.children])
-    #             node.x, node.y = circ.get_node_coords(node)
-
-    #         # store the x,y vertex positions
-    #         verts[node.idx] = [node.x, node.y]
-    #     return verts
-
-
-if __name__ == "__main__":
-
-    import toyplot
-    import toytree
-    from toytree.drawing.src.draw_toytree import get_tree_style_base, get_layout
-
-    toytree.set_log_level("DEBUG")
-
-    tre = toytree.rtree.unittree(8)
-    sty = tre.style
-    sty.layout = 'c'
-    lay = CircularLayout(tre, sty)
-    print(lay.coords)
-    # print(tre.get_edges())
-
-    canvases = []
-    for lay in ["c0-360", "c90-180", "c0-90", "c0-180", "c180-0"]:
-        sty = get_tree_style_base(tre, tree_style='r')
-        sty.layout = lay
-        sty.tip_labels = False
-        LAY = get_layout(tre, sty)
-
-        canvas = toyplot.Canvas(400, 300)
-        axes = canvas.cartesian()
-        axes.graph(
-            tre.get_edges('idx'),
-            vcoordinates=LAY.coords,
-            # vsize=16,
-            # estyle={"stroke-width": 2},
-        )
-        canvases.append(canvas)
-
-    toytree.utils.show(canvases, tmpdir="~")
+            theta[idx] = theta[[child.idx for child in node.children]].mean()
+            self.coords[idx, 0] = hub[0] + radii[idx] * np.cos(theta[idx])
+            self.coords[idx, 1] = hub[1] + radii[idx] * np.sin(theta[idx])

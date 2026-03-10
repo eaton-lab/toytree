@@ -1,39 +1,72 @@
 #!/usr/bin/env python
 
-"""Unrooted layout.
+"""Project rooted or unrooted trees into unrooted Cartesian coordinates.
 
+Unrooted drawings are initialized with the equal-angle algorithm and then
+optionally refined with the equal-daylight algorithm to distribute clades
+more evenly around internal vertices. Tip label angles are derived from the
+final projected coordinates rather than from branch metadata, so rooted and
+unrooted input trees both use the same geometric label logic.
 """
 
-from typing import TypeVar, Tuple
+from typing import List, Tuple, TypeVar
+
 import numpy as np
-from toytree.layout import BaseLayout, get_tip_labels_angles
+
+from toytree.layout.src.layout_base import BaseLayout
+from toytree.utils import ToytreeError
 
 ToyTree = TypeVar("ToyTree")
 
 
-class UnrootedLayout(BaseLayout):
-    """Layout for unrooted tree projection: "unrooted", "u1", "u2"
-    """
-    def run(self):
-        """Fills the .coords array with x, y values."""
+def _get_tip_label_angles(tree: ToyTree, coords: np.ndarray) -> np.ndarray:
+    """Return tip label angles from finalized unrooted node coordinates.
 
-        # xbaseline, ybaseline to set origin.
-        self.coords = equal_daylight_algorithm(
+    Using the grandparent direction when available spreads neighboring tip
+    labels more evenly than using only the terminal branch direction.
+    """
+    angles = np.zeros(tree.ntips, dtype=float)
+    for node in tree.traverse():
+        if not node.is_leaf():
+            continue
+
+        cx, cy = coords[node.idx]
+        if node.up.up:
+            px, py = coords[node.up.up.idx]
+        else:
+            px, py = coords[node.up.idx]
+
+        dx = cx - px
+        dy = cy - py
+        angles[node.idx] = np.rad2deg(np.arctan2(dy, dx))
+    return angles
+
+
+class UnrootedLayout(BaseLayout):
+    """Project a tree into unrooted coordinates and tip label angles."""
+
+    def run(self):
+        """Fill node coordinates and tip-label angles for unrooted drawing."""
+        coords = equal_daylight_algorithm(
             tree=self.tree,
             max_iter=50,
-            use_edge_lengths=self.style.use_edge_lengths)
-        self.tcoords = self.coords[:self.tree.ntips, :].copy()
-        self.angles = get_tip_labels_angles(self.tree, self.coords)
+            use_edge_lengths=self.style.use_edge_lengths,
+        )
+        offset = np.array(
+            [self.style.xbaseline, self.style.ybaseline],
+            dtype=float,
+        )
+        coords = coords + offset
+
+        self.coords = coords
+        self.tcoords = coords[: self.tree.ntips, :].copy()
+        self.angles = _get_tip_label_angles(self.tree, coords)
         self.style_overwrite()
 
     def style_overwrite(self):
-        """Overwrite styles that are not allowed in unrooted layout
-        of which should have different defaults.
-        """
+        """Apply unrooted-layout style constraints and defaults."""
         self.style.tip_labels_align = False
-        # self.style.tip_labels_style._toyplot_anchor_shift = 0
-        # self.style.tip_labels_style.text_anchor = "middle"
-        self.style.edge_type = 'c'
+        self.style.edge_type = "c"
 
 
 #####################################################
@@ -46,15 +79,76 @@ def rotate_arr(
     origin: Tuple[float, float] = (0, 0),
     degrees: float = 0,
 ) -> np.ndarray:
-    """Return an array of rotated Node coordinates."""
+    """Return coordinates rotated around an origin by degrees."""
     angle = np.deg2rad(degrees)
-    rotation_matrix = np.array([
-        [np.cos(angle), -np.sin(angle)],
-        [np.sin(angle), np.cos(angle)],
-    ])
-    origin = np.atleast_2d(origin)
-    point = np.atleast_2d(points)
-    return np.squeeze((rotation_matrix @ (point.T - origin.T) + origin.T).T)
+    rotation_matrix = np.array(
+        [
+            [np.cos(angle), -np.sin(angle)],
+            [np.sin(angle), np.cos(angle)],
+        ],
+        dtype=float,
+    )
+    points_arr = np.asarray(points, dtype=float)
+    origin_arr = np.asarray(origin, dtype=float)
+    centered = points_arr - origin_arr
+    return (centered @ rotation_matrix.T) + origin_arr
+
+
+def _validate_equal_daylight_args(max_iter: int, min_delta: float) -> Tuple[int, float]:
+    """Return validated equal-daylight stopping parameters."""
+    if isinstance(max_iter, bool) or not isinstance(max_iter, (int, np.integer)):
+        raise ToytreeError("max_iter must be an integer >= 0.")
+    if max_iter < 0:
+        raise ToytreeError("max_iter must be an integer >= 0.")
+
+    if isinstance(min_delta, bool) or not isinstance(
+        min_delta,
+        (int, float, np.integer, np.floating),
+    ):
+        raise ToytreeError("min_delta must be a finite number >= 0.")
+    min_delta = float(min_delta)
+    if (not np.isfinite(min_delta)) or (min_delta < 0):
+        raise ToytreeError("min_delta must be a finite number >= 0.")
+    return int(max_iter), min_delta
+
+
+def _precompute_daylight_subsets(
+    tree: ToyTree,
+) -> Tuple[List[object], List[Tuple[np.ndarray, ...]]]:
+    """Return focal nodes and rotating node-index subsets for daylight updates.
+
+    The equal-daylight refinement revisits the same topology-derived clade
+    memberships on every iteration. Precomputing them once avoids repeated
+    descendant traversals and `Node`-set hashing inside the hot loop.
+    """
+    all_indices = np.arange(tree.nnodes, dtype=int)
+    descendant_indices: List[np.ndarray] = [
+        np.empty(0, dtype=int) for _ in range(tree.nnodes)
+    ]
+    focal_nodes = []
+    focal_subsets = []
+
+    for node in tree.traverse("postorder"):
+        descendant_indices[node.idx] = np.fromiter(
+            (desc.idx for desc in node.iter_descendants()),
+            dtype=int,
+        )
+
+    for fnode in tree.traverse("levelorder"):
+        if fnode.is_leaf():
+            continue
+
+        subsets = [descendant_indices[child.idx] for child in fnode.children]
+        blocked = np.concatenate(([fnode.idx], *subsets))
+        other_mask = np.ones(tree.nnodes, dtype=bool)
+        other_mask[blocked] = False
+        other = all_indices[other_mask]
+        if other.size:
+            subsets.append(other)
+
+        focal_nodes.append(fnode)
+        focal_subsets.append(tuple(subsets))
+    return focal_nodes, focal_subsets
 
 
 def equal_daylight_algorithm(
@@ -62,42 +156,53 @@ def equal_daylight_algorithm(
     max_iter: int = 1,
     min_delta: float = 1,
     use_edge_lengths: bool = True,
-) -> float:
-    """Return coordinates for unrooted layout under the eda algorithm.
+) -> np.ndarray:
+    """Return unrooted coordinates refined under the equal-daylight algorithm.
 
-    This algorithm equalizes the sizes of angular gaps between
-    subtrees. As Felsenstein said, the result is "outstanding".
-    The description however is not very detailed, so there is room
-    for interpretation.
+    The layout starts from equal-angle coordinates and iteratively rotates
+    clades around internal vertices to reduce large daylight gaps. This is
+    the layout used by :class:`UnrootedLayout`.
 
-    I use a levelorder traversal but could it seems that postorder
-    can yield better results sometimes, but also much worse sometimes.
-    If the eda layout is too different from the eaa layout it will
-    be rejected.
+    Parameters
+    ----------
+    tree : ToyTree
+        Tree whose nodes will be projected into unrooted coordinates.
+    max_iter : int, default=1
+        Maximum number of refinement passes after the equal-angle start.
+    min_delta : float, default=1
+        Stop once the mean angular change per pass drops below this value.
+    use_edge_lengths : bool, default=True
+        If False, treat every branch as unit length during projection.
+
+    Returns
+    -------
+    np.ndarray
+        Array of shape ``(tree.nnodes, 2)`` with x/y node coordinates.
 
     Notes
     -----
-    We could estimate the length that tip names will extend past the
-    end of tips when calculating daylight. This would ensure that tip
-    names to do not crossover, not just that edges do not cross over.
-    This would only be necessary if tip names were text-align=start,
-    however, but they are usually drawn all with angle=0, so the idea
-    is moot I suppose.
+    Trees with fewer than five tips return the equal-angle layout directly.
+    Refinement is also rejected when it generates obviously worse or
+    overlapping angular configurations.
 
     References
     ----------
     - Felsenstein 2004, page 582 (and see Figure 34.6).
     """
-    # get the equal angle algorithm tree as a starting tree.
+    max_iter, min_delta = _validate_equal_daylight_args(
+        max_iter=max_iter,
+        min_delta=min_delta,
+    )
+
+    # Use the equal-angle geometry as the starting configuration and then
+    # iteratively rotate connected clades around focal internal vertices.
     coords = equal_angle_algorithm(tree, use_edge_lengths=use_edge_lengths)
 
     # return equal-angles for <= 4-taxon trees
-    if (tree.ntips < 5) | (max_iter == 0):
+    if tree.ntips < 5 or max_iter == 0:
         return coords
 
-    # a set with all Nodes except the root
-    # nodes = set(tree.get_nodes()[:-1])
-    nodes = set(tree.get_nodes())
+    focal_nodes, focal_subsets = _precompute_daylight_subsets(tree)
 
     # for Y internal nodes we expect an average rotation of X, thus
     # any solution with more delta than 3 * Y * X is almost surely
@@ -113,7 +218,7 @@ def equal_daylight_algorithm(
     sum_deltas = []  # list of sum change in angles each iter
     full_circle = None  # record whether full circle encountered.
     niter = 0
-    while 1:
+    while True:
         # create a copy of coords to modify
         icoords = coords.copy()
 
@@ -123,119 +228,77 @@ def equal_daylight_algorithm(
         # visit each internal node in levelorder and rotate other nodes
         # relative to the position of this one. Skip root and leaves,
         # they only rotate relative to internals.
-        for fnode in tree.traverse("levelorder"):
-
-            # only visit internal non-root nodes.
-            # if fnode.is_root():
-                # continue
-            if fnode.is_leaf():
+        for fnode, subsets in zip(focal_nodes, focal_subsets):
+            if len(subsets) < 2:
                 continue
 
             # get current focal node coordinates
             pos = icoords[fnode.idx]
 
-            # get the 3 or more subtrees connected to this vertex
-            full_set = nodes - {fnode}
-            subsets = [set(i.get_descendants()) for i in fnode.children]
-            other_set = full_set - set.union(*subsets)
-            if other_set:
-                subsets.append(full_set - set.union(*subsets))
-            subsets = dict(enumerate(subsets))
-
             # get shaded sectors by subtrees.
-            shade = {}
-            last = 0
-            for sidx, subset in subsets.items():
-                rads = []
-                for node in subset:
+            shade = np.zeros((len(subsets), 2), dtype=float)
+            last_angle = 0.0
+            for sidx, subset in enumerate(subsets):
+                rel = icoords[subset] - pos
+                rads = np.arctan2(rel[:, 1], rel[:, 0]) + (np.pi / 2)
+                rads[rads < 0] += 2 * np.pi
+                rads[rads < last_angle] += 2 * np.pi
+                shade[sidx, 0] = float(rads.min())
+                shade[sidx, 1] = float(rads.max())
+                last_angle = shade[sidx, 1]
 
-                    # get position of this node relative to focal node
-                    npos = icoords[node.idx]
-                    delta_x = npos[0] - pos[0]
-                    delta_y = npos[1] - pos[1]
-
-                    # get start,end radians of sector where 0 is down
-                    rad = np.arctan2(delta_y, delta_x) + np.pi / 2
-                    # flip 4th quad negative to positive
-                    rad = (2 * np.pi) + rad if rad < 0 else rad
-                    # save 1st quad as >2pi
-                    rad = (2 * np.pi) + rad if rad < last else rad
-                    rads.append(rad)
-
-                # store the sector of each shaded region
-                shade[sidx] = (min(rads), max(rads))
-                last = max(rads)
-
-            # get the order in which shaded regions rotate around node
-            skeys = sorted(shade, key=lambda x: abs(shade[x][0]))
-            gaps = [(skeys[i], skeys[i + 1]) for i in range(len(skeys) - 1)]
-            gaps += [(skeys[-1], skeys[0])]
+            # Sort by unwrapped sector starts so the daylight gaps reflect
+            # the actual order of clades around the focal vertex.
+            order = np.argsort(shade[:, 0])
+            gaps = [(order[i], order[i + 1]) for i in range(len(order) - 1)]
+            gaps += [(order[-1], order[0])]
 
             # get daylight as sectors between ordered shaded regions
             # e.g., (0, 1), (1, 2), ...
-            light = {}
-            for gap in gaps:
-                last, this = shade[gap[0]][1], shade[gap[1]][0]
-                if last > this:
-                    this = 2 * np.pi + this
-                light[gap] = np.rad2deg(this - last)
-
-                # debugging daylight for each gap
-                # logger.debug(
-                #     f"{fnode.idx} daylight: {gap}: size={light[gap]:.1f} "
-                #     f"-- last={np.rad2deg(last):.1f}, this={np.rad2deg(this):.1f}"
-                # )
+            light = np.zeros(len(gaps), dtype=float)
+            for gidx, gap in enumerate(gaps):
+                gap_end, next_start = shade[gap[0], 1], shade[gap[1], 0]
+                if gap_end > next_start:
+                    next_start += 2 * np.pi
+                light[gidx] = np.rad2deg(next_start - gap_end)
 
             # if subtree angles sum to more than a full circle it is
             # impossible to find a positive angle between subtrees and
             # they will overlap. So we stop the iteration and return
             # last set of coordinates. This will not occur when starting
             # from the equal-angles layout, but can on any subsequent iters.
-            if (shade[skeys[-1]][1] - (2 * np.pi)) > shade[skeys[0]][0]:
+            if (shade[order[-1], 1] - (2 * np.pi)) > shade[order[0], 0]:
                 full_circle = fnode.idx
+                break
 
             # change angles
-            optimal = sum(light.values()) / len(light)      # 56
-            rotated = [0]
-            for gap in gaps[:-1]:
+            optimal = float(light.mean())
+            rotated = np.zeros(len(subsets), dtype=float)
+            for gidx, gap in enumerate(gaps[:-1]):
                 # how far the gap[1] needs to be rotated
-                gap_to_next = light[gap] + rotated[-1]      # 76 +  0 = 76, 63 + 20
-                angle_to_rotate = gap_to_next - optimal     # 76 - 56 = 20, 83 - 56
-                rotated.append(angle_to_rotate)             # [0, 20,],
+                gap_to_next = light[gidx] + rotated[gidx]
+                angle_to_rotate = gap_to_next - optimal
+                rotated[gidx + 1] = angle_to_rotate
 
-                # rotation = angle_to_rotate
-                nodes_to_rotate = subsets[gap[1]]           # [13,4,5],
-                idxs = [i.idx for i in nodes_to_rotate]
-                icoords[idxs, :] = rotate_arr(
-                    points=icoords[idxs],
+                nodes_to_rotate = subsets[gap[1]]
+                icoords[nodes_to_rotate, :] = rotate_arr(
+                    points=icoords[nodes_to_rotate],
                     origin=pos,
                     degrees=-angle_to_rotate,
                 )
-                # debugging rotation applied to each Node
-                # logger.debug(
-                #     f"node {fnode.idx} rotating {len(nodes_to_rotate)} nodes by "
-                #     f"{angle_to_rotate:.2f} deg to get optimal daylight {optimal:.1f} deg.")
 
             # record how much change has happened
-            avg_delta = np.mean([abs(i) for i in rotated[1:]])
+            avg_delta = float(np.mean(np.abs(rotated[1:])))
             sum_delta += avg_delta
-
-        # iteration finished. Should we accept this change to coordinates?
-        # logger.debug(
-        #     f"sum angles change={sum(sum_deltas):.1f}, "
-        #     f"angles_change_this_iter={sum_delta:.1f}")
 
         # causes to not accept the proposed coordinate change.
         if full_circle is not None:
-            # logger.debug(f"stopping at {niter} iters because subtree angles sum to > full circle @ node {full_circle}")
             break
         if sum_delta > max_change:
-            # logger.debug(f"stopping at {niter} iters because bad solution ({sum_delta} > {max_change}).")
             break
         if sum_deltas:
-            last = sum_deltas[-1]
-            if sum_delta > (last + last * .1):
-                # logger.debug(f"stopping at {niter} iters because encountered a worse solution.")
+            prev_sum_delta = sum_deltas[-1]
+            if sum_delta > (prev_sum_delta + prev_sum_delta * 0.1):
                 break
 
         # accept the coordinates change
@@ -244,10 +307,8 @@ def equal_daylight_algorithm(
         coords = icoords
 
         if niter == max_iter:
-            # logger.debug(f"stopping after {niter} iters because max_iter reached.")
             break
         if sum_delta < min_delta:
-            # logger.debug(f"stopping after {niter} iters because delta <= min_delta.")
             break
 
     return coords
@@ -256,25 +317,29 @@ def equal_daylight_algorithm(
 def equal_angle_algorithm(
     tree: ToyTree,
     use_edge_lengths: bool = True,
-) -> float:
-    """Return coordinates for unrooted layout under the 'eaa' algorithm.
+) -> np.ndarray:
+    """Return unrooted coordinates under the equal-angle algorithm.
 
-    Assign the root node a sector from 0-360 degrees, and divide each
-    descendent node into subsectors with size weighted by their n
-    descendants.
+    The root receives the full 360-degree sector and each descendant clade
+    receives a sector proportional to its number of leaf descendants.
 
     Parameters
     ----------
-    tree: ToyTree
-        A Toytree from which to build coordinates.
-    use_edge_lengths: bool
-        If False then all dists are set to 1.
+    tree : ToyTree
+        Tree whose nodes will be projected into unrooted coordinates.
+    use_edge_lengths : bool, default=True
+        If False, treat every branch as unit length during projection.
+
+    Returns
+    -------
+    np.ndarray
+        Array of shape ``(tree.nnodes, 2)`` with x/y node coordinates.
 
     References
     ----------
     - Felsenstein (2004), page 578.
     """
-    coords = np.zeros(shape=(tree.nnodes, 2))
+    coords = np.zeros(shape=(tree.nnodes, 2), dtype=float)
 
     # if tree is rooted then use root Node as the central vertex.
     ntips = tree.ntips
@@ -307,95 +372,12 @@ def equal_angle_algorithm(
             else:
                 start = sectors[cohort[idx - 1]][1]
             sectors[node] = [start, start + radian_sums[node]]
-            mid = sum(sectors[node]) / 2.
+            mid = sum(sectors[node]) / 2.0
 
             # geometry relative to parent position and angle
             parent_pos = coords[node.up.idx]
-            hypo = node.dist if use_edge_lengths else 1.
+            hypo = node.dist if use_edge_lengths else 1.0
             newx = parent_pos[0] + (hypo * np.sin(mid))
             newy = parent_pos[1] - (hypo * np.cos(mid))
             coords[node.idx] = (newx, newy)
     return coords
-
-
-# NOT CURRENTLY USED
-# def get_subtrees(tree: ToyTree, node: Node) -> Sequence[Set[Node]]:
-#     """Return subtrees connected to a Node.
-
-#     If this Node was removed from an unrooted tree it would induce
-#     three or more subtrees. This returns the sets of Nodes in each
-#     subtree. This is used internally for unrooted tree layouts.
-#     """
-#     nodes = set(tree.get_nodes()) - {node}
-#     subsets = [set(i.get_descendants()) for i in node.children]
-#     subsets.append(nodes - set.union(*subsets))
-#     return subsets
-
-
-if __name__ == "__main__":
-
-    import toytree
-    # Felsenstein book example
-    NWK = "(((((((A:4,B:4):6,C:5):8,D:6):3,E:21):10,((F:4,G:12):14,H:8):13):13,((I:5,J:2):30,(K:11,L:11):2):17):4,M:56);"
-    # NWK = "(((E,F),(G, H)),((C,D),(B,(I,J)),A));"
-    TRE = toytree.tree(NWK)
-    # TRE = toytree.rtree.bdtree(20, b=0.5, d=0.5, seed=123)
-    # TRE = TRE.unroot()
-
-    toytree.set_log_level("INFO")
-    coords1 = equal_angle_algorithm(TRE, False)
-    coords2 = equal_daylight_algorithm(TRE, max_iter=10)
-
-    import toyplot
-
-    canvas1 = toyplot.Canvas(400, 400)
-    axes = canvas1.cartesian()
-    axes.graph(
-        TRE.get_edges(),#.values,
-        vcoordinates=coords1,
-        # vsize=16,
-        estyle={"stroke-width": 2},
-    )
-    canvas2 = toyplot.Canvas(500, 400)
-    axes = canvas2.cartesian()
-    axes.graph(
-        TRE.get_edges(),#.values,
-        vcoordinates=coords2,
-        #vsize=16,
-        estyle={"stroke-width": 2},
-        ecolor='black',
-    )
-
-    c, a, m = TRE.draw(node_labels="idx")
-    toytree.utils.show([canvas1, canvas2, c], new=False)
-    # toyplot.browser.show([canvas1, canvas2, c])
-    # print(equal_daylight_algorithm(tre))
-
-    # lay = Layout(
-    #     tre,
-    #     layout='c',
-    #     fixed_order=tre.get_tip_labels()[::-1],
-    #     fixed_position=None,
-    #     xbaseline=10,
-    # )
-    # print(lay.coords)
-
-    # lay = Layout(
-    #     tre,
-    #     layout='c0-180',
-    #     fixed_order=tre.get_tip_labels()[::-1],
-    #     fixed_position=None,
-    #     xbaseline=10,
-    # )
-    # print(lay.coords)
-
-    # # unrooted layout
-    # lay = Layout(
-    #     tre,
-    #     layout="*",
-    #     fixed_order=tre.get_tip_labels()[::-1],
-    #     fixed_position=None,
-    #     xbaseline=10,
-    # )
-    # print(lay.coords)
-
