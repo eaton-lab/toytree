@@ -14,11 +14,20 @@ from toytree.drawing.src.mark_toytree import ToyTreeMark
 # SVG path formats for creating edges in tree drawings
 PATH_FORMAT = {
     "c": "M {px:.1f} {py:.1f} L {cx:.1f} {cy:.1f}",
-    "b1": "M {px:.1f} {py:.1f} C {px:.1f} {cy:.1f}, {px:.1f} {cy:.1f}, {cx:.1f} {cy:.3f}",
-    "b2": "M {px:.1f} {py:.1f} C {cx:.1f} {py:.1f}, {cx:.1f} {py:.1f}, {cx:.1f} {cy:.3f}",
+    "b1": (
+        "M {px:.1f} {py:.1f} C {px:.1f} {cy:.1f}, "
+        "{px:.1f} {cy:.1f}, {cx:.1f} {cy:.3f}"
+    ),
+    "b2": (
+        "M {px:.1f} {py:.1f} C {cx:.1f} {py:.1f}, "
+        "{cx:.1f} {py:.1f}, {cx:.1f} {cy:.3f}"
+    ),
     "p1": "M {px:.1f} {py:.1f} L {px:.1f} {cy:.1f} L {cx:.1f} {cy:.1f}",
     "p2": "M {px:.1f} {py:.1f} L {cx:.1f} {py:.1f} L {cx:.1f} {cy:.1f}",
-    "pc": "M {cx:.1f} {cy:.1f} L {dx:.1f} {dy:.1f} A {rr:.1f} {rr:.1f} 0 0 {sweep} {px:.1f} {py:.1f}",
+    "pc": (
+        "M {cx:.1f} {cy:.1f} L {dx:.1f} {dy:.1f} "
+        "A {rr:.1f} {rr:.1f} 0 0 {sweep} {px:.1f} {py:.1f}"
+    ),
 }
 
 
@@ -50,7 +59,9 @@ def _get_edge_data(
     return nodes_x, nodes_y, radii, radians, root_x, root_y
 
 
-def get_tree_edge_svg_paths(axes: Cartesian, mark: ToyTreeMark) -> Tuple[List[str], List[str]]:
+def get_tree_edge_svg_paths(
+    axes: Cartesian, mark: ToyTreeMark
+) -> Tuple[List[str], List[str]]:
     """Return SVG paths and edge keys for each drawable tree edge."""
     nodes_x, nodes_y, radii, radians, root_x, root_y = _get_edge_data(
         axes, mark, space="pixel"
@@ -90,6 +101,10 @@ def get_tree_edge_svg_paths(axes: Cartesian, mark: ToyTreeMark) -> Tuple[List[st
             mid_y = root_y + radii[pidx] * np.sin(radians[cidx])
             px_mid_x = axes.project("x", mid_x)
             px_mid_y = axes.project("y", mid_y)
+            # Use the same shortest-path angular delta as the polyline
+            # builder so wrapped fan layouts choose the correct SVG arc
+            # direction when parent / child angles straddle the seam.
+            dtheta = (radians[pidx] - radians[cidx] + np.pi) % (2 * np.pi) - np.pi
             keys.append(f"{pidx},{cidx}")
             paths.append(
                 path_format.format(
@@ -101,7 +116,7 @@ def get_tree_edge_svg_paths(axes: Cartesian, mark: ToyTreeMark) -> Tuple[List[st
                         "dx": px_mid_x,
                         "dy": px_mid_y,
                         "rr": parent_radius,
-                        "sweep": int(radians[pidx] < radians[cidx]),
+                        "sweep": int(dtheta < 0),
                     }
                 )
             )
@@ -176,8 +191,18 @@ def get_tree_edge_polylines(
             c1x, c1y = px, cy
             c2x, c2y = px, cy
         omt = 1 - t
-        x = (omt ** 3) * px + 3 * (omt ** 2) * t * c1x + 3 * omt * (t ** 2) * c2x + (t ** 3) * cx
-        y = (omt ** 3) * py + 3 * (omt ** 2) * t * c1y + 3 * omt * (t ** 2) * c2y + (t ** 3) * cy
+        x = (
+            (omt**3) * px
+            + 3 * (omt**2) * t * c1x
+            + 3 * omt * (t**2) * c2x
+            + (t**3) * cx
+        )
+        y = (
+            (omt**3) * py
+            + 3 * (omt**2) * t * c1y
+            + 3 * omt * (t**2) * c2y
+            + (t**3) * cy
+        )
         xpaths.append(x.astype(float))
         ypaths.append(y.astype(float))
     return xpaths, ypaths, keys

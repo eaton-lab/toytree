@@ -10,26 +10,16 @@ import numpy as np
 import toyplot.data
 from toyplot.mark import Mark
 
+from toytree.layout.src.layout_circular import _parse_circular_layout
+from toytree.utils import ToytreeError
+
 
 def _is_full_circle_layout(layout: str) -> bool:
-    """Return ``True`` if a circular layout string spans 360 degrees."""
-    if not layout or layout[0] != "c":
+    """Return ``True`` if a circular layout spans 360 degrees."""
+    try:
+        return _parse_circular_layout(layout)[3]
+    except ToytreeError:
         return False
-    angles = str(layout[1:]).strip()
-    if not angles:
-        start, end = 0, 360
-    elif "-" not in angles:
-        start, end = 0, int(angles)
-    else:
-        start, end = (int(i) for i in angles.split("-", 1))
-
-    while start < 0:
-        start += 360
-    while end < start:
-        end += 360
-    if end - start > 360:
-        end = start + 359
-    return (end - start) == 360
 
 
 class TreeDomainMark(Mark):

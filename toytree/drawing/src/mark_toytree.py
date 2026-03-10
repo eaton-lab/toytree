@@ -8,34 +8,25 @@ this info along with the input Node coordinates and style args that
 have already been checked for validity.
 """
 
-from typing import List, Tuple, Union, Sequence
-import toyplot
+from typing import List, Sequence, Tuple, Union
+
 import numpy as np
+import toyplot
+import toyplot.text
 from loguru import logger
 from toyplot.mark import Mark
-import toyplot.text
+
+from toytree.layout.src.layout_circular import _parse_circular_layout
+from toytree.utils import ToytreeError
 
 
 # Note: see toytree/drawing/src/render_tree.py for rendering code.
 def _is_full_circle_layout(layout: str) -> bool:
-    """Return ``True`` if a circular layout string spans 360 degrees."""
-    if not layout or layout[0] != "c":
+    """Return ``True`` if a circular layout spans 360 degrees."""
+    try:
+        return _parse_circular_layout(layout)[3]
+    except ToytreeError:
         return False
-    angles = str(layout[1:]).strip()
-    if not angles:
-        start, end = 0, 360
-    elif "-" not in angles:
-        start, end = 0, int(angles)
-    else:
-        start, end = (int(i) for i in angles.split("-", 1))
-
-    while start < 0:
-        start += 360
-    while end < start:
-        end += 360
-    if end - start > 360:
-        end = start + 359
-    return (end - start) == 360
 
 
 class ToyTreeMark(Mark):
@@ -288,12 +279,12 @@ def set_tip_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndar
 
 if __name__ == "__main__":
     import toytree
-    from toytree.style import validate_style
     from toytree.drawing.src.draw_toytree import (
-        get_tree_style_base,
         get_layout,
+        get_tree_style_base,
         tree_style_to_css_dict,
     )
+    from toytree.style import validate_style
 
     toytree.set_log_level("DEBUG")
     tree = toytree.rtree.rtree(5, seed=123)

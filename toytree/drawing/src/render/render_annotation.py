@@ -28,6 +28,7 @@ from toytree.drawing.src.render.svg_defs import (
     LinearGradientStop,
     ensure_linear_gradients,
 )
+from toytree.layout.src.layout_circular import _parse_circular_layout
 
 # ---------------------------------------------------------------------
 # Register multipledispatch to use the toyplot.html namespace
@@ -415,7 +416,7 @@ def render_tip_tiles(
     else:
         root_x_px = float(axes.project("x", float(mark.root_xy[0])))
         root_y_px = float(axes.project("y", float(mark.root_xy[1])))
-        _, _, is_full_circle = _parse_circular_layout_span(mark.layout)
+        _, _, _, is_full_circle = _parse_circular_layout(mark.layout)
         paths_all, slot_min_all, slot_max_all = _build_circular_tile_paths_px(
             tips_x_px=tips_x_px,
             tips_y_px=tips_y_px,
@@ -663,26 +664,6 @@ def _midpoint_bounds_periodic(values: np.ndarray) -> tuple[np.ndarray, np.ndarra
         left[idx] = values[idx] - 0.5 * dprev
         right[idx] = values[idx] + 0.5 * dnext
     return left, right
-
-
-def _parse_circular_layout_span(layout: str) -> tuple[int, int, bool]:
-    """Parse circular layout string and report if it is a full 360-degree span."""
-    angles = str(layout[1:]).strip()
-    if not angles:
-        start, end = 0, 360
-    elif "-" not in angles:
-        start, end = 0, int(angles)
-    else:
-        start, end = (int(i) for i in angles.split("-"))
-
-    while start < 0:
-        start += 360
-    while end < start:
-        end += 360
-    if end - start > 360:
-        end = start + 359
-
-    return start, end, (end - start == 360)
 
 
 if __name__ == "__main__":
