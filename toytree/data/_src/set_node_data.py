@@ -24,11 +24,6 @@ Invalid 'data' arg to set_node_data(). Must be either a Mapping or a Series
 of length nnodes. This appears to be a Series of len={} while nnodes={}.\
 """
 
-# one of the following types:
-# - Mapping[Query: Any], e.g., `data={0: 3, 1: 4}`
-# - Series[Any] in Node idx order w/ len=nnodes, e.g., `data=range(tree.nnodes)`
-# """
-
 
 @add_toytree_method(ToyTree)
 def set_node_data(
