@@ -1,372 +1,398 @@
 #!/usr/bin/env python
 
-"""MultiTree classes for representing a collection of trees.
-
-A MultiTree class is used to store a collection of trees, and includes
-functions for visualizing and manipulating multiple trees.
-
-Methods
--------
-- get_consensus_tree
-    Return a consensus tree from a set of input trees.
-- draw
-    Return a toyplot drawing of multiple trees spaced on a grid.
-- draw_cloud_tree
-    Return a toyplot drawing of multiple trees overlaid.
-
-See Also
---------
-- toytree.utils.ToyTreeSequence
-    A wrapper around the tskit TreeSequence class. This class has
-    convenience functions for extracting and plotting trees from a
-    TreeSequence object. To use it requires that you install the
-    additional library tskit. By contrast the MultiTree class is a
-    much simpler collection of trees, and does not require any third
-    party packages, and is thus the default object in toytree for
-    working with multiple trees.
-
-TODO:
-    - set-like function that drops tips from each tree not shared by all trees.
-    - root function that drops tree that cannot be rooted or not set-like
-    - consensus function drop tips that are not in set.
-    - A distinct multitree mark for combining styles on topologies
-    - New mark: leave proper space for tips to mtree fits same as tree.
-"""
+"""Utilities for working with ordered collections of ToyTree objects."""
 
 from __future__ import annotations
-from typing import Union, List, Sequence, Optional, Tuple, TypeVar, Iterator
+
+import sys
+from collections.abc import Iterator, Sequence
 from copy import deepcopy
-import numpy as np
-from loguru import logger
-from toytree.utils import ToytreeError
+from numbers import Integral
+from typing import TYPE_CHECKING, TypeVar
+
 from toytree.style import TreeStyle
-from toytree.drawing.src.setup_canvas import get_canvas_and_axes
-from toytree.drawing.src.draw_cloudtree import draw_cloudtree
-from toytree.drawing.src.draw_multitree import draw_multitree
-# from toytree.drawing.src.setup_grid import Grid
-# from toytree.annotate import add_axes_scale_bar
-# from toytree.core.drawing.render import ToytreeMark
+from toytree.utils import ToytreeError
+
+if TYPE_CHECKING:
+    from toyplot.canvas import Canvas
+    from toyplot.coordinates import Cartesian
+    from toyplot.mark import Mark
 
 
-# aliases of Toyplot types returned by draw functions
-Canvas = TypeVar("Canvas")
-Cartesian = TypeVar("Cartesian")
-Mark = TypeVar("Mark")
 ToyTree = TypeVar("ToyTree")
 Node = TypeVar("Node")
 Query = TypeVar("Query", str, int, Node)
 
 
-class MultiTree:
-    """MultiTree class to visualize and analyze collections of trees.
+def _warn_deprecated_kwargs(name: str, kwargs: dict) -> None:
+    """Print a deprecated-kwargs warning for a public method."""
+    if kwargs:
+        print(
+            f"Deprecated args to {name}(): {list(kwargs.values())}. See docs.",
+            file=sys.stderr,
+        )
 
-    MultiTree objects can be indexed to extract ToyTrees, and are also
-    iterable. They include functions for visualizing sets of trees, and
-    for comparing and calculating statistics on sets of trees.
+
+def _require_non_empty_treelist(
+    treelist: Sequence[ToyTree],
+    action: str,
+) -> None:
+    """Raise a clear error if a method requires at least one tree."""
+    if not treelist:
+        raise ToytreeError(f"Cannot {action} on an empty MultiTree.")
+
+
+def _normalize_tree_indices(
+    idxs: int | Sequence[int] | None,
+    ntrees: int,
+    *,
+    caller: str,
+) -> list[int]:
+    """Return validated tree indices for selection-based methods."""
+    if idxs is None:
+        return list(range(ntrees))
+
+    if isinstance(idxs, Integral) and not isinstance(idxs, bool):
+        raw_indices = [int(idxs)]
+    else:
+        if isinstance(idxs, (str, bytes)):
+            raise ToytreeError(f"{caller} idxs must be an int or an iterable of ints.")
+        try:
+            raw_indices = list(idxs)
+        except TypeError as exc:
+            raise ToytreeError(
+                f"{caller} idxs must be an int or an iterable of ints."
+            ) from exc
+
+    if not raw_indices:
+        raise ToytreeError(f"{caller} requires at least one selected tree.")
+
+    indices = []
+    for raw in raw_indices:
+        if isinstance(raw, bool) or not isinstance(raw, Integral):
+            raise ToytreeError(f"{caller} idxs must contain only integer values.")
+        idx = int(raw)
+        if not -ntrees <= idx < ntrees:
+            raise ToytreeError(
+                f"{caller} idxs contains out-of-range tree index {idx}. "
+                f"Valid range is {-ntrees}..{ntrees - 1}."
+            )
+        indices.append(idx)
+    return indices
+
+
+class MultiTree:
+    """Represent an ordered collection of trees.
+
+    MultiTree objects store one or more ToyTree instances and expose
+    convenience methods for collection-level drawing, rooting, writing,
+    and consensus inference.
 
     Notes
     -----
-    Use factory function `toytree.mtree` to init a MultiTree instance
-    from a list of ToyTrees, or from a newick or nexus trees file.
+    Use :func:`toytree.mtree` to parse supported multitree inputs into a
+    MultiTree instance.
 
     Examples
     --------
-    >>> trees = [toytree.rtree.unittree(10) for i in range(100)]
+    >>> trees = [toytree.rtree.unittree(10) for _ in range(100)]
     >>> mtree = toytree.mtree(trees)
-    >>> mtree.draw();
+    >>> mtree.draw()
     """
-    def __init__(self, treelist: List[ToyTree]):
-        self.treelist: List[ToyTree] = treelist
-        """List of ToyTree objects in the MultiTree."""
 
-        # self.data: pd.DataFrame = self._init_data(treelist, data)
-        # """DataFrame with tree metadata (e.g., ipcoal.Model.df)."""
+    def __init__(self, treelist: list[ToyTree]):
+        self.treelist: list[ToyTree] = treelist
+        """Trees stored in the order they were provided."""
+        self._draw_fixed_order_cache: dict[tuple, list[str]] = {}
+        """Cached inferred tip orders used by repeated ``draw()`` calls."""
 
-    # def _init_data(self, treelist, data: Optional[pd.DataFrame]):
-    #     if data is None:
-    #         data = pd.DataFrame(
-    #             index=range(len(self)),
-    #             data={"count": 1},
-    #         )
-    #     return data
-
-    def __len__(self):
-        """Return number of trees in the treelist"""
+    def __len__(self) -> int:
+        """Return the number of trees in the collection."""
         return len(self.treelist)
 
     def __iter__(self) -> Iterator[ToyTree]:
-        """Generator to yield ToyTrees from MultiTree.treelist."""
-        for tree in self.treelist:
-            yield tree
+        """Iterate over ToyTree objects in the collection."""
+        return iter(self.treelist)
 
-    def __getitem__(self, idx: int) -> ToyTree:
-        """Return ToyTree by indexing from MultiTree.treelist."""
+    def __getitem__(self, idx: int | slice) -> ToyTree | list[ToyTree]:
+        """Return one tree or a tree slice from the collection."""
         return self.treelist[idx]
 
-    def __repr__(self):
-        """string representation shows ntrees and type"""
+    def __repr__(self) -> str:
+        """Return a concise representation of the MultiTree."""
         return f"<toytree.MultiTree ntrees={len(self)}>"
 
     @property
-    def ntips(self):
-        """Return number of tips in the FIRST tree in treelist."""
+    def ntips(self) -> int:
+        """Return the number of tips in the first tree.
+
+        Raises
+        ------
+        ToytreeError
+            If the MultiTree is empty.
+        """
+        _require_non_empty_treelist(self.treelist, "get ntips")
         return self.treelist[0].ntips
 
     @property
-    def ntrees(self):
-        """Return number of trees in the MultiTree.treelist"""
+    def ntrees(self) -> int:
+        """Return the number of trees in the collection."""
         return len(self.treelist)
 
     def all_tree_tip_labels_same(self) -> bool:
-        """Return True if names are the same in all the trees."""
+        """Return True if every tree shares the same tip-label set.
+
+        Returns
+        -------
+        bool
+            True if all trees contain the same tip labels, regardless of
+            order.
+
+        Raises
+        ------
+        ToytreeError
+            If the MultiTree is empty.
+        """
+        _require_non_empty_treelist(self.treelist, "compare tip labels")
         first = set(self.treelist[0].get_tip_labels())
-        return all(set(i.get_tip_labels()) == first for i in self)
+        return all(set(tree.get_tip_labels()) == first for tree in self.treelist[1:])
 
     def all_tree_topologies_same(self, include_root: bool = False) -> bool:
-        """Return True if all topologies in treelist are identical."""
-        return len(set(i.get_topology_id(include_root=include_root) for i in self)) == 1
-
-    def all_tree_tips_aligned(self, rtol: float = 1e-5, atol: float = 1e-5) -> bool:
-        """Return True if all tree tips are aligned (i.e., ultrametric)
-
-        This checks that all tip Node heights align at 0 within the
-        accepted tolerance level.
+        """Return True if every tree has the same topology.
 
         Parameters
         ----------
-        rtol: float
-            See np.allclose() function docstring.
-        atol: float
-            See np.allclose() function docstring.
+        include_root : bool, default=False
+            If True, rooted topology identifiers are compared. Otherwise
+            trees are compared by unrooted topology.
+
+        Returns
+        -------
+        bool
+            True if every tree has the same topology under the requested
+            root handling.
+
+        Raises
+        ------
+        ToytreeError
+            If the MultiTree is empty.
         """
-        return np.allclose(
-            a=np.concatenate([[i.height for i in tree] for tree in self]),
-            b=0,
-            rtol=rtol,
-            atol=atol,
+        _require_non_empty_treelist(self.treelist, "compare topologies")
+        first = self.treelist[0].get_topology_id(include_root=include_root)
+        return all(
+            tree.get_topology_id(include_root=include_root) == first
+            for tree in self.treelist[1:]
         )
 
-    # def iter_unique_topologies(self, include_root: bool = False) -> Iterator[ToyTree]:
-    #     """Generator to yield unique tree topologies in treelist."""
-    #     counter = Counter()
-    #     for tree in self:
-    #         hashed = tree.get_topology_id(include_root=include_root)
-    #         counter[hashed] += 1
-    #     return counter
-
-    # better name?
-    def get_unique_topologies(self, include_root: bool = False) -> List[Tuple[ToyTree, int]]:
-        """Return a list of (ToyTree, count) for each unique tree.
-
-        This can be useful for calculating statistics only on the
-        unique set of trees and multiplying by their frequency (for
-        example this is done when generating consensus trees).
+    def all_tree_tips_aligned(self, rtol: float = 1e-5, atol: float = 1e-5) -> bool:
+        """Return True if all tree tips are aligned at height zero.
 
         Parameters
         ----------
-        include_root:
-            If False then all unique rooted trees are counted and
-            returned rather than all unique unrooted trees.
+        rtol : float, default=1e-5
+            Relative tolerance forwarded to :func:`numpy.allclose`.
+        atol : float, default=1e-5
+            Absolute tolerance forwarded to :func:`numpy.allclose`.
+
+        Returns
+        -------
+        bool
+            True if every tip height across all trees is approximately
+            zero within the requested tolerances.
+
+        Raises
+        ------
+        ToytreeError
+            If the MultiTree is empty.
+        """
+        import numpy as np
+
+        _require_non_empty_treelist(self.treelist, "check tip alignment")
+        heights = [node.height for tree in self.treelist for node in tree]
+        return bool(np.allclose(heights, 0.0, rtol=rtol, atol=atol))
+
+    def get_unique_topologies(
+        self,
+        include_root: bool = False,
+    ) -> list[tuple[ToyTree, int]]:
+        """Return one representative tree and count for each unique topology.
+
+        Parameters
+        ----------
+        include_root : bool, default=False
+            If True, count rooted topologies separately. Otherwise count
+            trees by unrooted topology.
+
+        Returns
+        -------
+        list[tuple[ToyTree, int]]
+            Representative tree and occurrence count for each unique
+            topology, sorted from most to least frequent. An empty
+            MultiTree returns an empty list.
 
         Examples
         --------
         >>> mtree = toytree.mtree(
-        >>>     [toytree.rtree.rtree(6) for i in range(100)])
-        >>> print(mtree.get_unique_topology_counts())
-        >>> # [(ToyTree, 10), (ToyTree, 9), (ToyTree, 9), ...]
+        ...     [toytree.rtree.unittree(6, seed=i) for i in range(10)]
+        ... )
+        >>> mtree.get_unique_topologies()
         """
-        trees_dict = {}
-        for tree in self:
+        trees_dict: dict[object, tuple[ToyTree, int]] = {}
+        for tree in self.treelist:
             hashed = tree.get_topology_id(include_root=include_root)
             if hashed in trees_dict:
-                trees_dict[hashed][1] += 1
+                first_tree, count = trees_dict[hashed]
+                trees_dict[hashed] = (first_tree, count + 1)
             else:
-                trees_dict[hashed] = [tree, 1]
-        # sort trees and return as a List of Tuples
-        return sorted(trees_dict.values(), key=lambda x: x[1], reverse=True)
+                trees_dict[hashed] = (tree, 1)
+        return sorted(trees_dict.values(), key=lambda item: item[1], reverse=True)
 
-    def copy(self):
-        """Return a deepcopy of the MultiTree."""
+    def copy(self) -> MultiTree:
+        """Return a deep copy of the MultiTree."""
         return deepcopy(self)
 
-    # todo: use wrap
     def write(
         self,
-        path: Optional[str] = None,
-        dist_formatter: str = "%.12g",
-        internal_labels: Optional[str] = "support",
-        internal_labels_formatter: Optional[str] = "%.12g",
-        features: Optional[Sequence[str]] = None,
+        path: str | None = None,
+        dist_formatter: str | None = "%.12g",
+        internal_labels: str | None = "support",
+        internal_labels_formatter: str | None = "%.12g",
+        features: Sequence[str] | None = None,
         features_prefix: str = "&",
         features_delim: str = ",",
         features_assignment: str = "=",
         **kwargs,
-    ) -> Optional[str]:
-        """Write tree to newick string and return or write to filepath.
-
-        The newick string can be formatted in several ways. The default
-        will include dist values (edge lengths) and support values as
-        internal node labels. The edge lengths can be suppressed by
-        setting `dist_formatter=None`, and internal node labels can be
-        similarly suppressed, or set to store a different feature, such
-        as internal node names. Additional features can be stored in the
-        node comment blocks in extended-newick-format (NHX-like) by using
-        the "features" arguments (see examples).
+    ) -> str | None:
+        """Return serialized tree text or write it to a file.
 
         Parameters
         ----------
-        tree: ToyTree
-            A ToyTree instance to write as a newick string.
-        path: str or None
-            A filepath to write to file, or None to return newick string.
-        dist_formatter: str or None
-            A formatting string to format float dist values (edge lengths),
-            or None to not write dist values. Default is "%.6g".
-        internal_labels: str or None
-            A feature to write as internal node labels. None suppresses
-            internal labels. The 'support' feature is default, and
-            often used here, but 'name' or any other feature can be
-            used as well.
-        internal_labels_formatter: str or None
-            A formatting string to format internal labels. If an internal
-            label cannot be formatted due to TypeError (e.g., you select
-            'name' for `internal_labels` but leave this optional at its
-            default as a float formatter '%.6g', instead of str formatter)
-            it will simply be converted to a string.
-        features: List[str]
-            A list of additional features to write in the newick comment
-            block. For example, features=["height"] will save heights.
-        features_prefix: str
-            A prefix character written to the start of newick comment
-            blocks. Typical values are "&" (default) or "&&NHX:".
-        features_delim: str
-            A character used to delimit features in the newick comment
-            block. Default is ",".
-        features_assignment: str
-            A character used to separate feature keys and values. Default
-            is "=".
+        path : str or None, default=None
+            Filepath to write the combined tree text. If None, the text is
+            returned instead of written.
+        dist_formatter : str or None, default="%.12g"
+            Format string for edge lengths. Set to None to suppress edge
+            lengths in the serialized output.
+        internal_labels : str or None, default="support"
+            Node feature to write as internal labels. Set to None to
+            suppress internal node labels.
+        internal_labels_formatter : str or None, default="%.12g"
+            Format string applied to internal label values before writing.
+        features : Sequence[str] or None, default=None
+            Additional node features to write inside comment blocks.
+        features_prefix : str, default="&"
+            Prefix used at the start of serialized feature comment blocks.
+        features_delim : str, default=","
+            Delimiter used between serialized feature assignments.
+        features_assignment : str, default="="
+            Separator used between serialized feature keys and values.
+        **kwargs : dict
+            Deprecated extra arguments accepted for backward compatibility.
+            Any provided values are ignored with a warning to ``stderr``.
 
-        See Also
-        --------
-        `write_nexus`
-            Write tree newick string in a NEXUS format.
-        `ToyTree.write`
-            This function is available from ToyTree objects as `.write`.
+        Returns
+        -------
+        str or None
+            Newline-joined serialized tree text if ``path`` is None.
+            Otherwise writes to ``path`` and returns None.
         """
-        if kwargs:
-            logger.warning(f"Deprecated args to write(): {list(kwargs.values())}. See docs.")
-        newicks = []
-        for tree in self:
-            newicks.append(tree.write(
-                path=None, dist_formatter=dist_formatter,
+        _warn_deprecated_kwargs("write", kwargs)
+        newicks = [
+            tree.write(
+                path=None,
+                dist_formatter=dist_formatter,
                 internal_labels=internal_labels,
                 internal_labels_formatter=internal_labels_formatter,
                 features=features,
                 features_prefix=features_prefix,
                 features_delim=features_delim,
                 features_assignment=features_assignment,
-            ))
-        newicks = "\n".join(newicks)
+            )
+            for tree in self.treelist
+        ]
+        text = "\n".join(newicks)
         if path is None:
-            return newicks
-        with open(path, 'w', encoding="utf-8") as out:
-            out.write(newicks)
+            return text
+        with open(path, "w", encoding="utf-8") as out:
+            out.write(text)
         return None
 
-    # ---------------------------------------------------------------#
-    # see toytree.infer.consensus_tree()
-    # ---------------------------------------------------------------#
     def get_consensus_tree(self, min_freq: float = 0.0, **kwargs) -> ToyTree:
-        """Return an exteded majority-rule consensus tree from a list of trees.
-
-        The trees must contain the same set of tips. The returned tree will
-        contain the most frequently occurring non-conflicting clades in the
-        input trees. If the most frequent clades conflict with equal
-        frequency the node is collapsed. A minimum clade frequency can
-        be set to only include clades occurring above that threshold. For
-        example, min_freq=0.5 will procude a 50% majority-rule consensus
-        tree. The returned tree is unrooted with edge dist values as the
-        mean dist across all occurrences of that split in the set of trees.
+        """Return the consensus tree inferred from the collection.
 
         Parameters
         ----------
-        trees: MultiTree | list[ToyTree]
-            A MultiTree or list of ToyTrees sharing the same tip labels.
-        min_freq: float
-            A minimum frequency cutoff for a split to occur across the set
-            of trees for it to be included in the consensus tree.
+        min_freq : float, default=0.0
+            Minimum split frequency required for a clade to be retained in
+            the consensus tree.
+        **kwargs : dict
+            Deprecated extra arguments accepted for backward compatibility.
+            Any provided values are ignored with a warning to ``stderr``.
 
-        See Also
-        --------
-        map_features_to_consensus_tree
-            Map dists, heights, or other features from a set of input trees
-            to nodes of a consensus tree with additional options.
+        Returns
+        -------
+        ToyTree
+            Consensus tree inferred from the trees in this MultiTree.
 
-        Examples
-        --------
-        >>> trees = [toytree.rtree.unittree(ntips=10) for i in range(10)]
-        >>> mtree = toytree.mtree(trees)
-        >>> ctree1 = mtree.get_consensus_tree(trees)
-        >>> ctree2 = mtree.get_consensus_tree(trees, majority_rule_min=0.5)
-        >>> toytree.mtree([ctree1, ctree2]).draw();
+        Raises
+        ------
+        ToytreeError
+            If the MultiTree is empty.
+        ValueError
+            If ``min_freq`` is outside the valid range expected by the
+            consensus inference routine.
         """
         from toytree.infer import consensus_tree
-        if kwargs:
-            logger.warning(f"Deprecated args to get_consensus_tree(): {list(kwargs.values())}. See docs.")
-        return consensus_tree(self.treelist, min_freq=min_freq)
 
+        _require_non_empty_treelist(self.treelist, "infer a consensus tree")
+        _warn_deprecated_kwargs("get_consensus_tree", kwargs)
+        return consensus_tree(self.treelist, min_freq=min_freq)
 
     def get_consensus_features(
         self,
         tree: ToyTree,
-        features: list[str] = None,
-        edge_features: list[str] = None,
+        features: list[str] | None = None,
+        edge_features: list[str] | None = None,
         ultrametric: bool = False,
         conditional: bool = True,
     ) -> ToyTree:
-        """Return tree with feature data mapped to each bipartition from
-        a set of trees that may or may not share the same bipartitions.
+        """Map summary feature data from the collection onto one tree.
 
-        The 'support' value on the consensus tree represents the proportion
-        of trees that supported the split in the consensus, and the 'dist'
-        is the mean dist value of the bipartition edge in the set of trees
-        that included that edge. These two features are set on MJ rule
-        consensus trees by default. Other features can be optionally
-        computed as well.
+        The supplied tree is typically a consensus tree, but any tree
+        sharing relevant bipartitions can be used.
 
         Parameters
         ----------
-        tree: ToyTree
-            The tree can be the MJ consensus tree or a user input tree.
-        trees: MultiTree | list[ToyTree]
-            A list of trees from which features will be extracted. Support
-            is always measured. Edge lengths are extracted as 'dists' or
-            'heights' depending on the option 'rooted'.
-        features: None | list[str]
-            A list of feature names that exist on the input trees that you
-            wish to have summarized across the nodes of the consensus tree.
-            For quantitative features this will record min, max, mean, std
-            conditional on the existence of the node in the tree.
-        rooted: bool
-            If trees are rooted and ultrametric then set this option to
-            True to summarize stats of node heights instead of node dists.
-            Note: this forces conditional=True.
-        conditional: bool
-            If True then dist values of tip nodes on unrooted trees are
-            only calculated from the subset of trees where these tips occur
-            in the same splits as in the main tree, otherwise dists are
-            calculated from tip nodes across all input trees. This only
-            affects tip node dists.
+        tree : ToyTree
+            Tree that will receive the summarized feature annotations.
+        features : list[str] or None, default=None
+            Node features to summarize across matching bipartitions.
+        edge_features : list[str] or None, default=None
+            Edge features to summarize across matching bipartitions.
+        ultrametric : bool, default=False
+            If True, treat the input trees as rooted ultrametric trees
+            when summarizing edge-related values.
+        conditional : bool, default=True
+            If True, summarize values only over trees containing the
+            matching bipartition. If False, include all trees where the
+            feature is defined.
 
-        See Also
-        --------
-        ...
+        Returns
+        -------
+        ToyTree
+            Copy of ``tree`` with summary statistics mapped onto matching
+            nodes and edges.
 
-        Examples
-        --------
-        ...
+        Raises
+        ------
+        ToytreeError
+            If the MultiTree is empty.
+        ValueError
+            If requested feature names are invalid for the supplied trees.
         """
         from toytree.infer import consensus_features
+
+        _require_non_empty_treelist(self.treelist, "map consensus features")
         return consensus_features(
             tree=tree,
             trees=self.treelist,
@@ -376,47 +402,40 @@ class MultiTree:
             conditional=conditional,
         )
 
-
-    ################################################################
-    # Tree Modification functions
-    # These visit and possibly modify every tree in treelist
-    ################################################################
-
     def root(
         self,
         *query: Query,
-        root_dist: Optional[float] = None,
-        edge_features: Optional[Sequence[str]] = None,
+        root_dist: float | None = None,
+        edge_features: Sequence[str] | None = None,
         inplace: bool = False,
     ) -> MultiTree:
-        """Return a MultiTree with all ToyTrees in treelist rooted.
-
-        If a tree cannot be rooted on the selected position this
-        will raise a ToytreeError.
+        """Return a collection with every tree rooted on the same query.
 
         Parameters
         ----------
-        *query: str, int, or Node
-            One or more Node selectors, which can be Node objects, names,
-            or int idx labels. If multiple are entered the MRCA node will
-            be used as the base of the edge to split.
-        regex: bool
-            If True then Node name strings are treated as regular
-            expressions that can match to multiple Nodes.
-        root_dist: None or float
-            The length (dist) along the root edge above the Node query
-            where the new root edge should be placed. Default is None
-            which will place root at the midpoint of the edge. A float
-            can be entered, but will raise ToyTreeError if > len of edge.
-        edge_features: Sequence[str]
-            One or more Node features that should be treated as a feature
-            of its edge, not the Node itself. On rooting, edge features
-            are re-polarized, to apply to the correct Node. The 'dist'
-            and 'support' features are always treated as edge features.
-            Add additional edge features here. See docs for example.
-        inplace: bool
-            If True the original tree is modified and returned, otherwise
-            a modified copy is returned.
+        *query : str, int, or Node
+            One or more node selectors forwarded to
+            :meth:`toytree.ToyTree.root`.
+        root_dist : float or None, default=None
+            Distance above the selected edge at which to place the new
+            root. If None, each tree roots at the midpoint.
+        edge_features : Sequence[str] or None, default=None
+            Additional node features that should be treated as edge data
+            during rerooting.
+        inplace : bool, default=False
+            If True, modify this MultiTree in place and return it.
+            Otherwise return a rooted deep copy.
+
+        Returns
+        -------
+        MultiTree
+            Rooted collection.
+
+        Raises
+        ------
+        ToytreeError
+            Propagated if any tree cannot be rooted on the requested
+            selection.
         """
         mtree = self if inplace else self.copy()
         for tree in mtree:
@@ -429,347 +448,212 @@ class MultiTree:
         return mtree
 
     def unroot(self, inplace: bool = False) -> MultiTree:
-        """Return a MultiTree with all ToyTrees in treelist unrooted"""
+        """Return a collection with every tree unrooted.
+
+        Parameters
+        ----------
+        inplace : bool, default=False
+            If True, modify this MultiTree in place and return it.
+            Otherwise return an unrooted deep copy.
+
+        Returns
+        -------
+        MultiTree
+            Unrooted collection.
+        """
         mtree = self if inplace else self.copy()
         for tree in mtree:
             tree.unroot(inplace=True)
         return mtree
 
-    ################################################################
-    # Tree Comparison/Distance functions
-    # >>> toytree.distance.get_treedist_rf(mtre[0], mtre[1])
-    # >>> toytree.distance.get_treedist_matrix(*mtre.treelist)
-    ################################################################
-
-    # def get_tree_distance(self, idx0: int, idx1: int, metric: str = "rf") -> float:
-    #     """Return a distance metric comparing two trees.
-
-    #     Trees are indexed from the treelist by indices idx0 and idx1.
-
-    #     Parameters
-    #     ----------
-    #     idx0: int
-    #         Index of a tree from the treelist.
-    #     idx1: int
-    #         Index of a tree from the treelist.
-    #     metric: str
-    #         Name of a supported tree distance metric. For available
-    #         options see `toytree.distance.treedist`.
-    #     **kwargs: Dict
-    #         Additional options accepted by tree distance method.
-
-    #     Examples
-    #     --------
-    #     >>> ...
-    #     """
-    #     return get_tree_distance(
-    #         self[idx0], self[idx1], metric=metric, **kwargs)
-
-    # def get_tree_distance_matrix(self, ) -> float:
-    #     """TODO..."""
-
-    # def get_tree_distance_distribution(
-    #     self, ) -> np.ndarray:
-    #     """Return a distribution of tree distances.
-
-    #     Tree distances are measure between pairs of trees, but several
-    #     options are available for how pairs will be sampled, including
-    #     'random', 'consensus', or 'distance'.
-
-    #     Parameters
-    #     ----------
-
-    #     Returns
-    #     -------
-    #     pd.DataFrame?
-
-    #     Examples
-    #     --------
-    #     >>> ...
-    #     """
-
-    ################################################################
-    # Drawing functions
-    #
-    ################################################################
-
-    # TODO: write grid draw code in separate module
     def draw(
         self,
-        shape: Tuple[int, int] = (1, 4),
+        shape: tuple[int, int] = (1, 4),
         shared_axes: bool = False,
-        idxs: Optional[Sequence[int]] = None,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
-        margin: Union[float, Tuple[int, int, int, int]] = None,
+        idxs: int | Sequence[int] | None = None,
+        width: float | int | None = None,
+        height: float | int | None = None,
+        margin: float | tuple[float, float, float, float] | None = None,
+        fixed_order: bool | Sequence[str] | None = None,
+        label: str | Sequence[str | None] | None = None,
         **kwargs,
-    ) -> Tuple[Canvas, Cartesian, List[Mark]]:
-        """Return a toyplot drawing of a grid of ToyTrees.
-
-        The grid spacing can be controlled with shape and margin
-        options, and trees can each be on their own axis or on a
-        set of shared axes (same max height dimension), which can be
-        better for highlighting differences in heights.
+    ) -> tuple[Canvas, list[Cartesian], list[Mark]]:
+        """Return a grid drawing of trees contained in the ``MultiTree``.
 
         Parameters
         ----------
-        shape: Tuple[int,int]
-            A tuple of (nrows, ncolumns) for a tree grid drawing. The
-            dimension of this matrix determines the number of trees
-            that will be plotted.
-        shared_axes (bool):
-            If True then the 'height' dimension will be shared among
-            all trees, otherwise each tree is scaled to fill the
-            space in its grid cell.
-        idxs (int):
-            The indices of trees in treelist that you want to draw. By
-            default the first ncols*nrows trees are drawn, but you can
-            select the 10-14th tree by entering idxs=[10,11,12,13].
-            The selected trees will be displayed in the grid.
-        width (int):
-            Width of the canvas
-        height (int):
-            Height of the canvas
-        margin: Tuple[int,int,int,int]
-            Spacing between subplots in the grid in pixel units. A
-            single value or a tuple for top, right, bottom, left.
-        **kwargs (dict):
-            Any style arguments supported by .draw() in toytrees.
+        shape : tuple[int, int]
+            Requested grid shape as ``(nrows, ncols)``.
+        shared_axes : bool
+            If True, linear layouts share the same rendered tree-depth span.
+            Visible scale bars remain controlled by ``scale_bar``.
+        idxs : int or Sequence[int] or None
+            Optional tree indices to draw. If more indices are supplied than
+            grid cells, extra indices are ignored. ``idxs=[]`` returns a
+            blank grid with no rendered marks.
+        width : float or int or None
+            Canvas width in px. Must be > 0 when provided. If omitted,
+            width is inferred from the rendered tree extents for the
+            selected layout and then soft-capped for the full grid.
+        height : float or int or None
+            Canvas height in px. Must be > 0 when provided. If omitted,
+            height is inferred from the rendered tree extents for the
+            selected layout and then soft-capped for the full grid. If
+            either dimension is provided explicitly, only the missing
+            dimension is auto-sized.
+        margin : float or tuple[float, float, float, float] or None
+            Per-subplot margin in px, either as one scalar or
+            ``(top, right, bottom, left)``.
+        fixed_order : bool or Sequence[str] or None
+            If True, infer a shared tip order from the selected trees and
+            reuse cached results on repeated draws of the same selection.
+            If a sequence is provided, it is forwarded directly to each
+            rendered tree.
+        label : str or Sequence[str or None] or None
+            Axis label text for rendered trees. A scalar string is
+            broadcast to rendered trees; a sequence must match the number
+            of rendered trees.
+        **kwargs : dict
+            Additional ``ToyTree.draw()`` arguments applied to each
+            rendered tree. ``padding`` must be a finite number >= 0 when
+            provided.
 
-        Examples
-        --------
-        >>> mtre = toytree.mtree([toytree.rtree.unittree(10) for i in range(10)])
-        >>> mtre.draw(shape=(2, 3), width=800, edge_widths=4)
+        Returns
+        -------
+        tuple[Canvas, list[Cartesian], list[Mark]]
+            Canvas, full grid axes list, and marks for rendered trees only.
+            ``len(axes)`` always equals ``shape[0] * shape[1]`` while
+            ``len(marks)`` equals the number of trees actually drawn.
+
+        Raises
+        ------
+        ToytreeError
+            Raised if drawing inputs are invalid or if ``shared_axes=True``
+            is requested on a non-linear layout.
         """
+        from toytree.drawing.src.draw_multitree import draw_multitree
+
         return draw_multitree(
-            mtree=self, shape=shape, shared_axes=shared_axes, idxs=idxs,
-            width=width, height=height, margin=margin, **kwargs,
+            mtree=self,
+            shape=shape,
+            shared_axes=shared_axes,
+            idxs=idxs,
+            width=width,
+            height=height,
+            margin=margin,
+            fixed_order=fixed_order,
+            label=label,
+            **kwargs,
         )
-
-
-    # def draw_cloud_tree(
-    #     self,
-    #     axes: Cartesian = None,
-    #     fixed_order: Sequence[str] = None,
-    #     jitter: float = 0.0,
-    #     idxs: Optional[Sequence[int]] = None,
-    #     **kwargs,
-    # ):
-    #     """Return a cloud of overlapping low-opacity tree drawings.
-
-    #     Draw multiple trees overlapping in coordinate space. The
-    #     order of tip_labels is fixed in cloud trees so that trees
-    #     with discordant relationships can be seen in conflict. See
-    #     examples from the documentation for tips on using additional
-    #     styling options to further visualize patterns among subtrees
-    #     within the cloud.
-
-    #     Parameters
-    #     ----------
-    #     axes: None or toyplot.coordinates.Cartesian
-    #         If None then a new Canvas and Cartesian axes object is
-    #         returned, otherwise if a Cartesian axes object is provided
-    #         the cloudtree will be drawn on the axes.
-    #     fixed_order: Sequence[str], bool, or None
-    #         A list of tip names matching those in every tree in the
-    #         multitree, the order of which will determine the fixed
-    #         order of tips in plotted trees. If None (default) then a
-    #         consensus tree is inferred and its ladderized tip order
-    #         is used.
-    #     jitter: float
-    #         A value by which to randomly shift the baseline of tree
-    #         subplots so that they do not overlap perfectly. This adds
-    #         a value drawn from np.random.uniform(-jitter, jitter).
-    #     idxs: None or Sequence[int]
-    #         Optional select indices of which trees to draw.
-    #     **kwargs:
-    #         All drawing style arguments supported in the .draw()
-    #         function of toytree objects are also supported by
-    #         .draw_cloudtree(), most notably here, edge_style.
-
-    #     Notes
-    #     -----
-    #     For style arguments that apply to tips (e.g., tip_labels) the
-    #     styles will be re-ordered by fixed_order to apply to all trees
-    #     correctly.
-    #     """
-    #     logger.warning(("kwargs", kwargs))
-    #     # which trees to draw
-    #     treelist = self.treelist if idxs is None else idxs
-
-    #     # TreeStyle used for canvas, axes setup only, based on
-    #     # kwargs, not .style from any subtrees.
-    #     fstyle = TreeStyle()
-    #     fstyle.width = kwargs.get("width", None)
-    #     fstyle.height = kwargs.get("height", None)
-    #     fstyle.layout = kwargs.get("layout", 'r')
-    #     fstyle.padding = kwargs.get("padding", 20)
-    #     fstyle.scale_bar = kwargs.get("scale_bar", False)
-    #     fstyle.use_edge_lengths = kwargs.get("use_edge_lengths", True)
-    #     fstyle.edge_type = kwargs.get("edge_type", 'c')
-    #     fstyle.xbaseline = kwargs.get("xbaseline", 0)
-    #     fstyle.ybaseline = kwargs.get("ybaseline", 0)
-    #     fstyle.tip_labels = (
-    #         self.treelist[0].get_tip_labels() if "tip_labels" not in kwargs
-    #         else kwargs["tip_labels"]
-    #     )
-    #     logger.warning(("fstyle.tip_labels", fstyle.tip_labels))
-    #     fstyle.edge_style.stroke_opacity = 1 / len(treelist)
-    #     if "edge_style" in kwargs:
-    #         for key, val in kwargs["edge_style"]:
-    #             setattr(fstyle, key, val)
-    #     logger.warning(("fstyle.edge_style", fstyle.edge_style))
-
-    #     # get fixed order of tips from consensus tree if not provided.
-    #     if fixed_order is None:
-    #         fixed_order = (
-    #             MultiTree(self.treelist)
-    #             .get_consensus_tree()
-    #             .get_tip_labels()
-    #         )
-    #     logger.warning(("fixed_order", fixed_order))
-
-    #     # require fixed_order to match ntips
-    #     ntips = self.treelist[0].ntips
-    #     assert len(fixed_order) == ntips, (
-    #         f"fixed_order arg (len={len(fixed_order)}) "
-    #         f"must be the same length as ntips (len={ntips}). "
-    #         f"You entered: {fixed_order}")
-
-    #     # draw trees sequentially to get a list of ToyTreeMark objects
-    #     marks = []
-    #     for tidx, tree in enumerate(treelist):
-
-    #         # make copy of fstyle
-    #         tmpstyle = fstyle.copy()
-
-    #         # add jitter to tip coordinates
-    #         if jitter:
-    #             if fstyle.layout in "rl":
-    #                 tmpstyle.ybaseline = fstyle.ybaseline + np.random.uniform(-jitter, jitter)
-    #             else:
-    #                 tmpstyle.xbaseline = fstyle.xbaseline + np.random.uniform(-jitter, jitter)
-
-    #         # set the edge stroke-opacity
-    #         if tree.style.edge_style.stroke_opacity is not None:
-    #             tmpstyle.edge_style.stroke_opacity
-
-    #         # plot tip labels by reordering those of tree tidx=0
-    #         if not tidx:
-    #             tmpstyle.tip_labels = fstyle.tip_labels
-    #         else:
-    #             tmpstyle.tip_labels = False
-
-    #         # add mark to axes
-    #         kwargs = tree_style_to_css_dict(tmpstyle)
-    #         logger.warning(("kwargs", kwargs))
-    #         if not tidx:
-    #             canvas, axes, mark = tree.draw(axes=axes, fixed_order=fixed_order, **kwargs)
-    #         else:
-    #             _, _, mark = tree.draw(axes=axes, fixed_order=fixed_order, **kwargs)
-    #         marks.append(mark)
-
-    #     # get shared tree styles.
-    #     return canvas, axes, marks
-
 
     def draw_cloud_tree(
         self,
-        axes: Cartesian = None,
-        fixed_order: Union[Sequence[str], bool] = None,
+        axes: Cartesian | None = None,
+        fixed_order: Sequence[str] | bool | None = None,
         jitter: float = 0.0,
-        idxs: Optional[Sequence[int]] = None,
+        idxs: int | Sequence[int] | None = None,
         interior_algorithm: int = 1,
         **kwargs,
-    ):
-        """...
-        """
-        kwargs["jitter"] = jitter
-        kwargs["axes"] = axes
-        kwargs["idxs"] = idxs
-        kwargs["tree_style"] = None
-        kwargs["fixed_order"] = fixed_order
-        kwargs["interior_algorithm"] = interior_algorithm
-        kwargs["kwargs"] = {}
-        marks = draw_cloudtree(self, **kwargs)
+    ) -> tuple[Canvas | None, Cartesian, list[Mark]]:
+        """Return an overlay drawing of multiple trees on one set of axes.
 
-        # get or create axes and canvas
+        Parameters
+        ----------
+        axes : Cartesian or None, default=None
+            Existing toyplot Cartesian axes on which to draw. If None, a
+            new canvas and axes are created.
+        fixed_order : Sequence[str], bool, or None, default=None
+            Tip order to use for linear layouts. If a sequence is not
+            provided, a consensus order is inferred from the selected
+            trees.
+        jitter : float, default=0.0
+            Random baseline jitter forwarded to the cloud-tree renderer.
+        idxs : int, Sequence[int], or None, default=None
+            Optional tree indices to render. Negative indices are allowed.
+            Unlike ``MultiTree.draw()``, an empty selection is invalid.
+        interior_algorithm : int, default=1
+            Interior-node positioning algorithm forwarded to each tree draw.
+        **kwargs : dict
+            Additional ``ToyTree.draw()`` styling arguments applied to the
+            rendered trees.
+
+        Returns
+        -------
+        tuple[Canvas | None, Cartesian, list[Mark]]
+            Canvas (or None if ``axes`` was supplied), host Cartesian axes,
+            and rendered tree marks in draw order.
+
+        Raises
+        ------
+        ToytreeError
+            If the MultiTree is empty or if ``idxs`` is invalid.
+        """
+        from toytree.drawing.src.draw_cloudtree import draw_cloudtree
+        from toytree.drawing.src.setup_canvas import get_canvas_and_axes
+
+        _require_non_empty_treelist(self.treelist, "draw a cloud tree")
+        indices = _normalize_tree_indices(
+            idxs,
+            len(self.treelist),
+            caller="draw_cloud_tree()",
+        )
+        selected = MultiTree([self.treelist[idx] for idx in indices])
+
+        draw_kwargs = dict(kwargs)
+        draw_kwargs["jitter"] = jitter
+        draw_kwargs["axes"] = axes
+        draw_kwargs["idxs"] = None
+        draw_kwargs["tree_style"] = None
+        draw_kwargs["fixed_order"] = fixed_order
+        draw_kwargs["interior_algorithm"] = interior_algorithm
+        draw_kwargs["kwargs"] = {}
+
+        marks = draw_cloudtree(selected, **draw_kwargs)
         canvas, axes = get_canvas_and_axes(
-            axes, marks[0],
-            kwargs.get("width"), kwargs.get("height"),
+            axes,
+            marks[0],
+            draw_kwargs.get("width"),
+            draw_kwargs.get("height"),
         )
 
-        # add marks to axes
         for mark in marks:
             axes.add_mark(mark)
 
-        # style axes
-        # scale bar was not allowed on individual trees. Add scale
-        # bar for the tallest tree in the bunch
-        if kwargs.get("scale_bar", False):
-            tree = max(self, key=lambda x: x.treenode.height)
+        if draw_kwargs.get("scale_bar", False):
+            tree = max(selected, key=lambda item: item.treenode.height)
             if tree.style.layout in ("r", "u"):
                 srange = (-tree.treenode.height, 0)
             else:
                 srange = (0, tree.treenode.height)
             tree.annotate.add_axes_scale_bar(axes, range=srange)
-        else:
-            if canvas is not None:
-                axes.x.show = False
-                axes.y.show = False
+        elif canvas is not None:
+            axes.x.show = False
+            axes.y.show = False
 
         return canvas, axes, marks
 
-
-    def reset_tree_styles(self):
-        """Set the .style to default for all ToyTrees in treelist."""
-        for tre in self.treelist:
-            tre.style = TreeStyle()
+    def reset_tree_styles(self) -> None:
+        """Reset ``.style`` on every tree to the default TreeStyle."""
+        for tree in self.treelist:
+            tree.style = TreeStyle()
 
     def get_tip_labels(self) -> Sequence[str]:
-        """Return ordered tip labels from the first tree in treelist.
+        """Return tip labels in the order of the first tree.
 
-        Because a MultiTree contains many trees there are many possible
-        orderings of the tip Node labels. For the purposes of plotting,
-        it is sometimes desirable to fetch the tip names before plotting
-        so that they can be modified, and then supplied as an argument
-        to a plotting function, such as `draw_cloud_tree`.
+        Returns
+        -------
+        Sequence[str]
+            Tip-label order from the first tree in the MultiTree.
 
-        tree plot order for the *list of tree*, ...
-        starting from the zero axis. If all trees in the treelist do not
-        share the same set of tips then this will return an error message.
-
-        If fixed_order is a user entered list then names are returned in that
-        order. If fixed_order was True then the consensus tree order is
-        returned. If fixed_order was None or False then the order of the first
-        ToyTree in .treelist is returned.
+        Raises
+        ------
+        ToytreeError
+            If the MultiTree is empty or the trees do not share the same
+            set of tip labels.
         """
+        _require_non_empty_treelist(self.treelist, "get tip labels")
         if not self.all_tree_tip_labels_same():
             raise ToytreeError(
-                "All trees in treelist do not share the same set of tips")
+                "All trees in treelist do not share the same set of tip labels."
+            )
         return self.treelist[0].get_tip_labels()
-
-
-if __name__ == "__main__":
-
-    import toytree
-    mtree = toytree.mtree([toytree.rtree.unittree(10) for i in range(10)])
-    # print(mtree)
-    # c, a, m = mtree.draw(ts='c', shape=(2, 3))
-    # toytree.utils.show(c)
-    # for tree in mtree:
-    #     print(repr(tree))
-    # print(mtree.get_unique_topologies())
-    ctree = mtree.get_consensus_tree()
-    print(ctree.get_node_data())
-
-    ctree = mtree.get_consensus_features(ctree)
-    print(ctree.get_node_data())
-    # ctree._draw_browser(node_sizes=16, node_markers="r1.5x1", node_labels="support", tmpdir="~", scale_bar=True, ts='u')
-
-    # c, a, m = mtree.draw_cloud_tree()
-    # toytree.utils.show(c)
-    # mtree[1][-1].children[0]._dist = 100
-    # mtree[1]._update()
-    # c, a, m = mtree.draw(scale_bar=True, node_sizes=0, shared_axes=True, layout='d')
-    # toytree.utils.show(c, tmpdir="~")
