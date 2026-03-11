@@ -7,10 +7,12 @@ for missing values for Nodes that do not have assigned data for a
 feature.
 """
 
-from typing import Union, Sequence, Any, TypeVar, Optional
-import pandas as pd
+from typing import Any, Optional, Sequence, TypeVar, Union
+
 import numpy as np
-from toytree import ToyTree, Node
+import pandas as pd
+
+from toytree import Node, ToyTree
 from toytree.core.apis import add_toytree_method
 
 Query = TypeVar("Query", int, str, Node)
@@ -22,8 +24,7 @@ def get_node_data(
     feature: Union[str, Sequence[str], None] = None,
     missing: Union[Any, Sequence[Any], None] = None,
 ) -> Union[pd.DataFrame, pd.Series]:
-    """Return a pandas Series or DataFrame with values for one or
-    more selected features in the tree.
+    """Return a Mapping of one or more selected features in the tree.
 
     This function is convenient for accessing data in tabular
     format, but is slower than accessing data directly from Nodes,
@@ -35,8 +36,6 @@ def get_node_data(
     rather than float, int, or str, should generally work fine,
     but beware that this function will not attempt to automatically
     check or fill missing values for these data.
-
-    See Also: `get_feature_dict`, `set_node_data`, `get_tip_data`.
 
     Parameters
     ----------
@@ -62,6 +61,10 @@ def get_node_data(
         all features) then a pd.DataFrame is returned with tip
         node 'idx' attributes as the index and feature names as
         the column labels.
+
+    See Also
+    --------
+    `get_feature_dict`, `set_node_data`, `get_tip_data`.
 
     Examples
     --------
@@ -150,8 +153,7 @@ def get_tip_data(
     missing: Optional[Any] = None,
     names: bool = False,
 ) -> pd.DataFrame:
-    """Return a DataFrame with values for one or more selected
-    features from every leaf node in the tree.
+    """Return Mapping of one or more selected features from leaf nodes.
 
     Parameters
     ----------
