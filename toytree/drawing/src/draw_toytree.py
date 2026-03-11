@@ -7,11 +7,11 @@ projects node coordinates with the requested layout, and returns a
 ``ToyTreeMark`` rendered on toyplot axes.
 """
 
+import sys
 from collections.abc import Mapping
 from typing import Any, Tuple, TypeVar
 
 import numpy as np
-from loguru import logger
 from toyplot.canvas import Canvas
 from toyplot.coordinates import Cartesian
 
@@ -32,6 +32,43 @@ from toytree.style import (
 
 # from toytree.utils import ToytreeError
 ToyTree = TypeVar("ToyTree")
+
+
+def _normalize_extra_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
+    """Return draw kwargs with shorthand / extras normalized once."""
+    parsed = dict(kwargs)
+    extra_obj = parsed.pop("kwargs", {})
+    if extra_obj is None:
+        extra_kwargs = {}
+    elif isinstance(extra_obj, Mapping):
+        extra_kwargs = dict(extra_obj)
+    else:
+        print(
+            "Expected draw() internal `kwargs` to be a mapping; "
+            "received unsupported value and ignored it.",
+            file=sys.stderr,
+        )
+        extra_kwargs = {}
+
+    ts_key = extra_kwargs.pop("ts", None)
+    style_key = parsed.get("tree_style")
+    if style_key is None and ts_key is not None:
+        parsed["tree_style"] = ts_key
+    elif style_key is not None and ts_key is not None and ts_key != style_key:
+        print(
+            "Both `tree_style` and shorthand `ts` were provided; "
+            "using `tree_style` and ignoring `ts`.",
+            file=sys.stderr,
+        )
+
+    if extra_kwargs:
+        unknown = ", ".join(sorted(extra_kwargs))
+        print(
+            "Unrecognized keyword arguments passed to draw() were ignored: "
+            f"{unknown}. Check docs for current argument names.",
+            file=sys.stderr,
+        )
+    return parsed
 
 
 def get_tree_style_updated_by_draw_args(tree: ToyTree, **kwargs) -> TreeStyle:
@@ -61,37 +98,7 @@ def get_tree_style_updated_by_draw_args(tree: ToyTree, **kwargs) -> TreeStyle:
 
     Unknown extra kwargs are ignored with a warning.
     """
-    # extract extra kwargs that are not in ToyTree.draw()
-    extra_obj = kwargs.pop("kwargs", {})
-    if extra_obj is None:
-        extra_kwargs = {}
-    elif isinstance(extra_obj, Mapping):
-        extra_kwargs = dict(extra_obj)
-    else:
-        logger.warning(
-            "Expected draw() internal `kwargs` to be a mapping; "
-            "received unsupported value and ignored it."
-        )
-        extra_kwargs = {}
-
-    # remove 'ts' shortcut name and expand as a user tree_style arg
-    ts_key = extra_kwargs.pop("ts", None)
-    style_key = kwargs.get("tree_style")
-    if style_key is None and ts_key is not None:
-        kwargs["tree_style"] = ts_key
-    elif style_key is not None and ts_key is not None and ts_key != style_key:
-        logger.warning(
-            "Both `tree_style` and shorthand `ts` were provided; "
-            "using `tree_style` and ignoring `ts`."
-        )
-
-    # warn user of any remaining (unsupported) kwargs
-    if extra_kwargs:
-        unknown = ", ".join(sorted(extra_kwargs))
-        logger.warning(
-            "Unrecognized keyword arguments passed to draw() were ignored: "
-            f"{unknown}. Check docs for current argument names."
-        )
+    kwargs = _normalize_extra_kwargs(kwargs)
 
     # get a TreeStyle COPY from tree.style or new ts TreeStyle()
     style = get_tree_style_base(tree, tree_style=kwargs.pop("tree_style", None))
@@ -103,6 +110,36 @@ def get_tree_style_updated_by_draw_args(tree: ToyTree, **kwargs) -> TreeStyle:
     # check and expand user-kwargs if provided else base style value
     style = validate_style(tree, style, **kwargs)
     return style
+
+
+def _get_tree_style_layout_mark(
+    tree: ToyTree,
+    *,
+    fixed_order=None,
+    fixed_position=None,
+    interior_algorithm: int = 0,
+    **kwargs,
+) -> tuple[TreeStyle, BaseLayout, ToyTreeMark]:
+    """Return draw-resolved style, layout, and mark without creating axes."""
+    style = get_tree_style_updated_by_draw_args(tree, **kwargs)
+    layout = get_layout(
+        tree=tree,
+        style=style,
+        fixed_order=fixed_order,
+        fixed_position=fixed_position,
+        interior_algorithm=interior_algorithm,
+    )
+
+    if style.tip_labels_angles is None:
+        style.tip_labels_angles = layout.angles
+
+    mark = ToyTreeMark(
+        ntable=layout.coords,
+        ttable=layout.tcoords,
+        etable=tree.get_edges("idx"),
+        **tree_style_to_css_dict(style),
+    )
+    return style, layout, mark
 
 
 def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMark]:
@@ -134,28 +171,12 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
     fixed_position = kwargs.pop("fixed_position", None)
     interior_algorithm = kwargs.pop("interior_algorithm", 0)
 
-    # get tree style expanded for user args and base tree style (ts)
-    style = get_tree_style_updated_by_draw_args(tree, **kwargs)
-
-    # get a Layout with coordinates projected based on style
-    layout = get_layout(
+    style, layout, mark = _get_tree_style_layout_mark(
         tree=tree,
-        style=style,
         fixed_order=fixed_order,
         fixed_position=fixed_position,
         interior_algorithm=interior_algorithm,
-    )
-
-    # set tip angles on 'c' or unrooted layouts
-    if style.tip_labels_angles is None:
-        style.tip_labels_angles = layout.angles
-
-    # generate toyplot Mark. Style is already validated. tables of int idx labels
-    mark = ToyTreeMark(
-        ntable=layout.coords,
-        ttable=layout.tcoords,
-        etable=tree.get_edges("idx"),
-        **tree_style_to_css_dict(style),
+        **kwargs,
     )
 
     # create Canvas and Cartesian if they don't yet exist.
@@ -296,9 +317,15 @@ def get_layout(tree: ToyTree, style: TreeStyle, **kwargs) -> BaseLayout:
 
     # warn user that positional constraints are only for linear layouts
     if kwargs.get("fixed_order") is not None:
-        logger.warning(f"`fixed_order` has no effect on `{style.layout}` layout.")
+        print(
+            f"`fixed_order` has no effect on `{style.layout}` layout.",
+            file=sys.stderr,
+        )
     if kwargs.get("fixed_position") is not None:
-        logger.warning(f"`fixed_position` has no effect on `{style.layout}` layout.")
+        print(
+            f"`fixed_position` has no effect on `{style.layout}` layout.",
+            file=sys.stderr,
+        )
 
     # return circular or unrooted layout
     if style.layout.startswith("c"):

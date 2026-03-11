@@ -243,28 +243,28 @@ def set_tip_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndar
         text=mark.tip_labels, angle=angles, style=mark.tip_labels_style
     )
 
-    # TEMPORARY HACK: until toyplot extents is fixed.
+    # TEMPORARY HACK: until toyplot extents is fixed. -----------
     # extend the tip label direction extra space.
-    if mark.layout == "r":
-        ext[1][:ntips] *= 2
-        # ext[1][:ntips] += mark.shrink
-    elif mark.layout == "d":
-        ext[3][:ntips] *= 2
-        # ext[3][:ntips] += mark.shrink
-    elif mark.layout == "u":
-        ext[2][:ntips] *= 2
-        # ext[2][:ntips] -= mark.shrink
-    elif mark.layout == "l":
-        ext[0][:ntips] *= 2
-        # ext[0][:ntips] -= mark.shrink
+    # if mark.layout == "r":
+    #     ext[1][:ntips] *= 2
+    #     # ext[1][:ntips] += mark.shrink
+    # elif mark.layout == "d":
+    #     ext[3][:ntips] *= 2
+    #     # ext[3][:ntips] += mark.shrink
+    # elif mark.layout == "u":
+    #     ext[2][:ntips] *= 2
+    #     # ext[2][:ntips] -= mark.shrink
+    # elif mark.layout == "l":
+    #     ext[0][:ntips] *= 2
+    #     # ext[0][:ntips] -= mark.shrink
 
-    # Not important b/c we use fit-range later.
-    elif mark.layout[0] == "c":
-        ext[0][:ntips] *= 1.5
-        ext[1][:ntips] *= 1.5
-        ext[2][:ntips] *= 1.5
-        ext[3][:ntips] *= 1.5
-        # ext[0][:ntips] -= mark.shrink
+    # # Not important b/c we use fit-range later.
+    # elif mark.layout[0] == "c":
+    #     ext[0][:ntips] *= 1.5
+    #     ext[1][:ntips] *= 1.5
+    #     ext[2][:ntips] *= 1.5
+    #     ext[3][:ntips] *= 1.5
+    #     # ext[0][:ntips] -= mark.shrink
 
     # elif mark.layout[:3] == "unr":
     # logger.debug("unrooted layout needs custom tip ext!")
