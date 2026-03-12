@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 """Core subpackage for tree and node objects.
+
 The core subpackage contains modules for manipulating and drawing
 ToyTree and MultiTree objects.
 

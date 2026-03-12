@@ -13,6 +13,7 @@ Examples
 from __future__ import annotations
 
 import re
+import warnings
 from copy import deepcopy
 from hashlib import md5
 from numbers import Integral
@@ -27,6 +28,7 @@ from typing import (
     Mapping,
     Sequence,
     Set,
+    TextIO,
     Tuple,
     TypeAlias,
 )
@@ -1421,19 +1423,138 @@ class ToyTree(metaclass=ToyTreeMeta):
         except Exception as exc:
             raise exc
 
-    def get_ascii(self, compact: bool = False) -> None:
-        """Return ASCII drawing of tree topology.
+    def view(
+        self,
+        width: int | None = None,
+        tip_labels: bool | str | tuple = True,
+        charset: Literal["ascii", "unicode"] = "unicode",
+        use_edge_lengths: bool = True,
+        heavy: str | None = None,
+        heavier: bool = False,
+        ladderize: bool = False,
+        file: TextIO | None = None,
+    ) -> None:
+        """Print an ASCII or Unicode rendering of this tree.
 
         Parameters
         ----------
-        compact: bool
-            Return more compact representation.
+        width : int | None, default=None
+            Target width for the rendered tree before label overflow.
+            If ``None``, then a heuristic width is estimated from the
+            number of tips and rendered label lengths.
+        tip_labels : bool | str | tuple, default=True
+            Use ``True`` for tip names, ``False`` or ``None`` to omit
+            labels, a feature name to show that attribute, or
+            ``("feature", formatter)`` to apply a format string or
+            callable, e.g., ``('name', lambda x: x[:5])``.
+        charset : Literal["ascii", "unicode"], default="unicode"
+            Character set used to draw branches and connectors.
+        use_edge_lengths : bool, default=True
+            If ``True``, scale horizontal positions from cumulative
+            branch lengths when valid edge lengths are available. If
+            ``False``, render internal edges with equal spacing and
+            extend terminal edges so all tips align at the farthest
+            displayed tip.
+        heavy : str | None, default=None
+            Optional selector used to render matching non-root branches
+            with heavy horizontal glyphs. Selectors use the form
+            ``feature<op>value`` with operators ``=``, ``!=``, ``>``,
+            ``>=``, ``<``, or ``<=``. Examples include ``support>95``,
+            ``sex=M``, and ``support=nan``.
+        heavier : bool, default=False
+            If ``True``, then matching heavy branches use a stronger
+            horizontal glyph: ``#`` in ASCII mode or ``▒`` in Unicode
+            mode. If ``False``, heavy branches use ``=`` in ASCII mode
+            or ``━`` in Unicode mode.
+        ladderize : bool, default=False
+            If ``True``, reorder child clades by ascending descendant
+            tip count for display only. The underlying tree is not
+            modified.
+        file : TextIO | None, default=None
+            Text stream passed directly to ``print()``. This can be an
+            open file handle, ``sys.stderr``, or any compatible text
+            stream. If ``None``, output is written to stdout.
 
-        Example
+        Returns
         -------
-        >>> astr = tree.get_ascii()
-        >>> print(astr)
+        None
+            This method prints the rendered tree and does not return a
+            string.
+
+        Examples
+        --------
+        >>> tree = toytree.tree("((a:1,b:2):3,c:4);")
+        >>> tree.view(width=12)
+        >>> tree.view(
+        ...     charset="ascii",
+        ...     use_edge_lengths=False,
+        ...     heavy="support>95",
+        ...     heavier=True,
+        ...     ladderize=True,
+        ... )
+
+        See Also
+        --------
+        toytree.ToyTree.get_ascii
+            Deprecated legacy method returning the older ASCII format.
+        toytree.utils.src.ascii_unicode.get_ascii_or_unicode
+            Return the rendered tree as a string instead of printing it.
         """
+        from toytree.utils.src.ascii_unicode import get_ascii_or_unicode
+
+        rendered = get_ascii_or_unicode(
+            self,
+            width=width,
+            tip_labels=tip_labels,
+            charset=charset,
+            use_edge_lengths=use_edge_lengths,
+            heavy=heavy,
+            heavier=heavier,
+            ladderize=ladderize,
+        )
+        print(rendered, file=file)
+
+    def get_ascii(self, compact: bool = False) -> str:
+        """Return the legacy ASCII drawing of tree topology.
+
+        Parameters
+        ----------
+        compact : bool, default=False
+            If ``True``, remove the blank spacer rows inserted between
+            descendant subtrees in the legacy PyCogent-style output.
+
+        Returns
+        -------
+        str
+            The legacy ASCII representation returned as a string.
+
+        Warns
+        -----
+        DeprecationWarning
+            This method is deprecated. Use ``ToyTree.view()`` to print
+            the newer ASCII or Unicode renderer, or
+            ``toytree.utils.src.ascii_unicode.get_ascii_or_unicode()`` to
+            obtain that rendering as a string.
+
+        Examples
+        --------
+        >>> tree = toytree.tree("((a,b),c);")
+        >>> astr = tree.get_ascii(compact=True)
+        >>> print(astr)
+
+        See Also
+        --------
+        toytree.ToyTree.view
+            Print the newer ASCII or Unicode tree rendering.
+        toytree.utils.src.ascii_unicode.get_ascii_or_unicode
+            Return the newer renderer output as a string.
+        """
+        warnings.warn(
+            "ToyTree.get_ascii() is deprecated; use ToyTree.view() or "
+            "toytree.utils.src.ascii_unicode.get_ascii_or_unicode(...).",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         lines, _ = self.treenode._get_ascii(compact=compact)
         tree_lines = "\n".join(lines)
         return tree_lines

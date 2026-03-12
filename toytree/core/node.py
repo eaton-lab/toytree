@@ -36,6 +36,7 @@ from __future__ import annotations
 
 import math
 import sys
+import warnings
 from collections import deque
 from copy import deepcopy
 from functools import total_ordering
@@ -882,10 +883,40 @@ class Node:
         return (result, mid)
 
     def draw_ascii(self, compact: bool = False):
-        """Return the ASCII drawing of a Node and its descendants.
+        """Print the legacy ASCII drawing of a node and its descendants.
 
-        Code based on the PyCogent GPL project.
+        Parameters
+        ----------
+        compact : bool, default=False
+            If ``True``, remove the blank spacer rows inserted between
+            descendant subtrees in the legacy PyCogent-style output.
+
+        Warns
+        -----
+        DeprecationWarning
+            This printer is deprecated. Use
+            ``ToyTree.view()`` or
+            ``toytree.utils.src.ascii_unicode.get_ascii_or_unicode(tree, ...)``
+            to generate the newer branch-length-aware text renderer.
+
+        Examples
+        --------
+        >>> import toytree
+        >>> tree = toytree.tree("((a,b),c);")
+        >>> tree.treenode.draw_ascii(compact=True)
+
+        See Also
+        --------
+        toytree.utils.src.ascii_unicode.get_ascii_or_unicode
+            Return the newer ASCII or Unicode text rendering as a string.
         """
+        warnings.warn(
+            "Node.draw_ascii() is deprecated; use "
+            "ToyTree.view() or "
+            "toytree.utils.src.ascii_unicode.get_ascii_or_unicode(tree, ...).",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         lines, _ = self._get_ascii(compact=compact)
         tree_lines = "\n".join(lines)
         print(f"\n{tree_lines}")
