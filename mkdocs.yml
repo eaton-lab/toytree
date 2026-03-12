@@ -1,54 +1,20 @@
-# yaml-language-server: $schema=https://squidfunk.github.io/mkdocs-material/schema.json
-
-# conda install mkdocs-material mkdocs-jupyter mkdocstrings mkdocstrings-python -c conda-forge
 site_name: toytree documentation
 site_url: https://eaton-lab.org/toytree
 repo_url: https://github.com/eaton-lab/toytree
-edit_uri: edit/master/docs/
+edit_uri: edit/master/docs/pages/
+docs_dir: docs/pages
 
 theme:
-  name: material
-  palette:
-    primary: indigo
+  favicon: assets/favicon.svg
   icon:
     logo: material/graph-outline
-    repo: fontawesome/brands/github
-    # logo: material/library     
-  favicon: assets/images/favicon.ico
-  features:
-    - navigation.instant
-    - navigation.tracking
-    - navigation.tabs
-    - navigation.tabs.sticky
-    - content.code.copy  # unfortunately style varies depending if mkdocs-jupyter or not.
-    - content.action.edit
-    # - search.highlight
-    # - search.suggest
 
 plugins:
   - search
-  # - mkdocstrings:
-  #     handlers:
-  #       python:
-  #         options:
-  #           # docstring_style: google
-  #           docstring_style: numpy
-  #           annotations_path: brief
-  - mkdocs-jupyter:
-      kernel_name: toytree-dev
-      ignore_h1_titles: true
-      # include_requirejs: true  # only needed for plotly?
-      # highlight_extra_classes: "custom-css-classes"  # don't use this!
-      # execute: True
-      # no_input: True
-      # show_input: False
-      # include: ["*.ipynb"] # Default: ["*.py", "*.ipynb"]
-      ignore: [".ipynb_checkpoints/*.ipynb"]
 
 extra_css:
-  # - stylesheets/extra.css
-  - css/mkdocstrings.css
-  - https://unpkg.com/katex@0/dist/katex.min.css  
+  - css/notebook-markdown.css
+  - https://unpkg.com/katex@0/dist/katex.min.css
 
 extra_javascript:
   - javascripts/katex.js
@@ -61,185 +27,99 @@ markdown_extensions:
       line_spans: __span
       pygments_lang_class: true
   - pymdownx.arithmatex:
-     generic: true
+      generic: true
   - pymdownx.inlinehilite
   - pymdownx.snippets
   - pymdownx.superfences
 
-
 nav:
   - Getting started:
-    - Home: index.md
-    - Installation: installation.md
-    - Change log: change_log.md
-    - Contribute: contribute.md
-    - Citation: citation.md
+      - Home: index.md
+      - Installation: installation.md
+      - Change log: change_log.md
+      - Contribute: contribute.md
+      - Citation: citation.md
 
   - User Guide:
-    - Quick Guide: quick_guide.ipynb
+      - 'Quick Guide': quick_guide.md
+      - 'Tree I/O':
+          - parsing tree data: parse_trees.md
+          - writing tree data: write_trees.md
 
-    - Tree I/O:
-      - parsing tree data: parse_trees.ipynb
-      - writing tree data: write_trees.ipynb
+      - 'Core Concepts':
+          - Node: core-node.md
+          - ToyTree: core-toytree.md
+          - MultiTree: core-multitree.md
+          - Traversal: core-traversal.md
+          - Node query/selection: core-query.md
+          - Data/Features: core-data.md
 
-    - Object Types:
-      - Node: node.ipynb
-      - ToyTree: toytree.ipynb
-      - MultiTree: multitree.ipynb
+      - 'Drawing':
+          - drawing basics: drawing-basics.md
+          - drawing options: drawing-options.md
+          - coordinates and axes: drawing-coordinates.md
+          - built-in tree styles: drawing-tree-styles.md
+          - save/export drawings: drawing-save.md
+          - range-mapping data: drawing-range-mapping.md
+          - color-mapping data: drawing-color-mapping.md
+          - multitree draw grid: drawing-mtree-grid.md
+          - multitree draw cloud: drawing-mtree-cloud.md
 
-    - Traversal and Node selection:
-      - traversal order/methods: traversal.ipynb
-      - node query/selection: query.ipynb
+      - '[annotate]':
+          - add_edges: anno-add-edges.md
+          - add_tip_labels: anno-add_tip_labels.md
 
-    - Data/Features: data.ipynb
+      - '[mod]':
+          - rooting:
+            - outgroup: mod-rooting-outgroup.md
+            - mad - minimal ancestor deviation: mod-rooting-mad.md
+            - dlc - duplication loss coalescence: mod-rooting-dlc.md
+          - topology changes: mod-topology.md
+          - edge/dist changes: mod-edges.md
+          - make ultrametric: mod-make-ultrametric.md
 
-    - Tree Drawing:
-      - draw basics: drawing-basics.ipynb
-      - draw options: draw-options.ipynb
-      - coordinates and axes: drawing-coordinates.ipynb
-      - debug canvas: debug-canvas.md
-      - builtin tree styles: tree-styles.ipynb
-      - save/export canvas: rendering.ipynb
-      - feature range-mapping: range-mapping.ipynb
-      - feature color-mapping: color-mapping.ipynb
-      - multitree tree grids: drawing-tree-grids.ipynb
-      - multitree cloud trees: drawing-cloud-trees.ipynb
-      # - composite plots
-      # - Modifying axes style: ...
+      - '[distance]':
+          - tree distances: distance-tree.md
+          - node distances: distance-node.md
 
-    #- Consensus Trees: ...
+      - '[infer]':
+          - consensus trees: infer-consensus.md
+          - neighbor joining: infer-neighbor-joining.md
+          - upgma: infer-upgma.md
+          - parsimony indices: infer-parsimony.md
+          - duplication loss coalescence: infer-dlc.md
+
+      - '[pcm]':
+          - simulate traits: pcm-simulate.md
+          - fit discrete CMTC: ...
+          - fit continuous ML: ...
+          - fit pgls (Gaussian): ...
+          - fit pglm (non-Gaussian): ...
+          - ancestral state reconstruction: ...
+          - stochastic map: ...
+          - phylogenetic anova: ...
+          - phylogenetic signal: ...
+          - vcv matrix: ...
+
+      - '[enum]':
+          - bipartitions: ...
+          - quartets: ...
+          - quadripartitions: ...
+          - enumerations: ...
+
+      - '[network]':
+          - parse networks: ...
+          - draw networks: ...
+
+  - 'Command Line': command-line.md
+
     # - Species/Demographic Trees: ...
     # - Admixture/Networks: ... # TO DO
 
-    # - <i>.mod</i> - tree modifications:
-    - <i>.mod</i> - tree modification:
-      - rooting trees: rooting.ipynb
-      - topology changes: mod-topology.ipynb
-      - edge/dist changes: mod-edges.ipynb
-      - make ultrametric: make-ultrametric.ipynb
-      # - Tree moves: ...
 
-    - <i>.enum</i> - tree enumeration:
-      - bipartition methods: bipartitions.ipynb
-      - quartet methods: quartets.ipynb
-      - quadripartition methods: quadripartitions.ipynb
-      # - other: ...
-
-    - <i>.distance</i> - tree/node dists:
-      - node distances: node-distance.ipynb
-      - tree distances: tree-distance.ipynb
-
-    - <i>.pcm</i> - evol analyses:
-      - sim cont. traits BM: sim_continuous_bm.ipynb
-      - fit continuous traits: pcm-fit-continuous.ipynb
-      - sim discrete traits: pcm-simulate-discrete.ipynb
-      - fit discrete traits: pcm-fit-discrete.ipynb
-      # - sim/fit continuous:
-      # - sim/fit discrete: 
-      - vcv matrix, etc: vcv.ipynb
-      - phylogenetic-signal: phylogenetic_signal.ipynb
-    #   - Diversification: ...
-    #   - Variance-Covariance: ...
-    #   - Diversity: ...
-      # - Root inference: ...
-
-    # - <i>.infer</i> - inference:
-    - <i>.infer</i> - inference:
-      - UPGMA: infer-upgma.ipynb
-      - Neighbor-joining: infer-neighbor-joining.ipynb
-      - Consensus trees: infer-consensus.ipynb
-      - Parsimony indices: infer-parsimony.ipynb
-
-    - <i>.annotate</i> - add to drawings: annotate-intro.ipynb
-      # - annotations: 
-      # - node_annotations: 
-      # - edge_annotations: 
-      # - axes_annotations: 
-      # - histograms:
-      # - ...
-
-    - <i>.rtree</i> - random trees: random-trees.ipynb
-
-    - networks:
-      - parsing networks: network_parse.ipynb
-      - drawing networks: network_draw.ipynb
-    
-    # - tree sequences:
-    #   - draw tree sequences: ...
-    # - tree styles: ...
-
-  - FAQs: FAQs.md
 
   - Cookbooks:
-    - ToyTree with barplot: barplot.ipynb
-    - Spacing tree vs. tip names: spacing.ipynb
-    - Colored rectangles to highlight clades: highlights.ipynb
-    - Ridge plot: ridge-plot.ipynb
-    - ToyTree with matrix/heatmap: heatmap.ipynb
-    # - co-phylogeny
-    # - trait tree
-    # - unrooted trait tree in 2D (PCA)
-    # - ipcoal stuff
+      - CLI pipelines: cli-pipelines.md
+      - Debug canvas: debug-canvas.md
 
-
-  # - Source:
-  #   - Data structures: 
-  #     - class - ToyTree: source/toytree.md
-  #     - class - Node: source/node.md
-  #     - class - MultiTree: source/multitree.md
-  #   - Modules:
-  #     - io:
-  #       - tree: source/treeio.md
-  #       - write: source/write.md
-  #     - distance: 
-  #       - treedist: source/distance.md
-  #       - nodedist: source/distance.md        
-
-
-  # - Blog: blog.md
-
-
-# markdown_extensions:
-
-#   # Python Markdown
-#   - abbr
-#   - admonition
-#   - attr_list
-#   - def_list
-#   - footnotes
-#   - meta
-#   - tables
-#   - md_in_html
-#   - toc:
-#       permalink: true
-
-#   # Python Markdown Extensions
-#   - pymdownx.arithmatex:
-#       generic: true
-#   - pymdownx.betterem:
-#       smart_enable: all
-#   - pymdownx.caret
-#   - pymdownx.details
-#   - pymdownx.emoji:
-#       emoji_index: !!python/name:materialx.emoji.twemoji
-#       emoji_generator: !!python/name:materialx.emoji.to_svg
-#   - pymdownx.highlight
-#   - pymdownx.inlinehilite
-#   - pymdownx.keys
-#   - pymdownx.mark
-#   - pymdownx.smartsymbols
-#   - pymdownx.superfences
-#   - pymdownx.snippets
-#   - pymdownx.tabbed:
-#       alternate_style: true
-#   - pymdownx.tasklist:
-#       custom_checkbox: true
-#   - pymdownx.tilde
-
-# plugins:
-  # - search
-    # - navigation.sections  # expands sections in nav.
-  # markdown_extensions:
-  #   - pymdownx.highlight:
-  #       use_pygments: true
-  #   - pymdownx.superfences
+  - FAQs: FAQs.md
