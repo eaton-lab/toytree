@@ -1,15 +1,19 @@
 #!/usr/bin/env python
 
-"""unittest tests for core module.
+"""unittest tests for core module."""
 
-"""
-
+import io
+import warnings
+from contextlib import redirect_stdout
 from math import isnan
+
+from conftest import PytestCompat
+
 import toytree
-from toytree.utils import ToytreeError
 
 
 def get_connected_nodes_ABC():
+    """Return a small connected node set used by legacy node tests."""
     nodeA = toytree.Node("A")
     nodeB = toytree.Node("B")
     nodeC = toytree.Node("C")
@@ -21,12 +25,11 @@ def get_connected_nodes_ABC():
     nodeABC._add_child(nodeC)
 
 
-
-from conftest import PytestCompat
-
 class TestToyTreeNodeMethods(PytestCompat):
+    """Tests for the core Node class behavior."""
 
     def setUp(self):
+        """Create simple trees used across Node tests."""
         self.node = toytree.Node()
         self.tree1 = toytree.tree("((a,b),c);")
         self.tree2 = toytree.tree("((a:1,b:2)AB:2,C:2):2;")
@@ -44,30 +47,30 @@ class TestToyTreeNodeMethods(PytestCompat):
         node = toytree.Node(name="A", dist=2.1, support=100)
         self.assertEqual(node.name, "A")
         self.assertEqual(node.dist, 2.1)
-        self.assertEqual(node.support, 100.)
+        self.assertEqual(node.support, 100.0)
         self.assertTrue(isinstance(node.support, float))
 
     def test_node_height(self):
         """Node height returns a float and dynamically changes."""
         self.assertEqual(self.tree1.treenode.height, 2.0)
-        self.assertEqual(self.tree1.get_nodes('a')[0].height, 0.0)
-        self.assertEqual(self.tree1.get_nodes('b')[0].height, 0.0)
-        self.assertEqual(self.tree1.get_mrca_node('a', 'b').height, 1.0)
+        self.assertEqual(self.tree1.get_nodes("a")[0].height, 0.0)
+        self.assertEqual(self.tree1.get_nodes("b")[0].height, 0.0)
+        self.assertEqual(self.tree1.get_mrca_node("a", "b").height, 1.0)
 
         # cannot set height directly
         with self.assertRaises(toytree.utils.src.exceptions.TreeNodeError):
             self.node.height = 10
 
         # can modify height by modifying a tree
-        tmp = self.tree1.mod.edges_set_node_heights({'b': 2})
-        self.assertEqual(tmp.get_nodes('b')[0].height, 2)
+        tmp = self.tree1.mod.edges_set_node_heights({"b": 2})
+        self.assertEqual(tmp.get_nodes("b")[0].height, 2)
 
     def test_node_idxs(self):
         """Node idx returns an int and dynamically changes."""
         self.assertEqual(self.tree1.treenode.idx, 4)
-        self.assertEqual(self.tree1.get_nodes('a')[0].idx, 0)
-        self.assertEqual(self.tree1.get_nodes('b')[0].idx, 1)
-        self.assertEqual(self.tree1.get_mrca_node('a', 'b').idx, 3)
+        self.assertEqual(self.tree1.get_nodes("a")[0].idx, 0)
+        self.assertEqual(self.tree1.get_nodes("b")[0].idx, 1)
+        self.assertEqual(self.tree1.get_mrca_node("a", "b").idx, 3)
 
         # cannot set idx directly
         with self.assertRaises(toytree.utils.src.exceptions.TreeNodeError):
@@ -75,10 +78,10 @@ class TestToyTreeNodeMethods(PytestCompat):
 
         # modifications to tree topology change idxs
         tmp = self.tree1.mod.rotate_node(3)
-        self.assertEqual(tmp.get_nodes('b')[0].idx, 0)
+        self.assertEqual(tmp.get_nodes("b")[0].idx, 0)
 
     def test_node_children(self):
-        """Node children returns Tuple of Nodes and changes dynamically"""
+        """Node children return a tuple of Nodes and change dynamically."""
         child_idxs = [i.idx for i in self.tree1.treenode.children]
         self.assertEqual(child_idxs, [3, 2])
 
@@ -89,10 +92,8 @@ class TestToyTreeNodeMethods(PytestCompat):
         # tips have no children
         self.assertEqual(self.node.children, ())
 
-
     def test_node_method_copy_single_node(self):
         """Test Node.copy() method."""
-
         # copy a singular Node
         cnode = self.node.copy()
 
@@ -101,7 +102,7 @@ class TestToyTreeNodeMethods(PytestCompat):
 
         # copy has same basic attribute values (name, dist, support)
         self.assertEqual(self.node.name, cnode.name)
-        self.assertEqual(self.node.dist, cnode.dist)        
+        self.assertEqual(self.node.dist, cnode.dist)
         self.assertEqual(isnan(self.node.support), isnan(cnode.support))
 
         # copy has ... Nodes
@@ -111,10 +112,9 @@ class TestToyTreeNodeMethods(PytestCompat):
         cnode = self.node.copy()
         self.assertNotEqual(self.node, cnode)
 
-
     def test_node_method_copy_connected_node(self):
         """Test Node.copy() method."""
-        node = self.tree1.get_mrca_node('a', 'b')
+        node = self.tree1.get_mrca_node("a", "b")
         cnode = node.copy()
         dnode = node.copy(detach=True)
 
@@ -125,20 +125,23 @@ class TestToyTreeNodeMethods(PytestCompat):
         # number of descendants should be the same
         self.assertEqual(
             sum(1 for i in node.traverse()),
-            sum(1 for i in cnode.traverse()))
+            sum(1 for i in cnode.traverse()),
+        )
 
         # number of ancestors should be the same if not detached
         self.assertEqual(
             sum(1 for i in node.iter_ancestors()),
-            sum(1 for i in cnode.iter_ancestors()))
+            sum(1 for i in cnode.iter_ancestors()),
+        )
 
         # number of ancestors should be diff if detached (and not root)
         self.assertNotEqual(
             sum(1 for i in node.iter_ancestors()),
-            sum(1 for i in dnode.iter_ancestors()))
+            sum(1 for i in dnode.iter_ancestors()),
+        )
 
     def test_node_method_detach(self):
-        """detach should ..."""
+        """Detach should sever the node from its parent."""
         nodeA = toytree.Node("A")
         nodeB = toytree.Node("B")
         nodeC = toytree.Node("C")
@@ -147,9 +150,9 @@ class TestToyTreeNodeMethods(PytestCompat):
         nodeAB._add_child(nodeA)
         nodeAB._add_child(nodeB)
         nodeABC._add_child(nodeAB)
-        nodeABC._add_child(nodeC)        
+        nodeABC._add_child(nodeC)
 
-        # if nodeAB is detached then 
+        # if nodeAB is detached then
         nodeAB._detach()
         self.assertEqual(nodeAB.up, None)
         self.assertEqual(nodeAB.children[0], nodeA)
@@ -159,8 +162,8 @@ class TestToyTreeNodeMethods(PytestCompat):
         # if a detached nodes edge spans the root inherit the full edge
         # ... No, just unroot the tree for this to happen.
 
-
     def test_node_method_delete(self):
+        """Delete should reconnect children to the deleted node parent."""
         nodeA = toytree.Node("A")
         nodeB = toytree.Node("B")
         nodeC = toytree.Node("C")
@@ -169,21 +172,32 @@ class TestToyTreeNodeMethods(PytestCompat):
         nodeAB._add_child(nodeA)
         nodeAB._add_child(nodeB)
         nodeABC._add_child(nodeAB)
-        nodeABC._add_child(nodeC)        
+        nodeABC._add_child(nodeC)
 
         # if nodeAB is deleted then others are connected
         nodeAB._delete()
         self.assertEqual(nodeA.up, nodeABC)
-        self.assertEqual(nodeB.up, nodeABC)        
+        self.assertEqual(nodeB.up, nodeABC)
         self.assertEqual(nodeC.up, nodeABC)
 
         # deleted Node object should have no connections
         self.assertEqual(nodeAB.idx, -1)
-        self.assertEqual(nodeAB.up, None)        
+        self.assertEqual(nodeAB.up, None)
         self.assertEqual(nodeAB.children, ())
 
-
-
+    def test_draw_ascii_warns_and_keeps_legacy_output(self):
+        """Warn on legacy draw_ascii while preserving its printed output."""
+        tree = toytree.tree("((a,b),c);")
+        stream = io.StringIO()
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            with redirect_stdout(stream):
+                result = tree.treenode.draw_ascii(compact=True)
+        self.assertIsNone(result)
+        self.assertEqual(len(caught), 1)
+        self.assertIs(caught[0].category, DeprecationWarning)
+        self.assertIn("Node.draw_ascii() is deprecated", str(caught[0].message))
+        self.assertEqual(stream.getvalue(), "\n   /- /-a\n--|   \\-b\n   \\-c\n")
 
     # def test_get_nodes_by_idx(self):
     #     """Ladderize mirrors node rotations reversibly."""
@@ -211,5 +225,3 @@ class TestToyTreeNodeMethods(PytestCompat):
     #     """Bad regex raises a ToytreeError from re.error."""
     #     with self.assertRaises(ToytreeError):
     #         self.itree.get_nodes("~*r*")
-
-

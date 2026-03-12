@@ -63,8 +63,8 @@ def test_write_single_feature_is_not_supported_for_nexus() -> None:
         tree.write(write_single_feature="state", nexus=True)
 
 
-def test_write_feature_pack_serializes_list_like_values() -> None:
-    """List-like metadata values should be packed using `feature_pack`."""
+def test_write_features_pack_serializes_list_like_values() -> None:
+    """List-like metadata values should be packed using `features_pack`."""
     tree = toytree.rtree.unittree(3, seed=123)
     tree = tree.set_node_data("posterior", default=[0.1, 0.9])
     nwk = tree.write(features=["posterior"])
@@ -74,27 +74,70 @@ def test_write_feature_pack_serializes_list_like_values() -> None:
     assert parsed.get_node_data("posterior").iloc[0] == [0.1, 0.9]
 
 
-def test_write_feature_pack_custom_separator_roundtrips() -> None:
+def test_write_features_pack_custom_separator_roundtrips() -> None:
     """Custom pack separators should roundtrip with matching unpack token."""
     tree = toytree.rtree.unittree(3, seed=123)
     tree = tree.set_node_data("posterior", default=[0.2, 0.8])
-    nwk = tree.write(features=["posterior"], feature_pack=";")
+    nwk = tree.write(features=["posterior"], features_pack=";")
     assert "[&posterior=0.2;0.8]" in nwk
 
     parsed = toytree.tree(nwk, feature_unpack=";")
     assert parsed.get_node_data("posterior").iloc[0] == [0.2, 0.8]
 
 
-def test_write_feature_pack_conflict_raises() -> None:
+def test_write_features_pack_conflict_raises() -> None:
     """Packed-value token cannot overlap metadata key/value delimiters."""
     tree = toytree.rtree.unittree(3, seed=123)
     tree = tree.set_node_data("posterior", default=[0.2, 0.8])
-    with pytest.raises(ToytreeError, match="feature_pack cannot match"):
+    with pytest.raises(ToytreeError, match="features_pack cannot match"):
         tree.write(
             features=["posterior"],
-            feature_pack=",",
+            features_pack=",",
             features_delim=",",
         )
+
+
+def test_write_name_feature_allows_pipe_character() -> None:
+    """Built-in scalar features such as `name` should allow `|` as raw text."""
+    tree = toytree.rtree.unittree(3, seed=123)
+    tree = tree.set_node_data("name", {0: "a|b"}, inplace=False)
+    nwk = tree.write(features=["name"], internal_labels=None)
+    assert "[&name=a|b]" in nwk
+
+
+def test_write_features_pack_none_allows_scalar_pipe_character() -> None:
+    """Disabling `features_pack` should allow scalar strings containing `|`."""
+    tree = toytree.rtree.unittree(3, seed=123)
+    tree = tree.set_node_data("posterior", {0: "0|1"}, inplace=False)
+    nwk = tree.write(
+        features=["posterior"],
+        internal_labels=None,
+        features_pack=None,
+    )
+    assert "[&posterior=0|1]" in nwk
+
+
+def test_write_features_pack_none_rejects_list_like_values() -> None:
+    """Disabling `features_pack` should reject list-like metadata values."""
+    tree = toytree.rtree.unittree(3, seed=123)
+    tree = tree.set_node_data("posterior", default=[0.2, 0.8])
+    with pytest.raises(ToytreeError, match="features_pack=None"):
+        tree.write(features=["posterior"], features_pack=None)
+
+
+def test_write_rejects_non_standard_scalar_pack_token_with_hint() -> None:
+    """Non-standard scalar strings containing the active pack token should fail."""
+    tree = toytree.rtree.unittree(3, seed=123)
+    tree = tree.set_node_data("posterior", {0: "0|1"}, inplace=False)
+    with pytest.raises(ToytreeError, match="Use features_pack=None"):
+        tree.write(features=["posterior"])
+
+
+def test_write_rejects_old_feature_pack_arg_name() -> None:
+    """The old `feature_pack` kwarg name should fail immediately."""
+    tree = toytree.rtree.unittree(3, seed=123)
+    with pytest.raises(ToytreeError, match="feature_pack was renamed"):
+        tree.write(feature_pack=";")
 
 
 @pytest.mark.parametrize(

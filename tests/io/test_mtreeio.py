@@ -65,6 +65,28 @@ def test_mtree_accepts_generator_input():
     assert mtree[1].write(dist_formatter=None) == "((a,c),b);"
 
 
+def test_mtree_write_deprecated_kwargs_warns_on_stderr(capsys):
+    """Deprecated MultiTree.write kwargs should warn on stderr."""
+    mtree = toytree.mtree(["((a,b),c);", "((a,c),b);"])
+
+    result = mtree.write(legacy=True)
+    captured = capsys.readouterr()
+
+    assert result == "\n".join(tree.write() for tree in mtree)
+    assert "Deprecated args to write()" in captured.err
+
+
+def test_mtree_get_consensus_tree_deprecated_kwargs_warns_on_stderr(capsys):
+    """Deprecated MultiTree consensus kwargs should warn on stderr."""
+    mtree = toytree.mtree(["((a,b),c);", "((a,c),b);"])
+
+    tree = mtree.get_consensus_tree(legacy=True)
+    captured = capsys.readouterr()
+
+    assert tree.get_tip_labels() == ["a", "b", "c"]
+    assert "Deprecated args to get_consensus_tree()" in captured.err
+
+
 @pytest.mark.parametrize(
     "data",
     [

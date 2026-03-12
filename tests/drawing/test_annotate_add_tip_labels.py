@@ -3,15 +3,12 @@
 
 """Tests for annotate.add_tip_labels."""
 
-
 import numpy as np
 import toyplot.html
+from conftest import PytestCompat
 
 import toytree
 
-
-
-from conftest import PytestCompat
 
 class TestAnnotateAddTipLabels(PytestCompat):
     def setUp(self):
@@ -145,6 +142,14 @@ class TestAnnotateAddTipLabels(PytestCompat):
         mark = self.tree.annotate.add_tip_labels(a, labels="idx", color="red")
         self.assertEqual(mark.labels.size, self.tree.ntips)
 
+    def test_add_tip_labels_unrooted_angle_none_uses_layout_angles(self):
+        tree = self.tree.unroot()
+        c, a, m = tree.draw(layout="unrooted", tip_labels=False)
+        mark = tree.annotate.add_tip_labels(a, labels="idx", angle=None)
+        self.assertTrue(np.all(np.isfinite(mark.angles)))
+        self.assertEqual(mark.labels.size, tree.ntips)
+        toyplot.html.render(c)
+
     def test_add_tip_labels_long_labels_fit_participating(self):
         labels = {
             i: f"species_{i}_with_a_very_long_label_name_for_extent_test"
@@ -175,5 +180,3 @@ class TestAnnotateAddTipLabels(PytestCompat):
         self.assertIsNone(a._expand_domain_range_x)
         self.assertIsNone(a._expand_domain_range_y)
         toyplot.html.render(c)
-
-

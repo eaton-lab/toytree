@@ -178,27 +178,20 @@ class TestAncStateDiscreteCLI(PytestCompat):
                 ]
             )
 
-    def test_full_prints_fit_summary_to_stderr(self):
-        """Full mode should emit fitted model summary and parameters to stderr."""
-        _, err = self._run_capture(
-            [
-                "-i",
-                str(self.tree_path),
-                "-f",
-                "X",
-                "-n",
-                "2",
-                "--full",
-            ]
-        )
-        self.assertIn("feature=X", err)
-        self.assertIn("model=ER", err)
-        self.assertIn("AIC=", err)
-        self.assertIn("state_frequencies=", err)
-        self.assertIn("relative_rates=", err)
-        self.assertIn("qmatrix=", err)
-        self.assertNotIn("meta_base=", err)
-        self.assertNotIn("posterior_mode=", err)
+    def test_full_option_is_not_supported(self):
+        """Legacy text-summary flag should be rejected by the parser."""
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args(
+                [
+                    "-i",
+                    str(self.tree_path),
+                    "-f",
+                    "X",
+                    "-n",
+                    "2",
+                    "--full",
+                ]
+            )
 
     def test_json_prints_structured_fit_summary_to_stderr(self):
         """JSON mode should emit structured model-fit summary to stderr."""

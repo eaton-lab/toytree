@@ -8,15 +8,12 @@ import pytest
 
 from toytree.cli import subparsers
 
-HELP_INPUT = (
-    "input tree file/path/url/newick string, or '-' for stdin; "
-    "defaults to stdin when piped"
-)
+HELP_INPUT = "tree input: file/path/url/newick; '-' or piped stdin"
 HELP_OUTPUT = "optional output path; default writes to stdout"
 HELP_OUTPUT_DRAW = (
     "optional path to save drawing in format -f; ASCII defaults to stdout"
 )
-HELP_BINARY = "write binary ToyTree output for efficient piping between commands"
+HELP_BINARY = "write ToyTree in binary for faster piping with large trees"
 HELP_INTERNAL = "parse internal newick labels as this feature (overrides auto-detect)"
 HELP_EXCLUDE = "omit non-default node features from output Newick"
 
@@ -68,6 +65,10 @@ def _is_required(parser, option: str) -> bool:
                 "-I": HELP_INTERNAL,
                 "-x": HELP_EXCLUDE,
             },
+        ),
+        (
+            subparsers.get_parser_view,
+            {"-i": HELP_INPUT, "-I": HELP_INTERNAL},
         ),
         (
             subparsers.get_parser_draw,
@@ -138,6 +139,7 @@ def test_single_tree_parsers_use_shared_flag_help(parser_factory, expected):
         subparsers.get_parser_get_node_data,
         subparsers.get_parser_set_node_data,
         subparsers.get_parser_io,
+        subparsers.get_parser_view,
         subparsers.get_parser_draw,
         subparsers.get_parser_root,
         subparsers.get_parser_prune,
@@ -180,6 +182,31 @@ def test_distance_parser_does_not_define_internal_labels_option():
     assert not _has_option(parser, "--internal-labels")
 
 
+@pytest.mark.parametrize(
+    "parser_factory",
+    [
+        subparsers.get_parser_get_node_data,
+        subparsers.get_parser_set_node_data,
+        subparsers.get_parser_io,
+        subparsers.get_parser_view,
+        subparsers.get_parser_draw,
+        subparsers.get_parser_root,
+        subparsers.get_parser_prune,
+        subparsers.get_parser_distance,
+        subparsers.get_parser_make_ultrametric,
+        subparsers.get_parser_anc_state_discrete,
+        subparsers.get_parser_consensus,
+        subparsers.get_parser_rtree,
+        subparsers.get_parser_relabel,
+    ],
+)
+def test_cli_parsers_do_not_define_log_level_flags(parser_factory):
+    """CLI parsers should not expose removed log-level flags."""
+    parser = parser_factory()
+    assert not _has_option(parser, "-l")
+    assert not _has_option(parser, "--log-level")
+
+
 def test_draw_format_and_view_in_render_mode_group():
     """Draw should list -f/-v options under Render Mode."""
     help_text = subparsers.get_parser_draw().format_help()
@@ -191,6 +218,41 @@ def test_draw_format_and_view_in_render_mode_group():
     assert io_idx < render_idx < layout_idx
     assert render_idx < f_idx < layout_idx
     assert render_idx < v_idx < layout_idx
+
+
+def test_view_charset_and_ascii_in_rendering_group():
+    """View should list text-rendering options under Rendering."""
+    help_text = subparsers.get_parser_view().format_help()
+    input_idx = help_text.index("Input:")
+    render_idx = help_text.index("Rendering:")
+    options_idx = help_text.index("Options:")
+    ascii_idx = help_text.index("-a, --ascii", render_idx)
+    ladderize_idx = help_text.index("-e, --ladderize", render_idx)
+    heavy_idx = help_text.index("--heavy", render_idx)
+    heavier_idx = help_text.index("--heavier", render_idx)
+    assert input_idx < render_idx < options_idx
+    assert render_idx < ascii_idx < options_idx
+    assert render_idx < ladderize_idx < options_idx
+    assert render_idx < heavy_idx < options_idx
+    assert render_idx < heavier_idx < options_idx
+
+
+@pytest.mark.parametrize(
+    "parser_factory",
+    [
+        subparsers.get_parser_view,
+        subparsers.get_parser_draw,
+        subparsers.get_parser_set_node_data,
+        subparsers.get_parser_make_ultrametric,
+    ],
+)
+def test_single_tree_input_help_stays_on_one_line(parser_factory):
+    """Representative single-tree parsers should not wrap the -i help line."""
+    parser = parser_factory()
+    lines = parser.format_help().splitlines()
+    matches = [line for line in lines if "-i, --input" in line]
+    assert matches, parser_factory.__name__
+    assert HELP_INPUT in matches[0]
 
 
 def test_set_node_data_table_flags_grouped_under_from_table():

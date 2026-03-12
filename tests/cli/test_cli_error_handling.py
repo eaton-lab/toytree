@@ -6,6 +6,8 @@ from __future__ import annotations
 
 from pathlib import Path
 
+import pytest
+
 from toytree.cli import main
 
 
@@ -21,3 +23,14 @@ def test_set_missing_table_reports_clean_error_no_traceback(tmp_path, capsys):
     assert "Traceback" not in captured.err
     assert "Error:" in captured.err
     assert "A.tsv" in captured.err
+
+
+@pytest.mark.parametrize("flag", ["--log-level INFO", "-l INFO"])
+def test_removed_log_level_flag_is_rejected_by_argparse(flag, capsys):
+    """Removed CLI log-level flags should raise argparse unrecognized errors."""
+    with pytest.raises(SystemExit) as exc:
+        main.main(f"view -i ((a,b),c); {flag}")
+    assert exc.value.code == 2
+    captured = capsys.readouterr()
+    assert "unrecognized arguments:" in captured.err
+    assert flag.split()[0] in captured.err
