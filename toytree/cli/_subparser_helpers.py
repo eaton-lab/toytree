@@ -1,5 +1,3 @@
-
-
 import re
 from typing import Any
 
@@ -40,6 +38,17 @@ def parse_bool(value: Any) -> bool:
     raise ValueError(f"invalid boolean value: {value}")
 
 
+def parse_bool_or_feature(value: Any) -> bool | str:
+    """Parse a bool-like value, or return it unchanged as a feature name."""
+    if isinstance(value, bool):
+        return value
+    sval = str(value).strip()
+    try:
+        return parse_bool(sval)
+    except ValueError:
+        return sval
+
+
 def parse_node_mask(value: Any) -> bool | tuple[bool, bool, bool]:
     """Parse node-mask CLI values.
 
@@ -58,15 +67,16 @@ def parse_node_mask(value: Any) -> bool | tuple[bool, bool, bool]:
         pass
 
     # tuple/list mode
-    if (sval.startswith("(") and sval.endswith(")")) or (sval.startswith("[") and sval.endswith("]")):
+    if (sval.startswith("(") and sval.endswith(")")) or (
+        sval.startswith("[") and sval.endswith("]")
+    ):
         sval = sval[1:-1].strip()
     parts = [i for i in re.split(r"[\s,]+", sval) if i]
     if len(parts) != 3:
         raise ValueError(
-            "invalid node mask. Use true/false or a 3-value binary tuple/list like '(1,0,1)'."
+            "invalid node mask. Use true/false or a 3-value binary "
+            "tuple/list like '(1,0,1)'."
         )
     if any(i not in {"0", "1"} for i in parts):
         raise ValueError("node-mask tuple/list values must be binary 0/1.")
     return tuple(bool(int(i)) for i in parts)
-
-

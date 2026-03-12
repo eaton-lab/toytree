@@ -13,10 +13,6 @@ def run_prune(args):
         write_tree_output,
     )
     from toytree.mod._src.mod_topo import prune
-    from toytree.utils.src.logger_setup import set_log_level
-
-    if args.log_level is not None:
-        set_log_level(args.log_level)
 
     # parse the tree
     tre = read_tree_auto(

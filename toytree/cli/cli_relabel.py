@@ -40,11 +40,6 @@ def run_relabel(args):
         write_tree_output,
     )
 
-    if args.log_level is not None:
-        from toytree.utils.src.logger_setup import set_log_level
-
-        set_log_level(args.log_level)
-
     tre = read_tree_auto(
         resolve_input_arg(args.input), internal_labels=args.internal_labels
     )

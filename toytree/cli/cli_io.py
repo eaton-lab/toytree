@@ -28,11 +28,6 @@ def run_io(args) -> None:
     )
     from toytree.utils import ToytreeError
 
-    if args.log_level is not None:
-        from toytree.utils.src.logger_setup import set_log_level
-
-        set_log_level(args.log_level)
-
     nexus_out = _is_nexus_output(args)
     if args.write_single_feature is not None:
         if args.binary_out:
@@ -91,7 +86,7 @@ def run_io(args) -> None:
         "features_prefix": args.features_prefix,
         "features_delim": args.features_delim,
         "features_assignment": args.features_assignment,
-        "feature_pack": args.features_pack,
+        "features_pack": args.features_pack,
         "features_formatter": args.features_formatter,
         "nexus": nexus_out,
     }

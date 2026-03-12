@@ -45,11 +45,6 @@ def run_rtree(args) -> None:
     from toytree.cli._tree_transport import write_tree_output
     from toytree.rtree import baltree, bdtree, coaltree, imbtree, rtree, unittree
 
-    if args.log_level is not None:
-        from toytree.utils.src.logger_setup import set_log_level
-
-        set_log_level(args.log_level)
-
     _validate_method_args(args)
 
     names = args.names

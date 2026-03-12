@@ -52,12 +52,7 @@ def open_with_default_viewer(path: str) -> bool:
 
 def run_draw(args):
     """Run draw command."""
-    from toytree import save
     from toytree.cli._tree_transport import read_tree_auto, resolve_input_arg
-    from toytree.utils.src.logger_setup import set_log_level
-
-    if args.log_level is not None:
-        set_log_level(args.log_level)
 
     # read tree from file or stdin pkl
     tre = read_tree_auto(
@@ -71,13 +66,26 @@ def run_draw(args):
     if args.ascii:
         render_graphic = False
     if not render_graphic:
+        print(
+            "draw: text mode is deprecated; use `toytree view` "
+            "(or `toytree view --ascii`).",
+            file=sys.stderr,
+        )
         if args.format is not None:
             print(
                 "draw: --format ignored in ASCII mode (no --output/--view).",
                 file=sys.stderr,
             )
-        tre.treenode.draw_ascii()
+        tre.view(
+            charset="ascii",
+            tip_labels=True if args.tip_labels is None else args.tip_labels,
+            use_edge_lengths=(
+                True if args.use_edge_lengths is None else args.use_edge_lengths
+            ),
+        )
         return 0
+
+    from toytree import save
 
     # parse dict-style cli inputs
     node_style = _parse_style_kv(args.node_style, "--node-style")
@@ -118,7 +126,9 @@ def run_draw(args):
             prefix = prefix / "toytree"
         out = Path(f"{prefix}").with_suffix(suffix)
     else:
-        out = tempfile.NamedTemporaryFile(prefix="toytree-", suffix=suffix, delete=False)
+        out = tempfile.NamedTemporaryFile(
+            prefix="toytree-", suffix=suffix, delete=False
+        )
         out = out.name
     save(canvas, out)
 

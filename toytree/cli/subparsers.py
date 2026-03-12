@@ -21,12 +21,12 @@ from tempfile import gettempdir
 from textwrap import dedent
 from typing import Any
 
-from ._subparser_helpers import parse_bool, parse_node_mask
+from ._subparser_helpers import parse_bool, parse_bool_or_feature, parse_node_mask
 
 TMPDIR = gettempdir()
-SINGLE_TREE_INPUT_HELP = (
-    "input tree file/path/url/newick string, or '-' for stdin; "
-    "defaults to stdin when piped"
+SINGLE_TREE_INPUT_HELP = "tree input: file/path/url/newick; '-' or piped stdin"
+BINARY_OUTPUT_HELP = (
+    "write ToyTree in binary for faster piping with large trees"
 )
 
 
@@ -256,14 +256,6 @@ def get_parser_get_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
 
     options_group = p.add_argument_group(title="Options")
     options_group.add_argument(
-        "-l",
-        "--log-level",
-        type=str,
-        metavar="level",
-        default=None,
-        help="set toytree logger level (DEBUG, INFO, WARNING, ERROR)",
-    )
-    options_group.add_argument(
         "-h",
         "--help",
         action="help",
@@ -355,7 +347,7 @@ def get_parser_set_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
         "-b",
         "--binary-out",
         action="store_true",
-        help="write binary ToyTree output for efficient piping between commands",
+        help=BINARY_OUTPUT_HELP,
     )
     io_group.add_argument(
         "-I",
@@ -450,14 +442,6 @@ def get_parser_set_node_data(parser: ArgumentParser | None = None) -> ArgumentPa
 
     options_group = p.add_argument_group(title="Options")
     options_group.add_argument(
-        "-l",
-        "--log-level",
-        type=str,
-        metavar="level",
-        default=None,
-        help="set toytree logger level (DEBUG, INFO, WARNING, ERROR)",
-    )
-    options_group.add_argument(
         "-h",
         "--help",
         action="help",
@@ -550,7 +534,7 @@ def get_parser_io(parser: ArgumentParser | None = None) -> ArgumentParser:
         "-b",
         "--binary-out",
         action="store_true",
-        help="write binary ToyTree output for efficient piping between commands",
+        help=BINARY_OUTPUT_HELP,
     )
     io_group.add_argument(
         "-I",
@@ -658,14 +642,6 @@ def get_parser_io(parser: ArgumentParser | None = None) -> ArgumentParser:
 
     options_group = p.add_argument_group(title="Options")
     options_group.add_argument(
-        "-l",
-        "--log-level",
-        type=str,
-        metavar="level",
-        default=None,
-        help="set toytree logger level (DEBUG, INFO, WARNING, ERROR)",
-    )
-    options_group.add_argument(
         "-h",
         "--help",
         action="help",
@@ -682,17 +658,18 @@ def get_parser_draw(parser: ArgumentParser | None = None) -> ArgumentParser:
     kwargs = dict(
         prog="draw",
         usage="draw [options]",
-        help="draw tree as ascii or graphic",
+        help="render styled tree figures in graphic formats",
         formatter_class=_formatter(120, 120),
         description=dedent(
             """
             -------------------------------------------------------------------
-            | draw: generate tree drawing as ascii or graphics
+            | draw: render styled tree figures
             -------------------------------------------------------------------
-            | Default mode prints an ASCII tree to stdout.
-            | Use --output and/or --view to render graphic output to html,
-            | svg, pdf, or png and optionally open for viewing. Apply tree
-            | drawing styles or use built-in styles with --treestyle.
+            | Create graphic tree figures for notebooks, reports, and files.
+            | Render to html, svg, pdf, or png, save with --output, and
+            | optionally open the result with --view. Control layout, built-in
+            | tree styles, labels, and node/edge styling from the CLI.
+            | For terminal text rendering, use `toytree view`.
             -------------------------------------------------------------------
             """
         ),
@@ -700,7 +677,6 @@ def get_parser_draw(parser: ArgumentParser | None = None) -> ArgumentParser:
             """
             Examples
             --------
-            $ draw -i TRE.nwk
             $ draw -i TRE.nwk --output tree.svg
             $ draw -i TRE.nwk -f png --view
             $ draw -i TRE.nwk -f html -v -ts c
@@ -766,7 +742,7 @@ def get_parser_draw(parser: ArgumentParser | None = None) -> ArgumentParser:
         "-a",
         "--ascii",
         action="store_true",
-        help="force ASCII output (overrides graphic rendering)",
+        help="deprecated text mode; prefer `toytree view --ascii`",
     )
     render_group.add_argument(
         "-e", "--ladderize", action="store_true", help="ladderize tree before drawing"
@@ -927,14 +903,6 @@ def get_parser_draw(parser: ArgumentParser | None = None) -> ArgumentParser:
 
     options_group = p.add_argument_group(title="Options")
     options_group.add_argument(
-        "-l",
-        "--log-level",
-        type=str,
-        metavar="level",
-        default=None,
-        help="set toytree logger level (DEBUG, INFO, WARNING, ERROR)",
-    )
-    options_group.add_argument(
         "-h",
         "--help",
         action="help",
@@ -943,6 +911,133 @@ def get_parser_draw(parser: ArgumentParser | None = None) -> ArgumentParser:
     )
 
     _set_handler(p, "toytree.cli.cli_draw:run_draw")
+    return p
+
+
+def get_parser_view(parser: ArgumentParser | None = None) -> ArgumentParser:
+    """Return parser for view command."""
+    kwargs = dict(
+        prog="view",
+        usage="view [options]",
+        help="print tree as unicode or ASCII text",
+        formatter_class=_formatter(120, 120),
+        description=dedent(
+            """
+            -------------------------------------------------------------------
+            | view: print a tree as unicode or ASCII text
+            -------------------------------------------------------------------
+            | Prints a text rendering to stdout using the lightweight
+            | ASCII/Unicode viewer. Use shell redirection to save output.
+            -------------------------------------------------------------------
+            """
+        ),
+        epilog=dedent(
+            """
+            Examples
+            --------
+            $ toytree view -i TRE.nwk
+            $ toytree view -i TRE.nwk --ascii
+            $ toytree view -i TRE.nwk --ladderize
+            $ toytree view -i TRE.nwk --tip-labels idx --use-edge-lengths false
+            $ toytree view -i TRE.nwk --heavy 'support>95'
+            $ toytree view -i TRE.nwk --heavy 'support>95' --heavier
+            $ toytree rtree -n 20 | toytree view
+            $ toytree rt -n 20 | toytree set -f X -s ~r[0-5]=1 | toytree v --heavy 'X=1'
+            """
+        ),
+    )
+    if parser:
+        kwargs["name"] = kwargs.pop("prog")
+        kwargs["add_help"] = False
+        p = parser.add_parser(**kwargs)
+    else:
+        kwargs.pop("help", None)
+        kwargs["add_help"] = False
+        p = ArgumentParser(**kwargs)
+
+    io_group = p.add_argument_group(title="Input")
+    io_group.add_argument(
+        "-i",
+        "--input",
+        type=str,
+        metavar="path",
+        help=SINGLE_TREE_INPUT_HELP,
+    )
+    io_group.add_argument(
+        "-I",
+        "--internal-labels",
+        type=str,
+        metavar="str",
+        help="parse internal newick labels as this feature (overrides auto-detect)",
+    )
+
+    render_group = p.add_argument_group(title="Rendering")
+    render_group.add_argument(
+        "-w",
+        "--width",
+        type=int,
+        metavar="int",
+        help="target text width in columns",
+    )
+    render_group.add_argument(
+        "-a",
+        "--ascii",
+        dest="charset",
+        action="store_const",
+        const="ascii",
+        default="unicode",
+        help="use ASCII instead of Unicode line drawing",
+    )
+    render_group.add_argument(
+        "-e",
+        "--ladderize",
+        action="store_true",
+        help="ladderize clades for display only",
+    )
+    render_group.add_argument(
+        "-tl",
+        "--tip-labels",
+        type=parse_bool_or_feature,
+        metavar="bool|feature",
+        nargs="?",
+        const=True,
+        default=True,
+        help="show tip labels (true/false) or use a tip feature [true]",
+    )
+    render_group.add_argument(
+        "-ue",
+        "--use-edge-lengths",
+        type=parse_bool,
+        metavar="bool",
+        nargs="?",
+        const=True,
+        default=True,
+        help="use edge lengths (true/false) [true]; false aligns tips",
+    )
+    render_group.add_argument(
+        "-y",
+        "--heavy",
+        type=str,
+        metavar="selector",
+        help="show heavy branches where features match a query, e.g. 'support>95' or 'sex=M'",
+    )
+    render_group.add_argument(
+        "-Y",
+        "--heavier",
+        action="store_true",
+        help="use stronger heavy glyphs (# in ASCII, ▒ in Unicode)",
+    )
+
+    options_group = p.add_argument_group(title="Options")
+    options_group.add_argument(
+        "-h",
+        "--help",
+        action="help",
+        default=SUPPRESS,
+        help="show this help message and exit",
+    )
+
+    _set_handler(p, "toytree.cli.cli_view:run_view")
     return p
 
 
@@ -1028,7 +1123,7 @@ def get_parser_root(parser: ArgumentParser | None = None) -> ArgumentParser:
         "-b",
         "--binary-out",
         action="store_true",
-        help="write binary ToyTree output for efficient piping between commands",
+        help=BINARY_OUTPUT_HELP,
     )
     io_group.add_argument(
         "-I",
@@ -1154,14 +1249,6 @@ def get_parser_root(parser: ArgumentParser | None = None) -> ArgumentParser:
 
     general_group = p.add_argument_group(title="Options")
     general_group.add_argument(
-        "-l",
-        "--log-level",
-        type=str,
-        metavar="level",
-        default=None,
-        help="set toytree logger level (DEBUG, INFO, WARNING, ERROR)",
-    )
-    general_group.add_argument(
         "-h",
         "--help",
         action="help",
@@ -1240,7 +1327,7 @@ def get_parser_prune(parser: ArgumentParser | None = None) -> ArgumentParser:
         "-b",
         "--binary-out",
         action="store_true",
-        help="write binary ToyTree output for efficient piping between commands",
+        help=BINARY_OUTPUT_HELP,
     )
     io_group.add_argument(
         "-I",
@@ -1279,14 +1366,6 @@ def get_parser_prune(parser: ArgumentParser | None = None) -> ArgumentParser:
     )
 
     options_group = p.add_argument_group(title="Options")
-    options_group.add_argument(
-        "-l",
-        "--log-level",
-        type=str,
-        metavar="level",
-        default=None,
-        help="set toytree logger level (DEBUG, INFO, WARNING, ERROR)",
-    )
     options_group.add_argument(
         "-h",
         "--help",
@@ -1422,14 +1501,6 @@ def get_parser_distance(parser: ArgumentParser | None = None) -> ArgumentParser:
 
     options_group = p.add_argument_group(title="Options")
     options_group.add_argument(
-        "-l",
-        "--log-level",
-        type=str,
-        metavar="level",
-        default=None,
-        help="set toytree logger level (DEBUG, INFO, WARNING, ERROR)",
-    )
-    options_group.add_argument(
         "-h",
         "--help",
         action="help",
@@ -1507,7 +1578,7 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
         "-b",
         "--binary-out",
         action="store_true",
-        help="write binary ToyTree output for efficient piping between commands",
+        help=BINARY_OUTPUT_HELP,
     )
     io_group.add_argument(
         "-I",
@@ -1619,14 +1690,6 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
 
     options_group = p.add_argument_group(title="Options")
     options_group.add_argument(
-        "-l",
-        "--log-level",
-        type=str,
-        metavar="level",
-        default=None,
-        help="set toytree logger level (DEBUG, INFO, WARNING, ERROR)",
-    )
-    options_group.add_argument(
         "-h",
         "--help",
         action="help",
@@ -1674,8 +1737,6 @@ def get_parser_anc_state_discrete(
             $ anc-state-discrete -i TRE.nwk -f X -n 3 -m ER \\
                 | toytree io -fp '&&NHX:' -fd ':' -fa '=' > TRE.anc.nhx
 
-            $ anc-state-discrete -i TRE.nwk -f X -n 3 -m ER --full > TRE.anc.nwk
-
             $ anc-state-discrete -i TRE.nwk -f X -n 3 -b | toytree get -f X_anc
             $ anc-state-discrete -i TRE.nwk -f X -n 3 --json > TRE.anc.nwk 2> fit.json
             """
@@ -1709,7 +1770,7 @@ def get_parser_anc_state_discrete(
         "-b",
         "--binary-out",
         action="store_true",
-        help="write binary ToyTree output for efficient piping between commands",
+        help=BINARY_OUTPUT_HELP,
     )
     io_group.add_argument(
         "-I",
@@ -1754,22 +1815,9 @@ def get_parser_anc_state_discrete(
 
     options_group = p.add_argument_group(title="Options")
     options_group.add_argument(
-        "--full",
-        action="store_true",
-        help="print fitted model parameters and summary stats to stderr",
-    )
-    options_group.add_argument(
         "--json",
         action="store_true",
         help="print fitted model summary as JSON to stderr",
-    )
-    options_group.add_argument(
-        "-l",
-        "--log-level",
-        type=str,
-        metavar="level",
-        default=None,
-        help="set toytree logger level (DEBUG, INFO, WARNING, ERROR)",
     )
     options_group.add_argument(
         "-h",
@@ -1842,7 +1890,7 @@ def get_parser_consensus(parser: ArgumentParser | None = None) -> ArgumentParser
         "-b",
         "--binary-out",
         action="store_true",
-        help="write binary ToyTree output for efficient piping between commands",
+        help=BINARY_OUTPUT_HELP,
     )
     io_group.add_argument(
         "-I",
@@ -1900,14 +1948,6 @@ def get_parser_consensus(parser: ArgumentParser | None = None) -> ArgumentParser
 
     options_group = p.add_argument_group(title="Options")
     options_group.add_argument(
-        "-l",
-        "--log-level",
-        type=str,
-        metavar="level",
-        default=None,
-        help="set toytree logger level (DEBUG, INFO, WARNING, ERROR)",
-    )
-    options_group.add_argument(
         "-h",
         "--help",
         action="help",
@@ -1955,7 +1995,7 @@ def get_parser_rtree(parser: ArgumentParser | None = None) -> ArgumentParser:
             # Coalescent simulation (uses -n as k)
             $ rtree --method coaltree -n 16 --N 500 --seed 7 > TREE.nwk
 
-            # Binary output for efficient piping
+            # Binary output for large-tree or metadata-safe piping
             $ rtree -n 100 -b | draw -i - -a
             """
         ),
@@ -1981,7 +2021,7 @@ def get_parser_rtree(parser: ArgumentParser | None = None) -> ArgumentParser:
         "-b",
         "--binary-out",
         action="store_true",
-        help="write binary ToyTree output for efficient piping between commands",
+        help=BINARY_OUTPUT_HELP,
     )
 
     method_group = p.add_argument_group(title="Generator")
@@ -2073,14 +2113,6 @@ def get_parser_rtree(parser: ArgumentParser | None = None) -> ArgumentParser:
 
     options_group = p.add_argument_group(title="Options")
     options_group.add_argument(
-        "-l",
-        "--log-level",
-        type=str,
-        metavar="level",
-        default=None,
-        help="set toytree logger level (DEBUG, INFO, WARNING, ERROR)",
-    )
-    options_group.add_argument(
         "-h",
         "--help",
         action="help",
@@ -2150,7 +2182,7 @@ def get_parser_relabel(parser: ArgumentParser | None = None) -> ArgumentParser:
         "-b",
         "--binary-out",
         action="store_true",
-        help="write binary ToyTree output for efficient piping between commands",
+        help=BINARY_OUTPUT_HELP,
     )
     io_group.add_argument(
         "-I",
@@ -2222,14 +2254,6 @@ def get_parser_relabel(parser: ArgumentParser | None = None) -> ArgumentParser:
 
     options_group = p.add_argument_group(title="Options")
     options_group.add_argument(
-        "-l",
-        "--log-level",
-        type=str,
-        metavar="level",
-        default=None,
-        help="set toytree logger level (DEBUG, INFO, WARNING, ERROR)",
-    )
-    options_group.add_argument(
         "-h",
         "--help",
         action="help",
@@ -2246,6 +2270,7 @@ def register_subparsers(parent: Any) -> None:
     get_parser_get_node_data(parent)
     get_parser_set_node_data(parent)
     get_parser_io(parent)
+    get_parser_view(parent)
     get_parser_draw(parent)
     get_parser_rtree(parent)
     get_parser_root(parent)

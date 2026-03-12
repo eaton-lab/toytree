@@ -36,10 +36,6 @@ def run_distance(args) -> None:
     from toytree.distance._src.quartet_dist import get_quartet_metric
     from toytree.io.src.treeio import tree
     from toytree.utils import ToytreeError
-    from toytree.utils.src.logger_setup import set_log_level
-
-    if args.log_level is not None:
-        set_log_level(args.log_level)
 
     if args.tree1 == "-" and args.tree2 == "-":
         raise ToytreeError("only one of --tree1/--tree2 can read from stdin ('-').")

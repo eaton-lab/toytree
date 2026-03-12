@@ -47,10 +47,6 @@ def run_consensus(args) -> None:
     """Run the `consensus` CLI command."""
     from toytree.cli._tree_transport import write_tree_output
     from toytree.infer import consensus_features, consensus_tree
-    from toytree.utils.src.logger_setup import set_log_level
-
-    if args.log_level is not None:
-        set_log_level(args.log_level)
 
     text = _read_multitree_text(args.input)
     mtree = _parse_multitree_text(text, internal_labels=args.internal_labels)

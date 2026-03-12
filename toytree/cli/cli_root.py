@@ -67,10 +67,6 @@ def run_root(args):
     )
     from toytree.mod._src.root_unroot import root
     from toytree.utils import ToytreeError
-    from toytree.utils.src.logger_setup import set_log_level
-
-    if args.log_level is not None:
-        set_log_level(args.log_level)
 
     # parse the tree
     tre = read_tree_auto(
