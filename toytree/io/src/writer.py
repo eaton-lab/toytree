@@ -19,6 +19,7 @@ from toytree.utils.src.exceptions import ToytreeError
 
 DISALLOWED_FEATURES = {"idx", "dist", "up", "children"}
 SAFE_NEXUS_LABEL = re.compile(r"^[A-Za-z0-9_.-]+$")
+STANDARD_SCALAR_FEATURES = frozenset({"idx", "name", "height", "dist", "support"})
 
 
 @dataclass(frozen=True)
@@ -34,7 +35,7 @@ class _WriterConfig:
     features_prefix: str
     features_delim: str
     features_assignment: str
-    feature_pack: str
+    features_pack: str | None
     names_as_ints: bool
     label_suffixes: dict[int, str] | None
     reserved_text_tokens: tuple[str, ...]
@@ -91,12 +92,25 @@ def get_float_formatter(
     _raise_bad_formatter(param_name, formatting_str)
 
 
-def _raise_unsafe_feature_value(feature: str, value: str, token: str) -> None:
+def _raise_unsafe_feature_value(
+    feature: str,
+    value: str,
+    token: str,
+    hint: str | None = None,
+) -> None:
     """Raise when a string metadata value would serialize ambiguously."""
-    raise ToytreeError(
+    msg = (
         f"Cannot write feature {feature!r} value {value!r}; "
         f"it contains reserved metadata token {token!r}."
     )
+    if hint:
+        msg += f" {hint}"
+    raise ToytreeError(msg)
+
+
+def _is_standard_scalar_feature(feature: str) -> bool:
+    """Return True for built-in scalar features that should not use pack logic."""
+    return feature in STANDARD_SCALAR_FEATURES
 
 
 def _normalize_text_feature_value(
@@ -110,6 +124,20 @@ def _normalize_text_feature_value(
     for token in config.reserved_text_tokens:
         if token and token in value:
             _raise_unsafe_feature_value(feature, value, token)
+    if (
+        config.features_pack
+        and (not _is_standard_scalar_feature(feature))
+        and config.features_pack in value
+    ):
+        _raise_unsafe_feature_value(
+            feature,
+            value,
+            config.features_pack,
+            hint=(
+                "Use features_pack=None to treat packed-looking values as raw "
+                "strings, or choose a different features_pack symbol."
+            ),
+        )
     return value
 
 
@@ -131,7 +159,14 @@ def _serialize_feature_value(
             else:
                 if not _is_nan(fitem):
                     packed_values.append(config.feature_formatter(fitem))
-        return config.feature_pack.join(packed_values)
+        if not packed_values:
+            return ""
+        if config.features_pack is None:
+            raise ToytreeError(
+                f"Cannot write list-like feature {feature!r} when "
+                "features_pack=None. Set features_pack to a separator string."
+            )
+        return config.features_pack.join(packed_values)
 
     try:
         fval = float(value)
@@ -324,16 +359,16 @@ def _build_writer_config(
     features_prefix: str,
     features_delim: str,
     features_assignment: str,
-    feature_pack: str,
+    features_pack: str | None,
     features_formatter: str | None,
     nexus: bool,
     write_single_feature: str | None,
 ) -> _WriterConfig:
     """Return normalized settings and formatter callables for one write."""
-    if feature_pack in {features_delim, features_assignment}:
+    if features_pack in {features_delim, features_assignment}:
         raise ToytreeError(
-            "feature_pack cannot match features_delim or "
-            f"features_assignment: {feature_pack!r}"
+            "features_pack cannot match features_delim or "
+            f"features_assignment: {features_pack!r}"
         )
 
     ordered_features = _normalize_features(features)
@@ -361,9 +396,7 @@ def _build_writer_config(
         )
 
     reserved_text_tokens = tuple(
-        token
-        for token in (features_delim, features_assignment, feature_pack, "[", "]")
-        if token
+        token for token in (features_delim, features_assignment, "[", "]") if token
     )
     return _WriterConfig(
         dist_formatter=get_float_formatter(dist_formatter, "dist_formatter"),
@@ -378,7 +411,7 @@ def _build_writer_config(
         features_prefix=features_prefix,
         features_delim=features_delim,
         features_assignment=features_assignment,
-        feature_pack=feature_pack,
+        features_pack=features_pack,
         names_as_ints=nexus,
         label_suffixes=label_suffixes,
         reserved_text_tokens=reserved_text_tokens,
@@ -396,7 +429,7 @@ def write(
     features_prefix: str = "&",
     features_delim: str = ",",
     features_assignment: str = "=",
-    feature_pack: str = "|",
+    features_pack: str | None = "|",
     features_formatter: str | None = "%.12g",
     nexus: bool = False,
     write_single_feature: str | None = None,
@@ -430,9 +463,10 @@ def write(
         Separator between metadata entries inside one block.
     features_assignment : str, default="="
         Separator between metadata keys and values.
-    feature_pack : str, default="|"
+    features_pack : str or None, default="|"
         Separator used to pack list-like feature values into one metadata
-        value.
+        value. Set to ``None`` to allow scalar strings containing the
+        active pack token, while disallowing list-like metadata values.
     features_formatter : str or None, default="%.12g"
         Python formatting string used for numeric metadata values.
     nexus : bool, default=False
@@ -480,6 +514,10 @@ def write(
     toytree.mtree
     toytree.io.parse_newick_string
     """
+    if "feature_pack" in kwargs:
+        raise ToytreeError(
+            "feature_pack was renamed to features_pack. Update your write() call."
+        )
     if kwargs:
         print(f"Deprecated args to write(): {list(kwargs)}. See docs.", file=sys.stderr)
 
@@ -495,7 +533,7 @@ def write(
         features_prefix=features_prefix,
         features_delim=features_delim,
         features_assignment=features_assignment,
-        feature_pack=feature_pack,
+        features_pack=features_pack,
         features_formatter=features_formatter,
         nexus=nexus,
         write_single_feature=write_single_feature,

@@ -36,7 +36,8 @@ def tree(
         Separator between metadata keys and values.
     feature_unpack : str, default="|"
         Optional token used to unpack compact list-like metadata
-        values.
+        values. Built-in scalar features such as ``name`` are never
+        unpacked.
     internal_labels : str or None, default=None
         Controls how internal labels are interpreted after parsing.
         Use ``"name"``, ``"support"``, or another feature name to

@@ -37,6 +37,7 @@ BLOCK_ERRORS = {
 }
 CURLY_TRAIT_PATTERN = re.compile(r"^(.*)\{([^{}]*)\}$")
 RESERVED_FEATURE_NAMES = ["idx", "height", "dist"]
+STANDARD_SCALAR_FEATURE_NAMES = frozenset({"idx", "name", "height", "dist", "support"})
 NHX_ERROR = (
     "Error parsing NHX (extended New Hampshire format) newick meta data.\n"
     "  NHX format = "
@@ -349,7 +350,8 @@ def meta_parser(
         Separator between metadata keys and values.
     feature_unpack : str, default="|"
         Optional token used to unpack compact list-like values such as
-        ``"0.1|0.9"``.
+        ``"0.1|0.9"``. Built-in scalar features such as ``name`` are
+        never unpacked.
 
     Returns
     -------
@@ -398,7 +400,11 @@ def meta_parser(
             items = feats.split(delim) if delim else [feats]
             for item in items:
                 key, value = _split_meta_assignment(item, assignment)
-                if feature_unpack and feature_unpack in value:
+                if (
+                    feature_unpack
+                    and key not in STANDARD_SCALAR_FEATURE_NAMES
+                    and feature_unpack in value
+                ):
                     meta[key] = [
                         _coerce_meta_value(part) for part in value.split(feature_unpack)
                     ]
@@ -422,7 +428,11 @@ def meta_parser(
             else:
                 key, value = _split_meta_assignment(item, assignment)
 
-            if feature_unpack and feature_unpack in value:
+            if (
+                feature_unpack
+                and key not in STANDARD_SCALAR_FEATURE_NAMES
+                and feature_unpack in value
+            ):
                 meta[key] = [
                     _coerce_meta_value(part) for part in value.split(feature_unpack)
                 ]
@@ -798,7 +808,8 @@ def parse_newick_string(
         Separator between metadata keys and values.
     feature_unpack : str, default="|"
         Optional token used to unpack compact list-like metadata
-        values.
+        values. Built-in scalar features such as ``name`` are never
+        unpacked.
     internal_labels : str or None, default=None
         Controls how internal labels are interpreted after parsing.
 
