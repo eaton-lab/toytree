@@ -231,6 +231,86 @@ class AnnotationStochasticMapLine(AnnotationLine):
         self.map_id = int(map_id)
 
 
+def _shown_tip_indices(show: np.ndarray) -> np.ndarray:
+    """Return visible tip indices once for domain / extent filtering."""
+    return np.flatnonzero(np.asarray(show, dtype=bool)).astype(int)
+
+
+def _midpoint_bounds_from_centers(values: np.ndarray) -> np.ndarray:
+    """Return slot boundaries that match the rectangular render helpers."""
+    nvals = int(values.size)
+    if nvals == 1:
+        return np.array([values[0] - 0.5, values[0] + 0.5], dtype=float)
+
+    bounds = np.zeros(nvals + 1, dtype=float)
+    bounds[1:-1] = 0.5 * (values[:-1] + values[1:])
+    bounds[0] = values[0] - 0.5 * (values[1] - values[0])
+    bounds[-1] = values[-1] + 0.5 * (values[-1] - values[-2])
+    return bounds
+
+
+def _narrow_slot_bounds(
+    slot_min: np.ndarray,
+    slot_max: np.ndarray,
+    fill_width: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return centered occupied bounds inside each rectangular tip slot."""
+    center = 0.5 * (slot_min + slot_max)
+    half = 0.5 * float(fill_width) * (slot_max - slot_min)
+    return center - half, center + half
+
+
+def _get_rectangular_tip_slot_occupied_bounds(
+    centers: np.ndarray,
+    fill_width: float,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return occupied slot corners in raw coordinates for rectangular tips."""
+    order = np.argsort(centers)
+    sorted_centers = np.asarray(centers[order], dtype=float)
+    bounds = _midpoint_bounds_from_centers(sorted_centers)
+    lower_sorted, upper_sorted = _narrow_slot_bounds(
+        bounds[:-1],
+        bounds[1:],
+        fill_width,
+    )
+    lower = np.zeros(sorted_centers.size, dtype=float)
+    upper = np.zeros(sorted_centers.size, dtype=float)
+    lower[order] = lower_sorted
+    upper[order] = upper_sorted
+    return lower, upper
+
+
+def _get_rectangular_tip_rect_domain(
+    ntable: np.ndarray,
+    layout: str,
+    show: np.ndarray,
+    fill_width: float,
+    axis: str,
+) -> tuple[float, float] | None:
+    """Return occupied rectangular corners for the orthogonal raw domain."""
+    shown = _shown_tip_indices(show)
+    if shown.size == 0:
+        return None
+
+    # Rectangular bars / tiles consume one axis for depth and the orthogonal
+    # axis for their occupied slot width. Only the orthogonal axis needs the
+    # widened raw-domain corners; depth remains a pixel-space extent.
+    if layout in ("u", "d") and axis == "x":
+        lower, upper = _get_rectangular_tip_slot_occupied_bounds(
+            ntable[:, 0],
+            fill_width,
+        )
+    elif layout in ("r", "l") and axis == "y":
+        lower, upper = _get_rectangular_tip_slot_occupied_bounds(
+            ntable[:, 1],
+            fill_width,
+        )
+    else:
+        return None
+
+    return float(np.min(lower[shown])), float(np.max(upper[shown]))
+
+
 class AnnotationTipTileMark(Mark):
     """Polygon path annotation mark for tip-aligned tile rendering."""
 
@@ -245,7 +325,6 @@ class AnnotationTipTileMark(Mark):
         colors: np.ndarray | None,
         fill_color: Any,
         opacity: np.ndarray,
-        stroke_color: Any,
         style: Mapping[str, Any],
     ):
         Mark.__init__(self, annotation=True)
@@ -259,7 +338,6 @@ class AnnotationTipTileMark(Mark):
         self.colors = colors
         self.fill_color = fill_color
         self.opacity = opacity
-        self.stroke_color = stroke_color
         self.style = style
         self.tip_indices = np.array([], dtype=int)
         self.paths: list[str] = []
@@ -267,27 +345,46 @@ class AnnotationTipTileMark(Mark):
         self.slot_max = np.array([], dtype=float)
         self.slot_kind = ""
 
-    def domain(self, axis: str) -> Tuple[float, float]:
-        """Return domain based on tip coordinates."""
+    def domain(self, axis: str) -> Tuple[float | None, float | None]:
+        """Return rectangular occupied corners or circular tip centers."""
+        shown = _shown_tip_indices(self.show)
+        if shown.size == 0:
+            return (None, None)
+
+        rect_domain = _get_rectangular_tip_rect_domain(
+            ntable=self.ntable,
+            layout=self.layout,
+            show=self.show,
+            fill_width=1.0,
+            axis=axis,
+        )
+        if rect_domain is not None:
+            return rect_domain
+
         index = self._coordinate_axes.index(axis)
-        return toyplot.data.minimax(self.ntable[:, index])
+        domain = toyplot.data.minimax(self.ntable[shown, index])
+        return float(domain[0]), float(domain[1])
 
-    def extents(self, axis: str) -> Tuple[Tuple[np.ndarray], Tuple[np.ndarray]]:
+    def extents(
+        self,
+        axis: str | Sequence[str],
+    ) -> Tuple[Tuple[np.ndarray], Tuple[np.ndarray]]:
         """Return layout-aware extents for tile offset / depth in px units."""
-        if axis == "x":
-            coords = (self.ntable[:, 0],)
-        elif axis == "y":
-            coords = (self.ntable[:, 1],)
-        else:
-            coords = (self.ntable[:, 0], self.ntable[:, 1])
+        axes = (
+            [axis]
+            if isinstance(axis, str) and axis in self._coordinate_axes
+            else list(axis)
+        )
+        shown = _shown_tip_indices(self.show)
+        x_coords = self.ntable[shown, 0].copy()
+        y_coords = self.ntable[shown, 1].copy()
 
-        ntips = self.ntable.shape[0]
+        ntips = shown.size
         a0 = float(self.offset)
         a1 = float(self.offset + self.depth)
         min_d = min(a0, a1)
         max_d = max(a0, a1)
-        # Add small room for optional stroke outlines.
-        stroke_pad = 1.0 if self.stroke_color is not None else 0.0
+        stroke_pad = _visible_stroke_pad(self.style)
 
         left = np.zeros(ntips, dtype=float)
         right = np.zeros(ntips, dtype=float)
@@ -323,6 +420,32 @@ class AnnotationTipTileMark(Mark):
             top[:] = -reach
             bottom[:] = reach
 
+        if self.layout in ("u", "d"):
+            occ_min, occ_max = _get_rectangular_tip_slot_occupied_bounds(
+                self.ntable[:, 0],
+                1.0,
+            )
+            x_coords = np.concatenate((occ_min[shown], occ_max[shown]))
+            y_coords = np.repeat(y_coords, 2)
+            left = np.concatenate((np.full(ntips, -stroke_pad), np.zeros(ntips)))
+            right = np.concatenate((np.zeros(ntips), np.full(ntips, stroke_pad)))
+            top = np.concatenate((top, top))
+            bottom = np.concatenate((bottom, bottom))
+        elif self.layout in ("r", "l"):
+            occ_min, occ_max = _get_rectangular_tip_slot_occupied_bounds(
+                self.ntable[:, 1],
+                1.0,
+            )
+            # Once the occupied slot corners define the orthogonal coordinates,
+            # only the outer stroke pad belongs on those corner coordinates.
+            x_coords = np.repeat(x_coords, 2)
+            y_coords = np.concatenate((occ_min[shown], occ_max[shown]))
+            left = np.concatenate((left, left))
+            right = np.concatenate((right, right))
+            top = np.concatenate((np.zeros(ntips), np.full(ntips, -stroke_pad)))
+            bottom = np.concatenate((np.full(ntips, stroke_pad), np.zeros(ntips)))
+
+        coords = tuple(x_coords.copy() if ax == "x" else y_coords.copy() for ax in axes)
         extents = (left, right, top, bottom)
         return coords, extents
 
@@ -368,7 +491,7 @@ class AnnotationTipBarMark(Mark):
         hover_labels: np.ndarray | None,
         style: Mapping[str, Any],
     ):
-        Mark.__init__(self, annotation=True)
+        Mark.__init__(self, annotation=False)
         self._coordinate_axes = ["x", "y"]
         self.ntable = ntable
         self.root_xy = root_xy
@@ -394,21 +517,36 @@ class AnnotationTipBarMark(Mark):
         self.occupied_min = np.array([], dtype=float)
         self.occupied_max = np.array([], dtype=float)
         self.slot_kind = ""
-        self._cached_raw_domain: dict[str, tuple[float, float]] = {}
+        self._cached_raw_domain: dict[str, tuple[float | None, float | None]] = {}
         self._cached_extents_xy: tuple[np.ndarray, ...] | None = None
         self._cached_coords_xy: tuple[np.ndarray, np.ndarray] = (
             self.ntable[:, 0].copy(),
             self.ntable[:, 1].copy(),
         )
 
-    def domain(self, axis: str) -> Tuple[float, float]:
-        """Return the raw anchor-coordinate domain for shown bar geometry."""
+    def domain(self, axis: str) -> Tuple[float | None, float | None]:
+        """Return shown bar domains using occupied rectangular corners when needed."""
         cached = self._cached_raw_domain.get(axis)
         if cached is not None:
             return cached
 
+        shown = _shown_tip_indices(self.show)
+        if shown.size == 0:
+            return (None, None)
+
+        rect_domain = _get_rectangular_tip_rect_domain(
+            ntable=self.ntable,
+            layout=self.layout,
+            show=self.show,
+            fill_width=float(self.width),
+            axis=axis,
+        )
+        if rect_domain is not None:
+            self._cached_raw_domain[axis] = rect_domain
+            return rect_domain
+
         index = self._coordinate_axes.index(axis)
-        domain = toyplot.data.minimax(self.ntable[:, index])
+        domain = toyplot.data.minimax(self.ntable[shown, index])
         cached = (float(domain[0]), float(domain[1]))
         self._cached_raw_domain[axis] = cached
         return cached
@@ -463,14 +601,58 @@ class AnnotationTipBarMark(Mark):
         self._cached_extents_xy = (left, right, top, bottom)
         return self._cached_extents_xy
 
-    def extents(self, axis: str) -> Tuple[Tuple[np.ndarray], Tuple[np.ndarray]]:
+    def extents(
+        self,
+        axis: str | Sequence[str],
+    ) -> Tuple[Tuple[np.ndarray], Tuple[np.ndarray]]:
         """Return layout-aware extents for bar offset / depth in px units."""
-        axes = [axis] if axis in self._coordinate_axes else list(axis)
-        coords = tuple(
-            self._cached_coords_xy[self._coordinate_axes.index(ax)].copy()
-            for ax in axes
+        axes = (
+            [axis]
+            if isinstance(axis, str) and axis in self._coordinate_axes
+            else list(axis)
         )
-        extents = tuple(arr.copy() for arr in self._get_cached_extents_xy())
+        shown = _shown_tip_indices(self.show)
+        x_coords = self._cached_coords_xy[0][shown].copy()
+        y_coords = self._cached_coords_xy[1][shown].copy()
+        left, right, top, bottom = (
+            arr[shown].copy() for arr in self._get_cached_extents_xy()
+        )
+
+        if self.layout in ("u", "d"):
+            occ_min, occ_max = _get_rectangular_tip_slot_occupied_bounds(
+                self.ntable[:, 0],
+                float(self.width),
+            )
+            stroke_pad = _visible_stroke_pad(self.style)
+            x_coords = np.concatenate((occ_min[shown], occ_max[shown]))
+            y_coords = np.repeat(y_coords, 2)
+            left = np.concatenate(
+                (np.full(shown.size, -stroke_pad), np.zeros(shown.size))
+            )
+            right = np.concatenate(
+                (np.zeros(shown.size), np.full(shown.size, stroke_pad))
+            )
+            top = np.concatenate((top, top))
+            bottom = np.concatenate((bottom, bottom))
+        elif self.layout in ("r", "l"):
+            occ_min, occ_max = _get_rectangular_tip_slot_occupied_bounds(
+                self.ntable[:, 1],
+                float(self.width),
+            )
+            stroke_pad = _visible_stroke_pad(self.style)
+            x_coords = np.repeat(x_coords, 2)
+            y_coords = np.concatenate((occ_min[shown], occ_max[shown]))
+            left = np.concatenate((left, left))
+            right = np.concatenate((right, right))
+            top = np.concatenate(
+                (np.zeros(shown.size), np.full(shown.size, -stroke_pad))
+            )
+            bottom = np.concatenate(
+                (np.full(shown.size, stroke_pad), np.zeros(shown.size))
+            )
+
+        coords = tuple(x_coords.copy() if ax == "x" else y_coords.copy() for ax in axes)
+        extents = (left, right, top, bottom)
         return coords, extents
 
     def get_companion_scale_spec(

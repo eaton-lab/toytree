@@ -466,10 +466,6 @@ def render_tip_tiles(
             color = ToyColor(mark.colors[tip_indices[idx]])
         path_style["fill"] = color.rgb
         path_style["fill-opacity"] = float(mark.opacity[tip_indices[idx]])
-        if mark.stroke_color is None:
-            path_style["stroke"] = "none"
-        else:
-            path_style["stroke"] = ToyColor(mark.stroke_color).rgb
         xml.SubElement(
             group_xml,
             "path",

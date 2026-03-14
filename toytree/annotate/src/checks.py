@@ -8,6 +8,11 @@ from typing import Any
 
 # from toyplot.canvas import Canvas
 import numpy as np
+from toyplot.coordinates import (
+    _cartesian_max_extent_overflow_px,
+    _cartesian_projected_domain_tuple,
+    _cartesian_reset_expand_cache,
+)
 
 from toytree.core import ToyTree
 from toytree.drawing import Cartesian, Mark, ToyTreeMark
@@ -24,6 +29,8 @@ containing a ToyTree Mark (drawing). For example:
 >>> canvas, axes, mark = tree.draw()
 >>> tree.annotate.add_tip_markers(axes, size=9, color='red', xshift=20)
 """
+TOYTREE_CARTESIAN_FIT_PX_TOL = 0.5
+TOYTREE_CARTESIAN_FIT_EXTRA_ITER = 10
 
 
 def get_last_toytree_mark(axes: Cartesian) -> ToyTreeMark:
@@ -83,6 +90,66 @@ def invalidate_cartesian_fit_cache(axes: Cartesian) -> None:
         scale_axes._expand_domain_range_right = None
         scale_axes._expand_domain_range_top = None
         scale_axes._expand_domain_range_bottom = None
+
+
+def stabilize_cartesian_fit(
+    axes: Cartesian,
+    extra_iterations: int = TOYTREE_CARTESIAN_FIT_EXTRA_ITER,
+) -> None:
+    """Finalize one Cartesian and lightly extend autosize if needed.
+
+    Toyplot's finalize pass is usually sufficient on its own, but large
+    pixel-offset annotations can still leave a small amount of residual
+    overflow. This helper allows a few extra projected-domain passes to
+    settle those cases without chasing subpixel-perfect convergence.
+    """
+    axes._finalize()
+    overflow = _cartesian_max_extent_overflow_px(axes)
+    if overflow <= TOYTREE_CARTESIAN_FIT_PX_TOL:
+        return
+
+    extra_iterations = int(extra_iterations)
+    xaxis = axes.x
+    yaxis = axes.y
+    previous_domain = _cartesian_projected_domain_tuple(axes)
+
+    # Reuse Toyplot's own iterative expansion logic, but allow a few
+    # extra rounds and a tighter tolerance for large annotation offsets.
+    for idx in range(extra_iterations):
+        _cartesian_reset_expand_cache(axes)
+        # Restart each pass from the last projected display-domain so Toyplot
+        # expands from the current stable viewport instead of the raw domain.
+        xaxis._display_min, xaxis._display_max = (
+            previous_domain[0],
+            previous_domain[1],
+        )
+        yaxis._display_min, yaxis._display_max = (
+            previous_domain[2],
+            previous_domain[3],
+        )
+        axes._finalized = None
+        axes._finalize_once()
+        current_domain = _cartesian_projected_domain_tuple(axes)
+        overflow = _cartesian_max_extent_overflow_px(axes)
+        previous_domain = current_domain
+        if overflow <= TOYTREE_CARTESIAN_FIT_PX_TOL:
+            break
+        if idx < (extra_iterations - 1):
+            axes._finalized = None
+
+    # Write the settled projected domain back once more so later host
+    # projections and companion syncing use the same finalized viewport.
+    xaxis._display_min, xaxis._display_max = previous_domain[0], previous_domain[1]
+    yaxis._display_min, yaxis._display_max = previous_domain[2], previous_domain[3]
+    axes._finalized = None
+    axes._finalize_once()
+
+
+def finalize_cartesian_with_tip_bar_domains(axes: Cartesian) -> None:
+    """Finalize host axes and extend Toyplot fitting only if needed."""
+    axes._finalize()
+    if _cartesian_max_extent_overflow_px(axes) > TOYTREE_CARTESIAN_FIT_PX_TOL:
+        stabilize_cartesian_fit(axes)
 
 
 def normalize_tip_mask(tree: ToyTree, mask: Any) -> np.ndarray:

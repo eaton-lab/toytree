@@ -620,12 +620,22 @@ class MultiTree:
             axes.add_mark(mark)
 
         if draw_kwargs.get("scale_bar", False):
+            from toytree.annotate.src.add_scale_bar import (
+                _add_axes_scale_bar_impl,
+                _normalize_draw_scale_factor,
+            )
+
             tree = max(selected, key=lambda item: item.treenode.height)
             if tree.style.layout in ("r", "u"):
                 srange = (-tree.treenode.height, 0)
             else:
                 srange = (0, tree.treenode.height)
-            tree.annotate.add_axes_scale_bar(axes, range=srange)
+            _add_axes_scale_bar_impl(
+                tree,
+                axes,
+                scale=_normalize_draw_scale_factor(draw_kwargs["scale_bar"]),
+                domain_override=srange,
+            )
         elif canvas is not None:
             axes.x.show = False
             axes.y.show = False
