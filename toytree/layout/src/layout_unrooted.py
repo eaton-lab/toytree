@@ -52,6 +52,7 @@ class UnrootedLayout(BaseLayout):
             max_iter=50,
             use_edge_lengths=self.style.use_edge_lengths,
         )
+        coords = coords - coords[self.tree.treenode.idx]
         offset = np.array(
             [self.style.xbaseline, self.style.ybaseline],
             dtype=float,
