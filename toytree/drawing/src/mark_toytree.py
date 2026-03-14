@@ -13,7 +13,6 @@ from typing import List, Sequence, Tuple, Union
 import numpy as np
 import toyplot
 import toyplot.text
-from loguru import logger
 from toyplot.mark import Mark
 
 from toytree.layout.src.layout_circular import _parse_circular_layout
@@ -49,6 +48,10 @@ class ToyTreeMark(Mark):
         for key, val in kwargs.items():
             setattr(self, key, val)
 
+        self._cached_domain: dict[str, tuple[float, float]] = {}
+        self._cached_extents_xy: tuple[np.ndarray, ...] | None = None
+        self._cached_coords_xy: tuple[np.ndarray, np.ndarray] | None = None
+
     @property
     def nnodes(self) -> int:
         """The number of nodes in the tree."""
@@ -62,13 +65,41 @@ class ToyTreeMark(Mark):
         layouts (e.g., ``c0-180``), axis domains use true x/y minimax values
         to avoid allocating empty space.
         """
+        cached = self._cached_domain.get(axis)
+        if cached is not None:
+            return cached
+
         if self.layout[0] == "c" and _is_full_circle_layout(self.layout):
             domain = toyplot.data.minimax(self.ntable[:, :])
             absdomain = max(abs(i) for i in domain)
-            return -absdomain, absdomain
-        index = self._coordinate_axes.index(axis)
-        domain = toyplot.data.minimax(self.ntable[:, index])
-        return domain
+            cached = (-absdomain, absdomain)
+        else:
+            index = self._coordinate_axes.index(axis)
+            domain = toyplot.data.minimax(self.ntable[:, index])
+            cached = (float(domain[0]), float(domain[1]))
+        self._cached_domain[axis] = cached
+        return cached
+
+    def _get_cached_coords_xy(self) -> tuple[np.ndarray, np.ndarray]:
+        """Return immutable cached coordinates used by extent calculations."""
+        if self._cached_coords_xy is None:
+            coords = self.ntable.copy()
+            coords[: self.ttable.shape[0], :] = self.ttable
+            self._cached_coords_xy = (coords[:, 0], coords[:, 1])
+        return self._cached_coords_xy
+
+    def _get_cached_extents_xy(self) -> tuple[np.ndarray, ...]:
+        """Return immutable cached extents for repeated finalize passes."""
+        if self._cached_extents_xy is None:
+            extents = [np.zeros(self.nnodes, dtype=float) for _ in range(4)]
+            extents = set_node_label_extents(self, extents)
+            extents = set_marker_extents(self, extents)
+            extents = set_edge_extents(self, extents)
+            extents = set_tip_label_extents(self, extents)
+            self._cached_extents_xy = tuple(
+                np.asarray(arr, dtype=float).copy() for arr in extents
+            )
+        return self._cached_extents_xy
 
     def extents(
         self, axis: Union[str, Sequence[str]]
@@ -91,23 +122,62 @@ class ToyTreeMark(Mark):
         extents: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
         Each ndarray is len=nnodes.
         """
-        # this array can be modified during rendering so grab a copy.
-        # get node coords but set tip-align coords.
-        coords = self.ntable.copy()
-        coords[: self.ttable.shape[0], :] = self.ttable
+        axes = (
+            [axis]
+            if isinstance(axis, str) and axis in self._coordinate_axes
+            else list(axis)
+        )
+        coords_xy = self._get_cached_coords_xy()
+        extents_xy = self._get_cached_extents_xy()
 
-        # select coords on 'x', 'y' or ['x', 'y'] axes.
-        coords = (coords[:, 0], coords[:, 1])
-
-        # get marker/label extents and update minmax for each feature
-        extents = [np.zeros(self.nnodes)] * 4
-        extents = set_node_label_extents(self, extents)
-        extents = set_marker_extents(self, extents)
-        extents = set_edge_extents(self, extents)
-        extents = set_tip_label_extents(self, extents)
-
-        # self._coordinate_axes[i] for in list(axis)
+        # Renderers may adjust returned arrays in-place, so preserve the cache
+        # and hand out fresh copies on every call.
+        coords = tuple(coords_xy[self._coordinate_axes.index(ax)].copy() for ax in axes)
+        extents = tuple(arr.copy() for arr in extents_xy)
         return coords, extents
+
+    def get_companion_scale_spec(
+        self,
+        axes,
+        *,
+        axis: str = "auto",
+        padding: float = 15.0,
+        domain_override: tuple[float, float] | None = None,
+    ):
+        """Return companion scale metadata for rendering a tree ruler."""
+        from toytree.annotate.src.add_scale_bar import (
+            _get_tree_scale_bounds_finalized,
+            _resolve_internal_tree_scale_domain,
+            _resolve_tree_scale_axis,
+            _validate_scale_padding,
+        )
+        from toytree.drawing.src.scale_axes import CompanionScaleSpec
+
+        resolved_axis = _resolve_tree_scale_axis(self, axis)
+        resolved_padding = _validate_scale_padding(padding, "tree")
+        tmin, tmax = _resolve_internal_tree_scale_domain(
+            self,
+            resolved_axis,
+            domain_override,
+        )
+        shift = self.xbaseline if resolved_axis == "x" else self.ybaseline
+        # Tree rulers label tree-depth coordinates, but their companion bounds
+        # still come from finalized host pixel geometry around the rendered tree.
+        return CompanionScaleSpec(
+            key="tree",
+            axis=resolved_axis,
+            data_domain=(float(tmin), float(tmax)),
+            locator_domain=(float(tmin), float(tmax)),
+            bounds_getter=lambda: _get_tree_scale_bounds_finalized(
+                axes,
+                self,
+                resolved_axis,
+                resolved_padding,
+            ),
+            label_midpoint=0.5 * float(tmin + tmax),
+            shift=float(shift),
+            use_tree_domain_mark=True,
+        )
 
 
 def set_node_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndarray]:
@@ -180,7 +250,6 @@ def set_tip_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndar
     - check -180 on 'ud'
     - support 'c', 'unr'
     - censor vertical text extent
-    - support 'shrink' space
     """
     # return if not tip labels
     if mark.tip_labels is None:
@@ -243,91 +312,9 @@ def set_tip_label_extents(mark: Mark, extents: List[np.ndarray]) -> List[np.ndar
         text=mark.tip_labels, angle=angles, style=mark.tip_labels_style
     )
 
-    # TEMPORARY HACK: until toyplot extents is fixed. -----------
-    # extend the tip label direction extra space.
-    # if mark.layout == "r":
-    #     ext[1][:ntips] *= 2
-    #     # ext[1][:ntips] += mark.shrink
-    # elif mark.layout == "d":
-    #     ext[3][:ntips] *= 2
-    #     # ext[3][:ntips] += mark.shrink
-    # elif mark.layout == "u":
-    #     ext[2][:ntips] *= 2
-    #     # ext[2][:ntips] -= mark.shrink
-    # elif mark.layout == "l":
-    #     ext[0][:ntips] *= 2
-    #     # ext[0][:ntips] -= mark.shrink
-
-    # # Not important b/c we use fit-range later.
-    # elif mark.layout[0] == "c":
-    #     ext[0][:ntips] *= 1.5
-    #     ext[1][:ntips] *= 1.5
-    #     ext[2][:ntips] *= 1.5
-    #     ext[3][:ntips] *= 1.5
-    #     # ext[0][:ntips] -= mark.shrink
-
-    # elif mark.layout[:3] == "unr":
-    # logger.debug("unrooted layout needs custom tip ext!")
-
     # only allow increasing extents
     extents[0][:ntips] = np.min([extents[0][:ntips], ext[0]], axis=0)
     extents[1][:ntips] = np.max([extents[1][:ntips], ext[1]], axis=0)
     extents[2][:ntips] = np.min([extents[2][:ntips], ext[2]], axis=0)
     extents[3][:ntips] = np.max([extents[3][:ntips], ext[3]], axis=0)
     return extents
-
-
-if __name__ == "__main__":
-    import toytree
-    from toytree.drawing.src.draw_toytree import (
-        get_layout,
-        get_tree_style_base,
-        tree_style_to_css_dict,
-    )
-    from toytree.style import validate_style
-
-    toytree.set_log_level("DEBUG")
-    tree = toytree.rtree.rtree(5, seed=123)
-    tree[2].name = "hello world"
-
-    kwargs = tree.draw(
-        debug=True,
-        tip_labels=True,
-        tip_labels_angles=0,
-        tip_labels_style={"font-size": 15},
-        node_sizes=16,
-        node_mask=False,
-    )
-
-    style = get_tree_style_base(tree, tree_style=kwargs.pop("tree_style"))
-    logger.warning(style.tip_labels_style.font_size)
-    style = validate_style(tree, style, **kwargs)
-    logger.warning(style.tip_labels_style.font_size)
-    layout = get_layout(tree, style)
-    logger.warning(style.tip_labels_style.font_size)
-
-    ntable = layout.coords
-    etable = tree.get_edges("idx")
-    mark = ToyTreeMark(
-        ntable=ntable,
-        etable=etable,
-        ttable=layout.tcoords,
-        **tree_style_to_css_dict(style),
-    )
-    logger.info(style.tip_labels_angles)
-    print(f"domain x = {mark.domain('x')}")
-    print(f"domain y = {mark.domain('y')}")
-    print(mark.extents("x")[0])
-    print(mark.extents("x")[1][0])
-    print(mark.extents("x")[1][1])
-    print(mark.extents("x")[1][2])
-    print(mark.extents(["x", "y"])[1][3])
-
-    # mark = ToyTreeMark2(ntable=ntable, etable=etable, **tree_style_to_css_dict(style))
-    # print(f"domain x = {mark.domain('x')}")
-    # print(f"domain y = {mark.domain('y')}")
-    # print(mark.extents('x')[0])
-    # print(mark.extents('x')[1][0])
-    # print(mark.extents('x')[1][1])
-    # print(mark.extents('x')[1][2])
-    # print(mark.extents(['x', 'y'])[1][3])

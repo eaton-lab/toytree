@@ -13,7 +13,10 @@ from toyplot.coordinates import Cartesian
 from toyplot.mark import Mark
 
 import toytree
-from toytree.annotate import add_axes_scale_bar
+from toytree.annotate.src.add_scale_bar import (
+    _add_axes_scale_bar_impl,
+    _normalize_draw_scale_factor,
+)
 from toytree.drawing.src.draw_toytree import (
     _get_tree_style_layout_mark,
     _normalize_extra_kwargs,
@@ -365,13 +368,14 @@ def _apply_shared_axis_domain(axis: Cartesian, mark, depth: float) -> None:
 
 def _update_shared_scale_bar(tree, axis: Cartesian, mark, depth: float) -> None:
     """Sync visible shared scale bars to the rendered shared depth span."""
-    if mark.scale_bar in (False, None):
+    scale = _normalize_draw_scale_factor(mark.scale_bar)
+    if scale is None:
         return
-    add_axes_scale_bar(
+    _add_axes_scale_bar_impl(
         tree,
         axis,
-        range=_get_shared_axis_range(mark, depth),
-        scale=mark.scale_bar,
+        scale=scale,
+        domain_override=_get_shared_axis_range(mark, depth),
     )
 
 

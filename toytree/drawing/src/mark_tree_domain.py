@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Minimal mark used to define tree-only data domain for scale axes."""
+"""Minimal marks used to define custom domains without rendering output."""
 
 from __future__ import annotations
 
@@ -87,6 +87,48 @@ class HostDomainMark(Mark):
         tuple[np.ndarray, ...], tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
     ]:  # noqa: E501
         """Return zero extents so this mark only contributes display domain."""
+        axes = [axis] if isinstance(axis, str) else list(axis)
+        coords = tuple(self._dummy for _ in axes)
+        zeros = np.zeros(1, dtype=float)
+        return coords, (zeros, zeros, zeros, zeros)
+
+
+class HostVisibleDomainMark(Mark):
+    """Mark that contributes the host visible-domain as data-domain."""
+
+    def __init__(
+        self,
+        xdomain: tuple[float, float],
+        ydomain: tuple[float, float],
+    ):
+        Mark.__init__(self, annotation=False)
+        self._coordinate_axes = ["x", "y"]
+        self._dummy = np.array([0.0], dtype=float)
+        self.xdomain = (float(xdomain[0]), float(xdomain[1]))
+        self.ydomain = (float(ydomain[0]), float(ydomain[1]))
+
+    def update(
+        self,
+        xdomain: tuple[float, float],
+        ydomain: tuple[float, float],
+    ) -> None:
+        """Update stored visible-domain bounds."""
+        self.xdomain = (float(xdomain[0]), float(xdomain[1]))
+        self.ydomain = (float(ydomain[0]), float(ydomain[1]))
+
+    def domain(self, axis: str) -> tuple[float, float]:
+        """Return the stored visible-domain for one Cartesian axis."""
+        if axis == "x":
+            return self.xdomain
+        return self.ydomain
+
+    def extents(
+        self,
+        axis: str | Sequence[str],
+    ) -> tuple[
+        tuple[np.ndarray, ...], tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
+    ]:  # noqa: E501
+        """Return zero extents so only stored domain values contribute."""
         axes = [axis] if isinstance(axis, str) else list(axis)
         coords = tuple(self._dummy for _ in axes)
         zeros = np.zeros(1, dtype=float)

@@ -18,6 +18,7 @@ from toytree.drawing.src.mark_annotation import (
     AnnotationMarker,
     AnnotationRect,
     AnnotationStochasticMapLine,
+    AnnotationTipBarMark,
     AnnotationTipLabelMark,
     AnnotationTipTileMark,
 )
@@ -74,6 +75,15 @@ def _render(axes, mark, context):
 )
 def _render(axes, mark, context):
     render_tip_tiles(axes, mark, context)
+
+
+@dispatch(
+    toyplot.coordinates.Cartesian,
+    AnnotationTipBarMark,
+    toyplot.html.RenderContext,
+)
+def _render(axes, mark, context):
+    render_tip_bars(axes, mark, context)
 
 
 @dispatch(
@@ -469,6 +479,97 @@ def render_tip_tiles(
         )
 
 
+def render_tip_bars(
+    axes: Cartesian,
+    mark: AnnotationTipBarMark,
+    context: toyplot.html.RenderContext,
+) -> None:
+    """Render tip bar path annotations from data-space coords + px parameters."""
+    tips_x_px = axes.project("x", mark.ntable[:, 0])
+    tips_y_px = axes.project("y", mark.ntable[:, 1])
+
+    if mark.layout in ("r", "l", "u", "d"):
+        (
+            paths_all,
+            slot_min_all,
+            slot_max_all,
+            occupied_min_all,
+            occupied_max_all,
+        ) = _build_rectangular_bar_paths_px(
+            tips_x_px=tips_x_px,
+            tips_y_px=tips_y_px,
+            layout=mark.layout,
+            offset=float(mark.offset),
+            widths=np.asarray(mark.bar_depths, dtype=float),
+            fill_width=float(mark.width),
+        )
+        slot_kind = "span"
+    else:
+        root_x_px = float(axes.project("x", float(mark.root_xy[0])))
+        root_y_px = float(axes.project("y", float(mark.root_xy[1])))
+        _, _, _, is_full_circle = _parse_circular_layout(mark.layout)
+        (
+            paths_all,
+            slot_min_all,
+            slot_max_all,
+            occupied_min_all,
+            occupied_max_all,
+        ) = _build_circular_bar_paths_px(
+            tips_x_px=tips_x_px,
+            tips_y_px=tips_y_px,
+            root_x_px=root_x_px,
+            root_y_px=root_y_px,
+            wrap=is_full_circle,
+            offset=float(mark.offset),
+            depths=np.asarray(mark.bar_depths, dtype=float),
+            fill_width=float(mark.width),
+        )
+        slot_kind = "angle"
+
+    tip_indices = np.where(mark.show)[0].astype(int)
+    paths = [paths_all[i] for i in tip_indices]
+    slot_min = slot_min_all[tip_indices]
+    slot_max = slot_max_all[tip_indices]
+    occupied_min = occupied_min_all[tip_indices]
+    occupied_max = occupied_max_all[tip_indices]
+
+    mark.tip_indices = tip_indices
+    mark.paths = paths
+    mark.slot_min = slot_min
+    mark.slot_max = slot_max
+    mark.occupied_min = occupied_min
+    mark.occupied_max = occupied_max
+    mark.slot_kind = slot_kind
+
+    group_xml = xml.SubElement(
+        context.parent,
+        "g",
+        id=context.get_id(mark),
+        attrib={"class": "toytree-Annotation-TipBars"},
+        style=concat_style_fix_color(mark.style),
+    )
+
+    for idx, path in enumerate(paths):
+        path_style = dict(mark.style)
+        if mark.colors is None:
+            color = mark.fill_color
+        else:
+            color = ToyColor(mark.colors[tip_indices[idx]])
+        path_style["fill"] = color.rgb
+        path_style["fill-opacity"] = float(mark.opacity[tip_indices[idx]])
+        path_xml = xml.SubElement(
+            group_xml,
+            "path",
+            id=f"TipBar-{idx}",
+            d=path,
+            style=concat_style_fix_color(path_style),
+        )
+        if mark.hover_labels is not None:
+            xml.SubElement(path_xml, "title").text = str(
+                mark.hover_labels[tip_indices[idx]]
+            )
+
+
 def render_tip_labels(
     axes: Cartesian,
     mark: AnnotationTipLabelMark,
@@ -635,6 +736,159 @@ def _build_circular_tile_paths_px(
         parts.append("Z")
         paths[tidx] = " ".join(parts)
     return paths, slot_min, slot_max
+
+
+def _build_rectangular_bar_paths_px(
+    tips_x_px: np.ndarray,
+    tips_y_px: np.ndarray,
+    layout: str,
+    offset: float,
+    widths: np.ndarray,
+    fill_width: float,
+) -> tuple[list[str], np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Build tip bar paths in rectangular layouts."""
+    ntips = int(tips_x_px.size)
+    if layout in ("r", "l"):
+        span = tips_y_px
+        sort_idx = np.argsort(span)
+        bounds = _midpoint_bounds(span[sort_idx])
+        sign = 1.0 if layout == "r" else -1.0
+
+        paths = [""] * ntips
+        slot_min = np.zeros(ntips, dtype=float)
+        slot_max = np.zeros(ntips, dtype=float)
+        occupied_min = np.zeros(ntips, dtype=float)
+        occupied_max = np.zeros(ntips, dtype=float)
+        for jdx, tidx in enumerate(sort_idx):
+            y0 = float(bounds[jdx])
+            y1 = float(bounds[jdx + 1])
+            slot_min[tidx] = y0
+            slot_max[tidx] = y1
+            oy0, oy1 = _narrow_slot_bounds(y0, y1, fill_width)
+            occupied_min[tidx] = oy0
+            occupied_max[tidx] = oy1
+            x0 = float(tips_x_px[tidx] + sign * offset)
+            x1 = float(x0 + sign * widths[tidx])
+            paths[tidx] = (
+                f"M {x0:.8g} {oy0:.8g} "
+                f"L {x1:.8g} {oy0:.8g} "
+                f"L {x1:.8g} {oy1:.8g} "
+                f"L {x0:.8g} {oy1:.8g} Z"
+            )
+        return paths, slot_min, slot_max, occupied_min, occupied_max
+
+    span = tips_x_px
+    sort_idx = np.argsort(span)
+    bounds = _midpoint_bounds(span[sort_idx])
+    sign = -1.0 if layout == "u" else 1.0
+
+    paths = [""] * ntips
+    slot_min = np.zeros(ntips, dtype=float)
+    slot_max = np.zeros(ntips, dtype=float)
+    occupied_min = np.zeros(ntips, dtype=float)
+    occupied_max = np.zeros(ntips, dtype=float)
+    for jdx, tidx in enumerate(sort_idx):
+        x0 = float(bounds[jdx])
+        x1 = float(bounds[jdx + 1])
+        slot_min[tidx] = x0
+        slot_max[tidx] = x1
+        ox0, ox1 = _narrow_slot_bounds(x0, x1, fill_width)
+        occupied_min[tidx] = ox0
+        occupied_max[tidx] = ox1
+        y0 = float(tips_y_px[tidx] + sign * offset)
+        y1 = float(y0 + sign * widths[tidx])
+        paths[tidx] = (
+            f"M {ox0:.8g} {y0:.8g} "
+            f"L {ox1:.8g} {y0:.8g} "
+            f"L {ox1:.8g} {y1:.8g} "
+            f"L {ox0:.8g} {y1:.8g} Z"
+        )
+    return paths, slot_min, slot_max, occupied_min, occupied_max
+
+
+def _build_circular_bar_paths_px(
+    tips_x_px: np.ndarray,
+    tips_y_px: np.ndarray,
+    root_x_px: float,
+    root_y_px: float,
+    wrap: bool,
+    offset: float,
+    depths: np.ndarray,
+    fill_width: float,
+) -> tuple[list[str], np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+    """Build tip bar paths in circular layouts."""
+    dx = tips_x_px - float(root_x_px)
+    dy = tips_y_px - float(root_y_px)
+    radii = np.hypot(dx, dy)
+    if np.any(radii <= 0.0):
+        raise ValueError("tip radii must be positive in circular layout")
+
+    theta = np.arctan2(dy, dx)
+
+    if wrap:
+        theta = np.mod(theta, 2.0 * np.pi)
+        order = np.argsort(theta)
+        ts = theta[order]
+        left, right = _midpoint_bounds_periodic(ts)
+    else:
+        theta_mod = np.mod(theta, 2.0 * np.pi)
+        order0 = np.argsort(theta_mod)
+        ts0 = theta_mod[order0]
+        gaps = np.diff(np.concatenate([ts0, [ts0[0] + 2.0 * np.pi]]))
+        cut = int(np.argmax(gaps))
+        start = (cut + 1) % ts0.size
+        order = np.roll(order0, -start)
+        ts = np.unwrap(theta_mod[order])
+        bounds = _midpoint_bounds(ts)
+        left = bounds[:-1]
+        right = bounds[1:]
+
+    ntips = int(ts.size)
+    paths = [""] * ntips
+    slot_min = np.zeros(ntips, dtype=float)
+    slot_max = np.zeros(ntips, dtype=float)
+    occupied_min = np.zeros(ntips, dtype=float)
+    occupied_max = np.zeros(ntips, dtype=float)
+    for rank, tidx in enumerate(order):
+        t0 = float(left[rank])
+        t1 = float(right[rank])
+        slot_min[tidx] = t0
+        slot_max[tidx] = t1
+        o0, o1 = _narrow_slot_bounds(t0, t1, fill_width)
+        occupied_min[tidx] = o0
+        occupied_max[tidx] = o1
+
+        r_inner = float(radii[tidx] + offset)
+        r_outer = float(r_inner + depths[tidx])
+        if r_inner <= 0.0 or r_outer <= 0.0:
+            raise ValueError(
+                "offset/depth produce non-positive bar radius in circular layout"
+            )
+
+        nsteps = max(8, int(np.ceil((o1 - o0) / (np.pi / 18.0))))
+        ang = np.linspace(o0, o1, nsteps)
+        x_outer = root_x_px + r_outer * np.cos(ang)
+        y_outer = root_y_px + r_outer * np.sin(ang)
+        x_inner = root_x_px + r_inner * np.cos(ang[::-1])
+        y_inner = root_y_px + r_inner * np.sin(ang[::-1])
+
+        parts = [f"M {x_outer[0]:.8g} {y_outer[0]:.8g}"]
+        for idx in range(1, nsteps):
+            parts.append(f"L {x_outer[idx]:.8g} {y_outer[idx]:.8g}")
+        for idx in range(nsteps):
+            parts.append(f"L {x_inner[idx]:.8g} {y_inner[idx]:.8g}")
+        parts.append("Z")
+        paths[tidx] = " ".join(parts)
+    return paths, slot_min, slot_max, occupied_min, occupied_max
+
+
+def _narrow_slot_bounds(
+    slot_min: float, slot_max: float, fill_width: float
+) -> tuple[float, float]:
+    """Return centered occupied bounds within a full slot."""
+    center = 0.5 * (slot_min + slot_max)
+    half = 0.5 * fill_width * (slot_max - slot_min)
+    return center - half, center + half
 
 
 def _midpoint_bounds(values: np.ndarray) -> np.ndarray:

@@ -18,7 +18,6 @@ from toyplot.coordinates import Cartesian
 # from toytree.annotate.src.add_scale_bar import add_axis_scale_bar_to_mark
 from toytree.drawing.src.mark_toytree import ToyTreeMark
 from toytree.drawing.src.scale_axes import (
-    add_tree_domain_mark,
     get_toytree_scale_cartesian,
 )
 from toytree.drawing.src.setup_canvas import get_canvas_and_axes
@@ -32,6 +31,45 @@ from toytree.style import (
 
 # from toytree.utils import ToytreeError
 ToyTree = TypeVar("ToyTree")
+
+SUPPORTED_DRAW_KWARGS = frozenset(
+    {
+        "tree_style",
+        "axes",
+        "height",
+        "width",
+        "layout",
+        "tip_labels",
+        "tip_labels_colors",
+        "tip_labels_align",
+        "tip_labels_angles",
+        "tip_labels_style",
+        "node_mask",
+        "node_labels",
+        "node_labels_style",
+        "node_sizes",
+        "node_hover",
+        "node_style",
+        "node_colors",
+        "node_markers",
+        "node_as_edge_data",
+        "edge_type",
+        "edge_colors",
+        "edge_widths",
+        "edge_style",
+        "edge_align_style",
+        "use_edge_lengths",
+        "scale_bar",
+        "padding",
+        "xbaseline",
+        "ybaseline",
+        "admixture_edges",
+        "fixed_order",
+        "fixed_position",
+        "interior_algorithm",
+        "label",
+    }
+)
 
 
 def _normalize_extra_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
@@ -50,7 +88,16 @@ def _normalize_extra_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
         )
         extra_kwargs = {}
 
-    ts_key = extra_kwargs.pop("ts", None)
+    ts_key = parsed.pop("ts", None)
+    nested_ts_key = extra_kwargs.pop("ts", None)
+    if ts_key is None:
+        ts_key = nested_ts_key
+    elif nested_ts_key is not None and nested_ts_key != ts_key:
+        print(
+            "Both top-level `ts` and nested `ts` were provided; "
+            "using the top-level value and ignoring the nested one.",
+            file=sys.stderr,
+        )
     style_key = parsed.get("tree_style")
     if style_key is None and ts_key is not None:
         parsed["tree_style"] = ts_key
@@ -61,11 +108,17 @@ def _normalize_extra_kwargs(kwargs: dict[str, Any]) -> dict[str, Any]:
             file=sys.stderr,
         )
 
-    if extra_kwargs:
-        unknown = ", ".join(sorted(extra_kwargs))
+    unknown = set(extra_kwargs)
+    for key in list(parsed):
+        if key not in SUPPORTED_DRAW_KWARGS:
+            unknown.add(key)
+            parsed.pop(key)
+
+    if unknown:
+        unknown_text = ", ".join(sorted(unknown))
         print(
             "Unrecognized keyword arguments passed to draw() were ignored: "
-            f"{unknown}. Check docs for current argument names.",
+            f"{unknown_text}. Check docs for current argument names.",
             file=sys.stderr,
         )
     return parsed
@@ -190,10 +243,9 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
 
     # add ToyTreeMark to Cartesian axes.
     axes.add_mark(mark)
-    add_tree_domain_mark(axes, ntable=layout.coords, layout=style.layout)
 
     # Show axes with a scale bar if requested.
-    if mark.scale_bar is False:
+    if mark.scale_bar in (False, None):
         # hide axes if Cartesian is new and scale bar not added.
         if canvas is not None:
             axes.x.show = False
@@ -206,9 +258,14 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
     else:
         # keep host axes free for plotting and extents management; scale
         # bar is rendered on the hidden companion axes.
+        from toytree.annotate.src.add_scale_bar import _normalize_draw_scale_factor
+
         axes.x.show = False
         axes.y.show = False
-        tree.annotate.add_axes_scale_bar(axes)
+        scale_kwargs = {"scale": _normalize_draw_scale_factor(mark.scale_bar)}
+        if kwargs.get("padding") is not None:
+            scale_kwargs["padding"] = kwargs["padding"]
+        tree.annotate.add_axes_scale_bar_to_tree(axes, **scale_kwargs)
 
     # add label text to axes (user can add more styling outside)
     if label is not None:
