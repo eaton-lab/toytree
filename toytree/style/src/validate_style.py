@@ -3,7 +3,7 @@
 """Validate style arguments to ToyTree.draw.
 
 Note: validate_x() functions are written specifically to work in two
-fairly different scenarios: `draw_tree` and `annotation`. 
+fairly different scenarios: `draw_tree` and `annotation`.
 
 In `draw_tree` they take an attribute of a TreeStyle as input, expand
 it to an array, and return it to set it back on the TreeStyle object.
@@ -48,7 +48,6 @@ NON_VALIDATED = [
     "padding",
     "xbaseline",
     "ybaseline",
-    "shrink",
     "node_as_edge_data",
     # "admixture_edges",
     # "fixed_order",
@@ -99,18 +98,22 @@ def validate_style(tree: ToyTree, style: TreeStyle, **kwargs) -> TreeStyle:
     # style.tip_labels = validate_tip_labels(tree, style, **kwargs)
     # style.tip_labels_angles = validate_tip_labels_angles(tree, style, **kwargs)
     # style.tip_labels_colors, tip_fill_color = validate_tip_labels_colors(tree, style, **kwargs)
-    style.node_mask = validate_mask(
-        tree, tree_style=style, style=kwargs)
+    style.node_mask = validate_mask(tree, tree_style=style, style=kwargs)
     style.node_sizes = validate_numeric(
-        tree, key="node_sizes", size=tree.nnodes, tree_style=style, style=kwargs)
+        tree, key="node_sizes", size=tree.nnodes, tree_style=style, style=kwargs
+    )
     style.node_markers = validate_markers(
-        tree, key="node_markers", size=tree.nnodes, tree_style=style, style=kwargs)
+        tree, key="node_markers", size=tree.nnodes, tree_style=style, style=kwargs
+    )
     style.node_hover = validate_hover(
-        tree, key="node_hover", size=tree.nnodes, tree_style=style, style=kwargs)
+        tree, key="node_hover", size=tree.nnodes, tree_style=style, style=kwargs
+    )
     style.node_labels = validate_labels(
-        tree, key="node_labels", size=tree.nnodes, tree_style=style, style=kwargs)
+        tree, key="node_labels", size=tree.nnodes, tree_style=style, style=kwargs
+    )
     style.node_colors, node_fill_color = validate_colors(
-        tree, key="node_colors", size=tree.nnodes, tree_style=style, style=kwargs)
+        tree, key="node_colors", size=tree.nnodes, tree_style=style, style=kwargs
+    )
     if node_fill_color is not None:
         style.node_style.fill = node_fill_color
 
@@ -122,28 +125,43 @@ def validate_style(tree: ToyTree, style: TreeStyle, **kwargs) -> TreeStyle:
 
     # validate edge settings
     style.edge_widths = validate_numeric(
-        tree, key="edge_widths", size=tree.nnodes, tree_style=style, style=kwargs)
+        tree, key="edge_widths", size=tree.nnodes, tree_style=style, style=kwargs
+    )
     style.edge_colors, edge_stroke = validate_colors(
-        tree, key="edge_colors", size=tree.nnodes, tree_style=style, style=kwargs)
+        tree, key="edge_colors", size=tree.nnodes, tree_style=style, style=kwargs
+    )
     if edge_stroke is not None:
         style.edge_style.stroke = edge_stroke
 
     # validate tip settings. Override tip_labels=None with tip_labels="name"
     style.tip_labels = validate_labels(
-        tree, key="tip_labels", size=tree.ntips, tree_style=style, style=kwargs)
+        tree, key="tip_labels", size=tree.ntips, tree_style=style, style=kwargs
+    )
     style.tip_labels_angles = validate_numeric(
-        tree, key="tip_labels_angles", size=tree.ntips, tree_style=style, style=kwargs)
+        tree, key="tip_labels_angles", size=tree.ntips, tree_style=style, style=kwargs
+    )
     style.tip_labels_colors, tip_fill_color = validate_colors(
-        tree, key="tip_labels_colors", size=tree.ntips, tree_style=style, style=kwargs)
+        tree, key="tip_labels_colors", size=tree.ntips, tree_style=style, style=kwargs
+    )
     if tip_fill_color is not None:
         style.tip_labels_style.fill = tip_fill_color
 
     # validate style dictionaries
-    style.node_style = validate_node_style(tree, style.node_style, **get_dict(kwargs, "node_style"))
-    style.edge_style = validate_edge_style(tree, style.edge_style, **get_dict(kwargs, "edge_style"))
-    style.node_labels_style = validate_node_labels_style(tree, style.node_labels_style, **get_dict(kwargs, "node_labels_style"))
-    style.edge_align_style = validate_edge_align_style(tree, style.edge_align_style, **get_dict(kwargs, "edge_align_style"))
-    style.tip_labels_style = validate_tip_labels_style(tree, style.tip_labels_style, **get_dict(kwargs, "tip_labels_style"))
+    style.node_style = validate_node_style(
+        tree, style.node_style, **get_dict(kwargs, "node_style")
+    )
+    style.edge_style = validate_edge_style(
+        tree, style.edge_style, **get_dict(kwargs, "edge_style")
+    )
+    style.node_labels_style = validate_node_labels_style(
+        tree, style.node_labels_style, **get_dict(kwargs, "node_labels_style")
+    )
+    style.edge_align_style = validate_edge_align_style(
+        tree, style.edge_align_style, **get_dict(kwargs, "edge_align_style")
+    )
+    style.tip_labels_style = validate_tip_labels_style(
+        tree, style.tip_labels_style, **get_dict(kwargs, "tip_labels_style")
+    )
 
     style.admixture_edges = validate_admixture_edges(tree, style=kwargs)
 
@@ -160,14 +178,14 @@ def validate_style(tree: ToyTree, style: TreeStyle, **kwargs) -> TreeStyle:
 
 
 if __name__ == "__main__":
-
     import toytree
+
     # from toytree.style import get_base_tree_style_by_name
     from toytree.drawing.src.draw_toytree import get_tree_style_base
 
     tree = toytree.rtree.unittree(8)
 
-    style = get_tree_style_base(tree, ts='c', node_colors="red")
+    style = get_tree_style_base(tree, ts="c", node_colors="red")
     style = validate_style(tree, style)
 
     print(style.node_colors)
