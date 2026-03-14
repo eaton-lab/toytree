@@ -28,6 +28,7 @@ class TreeStyleS(TreeStyle):
     node_labels: bool = True
     node_mask: bool = False
     node_sizes: int = 16
+    node_hover: bool = True
     tip_labels: bool = True
     use_edge_lengths: bool = False
 
