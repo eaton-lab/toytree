@@ -48,7 +48,7 @@ def _edges_scale_to_root_height_inplace(tree: ToyTree, treeheight: float) -> Non
 
 def _edges_extend_tips_to_align_inplace(tree: ToyTree) -> None:
     """Extend terminal edges so all tip node heights are zero."""
-    for node in tree[:tree.ntips]:
+    for node in tree[: tree.ntips]:
         node._dist += node._height
         node._height = 0.0
 
@@ -372,7 +372,6 @@ def bdtree(
     return_stats: bool = False,
     random_names: bool = False,
     names: Optional[Iterable] = None,
-    verbose: bool = False,
 ) -> Union[ToyTree, Dict[str, object]]:
     """Return a parametric birth/death tree.
 
@@ -421,8 +420,6 @@ def bdtree(
     names: Optional[Iterable]
         Optional tip labels for extant tips in the returned tree. This is
         only supported for ``stop='taxa'`` and must have length ``ntips``.
-    verbose: bool
-        Sets logging level to INFO to show statistics
 
     Returns
     -------
@@ -487,8 +484,9 @@ def bdtree(
     time_stop = float(time)
     p_birth = float(b / (b + d))
 
-    # start from random tree (idxs will be re-assigned at end)
-    root = Node(name="0")
+    # Start from an unnamed ancestor so internal-node names remain empty
+    # in the returned tree; only tips are labeled after simulation.
+    root = Node()
     root._tdiv = 0
 
     # counters for extinctions, total events, and time
@@ -531,11 +529,11 @@ def bdtree(
         # event is a birth
         if rvar <= p_birth:
             # add child 1
-            child1 = Node(name=f"{evnts}-1", dist=0)
+            child1 = Node(dist=0)
             child1._tdiv = t_now
             tip._add_child(child1)
             # add child 2
-            child2 = Node(f"{evnts}-2", dist=0)
+            child2 = Node(dist=0)
             child2._tdiv = t_now
             tip._add_child(child2)
             # update tip list
@@ -574,7 +572,7 @@ def bdtree(
                 ext = 0
                 evnts = 0
                 t_now = 0.0
-                root = Node(name="0")
+                root = Node()
                 root._tdiv = 0.0
                 tips = [root]
                 continue
@@ -607,20 +605,6 @@ def bdtree(
         "target_time": float(time_stop) if stop == "time" else None,
         "retain_extinct": bool(retain_extinct),
     }
-    if verbose:
-        import pandas as pd
-
-        results = pd.Series(
-            {
-                "time": stats["time"],
-                "ntips": stats["ntips"],
-                "b": stats["births"],
-                "d": stats["deaths"],
-                "b/d": stats["birth_death_ratio"],
-                "resets": stats["resets"],
-            }
-        )
-        print(results)
 
     # if not retain_extinct then remove all internal unary nodes
     if not retain_extinct:
@@ -638,7 +622,6 @@ def bdtree(
                 break
 
     # update coords and return
-    # tre = tre.mod.ladderize()
     tree = ToyTree(root)
     _assign_names(tree, random_names, rng, names=names_seq)
     if return_stats:
@@ -747,7 +730,7 @@ if __name__ == "__main__":
     TREE = unittree(10)
     print(TREE.get_tip_labels())
 
-    TREE = bdtree(10, b=0.5, d=0.5, verbose=1)
+    TREE = bdtree(10, b=0.5, d=0.5)
     # TREE._draw_browser()
     # print(TREE.get_tip_labels())
     # print(TREE.treenode.draw_ascii())
