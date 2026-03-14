@@ -1163,7 +1163,6 @@ class ToyTree(metaclass=ToyTreeMeta):
         xbaseline: float | None = None,
         ybaseline: float | None = None,
         admixture_edges: AdmixtureEvent | Sequence[AdmixtureEvent] | None = None,
-        shrink: float | None = None,
         fixed_order: Sequence[str] | None = None,
         fixed_position: Sequence[int | float] | None = None,
         interior_algorithm: int = 0,
@@ -1318,20 +1317,13 @@ class ToyTree(metaclass=ToyTreeMeta):
             returned `axes` remains the main plotting axes; the scale
             bar itself is drawn on a linked companion axes.
         padding: float
-            Padding space between the drawing and the visible axes. This
-            is a setting of the Cartesian axes and can be modified more
-            after plotting. Default=20 (px).
+            Pixel gap between the rendered tree and the tree scale-bar
+            companion axes when `scale_bar` is enabled. Ignored when
+            no tree scale bar is shown. Default=15 (px).
         xbaseline: float
             Shift the position of the tree along x-axis.
         ybaseline: float
             Shift the position of the tree along y-axis.
-        shrink: float
-            Adds extra fitting extent in the tip-label direction
-            (pixel extent space), which makes the tree body take up
-            relatively less of the canvas compared with label space.
-            This applies only when tip labels are shown and is mainly
-            useful on linear layouts (`r`, `l`, `u`, `d`). It does not
-            change node coordinates or branch lengths.
         admixture_edges: toytree.AdmixtureEvent or List[toytree.AdmixtureEvent]
             One or more ``toytree.AdmixtureEvent`` objects describing
             source and destination lineages for admixture arrows.
@@ -1403,7 +1395,6 @@ class ToyTree(metaclass=ToyTreeMeta):
             xbaseline=xbaseline,
             ybaseline=ybaseline,
             admixture_edges=admixture_edges,
-            shrink=shrink,
             fixed_order=fixed_order,
             fixed_position=fixed_position,
             interior_algorithm=interior_algorithm,
