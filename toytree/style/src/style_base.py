@@ -264,8 +264,6 @@ class TreeStyle:
     """: Shift tree on Cartesian axes so Node 0 is at (xbaseline, ybaseline)."""
     ybaseline: float = 0.0
     """: Shift tree on Cartesian axes so Node 0 is at (xbaseline, ybaseline)."""
-    shrink: float = 0.0
-    """: Add extra tip-label-direction fitting extent (px space)."""
     admixture_edges: AdmixtureArg = None
 
     def __repr__(self):
