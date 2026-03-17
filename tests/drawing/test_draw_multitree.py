@@ -123,6 +123,23 @@ def test_mtree_draw_tip_labels_style_defaults_do_not_mutate_input(capsys) -> Non
     assert "font-size" not in captured.err
 
 
+def test_mtree_draw_removed_shrink_kwarg_warns_and_ignores(capsys) -> None:
+    """Removed draw kwargs should be warned and ignored once per multitree draw."""
+    mtree = _make_mtree(2)
+
+    _, _, marks = mtree.draw(shape=(1, 2), tip_labels=False, shrink=10)
+    captured = capsys.readouterr()
+
+    assert len(marks) == 2
+    assert (
+        captured.err.count(
+            "Unrecognized keyword arguments passed to draw() were ignored:"
+        )
+        == 1
+    )
+    assert "shrink" in captured.err
+
+
 def test_mtree_draw_broadcasts_scalar_label_to_rendered_trees() -> None:
     """A scalar label should apply to rendered trees only, not blank cells."""
     mtree = _make_mtree(5)
@@ -155,7 +172,7 @@ def test_mtree_draw_rejects_label_sequence_for_blank_cells() -> None:
 
 
 def test_mtree_draw_shared_axes_scale_bar_false_keeps_scale_axes_hidden() -> None:
-    """Shared axes should equalize depth without exposing a visible scale bar."""
+    """Shared axes should equalize depth without creating a tree scale bar."""
     tree1 = toytree.tree("((a:10,b:1):2,(c:3,d:4):5);")
     tree2 = toytree.tree("((a:2,b:2):2,(c:2,d:2):2);")
     mtree = toytree.mtree([tree1, tree2])
@@ -169,10 +186,7 @@ def test_mtree_draw_shared_axes_scale_bar_false_keeps_scale_axes_hidden() -> Non
     )
 
     scale_axes = get_toytree_scale_cartesian(axes[0], create=False)
-    assert scale_axes is not None
-    assert scale_axes.show is False
-    assert scale_axes.x.show is False
-    assert scale_axes.y.show is False
+    assert scale_axes is None
 
     spans = [_projection_span(axis, "x") for axis in axes]
     assert spans[0] == pytest.approx(spans[1], rel=1e-6)

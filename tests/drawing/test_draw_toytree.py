@@ -5,23 +5,32 @@
 from __future__ import annotations
 
 import toytree
-from toytree.utils.src.logger_setup import capture_logs
 
 
-def test_draw_unknown_extra_kwargs_warn_and_ignore() -> None:
+def test_draw_unknown_extra_kwargs_warn_and_ignore(capsys) -> None:
     """Unknown draw kwargs should be warned and ignored."""
     tree = toytree.rtree.unittree(8, seed=1)
-    toytree.set_log_level("WARNING")
-    try:
-        with capture_logs(format="{message}") as cap:
-            _, _, mark = tree.draw(not_a_draw_kwarg=True)
-    finally:
-        toytree.set_log_level(None)
+    _, _, mark = tree.draw(not_a_draw_kwarg=True)
+    captured = capsys.readouterr()
 
     assert mark is not None
-    assert cap
-    assert "Unrecognized keyword arguments passed to draw() were ignored:" in cap[0]
-    assert "not_a_draw_kwarg" in cap[0]
+    assert (
+        "Unrecognized keyword arguments passed to draw() were ignored:" in captured.err
+    )
+    assert "not_a_draw_kwarg" in captured.err
+
+
+def test_draw_removed_shrink_kwarg_warns_and_ignores(capsys) -> None:
+    """Removed draw kwargs should follow the generic unsupported-arg warning path."""
+    tree = toytree.rtree.unittree(8, seed=11)
+    _, _, mark = tree.draw(shrink=10)
+    captured = capsys.readouterr()
+
+    assert mark is not None
+    assert (
+        "Unrecognized keyword arguments passed to draw() were ignored:" in captured.err
+    )
+    assert "shrink" in captured.err
 
 
 def test_draw_prefers_tree_style_over_ts_alias() -> None:

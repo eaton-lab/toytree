@@ -35,8 +35,8 @@ def test_add_edge_labels_show_all_includes_all_rooted_edges() -> None:
     toyplot.html.render(canvas)
 
 
-def test_add_edge_labels_wrap_root_edge_true_maps_root_value() -> None:
-    """Root value should be copied to root-adjacent edges when wrapping."""
+def test_add_edge_labels_node_values_ignore_root_entry() -> None:
+    """Node-sized label arrays should ignore the root entry on edges."""
     tree = toytree.rtree.unittree(ntips=10, seed=123)
     values = np.arange(tree.nnodes, dtype=int)
     values[-1] = 999
@@ -45,69 +45,69 @@ def test_add_edge_labels_wrap_root_edge_true_maps_root_value() -> None:
         axes,
         labels=values,
         mask=False,
-        wrap_root_edge=True,
     )
     labels = np.asarray(mark._table["text"], dtype=object)
     root_child_idxs = [node.idx for node in tree[-1].children]
     for idx in root_child_idxs:
-        assert labels[idx] == "999"
+        assert labels[idx] == str(idx)
     toyplot.html.render(canvas)
 
 
-def test_add_edge_labels_wrap_root_edge_false_keeps_split_values() -> None:
-    """Root-adjacent edges should keep child-edge values when not wrapping."""
+def test_add_edge_labels_mask_selects_root_adjacent_edges() -> None:
+    """Node masks should select root-adjacent edges by child node idx."""
     tree = toytree.rtree.unittree(ntips=10, seed=123)
-    values = np.arange(tree.nnodes, dtype=int)
-    values[-1] = 999
     canvas, axes, _ = tree.draw(layout="r")
     mark = tree.annotate.add_edge_labels(
         axes,
-        labels=values,
-        mask=False,
-        wrap_root_edge=False,
+        labels="idx",
+        mask=tree.get_node_mask(11, 12, 13),
     )
     labels = np.asarray(mark._table["text"], dtype=object)
-    for node in tree[-1].children:
-        assert labels[node.idx] == str(node.idx)
+    assert labels.tolist() == ["11", "12", "13"]
     toyplot.html.render(canvas)
 
 
-def test_add_edge_labels_default_mask_uses_root_override_when_wrapped() -> None:
-    """mask=None should include root-adjacent edges when wrap_root_edge=True."""
+def test_add_edge_labels_single_root_adjacent_edge_mask_renders() -> None:
+    """A single root-adjacent edge should be selectable by node idx."""
+    tree = toytree.rtree.unittree(ntips=10, seed=123)
+    canvas, axes, _ = tree.draw(layout="r")
+    mark = tree.annotate.add_edge_labels(
+        axes, labels="idx", mask=tree.get_node_mask(11)
+    )
+    labels = np.asarray(mark._table["text"], dtype=object)
+    assert labels.tolist() == ["11"]
+    toyplot.html.render(canvas)
+
+
+def test_add_edge_labels_default_mask_ignores_root_bit() -> None:
+    """mask=None should use sliced node-mask behavior without root remapping."""
     tree = toytree.rtree.imbtree(ntips=10, seed=123)
     nedges = tree.nnodes - 1
-    root_child_idxs = np.array([i.idx for i in tree[-1].children], dtype=int)
     node_mask = tree.get_node_mask(show_tips=False, show_internal=True, show_root=True)
     expected = node_mask[:nedges].copy()
-    expected[root_child_idxs] = bool(node_mask[tree.nnodes - 1])
 
     canvas, axes, _ = tree.draw(layout="r")
     mark = tree.annotate.add_edge_labels(
         axes,
         labels="idx",
         mask=None,
-        wrap_root_edge=True,
     )
     assert len(mark._table["text"]) == int(expected.sum())
     toyplot.html.render(canvas)
 
 
-def test_add_edge_labels_tuple_mask_root_bit_overrides_root_children() -> None:
-    """show_root should control all root-adjacent edges when wrapping is enabled."""
+def test_add_edge_labels_tuple_mask_root_bit_is_ignored() -> None:
+    """Tuple mask root bit should not alter plotted edge selection."""
     tree = toytree.rtree.imbtree(ntips=10, seed=123)
     nedges = tree.nnodes - 1
-    root_child_idxs = np.array([i.idx for i in tree[-1].children], dtype=int)
-
     node_mask = tree.get_node_mask(show_tips=False, show_internal=True, show_root=False)
     expected = node_mask[:nedges].copy()
-    expected[root_child_idxs] = False
 
     canvas, axes, _ = tree.draw(layout="r")
     mark = tree.annotate.add_edge_labels(
         axes,
         labels="idx",
         mask=(0, 1, 0),
-        wrap_root_edge=True,
     )
     assert len(mark._table["text"]) == int(expected.sum())
     toyplot.html.render(canvas)
@@ -143,6 +143,15 @@ def test_add_edge_markers_show_all_includes_all_rooted_edges() -> None:
     canvas, axes, _ = tree.draw(layout="r")
     mark = tree.annotate.add_edge_markers(axes, mask=False)
     assert mark.ntable.shape[0] == tree.nnodes - 1
+    toyplot.html.render(canvas)
+
+
+def test_add_edge_markers_mask_selects_root_adjacent_edge() -> None:
+    """Marker masks should include the root-adjacent edge above node 11."""
+    tree = toytree.rtree.unittree(ntips=10, seed=123)
+    canvas, axes, _ = tree.draw(layout="r")
+    mark = tree.annotate.add_edge_markers(axes, mask=tree.get_node_mask(11))
+    assert mark.ntable.shape[0] == 1
     toyplot.html.render(canvas)
 
 

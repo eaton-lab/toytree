@@ -1,29 +1,28 @@
 #!/usr/bin/env python
 
-"""...
+"""Add edge markers and labels to a rendered tree."""
 
-"""
+from typing import Any, Callable, Mapping, Sequence, Tuple, TypeVar, Union
 
-from typing import Tuple, Sequence, Mapping, Any, Union, TypeVar, Callable
 import numpy as np
 
-from toytree.core import ToyTree
-from toytree.drawing import Cartesian, Mark
+from toytree.annotate.src.checks import assert_tree_matches_mark, get_last_toytree_mark
 from toytree.color import ToyColor
-from toytree.core.apis import add_subpackage_method, AnnotationAPI
-from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
+from toytree.core import ToyTree
+from toytree.core.apis import AnnotationAPI, add_subpackage_method
+from toytree.drawing import Cartesian, Mark
 from toytree.drawing.src.mark_annotation import AnnotationMarker
-from toytree.style.src.validate_utils import substyle_dict_to_css_dict
+from toytree.layout.src.get_edge_midpoints import get_edge_midpoints
 from toytree.style.src.validate_data import (
     validate_colors,
-    validate_numeric,
+    validate_labels,
     validate_markers,
     validate_mask,
-    validate_labels,
+    validate_numeric,
 )
-from toytree.style.src.validate_nodes import validate_node_style
 from toytree.style.src.validate_node_labels import validate_node_labels_style
-from toytree.layout.src.get_edge_midpoints import get_edge_midpoints
+from toytree.style.src.validate_nodes import validate_node_style
+from toytree.style.src.validate_utils import substyle_dict_to_css_dict
 from toytree.utils import ToytreeError
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -35,19 +34,10 @@ __all__ = [
 ]
 
 
-def _get_root_child_idxs(tree: ToyTree, nedges: int) -> np.ndarray:
-    """Return child-node indices attached directly to the root."""
-    if not tree.is_rooted():
-        return np.array([], dtype=int)
-    root = tree[-1]
-    return np.array([i.idx for i in root.children if i.idx < nedges], dtype=int)
-
-
 def _coerce_edge_mask(
     tree: ToyTree,
     mask: Union[np.ndarray, Tuple[int, int, int], None, bool],
     nedges: int,
-    wrap_root_edge: bool,
 ) -> np.ndarray:
     """Return a bool show-mask for plotted edges in child-index order."""
     # explicit edge-level mask of len(nedges) bypasses node-mask semantics.
@@ -60,14 +50,8 @@ def _coerce_edge_mask(
                         "'mask' edge sequence must contain boolean values."
                     )
                 return arr.astype(bool, copy=False)
-
     node_mask = validate_mask(tree, style={"node_mask": mask})
-    edge_mask = node_mask[:nedges].copy()
-    if wrap_root_edge and tree.is_rooted():
-        root_show = bool(node_mask[tree.nnodes - 1])
-        root_child_idxs = _get_root_child_idxs(tree, nedges)
-        edge_mask[root_child_idxs] = root_show
-    return edge_mask
+    return node_mask[:nedges].copy()
 
 
 def _coerce_edge_values(
@@ -76,7 +60,6 @@ def _coerce_edge_values(
     value: Any,
     validator: Callable[..., np.ndarray],
     nedges: int,
-    wrap_root_edge: bool,
 ) -> np.ndarray | None:
     """Validate input on nodes first, then fallback to explicit edge arrays."""
     style = {key: value}
@@ -92,19 +75,13 @@ def _coerce_edge_values(
     arr = np.array(arr, copy=True)
     if not from_nodes:
         return arr
-
-    edge_arr = arr[:nedges].copy()
-    if wrap_root_edge and tree.is_rooted():
-        root_child_idxs = _get_root_child_idxs(tree, nedges)
-        edge_arr[root_child_idxs] = arr[tree.nnodes - 1]
-    return edge_arr
+    return arr[:nedges].copy()
 
 
 def _coerce_edge_colors(
     tree: ToyTree,
     color: Union[Color, Sequence[Color], None],
     nedges: int,
-    wrap_root_edge: bool,
 ) -> tuple[np.ndarray | None, ToyColor | None]:
     """Validate colors on nodes first, then fallback to explicit edge arrays."""
     style = {"color": color}
@@ -130,12 +107,7 @@ def _coerce_edge_colors(
     colors = np.array(colors, copy=True)
     if not from_nodes:
         return colors, None
-
-    edge_colors = colors[:nedges].copy()
-    if wrap_root_edge and tree.is_rooted():
-        root_child_idxs = _get_root_child_idxs(tree, nedges)
-        edge_colors[root_child_idxs] = colors[tree.nnodes - 1]
-    return edge_colors, None
+    return colors[:nedges].copy(), None
 
 
 @add_subpackage_method(AnnotationAPI)
@@ -146,51 +118,62 @@ def add_edge_markers(
     size: Union[int, Sequence[int]] = 8,
     color: Union[Color, Sequence[Color]] = None,
     opacity: Union[float, Sequence[float]] = 1.0,
-    mask: Union[np.ndarray, Tuple[int, int, int], None] = None,
-    wrap_root_edge: bool = True,
+    mask: Union[np.ndarray, Tuple[int, int, int], None, bool] = None,
     xshift: float = 0.0,
     yshift: float = 0.0,
     style: Mapping[str, Any] = None,
 ) -> Mark:
-    """Return a toyplot Mark of edge markers added to a tree plot.
+    """Add marker annotations at plotted edge midpoints.
 
-    This adds edge markers to the last tree drawn on the Cartesian
-    axes. The shape, size, color, and style of markers can be modified.
+    This adds edge markers to the last tree drawn on ``axes``. Plotted
+    edges are indexed by the child-node indices ``0..nnodes-2``. On
+    rooted trees there is no separate plotted root edge, so ``mask`` and
+    node-sized value arrays ignore the root entry instead of remapping it
+    onto the root-adjacent edges.
 
     Parameters
     ----------
-    axes: Cartesian
+    axes : Cartesian
         A toyplot Cartesian axes object containing a tree drawing.
-    marker: str or toyplot.marker.Marker or Sequence
+    marker : str or toyplot.marker.Marker or Sequence
         Marker shape, e.g., "o", "s", "^", "r2x1". See toyplot Markers.
-    size: int or Sequence[int]
+    size : int or Sequence[int]
         Size of markers as single int or Sequence of ints, in px units.
-    color: str, tuple, or array, or Sequence
+    color : str, tuple, array, or Sequence
         Color of markers as single color or Sequence of colors.
-    opacity: float or Sequence[float]
+    opacity : float or Sequence[float]
         Opacity of markers (fill & stroke) as a single float or Sequence
         of floats. Note that fill and stroke opacity can be set
         separately using the style dict, but only as single values.
-    mask: np.array or None
+    mask : np.ndarray, tuple, bool, or None
         A boolean show-mask. Accepted forms are: bool, tuple
         (show_tips, show_internal, show_root), a node-sized boolean
         array (len=nnodes), or an edge-sized boolean array
         (len=nnodes-1). ``None`` uses the default node-mask behavior
         (show internal + root, hide tips). Use ``False`` to show all
-        edges explicitly.
-    wrap_root_edge: bool
-        If True on rooted trees, a root-node feature value is wrapped
-        onto all root-adjacent plotted edges. If False, each root-adjacent
-        edge uses its own child-edge value.
-    style: dict
-        Marker style dict. See `tree.style.node_style` for options.
-    xshift: int
+        plotted edges explicitly. For edge annotations, the root bit of a
+        tuple or node-sized mask is ignored because the plotted edges are
+        indexed only by non-root child nodes.
+    xshift : float
         Shift marker horizontally by px units (+=right, -=left).
-    yshift: int
+    yshift : float
         Shift marker vertically by px units (+=down, -=up).
+    style : dict
+        Marker style dict. See `tree.style.node_style` for options.
 
-    Example
+    Returns
     -------
+    Mark
+        A toyplot marker annotation mark added to ``axes``.
+
+    Raises
+    ------
+    ToytreeError
+        If ``axes`` does not contain a matching tree mark, or if a mask
+        or edge-level value array has an invalid size or dtype.
+
+    Examples
+    --------
     >>> tree = toytree.rtree.unittree(6, seed=123)
     >>> canvas, axes, m0 = tree.draw()
     >>> m1 = tree.annotate.add_edge_markers(
@@ -221,7 +204,6 @@ def add_edge_markers(
         tree=tree,
         mask=mask,
         nedges=nedges,
-        wrap_root_edge=wrap_root_edge,
     )
 
     # set styles on top of defaults. Must run before node_colors.
@@ -234,7 +216,6 @@ def add_edge_markers(
         tree=tree,
         color=color,
         nedges=nedges,
-        wrap_root_edge=wrap_root_edge,
     )
 
     # if fill_color then set to node_style.fill since node_colors = None
@@ -253,7 +234,6 @@ def add_edge_markers(
         value=marker,
         validator=validate_markers,
         nedges=nedges,
-        wrap_root_edge=wrap_root_edge,
     )[edge_mask]
     sizes = _coerce_edge_values(
         tree=tree,
@@ -261,7 +241,6 @@ def add_edge_markers(
         value=size,
         validator=validate_numeric,
         nedges=nedges,
-        wrap_root_edge=wrap_root_edge,
     )[edge_mask]
     opacity = _coerce_edge_values(
         tree=tree,
@@ -269,11 +248,8 @@ def add_edge_markers(
         value=opacity,
         validator=validate_numeric,
         nedges=nedges,
-        wrap_root_edge=wrap_root_edge,
     )[edge_mask]
 
-    # logger.warning(coords)
-    # logger.warning(mask)
     coords = coords[edge_mask, :]
 
     # plot edge markers as scatterplot markers
@@ -303,53 +279,65 @@ def add_edge_labels(
     opacity: Union[float, Sequence[float]] = 1.0,
     font_size: Union[int, None] = 12,
     angle: Union[int, Sequence[int]] = 0,
-    mask: Union[np.ndarray, Tuple[int, int, int], None] = None,
-    wrap_root_edge: bool = True,
+    mask: Union[np.ndarray, Tuple[int, int, int], None, bool] = None,
     xshift: int = 0,
     yshift: int = 0,
     style: Mapping[str, Any] = None,
 ) -> Mark:
-    """Return a toyplot Mark of edge labels added to a tree drawing.
+    """Add text annotations at plotted edge midpoints.
 
-    This adds edge labels to the last tree drawn on the Cartesian axes.
+    This adds edge labels to the last tree drawn on ``axes``. Plotted
+    edges are indexed by the child-node indices ``0..nnodes-2``. On
+    rooted trees there is no separate plotted root edge, so ``mask`` and
+    node-sized value arrays ignore the root entry instead of remapping it
+    onto the root-adjacent edges.
 
     Parameters
     ----------
-    axes: Cartesian
+    axes : Cartesian
         A toyplot Cartesian axes object containing a tree drawing.
-    labels: str or Sequence[str]
+    labels : str or Sequence[str]
         A sequence of labels in node-idx or edge-idx traversal order.
         Length can be ``nnodes`` (node values) or ``nnodes-1``
         (explicit plotted-edge values). Use '' to skip a label on an
         edge. You can also enter a single feature name as a str.
-    color: str, tuple, array or Sequence
+    color : str, tuple, array, or Sequence
         A single color or Sequence of colors for edge labels.
-    opacity: float or Sequence[float]
+    opacity : float or Sequence[float]
         A single opacity or Sequence of opacities for edge labels.
-    font_size: float
+    font_size : float
         Font size in px. Overrides 'font-size' setting in style dict.
-    angle: int or Sequence[int]
+    angle : int or Sequence[int]
         A single angle applied to all labels, or Sequence of angles.
-    mask: np.array or None
+    mask : np.ndarray, tuple, bool, or None
         A boolean show-mask. Accepted forms are: bool, tuple
         (show_tips, show_internal, show_root), a node-sized boolean
         array (len=nnodes), or an edge-sized boolean array
         (len=nnodes-1). ``None`` uses the default node-mask behavior
         (show internal + root, hide tips). Use ``False`` to show all
-        edges explicitly.
-    wrap_root_edge: bool
-        If True on rooted trees, a root-node feature value is wrapped
-        onto all root-adjacent plotted edges. If False, each root-adjacent
-        edge uses its own child-edge value.
-    xshift: int
+        plotted edges explicitly. For edge annotations, the root bit of a
+        tuple or node-sized mask is ignored because the plotted edges are
+        indexed only by non-root child nodes.
+    xshift : int
         Shift label horizontally by px units (+=right, -=left).
-    yshift: int
+    yshift : int
         Shift label vertically by px units (+=down, -=up).
-    style: dict
+    style : dict
         Style dict. See `tree.style.node_labels_style` for options.
 
-    Example
+    Returns
     -------
+    Mark
+        A toyplot text annotation mark added to ``axes``.
+
+    Raises
+    ------
+    ToytreeError
+        If ``axes`` does not contain a matching tree mark, or if a mask
+        or edge-level value array has an invalid size or dtype.
+
+    Examples
+    --------
     >>> tree = toytree.rtree.unittree(6, seed=123)
     >>> canvas, axes, m0 = tree.draw()
     >>> m1 = tree.annotate.add_edge_labels(
@@ -377,7 +365,6 @@ def add_edge_labels(
         tree=tree,
         mask=mask,
         nedges=nedges,
-        wrap_root_edge=wrap_root_edge,
     )
     labels = _coerce_edge_values(
         tree=tree,
@@ -385,7 +372,6 @@ def add_edge_labels(
         value=labels,
         validator=validate_labels,
         nedges=nedges,
-        wrap_root_edge=wrap_root_edge,
     )[edge_mask]
 
     # set styles on top of defaults
@@ -402,7 +388,6 @@ def add_edge_labels(
         tree=tree,
         color=color,
         nedges=nedges,
-        wrap_root_edge=wrap_root_edge,
     )
     if label_colors is None:
         if fill_color:
@@ -419,7 +404,6 @@ def add_edge_labels(
         value=opacity,
         validator=validate_numeric,
         nedges=nedges,
-        wrap_root_edge=wrap_root_edge,
     )[edge_mask]
     angle = _coerce_edge_values(
         tree=tree,
@@ -427,12 +411,11 @@ def add_edge_labels(
         value=angle,
         validator=validate_numeric,
         nedges=nedges,
-        wrap_root_edge=wrap_root_edge,
     )[edge_mask]
 
     # expand xshift,yshift args as anchor_shift,baseline_shift
-    style['-toyplot-anchor-shift'] += xshift
-    style['baseline-shift'] -= yshift
+    style["-toyplot-anchor-shift"] += xshift
+    style["baseline-shift"] -= yshift
 
     # add text at Node positions + half length of dists.
     coords = coords[edge_mask, :]
@@ -450,17 +433,16 @@ def add_edge_labels(
 
 
 if __name__ == "__main__":
-
     import toytree
 
     # base tree drawing
     tree = toytree.rtree.unittree(6)  # .unroot()
     tree[0].name = "amdodfl"
     tree[1]._name = "HI"
-    c, a, m = tree.draw(layout='d')  # r')
+    c, a, m = tree.draw(layout="d")  # r')
 
     # annotate with edge labels
-    add_edge_markers(tree, axes=a, size=10, marker='r1x2', color="height")
+    add_edge_markers(tree, axes=a, size=10, marker="r1x2", color="height")
     add_edge_labels(tree, axes=a, labels="idx", font_size=15)
 
     data = np.array([[0.5, 0.3, 0.2]] * tree.nnodes)

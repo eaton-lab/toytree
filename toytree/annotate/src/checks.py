@@ -35,6 +35,11 @@ TOYTREE_CARTESIAN_FIT_EXTRA_ITER = 10
 
 def get_last_toytree_mark(axes: Cartesian) -> ToyTreeMark:
     """Return the last ToyTreeMark rendered on the Cartesian axes."""
+    return get_toytree_marks(axes)[-1]
+
+
+def get_toytree_marks(axes: Cartesian) -> list[ToyTreeMark]:
+    """Return all rendered ``ToyTreeMark`` objects on one Cartesian axes."""
     if not isinstance(axes, Cartesian):
         raise TypeError(CARTESIAN_TYPE_ERROR)
     targets = axes._scenegraph.targets(axes, "render")
@@ -44,7 +49,25 @@ def get_last_toytree_mark(axes: Cartesian) -> ToyTreeMark:
             "No tree drawings (ToyTreeMark) have been rendered on the "
             "Cartesian axes. First draw a ToyTree."
         )
-    return tree_marks[-1]
+    return tree_marks
+
+
+def get_last_toytree_mark_for_tree(axes: Cartesian, tree: ToyTree) -> ToyTreeMark:
+    """Return the newest rendered mark associated with one ``ToyTree``."""
+    tree_marks = get_toytree_marks(axes)
+    matches = [
+        mark
+        for mark in tree_marks
+        if getattr(mark, "_toytree_source_tree", None) is tree
+    ]
+    if matches:
+        return matches[-1]
+
+    # Backward-compatible fallback for older marks that do not record their
+    # source tree identity. This preserves single-tree behavior.
+    mark = tree_marks[-1]
+    assert_tree_matches_mark(tree, mark)
+    return mark
 
 
 def assert_tree_matches_mark(tree: ToyTree, mark: Mark) -> None:
@@ -57,10 +80,12 @@ def assert_tree_matches_mark(tree: ToyTree, mark: Mark) -> None:
 
 
 def get_toytree_scale_cartesian(
-    axes: Cartesian, create: bool = False
+    axes: Cartesian,
+    mark: ToyTreeMark | None = None,
+    create: bool = False,
 ) -> Cartesian | None:  # noqa: E501
     """Return the hidden companion Cartesian used for tree scale bars."""
-    return _get_scale_axes(axes, create=create)
+    return _get_scale_axes(axes, mark=mark, create=create)
 
 
 def invalidate_cartesian_fit_cache(axes: Cartesian) -> None:
@@ -79,10 +104,16 @@ def invalidate_cartesian_fit_cache(axes: Cartesian) -> None:
     axes._expand_domain_range_top = None
     axes._expand_domain_range_bottom = None
 
-    # If this axes has a hidden companion scale-axes, invalidate it too
-    # so projections stay synchronized after host extents change.
-    scale_axes = get_toytree_scale_cartesian(axes, create=False)
-    if scale_axes is not None:
+    # Keep every registered companion axes dirty so projections stay
+    # synchronized after host extents change.
+    tree_registry = getattr(axes, "_toytree_tree_scale_axes", None) or {}
+    mark_registry = getattr(axes, "_toytree_mark_scale_axes", None) or {}
+    companions = list(tree_registry.values()) + list(mark_registry.values())
+    if not companions:
+        scale_axes = get_toytree_scale_cartesian(axes, create=False)
+        companions = [] if scale_axes is None else [scale_axes]
+
+    for scale_axes in companions:
         scale_axes._finalized = None
         scale_axes._expand_domain_range_x = None
         scale_axes._expand_domain_range_y = None

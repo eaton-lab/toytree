@@ -4,7 +4,7 @@
 
 from __future__ import annotations
 
-from typing import Sequence, Tuple, TypeVar, Union
+from typing import Any, Mapping, Sequence, Tuple, TypeVar, Union
 
 import numpy as np
 from toyplot.mark import Mark
@@ -19,10 +19,12 @@ from toytree.core import ToyTree
 from toytree.core.apis import AnnotationAPI, add_subpackage_method
 from toytree.drawing import Cartesian
 from toytree.drawing.src.mark_annotation import AnnotationTipTileMark
+from toytree.drawing.src.mark_toytree import set_tip_label_extents
 from toytree.style.src.validate_data import (
     validate_colors,
     validate_numeric,
 )
+from toytree.style.src.validate_utils import substyle_dict_to_css_dict
 from toytree.utils import ToytreeError
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -30,17 +32,66 @@ Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = ["add_tip_tiles"]
 
 
+def _resolve_auto_depth(
+    tmark: Mark,
+    show: np.ndarray,
+) -> float:
+    """Return a default tile depth sized to the current tip-label geometry."""
+    if tmark.tip_labels is None or not np.any(show):
+        return 10.0
+
+    ntips = len(tmark.tip_labels)
+    extents = [np.zeros(tmark.nnodes, dtype=float) for _ in range(4)]
+    left, right, top, bottom = set_tip_label_extents(tmark, extents)
+    left = left[:ntips][show]
+    right = right[:ntips][show]
+    top = top[:ntips][show]
+    bottom = bottom[:ntips][show]
+
+    layout = str(tmark.layout)
+    if layout == "r":
+        outward = right
+    elif layout == "l":
+        outward = -left
+    elif layout == "u":
+        outward = -top
+    elif layout == "d":
+        outward = bottom
+    elif layout.startswith("c"):
+        angles = np.deg2rad(
+            np.asarray(tmark.tip_labels_angles[:ntips], dtype=float)[show]
+        )
+        unit_x = np.cos(angles)
+        unit_y = -np.sin(angles)
+
+        # Project each label-bbox corner onto the outward radial vector to get
+        # the furthest pixel reach away from the tip anchor.
+        projections = np.column_stack(
+            (
+                left * unit_x + top * unit_y,
+                left * unit_x + bottom * unit_y,
+                right * unit_x + top * unit_y,
+                right * unit_x + bottom * unit_y,
+            )
+        )
+        outward = np.max(projections, axis=1)
+    else:
+        return 10.0
+
+    return float(np.max(outward) + 15.0)
+
+
 @add_subpackage_method(AnnotationAPI)
 def add_tip_tiles(
     tree: ToyTree,
     axes: Cartesian,
     color: Union[Color, Sequence[Color], tuple, None] = None,
-    depth: float = 10.0,
+    depth: float | None = None,
     offset: float = 0.0,
     opacity: Union[float, Sequence[float]] = 1.0,
-    mask: Union[np.ndarray, Tuple[int, int, int], None] = None,
-    stroke: Color | None = None,
-    below: bool = False,
+    mask: Union[np.ndarray, Tuple[int, int, int], None, bool] = None,
+    style: Mapping[str, Any] | None = None,
+    below: bool = True,
 ) -> Mark:
     """Add tip-aligned rectangular / annular tiles to an existing tree drawing.
 
@@ -58,9 +109,13 @@ def add_tip_tiles(
         Cartesian axes containing a previously drawn tree mark.
     color : Color, sequence, tuple, or None, default=None
         Tile fill color specification. Supports a single color, per-tip colors,
-        or feature mapping tuples such as ``("feature", "cmap")``.
-    depth : float, default=10.0
-        Tile thickness in pixel units.
+        or feature mapping tuples such as ``("feature", "cmap")``. If None,
+        tiles use ``style["fill"]`` when provided, otherwise they default to
+        light grey.
+    depth : float or None, default=None
+        Tile thickness in pixel units. If None, depth is sized to the maximum
+        outward tip-label extent on the current tree mark plus 15 pixels. If
+        the tree mark has no tip labels, a default depth of 10.0 is used.
     offset : float, default=0.0
         Distance from the tip edge in pixel units along the depth direction.
     opacity : float or sequence, default=1.0
@@ -71,9 +126,12 @@ def add_tip_tiles(
         - bool: True shows all tips, False shows none
         - tuple: (show_tips, show_internal, show_root) shortcut
         - np.ndarray: boolean array of size ntips
-    stroke : Color or None, default=None
-        Optional stroke color for tile outlines. If None, outlines are omitted.
-    below : bool, default=False
+    style : Mapping[str, Any] or None, default=None
+        Optional CSS-style mapping for the tile paths. Use this to set
+        properties such as ``stroke``, ``stroke-width``,
+        ``stroke-dasharray``, or ``fill``. Explicit ``color`` and ``opacity``
+        arguments override fill-related entries.
+    below : bool, default=True
         If True, place the tile mark below the associated tree mark in
         scenegraph render order.
 
@@ -90,7 +148,8 @@ def add_tip_tiles(
     tmark = get_last_toytree_mark(axes)
     assert_tree_matches_mark(tree, tmark)
 
-    depth = float(depth)
+    show = normalize_tip_mask(tree, mask)
+    depth = _resolve_auto_depth(tmark, show) if depth is None else float(depth)
     offset = float(offset)
     if (not np.isfinite(depth)) or depth <= 0.0:
         raise ToytreeError("depth must be a finite float > 0")
@@ -104,6 +163,8 @@ def add_tip_tiles(
             "layouts (c*)."
         )
 
+    style = {} if style is None else substyle_dict_to_css_dict(dict(style))
+    style.setdefault("stroke", "none")
     colors, fill_color = validate_colors(
         tree,
         key="colors",
@@ -111,9 +172,12 @@ def add_tip_tiles(
         style={"colors": color},
     )
     if colors is None:
-        fill_color = (
-            ToyColor(fill_color) if fill_color is not None else ToyColor("#262626")
-        )
+        if fill_color is not None:
+            fill_color = ToyColor(fill_color)
+        elif "fill" in style:
+            fill_color = ToyColor(style["fill"])
+        else:
+            fill_color = ToyColor("lightgrey")
 
     opacity_all = validate_numeric(
         tree,
@@ -121,10 +185,6 @@ def add_tip_tiles(
         size=tree.ntips,
         style={"opacity": opacity},
     ).astype(float)
-
-    show = normalize_tip_mask(tree, mask)
-
-    stroke_color = None if stroke is None else ToyColor(stroke)
 
     amark = AnnotationTipTileMark(
         ntable=np.asarray(tmark.ttable[: tree.ntips], dtype=float),
@@ -136,8 +196,7 @@ def add_tip_tiles(
         colors=colors,
         fill_color=fill_color,
         opacity=opacity_all,
-        stroke_color=stroke_color,
-        style={},
+        style=style,
     )
     axes.add_mark(amark)
     if below:

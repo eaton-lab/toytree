@@ -47,6 +47,13 @@ def test_tree_style_to_css_dict_is_non_mutating() -> None:
     assert isinstance(sty.node_style, NodeStyle)
     assert isinstance(css["node_style"], dict)
     assert "stroke-width" in css["node_style"]
+    assert "shrink" not in css
+
+
+def test_tree_style_no_longer_exposes_shrink() -> None:
+    """The default TreeStyle should not advertise removed draw-only fields."""
+    sty = TreeStyle()
+    assert not hasattr(sty, "shrink")
 
 
 def test_substyle_dict_to_css_dict_drops_none_values() -> None:

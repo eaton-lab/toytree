@@ -35,6 +35,35 @@ def test_unrooted_layout_applies_baseline_translation():
     assert np.allclose(shifted.tcoords, base.tcoords + delta)
 
 
+def test_unrooted_layout_pins_root_to_origin_by_default():
+    """Unrooted layouts should center the tree root at the origin."""
+    tree = toytree.rtree.unittree(12, seed=123)
+    style = tree.style.copy()
+    style.layout = "unrooted"
+    style.xbaseline = 0.0
+    style.ybaseline = 0.0
+
+    layout = UnrootedLayout(tree, style)
+
+    assert np.allclose(layout.coords[tree.treenode.idx], np.zeros(2))
+
+
+def test_unrooted_layout_pins_root_to_baseline():
+    """Unrooted layouts should anchor the tree root at the baselines."""
+    tree = toytree.rtree.unittree(12, seed=123)
+    style = tree.style.copy()
+    style.layout = "unrooted"
+    style.xbaseline = 10.5
+    style.ybaseline = -7.25
+
+    layout = UnrootedLayout(tree, style)
+
+    assert np.allclose(
+        layout.coords[tree.treenode.idx],
+        np.array([style.xbaseline, style.ybaseline]),
+    )
+
+
 def test_equal_daylight_max_iter_zero_matches_equal_angle():
     """`max_iter=0` should return the unmodified equal-angle layout."""
     tree = toytree.rtree.unittree(10, seed=123)

@@ -5,14 +5,17 @@
 import inspect
 
 import numpy as np
+from conftest import PytestCompat
+
 import toytree
 from toytree.utils import ToytreeError
 
 
-
-from conftest import PytestCompat
-
 class TestDrawTyping(PytestCompat):
+    def test_draw_signature_does_not_expose_shrink(self):
+        sig = inspect.signature(toytree.ToyTree.draw)
+        self.assertNotIn("shrink", sig.parameters)
+
     def test_draw_exposes_interior_algorithm(self):
         sig = inspect.signature(toytree.ToyTree.draw)
         self.assertIn("interior_algorithm", sig.parameters)
@@ -33,8 +36,12 @@ class TestDrawTyping(PytestCompat):
     def test_draw_interior_algorithm_changes_layout(self):
         tree = toytree.tree("((a,b),c);")
         fixed_position = [0.0, 1.0, 10.0]
-        _, _, mark0 = tree.draw(layout="r", fixed_position=fixed_position, interior_algorithm=0)
-        _, _, mark1 = tree.draw(layout="r", fixed_position=fixed_position, interior_algorithm=1)
+        _, _, mark0 = tree.draw(
+            layout="r", fixed_position=fixed_position, interior_algorithm=0
+        )
+        _, _, mark1 = tree.draw(
+            layout="r", fixed_position=fixed_position, interior_algorithm=1
+        )
         self.assertFalse(np.allclose(mark0.ntable, mark1.ntable))
 
     def test_draw_weighted_algorithm_differs_when_child_dists_differ(self):
@@ -45,7 +52,9 @@ class TestDrawTyping(PytestCompat):
 
     def test_draw_weighted_algorithm_handles_zero_length_branches(self):
         tree = toytree.tree("((a:0,b:1):1,c:1);")
-        _, _, mark2 = tree.draw(layout="r", fixed_position=[0.0, 2.0, 10.0], interior_algorithm=2)
+        _, _, mark2 = tree.draw(
+            layout="r", fixed_position=[0.0, 2.0, 10.0], interior_algorithm=2
+        )
         self.assertTrue(np.isfinite(mark2.ntable).all())
 
     def test_draw_median_and_trimmed_mean_are_bounded(self):
@@ -75,5 +84,3 @@ class TestDrawTyping(PytestCompat):
         tree = toytree.rtree.unittree(8, seed=123)
         with self.assertRaises(ToytreeError):
             tree.draw(ts="phylo")
-
-

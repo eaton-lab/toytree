@@ -3,15 +3,13 @@
 """unittests for draw() function."""
 
 import numpy as np
+from conftest import PytestCompat
 from numpy.testing import assert_allclose
 
-# from loguru import logger
-from toytree.utils.src.logger_setup import capture_logs
 import toytree
 
+# from loguru import logger
 
-
-from conftest import PytestCompat
 
 class TestDrawArgs(PytestCompat):
     def setUp(self):
@@ -132,7 +130,8 @@ class TestDrawMarkDomainExtent(PytestCompat):
         """ToyTreeMark extents return x and y always. This works b/c
         we always care about both. Need to check, this may be different
         than what toyplot does for most Marks. Adding a test here to
-        catch in case we ever change it."""
+        catch in case we ever change it.
+        """
         c, a, m = self.rtree.draw(tip_labels=False, edge_widths=2)
         coordsx, extentsx = m.extents("x")
         coordsy, extentsy = m.extents("y")
@@ -187,35 +186,3 @@ class TestDrawMarkDomainExtent(PytestCompat):
 
     # def test_extents_node_sizes(self):
     #     """TODO: this test will overlap with annotations tests."""
-
-    # def test_domain_shrink(self):
-    #     """TODO: Shrink extends the domain?"""
-    def test_extents_shrink_linear_with_tip_labels(self):
-        """shrink increases extent in tip-label direction on linear layouts."""
-        _, _, m1 = self.rtree.draw(layout="r", tip_labels=True, shrink=0)
-        _, ext1 = m1.extents("x")
-        _, _, m2 = self.rtree.draw(layout="r", tip_labels=True, shrink=100)
-        _, ext2 = m2.extents("x")
-
-        ntips = self.rtree.ntips
-        self.assertTrue(np.all(ext2[1][:ntips] > ext1[1][:ntips]))
-
-    def test_extents_shrink_no_effect_without_tip_labels(self):
-        """shrink has no effect when tip labels are not shown."""
-        _, _, m1 = self.rtree.draw(layout="r", tip_labels=False, shrink=0)
-        _, ext1 = m1.extents("x")
-        _, _, m2 = self.rtree.draw(layout="r", tip_labels=False, shrink=100)
-        _, ext2 = m2.extents("x")
-        for idx in range(4):
-            self.assertIsNone(assert_allclose(ext1[idx], ext2[idx]))
-
-    def test_extents_shrink_no_effect_unrooted(self):
-        """Current behavior: shrink is not applied on unrooted layouts."""
-        _, _, m1 = self.utree.draw(layout="unrooted", tip_labels=True, shrink=0)
-        _, ext1 = m1.extents("x")
-        _, _, m2 = self.utree.draw(layout="unrooted", tip_labels=True, shrink=100)
-        _, ext2 = m2.extents("x")
-        for idx in range(4):
-            self.assertIsNone(assert_allclose(ext1[idx], ext2[idx]))
-
-

@@ -17,6 +17,11 @@ def _root_to_tip_distance(node) -> float:
     return sum(float(anc.dist) for anc in [node, *node.iter_ancestors()])
 
 
+def _assert_internal_names_empty(tree: toytree.ToyTree) -> None:
+    """Assert that all internal nodes, including the root, have empty names."""
+    assert all(node.name == "" for node in tree[tree.ntips :])
+
+
 def test_bdtree_taxa_no_zero_length_tip_edges() -> None:
     """`stop='taxa'` should not return deterministic zero-length tips."""
     for seed in range(50):
@@ -27,6 +32,7 @@ def test_bdtree_taxa_no_zero_length_tip_edges() -> None:
             d=0.3,
             seed=seed,
         )
+        _assert_internal_names_empty(tree)
         tip_dists = [float(node.dist) for node in tree[: tree.ntips]]
         assert all(dist > 0.0 for dist in tip_dists)
 
@@ -41,6 +47,7 @@ def test_bdtree_time_stops_at_requested_time() -> None:
         d=0.2,
         seed=123,
     )
+    _assert_internal_names_empty(tree)
     tip_depths = [_root_to_tip_distance(node) for node in tree[: tree.ntips]]
     assert max(tip_depths) == pytest.approx(time_stop)
 
@@ -55,6 +62,7 @@ def test_bdtree_time_no_zero_length_tip_edges() -> None:
             d=0.3,
             seed=seed,
         )
+        _assert_internal_names_empty(tree)
         tip_dists = [float(node.dist) for node in tree[: tree.ntips]]
         assert all(dist > 0.0 for dist in tip_dists)
 
@@ -73,6 +81,7 @@ def test_bdtree_return_stats_dict_contains_tree_and_counts() -> None:
     assert "tree" in result
     tree = result["tree"]
     assert isinstance(tree, toytree.ToyTree)
+    _assert_internal_names_empty(tree)
     assert result["events"] == result["births"] + result["deaths"]
     if result["deaths"] == 0:
         assert result["birth_death_ratio"] == pytest.approx(float("inf"))

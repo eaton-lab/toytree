@@ -665,8 +665,8 @@ class AnnotationTipBarMark(Mark):
         """Return companion scale metadata for rendering a mark ruler."""
         from toytree.annotate.src.add_scale_bar import (
             _get_linear_tip_bar_scale_bounds_finalized,
-            _resolve_tip_bar_axis_domain,
             _resolve_tip_bar_scale_axis,
+            _resolve_tip_bar_scale_domain,
             _validate_scale_padding,
         )
         from toytree.drawing.src.scale_axes import CompanionScaleSpec
@@ -681,9 +681,13 @@ class AnnotationTipBarMark(Mark):
                 "Tip-bar data have zero range; add_axes_scale_bar_to_mark() "
                 "requires at least two distinct values."
             )
-        # Some layouts display the axis in reverse, but tick generation still
-        # needs the increasing raw value domain for consistent labels.
-        domain_min, domain_max = _resolve_tip_bar_axis_domain(self, tmin, tmax)
+        # Left / down bars extend away from the tree on the opposite side of
+        # the plotting axis, so they use a signed internal domain while still
+        # labeling the public outward depths as positive values.
+        domain_min, domain_max, locator_sign = _resolve_tip_bar_scale_domain(
+            self,
+            tmax,
+        )
         return CompanionScaleSpec(
             key="mark",
             axis=resolved_axis,
@@ -695,6 +699,7 @@ class AnnotationTipBarMark(Mark):
                 resolved_padding,
             ),
             label_midpoint=0.5 * float(domain_min + domain_max),
+            locator_sign=float(locator_sign),
         )
 
 

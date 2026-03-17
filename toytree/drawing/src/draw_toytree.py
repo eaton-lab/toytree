@@ -17,9 +17,6 @@ from toyplot.coordinates import Cartesian
 
 # from toytree.annotate.src.add_scale_bar import add_axis_scale_bar_to_mark
 from toytree.drawing.src.mark_toytree import ToyTreeMark
-from toytree.drawing.src.scale_axes import (
-    get_toytree_scale_cartesian,
-)
 from toytree.drawing.src.setup_canvas import get_canvas_and_axes
 from toytree.layout import BaseLayout, CircularLayout, LinearLayout, UnrootedLayout
 from toytree.style import (
@@ -190,6 +187,7 @@ def _get_tree_style_layout_mark(
         ntable=layout.coords,
         ttable=layout.tcoords,
         etable=tree.get_edges("idx"),
+        _toytree_source_tree=tree,
         **tree_style_to_css_dict(style),
     )
     return style, layout, mark
@@ -250,11 +248,6 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
         if canvas is not None:
             axes.x.show = False
             axes.y.show = False
-        scale_axes = get_toytree_scale_cartesian(axes, create=False)
-        if scale_axes is not None:
-            scale_axes.show = False
-            scale_axes.x.show = False
-            scale_axes.y.show = False
     else:
         # keep host axes free for plotting and extents management; scale
         # bar is rendered on the hidden companion axes.

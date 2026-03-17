@@ -33,11 +33,13 @@ Functions
 - add_edge_root()
 - add_edge_stochastic_map()
 
-- add_scale_bar()
+- add_axes_scale_bar_to_tree()
+- add_axes_scale_bar_to_mark()
 - add_confidence_intervals()
 - get_toytree_scale_cartesian()
 
 - add_tip_markers()
+- add_tip_bars()
 - add_tip_labels()
 - add_tip_heatmap()
 
@@ -54,6 +56,7 @@ from toytree.annotate.src.add_edges import *
 from toytree.annotate.src.add_node_markers import *
 from toytree.annotate.src.add_pie_markers import *
 from toytree.annotate.src.add_scale_bar import *
+from toytree.annotate.src.add_tip_bars import *
 from toytree.annotate.src.add_tip_labels import *
 from toytree.annotate.src.add_tip_markers import *
 from toytree.annotate.src.add_tip_tiles import *

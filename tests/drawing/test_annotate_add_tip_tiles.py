@@ -3,23 +3,103 @@
 
 """Tests for annotate.add_tip_tiles."""
 
-import xml.etree.ElementTree as xml
+import inspect
 
 import numpy as np
 import toyplot.html
+from conftest import PytestCompat
 
 import toytree
+from toytree.annotate.src.add_tip_tiles import add_tip_tiles
+from toytree.color import ToyColor
+from toytree.drawing.src.mark_toytree import set_tip_label_extents
 from toytree.utils import ToytreeError
 
-
-
-from conftest import PytestCompat
 
 class TestAnnotateAddTipTiles(PytestCompat):
     def setUp(self):
         self.tree = toytree.rtree.unittree(ntips=10, seed=123)
         vals = {i: i % 3 for i in range(self.tree.ntips)}
         self.tree = self.tree.set_node_data("X", vals, default=np.nan, inplace=False)
+
+    @staticmethod
+    def _assert_layout_u_tip_tiles_fit_axes(mark, axes):
+        tips_y_px = np.asarray(axes.project("y", mark.ntable[:, 1]), dtype=float)
+        actual_left = float(np.min(mark.slot_min))
+        actual_right = float(np.max(mark.slot_max))
+        actual_top = float(
+            np.min(tips_y_px[mark.tip_indices] - float(mark.offset) - float(mark.depth))
+        )
+        assert actual_left >= float(axes._xmin_range) - 1e-6
+        assert actual_right <= float(axes._xmax_range) + 1e-6
+        assert actual_top >= float(axes._ymin_range) - 1e-6
+
+    @staticmethod
+    def _tip_tile_paths(root):
+        return [
+            elem
+            for elem in root.iter()
+            if elem.attrib.get("id", "").startswith("TipTile-")
+        ]
+
+    def test_add_tip_tiles_signature_uses_style_and_defaults_below_true(self):
+        params = inspect.signature(add_tip_tiles).parameters
+        self.assertIn("style", params)
+        self.assertNotIn("stroke", params)
+        self.assertIsNone(params["depth"].default)
+        self.assertTrue(params["below"].default)
+
+    def test_add_tip_tiles_auto_depth_matches_tip_labels_rectangular(self):
+        labels = [f"very_long_tip_label_{idx}" for idx in range(self.tree.ntips)]
+        c, a, m = self.tree.draw(
+            layout="r",
+            edge_type="p",
+            tip_labels=labels,
+            tip_labels_style={"font-size": "18px"},
+        )
+        mark = self.tree.annotate.add_tip_tiles(a, color="steelblue")
+        toyplot.html.render(c)
+        expected = self._get_expected_auto_depth(
+            m, np.ones(self.tree.ntips, dtype=bool)
+        )
+        self.assertAlmostEqual(mark.depth, expected)
+
+    def test_add_tip_tiles_auto_depth_matches_tip_labels_circular(self):
+        labels = [f"very_long_tip_label_{idx}" for idx in range(self.tree.ntips)]
+        c, a, m = self.tree.draw(
+            layout="c",
+            edge_type="p",
+            tip_labels=labels,
+            tip_labels_style={"font-size": "18px"},
+        )
+        mark = self.tree.annotate.add_tip_tiles(a, color="steelblue", depth=None)
+        toyplot.html.render(c)
+        expected = self._get_expected_auto_depth(
+            m, np.ones(self.tree.ntips, dtype=bool)
+        )
+        self.assertAlmostEqual(mark.depth, expected)
+
+    def test_add_tip_tiles_auto_depth_falls_back_without_tip_labels(self):
+        c, a, _ = self.tree.draw(layout="r", edge_type="p", tip_labels=False)
+        mark = self.tree.annotate.add_tip_tiles(a, color="steelblue")
+        toyplot.html.render(c)
+        self.assertEqual(mark.depth, 10.0)
+
+    def test_add_tip_tiles_auto_depth_uses_only_shown_tips(self):
+        labels = ["x"] * self.tree.ntips
+        labels[-1] = "very_long_hidden_tip_label"
+        c, a, m = self.tree.draw(
+            layout="r",
+            edge_type="p",
+            tip_labels=labels,
+            tip_labels_style={"font-size": "18px"},
+        )
+        mask = np.ones(self.tree.ntips, dtype=bool)
+        mask[-1] = False
+        mark = self.tree.annotate.add_tip_tiles(a, color="steelblue", mask=mask)
+        toyplot.html.render(c)
+        expected = self._get_expected_auto_depth(m, mask)
+        self.assertAlmostEqual(mark.depth, expected)
 
     def test_add_tip_tiles_smoke_rectangular(self):
         c, a, m = self.tree.draw(layout="d", edge_type="p")
@@ -127,11 +207,66 @@ class TestAnnotateAddTipTiles(PytestCompat):
         )
         toyplot.html.render(c2)
 
-        by_tip_full = {int(t): p for t, p in zip(full.tip_indices, full.paths)}
-        by_tip_mask = {int(t): p for t, p in zip(masked.tip_indices, masked.paths)}
-        for tidx in np.where(mask)[0]:
-            self.assertIn(int(tidx), by_tip_mask)
-            self.assertEqual(by_tip_mask[int(tidx)], by_tip_full[int(tidx)])
+        self.assertEqual(len(full.paths), self.tree.ntips)
+        self.assertTrue(np.array_equal(masked.tip_indices, np.where(mask)[0]))
+        self.assertEqual(len(masked.paths), int(np.sum(mask)))
+
+    def test_add_tip_tiles_domain_uses_occupied_corners_rectangular(self):
+        _, axes, _ = self.tree.draw(layout="u", edge_type="p")
+        mark = self.tree.annotate.add_tip_tiles(axes, color="steelblue", depth=8)
+        domain_x = mark.domain("x")
+        self.assertAlmostEqual(domain_x[0], -0.5)
+        self.assertAlmostEqual(domain_x[1], self.tree.ntips - 0.5)
+
+    def test_add_tip_tiles_masked_domain_ignores_hidden_tips(self):
+        _, axes, _ = self.tree.draw(layout="u", edge_type="p")
+        mask = np.ones(self.tree.ntips, dtype=bool)
+        mask[0] = False
+        mark = self.tree.annotate.add_tip_tiles(
+            axes,
+            color="steelblue",
+            depth=8,
+            mask=mask,
+        )
+        domain_x = mark.domain("x")
+        self.assertAlmostEqual(domain_x[0], 0.5)
+        self.assertAlmostEqual(domain_x[1], self.tree.ntips - 0.5)
+
+        hidden = self.tree.annotate.add_tip_tiles(
+            axes,
+            color="steelblue",
+            depth=8,
+            mask=False,
+        )
+        self.assertEqual(hidden.domain("x"), (None, None))
+        coords, extents = hidden.extents("xy")
+        self.assertEqual(coords[0].size, 0)
+        self.assertEqual(coords[1].size, 0)
+        self.assertEqual(extents[0].size, 0)
+
+    def test_add_tip_tiles_style_fill_used_when_color_is_none(self):
+        _, axes, _ = self.tree.draw(layout="d", edge_type="p")
+        mark = self.tree.annotate.add_tip_tiles(
+            axes,
+            depth=8,
+            style={"fill": "orange"},
+        )
+        self.assertEqual(str(mark.fill_color), str(ToyColor("orange")))
+
+    def test_add_tip_tiles_explicit_color_beats_style_fill(self):
+        _, axes, _ = self.tree.draw(layout="d", edge_type="p")
+        mark = self.tree.annotate.add_tip_tiles(
+            axes,
+            color="steelblue",
+            depth=8,
+            style={"fill": "orange"},
+        )
+        self.assertEqual(str(mark.fill_color), str(ToyColor("steelblue")))
+
+    def test_add_tip_tiles_default_fill_is_lightgrey(self):
+        _, axes, _ = self.tree.draw(layout="d", edge_type="p")
+        mark = self.tree.annotate.add_tip_tiles(axes, depth=8)
+        self.assertEqual(str(mark.fill_color), str(ToyColor("lightgrey")))
 
     def test_add_tip_tiles_supports_feature_color_mapping(self):
         c, a, m = self.tree.draw(layout="d", edge_type="p")
@@ -166,22 +301,39 @@ class TestAnnotateAddTipTiles(PytestCompat):
         with self.assertRaises(ValueError):
             self.tree.annotate.add_tip_tiles(a, color="steelblue", depth=8, mask=bad)
 
-    def test_add_tip_tiles_stroke_none_and_set(self):
-        c, a, m = self.tree.draw(layout="d", edge_type="p")
-        self.tree.annotate.add_tip_tiles(a, color="steelblue", depth=8, stroke=None)
-        text = xml.tostring(toyplot.html.render(c), encoding="unicode")
-        self.assertIn("toytree-Annotation-TipTiles", text)
-        self.assertIn("stroke:none", text)
-
-        c2, a2, m2 = self.tree.draw(layout="d", edge_type="p")
-        self.tree.annotate.add_tip_tiles(
-            a2,
-            color="steelblue",
+    def test_add_tip_tiles_defaults_stroke_to_none(self):
+        canvas, axes, _ = self.tree.draw(layout="d", edge_type="p")
+        mark = self.tree.annotate.add_tip_tiles(
+            axes,
             depth=8,
-            stroke="black",
+            style={"stroke_width": 3},
         )
-        text2 = xml.tostring(toyplot.html.render(c2), encoding="unicode")
-        self.assertIn("stroke:rgb", text2)
+        root = toyplot.html.render(canvas)
+        paths = self._tip_tile_paths(root)
+        self.assertEqual(len(paths), self.tree.ntips)
+        self.assertEqual(mark.style["stroke"], "none")
+        style = paths[0].attrib["style"].replace(" ", "")
+        self.assertIn("stroke-opacity:0.0", style)
+        self.assertIn("stroke-width:3", style)
+
+    def test_add_tip_tiles_style_stroke_renders_on_paths(self):
+        canvas, axes, _ = self.tree.draw(layout="d", edge_type="p")
+        self.tree.annotate.add_tip_tiles(
+            axes,
+            depth=8,
+            style={
+                "stroke": "black",
+                "stroke_width": 2,
+                "stroke_dasharray": "3,2",
+            },
+        )
+        root = toyplot.html.render(canvas)
+        paths = self._tip_tile_paths(root)
+        self.assertEqual(len(paths), self.tree.ntips)
+        style = paths[0].attrib["style"].replace(" ", "")
+        self.assertIn("stroke-width:2", style)
+        self.assertIn("stroke-dasharray:3,2", style)
+        self.assertNotIn("stroke:none", style)
 
     def test_add_tip_tiles_rejects_invalid_depth(self):
         c, a, m = self.tree.draw(layout="d", edge_type="p")
@@ -221,22 +373,28 @@ class TestAnnotateAddTipTiles(PytestCompat):
         self.assertTrue(np.all(left <= -10.0))
         self.assertTrue(np.all(right >= 20.0))
 
-    def test_add_tip_tiles_default_renders_above_tree(self):
+    def test_add_tip_tiles_fit_layout_u_uses_rect_corners(self):
+        canvas, axes, _ = self.tree.draw(layout="u", edge_type="p")
+        mark = self.tree.annotate.add_tip_tiles(axes, color="steelblue", depth=8)
+        toyplot.html.render(canvas)
+        self._assert_layout_u_tip_tiles_fit_axes(mark, axes)
+
+    def test_add_tip_tiles_default_renders_below_tree(self):
         c, a, m = self.tree.draw(layout="d", edge_type="p")
         mark = self.tree.annotate.add_tip_tiles(a, color="steelblue", depth=8)
         render_targets = a._scenegraph._relationships["render"]._targets[a]
-        self.assertLess(render_targets.index(m), render_targets.index(mark))
+        self.assertLess(render_targets.index(mark), render_targets.index(m))
 
-    def test_add_tip_tiles_below_renders_below_tree(self):
+    def test_add_tip_tiles_above_renders_above_tree(self):
         c, a, m = self.tree.draw(layout="d", edge_type="p")
         mark = self.tree.annotate.add_tip_tiles(
             a,
             color="steelblue",
             depth=8,
-            below=True,
+            below=False,
         )
         render_targets = a._scenegraph._relationships["render"]._targets[a]
-        self.assertLess(render_targets.index(mark), render_targets.index(m))
+        self.assertLess(render_targets.index(m), render_targets.index(mark))
         toyplot.html.render(c)
 
     def _assert_tile_angles_match_tip_angles(self, mark, axes, tmark):
@@ -254,4 +412,39 @@ class TestAnnotateAddTipTiles(PytestCompat):
         )
         self.assertTrue(np.all(delta < 0.35))
 
+    def _get_expected_auto_depth(self, tmark, show):
+        if tmark.tip_labels is None or not np.any(show):
+            return 10.0
 
+        ntips = len(tmark.tip_labels)
+        extents = [np.zeros(tmark.nnodes, dtype=float) for _ in range(4)]
+        left, right, top, bottom = set_tip_label_extents(tmark, extents)
+        left = left[:ntips][show]
+        right = right[:ntips][show]
+        top = top[:ntips][show]
+        bottom = bottom[:ntips][show]
+
+        if tmark.layout == "r":
+            outward = right
+        elif tmark.layout == "l":
+            outward = -left
+        elif tmark.layout == "u":
+            outward = -top
+        elif tmark.layout == "d":
+            outward = bottom
+        else:
+            angles = np.deg2rad(
+                np.asarray(tmark.tip_labels_angles[:ntips], dtype=float)[show]
+            )
+            unit_x = np.cos(angles)
+            unit_y = -np.sin(angles)
+            projections = np.column_stack(
+                (
+                    left * unit_x + top * unit_y,
+                    left * unit_x + bottom * unit_y,
+                    right * unit_x + top * unit_y,
+                    right * unit_x + bottom * unit_y,
+                )
+            )
+            outward = np.max(projections, axis=1)
+        return float(np.max(outward) + 15.0)

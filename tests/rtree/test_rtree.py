@@ -87,6 +87,11 @@ def _internal_nodes_excluding_root(tree: toytree.ToyTree) -> list:
     return [node for node in tree if (not node.is_leaf()) and (not node.is_root())]
 
 
+def _assert_internal_names_empty(tree: toytree.ToyTree) -> None:
+    """Assert that all internal nodes, including the root, have empty names."""
+    assert all(node.name == "" for node in tree[tree.ntips :])
+
+
 def _find_unittree_seed_with_root_internal_count(
     ntips: int, ninternal: int, max_seed: int = 2000
 ) -> int:
@@ -176,17 +181,20 @@ def test_bdtree_retain_extinct_keeps_extinct_lineages() -> None:
         retain_extinct=True,
         seed=1,
     )
+    _assert_internal_names_empty(tree)
     extinct_count = sum(int(getattr(node, "extinct", False)) for node in tree)
     assert extinct_count > 0
 
 
 def test_bdtree_yule_time_stop_ultrametric() -> None:
     tree = toytree.rtree.bdtree(stop="time", time=2.0, b=1.0, d=0.0, seed=123)
+    _assert_internal_names_empty(tree)
     assert tree.is_ultrametric()
 
 
 def test_bdtree_high_extinction_with_resets() -> None:
     tree = toytree.rtree.bdtree(ntips=6, b=0.2, d=0.8, stop="taxa", seed=123)
+    _assert_internal_names_empty(tree)
     assert tree.ntips == 6
 
 
@@ -194,6 +202,7 @@ def test_bdtree_time_stop_retain_extinct() -> None:
     tree = toytree.rtree.bdtree(
         stop="time", time=2.0, b=1.0, d=0.8, retain_extinct=True, seed=123
     )
+    _assert_internal_names_empty(tree)
     assert tree.ntips >= 1
     extinct = sum(int(getattr(node, "extinct", False)) for node in tree)
     assert extinct >= 0
@@ -211,6 +220,7 @@ def test_bdtree_names_taxa_stop() -> None:
         seed=123,
     )
     assert tree.get_tip_labels() == names
+    _assert_internal_names_empty(tree)
 
 
 def test_bdtree_names_validation() -> None:

@@ -10,6 +10,7 @@ from typing import Any, Callable, Literal
 from toyplot.coordinates import Cartesian
 from toyplot.mark import Mark
 
+from toytree.drawing.src.mark_toytree import ToyTreeMark
 from toytree.drawing.src.mark_tree_domain import HostDomainMark, TreeDomainMark
 
 
@@ -23,6 +24,7 @@ class CompanionScaleSpec:
     locator_domain: tuple[float, float]
     bounds_getter: Callable[[], tuple[float, float, float, float]]
     label_midpoint: float
+    locator_sign: float = 1.0
     shift: float = 0.0
     use_tree_domain_mark: bool = False
 
@@ -42,11 +44,29 @@ def _get_companion_axes_registry(axes: Cartesian) -> dict[str, Any]:
     """Return the host registry that tracks hidden companion Cartesians."""
     registry = getattr(axes, "_toytree_companion_axes_registry", None)
     if registry is None:
+        tree_axes = getattr(axes, "_toytree_scale_axes", None)
+        tree_registry = getattr(axes, "_toytree_tree_scale_axes", None) or {}
+        if tree_axes is not None and not tree_registry:
+            target_mark = getattr(tree_axes, "_toytree_target_mark", None)
+            if target_mark is not None:
+                tree_registry[id(target_mark)] = tree_axes
         registry = {
-            "tree": getattr(axes, "_toytree_scale_axes", None),
+            "tree": tree_axes,
+            "trees": tree_registry,
             "marks": getattr(axes, "_toytree_mark_scale_axes", None) or {},
         }
         axes._toytree_companion_axes_registry = registry
+    else:
+        registry.setdefault("tree", getattr(axes, "_toytree_scale_axes", None))
+        registry.setdefault(
+            "trees",
+            getattr(axes, "_toytree_tree_scale_axes", None) or {},
+        )
+        registry.setdefault(
+            "marks",
+            getattr(axes, "_toytree_mark_scale_axes", None) or {},
+        )
+    axes._toytree_tree_scale_axes = registry["trees"]
     return registry
 
 
@@ -108,6 +128,20 @@ def _get_mark_scale_axes_registry(axes: Cartesian) -> dict[int, Cartesian]:
     registry = _get_companion_axes_registry(axes)["marks"]
     axes._toytree_mark_scale_axes = registry
     return registry
+
+
+def _get_tree_scale_axes_registry(axes: Cartesian) -> dict[int, Cartesian]:
+    """Return the tree-scale registry stored on a host Cartesian."""
+    registry = _get_companion_axes_registry(axes)["trees"]
+    axes._toytree_tree_scale_axes = registry
+    return registry
+
+
+def _get_last_tree_mark(axes: Cartesian) -> ToyTreeMark | None:
+    """Return the most recently rendered tree mark on one host axes."""
+    targets = axes._scenegraph.targets(axes, "render")
+    tree_marks = [mark for mark in targets if isinstance(mark, ToyTreeMark)]
+    return None if not tree_marks else tree_marks[-1]
 
 
 def sync_mark_scale_cartesian(
@@ -188,16 +222,29 @@ def get_mark_scale_cartesian(
 
 
 def get_toytree_scale_cartesian(
-    axes: Cartesian, create: bool = True
+    axes: Cartesian,
+    mark: ToyTreeMark | None = None,
+    create: bool = True,
 ) -> Cartesian | None:  # noqa: E501
     """Return hidden companion axes used to draw tree scale bars."""
-    registry = _get_companion_axes_registry(axes)
-    scale_axes = registry.get("tree")
+    container = _get_companion_axes_registry(axes)
+    registry = _get_tree_scale_axes_registry(axes)
+    if mark is None:
+        mark = _get_last_tree_mark(axes)
+        if mark is None:
+            scale_axes = container.get("tree")
+            if scale_axes is not None:
+                _disable_companion_interactive_coordinates(scale_axes)
+            return scale_axes
+
+    scale_axes = registry.get(id(mark))
     if scale_axes is not None:
         _disable_companion_interactive_coordinates(scale_axes)
+        container["tree"] = scale_axes
+        axes._toytree_scale_axes = scale_axes
         return scale_axes
     if not create:
-        return scale_axes
+        return None
 
     canvas = _get_canvas_for_axes(axes)
     scale_axes = canvas.cartesian(
@@ -217,16 +264,23 @@ def get_toytree_scale_cartesian(
     # keeping tree-only data-domain from TreeDomainMark children.
     scale_axes.add_mark(HostDomainMark(host_axes=axes))
     scale_axes._toytree_host_axes = axes
-    registry["tree"] = scale_axes
+    scale_axes._toytree_target_mark = mark
+    registry[id(mark)] = scale_axes
+    container["tree"] = scale_axes
     axes._toytree_scale_axes = scale_axes
     _disable_companion_interactive_coordinates(scale_axes)
     _ensure_companion_axes_render_order(axes, scale_axes)
     return scale_axes
 
 
-def add_tree_domain_mark(axes: Cartesian, ntable, layout: str) -> TreeDomainMark:
+def add_tree_domain_mark(
+    axes: Cartesian,
+    ntable,
+    layout: str,
+    mark: ToyTreeMark | None = None,
+) -> TreeDomainMark:
     """Create or update the tree-domain mark on the companion scale axes."""
-    scale_axes = get_toytree_scale_cartesian(axes, create=True)
+    scale_axes = get_toytree_scale_cartesian(axes, mark=mark, create=True)
     dmark = getattr(scale_axes, "_toytree_tree_domain_mark", None)
     if dmark is None:
         render_targets = scale_axes._scenegraph.targets(scale_axes, "render")
