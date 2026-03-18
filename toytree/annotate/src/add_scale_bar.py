@@ -18,11 +18,16 @@ from toytree.annotate.src.checks import (
     get_last_toytree_mark,
     get_last_toytree_mark_for_tree,
     invalidate_cartesian_fit_cache,
+    try_incremental_tip_bar_host_finalize,
 )
 from toytree.core import ToyTree
 from toytree.core.apis import AnnotationAPI, add_subpackage_method
 from toytree.drawing import Cartesian, ToyTreeMark
-from toytree.drawing.src.mark_annotation import AnnotationTipBarMark
+from toytree.drawing.src.mark_annotation import (
+    AnnotationTipBarMark,
+    AnnotationTipPathMark,
+    _visible_line_pad,
+)
 from toytree.drawing.src.scale_axes import (
     CompanionScaleSpec,
     add_tree_domain_mark,
@@ -34,6 +39,43 @@ from toytree.drawing.src.scale_axes import (
 from toytree.utils import ToytreeError
 
 __all__ = ["add_axes_scale_bar_to_tree", "add_axes_scale_bar_to_mark"]
+
+
+def _get_host_geometry_token(axes: Cartesian) -> int:
+    """Return the host-geometry version tracked on one Cartesian."""
+    return int(getattr(axes, "_toytree_host_geometry_token", 0))
+
+
+def _record_companion_sync_token(axes: Cartesian) -> None:
+    """Record that all active companions match the current host geometry."""
+    axes._toytree_companion_sync_token = _get_host_geometry_token(axes)
+
+
+def _companion_sync_is_current(
+    axes: Cartesian,
+    expand_margin: None | int | tuple[int, int, int, int],
+) -> bool:
+    """Return True when companion geometry already matches the host axes."""
+    if expand_margin is not None:
+        return False
+    if getattr(axes, "_finalized", None) is None:
+        return False
+    return getattr(axes, "_toytree_companion_sync_token", None) == (
+        _get_host_geometry_token(axes)
+    )
+
+
+def _prepare_axes_for_companion_update(
+    axes: Cartesian,
+    expand_margin: None | int | tuple[int, int, int, int],
+) -> bool:
+    """Ensure host geometry is current and return True when it was reused."""
+    if _companion_sync_is_current(axes, expand_margin):
+        return True
+    _apply_axes_expand_margin(axes, expand_margin)
+    invalidate_cartesian_fit_cache(axes)
+    _finalize_host_axes(axes)
+    return False
 
 
 def _store_scale_spec(
@@ -146,6 +188,7 @@ def _sync_all_companion_axes(axes: Cartesian) -> None:
     _sync_tree_scale_axes_finalized(axes)
     _sync_mark_scale_axes_finalized(axes)
     _align_companion_scale_axes(axes)
+    _record_companion_sync_token(axes)
 
 
 def _finalize_host_axes(axes: Cartesian) -> None:
@@ -233,19 +276,52 @@ def _add_mark_and_sync_companions(axes: Cartesian, mark: Mark) -> Mark:
     """Add a host mark, then refresh host fit and active companion axes."""
     original_add_mark = axes._toytree_original_add_mark
     result = original_add_mark(mark)
+
+    # Repeated rectangular tip-bar additions dominate the multi-companion
+    # workload, so reuse the finalized host extents when that path is safe.
+    if try_incremental_tip_bar_host_finalize(axes, mark):
+        _sync_all_companion_axes(axes)
+        return result
+
     invalidate_cartesian_fit_cache(axes)
     _finalize_host_axes(axes)
     _sync_all_companion_axes(axes)
     return result
 
 
+def _add_mark_and_invalidate_host_fit(axes: Cartesian, mark: Mark) -> Mark:
+    """Add a host mark and clear cached fit state for the next finalize."""
+    original_add_mark = axes._toytree_original_add_mark
+    result = original_add_mark(mark)
+    invalidate_cartesian_fit_cache(axes)
+    return result
+
+
+def _ensure_original_add_mark(axes: Cartesian) -> None:
+    """Store Toyplot's original ``add_mark()`` once for later wrappers."""
+    if not hasattr(axes, "_toytree_original_add_mark"):
+        axes._toytree_original_add_mark = axes.add_mark
+
+
+def _install_host_fit_invalidation_add_mark_hook(axes: Cartesian) -> None:
+    """Wrap ``axes.add_mark()`` so later host marks invalidate cached fit."""
+    if getattr(axes, "_toytree_companion_add_mark_hook_installed", False):
+        return
+    if getattr(axes, "_toytree_host_fit_add_mark_hook_installed", False):
+        return
+    _ensure_original_add_mark(axes)
+    axes.add_mark = MethodType(_add_mark_and_invalidate_host_fit, axes)
+    axes._toytree_host_fit_add_mark_hook_installed = True
+
+
 def _install_companion_add_mark_hook(axes: Cartesian) -> None:
     """Wrap ``axes.add_mark()`` so later host marks refresh companions."""
     if getattr(axes, "_toytree_companion_add_mark_hook_installed", False):
         return
-    axes._toytree_original_add_mark = axes.add_mark
+    _ensure_original_add_mark(axes)
     axes.add_mark = MethodType(_add_mark_and_sync_companions, axes)
     axes._toytree_companion_add_mark_hook_installed = True
+    axes._toytree_host_fit_add_mark_hook_installed = False
 
 
 def _resolve_tree_scale_axis(
@@ -276,6 +352,21 @@ def _resolve_tip_bar_scale_axis(
     if axis != expected:
         raise ToytreeError(
             f"Tip bar layout '{mark.layout}' only supports axis='{expected}'."
+        )
+    return axis
+
+
+def _resolve_tip_path_scale_axis(
+    mark: AnnotationTipPathMark,
+    axis: Literal["auto", "x", "y"],
+) -> Literal["x", "y"]:
+    """Resolve and validate the active value axis for a tip-path mark."""
+    expected = "x" if mark.layout in ("r", "l") else "y"
+    if axis == "auto":
+        return expected
+    if axis != expected:
+        raise ToytreeError(
+            f"Tip path layout '{mark.layout}' only supports axis='{expected}'."
         )
     return axis
 
@@ -514,6 +605,61 @@ def _midpoint_bounds(values: np.ndarray) -> np.ndarray:
     return bounds
 
 
+def _get_projected_tip_slot_cache(
+    axes: Cartesian,
+) -> dict[tuple[int, str], tuple[np.ndarray, np.ndarray]]:
+    """Return per-host-token projected slot bounds shared by tip-bar companions."""
+    token = _get_host_geometry_token(axes)
+    cache = getattr(axes, "_toytree_projected_tip_slot_cache", None)
+    if cache is None or cache.get("token") != token:
+        cache = {"token": token, "slots": {}}
+        axes._toytree_projected_tip_slot_cache = cache
+    return cache["slots"]
+
+
+def _get_projected_tip_slot_cache_key(
+    mark: AnnotationTipBarMark,
+) -> tuple[int, str]:
+    """Return the slot-cache key shared by bars from the same host tree."""
+    host_tree_mark = getattr(mark, "host_tree_mark", None)
+    tree_key = id(mark if host_tree_mark is None else host_tree_mark)
+    axis = "y" if mark.layout in ("r", "l") else "x"
+    return tree_key, axis
+
+
+def _compute_projected_tip_slot_bounds_finalized(
+    axes: Cartesian,
+    mark: AnnotationTipBarMark,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Project one full set of linear tip slots into pixel coordinates."""
+    if mark.layout in ("r", "l"):
+        span = np.asarray(axes.project("y", mark.ntable[:, 1]), dtype=float)
+    else:
+        span = np.asarray(axes.project("x", mark.ntable[:, 0]), dtype=float)
+
+    sort_idx = np.argsort(span)
+    bounds = _midpoint_bounds(span[sort_idx])
+    slot_min = np.zeros(span.size, dtype=float)
+    slot_max = np.zeros(span.size, dtype=float)
+    slot_min[sort_idx] = np.asarray(bounds[:-1], dtype=float)
+    slot_max[sort_idx] = np.asarray(bounds[1:], dtype=float)
+    return slot_min, slot_max
+
+
+def _get_projected_tip_slot_bounds_finalized(
+    axes: Cartesian,
+    mark: AnnotationTipBarMark,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return cached projected slot bounds in tip order for one bar family."""
+    cache = _get_projected_tip_slot_cache(axes)
+    key = _get_projected_tip_slot_cache_key(mark)
+    bounds = cache.get(key)
+    if bounds is None:
+        bounds = _compute_projected_tip_slot_bounds_finalized(axes, mark)
+        cache[key] = tuple(arr.copy() for arr in bounds)
+    return tuple(arr.copy() for arr in bounds)
+
+
 def _get_projected_mark_bounds_finalized(
     axes: Cartesian,
     mark: Mark,
@@ -543,19 +689,7 @@ def _get_visible_tip_slot_bounds_finalized(
         raise ToytreeError(
             "Cannot add a mark scale bar to a tip-bar mark with no visible bars."
         )
-
-    if mark.layout in ("r", "l"):
-        span = np.asarray(axes.project("y", mark.ntable[:, 1]), dtype=float)
-    else:
-        span = np.asarray(axes.project("x", mark.ntable[:, 0]), dtype=float)
-
-    sort_idx = np.argsort(span)
-    bounds = _midpoint_bounds(span[sort_idx])
-    slot_min = np.zeros(span.size, dtype=float)
-    slot_max = np.zeros(span.size, dtype=float)
-    for order_idx, tip_idx in enumerate(sort_idx):
-        slot_min[tip_idx] = float(bounds[order_idx])
-        slot_max[tip_idx] = float(bounds[order_idx + 1])
+    slot_min, slot_max = _get_projected_tip_slot_bounds_finalized(axes, mark)
     return slot_min[tip_indices], slot_max[tip_indices]
 
 
@@ -648,11 +782,105 @@ def _get_linear_tip_bar_scale_bounds_finalized(
     )
 
 
+def _get_visible_tip_path_span_bounds_finalized(
+    axes: Cartesian,
+    mark: AnnotationTipPathMark,
+) -> tuple[np.ndarray, np.ndarray]:
+    """Return visible orthogonal bounds for one finalized tip-path mark."""
+    shown = np.flatnonzero(np.asarray(mark.show, dtype=bool))
+    if not shown.size:
+        raise ToytreeError(
+            "Cannot add a mark scale bar to a tip-path mark with no visible paths."
+        )
+
+    line_pad = _visible_line_pad(mark.style)
+    start_x, start_y, end_x, end_y = mark._get_path_anchor_coords(shown)
+    start_x_px = np.asarray(axes.project("x", start_x), dtype=float)
+    start_y_px = np.asarray(axes.project("y", start_y), dtype=float)
+    end_x_px = np.asarray(axes.project("x", end_x), dtype=float)
+    end_y_px = np.asarray(axes.project("y", end_y), dtype=float)
+    span_offset = float(mark.span_offset)
+    if mark.layout in ("r", "l"):
+        start = start_y_px + span_offset
+        end = end_y_px + span_offset
+    else:
+        start = start_x_px + span_offset
+        end = end_x_px + span_offset
+    return np.minimum(start, end) - line_pad, np.maximum(start, end) + line_pad
+
+
+def _get_linear_tip_path_scale_bounds_finalized(
+    axes: Cartesian,
+    mark: AnnotationTipPathMark,
+    padding: float,
+) -> tuple[float, float, float, float]:
+    """Return overlay bounds for a finalized rectangular tip-path ruler."""
+    shown = np.flatnonzero(np.asarray(mark.show, dtype=bool))
+    if not shown.size:
+        raise ToytreeError(
+            "Cannot add a mark scale bar to a tip-path mark with no visible paths."
+        )
+
+    span_min, span_max = _get_visible_tip_path_span_bounds_finalized(axes, mark)
+    tips_x_px = np.asarray(axes.project("x", mark.ntable[:, 0]), dtype=float)
+    tips_y_px = np.asarray(axes.project("y", mark.ntable[:, 1]), dtype=float)
+    depth = float(mark.max_path_depth)
+    offset = float(mark.depth_offset)
+    padding = float(padding)
+
+    if mark.layout == "r":
+        baseline = float(np.max(tips_x_px[shown]) + offset)
+        return (
+            baseline,
+            baseline + depth,
+            float(np.min(span_min) + padding),
+            float(np.max(span_max) + padding),
+        )
+    if mark.layout == "l":
+        baseline = float(np.min(tips_x_px[shown]) - offset)
+        return (
+            baseline - depth,
+            baseline,
+            float(np.min(span_min) + padding),
+            float(np.max(span_max) + padding),
+        )
+    if mark.layout == "u":
+        baseline = float(np.min(tips_y_px[shown]) - offset)
+        return (
+            float(np.min(span_min) - padding),
+            float(np.max(span_max) - padding),
+            baseline - depth,
+            baseline,
+        )
+    if mark.layout == "d":
+        baseline = float(np.max(tips_y_px[shown]) + offset)
+        return (
+            float(np.min(span_min) - padding),
+            float(np.max(span_max) - padding),
+            baseline,
+            baseline + depth,
+        )
+    raise ToytreeError(
+        "add_axes_scale_bar_to_mark() currently supports only rectangular "
+        "tip-path layouts (r/l/u/d)."
+    )
+
+
 def _resolve_tip_bar_scale_domain(
     mark: AnnotationTipBarMark,
     tmax: float,
 ) -> tuple[float, float, float]:
     """Return internal domain limits and locator sign for tip-bar rulers."""
+    if mark.layout in ("r", "u"):
+        return 0.0, tmax, 1.0
+    return -tmax, 0.0, -1.0
+
+
+def _resolve_tip_path_scale_domain(
+    mark: AnnotationTipPathMark,
+    tmax: float,
+) -> tuple[float, float, float]:
+    """Return internal domain limits and locator sign for tip-path rulers."""
     if mark.layout in ("r", "u"):
         return 0.0, tmax, 1.0
     return -tmax, 0.0, -1.0
@@ -796,9 +1024,7 @@ def _add_axes_scale_bar_impl(
         assert_tree_matches_mark(tree, mark)
     _install_companion_add_mark_hook(axes)
 
-    _apply_axes_expand_margin(axes, expand_margin)
-    invalidate_cartesian_fit_cache(axes)
-    _finalize_host_axes(axes)
+    reused_sync = _prepare_axes_for_companion_update(axes, expand_margin)
     scale_axes = get_toytree_scale_cartesian(axes, mark=mark, create=True)
     spec = mark.get_companion_scale_spec(
         axes,
@@ -830,9 +1056,11 @@ def _add_axes_scale_bar_impl(
         tick_labels_style=tick_labels_style,
         tick_labels_offset=tick_labels_offset,
     )
-    _sync_tree_scale_axes_finalized(axes, skip_mark=mark)
-    _sync_mark_scale_axes_finalized(axes)
+    if not reused_sync:
+        _sync_tree_scale_axes_finalized(axes, skip_mark=mark)
+        _sync_mark_scale_axes_finalized(axes)
     _align_companion_scale_axes(axes)
+    _record_companion_sync_token(axes)
     return axes
 
 
@@ -1097,14 +1325,7 @@ def add_axes_scale_bar_to_mark(
     # validate scale arg is numeric
     scale = _validate_scale_factor(scale, "mark")
 
-    # optionally expand margins to better fit ticks/labels
-    _apply_axes_expand_margin(axes, expand_margin)
-
-    # reset domain bounds b/c we will re-calculate
-    invalidate_cartesian_fit_cache(axes)
-
-    # re-calculate domain bounds given this new Annotation Mark type
-    _finalize_host_axes(axes)
+    reused_sync = _prepare_axes_for_companion_update(axes, expand_margin)
 
     # get specifications for the companion scale
     spec = mark.get_companion_scale_spec(
@@ -1155,12 +1376,14 @@ def add_axes_scale_bar_to_mark(
         bounds=mark_bounds,
     )
 
-    # if a tree companion exists update it
-    _sync_tree_scale_axes_finalized(axes)
+    if not reused_sync:
+        # if a tree companion exists update it
+        _sync_tree_scale_axes_finalized(axes)
 
-    # if >=1 mark companions exist update them
-    _sync_mark_scale_axes_finalized(axes, skip_mark=mark)
+        # if >=1 mark companions exist update them
+        _sync_mark_scale_axes_finalized(axes, skip_mark=mark)
 
     # if both exist make them align visually
     _align_companion_scale_axes(axes)
+    _record_companion_sync_token(axes)
     return axes

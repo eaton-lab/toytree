@@ -117,10 +117,12 @@ class TestAnnotateAddTipBars(PytestCompat):
 
     def test_signature_uses_style_and_hover_not_stroke(self):
         params = inspect.signature(self.tree.annotate.add_tip_bars).parameters
+        self.assertIsNone(params["data"].default)
         self.assertIn("style", params)
         self.assertIn("hover", params)
         self.assertNotIn("stroke", params)
         self.assertIsNone(params["offset"].default)
+        self.assertIsNone(params["opacity"].default)
         self.assertTrue(params["below"].default)
         self.assertTrue(params["hover"].default)
 
@@ -170,6 +172,16 @@ class TestAnnotateAddTipBars(PytestCompat):
         toyplot.html.render(c)
         expected = vals / vals.max() * 30.0
         self.assertTrue(np.allclose(mark.bar_depths, expected))
+
+    def test_add_tip_bars_data_none_uses_full_depth_and_unit_metadata(self):
+        canvas, axes, _ = self.tree.draw(layout="d", edge_type="p")
+        mark = self.tree.annotate.add_tip_bars(axes, depth=30)
+        root = toyplot.html.render(canvas)
+        self.assertTrue(np.allclose(mark.bar_depths, 30.0))
+        self.assertTrue(np.allclose(mark.data, np.ones(self.tree.ntips)))
+        self.assertEqual(mark.value_min, 0.0)
+        self.assertEqual(mark.value_max, 1.0)
+        self.assertIn(f"{self.tree[0].name}: 1", self._tip_bar_titles(root))
 
     def test_add_tip_bars_stores_raw_scale_metadata(self):
         _, a, _ = self.tree.draw(layout="d", edge_type="p")
@@ -312,6 +324,17 @@ class TestAnnotateAddTipBars(PytestCompat):
         with self.assertRaises(ToytreeError):
             self.tree.annotate.add_tip_bars(a, data="X", width=float("inf"))
 
+    def test_add_tip_bars_rejects_invalid_opacity(self):
+        _, axes, _ = self.tree.draw(layout="d", edge_type="p")
+        with self.assertRaises(ToytreeError):
+            self.tree.annotate.add_tip_bars(
+                axes,
+                data="X",
+                opacity=np.ones(self.tree.ntips - 1),
+            )
+        with self.assertRaises(ToytreeError):
+            self.tree.annotate.add_tip_bars(axes, data="X", opacity=float("nan"))
+
     def test_add_tip_bars_zero_values_produce_zero_depths(self):
         c, a, _ = self.tree.draw(layout="d", edge_type="p")
         vals = np.zeros(self.tree.ntips, dtype=float)
@@ -347,6 +370,52 @@ class TestAnnotateAddTipBars(PytestCompat):
             style={"fill": "orange"},
         )
         self.assertEqual(str(mark.fill_color), str(ToyColor("steelblue")))
+
+    def test_add_tip_bars_style_fill_opacity_used_when_opacity_is_none(self):
+        canvas, axes, _ = self.tree.draw(layout="r", edge_type="p")
+        self.tree.annotate.add_tip_bars(
+            axes,
+            data="X",
+            opacity=None,
+            style={"fill_opacity": 0.4},
+        )
+        root = toyplot.html.render(canvas)
+        styles = [
+            elem.attrib["style"].replace(" ", "") for elem in self._tip_bar_paths(root)
+        ]
+        self.assertIn("fill-opacity:0.4", styles[0])
+        self.assertIn("fill-opacity:0.4", styles[-1])
+
+    def test_add_tip_bars_scalar_opacity_overrides_style(self):
+        canvas, axes, _ = self.tree.draw(layout="r", edge_type="p")
+        self.tree.annotate.add_tip_bars(
+            axes,
+            data="X",
+            opacity=0.7,
+            style={"fill_opacity": 0.4},
+        )
+        root = toyplot.html.render(canvas)
+        styles = [
+            elem.attrib["style"].replace(" ", "") for elem in self._tip_bar_paths(root)
+        ]
+        self.assertIn("fill-opacity:0.7", styles[0])
+        self.assertNotIn("fill-opacity:0.4", styles[0])
+
+    def test_add_tip_bars_sequence_opacity_overrides_shared_style(self):
+        canvas, axes, _ = self.tree.draw(layout="r", edge_type="p")
+        self.tree.annotate.add_tip_bars(
+            axes,
+            data="X",
+            opacity=np.linspace(0.2, 0.8, self.tree.ntips),
+            style={"fill_opacity": 0.4},
+        )
+        root = toyplot.html.render(canvas)
+        styles = [
+            elem.attrib["style"].replace(" ", "") for elem in self._tip_bar_paths(root)
+        ]
+        self.assertIn("fill-opacity:0.2", styles[0])
+        self.assertIn("fill-opacity:0.8", styles[-1])
+        self.assertNotIn("fill-opacity:0.4", styles[0])
 
     def test_add_tip_bars_defaults_stroke_to_none(self):
         canvas, axes, _ = self.tree.draw(layout="u", edge_type="p")

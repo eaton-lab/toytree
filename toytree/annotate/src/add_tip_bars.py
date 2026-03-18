@@ -9,6 +9,9 @@ from typing import Any, Mapping, Sequence, Tuple, TypeVar, Union
 import numpy as np
 from toyplot.mark import Mark
 
+from toytree.annotate.src.add_scale_bar import (
+    _install_host_fit_invalidation_add_mark_hook,
+)
 from toytree.annotate.src.checks import (
     assert_tree_matches_mark,
     finalize_cartesian_with_tip_bar_domains,
@@ -22,7 +25,7 @@ from toytree.core.apis import AnnotationAPI, add_subpackage_method
 from toytree.drawing import Cartesian
 from toytree.drawing.src.mark_annotation import AnnotationTipBarMark
 from toytree.drawing.src.mark_toytree import set_marker_extents, set_tip_label_extents
-from toytree.style.src.validate_data import validate_colors, validate_numeric
+from toytree.style.src.validate_data import validate_colors
 from toytree.style.src.validate_utils import substyle_dict_to_css_dict
 from toytree.utils import ToytreeError
 
@@ -31,9 +34,14 @@ Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = ["add_tip_bars"]
 
 
-def _coerce_tip_bar_data(tree: ToyTree, data: str | Sequence[float]) -> np.ndarray:
-    """Return raw numeric tip data in tip order."""
-    if isinstance(data, str):
+def _coerce_tip_metric_data(
+    tree: ToyTree,
+    data: str | Sequence[float] | None,
+) -> np.ndarray:
+    """Return one finite non-negative tip-sized numeric array in tip order."""
+    if data is None:
+        arr = np.ones(tree.ntips, dtype=float)
+    elif isinstance(data, str):
         arr = np.asarray(tree.get_tip_data(data), dtype=float)
     else:
         arr = np.asarray(data)
@@ -61,6 +69,47 @@ def _coerce_tip_bar_data(tree: ToyTree, data: str | Sequence[float]) -> np.ndarr
     if np.any(arr < 0.0):
         raise ToytreeError("'data' must be non-negative.")
     return np.asarray(arr, dtype=float)
+
+
+def _resolve_tip_bar_opacity(
+    tree: ToyTree,
+    style: Mapping[str, Any],
+    opacity: float | Sequence[float] | None,
+) -> tuple[dict[str, Any], np.ndarray | None]:
+    """Resolve shared or per-tip fill opacity for tip-bar rendering."""
+    style = dict(style)
+    if opacity is None:
+        return style, None
+
+    if np.isscalar(opacity):
+        try:
+            value = float(opacity)
+        except (TypeError, ValueError) as exc:
+            raise ToytreeError(
+                "'opacity' must be numeric or a tip-sized sequence."
+            ) from exc
+        if not np.isfinite(value):
+            raise ToytreeError("'opacity' must contain only finite numeric values.")
+        style["fill-opacity"] = value
+        return style, None
+
+    values = np.asarray(opacity)
+    if values.ndim == 0:
+        raise ToytreeError("'opacity' must be numeric or a tip-sized sequence.")
+    if values.ndim != 1:
+        raise ToytreeError("'opacity' sequence must be one-dimensional.")
+    if values.size != tree.ntips:
+        raise ToytreeError(
+            f"'opacity' sequence must be size ntips ({tree.ntips}), not {values.size}."
+        )
+    try:
+        values = values.astype(float, copy=False)
+    except (TypeError, ValueError) as exc:
+        raise ToytreeError("'opacity' must contain numeric values.") from exc
+    if np.any(~np.isfinite(values)):
+        raise ToytreeError("'opacity' must contain only finite numeric values.")
+    style.pop("fill-opacity", None)
+    return style, np.asarray(values, dtype=float)
 
 
 def _insert_mark_below_tree(axes: Cartesian, tree_mark: Mark, mark: Mark) -> None:
@@ -155,8 +204,12 @@ def _resolve_outward_extent(
     return np.zeros(int(np.sum(show)), dtype=float)
 
 
-def _resolve_auto_offset(tree: ToyTree, tmark: Mark, show: np.ndarray) -> float:
-    """Return a default bar gap from the rendered tree tip geometry."""
+def _resolve_tip_overlay_auto_offset(
+    tree: ToyTree,
+    tmark: Mark,
+    show: np.ndarray,
+) -> float:
+    """Return a default outward gap from the rendered tree tip geometry."""
     if not np.any(show):
         return 10.0
 
@@ -203,12 +256,12 @@ def _build_tip_hover_labels(tree: ToyTree, values: np.ndarray) -> np.ndarray:
 def add_tip_bars(
     tree: ToyTree,
     axes: Cartesian,
-    data: str | Sequence[float],
+    data: str | Sequence[float] | None = None,
     color: Union[Color, Sequence[Color], tuple, None] = None,
     depth: float = 100.0,
     offset: float | None = None,
-    width: float = 0.9,
-    opacity: Union[float, Sequence[float]] = 1.0,
+    width: float = 0.8,
+    opacity: Union[float, Sequence[float], None] = None,
     mask: Union[np.ndarray, Tuple[int, int, int], None, bool] = None,
     style: Mapping[str, Any] | None = None,
     below: bool = True,
@@ -228,9 +281,11 @@ def add_tip_bars(
         Tree associated with the existing drawing on ``axes``.
     axes : Cartesian
         Cartesian axes containing a previously drawn tree mark.
-    data : str or sequence of float
+    data : str, sequence of float, or None, default=None
         Tip feature name or tip-sized numeric sequence to render as bar
-        lengths. Values must be finite and non-negative.
+        lengths. Values must be finite and non-negative. When None, bars use
+        unit data so every visible tip reaches the full requested ``depth``
+        and companion mark scale bars use a ``0..1`` domain.
     color : Color, sequence, tuple, or None, default=None
         Bar fill color specification. Supports a single color, per-tip
         colors, or feature mapping tuples such as ``("feature", "cmap")``.
@@ -243,11 +298,14 @@ def add_tip_bars(
         None, the gap is set to the furthest outward shown tip-label extent
         plus 10 pixels, or to the furthest shown tip-node extent plus 10
         pixels when the tree drawing has no tip labels.
-    width : float, default=0.9
+    width : float, default=0.8
         Proportion of each tip slot occupied by the bar, from ``0`` to ``1``.
         Values below ``1`` leave centered gaps between neighboring bars.
-    opacity : float or sequence, default=1.0
-        Fill opacity as a scalar or per-tip sequence.
+    opacity : float, sequence, or None, default=None
+        Bar fill opacity. When None, bars keep ``style["fill-opacity"]`` if
+        provided and otherwise use the default visible fill opacity. A scalar
+        sets one shared fill opacity for all bars. A tip-sized sequence
+        applies per-bar fill opacity and overrides any shared style opacity.
     mask : bool, tuple[int, int, int], np.ndarray, or None, default=None
         Controls shown tips. Accepted values are:
         - None: show all tips
@@ -257,8 +315,8 @@ def add_tip_bars(
     style : Mapping[str, Any] or None, default=None
         Optional CSS-style mapping for the bar paths. Use this to set
         properties such as ``stroke``, ``stroke-width``,
-        ``stroke-dasharray``, or ``fill``. Explicit ``color`` and ``opacity``
-        arguments override fill-related entries.
+        ``stroke-dasharray``, ``fill``, or ``fill-opacity``. Explicit
+        ``color`` and ``opacity`` arguments override fill-related entries.
     below : bool, default=True
         If True, place the bar mark below the associated tree mark in
         scenegraph render order.
@@ -315,12 +373,14 @@ def add_tip_bars(
 
     show = normalize_tip_mask(tree, mask)
     offset = (
-        _resolve_auto_offset(tree, tmark, show) if offset is None else float(offset)
+        _resolve_tip_overlay_auto_offset(tree, tmark, show)
+        if offset is None
+        else float(offset)
     )
     if not np.isfinite(offset):
         raise ToytreeError("offset must be a finite float")
 
-    raw_data = _coerce_tip_bar_data(tree, data)
+    raw_data = _coerce_tip_metric_data(tree, data)
     max_value = float(np.max(raw_data))
     if max_value == 0.0:
         bar_depths = np.zeros(tree.ntips, dtype=float)
@@ -343,17 +403,13 @@ def add_tip_bars(
         else:
             fill_color = ToyColor("lightgrey")
 
-    opacity_all = validate_numeric(
-        tree,
-        key="opacity",
-        size=tree.ntips,
-        style={"opacity": opacity},
-    ).astype(float)
+    style, opacity_all = _resolve_tip_bar_opacity(tree, style, opacity)
     hover_labels = _build_tip_hover_labels(tree, raw_data) if hover else None
 
     amark = AnnotationTipBarMark(
         ntable=np.asarray(tmark.ttable[: tree.ntips], dtype=float),
         root_xy=np.asarray(tmark.ntable[tree.treenode.idx], dtype=float),
+        host_tree_mark=tmark,
         layout=layout,
         offset=offset,
         width=width,
@@ -375,4 +431,5 @@ def add_tip_bars(
     if not getattr(axes, "_toytree_companion_add_mark_hook_installed", False):
         invalidate_cartesian_fit_cache(axes)
         finalize_cartesian_with_tip_bar_domains(axes)
+        _install_host_fit_invalidation_add_mark_hook(axes)
     return amark

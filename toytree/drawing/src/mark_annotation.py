@@ -469,6 +469,11 @@ def _visible_stroke_pad(style: Mapping[str, Any]) -> float:
         return 1.0
 
 
+def _visible_line_pad(style: Mapping[str, Any]) -> float:
+    """Return half the visible stroke width for open line annotations."""
+    return 0.5 * _visible_stroke_pad(style)
+
+
 class AnnotationTipBarMark(Mark):
     """Polygon path annotation mark for tip-aligned bar rendering."""
 
@@ -476,6 +481,7 @@ class AnnotationTipBarMark(Mark):
         self,
         ntable: np.ndarray,
         root_xy: np.ndarray,
+        host_tree_mark: Mark | None,
         layout: str,
         offset: float,
         width: float,
@@ -487,7 +493,7 @@ class AnnotationTipBarMark(Mark):
         bar_depths: np.ndarray,
         colors: np.ndarray | None,
         fill_color: Any,
-        opacity: np.ndarray,
+        opacity: np.ndarray | None,
         hover_labels: np.ndarray | None,
         style: Mapping[str, Any],
     ):
@@ -495,6 +501,7 @@ class AnnotationTipBarMark(Mark):
         self._coordinate_axes = ["x", "y"]
         self.ntable = ntable
         self.root_xy = root_xy
+        self.host_tree_mark = host_tree_mark
         self.layout = layout
         self.offset = offset
         self.width = width
@@ -694,6 +701,188 @@ class AnnotationTipBarMark(Mark):
             data_domain=(float(domain_min), float(domain_max)),
             locator_domain=(float(tmin), float(tmax)),
             bounds_getter=lambda: _get_linear_tip_bar_scale_bounds_finalized(
+                axes,
+                self,
+                resolved_padding,
+            ),
+            label_midpoint=0.5 * float(domain_min + domain_max),
+            locator_sign=float(locator_sign),
+        )
+
+
+class AnnotationTipPathMark(Mark):
+    """Path annotation mark for tip-anchored line rendering."""
+
+    def __init__(
+        self,
+        ntable: np.ndarray,
+        host_tree_mark: Mark | None,
+        layout: str,
+        depth_offset: float,
+        span_offset: float,
+        show: np.ndarray,
+        data: np.ndarray,
+        value_min: float,
+        value_max: float,
+        max_path_depth: float,
+        path_depths: np.ndarray,
+        spans: np.ndarray,
+        colors: np.ndarray | None,
+        stroke_color: Any,
+        opacity: np.ndarray | None,
+        hover_labels: np.ndarray | None,
+        bezier_fractions: tuple[float, float],
+        style: Mapping[str, Any],
+    ):
+        Mark.__init__(self, annotation=False)
+        self._coordinate_axes = ["x", "y"]
+        self.ntable = ntable
+        self.host_tree_mark = host_tree_mark
+        self.layout = layout
+        self.depth_offset = depth_offset
+        self.span_offset = span_offset
+        self.show = show
+        self.data = data
+        self.value_min = value_min
+        self.value_max = value_max
+        self.max_path_depth = max_path_depth
+        self.path_depths = path_depths
+        self.spans = spans
+        self.colors = colors
+        self.stroke_color = stroke_color
+        self.opacity = opacity
+        self.hover_labels = hover_labels
+        self.bezier_fractions = bezier_fractions
+        self.style = style
+        self.tip_indices = np.array([], dtype=int)
+        self.paths: list[str] = []
+
+        # alias for user-access from Mark
+        self.depth = self.max_path_depth
+
+    def _get_path_anchor_coords(
+        self,
+        shown: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Return start / end anchor coordinates in data space."""
+        start_x = np.asarray(self.ntable[shown, 0], dtype=float)
+        start_y = np.asarray(self.ntable[shown, 1], dtype=float)
+        end_x = start_x.copy()
+        end_y = start_y.copy()
+        spans = np.asarray(self.spans[shown], dtype=float)
+
+        if self.layout in ("r", "l"):
+            end_y = spans
+        elif self.layout in ("u", "d"):
+            end_x = spans
+        else:
+            raise ValueError(f"Unsupported tip-path layout: {self.layout!r}")
+        return start_x, start_y, end_x, end_y
+
+    def domain(self, axis: str) -> Tuple[float | None, float | None]:
+        """Return the raw domain of visible path endpoints."""
+        shown = _shown_tip_indices(self.show)
+        if shown.size == 0:
+            return (None, None)
+        start_x, start_y, end_x, end_y = self._get_path_anchor_coords(shown)
+        if axis == "x":
+            domain = toyplot.data.minimax(np.concatenate((start_x, end_x)))
+        else:
+            domain = toyplot.data.minimax(np.concatenate((start_y, end_y)))
+        return float(domain[0]), float(domain[1])
+
+    def _get_endpoint_offsets_xy(
+        self,
+        shown: np.ndarray,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Return endpoint offsets from each anchor in Cartesian px axes."""
+        ntips = shown.size
+        depth0 = np.repeat(float(self.depth_offset), ntips)
+        depth1 = depth0 + np.asarray(self.path_depths[shown], dtype=float)
+        span = np.repeat(float(self.span_offset), ntips)
+
+        if self.layout == "r":
+            return depth0, depth1, span, span
+        if self.layout == "l":
+            return -depth0, -depth1, span, span
+        if self.layout == "u":
+            return span, span, -depth0, -depth1
+        if self.layout == "d":
+            return span, span, depth0, depth1
+        raise ValueError(f"Unsupported tip-path layout: {self.layout!r}")
+
+    def extents(
+        self,
+        axis: str | Sequence[str],
+    ) -> Tuple[Tuple[np.ndarray], Tuple[np.ndarray]]:
+        """Return pixel-space extents from path offsets and visible stroke."""
+        axes = (
+            [axis]
+            if isinstance(axis, str) and axis in self._coordinate_axes
+            else list(axis)
+        )
+        shown = _shown_tip_indices(self.show)
+        if shown.size == 0:
+            x_coords = np.zeros(0, dtype=float)
+            y_coords = np.zeros(0, dtype=float)
+            coords = tuple(
+                x_coords.copy() if ax == "x" else y_coords.copy() for ax in axes
+            )
+            zeros = np.zeros(0, dtype=float)
+            return coords, (zeros, zeros, zeros, zeros)
+
+        line_pad = _visible_line_pad(self.style)
+        start_x, start_y, end_x, end_y = self._get_path_anchor_coords(shown)
+        x0, x1, y0, y1 = self._get_endpoint_offsets_xy(shown)
+
+        # Expose both data-space endpoints so Toyplot can project the absolute
+        # span-axis end positions through the active axis scale; only the
+        # overlay offsets remain as pure pixel extents.
+        x_coords = np.concatenate((start_x, end_x))
+        y_coords = np.concatenate((start_y, end_y))
+        left = np.concatenate((x0 - line_pad, x1 - line_pad))
+        right = np.concatenate((x0 + line_pad, x1 + line_pad))
+        top = np.concatenate((y0 - line_pad, y1 - line_pad))
+        bottom = np.concatenate((y0 + line_pad, y1 + line_pad))
+        coords = tuple(x_coords.copy() if ax == "x" else y_coords.copy() for ax in axes)
+        return coords, (left, right, top, bottom)
+
+    def get_companion_scale_spec(
+        self,
+        axes,
+        *,
+        axis: str = "auto",
+        padding: float = 15.0,
+    ):
+        """Return companion scale metadata for rendering a tip-path ruler."""
+        from toytree.annotate.src.add_scale_bar import (
+            _get_linear_tip_path_scale_bounds_finalized,
+            _resolve_tip_path_scale_axis,
+            _resolve_tip_path_scale_domain,
+            _validate_scale_padding,
+        )
+        from toytree.drawing.src.scale_axes import CompanionScaleSpec
+        from toytree.utils import ToytreeError
+
+        resolved_axis = _resolve_tip_path_scale_axis(self, axis)
+        resolved_padding = _validate_scale_padding(padding, "mark")
+        tmin = float(self.value_min)
+        tmax = float(self.value_max)
+        if tmax <= tmin:
+            raise ToytreeError(
+                "Tip-path data have zero range; "
+                "add_axes_scale_bar_to_mark() requires at least one positive value."
+            )
+        domain_min, domain_max, locator_sign = _resolve_tip_path_scale_domain(
+            self,
+            tmax,
+        )
+        return CompanionScaleSpec(
+            key="mark",
+            axis=resolved_axis,
+            data_domain=(float(domain_min), float(domain_max)),
+            locator_domain=(float(tmin), float(tmax)),
+            bounds_getter=lambda: _get_linear_tip_path_scale_bounds_finalized(
                 axes,
                 self,
                 resolved_padding,

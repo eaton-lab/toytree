@@ -11,7 +11,6 @@ import sys
 from collections.abc import Mapping
 from typing import Any, Tuple, TypeVar
 
-import numpy as np
 from toyplot.canvas import Canvas
 from toyplot.coordinates import Cartesian
 
@@ -379,9 +378,6 @@ def get_layout(tree: ToyTree, style: TreeStyle, **kwargs) -> BaseLayout:
 
     # return circular or unrooted layout
     if style.layout.startswith("c"):
-        # require tip_labels_align=True for 'c' unless no variation
-        if not np.allclose(tree.get_tip_data("height"), 0):
-            style.tip_labels_align = True
         return CircularLayout(tree, style)
 
     # anything else is unrooted (None, etc.)

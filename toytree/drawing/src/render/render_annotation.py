@@ -20,6 +20,7 @@ from toytree.drawing.src.mark_annotation import (
     AnnotationStochasticMapLine,
     AnnotationTipBarMark,
     AnnotationTipLabelMark,
+    AnnotationTipPathMark,
     AnnotationTipTileMark,
 )
 from toytree.drawing.src.render.render_marker import render_marker
@@ -84,6 +85,15 @@ def _render(axes, mark, context):
 )
 def _render(axes, mark, context):
     render_tip_bars(axes, mark, context)
+
+
+@dispatch(
+    toyplot.coordinates.Cartesian,
+    AnnotationTipPathMark,
+    toyplot.html.RenderContext,
+)
+def _render(axes, mark, context):
+    render_tip_paths(axes, mark, context)
 
 
 @dispatch(
@@ -552,11 +562,140 @@ def render_tip_bars(
         else:
             color = ToyColor(mark.colors[tip_indices[idx]])
         path_style["fill"] = color.rgb
-        path_style["fill-opacity"] = float(mark.opacity[tip_indices[idx]])
+        if mark.opacity is not None:
+            path_style["fill-opacity"] = float(mark.opacity[tip_indices[idx]])
         path_xml = xml.SubElement(
             group_xml,
             "path",
             id=f"TipBar-{idx}",
+            d=path,
+            style=concat_style_fix_color(path_style),
+        )
+        if mark.hover_labels is not None:
+            xml.SubElement(path_xml, "title").text = str(
+                mark.hover_labels[tip_indices[idx]]
+            )
+
+
+def _build_rectangular_tip_paths_px(
+    start_x_px: np.ndarray,
+    start_y_px: np.ndarray,
+    end_x_px: np.ndarray,
+    end_y_px: np.ndarray,
+    layout: str,
+    depth_offset: float,
+    span_offset: float,
+    depths: np.ndarray,
+    bezier_fractions: tuple[float, float],
+) -> list[str]:
+    """Build SVG path strings for rectangular tip-path annotations."""
+    paths = []
+    depths = np.asarray(depths, dtype=float)
+    frac0 = float(bezier_fractions[0])
+    frac1 = float(bezier_fractions[1])
+    use_line = bool(np.isclose(frac0, 0.0) and np.isclose(frac1, 1.0))
+
+    for idx in range(int(depths.size)):
+        if layout == "r":
+            start_x = float(start_x_px[idx] + depth_offset)
+            start_y = float(start_y_px[idx] + span_offset)
+            end_x = float(end_x_px[idx] + depth_offset + depths[idx])
+            end_y = float(end_y_px[idx] + span_offset)
+            ctrl1_x = float(start_x + (end_x - start_x) * frac0)
+            ctrl1_y = start_y
+            ctrl2_x = float(start_x + (end_x - start_x) * frac1)
+            ctrl2_y = end_y
+        elif layout == "l":
+            start_x = float(start_x_px[idx] - depth_offset)
+            start_y = float(start_y_px[idx] + span_offset)
+            end_x = float(end_x_px[idx] - depth_offset - depths[idx])
+            end_y = float(end_y_px[idx] + span_offset)
+            ctrl1_x = float(start_x + (end_x - start_x) * frac0)
+            ctrl1_y = start_y
+            ctrl2_x = float(start_x + (end_x - start_x) * frac1)
+            ctrl2_y = end_y
+        elif layout == "u":
+            start_x = float(start_x_px[idx] + span_offset)
+            start_y = float(start_y_px[idx] - depth_offset)
+            end_x = float(end_x_px[idx] + span_offset)
+            end_y = float(end_y_px[idx] - depth_offset - depths[idx])
+            ctrl1_x = start_x
+            ctrl1_y = float(start_y + (end_y - start_y) * frac0)
+            ctrl2_x = end_x
+            ctrl2_y = float(start_y + (end_y - start_y) * frac1)
+        elif layout == "d":
+            start_x = float(start_x_px[idx] + span_offset)
+            start_y = float(start_y_px[idx] + depth_offset)
+            end_x = float(end_x_px[idx] + span_offset)
+            end_y = float(end_y_px[idx] + depth_offset + depths[idx])
+            ctrl1_x = start_x
+            ctrl1_y = float(start_y + (end_y - start_y) * frac0)
+            ctrl2_x = end_x
+            ctrl2_y = float(start_y + (end_y - start_y) * frac1)
+        else:
+            raise ValueError(f"Unsupported tip-path layout: {layout!r}")
+
+        # Control points share the start and end tangents so rectangular tip
+        # paths ease out from one span level and ease back into the other.
+        if use_line:
+            path = f"M {start_x:.8g} {start_y:.8g} " f"L {end_x:.8g} {end_y:.8g}"
+        else:
+            path = (
+                f"M {start_x:.8g} {start_y:.8g} "
+                f"C {ctrl1_x:.8g} {ctrl1_y:.8g} "
+                f"{ctrl2_x:.8g} {ctrl2_y:.8g} "
+                f"{end_x:.8g} {end_y:.8g}"
+            )
+        paths.append(path)
+    return paths
+
+
+def render_tip_paths(
+    axes: Cartesian,
+    mark: AnnotationTipPathMark,
+    context: toyplot.html.RenderContext,
+) -> None:
+    """Render rectangular tip-anchored path annotations."""
+    tip_indices = np.where(np.asarray(mark.show, dtype=bool))[0].astype(int)
+    start_x, start_y, end_x, end_y = mark._get_path_anchor_coords(tip_indices)
+    paths = _build_rectangular_tip_paths_px(
+        start_x_px=np.asarray(axes.project("x", start_x), dtype=float),
+        start_y_px=np.asarray(axes.project("y", start_y), dtype=float),
+        end_x_px=np.asarray(axes.project("x", end_x), dtype=float),
+        end_y_px=np.asarray(axes.project("y", end_y), dtype=float),
+        layout=mark.layout,
+        depth_offset=float(mark.depth_offset),
+        span_offset=float(mark.span_offset),
+        depths=np.asarray(mark.path_depths[tip_indices], dtype=float),
+        bezier_fractions=mark.bezier_fractions,
+    )
+
+    mark.tip_indices = tip_indices
+    mark.paths = paths
+
+    group_xml = xml.SubElement(
+        context.parent,
+        "g",
+        id=context.get_id(mark),
+        attrib={"class": "toytree-Annotation-TipPaths"},
+    )
+
+    for idx, path in enumerate(paths):
+        path_style = dict(mark.style)
+        path_style["fill"] = "none"
+        path_style.pop("opacity", None)
+        if mark.colors is None:
+            color = mark.stroke_color
+        else:
+            color = ToyColor(mark.colors[tip_indices[idx]])
+        path_style["stroke"] = color.rgb
+        if mark.opacity is not None:
+            path_style.pop("stroke-opacity", None)
+            path_style["stroke-opacity"] = float(mark.opacity[tip_indices[idx]])
+        path_xml = xml.SubElement(
+            group_xml,
+            "path",
+            id=f"TipPath-{idx}",
             d=path,
             style=concat_style_fix_color(path_style),
         )

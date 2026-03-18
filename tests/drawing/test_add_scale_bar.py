@@ -740,12 +740,59 @@ class TestAddScaleBar(PytestCompat):
         self.assertGreaterEqual(float(axes.x._data_max), 9.0)
         self.assertGreaterEqual(float(axes.y._data_max), 9.0)
 
+    def test_tip_bar_without_companion_late_host_marks_update_host_domain(self):
+        _, axes, _ = self.bar_tree.draw(layout="r", scale_bar=False)
+        self.bar_tree.annotate.add_tip_bars(axes, data="X", depth=18)
+        self.assertTrue(
+            getattr(axes, "_toytree_host_fit_add_mark_hook_installed", False)
+        )
+        axes.scatterplot(range(10), range(10))
+        self.assertIsNone(axes._finalized)
+        axes._finalize()
+        self.assertGreaterEqual(float(axes.x._data_max), 9.0)
+        self.assertGreaterEqual(float(axes.y._data_max), 9.0)
+
+    def test_tip_path_without_companion_late_host_marks_update_host_domain(self):
+        _, axes, _ = self.bar_tree.draw(layout="r", scale_bar=False)
+        self.bar_tree.annotate.add_tip_paths(axes, data="X", depth=18)
+        self.assertTrue(
+            getattr(axes, "_toytree_host_fit_add_mark_hook_installed", False)
+        )
+        axes.scatterplot(range(10), range(10))
+        self.assertIsNone(axes._finalized)
+        axes._finalize()
+        self.assertGreaterEqual(float(axes.x._data_max), 9.0)
+        self.assertGreaterEqual(float(axes.y._data_max), 9.0)
+
     def test_mark_scale_bar_late_host_marks_update_host_domain(self):
         _, axes, _ = self.bar_tree.draw(layout="r", scale_bar=False)
         bmark = self.bar_tree.annotate.add_tip_bars(axes, data="X", depth=18)
         self.bar_tree.annotate.add_axes_scale_bar_to_mark(axes, bmark)
         axes.scatterplot(range(10), range(10))
         axes._finalize()
+        self.assertGreaterEqual(float(axes.x._data_max), 9.0)
+        self.assertGreaterEqual(float(axes.y._data_max), 9.0)
+
+    def test_mark_scale_bar_upgrades_plain_data_annotation_hook(self):
+        _, axes, _ = self.bar_tree.draw(layout="r", scale_bar=False)
+        bmark = self.bar_tree.annotate.add_tip_bars(axes, data="X", depth=18)
+        self.assertTrue(
+            getattr(axes, "_toytree_host_fit_add_mark_hook_installed", False)
+        )
+        self.assertFalse(
+            getattr(axes, "_toytree_companion_add_mark_hook_installed", False)
+        )
+        original = axes._toytree_original_add_mark
+        self.bar_tree.annotate.add_axes_scale_bar_to_mark(axes, bmark)
+        self.assertFalse(
+            getattr(axes, "_toytree_host_fit_add_mark_hook_installed", False)
+        )
+        self.assertTrue(
+            getattr(axes, "_toytree_companion_add_mark_hook_installed", False)
+        )
+        self.assertIs(axes._toytree_original_add_mark, original)
+        axes.scatterplot(range(10), range(10))
+        self.assertIsNotNone(axes._finalized)
         self.assertGreaterEqual(float(axes.x._data_max), 9.0)
         self.assertGreaterEqual(float(axes.y._data_max), 9.0)
 
@@ -787,6 +834,20 @@ class TestAddScaleBar(PytestCompat):
         self.assertEqual(float(saxes.x.domain.max), 2.0)
         self.assertEqual(list(saxes.x.ticks.locator._labels), ["0", "1", "2"])
 
+    def test_mark_scale_bar_uses_unit_data_when_bar_data_is_none(self):
+        _, axes, _ = self.bar_tree.draw(layout="r", scale_bar=False)
+        bmark = self.bar_tree.annotate.add_tip_bars(axes, data=None, depth=24)
+        self.bar_tree.annotate.add_axes_scale_bar_to_mark(
+            axes,
+            bmark,
+            tick_locations=[0.0, 0.5, 1.0],
+            scale=1.0,
+        )
+        saxes = self._mark_scale_axes(axes, bmark)
+        self.assertEqual(float(saxes.x.domain.min), 0.0)
+        self.assertEqual(float(saxes.x.domain.max), 1.0)
+        self.assertEqual(list(saxes.x.ticks.locator._labels), ["0", "0.5", "1"])
+
     def test_mark_scale_bar_uses_signed_internal_domain_on_left_and_down(self):
         for layout, axis in (("l", "x"), ("d", "y")):
             _, axes, _ = self.bar_tree.draw(layout=layout, scale_bar=False)
@@ -808,6 +869,85 @@ class TestAddScaleBar(PytestCompat):
                 )
             )
             self.assertEqual(list(active.ticks.locator._labels), ["0", "1", "2"])
+
+    def test_tip_path_scale_bar_uses_raw_value_domain(self):
+        _, axes, _ = self.bar_tree.draw(layout="r", scale_bar=False)
+        pmark = self.bar_tree.annotate.add_tip_paths(
+            axes,
+            data="X",
+            depth=24,
+            spans=np.array([0.0, -4.0, 4.0]),
+        )
+        self.bar_tree.annotate.add_axes_scale_bar_to_mark(
+            axes,
+            pmark,
+            tick_locations=[0, 1, 2],
+            scale=1.0,
+        )
+        saxes = self._mark_scale_axes(axes, pmark)
+        self.assertEqual(float(saxes.x.domain.min), 0.0)
+        self.assertEqual(float(saxes.x.domain.max), 2.0)
+        self.assertEqual(list(saxes.x.ticks.locator._labels), ["0", "1", "2"])
+
+    def test_tip_path_scale_bar_uses_unit_data_when_data_is_none(self):
+        _, axes, _ = self.bar_tree.draw(layout="r", scale_bar=False)
+        pmark = self.bar_tree.annotate.add_tip_paths(axes, data=None, depth=24)
+        self.bar_tree.annotate.add_axes_scale_bar_to_mark(
+            axes,
+            pmark,
+            tick_locations=[0.0, 0.5, 1.0],
+            scale=1.0,
+        )
+        saxes = self._mark_scale_axes(axes, pmark)
+        self.assertEqual(float(saxes.x.domain.min), 0.0)
+        self.assertEqual(float(saxes.x.domain.max), 1.0)
+        self.assertEqual(list(saxes.x.ticks.locator._labels), ["0", "0.5", "1"])
+
+    def test_tip_path_scale_bar_uses_signed_internal_domain_on_left_and_down(self):
+        for layout, axis in (("l", "x"), ("d", "y")):
+            _, axes, _ = self.bar_tree.draw(layout=layout, scale_bar=False)
+            pmark = self.bar_tree.annotate.add_tip_paths(
+                axes,
+                data="X",
+                depth=24,
+                spans=np.array([0.0, -4.0, 4.0]),
+            )
+            self.bar_tree.annotate.add_axes_scale_bar_to_mark(
+                axes,
+                pmark,
+                tick_locations=[0, 1, 2],
+                scale=1.0,
+            )
+            saxes = self._mark_scale_axes(axes, pmark)
+            active = getattr(saxes, axis)
+            self.assertEqual(float(active.domain.min), -2.0)
+            self.assertEqual(float(active.domain.max), 0.0)
+            self.assertTrue(
+                np.allclose(
+                    np.asarray(active.ticks.locator._locations, dtype=float),
+                    np.array([0.0, -1.0, -2.0]),
+                )
+            )
+            self.assertEqual(list(active.ticks.locator._labels), ["0", "1", "2"])
+
+    def test_mark_scale_bar_rejects_zero_data(self):
+        _, axes0, _ = self.bar_tree.draw(layout="r", scale_bar=False)
+        bmark0 = self.bar_tree.annotate.add_tip_bars(
+            axes0,
+            data=np.zeros(self.bar_tree.ntips, dtype=float),
+            depth=24,
+        )
+        with self.assertRaises(ToytreeError):
+            self.bar_tree.annotate.add_axes_scale_bar_to_mark(axes0, bmark0)
+
+        _, axes1, _ = self.bar_tree.draw(layout="r", scale_bar=False)
+        pmark1 = self.bar_tree.annotate.add_tip_paths(
+            axes1,
+            data=np.zeros(self.bar_tree.ntips, dtype=float),
+            depth=24,
+        )
+        with self.assertRaises(ToytreeError):
+            self.bar_tree.annotate.add_axes_scale_bar_to_mark(axes1, pmark1)
 
     def test_mark_scale_bar_zero_tick_stays_at_tip_baseline_for_all_layouts(self):
         expectations = {
@@ -879,7 +1019,9 @@ class TestAddScaleBar(PytestCompat):
 
         self.assertEqual(calls["count"], 1)
 
-    def test_add_mark_scale_bar_with_existing_companions_finalizes_host_once(self):
+    def test_add_mark_scale_bar_with_existing_companions_skips_duplicate_finalize(
+        self,
+    ):
         _, axes, _ = self.long_bar_tree.draw(
             tip_labels_align=True,
             scale_bar=True,
@@ -914,6 +1056,114 @@ class TestAddScaleBar(PytestCompat):
         add_scale_bar_mod._finalize_host_axes = counting_finalize
         try:
             self.long_bar_tree.annotate.add_axes_scale_bar_to_mark(axes, second)
+        finally:
+            add_scale_bar_mod._finalize_host_axes = original
+
+        self.assertEqual(calls["count"], 0)
+
+    def test_add_tip_bars_with_existing_companions_skips_full_host_finalize(self):
+        _, axes, _ = self.long_bar_tree.draw(
+            tip_labels_align=True,
+            scale_bar=True,
+            padding=15,
+            width=600,
+        )
+        first = self.long_bar_tree.annotate.add_tip_bars(
+            axes,
+            data="X",
+            offset=150,
+            width=1.0,
+            depth=75,
+            style={"stroke": "black"},
+        )
+        self.long_bar_tree.annotate.add_axes_scale_bar_to_mark(axes, first)
+
+        original = add_scale_bar_mod._finalize_host_axes
+        calls = {"count": 0}
+
+        def counting_finalize(axes):
+            calls["count"] += 1
+            return original(axes)
+
+        add_scale_bar_mod._finalize_host_axes = counting_finalize
+        try:
+            self.long_bar_tree.annotate.add_tip_bars(
+                axes,
+                data="X",
+                offset=250,
+                width=1.0,
+                depth=75,
+                style={"stroke": "black"},
+            )
+        finally:
+            add_scale_bar_mod._finalize_host_axes = original
+
+        self.assertEqual(calls["count"], 0)
+
+    def test_add_tip_bars_falls_back_to_full_host_finalize_when_incremental_skips(
+        self,
+    ):
+        _, axes, _ = self.long_bar_tree.draw(
+            tip_labels_align=True,
+            scale_bar=True,
+            padding=15,
+            width=600,
+        )
+        first = self.long_bar_tree.annotate.add_tip_bars(
+            axes,
+            data="X",
+            offset=150,
+            width=1.0,
+            depth=75,
+            style={"stroke": "black"},
+        )
+        self.long_bar_tree.annotate.add_axes_scale_bar_to_mark(axes, first)
+
+        original_try = add_scale_bar_mod.try_incremental_tip_bar_host_finalize
+        original_finalize = add_scale_bar_mod._finalize_host_axes
+        calls = {"count": 0}
+
+        def skip_incremental(axes, mark):
+            return False
+
+        def counting_finalize(axes):
+            calls["count"] += 1
+            return original_finalize(axes)
+
+        add_scale_bar_mod.try_incremental_tip_bar_host_finalize = skip_incremental
+        add_scale_bar_mod._finalize_host_axes = counting_finalize
+        try:
+            self.long_bar_tree.annotate.add_tip_bars(
+                axes,
+                data="X",
+                offset=250,
+                width=1.0,
+                depth=75,
+                style={"stroke": "black"},
+            )
+        finally:
+            add_scale_bar_mod.try_incremental_tip_bar_host_finalize = original_try
+            add_scale_bar_mod._finalize_host_axes = original_finalize
+
+        self.assertEqual(calls["count"], 1)
+
+    def test_second_tree_draw_with_existing_companions_finalizes_host_once(self):
+        _, axes, _ = self.tree.draw(layout="r", scale_bar=True, width=400)
+        original = add_scale_bar_mod._finalize_host_axes
+        calls = {"count": 0}
+
+        def counting_finalize(axes):
+            calls["count"] += 1
+            return original(axes)
+
+        add_scale_bar_mod._finalize_host_axes = counting_finalize
+        try:
+            _, axes, _ = self.tree.draw(
+                axes=axes,
+                layout="l",
+                xbaseline=6,
+                scale_bar=True,
+            )
         finally:
             add_scale_bar_mod._finalize_host_axes = original
 
@@ -1125,6 +1375,37 @@ class TestAddScaleBar(PytestCompat):
         )
         xmax = self._projected_bounds(axes, marks[-1])[1]
         self.assertLessEqual(xmax, float(axes._xmax_range) + 0.5)
+
+    def test_multiple_mark_companions_share_projected_tip_slot_cache(self):
+        _, axes, _ = self.long_bar_tree.draw(
+            tip_labels_align=True,
+            scale_bar=True,
+            padding=20,
+            width=700,
+        )
+        original = add_scale_bar_mod._compute_projected_tip_slot_bounds_finalized
+        calls = {"count": 0}
+
+        def counting_bounds(axes, mark):
+            calls["count"] += 1
+            return original(axes, mark)
+
+        add_scale_bar_mod._compute_projected_tip_slot_bounds_finalized = counting_bounds
+        try:
+            for offset in (150, 250, 350):
+                bmark = self.long_bar_tree.annotate.add_tip_bars(
+                    axes,
+                    data="X",
+                    offset=offset,
+                    width=1.0,
+                    depth=75,
+                    style={"stroke": "black"},
+                )
+                self.long_bar_tree.annotate.add_axes_scale_bar_to_mark(axes, bmark)
+        finally:
+            add_scale_bar_mod._compute_projected_tip_slot_bounds_finalized = original
+
+        self.assertEqual(calls["count"], 3)
 
     def test_host_axis_stays_raw_data_domain_when_shown(self):
         _, axes, _ = self.long_bar_tree.draw(

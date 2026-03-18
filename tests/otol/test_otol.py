@@ -203,19 +203,177 @@ def test_resolve_taxonomic_names_includes_ncbi_id_and_policies(monkeypatch):
         on_unresolved="ignore",
     )
     assert list(out.columns) == [
+        "key",
         "query",
         "status",
         "matched_name",
+        "rank",
+        "taxon_name",
         "ott_id",
         "ncbi_id",
         "is_synonym",
         "reason",
     ]
+    assert pd.isna(out.loc[0, "key"])
+    assert pd.isna(out.loc[1, "key"])
     assert str(out["ott_id"].dtype) == "Int64"
     assert str(out["ncbi_id"].dtype) == "Int64"
     assert int(out.loc[0, "ncbi_id"]) == 9612
+    assert pd.isna(out.loc[1, "rank"])
+    assert pd.isna(out.loc[1, "taxon_name"])
     assert pd.isna(out.loc[1, "ott_id"])
     assert pd.isna(out.loc[1, "ncbi_id"])
+
+
+def test_resolve_taxonomic_names_ignore_ambiguous_leaves_taxon_fields_missing(
+    monkeypatch,
+):
+    """Ignore ambiguous rows without leaking or requiring taxon metadata."""
+
+    def _mock_first_ambiguous(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Ambiguous first",
+                "matches": [
+                    {
+                        "matched_name": "Choice A",
+                        "is_synonym": False,
+                        "taxon": {"name": "Choice A", "rank": "species", "ott_id": 1},
+                    },
+                    {
+                        "matched_name": "Choice B",
+                        "is_synonym": False,
+                        "taxon": {"name": "Choice B", "rank": "species", "ott_id": 2},
+                    },
+                ],
+            }
+        ]
+
+    def _mock_after_matched(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Canis lupus",
+                "matches": [
+                    {
+                        "matched_name": "Canis lupus",
+                        "is_synonym": False,
+                        "taxon": {
+                            "name": "Canis lupus",
+                            "rank": "species",
+                            "ott_id": 9612,
+                            "tax_sources": ["ncbi:9612"],
+                        },
+                    }
+                ],
+            },
+            {
+                "name": "Ambiguous after matched",
+                "matches": [
+                    {
+                        "matched_name": "Choice A",
+                        "is_synonym": False,
+                        "taxon": {"name": "Choice A", "rank": "species", "ott_id": 3},
+                    },
+                    {
+                        "matched_name": "Choice B",
+                        "is_synonym": False,
+                        "taxon": {"name": "Choice B", "rank": "species", "ott_id": 4},
+                    },
+                ],
+            },
+        ]
+
+    client = otol._OTOLClient(cache=False)
+
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_first_ambiguous)
+    first = client.resolve_taxonomic_names(["Ambiguous first"], on_ambiguous="ignore")
+    assert first.loc[0, "status"] == "ambiguous"
+    assert first.loc[0, "matched_name"] is None
+    assert first.loc[0, "reason"] == "2_matches"
+    assert pd.isna(first.loc[0, "rank"])
+    assert pd.isna(first.loc[0, "taxon_name"])
+    assert pd.isna(first.loc[0, "ott_id"])
+    assert pd.isna(first.loc[0, "ncbi_id"])
+
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_after_matched)
+    after = client.resolve_taxonomic_names(
+        ["Canis lupus", "Ambiguous after matched"],
+        on_ambiguous="ignore",
+    )
+    assert after.loc[1, "status"] == "ambiguous"
+    assert after.loc[1, "matched_name"] is None
+    assert after.loc[1, "reason"] == "2_matches"
+    assert pd.isna(after.loc[1, "rank"])
+    assert pd.isna(after.loc[1, "taxon_name"])
+    assert pd.isna(after.loc[1, "ott_id"])
+    assert pd.isna(after.loc[1, "ncbi_id"])
+
+
+def test_resolve_taxonomic_names_keep_alias_warns_and_maps_to_ignore(
+    monkeypatch,
+    capsys,
+):
+    """Accept deprecated keep alias and warn to use ignore instead."""
+
+    def _mock_ambiguous(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Ambiguous name",
+                "matches": [
+                    {
+                        "matched_name": "Choice A",
+                        "is_synonym": False,
+                        "taxon": {"name": "Choice A", "rank": "species", "ott_id": 1},
+                    },
+                    {
+                        "matched_name": "Choice B",
+                        "is_synonym": False,
+                        "taxon": {"name": "Choice B", "rank": "species", "ott_id": 2},
+                    },
+                ],
+            }
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_ambiguous)
+    out = client.resolve_taxonomic_names(["Ambiguous name"], on_ambiguous="keep")
+    captured = capsys.readouterr()
+
+    assert out.loc[0, "status"] == "ambiguous"
+    assert "deprecated" in captured.err
+    assert "use 'ignore' instead" in captured.err
+
+
+def test_resolve_taxonomic_names_defaults_ambiguous_to_first(monkeypatch):
+    """Resolve ambiguous names to the first match by default."""
+
+    def _mock_ambiguous(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Ambiguous name",
+                "matches": [
+                    {
+                        "matched_name": "Choice A",
+                        "is_synonym": False,
+                        "taxon": {"name": "Choice A", "rank": "species", "ott_id": 1},
+                    },
+                    {
+                        "matched_name": "Choice B",
+                        "is_synonym": False,
+                        "taxon": {"name": "Choice B", "rank": "species", "ott_id": 2},
+                    },
+                ],
+            }
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_ambiguous)
+    out = client.resolve_taxonomic_names(["Ambiguous name"])
+
+    assert out.loc[0, "status"] == "matched"
+    assert out.loc[0, "matched_name"] == "Choice A"
+    assert int(out.loc[0, "ott_id"]) == 1
+    assert out.loc[0, "reason"] == "resolved_first_of_2"
 
 
 def test_resolve_taxonomic_names_raises_on_unresolved(monkeypatch):
@@ -226,7 +384,7 @@ def test_resolve_taxonomic_names_raises_on_unresolved(monkeypatch):
 
     client = otol._OTOLClient(cache=False)
     monkeypatch.setattr(client, "fetch_json_match_names", _mock_fetch_json_match_names)
-    with pytest.raises(ToytreeError, match="unresolved rows"):
+    with pytest.raises(ToytreeError, match="return_unresolved=True"):
         client.resolve_taxonomic_names(
             ["Unknown taxon"],
             on_unresolved="raise",
@@ -247,6 +405,582 @@ def test_resolve_taxonomic_names_warn_prints_to_stderr(monkeypatch, capsys):
     )
     captured = capsys.readouterr()
     assert "unresolved rows" in captured.err
+    assert "return_unresolved=True" in captured.err
+
+
+def test_resolve_taxonomic_names_return_unresolved_filters_rows(monkeypatch):
+    """Return only unresolved rows when requested."""
+
+    def _mock_fetch_json_match_names(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Canis lupus",
+                "matches": [
+                    {
+                        "matched_name": "Canis lupus",
+                        "is_synonym": False,
+                        "taxon": {
+                            "name": "Canis lupus",
+                            "rank": "species",
+                            "ott_id": 1,
+                        },
+                    }
+                ],
+            },
+            {"name": "Unknown taxon", "matches": []},
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_fetch_json_match_names)
+    out = client.resolve_taxonomic_names(
+        ["Canis lupus", "Unknown taxon"],
+        return_unresolved=True,
+    )
+
+    assert list(out["query"]) == ["Unknown taxon"]
+    assert list(out["status"]) == ["unmatched"]
+
+
+def test_resolve_taxonomic_names_return_unresolved_includes_ambiguous_rows(monkeypatch):
+    """Include ambiguous rows in unresolved-only output when ambiguity is ignored."""
+
+    def _mock_fetch_json_match_names(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Ambiguous name",
+                "matches": [
+                    {
+                        "matched_name": "Choice A",
+                        "is_synonym": False,
+                        "taxon": {"name": "Choice A", "rank": "species", "ott_id": 1},
+                    },
+                    {
+                        "matched_name": "Choice B",
+                        "is_synonym": False,
+                        "taxon": {"name": "Choice B", "rank": "species", "ott_id": 2},
+                    },
+                ],
+            }
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_fetch_json_match_names)
+    out = client.resolve_taxonomic_names(
+        ["Ambiguous name"],
+        on_ambiguous="ignore",
+        return_unresolved=True,
+    )
+
+    assert list(out["status"]) == ["ambiguous"]
+    assert list(out["query"]) == ["Ambiguous name"]
+
+
+def test_resolve_taxonomic_names_return_unresolved_returns_empty_when_all_resolved(
+    monkeypatch,
+):
+    """Return an empty table with the standard schema when nothing is unresolved."""
+
+    def _mock_fetch_json_match_names(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Canis lupus",
+                "matches": [
+                    {
+                        "matched_name": "Canis lupus",
+                        "is_synonym": False,
+                        "taxon": {
+                            "name": "Canis lupus",
+                            "rank": "species",
+                            "ott_id": 1,
+                        },
+                    }
+                ],
+            }
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_fetch_json_match_names)
+    out = client.resolve_taxonomic_names(
+        ["Canis lupus"],
+        return_unresolved=True,
+    )
+
+    assert out.empty
+    assert list(out.columns) == [
+        "key",
+        "query",
+        "status",
+        "matched_name",
+        "rank",
+        "taxon_name",
+        "ott_id",
+        "ncbi_id",
+        "is_synonym",
+        "reason",
+    ]
+
+
+def test_resolve_taxonomic_names_return_unresolved_still_warns(monkeypatch, capsys):
+    """Keep unresolved warn behavior while returning only unresolved rows."""
+
+    def _mock_fetch_json_match_names(query, approximate=False, context=None):  # noqa: ARG001
+        return [{"name": "Unknown taxon", "matches": []}]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_fetch_json_match_names)
+    out = client.resolve_taxonomic_names(
+        ["Unknown taxon"],
+        on_unresolved="warn",
+        return_unresolved=True,
+    )
+    captured = capsys.readouterr()
+
+    assert list(out["status"]) == ["unmatched"]
+    assert "return_unresolved=True" in captured.err
+
+
+def test_resolve_taxonomic_names_return_unresolved_skips_raise(monkeypatch, capsys):
+    """Do not raise when unresolved rows are being returned explicitly."""
+
+    def _mock_fetch_json_match_names(query, approximate=False, context=None):  # noqa: ARG001
+        return [{"name": "Unknown taxon", "matches": []}]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_fetch_json_match_names)
+    out = client.resolve_taxonomic_names(
+        ["Unknown taxon"],
+        on_unresolved="raise",
+        return_unresolved=True,
+    )
+    captured = capsys.readouterr()
+
+    assert list(out["status"]) == ["unmatched"]
+    assert captured.err == ""
+
+
+def test_resolve_taxonomic_names_mapping_supports_key_column(monkeypatch):
+    """Resolve mapping values as queries while preserving mapping keys."""
+
+    def _mock_fetch_json_match_names(query, approximate=False, context=None):  # noqa: ARG001
+        assert query == ["Canis lupus", "Unknown taxon"]
+        return [
+            {
+                "name": "Canis lupus",
+                "matches": [
+                    {
+                        "matched_name": "Canis lupus",
+                        "is_synonym": False,
+                        "taxon": {
+                            "name": "Canis lupus",
+                            "rank": "species",
+                            "ott_id": 1,
+                        },
+                    }
+                ],
+            },
+            {"name": "Unknown taxon", "matches": []},
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_fetch_json_match_names)
+    out = client.resolve_taxonomic_names(
+        {"wolf": "Canis lupus", "missing": "Unknown taxon"},
+        on_unresolved="ignore",
+    )
+
+    assert list(out.columns) == [
+        "key",
+        "query",
+        "status",
+        "matched_name",
+        "rank",
+        "taxon_name",
+        "ott_id",
+        "ncbi_id",
+        "is_synonym",
+        "reason",
+    ]
+    assert list(out["key"]) == ["wolf", "missing"]
+    assert list(out["query"]) == ["Canis lupus", "Unknown taxon"]
+    assert list(out["status"]) == ["matched", "unmatched"]
+
+
+def test_resolve_taxonomic_names_mapping_return_unresolved_keeps_key(
+    monkeypatch,
+):
+    """Keep mapping keys on unresolved-only returns."""
+
+    def _mock_fetch_json_match_names(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Canis lupus",
+                "matches": [
+                    {
+                        "matched_name": "Canis lupus",
+                        "is_synonym": False,
+                        "taxon": {
+                            "name": "Canis lupus",
+                            "rank": "species",
+                            "ott_id": 1,
+                        },
+                    }
+                ],
+            },
+            {"name": "Unknown taxon", "matches": []},
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_fetch_json_match_names)
+    out = client.resolve_taxonomic_names(
+        {"wolf": "Canis lupus", "missing": "Unknown taxon"},
+        return_unresolved=True,
+    )
+
+    assert list(out["key"]) == ["missing"]
+    assert list(out["query"]) == ["Unknown taxon"]
+    assert list(out["status"]) == ["unmatched"]
+
+
+def test_resolve_taxonomic_names_mapping_ignore_ambiguous_preserves_key(
+    monkeypatch,
+):
+    """Preserve mapping key on ambiguous rows when ambiguity is ignored."""
+
+    def _mock_ambiguous(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Ambiguous name",
+                "matches": [
+                    {
+                        "matched_name": "Choice A",
+                        "is_synonym": False,
+                        "taxon": {"name": "Choice A", "rank": "species", "ott_id": 1},
+                    },
+                    {
+                        "matched_name": "Choice B",
+                        "is_synonym": False,
+                        "taxon": {"name": "Choice B", "rank": "species", "ott_id": 2},
+                    },
+                ],
+            }
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_ambiguous)
+    out = client.resolve_taxonomic_names(
+        {"sample_a": "Ambiguous name"},
+        on_ambiguous="ignore",
+    )
+
+    assert list(out["key"]) == ["sample_a"]
+    assert list(out["status"]) == ["ambiguous"]
+    assert list(out["query"]) == ["Ambiguous name"]
+
+
+def test_resolve_taxonomic_names_mapping_default_first_preserves_key(monkeypatch):
+    """Preserve mapping key when the default ambiguity policy picks first."""
+
+    def _mock_ambiguous(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Ambiguous name",
+                "matches": [
+                    {
+                        "matched_name": "Choice A",
+                        "is_synonym": False,
+                        "taxon": {"name": "Choice A", "rank": "species", "ott_id": 1},
+                    },
+                    {
+                        "matched_name": "Choice B",
+                        "is_synonym": False,
+                        "taxon": {"name": "Choice B", "rank": "species", "ott_id": 2},
+                    },
+                ],
+            }
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_ambiguous)
+    out = client.resolve_taxonomic_names({"sample_a": "Ambiguous name"})
+
+    assert list(out["key"]) == ["sample_a"]
+    assert list(out["status"]) == ["matched"]
+    assert list(out["query"]) == ["Ambiguous name"]
+    assert out.loc[0, "reason"] == "resolved_first_of_2"
+
+
+def test_resolve_taxonomic_names_mapping_duplicate_values_preserve_keys(monkeypatch):
+    """Preserve distinct keys when a mapping contains duplicate query values."""
+
+    def _mock_duplicate_values(query, approximate=False, context=None):  # noqa: ARG001
+        assert query == ["Repeated name", "Repeated name"]
+        return [
+            {
+                "name": "Repeated name",
+                "matches": [
+                    {
+                        "matched_name": "Repeated name",
+                        "is_synonym": False,
+                        "taxon": {
+                            "name": "Repeated name",
+                            "rank": "species",
+                            "ott_id": 1,
+                        },
+                    }
+                ],
+            },
+            {
+                "name": "Repeated name",
+                "matches": [
+                    {
+                        "matched_name": "Repeated name",
+                        "is_synonym": False,
+                        "taxon": {
+                            "name": "Repeated name",
+                            "rank": "species",
+                            "ott_id": 2,
+                        },
+                    }
+                ],
+            },
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_duplicate_values)
+    out = client.resolve_taxonomic_names(
+        {"sample_a": "Repeated name", "sample_b": "Repeated name"},
+        on_duplicate="ignore",
+    )
+
+    assert list(out["key"]) == ["sample_a", "sample_b"]
+    assert list(out["query"]) == ["Repeated name", "Repeated name"]
+    assert list(out["ott_id"]) == [1, 2]
+
+
+def test_resolve_taxonomic_names_warns_on_duplicate_ott_ids(monkeypatch, capsys):
+    """Warn by default when different matched queries resolve to the same OTT id."""
+
+    def _mock_fetch_json_match_names(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Pedicularis groenlandica",
+                "matches": [
+                    {
+                        "matched_name": "Pedicularis groenlandica",
+                        "is_synonym": False,
+                        "taxon": {"name": "Pedicularis groenlandica", "ott_id": 11},
+                    }
+                ],
+            },
+            {
+                "name": "Pedicularis cranolopha",
+                "matches": [
+                    {
+                        "matched_name": "Pedicularis cranolopha",
+                        "is_synonym": False,
+                        "taxon": {"name": "Pedicularis cranolopha", "ott_id": 11},
+                    }
+                ],
+            },
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_fetch_json_match_names)
+    _ = client.resolve_taxonomic_names(
+        ["Pedicularis groenlandica", "Pedicularis cranolopha"],
+        on_unresolved="ignore",
+    )
+    captured = capsys.readouterr()
+    assert "ott11" in captured.err
+    assert "'Pedicularis groenlandica'" in captured.err
+    assert "'Pedicularis cranolopha'" in captured.err
+
+
+def test_resolve_taxonomic_names_warns_once_per_duplicate_ott_group(
+    monkeypatch,
+    capsys,
+):
+    """Emit one stderr line per duplicated OTT id group in warn mode."""
+
+    def _mock_fetch_json_match_names(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Query A1",
+                "matches": [
+                    {
+                        "matched_name": "Match A1",
+                        "is_synonym": False,
+                        "taxon": {"name": "Match A1", "ott_id": 101},
+                    }
+                ],
+            },
+            {
+                "name": "Query A2",
+                "matches": [
+                    {
+                        "matched_name": "Match A2",
+                        "is_synonym": False,
+                        "taxon": {"name": "Match A2", "ott_id": 101},
+                    }
+                ],
+            },
+            {
+                "name": "Query B1",
+                "matches": [
+                    {
+                        "matched_name": "Match B1",
+                        "is_synonym": False,
+                        "taxon": {"name": "Match B1", "ott_id": 202},
+                    }
+                ],
+            },
+            {
+                "name": "Query B2",
+                "matches": [
+                    {
+                        "matched_name": "Match B2",
+                        "is_synonym": False,
+                        "taxon": {"name": "Match B2", "ott_id": 202},
+                    }
+                ],
+            },
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_fetch_json_match_names)
+    _ = client.resolve_taxonomic_names(
+        ["Query A1", "Query A2", "Query B1", "Query B2"],
+        on_unresolved="ignore",
+        on_duplicate="warn",
+    )
+    captured = capsys.readouterr()
+    lines = [line for line in captured.err.strip().splitlines() if line]
+    assert len(lines) == 2
+    assert "ott101" in lines[0]
+    assert "'Query A1'" in lines[0]
+    assert "'Query A2'" in lines[0]
+    assert "ott202" in lines[1]
+    assert "'Query B1'" in lines[1]
+    assert "'Query B2'" in lines[1]
+
+
+def test_resolve_taxonomic_names_ignores_duplicate_ott_warning_when_configured(
+    monkeypatch,
+    capsys,
+):
+    """Suppress duplicate-OTT warnings when on_duplicate='ignore'."""
+
+    def _mock_fetch_json_match_names(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Query A",
+                "matches": [
+                    {
+                        "matched_name": "Match A",
+                        "is_synonym": False,
+                        "taxon": {"name": "Match A", "ott_id": 101},
+                    }
+                ],
+            },
+            {
+                "name": "Query B",
+                "matches": [
+                    {
+                        "matched_name": "Match B",
+                        "is_synonym": False,
+                        "taxon": {"name": "Match B", "ott_id": 101},
+                    }
+                ],
+            },
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_fetch_json_match_names)
+    _ = client.resolve_taxonomic_names(
+        ["Query A", "Query B"],
+        on_unresolved="ignore",
+        on_duplicate="ignore",
+    )
+    captured = capsys.readouterr()
+    assert "multiple matched queries resolve to ott" not in captured.err
+
+
+def test_resolve_taxonomic_names_raises_on_duplicate_ott_ids(monkeypatch):
+    """Raise on duplicate matched OTT ids when on_duplicate='raise'."""
+
+    def _mock_fetch_json_match_names(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Query A",
+                "matches": [
+                    {
+                        "matched_name": "Match A",
+                        "is_synonym": False,
+                        "taxon": {"name": "Match A", "ott_id": 101},
+                    }
+                ],
+            },
+            {
+                "name": "Query B",
+                "matches": [
+                    {
+                        "matched_name": "Match B",
+                        "is_synonym": False,
+                        "taxon": {"name": "Match B", "ott_id": 101},
+                    }
+                ],
+            },
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_fetch_json_match_names)
+    with pytest.raises(ToytreeError, match="ott101"):
+        client.resolve_taxonomic_names(
+            ["Query A", "Query B"],
+            on_unresolved="ignore",
+            on_duplicate="raise",
+        )
+
+
+def test_resolve_taxonomic_names_no_duplicate_ott_warning_when_ids_unique(
+    monkeypatch,
+    capsys,
+):
+    """Stay silent when matched OTT ids are unique."""
+
+    def _mock_fetch_json_match_names(query, approximate=False, context=None):  # noqa: ARG001
+        return [
+            {
+                "name": "Query A",
+                "matches": [
+                    {
+                        "matched_name": "Match A",
+                        "is_synonym": False,
+                        "taxon": {"name": "Match A", "ott_id": 101},
+                    }
+                ],
+            },
+            {
+                "name": "Query B",
+                "matches": [
+                    {
+                        "matched_name": "Match B",
+                        "is_synonym": False,
+                        "taxon": {"name": "Match B", "ott_id": 202},
+                    }
+                ],
+            },
+        ]
+
+    client = otol._OTOLClient(cache=False)
+    monkeypatch.setattr(client, "fetch_json_match_names", _mock_fetch_json_match_names)
+    _ = client.resolve_taxonomic_names(
+        ["Query A", "Query B"],
+        on_unresolved="ignore",
+        on_duplicate="warn",
+    )
+    captured = capsys.readouterr()
+    assert "multiple matched queries resolve to ott" not in captured.err
 
 
 def test_public_signatures_and_removed_old_api():
@@ -284,6 +1018,8 @@ def test_public_signatures_and_removed_old_api():
             "include_synonyms",
             "on_unresolved",
             "on_ambiguous",
+            "on_duplicate",
+            "return_unresolved",
         ],
         "fetch_newick_subtree_from_taxonomy": ["resolved", "label_template"],
         "fetch_newick_induced_tree_otol": [
@@ -299,6 +1035,10 @@ def test_public_signatures_and_removed_old_api():
         for par in sig.parameters.values():
             assert par.kind is not inspect.Parameter.VAR_POSITIONAL
             assert par.kind is not inspect.Parameter.VAR_KEYWORD
+
+    rsig = inspect.signature(otol.resolve_taxonomic_names)
+    assert rsig.parameters["on_ambiguous"].default == "first"
+    assert rsig.parameters["return_unresolved"].default is False
 
     assert not hasattr(otol, "match_names")
     assert not hasattr(otol, "taxon_info")
@@ -351,6 +1091,7 @@ def _resolved_df_from_lineages(
     lineages: list[dict[str, object]],
     *,
     use_query: bool = False,
+    use_key: bool = False,
 ) -> pd.DataFrame:
     """Return a resolved-name table compatible with fetch_newick_* methods."""
     rows = []
@@ -358,6 +1099,7 @@ def _resolved_df_from_lineages(
         ott = int(rec["ott_id"])
         name = str(rec.get("name", f"ott{ott}"))
         row = {
+            "key": rec.get("key", f"k{idx}") if use_key else pd.NA,
             "query": f"q{idx}" if use_query else name,
             "status": "matched",
             "matched_name": name,
@@ -365,6 +1107,29 @@ def _resolved_df_from_lineages(
             "ncbi_id": pd.NA,
             "is_synonym": False,
             "reason": "ok",
+        }
+        rows.append(row)
+    out = pd.DataFrame(rows)
+    out["ott_id"] = pd.array(out["ott_id"], dtype="Int64")
+    out["ncbi_id"] = pd.array(out["ncbi_id"], dtype="Int64")
+    return out
+
+
+def _resolved_df_from_records(
+    records: list[dict[str, object]],
+) -> pd.DataFrame:
+    """Return a resolved-name table from explicit row records."""
+    rows = []
+    for idx, rec in enumerate(records):
+        row = {
+            "key": rec.get("key", pd.NA),
+            "query": rec.get("query", f"q{idx}"),
+            "status": rec.get("status", "matched"),
+            "matched_name": rec.get("matched_name", rec.get("query", f"q{idx}")),
+            "ott_id": rec["ott_id"],
+            "ncbi_id": rec.get("ncbi_id", pd.NA),
+            "is_synonym": rec.get("is_synonym", False),
+            "reason": rec.get("reason", "ok"),
         }
         rows.append(row)
     out = pd.DataFrame(rows)
@@ -474,6 +1239,7 @@ def test_newick_subtree_from_taxonomy_normalizes_internal_lineage_spaces(monkeyp
         ("{matched_name}", {"SpeciesA", "SpeciesB", "SpeciesC"}),
         ("ott{ott_id}", {"ott1", "ott2", "ott3"}),
         ("{query_id}_{ott_id}", {"q0_1", "q1_2", "q2_3"}),
+        ("{key}_{ott_id}", {"k0_1", "k1_2", "k2_3"}),
     ],
 )
 def test_fetch_newick_subtree_from_taxonomy_label_templates(
@@ -489,13 +1255,77 @@ def test_fetch_newick_subtree_from_taxonomy_label_templates(
         "fetch_json_taxon_info",
         lambda query, include_lineage=True: lineages,
     )  # noqa: ARG005,E501
-    resolved = _resolved_df_from_lineages(lineages, use_query=True)
-    nwk = client.fetch_newick_subtree_from_taxonomy(
+    resolved = _resolved_df_from_lineages(lineages, use_query=True, use_key=True)
+    tree = client.fetch_newick_subtree_from_taxonomy(
         resolved,
         label_template=template,
     )
-    tree = toytree.tree(nwk)
     assert set(tree.get_tip_labels()) == expected
+
+
+def test_fetch_newick_subtree_from_taxonomy_missing_key_formats_as_empty(
+    monkeypatch,
+):
+    """Render missing key values as empty strings in label templates."""
+    client = otol._OTOLClient(cache=False)
+    lineages = _lineage_records_fixture()[:2]
+    monkeypatch.setattr(
+        client,
+        "fetch_json_taxon_info",
+        lambda query, include_lineage=True: lineages,
+    )  # noqa: ARG005,E501
+    resolved = _resolved_df_from_records(
+        [
+            {
+                "key": pd.NA,
+                "query": "q0",
+                "matched_name": "SpeciesA",
+                "ott_id": 1,
+            },
+            {
+                "key": None,
+                "query": "q1",
+                "matched_name": "SpeciesB",
+                "ott_id": 2,
+            },
+        ]
+    )
+    tree = client.fetch_newick_subtree_from_taxonomy(
+        resolved,
+        label_template="{key}{query}_{ott_id}",
+    )
+    assert set(tree.get_tip_labels()) == {"q0_1", "q1_2"}
+
+
+def test_format_resolved_taxon_label_supports_key_and_missing_values():
+    """Expose key in the shared OTOL label formatter and blank missing keys."""
+    client = otol._OTOLClient(cache=False)
+
+    keyed = client._format_resolved_taxon_label(
+        row={
+            "key": "sample_a",
+            "query": "Canis lupus",
+            "matched_name": "Canis lupus",
+            "ott_id": 1,
+            "ncbi_id": pd.NA,
+        },
+        label_template="{key}_{ott_id}",
+        idx=0,
+    )
+    missing = client._format_resolved_taxon_label(
+        row={
+            "key": pd.NA,
+            "query": "Canis lupus",
+            "matched_name": "Canis lupus",
+            "ott_id": 1,
+            "ncbi_id": pd.NA,
+        },
+        label_template="{key}{query_id}_{ott_id}",
+        idx=0,
+    )
+
+    assert keyed == "sample_a_1"
+    assert missing == "Canis_lupus_1"
 
 
 def test_newick_subtree_from_taxonomy_normalizes_whitespace_in_names(monkeypatch):
@@ -525,6 +1355,523 @@ def test_newick_subtree_from_taxonomy_normalizes_whitespace_in_names(monkeypatch
     tree = toytree.tree(nwk)
     assert "Pedicularis_anas_ott1" in set(tree.get_tip_labels())
     assert "Castilleja_campestris_ott2" in set(tree.get_tip_labels())
+
+
+def _mock_taxonomy_distance_matrix(label_to_lineage):
+    """Return a simple symmetric matrix keyed to current leaf labels."""
+    labels = list(label_to_lineage)
+    data = [
+        [0 if i == j else 1 for j in range(len(labels))] for i in range(len(labels))
+    ]
+    dist = pd.DataFrame(data, index=labels, columns=labels)
+    return dist, None
+
+
+def test_fetch_newick_subtree_from_taxonomy_reassigns_internal_input_tip(
+    monkeypatch,
+    capsys,
+):
+    """Retain mixed-rank ancestor inputs as internals instead of duplicate tips."""
+    client = otol._OTOLClient(cache=False)
+    data = [
+        {
+            "ott_id": 11,
+            "name": "Pedicularis",
+            "rank": "genus",
+            "lineage": [
+                {
+                    "ott_id": 41,
+                    "name": "FamilyZ",
+                    "rank": "family",
+                    "tax_sources": [],
+                }
+            ],
+        },
+        {
+            "ott_id": 1,
+            "name": "Pedicularis anas",
+            "rank": "species",
+            "lineage": [
+                {
+                    "ott_id": 11,
+                    "name": "Pedicularis",
+                    "rank": "genus",
+                    "tax_sources": [],
+                },
+                {
+                    "ott_id": 41,
+                    "name": "FamilyZ",
+                    "rank": "family",
+                    "tax_sources": [],
+                },
+            ],
+        },
+        {
+            "ott_id": 2,
+            "name": "Pedicularis groenlandica",
+            "rank": "species",
+            "lineage": [
+                {
+                    "ott_id": 11,
+                    "name": "Pedicularis",
+                    "rank": "genus",
+                    "tax_sources": [],
+                },
+                {
+                    "ott_id": 41,
+                    "name": "FamilyZ",
+                    "rank": "family",
+                    "tax_sources": [],
+                },
+            ],
+        },
+    ]
+    monkeypatch.setattr(
+        client,
+        "fetch_json_taxon_info",
+        lambda query, include_lineage=True: data,
+    )  # noqa: ARG005,E501
+    monkeypatch.setattr(
+        otol.induced_tree,
+        "build_cophenetic_distance_matrix_from_taxonomy",
+        _mock_taxonomy_distance_matrix,
+    )
+    monkeypatch.setattr(
+        toytree.infer,
+        "upgma_tree",
+        lambda dist: toytree.tree("(ott11,(ott1,ott2)X)Root;"),
+    )  # noqa: ARG005,E501
+
+    resolved = _resolved_df_from_lineages(data)
+    tree = client.fetch_newick_subtree_from_taxonomy(
+        resolved,
+        label_template="{matched_name}_ott{ott_id}",
+    )
+    captured = capsys.readouterr()
+
+    assert set(tree.get_tip_labels()) == {
+        "Pedicularis_anas_ott1",
+        "Pedicularis_groenlandica_ott2",
+    }
+    assert not any(
+        node.is_leaf() and getattr(node, "ott_id", None) == 11 for node in tree
+    )
+    assert sum(getattr(node, "ott_id", None) == 11 for node in tree) == 1
+    assert "assigned to internal node" in captured.err
+    assert "returning 2 tips for 3 matched taxa" in captured.err
+
+
+def test_fetch_newick_subtree_from_taxonomy_groups_duplicate_tip_matches(
+    monkeypatch,
+    capsys,
+):
+    """Expand duplicate terminal OTT matches under an artificial parent."""
+    client = otol._OTOLClient(cache=False)
+    data = [
+        {
+            "ott_id": 11,
+            "name": "Pedicularis",
+            "rank": "genus",
+            "lineage": [
+                {
+                    "ott_id": 41,
+                    "name": "FamilyZ",
+                    "rank": "family",
+                    "tax_sources": [],
+                }
+            ],
+        },
+        {
+            "ott_id": 2,
+            "name": "Castilleja campestris",
+            "rank": "species",
+            "lineage": [
+                {
+                    "ott_id": 12,
+                    "name": "Castilleja",
+                    "rank": "genus",
+                    "tax_sources": [],
+                },
+                {
+                    "ott_id": 41,
+                    "name": "FamilyZ",
+                    "rank": "family",
+                    "tax_sources": [],
+                },
+            ],
+        },
+    ]
+    monkeypatch.setattr(
+        client,
+        "fetch_json_taxon_info",
+        lambda query, include_lineage=True: data,
+    )  # noqa: ARG005,E501
+    monkeypatch.setattr(
+        otol.induced_tree,
+        "build_cophenetic_distance_matrix_from_taxonomy",
+        _mock_taxonomy_distance_matrix,
+    )
+    monkeypatch.setattr(
+        toytree.infer,
+        "upgma_tree",
+        lambda dist: toytree.tree("(ott11,ott2)Root;"),
+    )  # noqa: ARG005,E501
+
+    resolved = _resolved_df_from_records(
+        [
+            {"query": "ped_a", "matched_name": "Pedicularis", "ott_id": 11},
+            {"query": "ped_b", "matched_name": "Pedicularis", "ott_id": 11},
+            {
+                "query": "castilleja",
+                "matched_name": "Castilleja campestris",
+                "ott_id": 2,
+            },
+        ]
+    )
+    tree = client.fetch_newick_subtree_from_taxonomy(
+        resolved,
+        label_template="{query}_{ott_id}",
+    )
+    captured = capsys.readouterr()
+
+    assert captured.err == ""
+    assert set(tree.get_tip_labels()) == {"ped_a_11", "ped_b_11", "castilleja_2"}
+    group = next(node for node in tree if node.name == "Pedicularis_ott11_group")
+    assert pd.isna(group.ott_id)
+    assert [child.name for child in group.children] == ["ped_a_11", "ped_b_11"]
+    assert [int(child.ott_id) for child in group.children] == [11, 11]
+
+
+def test_fetch_newick_subtree_from_taxonomy_collapses_duplicate_internal_matches(
+    monkeypatch,
+    capsys,
+):
+    """Keep duplicated ancestor matches only on the inferred internal node."""
+    client = otol._OTOLClient(cache=False)
+    data = [
+        {
+            "ott_id": 11,
+            "name": "Pedicularis",
+            "rank": "genus",
+            "lineage": [
+                {
+                    "ott_id": 41,
+                    "name": "FamilyZ",
+                    "rank": "family",
+                    "tax_sources": [],
+                }
+            ],
+        },
+        {
+            "ott_id": 1,
+            "name": "Pedicularis anas",
+            "rank": "species",
+            "lineage": [
+                {
+                    "ott_id": 11,
+                    "name": "Pedicularis",
+                    "rank": "genus",
+                    "tax_sources": [],
+                },
+                {
+                    "ott_id": 41,
+                    "name": "FamilyZ",
+                    "rank": "family",
+                    "tax_sources": [],
+                },
+            ],
+        },
+        {
+            "ott_id": 2,
+            "name": "Pedicularis groenlandica",
+            "rank": "species",
+            "lineage": [
+                {
+                    "ott_id": 11,
+                    "name": "Pedicularis",
+                    "rank": "genus",
+                    "tax_sources": [],
+                },
+                {
+                    "ott_id": 41,
+                    "name": "FamilyZ",
+                    "rank": "family",
+                    "tax_sources": [],
+                },
+            ],
+        },
+    ]
+    monkeypatch.setattr(
+        client,
+        "fetch_json_taxon_info",
+        lambda query, include_lineage=True: data,
+    )  # noqa: ARG005,E501
+    monkeypatch.setattr(
+        otol.induced_tree,
+        "build_cophenetic_distance_matrix_from_taxonomy",
+        _mock_taxonomy_distance_matrix,
+    )
+    monkeypatch.setattr(
+        toytree.infer,
+        "upgma_tree",
+        lambda dist: toytree.tree("(ott11,(ott1,ott2)X)Root;"),
+    )  # noqa: ARG005,E501
+
+    resolved = _resolved_df_from_records(
+        [
+            {"query": "ped_a", "matched_name": "Pedicularis", "ott_id": 11},
+            {"query": "ped_b", "matched_name": "Pedicularis", "ott_id": 11},
+            {"query": "anas", "matched_name": "Pedicularis anas", "ott_id": 1},
+            {
+                "query": "groenlandica",
+                "matched_name": "Pedicularis groenlandica",
+                "ott_id": 2,
+            },
+        ]
+    )
+    tree = client.fetch_newick_subtree_from_taxonomy(
+        resolved,
+        label_template="{query}",
+    )
+    captured = capsys.readouterr()
+
+    assert set(tree.get_tip_labels()) == {"anas", "groenlandica"}
+    assert not any(
+        node.is_leaf()
+        and pd.notna(getattr(node, "ott_id", pd.NA))
+        and int(node.ott_id) == 11
+        for node in tree
+    )
+    assert (
+        sum(
+            pd.notna(getattr(node, "ott_id", pd.NA)) and int(node.ott_id) == 11
+            for node in tree
+        )
+        == 1
+    )
+    assert all(not str(node.name).endswith("_group") for node in tree)
+    assert "assigned to internal node" in captured.err
+    assert "returning 2 tips for 4 matched taxa" in captured.err
+
+
+def test_fetch_newick_subtree_from_taxonomy_warns_on_duplicate_group_tip_labels(
+    monkeypatch,
+    capsys,
+):
+    """Warn, but still return a tree, on duplicate terminal group-tip labels."""
+    client = otol._OTOLClient(cache=False)
+    data = [
+        {
+            "ott_id": 11,
+            "name": "Pedicularis",
+            "rank": "genus",
+            "lineage": [
+                {
+                    "ott_id": 41,
+                    "name": "FamilyZ",
+                    "rank": "family",
+                    "tax_sources": [],
+                }
+            ],
+        },
+        {
+            "ott_id": 2,
+            "name": "Castilleja campestris",
+            "rank": "species",
+            "lineage": [
+                {
+                    "ott_id": 12,
+                    "name": "Castilleja",
+                    "rank": "genus",
+                    "tax_sources": [],
+                },
+                {
+                    "ott_id": 41,
+                    "name": "FamilyZ",
+                    "rank": "family",
+                    "tax_sources": [],
+                },
+            ],
+        },
+    ]
+    monkeypatch.setattr(
+        client,
+        "fetch_json_taxon_info",
+        lambda query, include_lineage=True: data,
+    )  # noqa: ARG005,E501
+    monkeypatch.setattr(
+        otol.induced_tree,
+        "build_cophenetic_distance_matrix_from_taxonomy",
+        _mock_taxonomy_distance_matrix,
+    )
+    monkeypatch.setattr(
+        toytree.infer,
+        "upgma_tree",
+        lambda dist: toytree.tree("(ott11,ott2)Root;"),
+    )  # noqa: ARG005,E501
+
+    resolved = _resolved_df_from_records(
+        [
+            {"query": "ped_a", "matched_name": "Pedicularis", "ott_id": 11},
+            {"query": "ped_b", "matched_name": "Pedicularis", "ott_id": 11},
+            {
+                "query": "castilleja",
+                "matched_name": "Castilleja campestris",
+                "ott_id": 2,
+            },
+        ]
+    )
+    tree = client.fetch_newick_subtree_from_taxonomy(
+        resolved,
+        label_template="{matched_name}",
+    )
+    captured = capsys.readouterr()
+
+    assert tree.get_tip_labels().count("Pedicularis") == 2
+    assert "duplicate tip labels" in captured.err
+    assert "'Pedicularis' (2)" in captured.err
+    assert "Choose a more specific label_template" in captured.err
+
+
+def test_fetch_newick_subtree_from_taxonomy_warns_on_duplicate_labels_across_ott_ids(
+    monkeypatch,
+    capsys,
+):
+    """Warn, but still return a tree, when different OTT tips share one label."""
+    client = otol._OTOLClient(cache=False)
+    data = [
+        {
+            "ott_id": 1,
+            "name": "SpeciesA",
+            "rank": "species",
+            "lineage": [
+                {"ott_id": 11, "name": "GenusA", "rank": "genus", "tax_sources": []},
+                {"ott_id": 41, "name": "FamilyZ", "rank": "family", "tax_sources": []},
+            ],
+        },
+        {
+            "ott_id": 2,
+            "name": "SpeciesB",
+            "rank": "species",
+            "lineage": [
+                {"ott_id": 12, "name": "GenusB", "rank": "genus", "tax_sources": []},
+                {"ott_id": 41, "name": "FamilyZ", "rank": "family", "tax_sources": []},
+            ],
+        },
+    ]
+    monkeypatch.setattr(
+        client,
+        "fetch_json_taxon_info",
+        lambda query, include_lineage=True: data,
+    )  # noqa: ARG005,E501
+    monkeypatch.setattr(
+        otol.induced_tree,
+        "build_cophenetic_distance_matrix_from_taxonomy",
+        _mock_taxonomy_distance_matrix,
+    )
+    monkeypatch.setattr(
+        toytree.infer,
+        "upgma_tree",
+        lambda dist: toytree.tree("(ott1,ott2)Root;"),
+    )  # noqa: ARG005,E501
+
+    resolved = _resolved_df_from_records(
+        [
+            {"query": "q0", "matched_name": "Pedicularis", "ott_id": 1},
+            {"query": "q1", "matched_name": "Pedicularis", "ott_id": 2},
+        ]
+    )
+    tree = client.fetch_newick_subtree_from_taxonomy(
+        resolved,
+        label_template="{matched_name}",
+    )
+    captured = capsys.readouterr()
+
+    assert tree.get_tip_labels() == ["Pedicularis", "Pedicularis"]
+    assert "duplicate tip labels" in captured.err
+    assert "'Pedicularis' (2)" in captured.err
+    assert "Choose a more specific label_template" in captured.err
+
+
+def test_fetch_newick_subtree_from_taxonomy_skips_warning_without_internal_match(
+    monkeypatch,
+    capsys,
+):
+    """Do not warn or drop tips when no matched input maps to an internal OTT."""
+    client = otol._OTOLClient(cache=False)
+    data = [
+        {
+            "ott_id": 1,
+            "name": "SpeciesA",
+            "rank": "species",
+            "lineage": [
+                {"ott_id": 11, "name": "GenusA", "rank": "genus", "tax_sources": []},
+                {
+                    "ott_id": 41,
+                    "name": "FamilyZ",
+                    "rank": "family",
+                    "tax_sources": [],
+                },
+            ],
+        },
+        {
+            "ott_id": 2,
+            "name": "SpeciesB",
+            "rank": "species",
+            "lineage": [
+                {"ott_id": 12, "name": "GenusB", "rank": "genus", "tax_sources": []},
+                {
+                    "ott_id": 41,
+                    "name": "FamilyZ",
+                    "rank": "family",
+                    "tax_sources": [],
+                },
+            ],
+        },
+        {
+            "ott_id": 3,
+            "name": "SpeciesC",
+            "rank": "species",
+            "lineage": [
+                {"ott_id": 13, "name": "GenusC", "rank": "genus", "tax_sources": []},
+                {
+                    "ott_id": 41,
+                    "name": "FamilyZ",
+                    "rank": "family",
+                    "tax_sources": [],
+                },
+            ],
+        },
+    ]
+    monkeypatch.setattr(
+        client,
+        "fetch_json_taxon_info",
+        lambda query, include_lineage=True: data,
+    )  # noqa: ARG005,E501
+    monkeypatch.setattr(
+        otol.induced_tree,
+        "build_cophenetic_distance_matrix_from_taxonomy",
+        _mock_taxonomy_distance_matrix,
+    )
+    monkeypatch.setattr(
+        toytree.infer,
+        "upgma_tree",
+        lambda dist: toytree.tree("((ott1,ott2)X,ott3)Root;"),
+    )  # noqa: ARG005,E501
+
+    resolved = _resolved_df_from_lineages(data)
+    tree = client.fetch_newick_subtree_from_taxonomy(
+        resolved,
+        label_template="{matched_name}_ott{ott_id}",
+    )
+    captured = capsys.readouterr()
+
+    assert set(tree.get_tip_labels()) == {
+        "SpeciesA_ott1",
+        "SpeciesB_ott2",
+        "SpeciesC_ott3",
+    }
+    assert captured.err == ""
 
 
 def _lineages_for_taxonomy_rooting_fixture():
@@ -570,9 +1917,7 @@ def test_fetch_newick_subtree_from_taxonomy_roots_on_taxonomy_clade(monkeypatch)
     monkeypatch.setattr(
         toytree.infer,
         "upgma_tree",
-        lambda dist: toytree.tree(
-            "((SpeciesA_ott1,SpeciesB_ott2)AB,SpeciesC_ott3,SpeciesD_ott4)R;"
-        ),
+        lambda dist: toytree.tree("((ott1,ott2)AB,ott3,ott4)R;"),
     )  # noqa: ARG005,E501
 
     tree = toytree.tree(client.fetch_newick_subtree_from_taxonomy(resolved))
@@ -596,9 +1941,7 @@ def test_fetch_newick_subtree_from_taxonomy_falls_back_to_midpoint_root(monkeypa
     monkeypatch.setattr(
         toytree.infer,
         "upgma_tree",
-        lambda dist: toytree.tree(
-            "((SpeciesA_ott1,SpeciesC_ott3)AC,SpeciesB_ott2,SpeciesD_ott4)R;"
-        ),
+        lambda dist: toytree.tree("((ott1,ott3)AC,ott2,ott4)R;"),
     )  # noqa: ARG005,E501
 
     tree = toytree.tree(client.fetch_newick_subtree_from_taxonomy(resolved))

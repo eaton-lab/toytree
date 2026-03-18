@@ -10,8 +10,9 @@ Circular layouts accept three string forms:
   degrees, wrapping across 360 when ``B <= A``.
 
 When edge lengths are disabled, or when all branch lengths are zero,
-radial positions fall back to unit depths from the root so every node
-still receives a non-zero circular projection.
+radial positions fall back to cladogram heights measured in unit steps
+from each node to its farthest descendant tip. This keeps all tips on
+one ring while preserving the nested internal levels.
 """
 
 from typing import Tuple
@@ -88,7 +89,7 @@ class CircularLayout(BaseLayout):
     This layout places tips on a circumference or fan arc and positions
     internal nodes on the spoke midway between their descendant clades.
     Radial distances come from branch lengths when available, otherwise
-    from unit root-to-node depths.
+    from unit cladogram heights that align all tips.
     """
 
     def run(self):
@@ -101,8 +102,8 @@ class CircularLayout(BaseLayout):
         """Return root height and node heights for layout projection.
 
         Circular layouts need non-zero radial distances. If edge lengths
-        are disabled or all dists are zero, fall back to unit edge depths
-        without mutating the tree.
+        are disabled or all dists are zero, fall back to unit cladogram
+        heights without mutating the tree.
         """
         if self.style.use_edge_lengths and not np.isclose(
             self.tree.treenode.height, 0.0
@@ -114,18 +115,15 @@ class CircularLayout(BaseLayout):
             )
             return self.tree.treenode.height, node_heights
 
-        root = self.tree.treenode
-        depths = np.full(self.tree.nnodes, -1, dtype=int)
-        depths[root.idx] = 0
-        queue = list(root._children)
-        while queue:
-            node = queue.pop()
-            depths[node.idx] = depths[node._up.idx] + 1
-            queue.extend(node._children)
-
-        max_depth = int(depths.max())
-        node_heights = (max_depth - depths).astype(float)
-        return float(max_depth), node_heights
+        node_heights = np.zeros(self.tree.nnodes, dtype=float)
+        # Compute unit cladogram heights in idx order so each internal node
+        # can reuse already-computed child heights without mutating the tree.
+        for idx in range(self.tree.ntips, self.tree.nnodes):
+            node = self.tree[idx]
+            child_heights = [node_heights[child.idx] for child in node.children]
+            node_heights[idx] = max(child_heights, default=-1.0) + 1.0
+        root_height = float(node_heights[self.tree.treenode.idx])
+        return root_height, node_heights
 
     def set_fan_coords(self):
         """Fill node and aligned-tip coordinate arrays."""
@@ -146,8 +144,13 @@ class CircularLayout(BaseLayout):
         tip_sin = np.sin(theta[: self.tree.ntips])
         self.coords[: self.tree.ntips, 0] = hub[0] + radii[: self.tree.ntips] * tip_cos
         self.coords[: self.tree.ntips, 1] = hub[1] + radii[: self.tree.ntips] * tip_sin
-        self.tcoords[:, 0] = hub[0] + root_height * tip_cos
-        self.tcoords[:, 1] = hub[1] + root_height * tip_sin
+        if self.style.tip_labels_align:
+            label_radius = float(np.max(radii[: self.tree.ntips], initial=0.0))
+            label_radii = np.repeat(label_radius, self.tree.ntips)
+        else:
+            label_radii = radii[: self.tree.ntips]
+        self.tcoords[:, 0] = hub[0] + label_radii * tip_cos
+        self.tcoords[:, 1] = hub[1] + label_radii * tip_sin
         self.coords[self.tree.treenode.idx, :] = hub
 
         # Internal clades occupy contiguous tip intervals in tree order, so

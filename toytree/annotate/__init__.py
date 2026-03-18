@@ -59,6 +59,7 @@ from toytree.annotate.src.add_scale_bar import *
 from toytree.annotate.src.add_tip_bars import *
 from toytree.annotate.src.add_tip_labels import *
 from toytree.annotate.src.add_tip_markers import *
+from toytree.annotate.src.add_tip_paths import *
 from toytree.annotate.src.add_tip_tiles import *
 from toytree.annotate.src.checks import (
     get_toytree_scale_cartesian as get_toytree_scale_cartesian,
