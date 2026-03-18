@@ -25,8 +25,10 @@ import pickle
 import re
 import sys
 import tempfile
+from collections import Counter
+from collections.abc import Mapping
 from pathlib import Path
-from typing import Any, Literal, Mapping, Sequence
+from typing import Any, Literal, Sequence
 from urllib.parse import urljoin
 
 import pandas as pd
@@ -315,19 +317,23 @@ class _OTOLClient:
 
     def resolve_taxonomic_names(
         self,
-        query: Sequence[str],
+        query: Sequence[str] | Mapping[str, str],
         approximate: bool = False,
         context: str | None = None,
         include_synonyms: bool = True,
         on_unresolved: Literal["raise", "warn", "ignore"] = "ignore",
-        on_ambiguous: Literal["keep", "first", "raise"] = "keep",
+        on_ambiguous: Literal["ignore", "first", "raise"] = "first",
+        on_duplicate: Literal["ignore", "warn", "raise"] = "warn",
+        return_unresolved: bool = False,
     ) -> pd.DataFrame:
         """Resolve taxon names through OTOL TNRS and return a standardized table.
 
         Parameters
         ----------
-        query : Sequence[str]
-            Taxon-name strings to resolve.
+        query : Sequence[str] or Mapping[str, str]
+            Taxon-name strings to resolve. If a mapping is provided then its
+            values are used as TNRS queries and its keys are stored in the
+            returned ``key`` column.
         approximate : bool, default=False
             If True, enable approximate matching in TNRS.
         context : str or None, default=None
@@ -337,33 +343,61 @@ class _OTOLClient:
         on_unresolved : {"raise", "warn", "ignore"}, default="ignore"
             Behavior when unmatched or ambiguous rows remain. The "warn"
             mode prints a message to stderr.
-        on_ambiguous : {"keep", "first", "raise"}, default="keep"
+        on_ambiguous : {"ignore", "first", "raise"}, default="first"
             Behavior when a query has multiple TNRS matches.
+        on_duplicate : {"ignore", "warn", "raise"}, default="warn"
+            Behavior when multiple matched queries resolve to the same OTT id.
+        return_unresolved : bool, default=False
+            If True, return only rows whose status is not ``"matched"``.
 
         Returns
         -------
         pandas.DataFrame
-            Columns are ``query``, ``status``, ``matched_name``, ``ott_id``,
-            ``ncbi_id``, ``is_synonym``, and ``reason``.
+            Columns are ``key``, ``query``, ``status``, ``matched_name``,
+            ``rank``, ``taxon_name``, ``ott_id``, ``ncbi_id``,
+            ``is_synonym``, and ``reason``. Rows kept as ambiguous leave
+            taxon-specific fields missing because no single TNRS match was
+            selected. Duplicate matched OTT ids are handled according to
+            ``on_duplicate``. For sequence input, ``key`` values are missing.
+            If ``return_unresolved=True``, only unresolved rows are returned.
         """
         if on_unresolved not in ("raise", "warn", "ignore"):
             raise ToytreeError(f"invalid on_unresolved option: {on_unresolved!r}")
-        if on_ambiguous not in ("keep", "first", "raise"):
+        if on_ambiguous == "keep":
+            print(
+                "WARNING: on_ambiguous='keep' is deprecated; use 'ignore' instead.",
+                file=sys.stderr,
+            )
+            on_ambiguous = "ignore"
+        if on_ambiguous not in ("ignore", "first", "raise"):
             raise ToytreeError(f"invalid on_ambiguous option: {on_ambiguous!r}")
+        if on_duplicate not in ("ignore", "warn", "raise"):
+            raise ToytreeError(f"invalid on_duplicate option: {on_duplicate!r}")
+
+        # normalize ordered query rows before calling TNRS so mapping keys
+        # can be reattached even when query values are duplicated.
+        if isinstance(query, Mapping):
+            query_pairs = [(str(key), str(val)) for key, val in query.items()]
+        else:
+            query_pairs = [(pd.NA, str(val)) for val in query]
+        query_values = [pair[1] for pair in query_pairs]
 
         # get JSON API result
         results = self.fetch_json_match_names(
-            query=query,
+            query=query_values,
             approximate=approximate,
             context=context,
         )
+        if len(results) != len(query_pairs):
+            raise ToytreeError(
+                "unexpected response shape from tnrs/match_names: "
+                "could not align returned rows to input queries."
+            )
 
         # iterate over results filling a list of dicts
         rows: list[dict[str, Any]] = []
-        for item in results:
-
+        for (qkey, qname), item in zip(query_pairs, results):
             # top level has 'name' str and 'matches' dict.
-            qname = str(item.get("name", ""))
             matches = list(item.get("matches", []))
 
             # Optionally only examine matches where query is not a synonym.
@@ -374,10 +408,12 @@ class _OTOLClient:
             if not matches:
                 rows.append(
                     {
+                        "key": qkey,
                         "query": qname,
                         "status": "unmatched",
                         "matched_name": None,
-                        "rank": None,
+                        "rank": pd.NA,
+                        "taxon_name": pd.NA,
                         "ott_id": pd.NA,
                         "ncbi_id": pd.NA,
                         "is_synonym": None,
@@ -397,12 +433,17 @@ class _OTOLClient:
                     taxon = match.get("taxon", {})
                     rows.append(
                         {
+                            "key": qkey,
                             "query": qname,
                             "status": "matched",
-                            "matched_name": match.get("matched_name", taxon.get("name")),    #noqa
+                            "matched_name": match.get(
+                                "matched_name", taxon.get("name")
+                            ),  # noqa
                             "rank": taxon.get("rank"),
                             "taxon_name": taxon.get("name"),
-                            "ott_id": int(taxon["ott_id"]) if "ott_id" in taxon else pd.NA,  #noqa
+                            "ott_id": int(taxon["ott_id"])
+                            if "ott_id" in taxon
+                            else pd.NA,  # noqa
                             "ncbi_id": self._extract_ncbi_id_from_taxon(taxon) or pd.NA,
                             "is_synonym": bool(match.get("is_synonym", False)),
                             "reason": f"resolved_first_of_{len(matches)}",
@@ -411,11 +452,12 @@ class _OTOLClient:
                     continue
                 rows.append(
                     {
+                        "key": qkey,
                         "query": qname,
                         "status": "ambiguous",
                         "matched_name": None,
-                        "rank": taxon.get("rank"),
-                        "taxon_name": taxon.get("name"),
+                        "rank": pd.NA,
+                        "taxon_name": pd.NA,
                         "ott_id": pd.NA,
                         "ncbi_id": pd.NA,
                         "is_synonym": None,
@@ -428,6 +470,7 @@ class _OTOLClient:
             taxon = match.get("taxon", {})
             rows.append(
                 {
+                    "key": qkey,
                     "query": qname,
                     "status": "matched",
                     "matched_name": match.get("matched_name", taxon.get("name")),
@@ -441,20 +484,60 @@ class _OTOLClient:
             )
 
         # store as a dataframe and add ID columns
-        table = pd.DataFrame(rows)
+        columns = [
+            "key",
+            "query",
+            "status",
+            "matched_name",
+            "rank",
+            "taxon_name",
+            "ott_id",
+            "ncbi_id",
+            "is_synonym",
+            "reason",
+        ]
+        table = pd.DataFrame(rows, columns=columns)
         table["ott_id"] = pd.array(table["ott_id"], dtype="Int64")
         table["ncbi_id"] = pd.array(table["ncbi_id"], dtype="Int64")
 
-        # add column for status flags
-        if (table["status"] != "matched").any() and on_unresolved in ("raise", "warn"):
-            amb = int((table["status"] == "ambiguous").sum())
-            unm = int((table["status"] == "unmatched").sum())
-            message = f"TNRS resolution has unresolved rows: {amb} ambiguous, {unm} unmatched."
+        # detect duplicate matched OTT ids for downstream warning or error handling
+        matched = table[(table["status"] == "matched") & table["ott_id"].notna()]
+        duplicate_queries_by_ott: dict[int, list[str]] = {}
+        for row in matched[["query", "ott_id"]].itertuples(index=False):
+            ott = int(row.ott_id)
+            duplicate_queries_by_ott.setdefault(ott, []).append(str(row.query))
+        duplicate_messages = []
+        for ott, queries in duplicate_queries_by_ott.items():
+            if len(queries) > 1:
+                qtext = ", ".join(repr(query) for query in queries)
+                duplicate_messages.append(
+                    f"multiple matched queries resolve to ott{ott}: {qtext}"
+                )
 
-            # raise a warning for unresolved
-            if on_unresolved == "raise":
+        if duplicate_messages:
+            if on_duplicate == "raise":
+                raise ToytreeError("; ".join(duplicate_messages))
+            if on_duplicate == "warn":
+                for message in duplicate_messages:
+                    print(f"WARNING: {message}", file=sys.stderr)
+
+        unresolved = table[table["status"] != "matched"].reset_index(drop=True)
+        if not unresolved.empty and on_unresolved in ("raise", "warn"):
+            amb = int((unresolved["status"] == "ambiguous").sum())
+            unm = int((unresolved["status"] == "unmatched").sum())
+            message = (
+                "TNRS resolution has unresolved rows: "
+                f"{amb} ambiguous, {unm} unmatched. "
+                "Use return_unresolved=True to see which names remain unresolved."
+            )
+
+            if on_unresolved == "raise" and not return_unresolved:
                 raise ToytreeError(message)
-            print(message, file=sys.stderr)
+            if on_unresolved == "warn":
+                print(message, file=sys.stderr)
+
+        if return_unresolved:
+            return unresolved
         return table
 
     def fetch_json_node_info(
@@ -595,13 +678,8 @@ class _OTOLClient:
         """Replace whitespace with underscore for Newick-safe taxon tokens."""
         return re.sub(r"\s+", "_", str(text).strip())
 
-    def _coerce_resolved_taxa(
-        self,
-        resolved: pd.DataFrame,
-        label_template: str,
-    ) -> dict[int, str]:
-        """Validate resolved table and return dict[int, str] of ids to names."""
-        # ---------------------------------------------------------
+    def _validate_resolved_taxa_table(self, resolved: pd.DataFrame) -> pd.DataFrame:
+        """Validate resolved rows shared by OTOL tree-building helpers."""
         # input must be a dataframe with the expected columns
         if not isinstance(resolved, pd.DataFrame):
             raise ToytreeError("resolved must be a pandas DataFrame.")
@@ -623,6 +701,51 @@ class _OTOLClient:
                 "Use resolve_taxonomic_names(..., on_unresolved='raise' or "
                 "on_ambiguous='first') or filter to matched rows."
             )
+        return resolved
+
+    def _format_resolved_taxon_label(
+        self,
+        row: pd.Series | dict[str, Any],
+        label_template: str,
+        idx: object,
+    ) -> str:
+        """Apply label_template to one resolved row and normalize the token."""
+        ott = int(row["ott_id"])
+        ncbi_val = row.get("ncbi_id", pd.NA)
+        ncbi_text = ""
+        if pd.notna(ncbi_val):
+            ncbi_text = str(int(ncbi_val))
+        key_val = row.get("key", "")
+        if pd.isna(key_val):
+            key_text = ""
+        else:
+            key_text = str(key_val)
+        context = {
+            "key": key_text,
+            "query": row.get("query"),
+            "matched_name": row.get("matched_name"),
+            "ott_id": ott,
+            "ncbi_id": ncbi_text,
+            "query_id": str(row.get("query", idx)),
+            "ncbi_suffix": f"_ncbi{ncbi_text}" if ncbi_text else "",
+        }
+        try:
+            label = label_template.format(**context)
+        except KeyError as exc:
+            fields = ", ".join(sorted(context))
+            raise ToytreeError(
+                f"label_template uses unknown field {exc!s}; "
+                f"available fields are: {fields}"
+            ) from exc
+        return induced_tree._normalize_label_token(str(label))
+
+    def _coerce_resolved_taxa(
+        self,
+        resolved: pd.DataFrame,
+        label_template: str,
+    ) -> dict[int, str]:
+        """Validate resolved table and return dict[int, str] of ids to names."""
+        resolved = self._validate_resolved_taxa_table(resolved)
 
         # no names can be duplicated
         ott_ids = [int(i) for i in resolved["ott_id"].tolist()]
@@ -634,27 +757,11 @@ class _OTOLClient:
         labels: dict[int, str] = {}
         for idx, row in resolved.iterrows():
             ott = int(row["ott_id"])
-            ncbi_val = row.get("ncbi_id", pd.NA)
-            ncbi_text = ""
-            if pd.notna(ncbi_val):
-                ncbi_text = str(int(ncbi_val))
-            context = {
-                "query": row.get("query"),
-                "matched_name": row.get("matched_name"),
-                "ott_id": ott,
-                "ncbi_id": ncbi_text,
-                "query_id": str(row.get("query", idx)),
-                "ncbi_suffix": f"_ncbi{ncbi_text}" if ncbi_text else "",
-            }
-            try:
-                label = label_template.format(**context)
-            except KeyError as exc:
-                fields = ", ".join(sorted(context))
-                raise ToytreeError(
-                    f"label_template uses unknown field {exc!s}; "
-                    f"available fields are: {fields}"
-                ) from exc
-            labels[ott] = induced_tree._normalize_label_token(str(label))
+            labels[ott] = self._format_resolved_taxon_label(
+                row=row,
+                label_template=label_template,
+                idx=idx,
+            )
 
         # raise on duplciates
         if len(set(labels.values())) != len(labels):
@@ -667,7 +774,7 @@ class _OTOLClient:
     def fetch_newick_subtree_from_taxonomy(
         self,
         resolved: pd.DataFrame,
-        label_template: str = "{matched_name}",
+        label_template: str = "{matched_name}_ott{ott_id}",
     ) -> str:
         """Infer a Newick subtree from taxonomic lineage similarity.
 
@@ -680,10 +787,12 @@ class _OTOLClient:
         ----------
         resolved : pandas.DataFrame
             Output table from ``resolve_taxonomic_names`` with one matched row
-            per OTOL taxon.
-        label_template : str, default="{matched_name}"
+            per OTOL taxon. Duplicate ``ott_id`` rows are allowed here.
+        label_template : str, default="{matched_name}_ott{ott_id}"
             Python format string applied to each resolved row to generate the
-            final output tip labels. E.g., "{matched_name}_ott{ott_id}"
+            final output tip labels. Available fields include ``key``,
+            ``query``, ``matched_name``, ``ott_id``, ``ncbi_id``,
+            ``query_id``, and ``ncbi_suffix``.
 
         Returns
         -------
@@ -692,12 +801,16 @@ class _OTOLClient:
             distances and rooted using taxonomy-informed clades when possible.
             If no compatible taxonomy-informed outgroup clade is monophyletic
             in the inferred topology, midpoint rooting is used as fallback.
+            When an input taxon is reassigned to an internal node, it is not
+            also retained as a terminal tip. When duplicate matched rows share
+            a terminal ``ott_id``, the returned tree inserts an artificial
+            ``{taxon_name}_ott{ott_id}_group`` parent with missing ``ott_id``.
+            Duplicate surviving tip labels are allowed but warned on.
 
         Raises
         ------
         ToytreeError
-            Raised if query is empty, lineage records are malformed, or labels
-            cannot be made unique.
+            Raised if query is empty or lineage records are malformed.
 
         Notes
         -----
@@ -710,48 +823,70 @@ class _OTOLClient:
         topology. Absolute MRCA depth acts as a proxy for divergence time, aligning
         splits purely by their highest shared rank. This correctly satisfies UPGMA's
         ultrametric requirement and yields a biologically accurate tree.
+
+        If one or more matched input taxa also label inferred internal nodes,
+        those taxa are retained only on the internal nodes and a summary
+        warning is printed to stderr because the returned tree will have fewer
+        tips than matched input rows.
         """
         import toytree
 
-        # get dict[int,str] mapping ott<id> to template style label str
-        ott_to_label = self._coerce_resolved_taxa(
-            resolved=resolved,
-            label_template=label_template,
-        )
+        resolved = self._validate_resolved_taxa_table(resolved)
+        resolved_rows: list[dict[str, Any]] = []
+        ott_to_rows: dict[int, list[dict[str, Any]]] = {}
+        unique_ott_ids: list[int] = []
+        for idx, row in resolved.iterrows():
+            record = row.to_dict()
+            ott = int(record["ott_id"])
+            record["ott_id"] = ott
+            record["row_index"] = idx
+            resolved_rows.append(record)
+            if ott not in ott_to_rows:
+                ott_to_rows[ott] = []
+                unique_ott_ids.append(ott)
+            ott_to_rows[ott].append(record)
+
+        # Build the topology on unique OTT ids first so duplicate matched rows
+        # can later be expanded only where they survive as terminal taxa.
+        ott_to_label = {ott: f"ott{ott}" for ott in unique_ott_ids}
         label_to_ott = {j: i for (i, j) in ott_to_label.items()}
-        ott_to_ncbi = {i['ott_id']: i["ncbi_id"] for i in resolved.to_dict('records')}
 
         # get list[dict[str,Any]] of lineage maps from each taxon to root.
         # TODO: for very large queries does this need to be broken into multiple calls?
         lineages = self.fetch_json_taxon_info(
-            list(ott_to_label),
+            unique_ott_ids,
             include_lineage=True,
         )
 
         # fill dict[str,str] mapping label to taxon lineage map
         label_to_lineage: dict[str, tuple[str, str]] = {}
+        ott_to_taxon_name: dict[int, str] = {}
         for rec in lineages:
             ott = rec.get("ott_id")
             if ott is None:
                 raise ToytreeError("lineage record missing required key 'ott_id'.")
-            label = ott_to_label[int(ott)]
+            ott = int(ott)
+            label = ott_to_label[ott]
+            ott_to_taxon_name[ott] = str(rec.get("name", f"ott{ott}"))
             lineage = []
-            for tax in rec['lineage']:
-                ncbi = [i for i in tax['tax_sources'] if i.startswith("ncbi:")]
-                ncbi = int(ncbi[0][5:]) if ncbi else float('nan')
+            for tax in rec.get("lineage", []):
+                ncbi = [i for i in tax.get("tax_sources", []) if i.startswith("ncbi:")]
+                ncbi = int(ncbi[0][5:]) if ncbi else float("nan")
                 lineage.append(
-                    (tax['name'], tax['rank'], tax['ott_id'], ncbi),
+                    (tax["name"], tax["rank"], tax["ott_id"], ncbi),
                 )
-                label_to_lineage[label] = lineage
+            label_to_lineage[label] = lineage
 
         # get taxonomy cophenetic distance matrix and infer UPGMA distance tree.
-        dist, _ = induced_tree.build_cophenetic_distance_matrix_from_taxonomy(label_to_lineage)
+        dist, _ = induced_tree.build_cophenetic_distance_matrix_from_taxonomy(
+            label_to_lineage
+        )
         tree = toytree.infer.upgma_tree(dist)
 
         def _get_mrca_taxon(label_to_lineage, tnames):
             """Return lowest shared ancestor info among tips 'tnames."""
             base_path = label_to_lineage[tnames[0]]
-            for (t, _, ott, ncbi) in base_path:
+            for t, _, ott, ncbi in base_path:
                 if all([t in [i[0] for i in label_to_lineage[j]] for j in tnames[1:]]):
                     return t, ott, ncbi
 
@@ -759,7 +894,7 @@ class _OTOLClient:
         for node in tree:
             if node.is_leaf():
                 node.ott_id = label_to_ott[node.name]
-                node.ncbi_id = ott_to_ncbi[node.ott_id]
+                node.ncbi_id = ott_to_rows[node.ott_id][0]["ncbi_id"]
                 continue
 
             # get name and IDs for internal nodes
@@ -773,8 +908,97 @@ class _OTOLClient:
             for child in node.children:
                 if child.name == node.name:
                     child.name = f"ott{_ott}"
-            node._dist = 1.
+            node._dist = 1.0
         tree._update()
+
+        # Mixed-rank inputs can include ancestor taxa that are also inferred
+        # as internal nodes; keep those taxa once as internals, not as tips.
+        internal_ott_ids = {
+            int(node.ott_id)
+            for node in tree[tree.ntips :]
+            if pd.notna(getattr(node, "ott_id", pd.NA))
+        }
+
+        # Only labels that survive as tips are checked for collisions. Rows
+        # reassigned to internal nodes do not materialize as terminal labels.
+        final_tip_labels = []
+        for ott, rows in ott_to_rows.items():
+            if ott in internal_ott_ids:
+                continue
+            for row in rows:
+                row["tip_label"] = self._format_resolved_taxon_label(
+                    row=row,
+                    label_template=label_template,
+                    idx=row["row_index"],
+                )
+                final_tip_labels.append(row["tip_label"])
+        duplicate_tip_labels = {
+            label: count
+            for label, count in Counter(final_tip_labels).items()
+            if count > 1
+        }
+        if duplicate_tip_labels:
+            duplicates = ", ".join(
+                f"{label!r} ({count})"
+                for label, count in sorted(duplicate_tip_labels.items())
+            )
+            print(
+                "WARNING: label_template formatting produced duplicate tip labels: "
+                f"{duplicates}. Choose a more specific label_template if you need "
+                "unique tip names.",
+                file=sys.stderr,
+            )
+
+        assigned_to_internal = 0
+        for node in list(tree[: tree.ntips]):
+            node_ott = getattr(node, "ott_id", pd.NA)
+            if pd.isna(node_ott):
+                continue
+            node_ott = int(node_ott)
+            rows = ott_to_rows[node_ott]
+            if node_ott in internal_ott_ids:
+                assigned_to_internal += len(rows)
+                continue
+            if len(rows) == 1:
+                node.name = rows[0]["tip_label"]
+                node.ncbi_id = rows[0]["ncbi_id"]
+                continue
+
+            # Preserve a single taxonomy-backed attachment point, then expand
+            # duplicate matched rows into child tips underneath that parent.
+            taxon_name = ott_to_taxon_name.get(node_ott, rows[0]["matched_name"])
+            node.name = self._normalize_label_token(f"{taxon_name}_ott{node_ott}_group")
+            node.ott_id = pd.NA
+            node.ncbi_id = pd.NA
+            for row in rows:
+                child = toytree.Node(name=row["tip_label"], dist=0.0)
+                child.ott_id = node_ott
+                child.ncbi_id = row["ncbi_id"]
+                node._add_child(child)
+        tree._update()
+
+        if assigned_to_internal:
+            tip_labels_to_keep = [
+                node.name
+                for node in tree[: tree.ntips]
+                if not (
+                    pd.notna(getattr(node, "ott_id", pd.NA))
+                    and int(node.ott_id) in internal_ott_ids
+                )
+            ]
+            ndups = assigned_to_internal
+            ntips = len(tip_labels_to_keep)
+            ntaxa = len(resolved_rows)
+            assigned = "taxon was" if ndups == 1 else "taxa were"
+            node_word = "node" if ndups == 1 else "nodes"
+            tip_word = "tip" if ntips == 1 else "tips"
+            print(
+                f"WARNING: {ndups} matched input {assigned} assigned to internal "
+                f"{node_word}; returning {ntips} {tip_word} for {ntaxa} matched taxa.",
+                file=sys.stderr,
+            )
+            tree = tree.mod.prune(*tip_labels_to_keep, require_root=False)
+
         tree.mod.edges_extend_tips_to_align(inplace=True)
 
         # write with internal node IDs as NHX metadata
@@ -785,7 +1009,6 @@ class _OTOLClient:
         #         features=["ott_id", "ncbi_id"]
         #         )
         # return tree.write(internal_labels="name", dist_formatter=None)
-
 
     def get_induced_subtree_from_otol(
         self,
@@ -801,11 +1024,13 @@ class _OTOLClient:
         resolved : pandas.DataFrame
             Output table from ``resolve_taxonomic_names`` with one matched row
             per OTOL taxon.
-        label_template : str, default="{matched_name}_ott{ott_id}"
+        label_template : str, default="{matched_name}"
             Python format string applied to each resolved row to generate the
             final output tip labels. If output includes additional OTT IDs not
             present in ``resolved`` (for example from broken-node insertion),
             those labels are filled from taxonomy names as ``{name}_ott{ott_id}``.
+            Available fields include ``key``, ``query``, ``matched_name``,
+            ``ott_id``, ``ncbi_id``, ``query_id``, and ``ncbi_suffix``.
         constrain_by_taxonomy : bool, default=True
             If True, enforce taxonomy scaffold constraints and use induced
             topology only to resolve compatible polytomies. If False, use the
@@ -828,12 +1053,14 @@ class _OTOLClient:
             label_template=label_template,
         )
         # label_to_ott = {j: i for (i, j) in ott_to_label.items()}
-        ott_to_ncbi = {i['ott_id']: i["ncbi_id"] for i in resolved.to_dict('records')}
+        ott_to_ncbi = {i["ott_id"]: i["ncbi_id"] for i in resolved.to_dict("records")}
 
         # get newick and broken from API call to induced tree
-        payload = self.fetch_json_induced_subtree(list(ott_to_label), label_format="name_and_id")
-        newick = payload.get('newick', '')
-        broken = payload.get('broken', {})
+        payload = self.fetch_json_induced_subtree(
+            list(ott_to_label), label_format="name_and_id"
+        )
+        newick = payload.get("newick", "")
+        broken = payload.get("broken", {})
         if (not newick) or (not isinstance(broken, dict)):
             raise ToytreeError("induced subtree payload malformed")
 
@@ -902,11 +1129,13 @@ class _OTOLClient:
                         if schilds < tchilds:
                             ctips = []
                             for child in snode.children:
-                                ctips.append([i for i in child.get_leaf_names() if i in tips]) #noqa
+                                ctips.append(
+                                    [i for i in child.get_leaf_names() if i in tips]
+                                )  # noqa
                             to_resolve.append((tips, ctips))
 
                 # resolve polytomy nodes
-                for (clade, split) in to_resolve:
+                for clade, split in to_resolve:
                     # skip if clade in taxonomy tree
                     try:
                         ttree.mod.resolve_node(*clade, splits=split, inplace=True)
@@ -1393,19 +1622,23 @@ def fetch_json_studies_by_doi(
 
 
 def resolve_taxonomic_names(
-    query: Sequence[str],
+    query: Sequence[str] | Mapping[str, str],
     approximate: bool = False,
     context: str | None = None,
     include_synonyms: bool = True,
     on_unresolved: Literal["raise", "warn", "ignore"] = "ignore",
-    on_ambiguous: Literal["keep", "first", "raise"] = "keep",
+    on_ambiguous: Literal["ignore", "first", "raise"] = "first",
+    on_duplicate: Literal["ignore", "warn", "raise"] = "warn",
+    return_unresolved: bool = False,
 ) -> pd.DataFrame:
     """Resolve taxonomic names through OTOL TNRS.
 
     Parameters
     ----------
-    query : Sequence[str]
-        Taxon-name strings to resolve.
+    query : Sequence[str] or Mapping[str, str]
+        Taxon-name strings to resolve. If a mapping is provided then its
+        values are used as TNRS queries and its keys are stored in the
+        returned ``key`` column.
     approximate : bool, default=False
         If True, enable approximate matching in TNRS.
     context : str or None, default=None
@@ -1414,8 +1647,23 @@ def resolve_taxonomic_names(
         If False, synonym matches are filtered before status assignment.
     on_unresolved : {"raise", "warn", "ignore"}, default="ignore"
         Behavior when unmatched or ambiguous rows remain.
-    on_ambiguous : {"keep", "first", "raise"}, default="keep"
+    on_ambiguous : {"ignore", "first", "raise"}, default="first"
         Behavior when a query has multiple TNRS matches.
+    on_duplicate : {"ignore", "warn", "raise"}, default="warn"
+        Behavior when multiple matched queries resolve to the same OTT id.
+    return_unresolved : bool, default=False
+        If True, return only rows whose status is not ``"matched"``.
+
+    Returns
+    -------
+    pandas.DataFrame
+        Standardized resolution table with columns ``key``, ``query``,
+        ``status``, ``matched_name``, ``rank``, ``taxon_name``, ``ott_id``,
+        ``ncbi_id``, ``is_synonym``, and ``reason``. Rows kept as ambiguous
+        leave taxon-specific fields missing. Duplicate matched OTT ids are
+        handled according to ``on_duplicate``. For sequence input, ``key``
+        values are missing. If ``return_unresolved=True``, only unresolved
+        rows are returned.
     """
     return _get_default_client().resolve_taxonomic_names(
         query=query,
@@ -1424,12 +1672,14 @@ def resolve_taxonomic_names(
         include_synonyms=include_synonyms,
         on_unresolved=on_unresolved,
         on_ambiguous=on_ambiguous,
+        on_duplicate=on_duplicate,
+        return_unresolved=return_unresolved,
     )
 
 
 def fetch_newick_subtree_from_taxonomy(
     resolved: pd.DataFrame,
-    label_template: str = "{matched_name}",
+    label_template: str = "{matched_name}_ott{ott_id}",
 ) -> str:
     """Infer a Newick subtree from taxonomic lineage similarity.
 
@@ -1443,22 +1693,28 @@ def fetch_newick_subtree_from_taxonomy(
     ----------
     resolved : pandas.DataFrame
         Output table from ``resolve_taxonomic_names`` with one matched row per
-        OTOL taxon.
+        OTOL taxon. Duplicate ``ott_id`` rows are allowed here.
     label_template : str, default="{matched_name}_ott{ott_id}"
         Python format string applied to each resolved row to generate final
-        output tip labels.
+        output tip labels. Available fields include ``key``, ``query``,
+        ``matched_name``, ``ott_id``, ``ncbi_id``, ``query_id``, and
+        ``ncbi_suffix``.
 
     Returns
     -------
     str
         Newick string with internal node labels set to lineage-derived
-        ``{name}_ott{ott_id}`` when available.
+        ``{name}_ott{ott_id}`` when available. If a matched input taxon is
+        reassigned to an internal node then the returned tree has fewer tips
+        than matched input rows, and a summary warning is printed to stderr.
+        Duplicate matched rows that remain as terminal taxa are expanded under
+        an artificial ``{taxon_name}_ott{ott_id}_group`` parent with missing
+        ``ott_id``. Duplicate surviving tip labels are allowed but warned on.
 
     Raises
     ------
     ToytreeError
-        If query is empty, lineage records are malformed, or selected tip label
-        formatting yields duplicate names.
+        If query is empty or lineage records are malformed.
 
     Examples
     --------
@@ -1491,11 +1747,13 @@ def fetch_newick_induced_tree_otol(
     resolved : pandas.DataFrame
         Output table from ``resolve_taxonomic_names`` with one matched row per
         OTOL taxon.
-    label_template : str, default="{matched_name}_ott{ott_id}"
+    label_template : str, default="{matched_name}"
         Python format string applied to each resolved row to generate final
         output tip labels. If output includes additional OTT IDs not present in
         ``resolved`` (for example from broken-node insertion), those labels are
-        filled from taxonomy names as ``{name}_ott{ott_id}``.
+        filled from taxonomy names as ``{name}_ott{ott_id}``. Available fields
+        include ``key``, ``query``, ``matched_name``, ``ott_id``, ``ncbi_id``,
+        ``query_id``, and ``ncbi_suffix``.
     constrain_by_taxonomy : bool, default=True
         If True, taxonomy scaffolding is enforced and induced topology is used
         to resolve compatible polytomies. If False, the induced OTOL topology
@@ -1533,7 +1791,6 @@ def fetch_newick_induced_tree_otol(
 
 
 if __name__ == "__main__":
-
     SUBTREE_SPP_LIST = [
         "Castilleja caudata",
         "Castilleja campestris",
@@ -1541,7 +1798,7 @@ if __name__ == "__main__":
         "Pedicularis anas",
         "Pedicularis groenlandica",
         "Pedicularis latituba",
-        #"Mimulus guttatus",
+        # "Mimulus guttatus",
         "Erythranthe guttata",
         "Aquilegia coerulea",
         "Delphinium exaltatum",
@@ -1570,13 +1827,16 @@ if __name__ == "__main__":
     ]
 
     names = resolve_taxonomic_names(
-        SUBTREE_GEN_LIST, approximate=True, context="Angiosperms",
-        on_ambiguous='first', on_unresolved="warn",
+        SUBTREE_GEN_LIST,
+        approximate=True,
+        context="Angiosperms",
+        on_ambiguous="first",
+        on_unresolved="warn",
     )
 
     nwk = fetch_newick_subtree_from_taxonomy(names)
 
     import toytree
-    t = toytree.tree(nwk)
-    t._draw_browser('s', node_hover=True)
 
+    t = toytree.tree(nwk)
+    t._draw_browser("s", node_hover=True)
