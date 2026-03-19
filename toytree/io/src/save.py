@@ -57,9 +57,9 @@ def save(canvas: Any, path: Union[str, Path]) -> None:
 
     Example
     -------
-    tree = toytree.rtree.coaltree(10)
-    canvas, axes, mark = tree.draw(ts='c')
-    toytree.save(canvas, "./drawing.svg")
+    >>> tree = toytree.rtree.coaltree(10)
+    >>> canvas, axes, mark = tree.draw(ts='c')
+    >>> toytree.save(canvas, "./drawing.svg")
     """
     _validate_canvas_like(canvas)
 
@@ -82,8 +82,9 @@ def save(canvas: Any, path: Union[str, Path]) -> None:
     if suffix in (".pdf", ".png") and _canvas_has_toytree_linear_gradients(canvas):
         raise ValueError(
             "Canvas contains linearGradients, which are only currently "
-            "supported for HTML and SVG outputs. For PDF or PNG write to SVG "
-            "and then export to PDF/PNG in Inkscape or Illustrator."
+            "supported for HTML and SVG outputs. To obtain a PDF or PNG with "
+            "a linear color gradient first write to SVG and then convert to "
+            "PDF/PNG in external software like Inkscape or Illustrator."
         )
 
     renderer = _get_renderer_for_suffix(suffix)
