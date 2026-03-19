@@ -13,14 +13,12 @@ from toytree.annotate.src.add_scale_bar import (
     _install_host_fit_invalidation_add_mark_hook,
 )
 from toytree.annotate.src.add_tip_bars import (
-    _coerce_tip_metric_data,
     _insert_mark_below_tree,
-    _resolve_tip_overlay_auto_offset,
 )
 from toytree.annotate.src.checks import (
     assert_tree_matches_mark,
     finalize_cartesian_with_tip_bar_domains,
-    get_last_toytree_mark,
+    get_last_toytree_mark_for_tree,
     invalidate_cartesian_fit_cache,
     normalize_tip_mask,
 )
@@ -38,14 +36,57 @@ __all__ = ["add_tip_paths"]
 Color = TypeVar("Color", str, tuple, np.ndarray)
 
 
+def _coerce_tip_path_ends(
+    tree: ToyTree,
+    ends: str | Sequence[float] | None,
+) -> np.ndarray | None:
+    """Return one finite tip-sized end-position array or None."""
+    if ends is None:
+        return None
+    if isinstance(ends, str):
+        try:
+            arr = np.asarray(tree.get_tip_data(ends))
+        except Exception as exc:  # pragma: no cover - precise error type varies
+            raise ToytreeError(
+                f"'ends' feature {ends!r} could not be resolved for tip paths."
+            ) from exc
+    else:
+        arr = np.asarray(ends)
+    if arr.ndim == 0:
+        raise ToytreeError(
+            "'ends' must be a tip-sized numeric sequence or a tip feature name."
+        )
+    if arr.ndim != 1:
+        raise ToytreeError("'ends' must be a one-dimensional tip-sized sequence.")
+    if arr.size != tree.ntips:
+        raise ToytreeError(f"'ends' must be size ntips ({tree.ntips}), not {arr.size}.")
+    try:
+        arr = arr.astype(float, copy=False)
+    except (TypeError, ValueError) as exc:
+        raise ToytreeError("'ends' must contain numeric tip data.") from exc
+    if np.any(~np.isfinite(arr)):
+        raise ToytreeError("'ends' must contain only finite numeric data.")
+    return np.asarray(arr, dtype=float)
+
+
 def _coerce_tip_path_spans(
     tree: ToyTree,
-    spans: Sequence[float] | None,
+    spans: str | Sequence[float] | None,
 ) -> np.ndarray:
     """Return one finite tip-sized array of absolute end positions."""
-    arr = np.asarray(spans)
+    if isinstance(spans, str):
+        try:
+            arr = np.asarray(tree.get_tip_data(spans))
+        except Exception as exc:  # pragma: no cover - precise error type varies
+            raise ToytreeError(
+                f"'spans' feature {spans!r} could not be resolved for tip paths."
+            ) from exc
+    else:
+        arr = np.asarray(spans)
     if arr.ndim == 0:
-        raise ToytreeError("'spans' must be a tip-sized numeric sequence.")
+        raise ToytreeError(
+            "'spans' must be a tip-sized numeric sequence or a tip feature name."
+        )
     if arr.ndim != 1:
         raise ToytreeError("'spans' must be a one-dimensional tip-sized sequence.")
     if arr.size != tree.ntips:
@@ -66,7 +107,7 @@ def _resolve_tip_path_bezier_fractions(
 ) -> tuple[float, float]:
     """Return validated cubic control fractions for tip-path rendering."""
     if bezier_fractions is None:
-        return (0.25, 0.75)
+        return (0.45, 0.55)
     if not isinstance(bezier_fractions, tuple):
         raise ToytreeError("'bezier_fractions' must be None or a tuple of two floats.")
     if len(bezier_fractions) != 2:
@@ -184,13 +225,14 @@ def _resolve_tip_path_opacity(
 def add_tip_paths(
     tree: ToyTree,
     axes: Cartesian,
-    data: str | Sequence[float] | None = None,
+    spans: str | Sequence[float] | None = None,
+    ends: str | Sequence[float] | None = None,
+    depth: float | None = 100.0,
+    offset_start: float = 0.0,
+    offset_end: float = 0.0,
+    offset_span: float = 0.0,
     color: Union[Color, Sequence[Color], tuple, None] = None,
-    spans: Sequence[float] | None = None,
-    depth: float = 100.0,
-    depth_offset: float | None = None,
     opacity: Union[float, Sequence[float], None] = None,
-    span_offset: float = 0.0,
     mask: np.ndarray | Tuple[int, int, int] | None | bool = None,
     style: Mapping[str, Any] | None = None,
     bezier_fractions: tuple[float, float] | None = None,
@@ -199,14 +241,11 @@ def add_tip_paths(
 ) -> Mark:
     """Add one tip-anchored path per visible tip on rectangular tree drawings.
 
-    Paths are anchored to tip coordinates and then displaced in pixel units
-    away from the tree by ``depth_offset`` and along the tip span by
-    ``span_offset``. Each path can use the full requested ``depth`` or a
-    depth normalized from numeric ``data``. Optional ``spans`` set the
-    endpoint position along the tree span axis in data units, and
-    ``bezier_fractions`` controls the cubic ease-in-ease-out bend toward that
-    endpoint without changing the outward depth scale used by companion
-    rulers.
+    Path endpoints can be specified directly in tree data coordinates using
+    ``spans`` and ``ends``. When ``ends`` is None, the path endpoint
+    along the depth axis falls back to a pixel-space depth offset given by
+    ``depth``. The three offset arguments then apply additional pixel-space
+    shifts to the rendered start point, end point, and shared span axis.
 
     Parameters
     ----------
@@ -214,38 +253,36 @@ def add_tip_paths(
         Tree associated with the existing drawing on ``axes``.
     axes : Cartesian
         Cartesian axes containing a previously drawn tree mark.
-    data : str, sequence of float, or None, default=None
-        Tip feature name or tip-sized numeric sequence used to scale the
-        outward path depth. Values must be finite and non-negative. When
-        None, paths use unit data so every visible tip reaches the full
-        requested ``depth`` and companion mark scale bars use a ``0..1``
-        domain.
+    spans : str, sequence of float, or None, default=None
+        Tip feature name or tip-sized sequence giving the absolute endpoint
+        positions on the tree span axis in data units. When None, endpoint
+        spans default to ``np.arange(tree.ntips)`` in tip order.
+    ends : str, sequence of float, or None, default=None
+        Tip feature name or tip-sized sequence giving the absolute endpoint
+        positions on the tree depth axis in data units. When provided, the
+        path endpoint is placed exactly at this depth-axis coordinate and
+        ``depth`` is ignored. When None, paths use the pixel-space ``depth``
+        fallback and hover labels use a synthetic unit value of ``1``.
+    depth : float or None, default=100.0
+        Pixel-space fallback distance from the start point to the end point
+        along the depth axis. Used only when ``ends`` is None.
+    offset_start : float, default=0.0
+        Pixel-space shift applied to the start point along the depth axis.
+    offset_end : float, default=0.0
+        Pixel-space shift applied to the end point along the depth axis.
+    offset_span : float, default=0.0
+        Pixel-space shift applied to both endpoints along the span axis.
     color : Color, sequence, tuple, or None, default=None
         Path stroke color specification. Supports a single color, per-tip
         colors, or feature mapping tuples such as ``("feature", "cmap")``.
         If None, paths use ``style["stroke"]`` when provided, otherwise they
         default to black.
-    spans : sequence of float or None, default=None
-        Tip-sized sequence giving the absolute endpoint positions on the tree
-        span axis in data units. When None, path endpoints reuse the tip span
-        coordinates so paths remain straight by default. Endpoint positions
-        are not scaled by ``data``.
-    depth : float, default=100.0
-        Maximum outward path depth in pixel units.
-    depth_offset : float or None, default=None
-        Distance from the tip edge in pixel units to the path start. When
-        None, the gap is set to the furthest outward shown tip-label extent
-        plus 10 pixels, or to the furthest shown tip-node extent plus 10
-        pixels when the tree drawing has no tip labels.
     opacity : float, sequence, or None, default=None
         Path stroke opacity. When None, paths keep
         ``style["stroke-opacity"]`` if provided and otherwise use the default
         visible stroke opacity. A scalar sets one shared stroke opacity for
         all paths. A tip-sized sequence applies per-path stroke opacity and
         overrides any shared style opacity.
-    span_offset : float, default=0.0
-        Uniform signed shift in pixel units applied to the whole path along
-        the tip span axis.
     mask : bool, tuple[int, int, int], np.ndarray, or None, default=None
         Controls shown tips. Accepted values are:
         - None: show all tips
@@ -259,7 +296,7 @@ def add_tip_paths(
         preserves style-level ``stroke-opacity``.
     bezier_fractions : tuple[float, float] or None, default=None
         Normalized depth fractions locating the two cubic Bezier control
-        points. When None, the path uses ``(0.25, 0.75)`` for a default
+        points. When None, the path uses ``(0.45, 0.55)`` for a default
         ease-in-ease-out curve. Use ``(0.0, 1.0)`` to render a straight
         segment.
     below : bool, default=True
@@ -267,10 +304,10 @@ def add_tip_paths(
         scenegraph render order.
     hover : bool, str, sequence of str, or None, default=True
         Tooltip labels for rendered paths. ``True`` shows ``"{name}: {value}"``
-        using the resolved tip data, including the implicit unit values used
-        when ``data`` is None. A string is treated as a tip feature name whose
-        resolved values are shown directly. A tip-sized sequence is used
-        verbatim as custom labels.
+        using the resolved tip end values, including the implicit unit values
+        used when ``ends`` is None. A string is treated as a tip feature
+        name whose resolved values are shown directly. A tip-sized sequence is
+        used verbatim as custom labels.
 
     Returns
     -------
@@ -288,17 +325,18 @@ def add_tip_paths(
     >>> canvas, axes, _ = tree.draw(layout="r")
     >>> tree.annotate.add_tip_paths(
     ...     axes,
-    ...     data=[0, 1, 2, 3, 4, 5],
-    ...     color="steelblue",
     ...     spans=[0, 1, 2, 4, 3, 5],
-    ...     depth=40,
+    ...     ends=[0, 1, 2, 3, 4, 5],
+    ...     color="steelblue",
+    ...     offset_end=10,
+    ...     offset_span=4,
     ...     bezier_fractions=(0.2, 0.8),
     ...     opacity=None,
     ...     hover=True,
     ...     style={"stroke-width": 2.5, "stroke-opacity": 0.7},
     ... )
     """
-    tmark = get_last_toytree_mark(axes)
+    tmark = get_last_toytree_mark_for_tree(axes, tree)
     assert_tree_matches_mark(tree, tmark)
 
     layout = str(tmark.layout)
@@ -307,42 +345,35 @@ def add_tip_paths(
             "add_tip_paths currently supports only rectangular layouts (r/l/u/d)."
         )
 
-    depth = float(depth)
-    if (not np.isfinite(depth)) or depth <= 0.0:
-        raise ToytreeError("depth must be a finite float > 0.")
-
     show = normalize_tip_mask(tree, mask)
-    depth_offset = (
-        _resolve_tip_overlay_auto_offset(tree, tmark, show)
-        if depth_offset is None
-        else float(depth_offset)
-    )
-    if not np.isfinite(depth_offset):
-        raise ToytreeError("depth_offset must be a finite float.")
+    raw_ends = _coerce_tip_path_ends(tree, ends)
+    if raw_ends is None:
+        if depth is None:
+            raise ToytreeError("depth must be a finite float > 0 when ends is None.")
+        pixel_depth = float(depth)
+        if (not np.isfinite(pixel_depth)) or pixel_depth <= 0.0:
+            raise ToytreeError("depth must be a finite float > 0 when ends is None.")
+        values = np.ones(tree.ntips, dtype=float)
+    else:
+        pixel_depth = None
+        values = np.asarray(raw_ends, dtype=float)
 
-    span_offset = float(span_offset)
-    if not np.isfinite(span_offset):
-        raise ToytreeError("span_offset must be a finite float.")
+    offset_start = float(offset_start)
+    offset_end = float(offset_end)
+    offset_span = float(offset_span)
+    if not np.isfinite(offset_start):
+        raise ToytreeError("offset_start must be a finite float.")
+    if not np.isfinite(offset_end):
+        raise ToytreeError("offset_end must be a finite float.")
+    if not np.isfinite(offset_span):
+        raise ToytreeError("offset_span must be a finite float.")
 
     resolved_bezier_fractions = _resolve_tip_path_bezier_fractions(bezier_fractions)
 
     if spans is None:
-        span_axis = 1 if layout in ("r", "l") else 0
-        raw_spans = np.array(
-            tmark.ttable[: tree.ntips, span_axis],
-            dtype=float,
-            copy=True,
-        )
+        raw_spans = np.arange(tree.ntips, dtype=float)
     else:
         raw_spans = _coerce_tip_path_spans(tree, spans)
-    raw_data = _coerce_tip_metric_data(tree, data)
-    value_min = 0.0
-    value_max = float(np.max(raw_data))
-    if value_max == 0.0:
-        scale_factors = np.zeros(tree.ntips, dtype=float)
-    else:
-        scale_factors = np.asarray(raw_data / value_max, dtype=float)
-    path_depths = scale_factors * depth
 
     style = {} if style is None else substyle_dict_to_css_dict(dict(style))
     style.setdefault("fill", "none")
@@ -365,21 +396,22 @@ def add_tip_paths(
             stroke_color = ToyColor("black")
 
     style, opacity_all = _resolve_tip_path_opacity(tree, style, opacity)
-    hover_labels = _build_tip_path_hover_labels(tree, raw_data, hover)
+    hover_labels = _build_tip_path_hover_labels(tree, values, hover)
 
     amark = AnnotationTipPathMark(
         ntable=np.asarray(tmark.ttable[: tree.ntips], dtype=float),
         host_tree_mark=tmark,
         layout=layout,
-        depth_offset=float(depth_offset),
-        span_offset=float(span_offset),
-        show=show,
-        data=np.asarray(raw_data, dtype=float),
-        value_min=float(value_min),
-        value_max=float(value_max),
-        max_path_depth=float(depth),
-        path_depths=np.asarray(path_depths, dtype=float),
+        ends=None if raw_ends is None else np.asarray(raw_ends, dtype=float),
         spans=np.array(raw_spans, dtype=float, copy=True),
+        pixel_depth=pixel_depth,
+        offset_start=float(offset_start),
+        offset_end=float(offset_end),
+        offset_span=float(offset_span),
+        show=show,
+        data=np.asarray(values, dtype=float),
+        value_min=0.0,
+        value_max=float(np.max(values)),
         colors=colors,
         stroke_color=stroke_color,
         opacity=opacity_all,
