@@ -15,7 +15,6 @@ from toyplot.mark import Mark
 from toytree.annotate.src.checks import (
     assert_tree_matches_mark,
     finalize_cartesian_with_tip_bar_domains,
-    get_last_toytree_mark,
     get_last_toytree_mark_for_tree,
     invalidate_cartesian_fit_cache,
     try_incremental_tip_bar_host_finalize,
@@ -26,7 +25,6 @@ from toytree.drawing import Cartesian, ToyTreeMark
 from toytree.drawing.src.mark_annotation import (
     AnnotationTipBarMark,
     AnnotationTipPathMark,
-    _visible_line_pad,
 )
 from toytree.drawing.src.scale_axes import (
     CompanionScaleSpec,
@@ -36,6 +34,7 @@ from toytree.drawing.src.scale_axes import (
     sync_mark_scale_cartesian,
     sync_scale_cartesian_ranges,
 )
+from toytree.layout.src.layout_circular import _parse_circular_layout
 from toytree.utils import ToytreeError
 
 __all__ = ["add_axes_scale_bar_to_tree", "add_axes_scale_bar_to_mark"]
@@ -356,25 +355,21 @@ def _resolve_tip_bar_scale_axis(
     return axis
 
 
-def _resolve_tip_path_scale_axis(
-    mark: AnnotationTipPathMark,
-    axis: Literal["auto", "x", "y"],
-) -> Literal["x", "y"]:
-    """Resolve and validate the active value axis for a tip-path mark."""
-    expected = "x" if mark.layout in ("r", "l") else "y"
-    if axis == "auto":
-        return expected
-    if axis != expected:
-        raise ToytreeError(
-            f"Tip path layout '{mark.layout}' only supports axis='{expected}'."
-        )
-    return axis
-
-
 def _resolve_tree_scale_range(
     mark: Any, axis: Literal["x", "y"]
 ) -> tuple[float, float]:
-    """Return the default tree scale-bar range in tree units."""
+    """Return the default visible tree scale-bar range in display-axis units."""
+    if mark.layout.startswith("c"):
+        lo, hi = mark.domain(axis)
+        lo = float(lo)
+        hi = float(hi)
+        is_full_circle = _parse_circular_layout(mark.layout)[3]
+        pos_extent = max(hi, 0.0)
+        neg_extent = abs(min(lo, 0.0))
+        if is_full_circle or pos_extent >= neg_extent:
+            return 0.0, pos_extent
+        return min(lo, 0.0), 0.0
+
     if axis == "x":
         left, right = mark.domain("x")
         tree_height = max(abs(right - left), 1e-6)
@@ -430,6 +425,16 @@ def _resolve_internal_tree_scale_domain(
     return tmin, tmax
 
 
+def _resolve_circular_tree_locator_domain(
+    tmin: float,
+    tmax: float,
+) -> tuple[tuple[float, float], float]:
+    """Return outward tick span and sign for one circular tree ruler."""
+    if tmax <= 0.0:
+        return (0.0, abs(float(tmin))), -1.0
+    return (0.0, float(tmax)), 1.0
+
+
 def _validate_scale_padding(padding: float, target: str) -> float:
     """Return validated non-negative local gap for a scale bar."""
     padding = float(padding)
@@ -467,12 +472,16 @@ def _format_tick_labels(
     formatter: str | Callable[[float], str] | None,
     precision: int,
     trim: Literal["k", ".", "0", "-"],
+    use_absolute: bool = True,
 ) -> list[str]:
     """Return formatted tick labels for one scale axis."""
     if isinstance(effective_scale, (int, float)):
-        labels_data = abs(locs / effective_scale)
+        labels_data = locs / effective_scale
     else:
-        labels_data = abs(locs.copy())
+        labels_data = locs.copy()
+
+    if use_absolute:
+        labels_data = abs(labels_data)
 
     if formatter is None:
         return [
@@ -558,12 +567,21 @@ def _set_scale_axis_label(
         active.label.style.update(label_style)
 
 
-def _set_tree_scale_axis_domain(scale_axes: Cartesian) -> None:
-    """Restore tree scale axes to host-mirrored domains."""
+def _set_tree_scale_axis_domain(
+    scale_axes: Cartesian,
+    axis: Literal["x", "y"],
+    domain_override: tuple[float, float] | None = None,
+) -> None:
+    """Restore tree scale axes to host domains or one explicit active range."""
     scale_axes.x.domain.min = None
     scale_axes.x.domain.max = None
     scale_axes.y.domain.min = None
     scale_axes.y.domain.max = None
+    if domain_override is None:
+        return
+    active = scale_axes.x if axis == "x" else scale_axes.y
+    active.domain.min = float(domain_override[0])
+    active.domain.max = float(domain_override[1])
 
 
 def _set_mark_scale_axis_domain(
@@ -709,6 +727,7 @@ def _get_tree_scale_bounds_finalized(
     mark: Mark,
     axis: Literal["x", "y"],
     padding: float,
+    axis_domain: tuple[float, float] | None = None,
 ) -> tuple[float, float, float, float]:
     """Return tree scale-bar bounds assuming host ranges are finalized."""
     left, right, top, bottom = _get_projected_mark_bounds_finalized(axes, mark)
@@ -719,9 +738,23 @@ def _get_tree_scale_bounds_finalized(
 
     if axis == "x":
         delta = (bottom + float(padding)) - ymax
+        if axis_domain is not None:
+            projected = np.asarray(
+                axes.project("x", np.asarray(axis_domain, dtype=float)),
+                dtype=float,
+            )
+            xmin = float(np.min(projected))
+            xmax = float(np.max(projected))
         return xmin, xmax, ymin + delta, ymax + delta
 
     delta = (left - float(padding)) - xmin
+    if axis_domain is not None:
+        projected = np.asarray(
+            axes.project("y", np.asarray(axis_domain, dtype=float)),
+            dtype=float,
+        )
+        ymin = float(np.min(projected))
+        ymax = float(np.max(projected))
     return xmin + delta, xmax + delta, ymin, ymax
 
 
@@ -782,105 +815,11 @@ def _get_linear_tip_bar_scale_bounds_finalized(
     )
 
 
-def _get_visible_tip_path_span_bounds_finalized(
-    axes: Cartesian,
-    mark: AnnotationTipPathMark,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Return visible orthogonal bounds for one finalized tip-path mark."""
-    shown = np.flatnonzero(np.asarray(mark.show, dtype=bool))
-    if not shown.size:
-        raise ToytreeError(
-            "Cannot add a mark scale bar to a tip-path mark with no visible paths."
-        )
-
-    line_pad = _visible_line_pad(mark.style)
-    start_x, start_y, end_x, end_y = mark._get_path_anchor_coords(shown)
-    start_x_px = np.asarray(axes.project("x", start_x), dtype=float)
-    start_y_px = np.asarray(axes.project("y", start_y), dtype=float)
-    end_x_px = np.asarray(axes.project("x", end_x), dtype=float)
-    end_y_px = np.asarray(axes.project("y", end_y), dtype=float)
-    span_offset = float(mark.span_offset)
-    if mark.layout in ("r", "l"):
-        start = start_y_px + span_offset
-        end = end_y_px + span_offset
-    else:
-        start = start_x_px + span_offset
-        end = end_x_px + span_offset
-    return np.minimum(start, end) - line_pad, np.maximum(start, end) + line_pad
-
-
-def _get_linear_tip_path_scale_bounds_finalized(
-    axes: Cartesian,
-    mark: AnnotationTipPathMark,
-    padding: float,
-) -> tuple[float, float, float, float]:
-    """Return overlay bounds for a finalized rectangular tip-path ruler."""
-    shown = np.flatnonzero(np.asarray(mark.show, dtype=bool))
-    if not shown.size:
-        raise ToytreeError(
-            "Cannot add a mark scale bar to a tip-path mark with no visible paths."
-        )
-
-    span_min, span_max = _get_visible_tip_path_span_bounds_finalized(axes, mark)
-    tips_x_px = np.asarray(axes.project("x", mark.ntable[:, 0]), dtype=float)
-    tips_y_px = np.asarray(axes.project("y", mark.ntable[:, 1]), dtype=float)
-    depth = float(mark.max_path_depth)
-    offset = float(mark.depth_offset)
-    padding = float(padding)
-
-    if mark.layout == "r":
-        baseline = float(np.max(tips_x_px[shown]) + offset)
-        return (
-            baseline,
-            baseline + depth,
-            float(np.min(span_min) + padding),
-            float(np.max(span_max) + padding),
-        )
-    if mark.layout == "l":
-        baseline = float(np.min(tips_x_px[shown]) - offset)
-        return (
-            baseline - depth,
-            baseline,
-            float(np.min(span_min) + padding),
-            float(np.max(span_max) + padding),
-        )
-    if mark.layout == "u":
-        baseline = float(np.min(tips_y_px[shown]) - offset)
-        return (
-            float(np.min(span_min) - padding),
-            float(np.max(span_max) - padding),
-            baseline - depth,
-            baseline,
-        )
-    if mark.layout == "d":
-        baseline = float(np.max(tips_y_px[shown]) + offset)
-        return (
-            float(np.min(span_min) - padding),
-            float(np.max(span_max) - padding),
-            baseline,
-            baseline + depth,
-        )
-    raise ToytreeError(
-        "add_axes_scale_bar_to_mark() currently supports only rectangular "
-        "tip-path layouts (r/l/u/d)."
-    )
-
-
 def _resolve_tip_bar_scale_domain(
     mark: AnnotationTipBarMark,
     tmax: float,
 ) -> tuple[float, float, float]:
     """Return internal domain limits and locator sign for tip-bar rulers."""
-    if mark.layout in ("r", "u"):
-        return 0.0, tmax, 1.0
-    return -tmax, 0.0, -1.0
-
-
-def _resolve_tip_path_scale_domain(
-    mark: AnnotationTipPathMark,
-    tmax: float,
-) -> tuple[float, float, float]:
-    """Return internal domain limits and locator sign for tip-path rulers."""
     if mark.layout in ("r", "u"):
         return 0.0, tmax, 1.0
     return -tmax, 0.0, -1.0
@@ -918,11 +857,16 @@ def _configure_companion_scale_axes(
     _store_scale_spec(scale_axes, mark, spec)
 
     if spec.use_tree_domain_mark:
-        # Tree companions keep the host display-domain mirroring via the
-        # hidden HostDomainMark / TreeDomainMark pairing.
+        # Tree companions still rely on the hidden HostDomainMark /
+        # TreeDomainMark pairing for host synchronization, but circular tree
+        # rulers can clamp the visible active axis to one selected half-domain.
         add_tree_domain_mark(axes, ntable=mark.ntable, layout=mark.layout, mark=mark)
         sync_scale_cartesian_ranges(axes, scale_axes, bounds=resolved_bounds)
-        _set_tree_scale_axis_domain(scale_axes)
+        _set_tree_scale_axis_domain(
+            scale_axes,
+            spec.axis,
+            domain_override=spec.axis_domain,
+        )
         axes.x.show = False
         axes.y.show = False
     else:
@@ -941,11 +885,18 @@ def _configure_companion_scale_axes(
         if spec.axis == "x"
         else float(resolved_bounds[3] - resolved_bounds[2])
     )
+    resolved_tick_locations = tick_locations
+    if (
+        spec.use_tree_domain_mark
+        and mark.layout.startswith("c")
+        and tick_locations is not None
+    ):
+        resolved_tick_locations = np.abs(np.asarray(tick_locations, dtype=float))
     tick_values = _resolve_tick_locations(
         csize=csize,
         tmin=spec.locator_domain[0],
         tmax=spec.locator_domain[1],
-        tick_locations=tick_locations,
+        tick_locations=resolved_tick_locations,
     )
     # Tip-bar companions on left / down layouts store outward depth on a
     # signed internal axis so value 0 stays at the bar baseline near tips.
@@ -1112,7 +1063,9 @@ def add_axes_scale_bar_to_tree(
     tick_locations : Sequence[float] or None, default=None
         Explicit tick locations in tree units. Values outside the tree-depth
         domain are clipped to the nearest endpoint. If omitted, ticks are
-        chosen automatically from the tree-depth domain.
+        chosen automatically from the visible tree-depth domain. Circular and
+        fan layouts use only one visible half-domain, and their tick locations
+        are measured outward from zero on that selected side.
     ticks_near : int, default=0
         Tick length in pixels on the near side of the spine.
     ticks_far : int, default=5
@@ -1146,9 +1099,13 @@ def add_axes_scale_bar_to_tree(
         union of visible tree content, annotation marks, and later host data
         marks, while the companion axes renders only the tree scale bar. The
         scale-bar domain is fixed by the tree depth shown in the drawing.
-        Tick locations are generated automatically from that domain unless
-        ``tick_locations`` is provided explicitly, in which case out-of-domain
-        values are clipped to the domain endpoints.
+        Circular full-circle layouts render only the positive half of the
+        chosen companion axis, while circular fan layouts render the longer
+        positive or negative half; negative-side fan labels are displayed as
+        positive outward distances. Tick locations are generated automatically
+        from that visible domain unless ``tick_locations`` is provided
+        explicitly, in which case out-of-domain values are clipped to the
+        visible domain endpoints.
 
     Raises
     ------
@@ -1316,9 +1273,11 @@ def add_axes_scale_bar_to_mark(
             trim=trim,
         )
 
-    # get last tree mark, check it matches this Tree and is on this Cartesian
-    tmark = get_last_toytree_mark(axes)
+    # Get the rendered tree mark associated with this Tree on these axes.
+    tmark = get_last_toytree_mark_for_tree(axes, tree)
     assert_tree_matches_mark(tree, tmark)
+    if isinstance(mark, AnnotationTipPathMark):
+        raise ToytreeError("Tip-path marks do not support companion scale axes.")
     if not hasattr(mark, "get_companion_scale_spec"):
         raise ToytreeError("mark does not define companion scale metadata.")
 

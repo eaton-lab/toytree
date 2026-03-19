@@ -8,7 +8,10 @@ from typing import Literal, Sequence, Tuple, TypeVar, Union
 
 import numpy as np
 
-from toytree.annotate.src.checks import assert_tree_matches_mark, get_last_toytree_mark
+from toytree.annotate.src.checks import (
+    assert_tree_matches_mark,
+    get_last_toytree_mark_for_tree,
+)
 from toytree.color import ToyColor
 from toytree.core import ToyTree
 from toytree.core.apis import AnnotationAPI, add_subpackage_method
@@ -121,7 +124,7 @@ def add_edges(
     ... )
     """
     # Validate that the tree and target axes correspond to the same drawn mark.
-    mark = get_last_toytree_mark(axes)
+    mark = get_last_toytree_mark_for_tree(axes, tree)
     assert_tree_matches_mark(tree, mark)
 
     # Number of drawable edges represented in mark.etable excludes only the

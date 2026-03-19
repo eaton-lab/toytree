@@ -6,7 +6,10 @@ from typing import Any, Callable, Mapping, Sequence, Tuple, TypeVar, Union
 
 import numpy as np
 
-from toytree.annotate.src.checks import assert_tree_matches_mark, get_last_toytree_mark
+from toytree.annotate.src.checks import (
+    assert_tree_matches_mark,
+    get_last_toytree_mark_for_tree,
+)
 from toytree.color import ToyColor
 from toytree.core import ToyTree
 from toytree.core.apis import AnnotationAPI, add_subpackage_method
@@ -125,7 +128,8 @@ def add_edge_markers(
 ) -> Mark:
     """Add marker annotations at plotted edge midpoints.
 
-    This adds edge markers to the last tree drawn on ``axes``. Plotted
+    This adds edge markers to the rendered tree associated with ``tree``
+    on ``axes``. Plotted
     edges are indexed by the child-node indices ``0..nnodes-2``. On
     rooted trees there is no separate plotted root edge, so ``mask`` and
     node-sized value arrays ignore the root entry instead of remapping it
@@ -185,7 +189,7 @@ def add_edge_markers(
     >>> )
     """
     # get mark for coordinates on plotted tree.
-    mark = get_last_toytree_mark(axes)
+    mark = get_last_toytree_mark_for_tree(axes, tree)
     assert_tree_matches_mark(tree, mark)
 
     # plotted edges correspond to non-root child indices (0..nnodes-2).
@@ -286,7 +290,8 @@ def add_edge_labels(
 ) -> Mark:
     """Add text annotations at plotted edge midpoints.
 
-    This adds edge labels to the last tree drawn on ``axes``. Plotted
+    This adds edge labels to the rendered tree associated with ``tree``
+    on ``axes``. Plotted
     edges are indexed by the child-node indices ``0..nnodes-2``. On
     rooted trees there is no separate plotted root edge, so ``mask`` and
     node-sized value arrays ignore the root entry instead of remapping it
@@ -348,7 +353,7 @@ def add_edge_labels(
     >>> )
     """
     # get mark for coordinates on plotted tree.
-    mark = get_last_toytree_mark(axes)
+    mark = get_last_toytree_mark_for_tree(axes, tree)
     assert_tree_matches_mark(tree, mark)
 
     # plotted edges correspond to non-root child indices (0..nnodes-2).

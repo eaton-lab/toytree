@@ -15,7 +15,7 @@ from toytree.annotate.src.add_scale_bar import (
 from toytree.annotate.src.checks import (
     assert_tree_matches_mark,
     finalize_cartesian_with_tip_bar_domains,
-    get_last_toytree_mark,
+    get_last_toytree_mark_for_tree,
     invalidate_cartesian_fit_cache,
     normalize_tip_mask,
 )
@@ -354,7 +354,7 @@ def add_tip_bars(
     ...     below=True,
     ... )
     """
-    tmark = get_last_toytree_mark(axes)
+    tmark = get_last_toytree_mark_for_tree(axes, tree)
     assert_tree_matches_mark(tree, tmark)
 
     depth = float(depth)

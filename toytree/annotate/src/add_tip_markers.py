@@ -12,7 +12,10 @@ from typing import Any, Mapping, Sequence, Tuple, TypeVar, Union
 import numpy as np
 from toyplot.mark import Mark
 
-from toytree.annotate.src.checks import assert_tree_matches_mark, get_last_toytree_mark
+from toytree.annotate.src.checks import (
+    assert_tree_matches_mark,
+    get_last_toytree_mark_for_tree,
+)
 from toytree.color import ToyColor
 from toytree.core import ToyTree
 from toytree.core.apis import AnnotationAPI, add_subpackage_method
@@ -60,9 +63,9 @@ def add_tip_markers(
 ) -> Mark:
     """Return toyplot Mark of markers aligned with tips of tree plot.
 
-    This adds node markers to the last tree drawn on the Cartesian
-    axes using the coordinates of plotted Nodes. The shape, size,
-    color, and style of markers can be modified.
+    This adds node markers to the rendered tree associated with ``tree``
+    on the Cartesian axes using the coordinates of plotted Nodes. The
+    shape, size, color, and style of markers can be modified.
 
     Parameters
     ----------
@@ -116,7 +119,7 @@ def add_tip_markers(
     >>> )
     """
     # get mark for coordinates on plotted tree.
-    mark = get_last_toytree_mark(axes)
+    mark = get_last_toytree_mark_for_tree(axes, tree)
     assert_tree_matches_mark(tree, mark)
 
     # get coordinates of the tip Nodes

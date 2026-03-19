@@ -11,7 +11,7 @@ from toyplot.mark import Mark
 
 from toytree.annotate.src.checks import (
     assert_tree_matches_mark,
-    get_last_toytree_mark,
+    get_last_toytree_mark_for_tree,
     normalize_tip_mask,
 )
 from toytree.color import ToyColor
@@ -145,7 +145,7 @@ def add_tip_tiles(
     ToytreeError
         If inputs are invalid or layout is unsupported.
     """
-    tmark = get_last_toytree_mark(axes)
+    tmark = get_last_toytree_mark_for_tree(axes, tree)
     assert_tree_matches_mark(tree, tmark)
 
     show = normalize_tip_mask(tree, mask)

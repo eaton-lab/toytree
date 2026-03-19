@@ -10,7 +10,10 @@ import numpy as np
 import pandas as pd
 import toyplot
 
-from toytree.annotate.src.checks import assert_tree_matches_mark, get_last_toytree_mark
+from toytree.annotate.src.checks import (
+    assert_tree_matches_mark,
+    get_last_toytree_mark_for_tree,
+)
 from toytree.core import ToyTree
 from toytree.core.apis import AnnotationAPI, add_subpackage_method
 from toytree.drawing import Cartesian, Mark
@@ -177,7 +180,7 @@ def add_edge_stochastic_map(
         raise ToytreeError("width must be a finite value > 0")
 
     # Validate that the tree and target axes correspond to the same drawn mark.
-    mark = get_last_toytree_mark(axes)
+    mark = get_last_toytree_mark_for_tree(axes, tree)
     assert_tree_matches_mark(tree, mark)
 
     # Stochastic segments are defined for straight/step edge drawings only.

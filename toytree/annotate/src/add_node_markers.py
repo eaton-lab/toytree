@@ -7,26 +7,29 @@ Examples
 ...
 """
 
-from typing import Tuple, Sequence, Mapping, Any, Union, TypeVar
+from typing import Any, Mapping, Sequence, Tuple, TypeVar, Union
+
 import numpy as np
 
-from toytree.core import ToyTree
-from toytree.drawing import Cartesian, Mark
+from toytree.annotate.src.checks import (
+    assert_tree_matches_mark,
+    get_last_toytree_mark_for_tree,
+)
 from toytree.color import ToyColor
-from toytree.core.apis import add_subpackage_method, AnnotationAPI
-from toytree.style.src.validate_utils import substyle_dict_to_css_dict
-from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
-from toytree.drawing.src.mark_annotation import AnnotationRect, AnnotationMarker
-
+from toytree.core import ToyTree
+from toytree.core.apis import AnnotationAPI, add_subpackage_method
+from toytree.drawing import Cartesian, Mark
+from toytree.drawing.src.mark_annotation import AnnotationMarker, AnnotationRect
 from toytree.style.src.validate_data import (
     validate_colors,
-    validate_numeric,
+    validate_labels,
     validate_markers,
     validate_mask,
-    validate_labels,
+    validate_numeric,
 )
 from toytree.style.src.validate_node_labels import validate_node_labels_style
 from toytree.style.src.validate_nodes import validate_node_style
+from toytree.style.src.validate_utils import substyle_dict_to_css_dict
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = [
@@ -54,9 +57,9 @@ def add_node_markers(
 ) -> Mark:
     """Return a toyplot Mark of node markers added to a tree plot.
 
-    This adds node markers to the last tree drawn on the Cartesian
-    axes using the coordinates of plotted Nodes. The shape, size,
-    color, and style of markers can be modified.
+    This adds node markers to the rendered tree associated with ``tree``
+    on the Cartesian axes using the coordinates of plotted Nodes. The
+    shape, size, color, and style of markers can be modified.
 
     Parameters
     ----------
@@ -103,7 +106,7 @@ def add_node_markers(
     >>> )
     """
     # get mark for coordinates on plotted tree.
-    mark = get_last_toytree_mark(axes)
+    mark = get_last_toytree_mark_for_tree(axes, tree)
     assert_tree_matches_mark(tree, mark)
     coords = mark.ntable
 
@@ -117,7 +120,8 @@ def add_node_markers(
 
     # update node colors setting; sets to None if only one color.
     colors, fill_color = validate_colors(
-        tree, key="color", size=tree.nnodes, style={"color": color})
+        tree, key="color", size=tree.nnodes, style={"color": color}
+    )
 
     # if fill_color then set to node_style.fill since colors = None
     if colors is None:
@@ -131,11 +135,14 @@ def add_node_markers(
 
     # validate others and trim to mask
     markers = validate_markers(
-        tree, key="marker", size=tree.nnodes, style={"marker": marker})[mask]
-    sizes = validate_numeric(
-        tree, key="size", size=tree.nnodes, style={"size": size})[mask]
+        tree, key="marker", size=tree.nnodes, style={"marker": marker}
+    )[mask]
+    sizes = validate_numeric(tree, key="size", size=tree.nnodes, style={"size": size})[
+        mask
+    ]
     opacity = validate_numeric(
-        tree, key="opacity", size=tree.nnodes, style={"opacity": opacity})[mask]
+        tree, key="opacity", size=tree.nnodes, style={"opacity": opacity}
+    )[mask]
 
     # if all marker opacities are the same then set to 1 and use style.
     # this simplifies the CSS and makes things faster, but is otherwise
@@ -205,7 +212,8 @@ def add_node_labels(
 ) -> Mark:
     """Return a toyplot Mark of node labels added to a tree drawing.
 
-    This adds node labels to the last tree drawn on the Cartesian axes.
+    This adds node labels to the rendered tree associated with ``tree``
+    on the Cartesian axes.
 
     Parameters
     ----------
@@ -249,7 +257,7 @@ def add_node_labels(
     >>> )
     """
     # get mark for coordinates on plotted tree.
-    mark = get_last_toytree_mark(axes)
+    mark = get_last_toytree_mark_for_tree(axes, tree)
     assert_tree_matches_mark(tree, mark)
 
     # mask some edges
@@ -258,7 +266,8 @@ def add_node_labels(
 
     # check length and type of labels
     labels = validate_labels(
-        tree, key="labels", size=tree.nnodes, style={"labels": labels})[mask]
+        tree, key="labels", size=tree.nnodes, style={"labels": labels}
+    )[mask]
 
     # set styles on top of defaults
     style = {} if style is None else style
@@ -271,7 +280,8 @@ def add_node_labels(
 
     # update node colors setting; sets to None if only one color.
     node_colors, fill_color = validate_colors(
-        tree, key="color", size=tree.nnodes, style={"color": color})
+        tree, key="color", size=tree.nnodes, style={"color": color}
+    )
 
     # if fill_color then set to node_style.fill since node_colors = None
     if node_colors is None:
@@ -285,13 +295,15 @@ def add_node_labels(
 
     # ...
     opacity = validate_numeric(
-        tree, key="opacity", size=tree.nnodes, style={"opacity": opacity})[mask]
+        tree, key="opacity", size=tree.nnodes, style={"opacity": opacity}
+    )[mask]
     angle = validate_numeric(
-        tree, key="angle", size=tree.nnodes, style={"angle": angle})[mask]
+        tree, key="angle", size=tree.nnodes, style={"angle": angle}
+    )[mask]
 
     # expand xshift,yshift args as anchor_shift,baseline_shift
-    style['-toyplot-anchor-shift'] += xshift
-    style['baseline-shift'] -= yshift
+    style["-toyplot-anchor-shift"] += xshift
+    style["baseline-shift"] -= yshift
 
     # add text at Node positions + half length of dists.
     mark = axes.text(
@@ -323,7 +335,7 @@ def add_node_bars(
     style: Mapping[str, Any] = None,
     z_index: int = 0,
 ) -> Mark:
-    """Returns a toyplot marker to add bars at Nodes.
+    """Return a toyplot marker to add bars at Nodes.
 
     This is commonly used to display confidence intervals on node ages.
     Bars are rectangles on which styles can be set.
@@ -366,7 +378,7 @@ def add_node_bars(
     >>> )
     """
     # get mark for coordinates of Nodes on plotted tree.
-    mark = get_last_toytree_mark(axes)
+    mark = get_last_toytree_mark_for_tree(axes, tree)
     assert_tree_matches_mark(tree, mark)
 
     # mask some edges
@@ -384,9 +396,11 @@ def add_node_bars(
 
     # update node colors setting; sets to None if only one color.
     opacity = validate_numeric(
-        tree, key="opacity", size=tree.nnodes, style={"opacity": opacity})[mask]
+        tree, key="opacity", size=tree.nnodes, style={"opacity": opacity}
+    )[mask]
     colors, fill_color = validate_colors(
-        tree, key="color", size=tree.nnodes, style={"color": color})
+        tree, key="color", size=tree.nnodes, style={"color": color}
+    )
 
     # if fill_color then set to node_style.fill since node_colors = None
     if colors is None:
@@ -400,24 +414,35 @@ def add_node_bars(
 
     # check values for positions
     bar_min = validate_numeric(
-        tree, key="bar_min", size=tree.nnodes, style={"bar_min": bar_min})[mask]
+        tree, key="bar_min", size=tree.nnodes, style={"bar_min": bar_min}
+    )[mask]
     bar_max = validate_numeric(
-        tree, key="bar_max", size=tree.nnodes, style={"bar_max": bar_max})[mask]
-    sizes = validate_numeric(
-        tree, key="size", size=tree.nnodes, style={"size": size})[mask]
+        tree, key="bar_max", size=tree.nnodes, style={"bar_max": bar_max}
+    )[mask]
+    sizes = validate_numeric(tree, key="size", size=tree.nnodes, style={"size": size})[
+        mask
+    ]
 
     # orient rectangles for the tree layout
     if mark.layout == "r":
         xtable = np.column_stack([-bar_max, -bar_min])
-        ytable = np.column_stack([coords[:, 1] - sizes / 2., coords[:, 1] + sizes / 2.])
+        ytable = np.column_stack(
+            [coords[:, 1] - sizes / 2.0, coords[:, 1] + sizes / 2.0]
+        )
     elif mark.layout == "l":
         xtable = np.column_stack([bar_min, bar_max])
-        ytable = np.column_stack([coords[:, 1] - sizes / 2., coords[:, 1] + sizes / 2.])
+        ytable = np.column_stack(
+            [coords[:, 1] - sizes / 2.0, coords[:, 1] + sizes / 2.0]
+        )
     elif mark.layout == "d":
-        xtable = np.column_stack([coords[:, 0] - sizes / 2., coords[:, 0] + sizes / 2.])
+        xtable = np.column_stack(
+            [coords[:, 0] - sizes / 2.0, coords[:, 0] + sizes / 2.0]
+        )
         ytable = np.column_stack([bar_min, bar_max])
     elif mark.layout == "u":
-        xtable = np.column_stack([coords[:, 0] - sizes / 2., coords[:, 0] + sizes / 2.])
+        xtable = np.column_stack(
+            [coords[:, 0] - sizes / 2.0, coords[:, 0] + sizes / 2.0]
+        )
         ytable = np.column_stack([-bar_max, -bar_min])
     else:
         raise NotImplementedError("TODO")
@@ -438,9 +463,9 @@ def add_node_bars(
     mark._annotation = True
 
     # z-index: option to set markers to appear UNDER the tree Mark
-    axes._scenegraph._relationships['render']._targets[axes].insert(z_index, mark)
-    axes._scenegraph._relationships['map']._targets[axes.x].insert(z_index, mark)
-    axes._scenegraph._relationships['map']._targets[axes.y].insert(z_index, mark)
+    axes._scenegraph._relationships["render"]._targets[axes].insert(z_index, mark)
+    axes._scenegraph._relationships["map"]._targets[axes.x].insert(z_index, mark)
+    axes._scenegraph._relationships["map"]._targets[axes.y].insert(z_index, mark)
     return mark
 
 
@@ -452,20 +477,19 @@ def add_node_bars(
 
 
 if __name__ == "__main__":
-
     import toytree
 
     # base tree drawing
     tree = toytree.rtree.unittree(12)
-    c, a, m = tree.draw(layout='r', scale_bar=True, node_sizes=5, width=400)
+    c, a, m = tree.draw(layout="r", scale_bar=True, node_sizes=5, width=400)
     m0 = tree.annotate.add_node_markers(
-        a, 
+        a,
         # color="idx",
-        color=('idx',),
-        yshift=-15, 
+        color=("idx",),
+        yshift=-15,
         opacity=0.3,
         # style={"fill-opacity": 0.1, "stroke-opacity": 0.5},
-        )
+    )
     # m1 = tree.annotate.add_node_labels(a, font_size=20, yshift=-15)
     # m2 = tree.annotate.add_node_bars(
     #     a,
