@@ -27,6 +27,7 @@ class CompanionScaleSpec:
     locator_sign: float = 1.0
     shift: float = 0.0
     use_tree_domain_mark: bool = False
+    axis_domain: tuple[float, float] | None = None
 
 
 def _get_canvas_for_axes(axes: Cartesian):

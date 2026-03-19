@@ -147,6 +147,7 @@ class ToyTreeMark(Mark):
         """Return companion scale metadata for rendering a tree ruler."""
         from toytree.annotate.src.add_scale_bar import (
             _get_tree_scale_bounds_finalized,
+            _resolve_circular_tree_locator_domain,
             _resolve_internal_tree_scale_domain,
             _resolve_tree_scale_axis,
             _validate_scale_padding,
@@ -161,22 +162,37 @@ class ToyTreeMark(Mark):
             domain_override,
         )
         shift = self.xbaseline if resolved_axis == "x" else self.ybaseline
-        # Tree rulers label tree-depth coordinates, but their companion bounds
-        # still come from finalized host pixel geometry around the rendered tree.
+        locator_min = float(tmin)
+        locator_max = float(tmax)
+        locator_sign = 1.0
+        axis_domain = None
+        if self.layout.startswith("c"):
+            axis_domain = (float(tmin), float(tmax))
+            if domain_override is None:
+                (locator_min, locator_max), locator_sign = (
+                    _resolve_circular_tree_locator_domain(float(tmin), float(tmax))
+                )
+        # Linear tree rulers use the rendered tree-depth span directly.
+        # Circular rulers choose one visible half-domain, trim their spine
+        # to that projected segment, and keep public tick values outward
+        # from zero even when the selected segment lies on the negative side.
         return CompanionScaleSpec(
             key="tree",
             axis=resolved_axis,
             data_domain=(float(tmin), float(tmax)),
-            locator_domain=(float(tmin), float(tmax)),
+            locator_domain=(float(locator_min), float(locator_max)),
             bounds_getter=lambda: _get_tree_scale_bounds_finalized(
                 axes,
                 self,
                 resolved_axis,
                 resolved_padding,
+                axis_domain=axis_domain,
             ),
             label_midpoint=0.5 * float(tmin + tmax),
+            locator_sign=float(locator_sign),
             shift=float(shift),
             use_tree_domain_mark=True,
+            axis_domain=axis_domain,
         )
 
 

@@ -718,15 +718,16 @@ class AnnotationTipPathMark(Mark):
         ntable: np.ndarray,
         host_tree_mark: Mark | None,
         layout: str,
-        depth_offset: float,
-        span_offset: float,
+        ends: np.ndarray | None,
+        spans: np.ndarray,
+        pixel_depth: float | None,
+        offset_start: float,
+        offset_end: float,
+        offset_span: float,
         show: np.ndarray,
         data: np.ndarray,
         value_min: float,
         value_max: float,
-        max_path_depth: float,
-        path_depths: np.ndarray,
-        spans: np.ndarray,
         colors: np.ndarray | None,
         stroke_color: Any,
         opacity: np.ndarray | None,
@@ -739,15 +740,17 @@ class AnnotationTipPathMark(Mark):
         self.ntable = ntable
         self.host_tree_mark = host_tree_mark
         self.layout = layout
-        self.depth_offset = depth_offset
-        self.span_offset = span_offset
+        self.ends = None if ends is None else np.asarray(ends, dtype=float)
+        self.spans = np.asarray(spans, dtype=float)
+        self.pixel_depth = None if pixel_depth is None else float(pixel_depth)
+        self.offset_start = float(offset_start)
+        self.offset_end = float(offset_end)
+        self.offset_span = float(offset_span)
         self.show = show
         self.data = data
         self.value_min = value_min
         self.value_max = value_max
-        self.max_path_depth = max_path_depth
-        self.path_depths = path_depths
-        self.spans = spans
+        self.max_path_depth = self.pixel_depth
         self.colors = colors
         self.stroke_color = stroke_color
         self.opacity = opacity
@@ -758,7 +761,7 @@ class AnnotationTipPathMark(Mark):
         self.paths: list[str] = []
 
         # alias for user-access from Mark
-        self.depth = self.max_path_depth
+        self.depth = self.pixel_depth
 
     def _get_path_anchor_coords(
         self,
@@ -770,11 +773,16 @@ class AnnotationTipPathMark(Mark):
         end_x = start_x.copy()
         end_y = start_y.copy()
         spans = np.asarray(self.spans[shown], dtype=float)
+        ends = None if self.ends is None else np.asarray(self.ends[shown], dtype=float)
 
         if self.layout in ("r", "l"):
+            if ends is not None:
+                end_x = ends
             end_y = spans
         elif self.layout in ("u", "d"):
             end_x = spans
+            if ends is not None:
+                end_y = ends
         else:
             raise ValueError(f"Unsupported tip-path layout: {self.layout!r}")
         return start_x, start_y, end_x, end_y
@@ -797,9 +805,11 @@ class AnnotationTipPathMark(Mark):
     ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
         """Return endpoint offsets from each anchor in Cartesian px axes."""
         ntips = shown.size
-        depth0 = np.repeat(float(self.depth_offset), ntips)
-        depth1 = depth0 + np.asarray(self.path_depths[shown], dtype=float)
-        span = np.repeat(float(self.span_offset), ntips)
+        depth0 = np.repeat(float(self.offset_start), ntips)
+        depth1 = np.repeat(float(self.offset_end), ntips)
+        if self.ends is None:
+            depth1 = depth1 + float(self.pixel_depth)
+        span = np.repeat(float(self.offset_span), ntips)
 
         if self.layout == "r":
             return depth0, depth1, span, span
@@ -810,6 +820,27 @@ class AnnotationTipPathMark(Mark):
         if self.layout == "d":
             return span, span, depth0, depth1
         raise ValueError(f"Unsupported tip-path layout: {self.layout!r}")
+
+    def _get_rendered_endpoints_px(
+        self,
+        axes,
+        shown: np.ndarray | None = None,
+    ) -> tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray]:
+        """Return rendered start/end points in Cartesian pixel coordinates."""
+        if shown is None:
+            shown = _shown_tip_indices(self.show)
+        shown = np.asarray(shown, dtype=int)
+        if shown.size == 0:
+            zeros = np.zeros(0, dtype=float)
+            return shown, zeros, zeros, zeros, zeros
+
+        start_x, start_y, end_x, end_y = self._get_path_anchor_coords(shown)
+        x0, x1, y0, y1 = self._get_endpoint_offsets_xy(shown)
+        start_x_px = np.asarray(axes.project("x", start_x), dtype=float) + x0
+        start_y_px = np.asarray(axes.project("y", start_y), dtype=float) + y0
+        end_x_px = np.asarray(axes.project("x", end_x), dtype=float) + x1
+        end_y_px = np.asarray(axes.project("y", end_y), dtype=float) + y1
+        return shown, start_x_px, start_y_px, end_x_px, end_y_px
 
     def extents(
         self,
@@ -846,50 +877,6 @@ class AnnotationTipPathMark(Mark):
         bottom = np.concatenate((y0 + line_pad, y1 + line_pad))
         coords = tuple(x_coords.copy() if ax == "x" else y_coords.copy() for ax in axes)
         return coords, (left, right, top, bottom)
-
-    def get_companion_scale_spec(
-        self,
-        axes,
-        *,
-        axis: str = "auto",
-        padding: float = 15.0,
-    ):
-        """Return companion scale metadata for rendering a tip-path ruler."""
-        from toytree.annotate.src.add_scale_bar import (
-            _get_linear_tip_path_scale_bounds_finalized,
-            _resolve_tip_path_scale_axis,
-            _resolve_tip_path_scale_domain,
-            _validate_scale_padding,
-        )
-        from toytree.drawing.src.scale_axes import CompanionScaleSpec
-        from toytree.utils import ToytreeError
-
-        resolved_axis = _resolve_tip_path_scale_axis(self, axis)
-        resolved_padding = _validate_scale_padding(padding, "mark")
-        tmin = float(self.value_min)
-        tmax = float(self.value_max)
-        if tmax <= tmin:
-            raise ToytreeError(
-                "Tip-path data have zero range; "
-                "add_axes_scale_bar_to_mark() requires at least one positive value."
-            )
-        domain_min, domain_max, locator_sign = _resolve_tip_path_scale_domain(
-            self,
-            tmax,
-        )
-        return CompanionScaleSpec(
-            key="mark",
-            axis=resolved_axis,
-            data_domain=(float(domain_min), float(domain_max)),
-            locator_domain=(float(tmin), float(tmax)),
-            bounds_getter=lambda: _get_linear_tip_path_scale_bounds_finalized(
-                axes,
-                self,
-                resolved_padding,
-            ),
-            label_midpoint=0.5 * float(domain_min + domain_max),
-            locator_sign=float(locator_sign),
-        )
 
 
 class AnnotationTipLabelMark(Mark):

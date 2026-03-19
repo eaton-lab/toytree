@@ -583,51 +583,36 @@ def _build_rectangular_tip_paths_px(
     end_x_px: np.ndarray,
     end_y_px: np.ndarray,
     layout: str,
-    depth_offset: float,
-    span_offset: float,
-    depths: np.ndarray,
     bezier_fractions: tuple[float, float],
 ) -> list[str]:
     """Build SVG path strings for rectangular tip-path annotations."""
     paths = []
-    depths = np.asarray(depths, dtype=float)
     frac0 = float(bezier_fractions[0])
     frac1 = float(bezier_fractions[1])
     use_line = bool(np.isclose(frac0, 0.0) and np.isclose(frac1, 1.0))
 
-    for idx in range(int(depths.size)):
+    for idx in range(int(start_x_px.size)):
+        start_x = float(start_x_px[idx])
+        start_y = float(start_y_px[idx])
+        end_x = float(end_x_px[idx])
+        end_y = float(end_y_px[idx])
+
         if layout == "r":
-            start_x = float(start_x_px[idx] + depth_offset)
-            start_y = float(start_y_px[idx] + span_offset)
-            end_x = float(end_x_px[idx] + depth_offset + depths[idx])
-            end_y = float(end_y_px[idx] + span_offset)
             ctrl1_x = float(start_x + (end_x - start_x) * frac0)
             ctrl1_y = start_y
             ctrl2_x = float(start_x + (end_x - start_x) * frac1)
             ctrl2_y = end_y
         elif layout == "l":
-            start_x = float(start_x_px[idx] - depth_offset)
-            start_y = float(start_y_px[idx] + span_offset)
-            end_x = float(end_x_px[idx] - depth_offset - depths[idx])
-            end_y = float(end_y_px[idx] + span_offset)
             ctrl1_x = float(start_x + (end_x - start_x) * frac0)
             ctrl1_y = start_y
             ctrl2_x = float(start_x + (end_x - start_x) * frac1)
             ctrl2_y = end_y
         elif layout == "u":
-            start_x = float(start_x_px[idx] + span_offset)
-            start_y = float(start_y_px[idx] - depth_offset)
-            end_x = float(end_x_px[idx] + span_offset)
-            end_y = float(end_y_px[idx] - depth_offset - depths[idx])
             ctrl1_x = start_x
             ctrl1_y = float(start_y + (end_y - start_y) * frac0)
             ctrl2_x = end_x
             ctrl2_y = float(start_y + (end_y - start_y) * frac1)
         elif layout == "d":
-            start_x = float(start_x_px[idx] + span_offset)
-            start_y = float(start_y_px[idx] + depth_offset)
-            end_x = float(end_x_px[idx] + span_offset)
-            end_y = float(end_y_px[idx] + depth_offset + depths[idx])
             ctrl1_x = start_x
             ctrl1_y = float(start_y + (end_y - start_y) * frac0)
             ctrl2_x = end_x
@@ -656,17 +641,15 @@ def render_tip_paths(
     context: toyplot.html.RenderContext,
 ) -> None:
     """Render rectangular tip-anchored path annotations."""
-    tip_indices = np.where(np.asarray(mark.show, dtype=bool))[0].astype(int)
-    start_x, start_y, end_x, end_y = mark._get_path_anchor_coords(tip_indices)
+    tip_indices, start_x_px, start_y_px, end_x_px, end_y_px = (
+        mark._get_rendered_endpoints_px(axes)
+    )
     paths = _build_rectangular_tip_paths_px(
-        start_x_px=np.asarray(axes.project("x", start_x), dtype=float),
-        start_y_px=np.asarray(axes.project("y", start_y), dtype=float),
-        end_x_px=np.asarray(axes.project("x", end_x), dtype=float),
-        end_y_px=np.asarray(axes.project("y", end_y), dtype=float),
+        start_x_px=start_x_px,
+        start_y_px=start_y_px,
+        end_x_px=end_x_px,
+        end_y_px=end_y_px,
         layout=mark.layout,
-        depth_offset=float(mark.depth_offset),
-        span_offset=float(mark.span_offset),
-        depths=np.asarray(mark.path_depths[tip_indices], dtype=float),
         bezier_fractions=mark.bezier_fractions,
     )
 
@@ -688,7 +671,7 @@ def render_tip_paths(
             color = mark.stroke_color
         else:
             color = ToyColor(mark.colors[tip_indices[idx]])
-        path_style["stroke"] = color.rgb
+        path_style["stroke"] = color
         if mark.opacity is not None:
             path_style.pop("stroke-opacity", None)
             path_style["stroke-opacity"] = float(mark.opacity[tip_indices[idx]])
