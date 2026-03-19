@@ -66,8 +66,15 @@ def get_last_toytree_mark_for_tree(axes: Cartesian, tree: ToyTree) -> ToyTreeMar
         return matches[-1]
 
     # Backward-compatible fallback for older marks that do not record their
-    # source tree identity. This preserves single-tree behavior.
-    mark = tree_marks[-1]
+    # source tree identity. Preserve single-tree behavior but refuse to guess
+    # on shared axes where "last rendered" can silently annotate the wrong tree.
+    if len(tree_marks) > 1:
+        raise ToytreeError(
+            "Multiple ToyTreeMarks are rendered on these Cartesian axes, "
+            "but none record source-tree identity for the provided tree. "
+            "Tree selection is ambiguous."
+        )
+    mark = tree_marks[0]
     assert_tree_matches_mark(tree, mark)
     return mark
 
