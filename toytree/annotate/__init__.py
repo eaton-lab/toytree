@@ -40,7 +40,7 @@ Functions
 
 - add_tip_markers()
 - add_tip_bars()
-- add_tip_labels()
+- add_tip_text()
 - add_tip_heatmap()
 
 - add_image_markers(xpos, ypos, image[s], size, **style)
@@ -57,9 +57,9 @@ from toytree.annotate.src.add_node_markers import *
 from toytree.annotate.src.add_pie_markers import *
 from toytree.annotate.src.add_scale_bar import *
 from toytree.annotate.src.add_tip_bars import *
-from toytree.annotate.src.add_tip_labels import *
 from toytree.annotate.src.add_tip_markers import *
 from toytree.annotate.src.add_tip_paths import *
+from toytree.annotate.src.add_tip_text import *
 from toytree.annotate.src.add_tip_tiles import *
 from toytree.annotate.src.checks import (
     get_toytree_scale_cartesian as get_toytree_scale_cartesian,

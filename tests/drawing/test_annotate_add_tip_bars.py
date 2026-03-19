@@ -183,6 +183,24 @@ class TestAnnotateAddTipBars(PytestCompat):
         self.assertEqual(mark.value_max, 1.0)
         self.assertIn(f"{self.tree[0].name}: 1", self._tip_bar_titles(root))
 
+    def test_add_tip_bars_selects_tree_specific_mark_on_shared_axes(self):
+        other = toytree.rtree.unittree(
+            ntips=self.tree.ntips,
+            seed=333,
+            random_names=True,
+        )
+        _, axes, tmark1 = self.tree.draw(layout="r", width=500)
+        _, axes, tmark2 = other.draw(axes=axes, layout="l", xbaseline=2)
+        mark = self.tree.annotate.add_tip_bars(axes, data="X", depth=30)
+        self.assertIs(mark.host_tree_mark, tmark1)
+        self.assertIsNot(mark.host_tree_mark, tmark2)
+        self.assertTrue(
+            np.allclose(mark.ntable, np.asarray(tmark1.ttable[: self.tree.ntips]))
+        )
+        self.assertFalse(
+            np.allclose(mark.ntable, np.asarray(tmark2.ttable[: self.tree.ntips]))
+        )
+
     def test_add_tip_bars_stores_raw_scale_metadata(self):
         _, a, _ = self.tree.draw(layout="d", edge_type="p")
         vals = np.arange(self.tree.ntips, dtype=float)

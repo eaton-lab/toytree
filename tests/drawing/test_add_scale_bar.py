@@ -19,6 +19,7 @@ from toytree.annotate.src.add_scale_bar import (
     add_axes_scale_bar_to_mark,
     add_axes_scale_bar_to_tree,
 )
+from toytree.annotate.src.checks import get_last_toytree_mark_for_tree
 from toytree.drawing.src.scale_axes import (
     get_mark_scale_cartesian,
     get_toytree_scale_cartesian,
@@ -194,6 +195,130 @@ class TestAddScaleBar(PytestCompat):
         saxes = self._scale_axes(axes)
         labels = list(saxes.x.ticks.locator._labels)
         self.assertEqual(labels, ["0", "1", "2"])
+
+    def test_circular_tree_scale_bar_uses_positive_x_half_domain(self):
+        ctree = toytree.rtree.unittree(20, seed=123, treeheight=100)
+        _, axes, mark = ctree.draw(layout="c", scale_bar=False, width=400)
+        ctree.annotate.add_axes_scale_bar_to_tree(
+            axes,
+            tick_locations=[0, 40, 80],
+            scale=1.0,
+        )
+        saxes = self._scale_axes(axes)
+        self.assertTrue(saxes.x.show)
+        self.assertFalse(saxes.y.show)
+        locs, labels, _ = self._projected_scale_ticks(saxes, "x")
+        self.assertTrue(np.allclose(locs, np.array([0.0, 40.0, 80.0])))
+        self.assertEqual(labels, ["0", "40", "80"])
+        overlay = self._overlay_bounds(saxes)
+        projected = np.asarray(
+            axes.project("x", np.array([0.0, float(mark.domain("x")[1])])), dtype=float
+        )
+        self.assertTrue(
+            np.allclose(
+                np.array(overlay[:2]),
+                np.array([np.min(projected), np.max(projected)]),
+            )
+        )
+
+    def test_circular_fan_tree_scale_bar_uses_positive_y_half_domain(self):
+        ctree = toytree.rtree.unittree(20, seed=123, treeheight=100)
+        _, axes, mark = ctree.draw(layout="c60-320", scale_bar=False, width=400)
+        ctree.annotate.add_axes_scale_bar_to_tree(
+            axes,
+            tick_locations=[0, 40, 80],
+            scale=1.0,
+        )
+        saxes = self._scale_axes(axes)
+        self.assertFalse(saxes.x.show)
+        self.assertTrue(saxes.y.show)
+        locs, labels, _ = self._projected_scale_ticks(saxes, "y")
+        self.assertTrue(np.allclose(locs, np.array([0.0, 40.0, 80.0])))
+        self.assertEqual(labels, ["0", "40", "80"])
+        overlay = self._overlay_bounds(saxes)
+        projected = np.asarray(
+            axes.project("y", np.array([0.0, float(mark.domain("y")[1])])), dtype=float
+        )
+        self.assertTrue(
+            np.allclose(
+                np.array(overlay[2:]),
+                np.array([np.min(projected), np.max(projected)]),
+            )
+        )
+
+    def test_circular_negative_fan_scale_bar_uses_positive_labels(self):
+        ctree = toytree.rtree.unittree(20, seed=123, treeheight=100)
+        _, axes, mark = ctree.draw(layout="c60-160", scale_bar=False, width=400)
+        ctree.annotate.add_axes_scale_bar_to_tree(
+            axes,
+            tick_locations=[0, 40, 80],
+            scale=1.0,
+        )
+        saxes = self._scale_axes(axes)
+        self.assertTrue(saxes.x.show)
+        self.assertFalse(saxes.y.show)
+        locs, labels, _ = self._projected_scale_ticks(saxes, "x")
+        self.assertTrue(np.allclose(locs, np.array([0.0, -40.0, -80.0])))
+        self.assertEqual(labels, ["0", "40", "80"])
+        overlay = self._overlay_bounds(saxes)
+        projected = np.asarray(
+            axes.project("x", np.array([float(mark.domain("x")[0]), 0.0])),
+            dtype=float,
+        )
+        self.assertTrue(
+            np.allclose(
+                np.array(overlay[:2]),
+                np.array([np.min(projected), np.max(projected)]),
+            )
+        )
+
+    def test_circular_positive_fan_ticks_are_clipped_to_selected_half(self):
+        ctree = toytree.rtree.unittree(20, seed=123, treeheight=100)
+        _, axes, mark = ctree.draw(layout="c60-320", scale_bar=False, width=400)
+        ymax = float(mark.domain("y")[1])
+        ctree.annotate.add_axes_scale_bar_to_tree(
+            axes,
+            tick_locations=[0, 40, 200],
+            scale=1.0,
+        )
+        saxes = self._scale_axes(axes)
+        locs, labels, _ = self._projected_scale_ticks(saxes, "y")
+        self.assertTrue(np.isclose(locs[0], 0.0))
+        self.assertTrue(np.isclose(locs[1], 40.0))
+        self.assertTrue(np.isclose(locs[2], ymax))
+        self.assertEqual(labels[0], "0")
+        self.assertEqual(labels[1], "40")
+        self.assertTrue(np.isclose(float(labels[2]), ymax))
+
+    def test_circular_negative_fan_ticks_are_clipped_to_selected_half(self):
+        ctree = toytree.rtree.unittree(20, seed=123, treeheight=100)
+        _, axes, mark = ctree.draw(layout="c60-160", scale_bar=False, width=400)
+        xmin = float(mark.domain("x")[0])
+        ctree.annotate.add_axes_scale_bar_to_tree(
+            axes,
+            tick_locations=[0, 40, 200],
+            scale=1.0,
+        )
+        saxes = self._scale_axes(axes)
+        locs, labels, _ = self._projected_scale_ticks(saxes, "x")
+        self.assertTrue(np.isclose(locs[0], 0.0))
+        self.assertTrue(np.isclose(locs[1], -40.0))
+        self.assertTrue(np.isclose(locs[2], xmin))
+        self.assertEqual(labels[0], "0")
+        self.assertEqual(labels[1], "40")
+        self.assertTrue(np.isclose(float(labels[2]), abs(xmin)))
+
+    def test_circular_negative_fan_ticks_respect_scale_with_positive_labels(self):
+        ctree = toytree.rtree.unittree(20, seed=123, treeheight=100)
+        _, axes, _ = ctree.draw(layout="c60-160", scale_bar=False, width=400)
+        ctree.annotate.add_axes_scale_bar_to_tree(
+            axes,
+            tick_locations=[0, 40, 80],
+            scale=2.0,
+        )
+        saxes = self._scale_axes(axes)
+        labels = list(saxes.x.ticks.locator._labels)
+        self.assertEqual(labels, ["0", "20", "40"])
 
     def test_vertical_layout_uses_y_scale_axis(self):
         _, axes, _ = self.tree.draw(layout="d", scale_bar=False)
@@ -569,7 +694,7 @@ class TestAddScaleBar(PytestCompat):
         before_data = (float(saxes.x._data_min), float(saxes.x._data_max))
 
         # Add a non-tree annotation mark to host axes and rebuild scale bar.
-        t.annotate.add_tip_labels(axes, labels=t.get_tip_labels())
+        t.annotate.add_tip_text(axes, labels=t.get_tip_labels())
         t.annotate.add_axes_scale_bar_to_tree(axes)
         saxes = self._scale_axes(axes)
         saxes._finalize()
@@ -754,7 +879,7 @@ class TestAddScaleBar(PytestCompat):
 
     def test_tip_path_without_companion_late_host_marks_update_host_domain(self):
         _, axes, _ = self.bar_tree.draw(layout="r", scale_bar=False)
-        self.bar_tree.annotate.add_tip_paths(axes, data="X", depth=18)
+        self.bar_tree.annotate.add_tip_paths(axes, ends=None, depth=18)
         self.assertTrue(
             getattr(axes, "_toytree_host_fit_add_mark_hook_installed", False)
         )
@@ -805,6 +930,35 @@ class TestAddScaleBar(PytestCompat):
         axes._finalize()
         self.assertGreaterEqual(float(axes.x._data_max), 9.0)
         self.assertGreaterEqual(float(axes.y._data_max), 9.0)
+
+    def test_node_markers_select_tree_specific_mark_on_shared_axes(self):
+        tree1 = toytree.rtree.unittree(ntips=10, seed=123)
+        tree2 = toytree.rtree.unittree(ntips=10, seed=333, random_names=True)
+        _, axes, tmark1 = tree1.draw(layout="r", width=500)
+        _, axes, tmark2 = tree2.draw(axes=axes, layout="l", xbaseline=2)
+        mark = tree1.annotate.add_node_markers(axes, mask=False)
+        self.assertTrue(np.allclose(mark.ntable, np.asarray(tmark1.ntable)))
+        self.assertFalse(np.allclose(mark.ntable, np.asarray(tmark2.ntable)))
+
+    def test_get_last_toytree_mark_for_tree_single_untagged_mark_falls_back(self):
+        tree = toytree.rtree.unittree(ntips=8, seed=123)
+        _, axes, tmark = tree.draw(layout="r")
+        if hasattr(tmark, "_toytree_source_tree"):
+            delattr(tmark, "_toytree_source_tree")
+        resolved = get_last_toytree_mark_for_tree(axes, tree)
+        self.assertIs(resolved, tmark)
+
+    def test_get_last_toytree_mark_for_tree_rejects_ambiguous_shared_axes(self):
+        tree1 = toytree.rtree.unittree(ntips=10, seed=123)
+        tree2 = toytree.rtree.unittree(ntips=10, seed=333, random_names=True)
+        _, axes, tmark1 = tree1.draw(layout="r", width=500)
+        _, axes, tmark2 = tree2.draw(axes=axes, layout="l", xbaseline=2)
+        if hasattr(tmark1, "_toytree_source_tree"):
+            delattr(tmark1, "_toytree_source_tree")
+        if hasattr(tmark2, "_toytree_source_tree"):
+            delattr(tmark2, "_toytree_source_tree")
+        with self.assertRaises(ToytreeError):
+            get_last_toytree_mark_for_tree(axes, tree1)
 
     def test_companion_add_mark_hook_is_installed_only_once(self):
         _, axes, _ = self.bar_tree.draw(layout="r", scale_bar=False)
@@ -870,65 +1024,31 @@ class TestAddScaleBar(PytestCompat):
             )
             self.assertEqual(list(active.ticks.locator._labels), ["0", "1", "2"])
 
-    def test_tip_path_scale_bar_uses_raw_value_domain(self):
+    def test_tip_path_mark_scale_bar_is_unsupported(self):
         _, axes, _ = self.bar_tree.draw(layout="r", scale_bar=False)
         pmark = self.bar_tree.annotate.add_tip_paths(
             axes,
-            data="X",
-            depth=24,
             spans=np.array([0.0, -4.0, 4.0]),
+            ends="X",
         )
-        self.bar_tree.annotate.add_axes_scale_bar_to_mark(
-            axes,
-            pmark,
-            tick_locations=[0, 1, 2],
-            scale=1.0,
-        )
-        saxes = self._mark_scale_axes(axes, pmark)
-        self.assertEqual(float(saxes.x.domain.min), 0.0)
-        self.assertEqual(float(saxes.x.domain.max), 2.0)
-        self.assertEqual(list(saxes.x.ticks.locator._labels), ["0", "1", "2"])
-
-    def test_tip_path_scale_bar_uses_unit_data_when_data_is_none(self):
-        _, axes, _ = self.bar_tree.draw(layout="r", scale_bar=False)
-        pmark = self.bar_tree.annotate.add_tip_paths(axes, data=None, depth=24)
-        self.bar_tree.annotate.add_axes_scale_bar_to_mark(
-            axes,
-            pmark,
-            tick_locations=[0.0, 0.5, 1.0],
-            scale=1.0,
-        )
-        saxes = self._mark_scale_axes(axes, pmark)
-        self.assertEqual(float(saxes.x.domain.min), 0.0)
-        self.assertEqual(float(saxes.x.domain.max), 1.0)
-        self.assertEqual(list(saxes.x.ticks.locator._labels), ["0", "0.5", "1"])
-
-    def test_tip_path_scale_bar_uses_signed_internal_domain_on_left_and_down(self):
-        for layout, axis in (("l", "x"), ("d", "y")):
-            _, axes, _ = self.bar_tree.draw(layout=layout, scale_bar=False)
-            pmark = self.bar_tree.annotate.add_tip_paths(
-                axes,
-                data="X",
-                depth=24,
-                spans=np.array([0.0, -4.0, 4.0]),
-            )
+        with self.assertRaises(ToytreeError):
             self.bar_tree.annotate.add_axes_scale_bar_to_mark(
                 axes,
                 pmark,
                 tick_locations=[0, 1, 2],
                 scale=1.0,
             )
-            saxes = self._mark_scale_axes(axes, pmark)
-            active = getattr(saxes, axis)
-            self.assertEqual(float(active.domain.min), -2.0)
-            self.assertEqual(float(active.domain.max), 0.0)
-            self.assertTrue(
-                np.allclose(
-                    np.asarray(active.ticks.locator._locations, dtype=float),
-                    np.array([0.0, -1.0, -2.0]),
-                )
+
+    def test_tip_path_mark_scale_bar_is_unsupported_with_depth_fallback(self):
+        _, axes, _ = self.bar_tree.draw(layout="r", scale_bar=False)
+        pmark = self.bar_tree.annotate.add_tip_paths(axes, ends=None, depth=24)
+        with self.assertRaises(ToytreeError):
+            self.bar_tree.annotate.add_axes_scale_bar_to_mark(
+                axes,
+                pmark,
+                tick_locations=[0.0, 0.5, 1.0],
+                scale=1.0,
             )
-            self.assertEqual(list(active.ticks.locator._labels), ["0", "1", "2"])
 
     def test_mark_scale_bar_rejects_zero_data(self):
         _, axes0, _ = self.bar_tree.draw(layout="r", scale_bar=False)
@@ -939,15 +1059,6 @@ class TestAddScaleBar(PytestCompat):
         )
         with self.assertRaises(ToytreeError):
             self.bar_tree.annotate.add_axes_scale_bar_to_mark(axes0, bmark0)
-
-        _, axes1, _ = self.bar_tree.draw(layout="r", scale_bar=False)
-        pmark1 = self.bar_tree.annotate.add_tip_paths(
-            axes1,
-            data=np.zeros(self.bar_tree.ntips, dtype=float),
-            depth=24,
-        )
-        with self.assertRaises(ToytreeError):
-            self.bar_tree.annotate.add_axes_scale_bar_to_mark(axes1, pmark1)
 
     def test_mark_scale_bar_zero_tick_stays_at_tip_baseline_for_all_layouts(self):
         expectations = {
@@ -1491,9 +1602,7 @@ class TestAddScaleBar(PytestCompat):
 
     def test_mark_scale_bar_rejects_unsupported_mark(self):
         _, axes, _ = self.tree.draw(layout="r", scale_bar=False)
-        lmark = self.tree.annotate.add_tip_labels(
-            axes, labels=self.tree.get_tip_labels()
-        )
+        lmark = self.tree.annotate.add_tip_text(axes, labels=self.tree.get_tip_labels())
         with self.assertRaises(ToytreeError):
             self.tree.annotate.add_axes_scale_bar_to_mark(axes, lmark)
 
