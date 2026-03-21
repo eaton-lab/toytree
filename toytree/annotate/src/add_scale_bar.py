@@ -17,7 +17,6 @@ from toytree.annotate.src.checks import (
     finalize_cartesian_with_tip_bar_domains,
     get_last_toytree_mark_for_tree,
     invalidate_cartesian_fit_cache,
-    try_incremental_tip_bar_host_finalize,
 )
 from toytree.core import ToyTree
 from toytree.core.apis import AnnotationAPI, add_subpackage_method
@@ -275,12 +274,6 @@ def _add_mark_and_sync_companions(axes: Cartesian, mark: Mark) -> Mark:
     """Add a host mark, then refresh host fit and active companion axes."""
     original_add_mark = axes._toytree_original_add_mark
     result = original_add_mark(mark)
-
-    # Repeated rectangular tip-bar additions dominate the multi-companion
-    # workload, so reuse the finalized host extents when that path is safe.
-    if try_incremental_tip_bar_host_finalize(axes, mark):
-        _sync_all_companion_axes(axes)
-        return result
 
     invalidate_cartesian_fit_cache(axes)
     _finalize_host_axes(axes)

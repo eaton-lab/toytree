@@ -2,7 +2,6 @@
 
 """Add a color_scale to Cartesian axes.
 
-
 Plan
 ----
 
@@ -16,15 +15,15 @@ tree.annotate.add_legend(axes, *, x, y, ...)
 
 """
 
-from typing import Optional, Mapping, Any
+from typing import Any, Mapping, Optional
+
 from toyplot.color import Map
+
 from toytree.core import ToyTree
 from toytree.drawing import Cartesian
-from toytree.core.apis import add_subpackage_method, AnnotationAPI
-from toytree.style.src.validate_utils import substyle_dict_to_css_dict
+
 # from toytree.annotate.src.checks import get_last_toytree_mark, assert_tree_matches_mark
 from toytree.drawing.src.mark_annotation import AnnotationRect  # AnnotationMarker
-
 
 # def add_marker_legend(
 #     tree: ToyTree,
@@ -44,7 +43,7 @@ def add_color_scale_from_feature(
     feature: str,
     colormap: Map = None,
     width: Optional[int] = None,
-    angle: float = 0.,
+    angle: float = 0.0,
     style: Mapping[str, Any] = None,
 ) -> AnnotationRect:
     """Return color map...
@@ -66,10 +65,10 @@ def add_color_scale(
     xpos: float = 50,
     ypos: float = -50,
     colormap: Map = None,
-    min: float = 0.,
-    max: float = 1.,
+    min: float = 0.0,
+    max: float = 1.0,
     width: Optional[int] = None,
-    angle: float = 0.,
+    angle: float = 0.0,
     style: Mapping[str, Any] = None,
 ) -> AnnotationRect:
     """Return ... with color_scale ...
@@ -100,7 +99,7 @@ def add_color_scale(
 
     Examples
     --------
-    # create a color scale given 
+    # create a color scale given
     """
     canvas = axes._scenegraph.source("render", axes)
     canvas.color_scale(
@@ -115,8 +114,8 @@ def add_color_scale(
         label=label,
         ticklocator=tick_locator,
         scale="linear",
-        )
-    return axis    
+    )
+    return axis
 
 
 if __name__ == "__main__":

@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-# ruff: noqa: F403
 
 """Add additional Marks to annotate toytree drawings.
 
@@ -48,23 +47,99 @@ Functions
 - radial_...
 """
 
-# from toytree.annotate.src.node_pie_charts import draw_node_pie_charts
-from toytree.annotate.src.add_axes_box_outline import *
-from toytree.annotate.src.add_edge_markers import *
-from toytree.annotate.src.add_edge_stochastic_map import *
-from toytree.annotate.src.add_edges import *
-from toytree.annotate.src.add_node_markers import *
-from toytree.annotate.src.add_pie_markers import *
-from toytree.annotate.src.add_scale_bar import *
-from toytree.annotate.src.add_tip_bars import *
-from toytree.annotate.src.add_tip_markers import *
-from toytree.annotate.src.add_tip_paths import *
-from toytree.annotate.src.add_tip_text import *
-from toytree.annotate.src.add_tip_tiles import *
-from toytree.annotate.src.checks import (
-    get_toytree_scale_cartesian as get_toytree_scale_cartesian,
-)
+from __future__ import annotations
 
-# ... edge_labels
-# ... node_labels
-# from .confidence_intervals import draw_node_confidence_intervals
+import importlib
+
+_LAZY_SUBMODULES = {
+    "src": "toytree.annotate.src",
+}
+
+_MODULE_EXPORTS = {
+    "toytree.annotate.src.add_axes_box_outline": [
+        "add_axes_box_outline",
+        "set_axes_ticks_external",
+    ],
+    "toytree.annotate.src.add_edge_markers": [
+        "add_edge_markers",
+        "add_edge_labels",
+    ],
+    "toytree.annotate.src.add_edge_stochastic_map": [
+        "add_edge_stochastic_map",
+    ],
+    "toytree.annotate.src.add_edges": [
+        "add_edges",
+    ],
+    "toytree.annotate.src.add_node_markers": [
+        "add_node_markers",
+        "add_node_labels",
+        "add_node_bars",
+    ],
+    "toytree.annotate.src.add_pie_markers": [
+        "add_node_pie_markers",
+        "add_edge_pie_markers",
+    ],
+    "toytree.annotate.src.add_scale_bar": [
+        "add_axes_scale_bar_to_tree",
+        "add_axes_scale_bar_to_mark",
+    ],
+    "toytree.annotate.src.add_tip_bars": [
+        "add_tip_bars",
+    ],
+    "toytree.annotate.src.add_tip_markers": [
+        "add_tip_markers",
+    ],
+    "toytree.annotate.src.add_tip_paths": [
+        "add_tip_paths",
+    ],
+    "toytree.annotate.src.add_tip_text": [
+        "add_tip_text",
+    ],
+    "toytree.annotate.src.add_tip_tiles": [
+        "add_tip_tiles",
+    ],
+    "toytree.annotate.src.checks": [
+        "get_toytree_scale_cartesian",
+    ],
+}
+
+_PACKAGE_ATTRS = {
+    name: (module_name, name)
+    for module_name, names in _MODULE_EXPORTS.items()
+    for name in names
+    if name != "set_axes_ticks_external"
+}
+
+_TREE_API_ONLY_ATTRS = {
+    "set_axes_ticks_external": (
+        "toytree.annotate.src.add_axes_box_outline",
+        "set_axes_ticks_external",
+    ),
+}
+
+__all__ = sorted(_PACKAGE_ATTRS)
+
+
+def __getattr__(name: str):
+    """Lazily import annotate functions and helper submodules on demand."""
+    if name in _LAZY_SUBMODULES:
+        module = importlib.import_module(_LAZY_SUBMODULES[name])
+        globals()[name] = module
+        return module
+
+    if name in _PACKAGE_ATTRS:
+        module_name, attr_name = _PACKAGE_ATTRS[name]
+    elif name in _TREE_API_ONLY_ATTRS:
+        module_name, attr_name = _TREE_API_ONLY_ATTRS[name]
+    else:
+        raise AttributeError(name)
+
+    module = importlib.import_module(module_name)
+    value = getattr(module, attr_name)
+    globals()[name] = value
+    return value
+
+
+def __dir__():
+    """Return module attributes plus lazily available public names."""
+    return sorted(set(globals()) | set(__all__) | set(_LAZY_SUBMODULES))

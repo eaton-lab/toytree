@@ -11,9 +11,10 @@ from typing import Tuple
 import numpy as np
 import requests
 from PIL import Image as PILImage
-from toytree.drawing import Canvas, Mark
-from toyplot.mark import Image as MarkImage
 from toyplot.html import RenderContext, dispatch, xml
+from toyplot.mark import Image as MarkImage
+
+from toytree.drawing import Canvas, Mark
 
 
 def generate_example_image(width: int = 96, height: int = 96) -> np.ndarray:
@@ -43,6 +44,7 @@ def generate_example_image(width: int = 96, height: int = 96) -> np.ndarray:
 @dataclass(frozen=True)
 class FetchedImage:
     """Container for fetched image bytes and metadata."""
+
     data: bytes
     format: str
     content_type: str | None
@@ -51,6 +53,7 @@ class FetchedImage:
 @dataclass(frozen=True)
 class SvgMark(Mark):
     """Render SVG content directly onto a Toyplot canvas."""
+
     svg_text: str
     xmin: float
     ymin: float
@@ -111,7 +114,9 @@ def _convert_svg_to_png_bytes(data: bytes, *, scale: float = 1.0) -> bytes:
     return cairosvg.svg2png(bytestring=data, scale=scale)
 
 
-def image_to_array(image: np.ndarray | FetchedImage, *, svg_scale: float = 1.0) -> np.ndarray:
+def image_to_array(
+    image: np.ndarray | FetchedImage, *, svg_scale: float = 1.0
+) -> np.ndarray:
     """Convert a fetched PNG/SVG or numpy array into an image array."""
     if isinstance(image, FetchedImage):
         data = image.data
