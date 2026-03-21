@@ -70,14 +70,15 @@ Examples
 >>>     **kwargs,
 >>> );
 """
-from typing import Optional, Sequence, TypeVar, Set, Union
+
+from typing import Optional, Sequence, Set, TypeVar, Union
+
 import numpy as np
+
+from toytree.core.apis import TreeModAPI, add_subpackage_method, add_toytree_method
 from toytree.core.node import Node
 from toytree.core.tree import ToyTree
-from toytree.core.apis import (
-    TreeModAPI, add_subpackage_method, add_toytree_method
-)
-from toytree.utils import ToytreeError, NON_MONOPHYLETIC_OUTGROUP
+from toytree.utils import NON_MONOPHYLETIC_OUTGROUP, ToytreeError
 
 Query = TypeVar("Query", int, str, Node)
 
@@ -90,6 +91,7 @@ class Rooter:
     See `toytree.mod.root` docstring for details. This class is for
     internal use, not user-facing.
     """
+
     def __init__(
         self,
         tree: ToyTree,
@@ -107,7 +109,9 @@ class Rooter:
         self.edge_features: Set[str] = self._get_edge_features(edge_features)
         """: Features that should be re-polarized on rooting (e.g., support)"""
 
-    def _get_edge_features(self, edge_features: Optional[Union[str, Sequence[str]]]) -> Set[str]:
+    def _get_edge_features(
+        self, edge_features: Optional[Union[str, Sequence[str]]]
+    ) -> Set[str]:
         """Return the features associated with edges instead of nodes.
 
         This requires dist and support to be edge features. It also adds
@@ -160,7 +164,7 @@ class Rooter:
 
             # root mrca. Reciprocal tip set may be monophyletic, all tips, or non-monophyletic
             else:
-                all_tips = set(self.tree[:self.tree.ntips])
+                all_tips = set(self.tree[: self.tree.ntips])
                 tips = all_tips - tips
                 if not tips:
                     tips = all_tips
@@ -192,7 +196,8 @@ class Rooter:
             if self.node.is_root():
                 msg = (
                     "Cannot root unrooted tree on the pseudo-root, it has no "
-                    "edge. Select a valid outgroup")
+                    "edge. Select a valid outgroup"
+                )
                 raise ToytreeError(msg)
 
         self._insert_root_node()
@@ -223,7 +228,7 @@ class Rooter:
         ancestors of u on the original tree are re-polarized.
         """
         # create Node to insert, select edge to insert to, and store its dist
-        newroot = Node(name="root", support=np.nan, dist=0.)
+        newroot = Node(name="root", support=np.nan, dist=0.0)
         edge = (self.node, self.node._up)
         odist = float(edge[0]._dist)
 
@@ -259,20 +264,21 @@ class Rooter:
                         delattr(node, fname)
 
         # set node and its parent as sisters, and children of newroot.
-        newroot._children = edge             # n -> x, u -> x
+        newroot._children = edge  # n -> x, u -> x
         edge[0]._up = newroot
         edge[1]._up = newroot
 
         # position of newroot on edge, None=midpoint, ...
         if self.root_dist is None:
-            edge[0]._dist = odist / 2.
-            edge[1]._dist = odist / 2.
+            edge[0]._dist = odist / 2.0
+            edge[1]._dist = odist / 2.0
         else:
             # logger.debug(f"sumdist={odist}, root_dist={self.root_dist}")
             if self.root_dist > odist:
                 raise ValueError(
                     "`root_dist` arg (placement of root node on existing edge) "
-                    f"cannot be greater than length of the edge: {odist}.")
+                    f"cannot be greater than length of the edge: {odist}."
+                )
             edge[0]._dist = self.root_dist
             edge[1]._dist = odist - self.root_dist
 
@@ -403,7 +409,7 @@ def unroot(tree: ToyTree, inplace: bool = False) -> ToyTree:
 
     # other child's dist extends to include child->oldrootnode dist
     ochild._dist += newroot.dist
-    newroot._dist = 0.
+    newroot._dist = 0.0
 
     # ochild->child edge inherits features from child->oldrootnode edge
     ochild.support = newroot.support
@@ -421,9 +427,9 @@ def unroot(tree: ToyTree, inplace: bool = False) -> ToyTree:
 
 
 if __name__ == "__main__":
-
     # Example test: start with a simple balanced tree.
     import toytree
+
     toytree.set_log_level("DEBUG")
 
     tre = toytree.rtree.unittree(8, seed=123).unroot()
@@ -431,10 +437,10 @@ if __name__ == "__main__":
     tre.set_node_data("Y", tre.get_node_data("idx"), inplace=True)
     tre.treenode.X = np.nan
     tre.edge_features |= {"X"}
-    c, a, m = tre.draw(ts='s')
+    c, a, m = tre.draw(ts="s")
 
     rtre = tre.root("r0")
-    c, a, m = rtre.draw(ts='s')
+    c, a, m = rtre.draw(ts="s")
 
     print(tre.get_node_data())
     print(rtre.get_node_data())

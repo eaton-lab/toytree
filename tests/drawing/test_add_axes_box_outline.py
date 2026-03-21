@@ -4,12 +4,11 @@
 
 import io
 
-import toytree
 import toyplot.svg
-
-
-
 from conftest import PytestCompat
+
+import toytree
+
 
 class TestAddAxesBoxOutline(PytestCompat):
     def setUp(self):
@@ -149,9 +148,7 @@ class TestAddAxesBoxOutline(PytestCompat):
         ov0 = self.tree.annotate.add_axes_box_outline(axes, region="axes")
         l0, r0, t0, b0 = self._bbox(ov0)
 
-        ov1 = self.tree.annotate.add_axes_box_outline(
-            axes, region="axes", expand=10
-        )
+        ov1 = self.tree.annotate.add_axes_box_outline(axes, region="axes", expand=10)
         l1, r1, t1, b1 = self._bbox(ov1)
         self.assertAlmostEqual(l1, l0 - 10)
         self.assertAlmostEqual(r1, r0 + 10)
@@ -167,9 +164,7 @@ class TestAddAxesBoxOutline(PytestCompat):
         self.assertAlmostEqual(t2, t0 - 15)
         self.assertAlmostEqual(b2, b0 + 20)
 
-        ov3 = self.tree.annotate.add_axes_box_outline(
-            axes, region="axes", expand=-5
-        )
+        ov3 = self.tree.annotate.add_axes_box_outline(axes, region="axes", expand=-5)
         l3, r3, t3, b3 = self._bbox(ov3)
         self.assertAlmostEqual(l3, l0 + 5)
         self.assertAlmostEqual(r3, r0 - 5)
@@ -183,9 +178,7 @@ class TestAddAxesBoxOutline(PytestCompat):
                 axes, region="axes", expand=(1, 2, 3)
             )
         with self.assertRaises(ValueError):
-            self.tree.annotate.add_axes_box_outline(
-                axes, region="axes", expand=-1000
-            )
+            self.tree.annotate.add_axes_box_outline(axes, region="axes", expand=-1000)
 
     def test_behind_sets_render_order(self):
         canvas, axes, _ = self.tree.draw(layout="d", scale_bar=True)
@@ -196,5 +189,3 @@ class TestAddAxesBoxOutline(PytestCompat):
         targets = canvas._scenegraph._relationships["render"]._targets[canvas]
         self.assertGreater(targets.index(front), targets.index(axes))
         self.assertLess(targets.index(back), targets.index(axes))
-
-

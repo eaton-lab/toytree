@@ -91,7 +91,7 @@ class Interval:
     @cached_property
     def xmid(self):
         """Return the midpoint x-position on lower bound"""
-        return self.xpos + (self.width / 2.)
+        return self.xpos + (self.width / 2.0)
 
     @cached_property
     def xb1(self):
@@ -142,9 +142,9 @@ class Interval:
     def slope(self, position: float = None):
         """Return the slope (delta x / delta y) for use in :func:is_inside()"""
         if not self.up:
-            return 0.
+            return 0.0
         if not position:
-            position = (self.xt1 - self.xt0) / 2.
+            position = (self.xt1 - self.xt0) / 2.0
         # dist to right of xb0 / length of xb
         prop_bottom = (position - self.xb0) / (self.xb1 - self.xb0)
         length_on_top = prop_bottom * (self.xt1 - self.xt0)
@@ -216,6 +216,7 @@ class Container:
     max_width: float
         See min_width.
     """
+
     tree: Union[ToyTree, int]
     spacing: float = 1.5
     blend: bool = False
@@ -238,12 +239,7 @@ class Container:
         # single population coalescent
         if isinstance(self.tree, (int, float)):
             self.intervals[0] = Interval(
-                width=8,
-                height=np.inf,
-                xpos=0,
-                ypos=0,
-                neff=self.tree,
-                blend=self.blend
+                width=8, height=np.inf, xpos=0, ypos=0, neff=self.tree, blend=self.blend
             )
             tree = ToyTree(Node(name="0"))
             tree[0].Ne = self.tree
@@ -264,14 +260,13 @@ class Container:
 
         # traverse in idx order (tips then post-order for internal)
         for idx, node in enumerate(self.tree):
-
             # tips get x-position from widths starting from zero, whereas
             # internal nodes get their midpoint from child nodes and then
             # expand to sides for width.
             if not node.is_leaf():
                 xmids = [self.intervals[child.idx].xmid for child in node.children]
                 xmid = sum(xmids) / len(xmids)
-                xpos = xmid - (widths[idx] / 2.)
+                xpos = xmid - (widths[idx] / 2.0)
             else:
                 xpos = 0 if not idx else self.intervals[idx - 1].xb1 + self.spacing
 
@@ -282,7 +277,7 @@ class Container:
                 xpos=xpos,
                 ypos=node.height,
                 neff=node.Ne,
-                blend=self.blend
+                blend=self.blend,
             )
 
             # set child-parent relationships
@@ -296,8 +291,8 @@ class Container:
 
     def setup_drawing(self, **kwargs) -> Tuple[Canvas, Cartesian]:
         self.canvas = toyplot.Canvas(
-            width=kwargs.pop('width', 400),
-            height=kwargs.pop('height', 400),
+            width=kwargs.pop("width", 400),
+            height=kwargs.pop("height", 400),
         )
         self.axes = self.canvas.cartesian()
         self.axes.x.show = False
@@ -310,9 +305,7 @@ class Container:
         container_fill_opacity: float,
         container_fill_opacity_alternate: bool = False,
     ):
-        """Return a toyplot drawing of the container.
-
-        """
+        """Return a toyplot drawing of the container."""
         # do nothing if single population
         if self.tree.ntips == 1:
             return
@@ -429,13 +422,14 @@ class EmbeddingPlot:
 
     This ...
     """
+
     species_tree: Union[ToyTree, int]
     gene_tree: ToyTree
     imap: Mapping[str, Sequence[str]] = field(default_factory=dict)
     blend: bool = False
     spacing: float = 1.5
-    min_width: float = 2.
-    max_width: float = 8.
+    min_width: float = 2.0
+    max_width: float = 8.0
     table: DataFrame = field(default=None, repr=False, init=False)
     container: Container = field(default=None, repr=False, init=False)
 
@@ -450,22 +444,24 @@ class EmbeddingPlot:
     def __post_init__(self):
         # create a container of connected intervals and a ToyTree w/ Ne values
         self.container = Container(
-            self.species_tree, blend=self.blend, spacing=self.spacing,
-            min_width=self.min_width, max_width=self.max_width,
+            self.species_tree,
+            blend=self.blend,
+            spacing=self.spacing,
+            min_width=self.min_width,
+            max_width=self.max_width,
         )
         self.species_tree = self.container.tree
 
         # ensure imap
-        self.imap = self.imap if self.imap else {'0': self.gene_tree.get_tip_labels()}
+        self.imap = self.imap if self.imap else {"0": self.gene_tree.get_tip_labels()}
 
         # get a genealogy embedding table
         self.table = get_genealogy_embedding_table(
-            self.species_tree, self.gene_tree, self.imap)
+            self.species_tree, self.gene_tree, self.imap
+        )
 
     def get_node_coordinates(self, container_root_height: int) -> None:
-        """Sample position of each Node at interval (start, end/coal)
-
-        """
+        """Sample position of each Node at interval (start, end/coal)"""
         for sidx, ival in self.container.intervals.items():
             tab = self.table[self.table.st_node == sidx]
 
@@ -506,7 +502,6 @@ class EmbeddingPlot:
 
             # store midpoint positions for coalescence nodes
             for idx in tab.index[:-1]:
-
                 # get who coalesced into whom
                 cidxs = set(tab.loc[idx].edges) - set(tab.loc[idx + 1].edges)
                 nidx = set(tab.loc[idx + 1].edges) - set(tab.loc[idx].edges)
@@ -521,7 +516,7 @@ class EmbeddingPlot:
                     dist = node.height + node.dist - ival.ypos
                     shifted.append(pos + (dist * slope))
                     # shifted.append(ival.data[c][0] + shift)
-                xpos = sum(shifted) / 2.
+                xpos = sum(shifted) / 2.0
 
                 # store the start position of the ancestor coal node
                 nidx = nidx.pop()
@@ -546,10 +541,9 @@ class EmbeddingPlot:
         edge_stroke_opacity: float,
         edge_samples: int,
         edge_variance: int,
-        container_root_height: int
+        container_root_height: int,
     ):
-        """...
-        """
+        """..."""
         # scaling the wiggle. Allow 50 wiggles from tip to root, sample
         # number of wiggles per edge according to the proportion of len.
         if (edge_samples < 2) | (edge_variance <= 0):
@@ -572,7 +566,11 @@ class EmbeddingPlot:
 
                     # get x coords
                     x0 = ival.data[e][0]
-                    x1 = ival.data[e][1] if len(ival.data[e]) == 2 else ival.up.data[e][0]
+                    x1 = (
+                        ival.data[e][1]
+                        if len(ival.data[e]) == 2
+                        else ival.up.data[e][0]
+                    )
 
                     # get y coords
                     y0 = self.gene_tree[e].height
@@ -588,10 +586,12 @@ class EmbeddingPlot:
                     if y1 > container_root_height:
                         y1 = container_root_height
                         xdiff = x0 - x1
-                        x1 = x0 - (xdiff / 2.)
+                        x1 = x0 - (xdiff / 2.0)
 
                     # override color to black if internal not monophyletic
-                    kidx = check_monophyly(self.gene_tree[e].get_leaf_names(), self.imap)
+                    kidx = check_monophyly(
+                        self.gene_tree[e].get_leaf_names(), self.imap
+                    )
                     if kidx == -1:
                         stroke = "black"
                     else:
@@ -600,9 +600,12 @@ class EmbeddingPlot:
                     # add wiggle to x coords
                     ypos = np.linspace(y0, y1, nsamps)
                     xpos = np.linspace(x0, x1, nsamps)
-                    xpos[1:-1] += np.random.uniform(-edge_variance, edge_variance, size=nsamps - 2)
+                    xpos[1:-1] += np.random.uniform(
+                        -edge_variance, edge_variance, size=nsamps - 2
+                    )
                     self.axes.plot(
-                        xpos, ypos,
+                        xpos,
+                        ypos,
                         color=stroke,
                         stroke_width=edge_stroke_width,
                         # stroke_opacity=stroke_opacity
@@ -615,7 +618,9 @@ class EmbeddingPlot:
                 names = [i for i in ival.data if i < self.gene_tree.ntips]
                 names = [self.gene_tree[i].name for i in names]
                 self.axes.text(
-                    xpos, [0] * len(xpos), names,
+                    xpos,
+                    [0] * len(xpos),
+                    names,
                     angle=-90,
                     style={
                         "font-size": 12,
@@ -643,7 +648,7 @@ class EmbeddingPlot:
                 "fill-opacity": node_fill_opacity,
                 "stroke": node_stroke,
                 "stroke-width": node_stroke_width,
-            }
+            },
         )
 
     def add_container(
@@ -719,18 +724,26 @@ class EmbeddingPlot:
         else:
             if container_root_height is True:
                 container_root_height = (
-                    self.gene_tree.treenode.height - self.species_tree.treenode.height)
+                    self.gene_tree.treenode.height - self.species_tree.treenode.height
+                )
 
         # draw species tree container
         self.add_container(
-            container_width, container_height,
-            container_fill, container_fill_opacity, container_fill_opacity_alternate,
-            container_stroke, container_stroke_opacity, container_stroke_width,
+            container_width,
+            container_height,
+            container_fill,
+            container_fill_opacity,
+            container_fill_opacity_alternate,
+            container_stroke,
+            container_stroke_opacity,
+            container_stroke_width,
             container_root_height,
         )
 
         # sample positions at interval intersections
-        self.get_node_coordinates(self.species_tree.treenode.height + container_root_height)
+        self.get_node_coordinates(
+            self.species_tree.treenode.height + container_root_height
+        )
 
         # draw the figure
         self.add_connecting_lines(
@@ -740,7 +753,8 @@ class EmbeddingPlot:
             edge_stroke_opacity=1.0,
             edge_samples=edge_samples,
             edge_variance=edge_variance,
-            container_root_height=self.species_tree.treenode.height + container_root_height,
+            container_root_height=self.species_tree.treenode.height
+            + container_root_height,
         )
         self.add_tip_labels()
         self.add_nodes(
@@ -761,9 +775,10 @@ def check_monophyly(names, imap) -> int:
 
 
 if __name__ == "__main__":
-
     import ipcoal
+
     import toytree
+
     toytree.set_log_level("INFO")
 
     # tree = toytree.rtree.unittree(ntips=4, treeheight=1e6, seed=123)

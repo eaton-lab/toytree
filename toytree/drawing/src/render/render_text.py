@@ -8,9 +8,11 @@ This is used in `render_tree` to add tip labels and node labels.
 
 from typing import Dict, Union
 from xml.etree import ElementTree as xml
-import toyplot.style
+
 import toyplot.font
+import toyplot.style
 import toyplot.text
+
 from toytree.color.src.concat import concat_style_fix_color
 
 POP_STYLES = [
@@ -28,7 +30,7 @@ def render_text(
     text: Union[str, toyplot.text.Layout],
     xpos: float = 0,
     ypos: float = 0,
-    style: Dict[str , str] = None,
+    style: Dict[str, str] = None,
     angle: float = None,
     title: str = None,
     attributes: Dict[str, str] = None,
@@ -42,7 +44,7 @@ def render_text(
     style = toyplot.style.combine({"font-family": "helvetica"}, style)
     layout = toyplot.text.layout(text, style, toyplot.font.ReportlabLibrary())
 
-    # DEFAULT STYLE OF LAYOUT. These styles can be updated, but all 
+    # DEFAULT STYLE OF LAYOUT. These styles can be updated, but all
     # have already been set on the <g class=toytree-TipLabels> group
     # and so they are discarded after we get the Layout object.
     # {'fill': '#292724',
@@ -53,7 +55,7 @@ def render_text(
     #  'vertical-align': 'baseline',
     #  'white-space': 'pre'}
 
-    # a layout has left, right, bottom, height, 
+    # a layout has left, right, bottom, height,
     # layout = (
     #     text if isinstance(text, toyplot.text.Layout) else
     #     toyplot.text.layout(text, style, fonts)
@@ -78,20 +80,20 @@ def render_text(
 
     # only fill and stroke can differ on an individual text element
     sty = {
-        i: style.get(i, None) for i in
-        ["fill", "fill-opacity", "stroke", "stroke-opacity"]
+        i: style.get(i, None)
+        for i in ["fill", "fill-opacity", "stroke", "stroke-opacity"]
     }
 
     # for each child in layout (element with different style) make xml
     hyperlink = []
     for line in layout.children:
         for box in line.children:
-
             # draw textbox <text ...>
             if isinstance(box, toyplot.text.TextBox):
                 text_style = toyplot.style.combine(sty, box.style)
                 xml.SubElement(
-                    group, "text",
+                    group,
+                    "text",
                     x=str(box.left),
                     y=str(box.baseline),
                     # style=toyplot.style.to_css(box.style),
@@ -117,12 +119,14 @@ def render_text(
 
 
 if __name__ == "__main__":
-
-    root_ = xml.Element('root')
-    group_ = xml.SubElement(root_, "g", attrib={"class": "Labels"})    
+    root_ = xml.Element("root")
+    group_ = xml.SubElement(root_, "g", attrib={"class": "Labels"})
     render_text(
-        root=group_, text="hello", 
-        xpos=0, ypos=0, angle=0, 
+        root=group_,
+        text="hello",
+        xpos=0,
+        ypos=0,
+        angle=0,
         attributes={"class": "Label"},
         style={"font-size": "12px", "fill": "red"},
     )

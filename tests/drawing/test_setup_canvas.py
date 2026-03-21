@@ -5,8 +5,8 @@
 
 from __future__ import annotations
 
-
 import numpy as np
+from conftest import PytestCompat
 
 import toytree
 from toytree.drawing.src.setup_canvas import (
@@ -14,9 +14,6 @@ from toytree.drawing.src.setup_canvas import (
     get_linear_width_and_height,
 )
 
-
-
-from conftest import PytestCompat
 
 class TestSetupCanvasLinearSizing(PytestCompat):
     def test_font_family_changes_width_estimate(self):
@@ -88,5 +85,3 @@ class TestSetupCanvasLinearSizing(PytestCompat):
         width, height = get_circular_width_and_height(mark)
         self.assertNotEqual(width, height)
         self.assertGreater(width, height)
-
-

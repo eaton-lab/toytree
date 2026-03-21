@@ -2,12 +2,11 @@
 
 """unittest tests for core module."""
 
-import toytree
 import numpy as np
-from toytree.utils import ToytreeError
-
-
 from conftest import PytestCompat
+
+import toytree
+from toytree.utils import ToytreeError
 
 
 class TestToyTreeGetNodes(PytestCompat):

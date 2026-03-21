@@ -2,12 +2,13 @@
 
 """Tests for svg defs / linearGradient helpers."""
 
-from types import SimpleNamespace
 import xml.etree.ElementTree as xml
+from types import SimpleNamespace
+
+import toyplot.html
+from conftest import PytestCompat
 
 import toytree
-import toyplot.html
-
 from toytree.drawing.src.render.svg_defs import (
     LinearGradient,
     LinearGradientStop,
@@ -17,9 +18,6 @@ from toytree.drawing.src.render.svg_defs import (
     get_svg_element,
 )
 
-
-
-from conftest import PytestCompat
 
 class TestSvgDefs(PytestCompat):
     def test_get_or_create_defs_inserts_first_child(self):
@@ -90,5 +88,3 @@ class TestSvgDefs(PytestCompat):
         defs = svg.find("defs")
         self.assertIsNotNone(defs)
         self.assertIsNotNone(defs.find("./linearGradient[@id='grad-one']"))
-
-

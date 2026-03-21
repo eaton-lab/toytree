@@ -25,7 +25,9 @@ def _render(axis, context):
     if not axis.show:
         return
 
-    transform, length = _axis_transform(axis._x1, axis._y1, axis._x2, axis._y2, offset=axis._offset, return_length=True)
+    transform, length = _axis_transform(
+        axis._x1, axis._y1, axis._x2, axis._y2, offset=axis._offset, return_length=True
+    )
 
     axis_xml = xml.SubElement(
         context.parent,
@@ -38,7 +40,11 @@ def _render(axis, context):
     if axis.spine.show:
         x1 = 0
         x2 = length
-        if axis.domain.show and axis._data_min is not None and axis._data_max is not None:
+        if (
+            axis.domain.show
+            and axis._data_min is not None
+            and axis._data_max is not None
+        ):
             x1 = max(x1, axis.projection(axis._data_min))
             x2 = min(x2, axis.projection(axis._data_max))
         xml.SubElement(
@@ -52,7 +58,11 @@ def _render(axis, context):
         )
 
         if axis.ticks.show:
-            y1 = axis._ticks_near if axis._tick_location == "below" else -axis._ticks_near
+            y1 = (
+                axis._ticks_near
+                if axis._tick_location == "below"
+                else -axis._ticks_near
+            )
             y2 = -axis._ticks_far if axis._tick_location == "below" else axis._ticks_far
 
             ticks_group = xml.SubElement(axis_xml, "g")
@@ -85,7 +95,11 @@ def _render(axis, context):
             vertical_align = "last-baseline" if location == "above" else "top"
             text_anchor = "middle"
 
-        y = axis._tick_labels_offset if location == "below" else -axis._tick_labels_offset
+        y = (
+            axis._tick_labels_offset
+            if location == "below"
+            else -axis._tick_labels_offset
+        )
 
         ticks_group = xml.SubElement(axis_xml, "g")
         for location, label, title, label_style in zip(
@@ -159,9 +173,17 @@ def _render(axis, context):
         )
 
         if axis.interactive.coordinates.tick.show:
-            y1 = axis._tick_labels_offset if axis._interactive_coordinates_location == "below" else -axis._tick_labels_offset
+            y1 = (
+                axis._tick_labels_offset
+                if axis._interactive_coordinates_location == "below"
+                else -axis._tick_labels_offset
+            )
             y1 *= 0.5
-            y2 = -axis._tick_labels_offset if axis._interactive_coordinates_location == "below" else axis._tick_labels_offset
+            y2 = (
+                -axis._tick_labels_offset
+                if axis._interactive_coordinates_location == "below"
+                else axis._tick_labels_offset
+            )
             y2 *= 0.75
             xml.SubElement(
                 coordinates_xml,
@@ -174,8 +196,16 @@ def _render(axis, context):
             )
 
         if axis.interactive.coordinates.label.show:
-            y = axis._tick_labels_offset if axis._interactive_coordinates_location == "below" else -axis._tick_labels_offset
-            alignment_baseline = "hanging" if axis._interactive_coordinates_location == "below" else "alphabetic"
+            y = (
+                axis._tick_labels_offset
+                if axis._interactive_coordinates_location == "below"
+                else -axis._tick_labels_offset
+            )
+            alignment_baseline = (
+                "hanging"
+                if axis._interactive_coordinates_location == "below"
+                else "alphabetic"
+            )
             xml.SubElement(
                 coordinates_xml,
                 "text",
@@ -189,7 +219,10 @@ def _render(axis, context):
                 ),
             )
 
-    context.define("toyplot.coordinates.Axis", ["toyplot/canvas"], """
+    context.define(
+        "toyplot.coordinates.Axis",
+        ["toyplot/canvas"],
+        """
         function(canvas)
         {
             function sign(x)
@@ -293,25 +326,27 @@ def _render(axis, context):
 
     projection = []
     for segment in axis.projection._segments:
-        projection.append({
-            "scale": segment.scale,
-            "domain": {
-                "min": segment.domain.min,
-                "max": segment.domain.max,
-                "bounds": {
-                    "min": segment.domain.bounds.min,
-                    "max": segment.domain.bounds.max,
+        projection.append(
+            {
+                "scale": segment.scale,
+                "domain": {
+                    "min": segment.domain.min,
+                    "max": segment.domain.max,
+                    "bounds": {
+                        "min": segment.domain.bounds.min,
+                        "max": segment.domain.bounds.max,
+                    },
                 },
-            },
-            "range": {
-                "min": segment.range.min,
-                "max": segment.range.max,
-                "bounds": {
-                    "min": segment.range.bounds.min,
-                    "max": segment.range.bounds.max,
+                "range": {
+                    "min": segment.range.min,
+                    "max": segment.range.max,
+                    "bounds": {
+                        "min": segment.range.bounds.min,
+                        "max": segment.range.bounds.max,
+                    },
                 },
-            },
-        })
+            }
+        )
 
     context.require(
         dependencies=["toyplot.coordinates.Axis"],

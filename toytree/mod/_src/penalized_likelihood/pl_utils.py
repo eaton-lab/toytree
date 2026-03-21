@@ -61,7 +61,10 @@ def _run_multistart(
 
     try:
         with ProcessPoolExecutor(max_workers=workers) as pool:
-            fut_to_start = {pool.submit(worker, payload): int(payload.get("start", -1)) for payload in payloads}
+            fut_to_start = {
+                pool.submit(worker, payload): int(payload.get("start", -1))
+                for payload in payloads
+            }
             for fut in as_completed(fut_to_start):
                 start = fut_to_start[fut]
                 try:
@@ -78,7 +81,9 @@ def _run_multistart(
                     )
         return sorted(results, key=lambda x: x["start"])
     except (PermissionError, OSError) as exc:
-        logger.warning(f"ProcessPool unavailable; falling back to serial multistart: {exc}")
+        logger.warning(
+            f"ProcessPool unavailable; falling back to serial multistart: {exc}"
+        )
         return _run_multistart(worker, payloads, ncores=1)
 
 
@@ -111,7 +116,9 @@ def _logit(p: np.ndarray) -> np.ndarray:
     return np.log(p / (1.0 - p))
 
 
-def _age_has_upper(lo: float, hi: float, dist_floor: float, age_upper_switch: float) -> bool:
+def _age_has_upper(
+    lo: float, hi: float, dist_floor: float, age_upper_switch: float
+) -> bool:
     return np.isfinite(hi) and (hi < age_upper_switch) and (hi > lo + dist_floor)
 
 
@@ -164,7 +171,9 @@ def _decode_age_params(
     return ages_hat
 
 
-def _get_init_ages(tree: ToyTree, calibrations: Calibrations, mult: float = 1.5) -> Tuple[np.ndarray, np.ndarray]:
+def _get_init_ages(
+    tree: ToyTree, calibrations: Calibrations, mult: float = 1.5
+) -> Tuple[np.ndarray, np.ndarray]:
     """Return an array with starting ages set to internal nodes.
 
     Note that mult has no effect if root is calibrated. This method
@@ -186,16 +195,16 @@ def _get_init_ages(tree: ToyTree, calibrations: Calibrations, mult: float = 1.5)
 
     # get array with tips at zero and internal at nan
     ages = np.zeros(tree.nnodes)
-    ages[tree.ntips:] = np.nan
+    ages[tree.ntips :] = np.nan
 
     # set internal nodes to their calibration midpoints
     if not calibrations:
-        calibrations = {tree[-1].idx: (1., 1.)}
+        calibrations = {tree[-1].idx: (1.0, 1.0)}
     for nidx, calib in calibrations.items():
         if isinstance(calib, (float, int)):
             calib = (float(calib), float(calib))
         span = calib[1] - calib[0]
-        ages[nidx] = calib[0] + span / 2.
+        ages[nidx] = calib[0] + span / 2.0
         # logger.debug(f"setting calibration: node {nidx} age to {ages[nidx]}")
 
     # set root age (if not calibrated) to mult of max internal age
@@ -205,7 +214,7 @@ def _get_init_ages(tree: ToyTree, calibrations: Calibrations, mult: float = 1.5)
     # sort edge paths (e.g., (node, node.up, node.up.up)) so that
     # the paths with more calibrations are done first, and when tied,
     # the longer path is selected first.
-    paths = [i.iter_ancestors(include_self=True) for i in tree[:tree.ntips]]
+    paths = [i.iter_ancestors(include_self=True) for i in tree[: tree.ntips]]
     paths = [tuple(i._idx for i in j) for j in paths]
     spaths = sorted(
         paths,
@@ -247,7 +256,9 @@ def _get_init_ages(tree: ToyTree, calibrations: Calibrations, mult: float = 1.5)
     return _get_init_ages(tree, calibrations, mult * 1.5)
 
 
-def _get_params_bounds(tree: ToyTree, calibrations: Dict[int, Tuple[float, float]]) -> Tuple[dict[int, Tuple[float, float]]]:
+def _get_params_bounds(
+    tree: ToyTree, calibrations: Dict[int, Tuple[float, float]]
+) -> Tuple[dict[int, Tuple[float, float]]]:
     """Return a list of tuples of (min, max) for every parameter that must be estimated.
 
     The num parameters is (2 * ninternal_nodes - 1) = ninodes ages and
@@ -264,11 +275,11 @@ def _get_params_bounds(tree: ToyTree, calibrations: Dict[int, Tuple[float, float
     """
     # if no calibrations set the treenode to 1.
     if not calibrations:
-        calibrations = {tree[-1].idx: (1., 1.)}
+        calibrations = {tree[-1].idx: (1.0, 1.0)}
 
     # set bounds for all internal nodes to min,max
     ages_bounds = {}
-    for node in tree[tree.ntips:]:
+    for node in tree[tree.ntips :]:
         ages_bounds[node._idx] = (PARAM_MIN, PARAM_MAX)
 
     # set stricter bounds on calibrated nodes, unless fixed age, then remove.
@@ -303,6 +314,7 @@ def get_tree_with_categorical_rates(ntips: int, nrates: int, seed: int) -> ToyTr
         - G(3, 10)   [mean=30, std=17.25]
     """
     import toytree
+
     rng = np.random.default_rng(seed=seed)
     tree = toytree.rtree.unittree(ntips, seed=123)
     rates = np.linspace(1, 10, nrates)
@@ -313,7 +325,9 @@ def get_tree_with_categorical_rates(ntips: int, nrates: int, seed: int) -> ToyTr
     return tree
 
 
-def get_tree_with_uncorrelated_relaxed_rates(ntips: int, mean: float=1.0, sigma: float=1.0, seed: int=None) -> ToyTree:
+def get_tree_with_uncorrelated_relaxed_rates(
+    ntips: int, mean: float = 1.0, sigma: float = 1.0, seed: int = None
+) -> ToyTree:
     """Return a ToyTree with edge dists scaled to reflect uncorrelated
     relaxed clock rates.
 
@@ -328,10 +342,11 @@ def get_tree_with_uncorrelated_relaxed_rates(ntips: int, mean: float=1.0, sigma:
     G(3, RATE).
     """
     import toytree
+
     rng = np.random.default_rng(seed=seed)
     tree = toytree.rtree.unittree(ntips, seed=123)
     shape = (mean / sigma) ** 2
-    scale = sigma ** 2 / mean
+    scale = sigma**2 / mean
     rates = rng.gamma(shape=shape, scale=scale, size=tree.nnodes)
     for node in tree:
         node._dist = node._dist * rates[node.idx]
@@ -339,7 +354,9 @@ def get_tree_with_uncorrelated_relaxed_rates(ntips: int, mean: float=1.0, sigma:
     return tree
 
 
-def get_tree_with_correlated_relaxed_rates(ntips: int, mean: float=0.0, sigma: float=1.0, seed: int=None) -> ToyTree:
+def get_tree_with_correlated_relaxed_rates(
+    ntips: int, mean: float = 0.0, sigma: float = 1.0, seed: int = None
+) -> ToyTree:
     """Return a ToyTree with edge dists scaled to reflect uncorrelated
     relaxed clock rates.
 
@@ -354,19 +371,18 @@ def get_tree_with_correlated_relaxed_rates(ntips: int, mean: float=0.0, sigma: f
     G(3, RATE).
     """
     import toytree
+
     rng = np.random.default_rng(seed=seed)
     tree = toytree.rtree.unittree(ntips, seed=123)
     shape = (mean / sigma) ** 2
-    scale = sigma ** 2 / mean
+    scale = sigma**2 / mean
     rates = rng.gamma(shape=shape, scale=scale, size=tree.nnodes)
     for node in tree:
         node._dist = node._dist * rates[node.idx]
     return tree
 
 
-
 if __name__ == "__main__":
-
     rng = np.random.default_rng(123)
 
     t = get_tree_with_uncorrelated_relaxed_rates(ntips=50, mean=3, sigma=3)

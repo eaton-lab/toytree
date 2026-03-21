@@ -2,11 +2,10 @@
 
 
 import pandas as pd
+from conftest import PytestCompat
+
 import toytree
 
-
-
-from conftest import PytestCompat
 
 class TestSetNodeDataFromDataFrame(PytestCompat):
     def setUp(self):
@@ -117,5 +116,3 @@ class TestSetNodeDataFromDataFrame(PytestCompat):
         data = tre.get_node_data("state")
         self.assertEqual(data.iloc[0], "A")
         self.assertEqual(data.iloc[1], "B")
-
-

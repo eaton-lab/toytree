@@ -19,12 +19,14 @@ References
 - ...
 """
 
-from typing import TypeVar, Dict, Union, Optional, Sequence
 import itertools
+from typing import Dict, Optional, Sequence, TypeVar, Union
+
 import numpy as np
 import pandas as pd
 from loguru import logger
-from toytree import ToyTree, Node
+
+from toytree import Node, ToyTree
 from toytree.core.apis import TreeModAPI, add_subpackage_method
 from toytree.infer.src.dlc_reconcile import reconcile_gene_tree_dlc
 from toytree.utils import ToytreeError
@@ -37,7 +39,6 @@ __all__ = [
     "root_on_minimal_ancestor_deviation",
     "root_on_minimal_dlc",
 ]
-
 
 
 @add_subpackage_method(TreeModAPI)
@@ -81,7 +82,7 @@ def root_on_balanced_midpoint(
 
     # set dists between internal nodes to zero on an array copy
     nmat = dmat.copy()
-    nmat[tree.ntips:, tree.ntips:] = 0.
+    nmat[tree.ntips :, tree.ntips :] = 0.0
 
     # get node idx's with smallest max dist to all other tips
     dists = np.max(dmat, axis=0)
@@ -94,19 +95,18 @@ def root_on_balanced_midpoint(
     for idx in [n0, n1]:
         node = tree[idx]
         idxs_d = set([i.idx for i in node.get_leaves()])
-        idxs_u = set([i.idx for i in tree[:tree.ntips]]) - idxs_d
+        idxs_u = set([i.idx for i in tree[: tree.ntips]]) - idxs_d
 
         # skip if node is root
         if node.is_root():
             continue
 
         # optimize position on the branch
-        lmin = 0.
+        lmin = 0.0
         lmax = node._dist
         while 1:
-
             # get dists to each side from the new position
-            pos = lmin + (lmax - lmin) / 2.
+            pos = lmin + (lmax - lmin) / 2.0
             dists_d = nmat[idx][list(idxs_d)] + pos
             dists_u = nmat[idx][list(idxs_u)] - pos
 
@@ -140,7 +140,6 @@ def root_on_balanced_midpoint(
         inplace=inplace,
     )
     return tree
-
 
 
 @add_subpackage_method(TreeModAPI)
@@ -194,13 +193,13 @@ def root_on_midpoint(
     n0, n1 = pairs[0][0], pairs[1][0]
 
     # midpoint is half this distance
-    dist_to_new_root = dmat[n0, n1] / 2.
+    dist_to_new_root = dmat[n0, n1] / 2.0
 
     # going up this dist from one of the two Nodes will hit the
     # pseudo-root, but not for the other. Select the other.
     for idx in [n0, n1]:
         node = tree[idx]
-        dist_below = 0.
+        dist_below = 0.0
         while 1:
             # this is the correct edge to root on
             if (node._dist + dist_below) >= dist_to_new_root:
@@ -308,7 +307,8 @@ def root_on_minimal_ancestor_deviation(
     # tell user to resolve polytomies.
     assert tree.is_bifurcating(include_root=False), (
         "tree contains polytomies, first resolve manually or with "
-        "`tree.mod.resolve_polytomies()`.")
+        "`tree.mod.resolve_polytomies()`."
+    )
 
     # get a copy of the tree and translatable query
     if query:
@@ -319,12 +319,13 @@ def root_on_minimal_ancestor_deviation(
     zero_len_edges = sum(1 for i in tree[:-1] if i._dist < min_dist)
     if zero_len_edges:
         logger.warning(
-            f"Using min_dist {min_dist} for {zero_len_edges} zero len edges in tree.")
+            f"Using min_dist {min_dist} for {zero_len_edges} zero len edges in tree."
+        )
 
     # get pairwise dist matrix w/ min_dist for zero len edges
     dmat = tree.distance.get_node_distance_matrix()
     dmat[dmat < min_dist] = min_dist
-    dmat[np.diag_indices_from(dmat)] = 0.
+    dmat[np.diag_indices_from(dmat)] = 0.0
 
     # store paths between pairs of tips, {(0, 2): [1, 5, 2]... }
     paths = {}
@@ -339,9 +340,10 @@ def root_on_minimal_ancestor_deviation(
 
     # iterate over (idx, jdx) edges separating (seti, setj) tip sets.
     inodes = tree.iter_edges()
-    ibiparts = tree.enum._iter_bipartition_sets(feature="idx", include_singleton_partitions=True)
+    ibiparts = tree.enum._iter_bipartition_sets(
+        feature="idx", include_singleton_partitions=True
+    )
     for (node_i, node_j), (seti, setj) in zip(inodes, ibiparts):
-
         # get .idx label of nodes idx,jdx representing the edge
         idx = node_i._idx
         jdx = node_j._idx
@@ -355,8 +357,8 @@ def root_on_minimal_ancestor_deviation(
             for tipc in setj:
                 dbc = dmat[tipb, tipc]
                 dbi = dmat[tipb, idx]
-                rho_top += (dbc - (2 * dbi)) * (dbc ** -2)
-                rho_bot += (2 * dij) * (dbc ** -2)
+                rho_top += (dbc - (2 * dbi)) * (dbc**-2)
+                rho_bot += (2 * dij) * (dbc**-2)
 
         # the relative position of root on edge (idx, jdx) constrained in [0, 1]
         rho = rho_top / rho_bot
@@ -413,12 +415,14 @@ def root_on_minimal_ancestor_deviation(
             pidx += 1
 
         # make sum-squares into root-mean-square and save to rij_dict
-        rbranch = np.sqrt(np.mean(relative_deviations ** 2))
+        rbranch = np.sqrt(np.mean(relative_deviations**2))
 
         # warn user if rbranch exceeds 1.
         if rbranch > 1:
             constrained_rbranch = min(max(0, rbranch), 1)
-            logger.warning(f"edge {idx, jdx} MAD={rbranch:.2f} outlier constrained to {constrained_rbranch:.0f}))")
+            logger.warning(
+                f"edge {idx, jdx} MAD={rbranch:.2f} outlier constrained to {constrained_rbranch:.0f}))"
+            )
             rbranch = constrained_rbranch
         # logger.info(f"edge {idx, jdx} rho={rho_i:.3f} R={rbranch:.4f}")
         rij_dict[(idx, jdx, rho_i)] = rbranch
@@ -431,7 +435,8 @@ def root_on_minimal_ancestor_deviation(
     if root_ambiguity_index == 1:
         logger.warning(
             ">1 optimal rootings exist. Check the 'MAD' and 'MAD_root_prob' "
-            "features on the returned tree to examine alternative rootings.")
+            "features on the returned tree to examine alternative rootings."
+        )
 
     # select node to root the tree on. Choose the optimal MAD edge.
     if not query:
@@ -442,14 +447,18 @@ def root_on_minimal_ancestor_deviation(
     else:
         root_node = tree.get_mrca_node(*query)
         if root_node.is_root():
-            raise ToytreeError(f"Cannot root on current root {root_node}, select another Node.")
+            raise ToytreeError(
+                f"Cannot root on current root {root_node}, select another Node."
+            )
         ridx = root_node._idx
 
         # find the rho value for this edge rooting
         for edge in r_sorted:
             if edge[0] == ridx:
                 _, _, rho_i = edge
-        logger.info(f"rooting on user-selected edge {ridx, root_node._up._idx} w/ optimized rho={rho_i:.2f}")
+        logger.info(
+            f"rooting on user-selected edge {ridx, root_node._up._idx} w/ optimized rho={rho_i:.2f}"
+        )
 
     # set values to Nodes
     root_probs = {}
@@ -537,7 +546,9 @@ def root_on_minimal_dlc(
         Additional edge features to preserve/re-polarize on rooting.
     """
     # Validate weights up front to avoid ambiguous optimization behavior.
-    weights = np.array([weight_duplications, weight_losses, weight_coalescences], dtype=float)
+    weights = np.array(
+        [weight_duplications, weight_losses, weight_coalescences], dtype=float
+    )
     if not np.isfinite(weights).all():
         raise ToytreeError("DLC rooting weights must be finite.")
     if (weights < 0).any():
@@ -571,7 +582,9 @@ def root_on_minimal_dlc(
 
         # Secondary tie-break criterion: minimize root-to-tip CV (clock-likeness).
         dmat = rooted.distance.get_node_distance_matrix()
-        rdists = np.array([dmat[i, rooted.treenode.idx] for i in range(rooted.ntips)], dtype=float)
+        rdists = np.array(
+            [dmat[i, rooted.treenode.idx] for i in range(rooted.ntips)], dtype=float
+        )
         if rdists.mean() == 0:
             cv = 0.0
         else:
@@ -589,12 +602,18 @@ def root_on_minimal_dlc(
         )
         best_score = min(best_score, score)
 
-    table = pd.DataFrame(rows).sort_values(
-        by=["score", "root_clock_cv", "edge_idx"],
-        ascending=[True, True, True],
-    ).reset_index(drop=True)
+    table = (
+        pd.DataFrame(rows)
+        .sort_values(
+            by=["score", "root_clock_cv", "edge_idx"],
+            ascending=[True, True, True],
+        )
+        .reset_index(drop=True)
+    )
     best_rows = table[np.isclose(table["score"].to_numpy(dtype=float), best_score)]
-    best_rows = best_rows.sort_values(["root_clock_cv", "edge_idx"], ascending=[True, True]).reset_index(drop=True)
+    best_rows = best_rows.sort_values(
+        ["root_clock_cv", "edge_idx"], ascending=[True, True]
+    ).reset_index(drop=True)
     best_edge_idx = int(best_rows.iloc[0]["edge_idx"])
     tied_best_edge_idxs = [int(i) for i in best_rows["edge_idx"].to_list()]
 
@@ -605,9 +624,13 @@ def root_on_minimal_dlc(
     # Optionally cache all candidate edge scores before rooting so feature
     # values can be re-polarized as edge features by root().
     if store_scores:
-        dlc_scores = {int(r.edge_idx): float(r.score) for r in table.itertuples(index=False)}
+        dlc_scores = {
+            int(r.edge_idx): float(r.score) for r in table.itertuples(index=False)
+        }
         prob = 1.0 / float(len(tied_best_edge_idxs))
-        dlc_probs = {idx: (prob if idx in tied_best_edge_idxs else 0.0) for idx in dlc_scores}
+        dlc_probs = {
+            idx: (prob if idx in tied_best_edge_idxs else 0.0) for idx in dlc_scores
+        }
         retree.set_node_data("DLC", dlc_scores, inplace=True)
         retree.set_node_data("DLC_root_prob", dlc_probs, inplace=True)
         retree.edge_features = retree.edge_features | {"DLC", "DLC_root_prob"}
@@ -641,8 +664,8 @@ def root_on_minimal_dlc(
 
 
 if __name__ == "__main__":
-
     import toytree
+
     toytree.set_log_level("INFO")
     import numpy as np
 
@@ -656,9 +679,8 @@ if __name__ == "__main__":
     # tree.write("/tmp/test.tree")
     c1, _, _ = tree.draw()
     c2, _, _ = tree.mod.root_on_midpoint().draw()
-    c3, _, _ = root_on_balanced_midpoint(tree).draw()    
+    c3, _, _ = root_on_balanced_midpoint(tree).draw()
     toytree.utils.show([c1, c2, c3], tmpdir="~")
-
 
     # test1 rtree 5-tips variable edgelens
     # tree = toytree.rtree.rtree(5, seed=123).unroot()

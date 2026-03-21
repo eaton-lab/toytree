@@ -156,7 +156,9 @@ def _prepare_candidates(
             return "lam", vals
         return "lam", _make_lam_candidates(estimate)
 
-    raise ToytreeError("--estimate is only supported for method='discrete', 'relaxed', or 'correlated'.")
+    raise ToytreeError(
+        "--estimate is only supported for method='discrete', 'relaxed', or 'correlated'."
+    )
 
 
 def _select_best_search(records: list[dict[str, Any]]) -> dict[str, Any]:
@@ -382,16 +384,24 @@ def edges_make_ultrametric(
                 "optimizer_message": f"{type(exc).__name__}: {exc}",
             }
         search.append(record)
-        if result is not None and (best_result is None or (
-            np.isfinite(record["PHIIC"]) and (
-                record["PHIIC"] < best_result["PHIIC"] - 1e-9
-                or (
-                    abs(record["PHIIC"] - best_result["PHIIC"]) <= 1e-9
-                    and float(record["candidate"]) < float(best_result["candidate"])
+        if result is not None and (
+            best_result is None
+            or (
+                np.isfinite(record["PHIIC"])
+                and (
+                    record["PHIIC"] < best_result["PHIIC"] - 1e-9
+                    or (
+                        abs(record["PHIIC"] - best_result["PHIIC"]) <= 1e-9
+                        and float(record["candidate"]) < float(best_result["candidate"])
+                    )
                 )
             )
-        )):
-            best_result = {"PHIIC": record["PHIIC"], "candidate": record["candidate"], "result": result}
+        ):
+            best_result = {
+                "PHIIC": record["PHIIC"],
+                "candidate": record["candidate"],
+                "result": result,
+            }
 
     _ = _select_best_search(search)
     assert best_result is not None

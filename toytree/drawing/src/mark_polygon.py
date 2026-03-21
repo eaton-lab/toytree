@@ -16,17 +16,16 @@ shapes such as maps, etc.
 >>> toytree.container(...)
 """
 
-from typing import List, Tuple
-
 import functools
 import xml.etree.ElementTree as xml
-from multipledispatch import dispatch
+from typing import List, Tuple
 
 import numpy as np
 import toyplot.html
+from multipledispatch import dispatch
 from toyplot.mark import Mark
-from toytree.color import ToyColor
-from toytree.color import concat_style_fix_color
+
+from toytree.color import ToyColor, concat_style_fix_color
 
 
 class Polygon(Mark):
@@ -66,6 +65,8 @@ dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 @dispatch(toyplot.coordinates.Cartesian, Polygon, toyplot.html.RenderContext)
 def _render(axes, mark, context):
     RenderPolygon(axes, mark, context)
+
+
 # ---------------------------------------------------------------------
 
 
@@ -76,7 +77,8 @@ class RenderPolygon:
         self.context = context
 
         self.mark_xml: xml.SubElement = xml.SubElement(
-            context.parent, "g",
+            context.parent,
+            "g",
             id=context.get_id(self.mark),
             attrib={"class": "toytree-Polygon"},
         )
@@ -85,30 +87,35 @@ class RenderPolygon:
         yproj = self.axes.project("y", self.mark._table[:, 1])
         points = " ".join([f"{i[0]},{i[1]}" for i in zip(xproj, yproj)])
         xml.SubElement(
-            self.mark_xml, "polygon",
+            self.mark_xml,
+            "polygon",
             points=points,
-            style=concat_style_fix_color({
-                "fill": self.mark.fill,
-                "fill-opacity": self.mark.fill_opacity,
-                "stroke": self.mark.stroke,
-                "stroke-width": self.mark.stroke_width,
-                "stroke-opacity": self.mark.stroke_opacity
-            }),
+            style=concat_style_fix_color(
+                {
+                    "fill": self.mark.fill,
+                    "fill-opacity": self.mark.fill_opacity,
+                    "stroke": self.mark.stroke,
+                    "stroke-width": self.mark.stroke_width,
+                    "stroke-opacity": self.mark.stroke_opacity,
+                }
+            ),
         )
 
 
 if __name__ == "__main__":
-
-    import toytree
     import toyplot
 
-    arr = np.array([
-        [0, 0],
-        [5, 0],
-        [6, 2],
-        [3, 3],
-        [0, 0],
-    ])
+    import toytree
+
+    arr = np.array(
+        [
+            [0, 0],
+            [5, 0],
+            [6, 2],
+            [3, 3],
+            [0, 0],
+        ]
+    )
     pol = Polygon(points=arr, stroke="blue")
     cvs = toyplot.Canvas(300, 300)
     axe = cvs.cartesian()

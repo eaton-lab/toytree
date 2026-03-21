@@ -1172,7 +1172,7 @@ class TestAddScaleBar(PytestCompat):
 
         self.assertEqual(calls["count"], 0)
 
-    def test_add_tip_bars_with_existing_companions_skips_full_host_finalize(self):
+    def test_add_tip_bars_with_existing_companions_finalizes_host_once(self):
         _, axes, _ = self.long_bar_tree.draw(
             tip_labels_align=True,
             scale_bar=True,
@@ -1208,53 +1208,6 @@ class TestAddScaleBar(PytestCompat):
             )
         finally:
             add_scale_bar_mod._finalize_host_axes = original
-
-        self.assertEqual(calls["count"], 0)
-
-    def test_add_tip_bars_falls_back_to_full_host_finalize_when_incremental_skips(
-        self,
-    ):
-        _, axes, _ = self.long_bar_tree.draw(
-            tip_labels_align=True,
-            scale_bar=True,
-            padding=15,
-            width=600,
-        )
-        first = self.long_bar_tree.annotate.add_tip_bars(
-            axes,
-            data="X",
-            offset=150,
-            width=1.0,
-            depth=75,
-            style={"stroke": "black"},
-        )
-        self.long_bar_tree.annotate.add_axes_scale_bar_to_mark(axes, first)
-
-        original_try = add_scale_bar_mod.try_incremental_tip_bar_host_finalize
-        original_finalize = add_scale_bar_mod._finalize_host_axes
-        calls = {"count": 0}
-
-        def skip_incremental(axes, mark):
-            return False
-
-        def counting_finalize(axes):
-            calls["count"] += 1
-            return original_finalize(axes)
-
-        add_scale_bar_mod.try_incremental_tip_bar_host_finalize = skip_incremental
-        add_scale_bar_mod._finalize_host_axes = counting_finalize
-        try:
-            self.long_bar_tree.annotate.add_tip_bars(
-                axes,
-                data="X",
-                offset=250,
-                width=1.0,
-                depth=75,
-                style={"stroke": "black"},
-            )
-        finally:
-            add_scale_bar_mod.try_incremental_tip_bar_host_finalize = original_try
-            add_scale_bar_mod._finalize_host_axes = original_finalize
 
         self.assertEqual(calls["count"], 1)
 

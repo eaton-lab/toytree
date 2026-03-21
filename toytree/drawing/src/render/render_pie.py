@@ -27,17 +27,17 @@ preferred to use this.
 
 import functools
 import xml.etree.ElementTree as xml
-from multipledispatch import dispatch
-import toyplot
+
 import numpy as np
+import toyplot
 import toyplot.html
+from multipledispatch import dispatch
 from toyplot.coordinates import Cartesian
 from toyplot.mark import Mark
 
 from toytree.color import ToyColor
 from toytree.color.src.concat import concat_style_fix_color
 from toytree.drawing.src.mark_pie import PieChartMark
-
 
 # Register multipledispatch to use the toyplot.html namespace
 dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
@@ -47,10 +47,14 @@ dispatch = functools.partial(dispatch, namespace=toyplot.html._namespace)
 @dispatch(Cartesian, PieChartMark, toyplot.html.RenderContext)
 def _render(axes, mark, context):
     render_pie_chart(axes, mark, context)
+
+
 #######################################################################
 
 
-def render_pie_chart(axes: Cartesian, mark: Mark, context: toyplot.html.RenderContext) -> None:
+def render_pie_chart(
+    axes: Cartesian, mark: Mark, context: toyplot.html.RenderContext
+) -> None:
     """Multidispatch registered render function for PieChartMarks.
 
     The PieChartMark object is a custom Mark and contains the data,
@@ -58,12 +62,13 @@ def render_pie_chart(axes: Cartesian, mark: Mark, context: toyplot.html.RenderCo
     rendering.
     """
     # project coordinates to axes
-    nodes_x = axes.project('x', mark.coordinates[:, 0])
-    nodes_y = axes.project('y', mark.coordinates[:, 1])
+    nodes_x = axes.project("x", mark.coordinates[:, 0])
+    nodes_y = axes.project("y", mark.coordinates[:, 1])
 
     # create a group for pie node markers
     mark_xml = xml.SubElement(
-        context.parent, "g",
+        context.parent,
+        "g",
         id=context.get_id(mark),
         attrib={"class": "toytree-mark-PieCharts"},
     )
@@ -71,7 +76,7 @@ def render_pie_chart(axes: Cartesian, mark: Mark, context: toyplot.html.RenderCo
     # fill dict w/ dicts {idx: {fill: ..., fill-opacity: ...}, ...}
     colors = {}
     for cidx, color in enumerate(mark.colors):
-        colors[cidx] = {'fill': ToyColor(color)}
+        colors[cidx] = {"fill": ToyColor(color)}
 
         # get shared inner stroke styles
         shared_style = {
@@ -82,21 +87,17 @@ def render_pie_chart(axes: Cartesian, mark: Mark, context: toyplot.html.RenderCo
 
     # render the pies as a group of path elements.
     for nidx in range(mark.coordinates.shape[0]):
-
         # make a group and position it correctly
         group = xml.SubElement(
-            mark_xml, "g",
-            attrib={'id': f'pie-{nidx}'},
+            mark_xml,
+            "g",
+            attrib={"id": f"pie-{nidx}"},
             style=concat_style_fix_color(shared_style),
         )
         xpos = nodes_x[nidx] + mark.xshift
         ypos = nodes_y[nidx] + mark.yshift
-        transform = (
-            f"translate({xpos:.4f},{ypos:.4f}) "
-            f"rotate({mark.rotate})"
-        )
+        transform = f"translate({xpos:.4f},{ypos:.4f}) " f"rotate({mark.rotate})"
         group.set("transform", transform)
-
 
         # iterate over slices: e.g., [0.3, 0.5, 0.2]
         # sums = [0, 0.3, 0.8, 1.0]
@@ -105,13 +106,14 @@ def render_pie_chart(axes: Cartesian, mark: Mark, context: toyplot.html.RenderCo
         xml.SubElement(group, "title").text = tooltip_label
         for cidx in range(mark.data[0].size):
             start_sum = data_row[:cidx].sum()
-            end_sum = data_row[:cidx + 1].sum()
+            end_sum = data_row[: cidx + 1].sum()
             slice_size = end_sum - start_sum
 
             if np.isclose(slice_size, 1.0):
                 # Render a filled circle for a full slice and skip remaining slices.
                 xml.SubElement(
-                    group, "circle",
+                    group,
+                    "circle",
                     r=str(mark.sizes[nidx]),
                     style=concat_style_fix_color(colors[cidx]),
                 )
@@ -124,9 +126,7 @@ def render_pie_chart(axes: Cartesian, mark: Mark, context: toyplot.html.RenderCo
                 radius=mark.sizes[nidx],
             )
             xml.SubElement(
-                group, "path",
-                d=path,
-                style=concat_style_fix_color(colors[cidx])
+                group, "path", d=path, style=concat_style_fix_color(colors[cidx])
             )
 
         # add a circle to outline the node and
@@ -136,7 +136,8 @@ def render_pie_chart(axes: Cartesian, mark: Mark, context: toyplot.html.RenderCo
         }
         ostyle.update({"stroke": ToyColor(mark.ostroke)})
         xml.SubElement(
-            group, "circle",
+            group,
+            "circle",
             r=str(mark.sizes[nidx]),
             style=concat_style_fix_color(ostyle),
         )
@@ -172,9 +173,9 @@ def _get_radial_coordinates_for_percents(percent):
 
 
 if __name__ == "__main__":
+    import toyplot
 
     import toytree
-    import toyplot
 
     TREE = toytree.rtree.bdtree(30, seed=123)
     c, a, m = TREE.draw(width=400, height=600, node_sizes=5)
@@ -183,4 +184,5 @@ if __name__ == "__main__":
     TREE.annotate.add_node_pie_markers(axes=a, data=DATA, colors="Greys", mask=False)
 
     import toyplot.browser
+
     toyplot.browser.show(c)

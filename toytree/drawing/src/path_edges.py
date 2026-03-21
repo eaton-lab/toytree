@@ -53,7 +53,7 @@ def _get_edge_data(
     if mark.edge_type in ("p", "b") and mark.layout[0] == "c":
         xdiffs = mark.ntable[:, 0] - root_x
         ydiffs = mark.ntable[:, 1] - root_y
-        radii = np.sqrt(xdiffs ** 2 + ydiffs ** 2)
+        radii = np.sqrt(xdiffs**2 + ydiffs**2)
         radians = np.arctan2(ydiffs, xdiffs)
         radians[radians < 0] = (2 * np.pi) + radians[radians < 0]
     return nodes_x, nodes_y, radii, radians, root_x, root_y
@@ -96,7 +96,7 @@ def get_tree_edge_svg_paths(
         else:
             xdiff = parent_x - nodes_x[-1]
             ydiff = parent_y - nodes_y[-1]
-            parent_radius = np.sqrt(xdiff ** 2 + ydiff ** 2)
+            parent_radius = np.sqrt(xdiff**2 + ydiff**2)
             mid_x = root_x + radii[pidx] * np.cos(radians[cidx])
             mid_y = root_y + radii[pidx] * np.sin(radians[cidx])
             px_mid_x = axes.project("x", mid_x)

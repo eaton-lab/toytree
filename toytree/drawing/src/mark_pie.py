@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""Custom toyplot.Mark for displaying pie charts.
-"""
+"""Custom toyplot.Mark for displaying pie charts."""
 
 import numpy as np
 import toyplot
@@ -35,6 +34,7 @@ class PieChartMark(Mark):
     >>> c, a, m = tree.draw(node_colors=pie_data)
     >>> tree.annotate.pie_charts(axes, mark, ...)
     """
+
     def __init__(
         self,
         coordinates,
@@ -50,7 +50,7 @@ class PieChartMark(Mark):
         yshift,
     ):
         Mark.__init__(self, annotation=True)
-        self._coordinate_axes = ['x', 'y']
+        self._coordinate_axes = ["x", "y"]
         self.coordinates = np.array(coordinates)
         self.data = data
         self.sizes = toyplot.broadcast.scalar(sizes, self.coordinates.shape[0])
@@ -64,7 +64,7 @@ class PieChartMark(Mark):
         self.yshift = yshift
 
         # radius is half the size
-        self.sizes /= 2.
+        self.sizes /= 2.0
 
     def domain(self, axis):
         """The domain of data to fit on Canvas."""
@@ -74,7 +74,7 @@ class PieChartMark(Mark):
 
     def extents(self, axes):
         """..."""
-        node_extents = [self.sizes / 2. for i in range(4)]
+        node_extents = [self.sizes / 2.0 for i in range(4)]
         node_extents[0] *= -1
         node_extents[2] *= -1
         node_extents[0] += self.xshift
@@ -89,7 +89,6 @@ class PieChartMark(Mark):
 
 
 if __name__ == "__main__":
-
     pass
     # import toyplot
     # c = toyplot.Canvas()

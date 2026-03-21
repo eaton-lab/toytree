@@ -1,11 +1,10 @@
-
-
 # from typing import Any
-import numpy as np
 import xml.etree.ElementTree as xml
+
+import numpy as np
+
 from toytree.color.src.concat import concat_style_fix_color
 from toytree.drawing.src.mark_toytree import ToyTreeMark
-from toytree.network import AdmixtureEdges
 
 
 def add_admixture_edge_xml(mark: ToyTreeMark):
@@ -19,22 +18,22 @@ def add_admixture_edge_xml(mark: ToyTreeMark):
 
     The edge takes the same style as the edge_type of the tree.
     """
-
     # iterate over colors for subsequent edges unless provided
     default_admix_edge_style = {
-        "stroke": 'rgb(90.6%,54.1%,76.5%)',
+        "stroke": "rgb(90.6%,54.1%,76.5%)",
         "stroke-width": 5,
         "stroke-opacity": 0.6,
         "stroke-linecap": "round",
         "fill": "none",
-        "font-size": "14px"
+        "font-size": "14px",
     }
 
     # create new group in the tree xml element for AdmixEdges
     admix_xml = xml.SubElement(
-        mark.mark_xml, 'g',
-        attrib={'class': 'toytree-AdmixEdges'},
-        style=concat_style_fix_color(default_admix_edge_style)
+        mark.mark_xml,
+        "g",
+        attrib={"class": "toytree-AdmixEdges"},
+        style=concat_style_fix_color(default_admix_edge_style),
     )
 
     # path format for admix edge
@@ -48,7 +47,6 @@ def add_admixture_edge_xml(mark: ToyTreeMark):
 
     # create path subelement for each admixture edge
     for aedge in mark.admixture_edges:
-
         # user arg has been expanded to: int, int, must be an AdmixtureEdge object or Tuple
         src, dst, src_dist, dst_dist, gamma, estyle, label = aedge
 
@@ -76,7 +74,7 @@ def add_admixture_edge_xml(mark: ToyTreeMark):
             p_dst_x, p_dst_y = self.nodes_y[pdest], self.nodes_x[pdest]
 
             # ...
-            if self.mark.layout == 'r':
+            if self.mark.layout == "r":
                 disjoint = (p_src_y >= dst_y) or (src_y <= p_dst_y)
                 sign = 1
             else:
@@ -124,7 +122,6 @@ def add_admixture_edge_xml(mark: ToyTreeMark):
 
         # project angle of up/down lines towards parent nodes.
         if self.mark.edge_type == "c":
-
             # angle from src to src parent
             if (p_src_x - src_x) == 0:
                 x_shift_src_mid = 0
@@ -148,14 +145,14 @@ def add_admixture_edge_xml(mark: ToyTreeMark):
         # build the SVG path
         if self.mark.layout in ("r", "l"):
             edge_dict = {
-                'sdy': src_x,  # + x_shift_src_tip + snudge,
-                'sdx': src_y,  # src_tip_y,
-                'suy': src_x + x_shift_src_mid,
-                'sux': src_mid_y,  # admix_ymid,
-                'ddy': dst_x + x_shift_dest_mid,
-                'ddx': dest_mid_y,  # admix_ymid,
-                'duy': xend,
-                'dux': p_dst_y,  # dest_tip_y,
+                "sdy": src_x,  # + x_shift_src_tip + snudge,
+                "sdx": src_y,  # src_tip_y,
+                "suy": src_x + x_shift_src_mid,
+                "sux": src_mid_y,  # admix_ymid,
+                "ddy": dst_x + x_shift_dest_mid,
+                "ddx": dest_mid_y,  # admix_ymid,
+                "duy": xend,
+                "dux": p_dst_y,  # dest_tip_y,
             }
             # tri_dict = {
             #     'x0': admix_ymid - 6,
@@ -168,17 +165,14 @@ def add_admixture_edge_xml(mark: ToyTreeMark):
 
         else:
             edge_dict = {
-                'sdx': src_x,  # + x_shift_src_tip + snudge,
-                'sdy': src_y,  # src_tip_y,
-
-                'sux': src_x + x_shift_src_mid,
-                'suy': src_mid_y,  # admix_ymid,
-
-                'ddx': dst_x + x_shift_dest_mid,
-                'ddy': dest_mid_y,  # admix_ymid,
-
-                'dux': xend,
-                'duy': p_dst_y,  # dest_tip_y,
+                "sdx": src_x,  # + x_shift_src_tip + snudge,
+                "sdy": src_y,  # src_tip_y,
+                "sux": src_x + x_shift_src_mid,
+                "suy": src_mid_y,  # admix_ymid,
+                "ddx": dst_x + x_shift_dest_mid,
+                "ddy": dest_mid_y,  # admix_ymid,
+                "dux": xend,
+                "duy": p_dst_y,  # dest_tip_y,
             }
 
             # TODO: not finished aligning triangle/arrow
@@ -197,7 +191,8 @@ def add_admixture_edge_xml(mark: ToyTreeMark):
         # TODO: split style not needed.
         # estyle['stroke'] = split_rgba_style(estyle['stroke'])
         xml.SubElement(
-            admix_xml, "path",
+            admix_xml,
+            "path",
             d=path,
             style=concat_style_fix_color(estyle),
         )
@@ -205,12 +200,11 @@ def add_admixture_edge_xml(mark: ToyTreeMark):
         lstyle = estyle.copy()
         # LABEL
         if label is not None:
-
             # RENDER edge label
-            lstyle['fill'] = '#262626'
-            lstyle['fill-opacity'] = '1.0'
-            lstyle['stroke'] = "none"
-            lstyle['text-anchor'] = 'middle'
+            lstyle["fill"] = "#262626"
+            lstyle["fill-opacity"] = "1.0"
+            lstyle["stroke"] = "none"
+            lstyle["text-anchor"] = "middle"
 
             # position
             if self.mark.layout in ("r", "l"):

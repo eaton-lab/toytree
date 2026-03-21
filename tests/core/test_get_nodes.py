@@ -1,15 +1,12 @@
 #!/usr/bin/env python
 
-"""unittest tests for core module.
+"""unittest tests for core module."""
 
-"""
+from conftest import PytestCompat
 
 import toytree
 from toytree.utils import ToytreeError
 
-
-
-from conftest import PytestCompat
 
 class TestToyTreeGetNodes(PytestCompat):
     def setUp(self):
@@ -19,7 +16,7 @@ class TestToyTreeGetNodes(PytestCompat):
 
     def test_get_nodes_by_name(self):
         """Ladderize mirrors node rotations reversibly."""
-        select = ['r0', 'r1', 'r3', 'r4', 'r5']
+        select = ["r0", "r1", "r3", "r4", "r5"]
         res0 = self.itree.get_nodes(*select)
         self.assertEqual(set(i.name for i in res0), set(select))
 
@@ -49,5 +46,3 @@ class TestToyTreeGetNodes(PytestCompat):
         """Bad regex raises a ToytreeError from re.error."""
         with self.assertRaises(ToytreeError):
             self.itree.get_nodes("~*r*")
-
-

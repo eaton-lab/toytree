@@ -7,18 +7,18 @@ be filtered here to only show for toytree and not for other Python
 packages.
 """
 
-from typing import Optional
 import sys
 from contextlib import contextmanager
-from loguru import logger
+from typing import Optional
 
+from loguru import logger
 
 LOGGERS = [0]
 logger.disable("toytree")
 
 
 def colorize():
-    """colorize the logger if stderr is IPython/Jupyter or a terminal (TTY)"""
+    """Colorize the logger if stderr is IPython/Jupyter or a terminal (TTY)"""
     try:
         import IPython
 

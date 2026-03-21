@@ -562,5 +562,3 @@ def get_unique_node_styles(mark) -> List[Dict]:
             # special handling for transparency...
             unique_styles[idx]["fill-opacity"] = False
     return unique_styles
-
-

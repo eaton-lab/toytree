@@ -8,13 +8,11 @@ import xml.etree.ElementTree as xml
 
 import numpy as np
 import toyplot.html
+from conftest import PytestCompat
 
 import toytree
 from toytree.drawing.src.path_edges import get_tree_edge_polylines
 
-
-
-from conftest import PytestCompat
 
 class TestAnnotateAddEdges(PytestCompat):
     def setUp(self):
@@ -277,5 +275,3 @@ class TestAnnotateAddEdges(PytestCompat):
             unwrapped = np.unwrap(ang)
             span = float(np.abs(unwrapped[-1] - unwrapped[0]))
             self.assertLessEqual(span, np.pi + 1e-6)
-
-

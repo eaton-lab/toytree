@@ -8,13 +8,12 @@ the html+css size we use a custom render function?
 
 from typing import Sequence, TypeVar
 
+# from toytree import MultiTree
+from toytree.drawing import ToyTreeMark
 from toytree.drawing.src.draw_toytree import (
     get_layout,
     get_tree_style_updated_by_draw_args,
 )
-
-# from toytree import MultiTree
-from toytree.drawing import ToyTreeMark
 
 # from toytree.core import Canvas, Cartesian
 from toytree.style import tree_style_to_css_dict

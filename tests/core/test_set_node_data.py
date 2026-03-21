@@ -1,14 +1,11 @@
 #!/usr/bin/env python
 
-"""Test cases for `ToyTree.set_node_data`
+"""Test cases for `ToyTree.set_node_data`"""
 
-"""
+from conftest import PytestCompat
 
 import toytree
 
-
-
-from conftest import PytestCompat
 
 class TestToyTreeSetNodeData(PytestCompat):
     def setUp(self):
@@ -32,5 +29,3 @@ class TestToyTreeSetNodeData(PytestCompat):
 
     def test_todo(self):
         """Create tests..."""
-
-

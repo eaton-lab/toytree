@@ -3,15 +3,12 @@
 
 """Tests for annotate.add_tip_markers."""
 
-
 import numpy as np
 import toyplot.html
+from conftest import PytestCompat
 
 import toytree
 
-
-
-from conftest import PytestCompat
 
 class TestAnnotateAddTipMarkers(PytestCompat):
     def setUp(self):
@@ -130,5 +127,3 @@ class TestAnnotateAddTipMarkers(PytestCompat):
         root_xy = np.asarray(m.ntable[self.tree.treenode.idx], dtype=float)
         radii = np.sqrt(np.sum((mark.ntable - root_xy) ** 2, axis=1))
         self.assertLess(float(np.ptp(radii)), 1e-8)
-
-

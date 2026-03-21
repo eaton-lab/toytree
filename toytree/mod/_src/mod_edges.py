@@ -13,9 +13,11 @@ are ready to be plotted. This means they update the cached heights
 so idx values and x positions do not need to be updated.
 """
 
-from typing import Dict, TypeVar, Optional
-from loguru import logger
+from typing import Dict, Optional, TypeVar
+
 import numpy as np
+from loguru import logger
+
 from toytree import Node
 from toytree.core.apis import TreeModAPI, add_subpackage_method
 
@@ -35,7 +37,7 @@ __all__ = [
 @add_subpackage_method(TreeModAPI)
 def edges_scale_to_root_height(
     tree: ToyTree,
-    treeheight: float = 1.,
+    treeheight: float = 1.0,
     include_stem: bool = False,
     inplace: bool = False,
 ) -> ToyTree:
@@ -65,8 +67,10 @@ def edges_scale_to_root_height(
 
     # get total tree height
     height = (
-        tree.treenode.height + tree.treenode.dist if include_stem
-        else tree.treenode.height)
+        tree.treenode.height + tree.treenode.dist
+        if include_stem
+        else tree.treenode.height
+    )
 
     # get multiplier
     ratio = treeheight / height
@@ -114,10 +118,8 @@ def edges_slider(
 
     # traverse tree sampling new heights within constrained ranges
     for node in tree.traverse(order):
-
         # slide internal Nodes
         if (not node.is_root()) and (not node.is_leaf()):
-
             # the closest child to me
             min_child_dist = min([i.dist for i in node.children])
 
@@ -145,10 +147,7 @@ def edges_slider(
 
 @add_subpackage_method(TreeModAPI)
 def edges_multiplier(
-    tree: ToyTree,
-    alpha: float = 3.0,
-    inplace: bool = False,
-    seed: Optional[int] = None
+    tree: ToyTree, alpha: float = 3.0, inplace: bool = False, seed: Optional[int] = None
 ) -> ToyTree:
     """Return ToyTree w/ all Nodes scaled by a random constant.
 
@@ -202,7 +201,7 @@ def edges_extend_tips_to_align(
         If True tree is modified in place, else a copy is
     """
     tree = tree if inplace else tree.copy()
-    for node in tree[:tree.ntips]:
+    for node in tree[: tree.ntips]:
         node._dist += node._height
         node._height = 0
     return tree
@@ -239,9 +238,7 @@ def edges_set_node_heights(
     tree = tree if inplace else tree.copy()
 
     # convert {query: float} to {idx: float} using Node int idx labels
-    mapping = {
-        tree.get_nodes(i)[0].idx: j for (i, j) in data.items()
-    }
+    mapping = {tree.get_nodes(i)[0].idx: j for (i, j) in data.items()}
 
     # set node height to current value for those not in hdict
     for idx in range(tree.nnodes):
@@ -263,8 +260,8 @@ def edges_set_node_heights(
 
 
 if __name__ == "__main__":
-
     import toytree
+
     TREE = toytree.rtree.rtree(ntips=6)
     TREE = toytree.rtree.unittree(ntips=6, treeheight=100, seed=123)
 

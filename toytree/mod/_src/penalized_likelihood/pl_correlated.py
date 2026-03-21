@@ -80,7 +80,9 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
             RATE_FLOOR,
             None,
         )
-        params_seed = np.hstack([_pack_log_rates(rates_seed, rate_floor=RATE_FLOOR), age_params_init])
+        params_seed = np.hstack(
+            [_pack_log_rates(rates_seed, rate_floor=RATE_FLOOR), age_params_init]
+        )
         refit = minimize(
             fun=objective_correlated,
             x0=params_seed,
@@ -120,7 +122,7 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
         fixed = next(iter_fixed)
         fbools, fslice = fix_dict[fixed]
         rates_hat = _unpack_log_rates(current_params[:rsize])
-        age_params_hat = current_params[rsize:rsize + asize]
+        age_params_hat = current_params[rsize : rsize + asize]
         args = fbools + (
             rates_hat,
             age_params_hat,
@@ -204,7 +206,9 @@ def edges_make_ultrametric_pl_correlated(
 
     # map edges to their parent edge index for correlation penalty.
     child_to_eidx = {int(child): idx for idx, (child, _) in enumerate(edges)}
-    parent_edges = np.array([child_to_eidx.get(int(parent), -1) for _, parent in edges], dtype=int)
+    parent_edges = np.array(
+        [child_to_eidx.get(int(parent), -1) for _, parent in edges], dtype=int
+    )
 
     # get indices of which node ages will be estimated
     ages_idxs = np.array(sorted(ages_bounds))
@@ -218,8 +222,12 @@ def edges_make_ultrametric_pl_correlated(
         for (lo, hi) in rates_bounds
     ]
     age_params_init = _encode_age_params(
-        ages_init, ages_idxs, ages_bounds, children_map,
-        dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+        ages_init,
+        ages_idxs,
+        ages_bounds,
+        children_map,
+        dist_floor=DIST_FLOOR,
+        age_upper_switch=AGE_UPPER_SWITCH,
     )
     bounds = rates_bounds + [(None, None)] * age_params_init.size
 
@@ -228,7 +236,9 @@ def edges_make_ultrametric_pl_correlated(
         rates_init, ages_init, edges, edata, parent_edges, lam, None
     )
 
-    params = np.hstack([_pack_log_rates(rates_init, rate_floor=RATE_FLOOR), age_params_init])
+    params = np.hstack(
+        [_pack_log_rates(rates_init, rate_floor=RATE_FLOOR), age_params_init]
+    )
     nstarts = max(1, int(nstarts))
     ncores = max(1, int(ncores))
     rng = np.random.default_rng(seed)
@@ -240,7 +250,7 @@ def edges_make_ultrametric_pl_correlated(
         if start:
             sparams[:rsize] += rng.normal(0.0, 0.25, size=rsize)
             if asize:
-                sparams[rsize:rsize + asize] += rng.normal(0.0, 0.25, size=asize)
+                sparams[rsize : rsize + asize] += rng.normal(0.0, 0.25, size=asize)
         payloads.append(
             dict(
                 start=start,
@@ -272,12 +282,20 @@ def edges_make_ultrametric_pl_correlated(
     )
 
     ages = _decode_age_params(
-        current_params[rsize:rsize + asize], ages_init, ages_idxs, ages_bounds, children_map, dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+        current_params[rsize : rsize + asize],
+        ages_init,
+        ages_idxs,
+        ages_bounds,
+        children_map,
+        dist_floor=DIST_FLOOR,
+        age_upper_switch=AGE_UPPER_SWITCH,
     )
     tree = tree.set_node_data("height", ages, inplace=inplace)
     rates = _unpack_log_rates(current_params[:rsize])
 
-    loglik = log_likelihood_poisson_correlated(rates, ages, edges, edata, parent_edges, lam, valid_loglik)
+    loglik = log_likelihood_poisson_correlated(
+        rates, ages, edges, edata, parent_edges, lam, valid_loglik
+    )
     k = len(bounds)
     phiic = -2 * loglik + 2 * k
 
@@ -378,23 +396,38 @@ def objective_correlated(
     if fixed_ages and not fixed_rates:
         assert params.size == rates.size
         ages_hat = _decode_age_params(
-            age_params, ages_base, ages_idxs, ages_bounds, children_map,
-            dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+            age_params,
+            ages_base,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            dist_floor=DIST_FLOOR,
+            age_upper_switch=AGE_UPPER_SWITCH,
         )
         rates_hat = _unpack_log_rates(params)
     elif fixed_rates and not fixed_ages:
         assert params.size == ages_idxs.size
         rates_hat = rates
         ages_hat = _decode_age_params(
-            params, ages_base, ages_idxs, ages_bounds, children_map,
-            dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+            params,
+            ages_base,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            dist_floor=DIST_FLOOR,
+            age_upper_switch=AGE_UPPER_SWITCH,
         )
     else:
         assert params.size == ages_idxs.size + rates.size
-        rates_hat = _unpack_log_rates(params[:rates.size])
+        rates_hat = _unpack_log_rates(params[: rates.size])
         ages_hat = _decode_age_params(
-            params[rates.size:], ages_base, ages_idxs, ages_bounds, children_map,
-            dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+            params[rates.size :],
+            ages_base,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            dist_floor=DIST_FLOOR,
+            age_upper_switch=AGE_UPPER_SWITCH,
         )
     return -log_likelihood_poisson_correlated(
         rates_hat, ages_hat, edges, edata, parent_edges, lam, valid_loglik
@@ -403,6 +436,7 @@ def objective_correlated(
 
 if __name__ == "__main__":
     import toytree
+
     toytree.set_log_level("DEBUG")
 
     tree = get_tree_with_correlated_relaxed_rates(ntips=40, mean=3, sigma=2, seed=123)

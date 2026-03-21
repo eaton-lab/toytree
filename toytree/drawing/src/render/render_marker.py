@@ -39,9 +39,7 @@ def render_marker(marker_xml, marker) -> None:
         _draw_rect(marker_xml, marker.size, angle=45)
     elif marker.shape and marker.shape[0] == "r":
         width, height = marker.shape[1:].split("x")
-        _draw_rect(
-            marker_xml, marker.size,
-            width=float(width), height=float(height))
+        _draw_rect(marker_xml, marker.size, width=float(width), height=float(height))
     elif marker.shape == "o":
         _draw_circle(marker_xml, marker.size)
     elif marker.shape == "oo":

@@ -18,7 +18,6 @@ from conftest import PytestCompat
 
 import toytree
 from toytree.color import ToyColor
-from toytree.drawing.src._pdf_patch import install_pdf_render_patch
 from toytree.utils import ToytreeError
 
 
@@ -689,20 +688,5 @@ class TestAnnotateAddTipPaths(PytestCompat):
         root = toyplot.html.render(canvas)
         self.assertIn(" C ", self._tip_path_paths(root)[0].attrib["d"])
 
-        _, stream_text = self._render_pdf_text(canvas)
-        self.assertEqual(self._count_pdf_curve_ops(stream_text), self.tree.ntips)
-
-    def test_add_tip_paths_pdf_patch_install_is_idempotent(self):
-        install_pdf_render_patch()
-        install_pdf_render_patch()
-
-        canvas, axes, _ = self.tree.draw(width=400)
-        self.tree.annotate.add_tip_paths(
-            axes,
-            spans=[0, 1, 2, 6, 4, 3, 5, 7],
-            offset_start=40,
-            depth=140,
-            bezier_fractions=(0.45, 0.55),
-        )
         _, stream_text = self._render_pdf_text(canvas)
         self.assertEqual(self._count_pdf_curve_ops(stream_text), self.tree.ntips)

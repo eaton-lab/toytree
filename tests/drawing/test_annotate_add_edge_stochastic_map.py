@@ -7,14 +7,12 @@ import xml.etree.ElementTree as xml
 import numpy as np
 import pandas as pd
 import toyplot.html
+from conftest import PytestCompat
 
 import toytree
 from toytree.style.src.map_colors import get_color_mapped_values
 from toytree.utils import ToytreeError
 
-
-
-from conftest import PytestCompat
 
 class TestAnnotateAddEdgeStochasticMap(PytestCompat):
     """Validate stochastic-map edge annotation behavior."""
@@ -226,5 +224,3 @@ class TestAnnotateAddEdgeStochasticMap(PytestCompat):
         self.assertAlmostEqual(
             float(shifted.ypaths[0][0] - base.ypaths[0][0]), -2.0, places=8
         )
-
-

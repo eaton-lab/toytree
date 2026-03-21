@@ -55,7 +55,21 @@ def _fit_discrete_start(payload: dict[str, Any]) -> dict[str, Any]:
     fit = minimize(
         fun=objective_discrete,
         x0=params,
-        args=(False, False, False, rates_init, age_params_init, ages_init, ages_idxs, ages_bounds, children_map, edges, edata, freqs_init, valid_loglik),
+        args=(
+            False,
+            False,
+            False,
+            rates_init,
+            age_params_init,
+            ages_init,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            edges,
+            edata,
+            freqs_init,
+            valid_loglik,
+        ),
         method="L-BFGS-B",
         bounds=bounds,
         options=dict(maxiter=int(max_iter), maxfun=int(max_fun)),
@@ -78,7 +92,7 @@ def _fit_discrete_start(payload: dict[str, Any]) -> dict[str, Any]:
         fixed = next(iter_fixed)
         fbools, fslice = fix_dict[fixed]
         rates_hat = _unpack_log_rates(current_params[:rsize])
-        age_params_hat = current_params[rsize:rsize + asize]
+        age_params_hat = current_params[rsize : rsize + asize]
         freqs_hat = current_params[-fsize:] if fsize else np.array([], dtype=float)
         args = fbools + (
             rates_hat,
@@ -262,20 +276,29 @@ def edges_make_ultrametric_pl_discrete(
         for (lo, hi) in rates_bounds
     ]
     age_params_init = _encode_age_params(
-        ages_init, ages_idxs, ages_bounds, children_map, dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+        ages_init,
+        ages_idxs,
+        ages_bounds,
+        children_map,
+        dist_floor=DIST_FLOOR,
+        age_upper_switch=AGE_UPPER_SWITCH,
     )
     freqs_bounds = [(0, 1) for i in range(ncategories - 1)]
     bounds = rates_bounds + [(None, None)] * age_params_init.size + freqs_bounds
 
     # get loglik at a valid starting params to scale neg dist penalty
     _freqs_hat = np.append(freqs_init, 1 - freqs_init.sum())
-    valid_loglik = log_likelihood_poisson_discrete(rates_init, ages_init, edges, edata, _freqs_hat, None)
+    valid_loglik = log_likelihood_poisson_discrete(
+        rates_init, ages_init, edges, edata, _freqs_hat, None
+    )
 
-    params = np.hstack([
-        _pack_log_rates(rates_init, rate_floor=RATE_FLOOR),
-        age_params_init,
-        freqs_init,
-    ])
+    params = np.hstack(
+        [
+            _pack_log_rates(rates_init, rate_floor=RATE_FLOOR),
+            age_params_init,
+            freqs_init,
+        ]
+    )
     nstarts = max(1, int(nstarts))
     ncores = max(1, int(ncores))
     rng = np.random.default_rng(seed)
@@ -288,7 +311,7 @@ def edges_make_ultrametric_pl_discrete(
         if start:
             sparams[:rsize] += rng.normal(0.0, 0.25, size=rsize)
             if asize:
-                sparams[rsize:rsize + asize] += rng.normal(0.0, 0.25, size=asize)
+                sparams[rsize : rsize + asize] += rng.normal(0.0, 0.25, size=asize)
             if fsize:
                 freq_j = sparams[-fsize:] + rng.normal(0.0, 0.05, size=fsize)
                 sparams[-fsize:] = np.clip(freq_j, 1e-6, 1 - 1e-6)
@@ -323,7 +346,13 @@ def edges_make_ultrametric_pl_discrete(
 
     # transform tree with new ages
     ages = _decode_age_params(
-        current_params[rsize:rsize + asize], ages_init, ages_idxs, ages_bounds, children_map, dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+        current_params[rsize : rsize + asize],
+        ages_init,
+        ages_idxs,
+        ages_bounds,
+        children_map,
+        dist_floor=DIST_FLOOR,
+        age_upper_switch=AGE_UPPER_SWITCH,
     )
     tree = tree.set_node_data("height", ages, inplace=inplace)
 
@@ -332,8 +361,10 @@ def edges_make_ultrametric_pl_discrete(
     freqs = current_params[-fsize:]
 
     # Final fit for PHIIC calculation (Penalized Hierarchical Information Criterion)
-    _freqs = np.append(freqs, 1. - freqs.sum())
-    loglik = log_likelihood_poisson_discrete(rates, ages, edges, edata, _freqs, valid_loglik)
+    _freqs = np.append(freqs, 1.0 - freqs.sum())
+    loglik = log_likelihood_poisson_discrete(
+        rates, ages, edges, edata, _freqs, valid_loglik
+    )
     k = len(bounds)
     PHIIC = -2 * loglik + 2 * k
 
@@ -364,7 +395,6 @@ def edges_make_ultrametric_pl_discrete(
     }
 
 
-
 def objective_discrete(
     params,
     fixed_rates,
@@ -381,13 +411,18 @@ def objective_discrete(
     freqs,
     valid_loglik,
 ):
-    """Return neg log-likelihood under discrete model.
-    """
+    """Return neg log-likelihood under discrete model."""
     # [RATES]
     if fixed_ages and fixed_freqs and not fixed_rates:
         assert params.size == rates.size
         ages_hat = _decode_age_params(
-            age_params, ages_base, ages_idxs, ages_bounds, children_map, dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+            age_params,
+            ages_base,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            dist_floor=DIST_FLOOR,
+            age_upper_switch=AGE_UPPER_SWITCH,
         )
         rates_hat = _unpack_log_rates(params)
         freqs_hat = freqs
@@ -396,22 +431,7 @@ def objective_discrete(
         assert params.size == ages_idxs.size
         rates_hat = rates
         ages_hat = _decode_age_params(
-            params, ages_base, ages_idxs, ages_bounds, children_map, dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
-        )
-        freqs_hat = freqs
-    # [FREQS]
-    elif fixed_rates and fixed_ages and not fixed_freqs:
-        assert params.size == freqs.size
-        ages_hat = _decode_age_params(
-            age_params, ages_base, ages_idxs, ages_bounds, children_map, dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
-        )
-        rates_hat = rates
-        freqs_hat = params
-    else:
-        assert params.size == ages_idxs.size + rates.size + freqs.size
-        rates_hat = _unpack_log_rates(params[:rates.size])
-        ages_hat = _decode_age_params(
-            params[rates.size:rates.size + ages_idxs.size],
+            params,
             ages_base,
             ages_idxs,
             ages_bounds,
@@ -419,18 +439,46 @@ def objective_discrete(
             dist_floor=DIST_FLOOR,
             age_upper_switch=AGE_UPPER_SWITCH,
         )
-        freqs_hat = params[-freqs.size:]
+        freqs_hat = freqs
+    # [FREQS]
+    elif fixed_rates and fixed_ages and not fixed_freqs:
+        assert params.size == freqs.size
+        ages_hat = _decode_age_params(
+            age_params,
+            ages_base,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            dist_floor=DIST_FLOOR,
+            age_upper_switch=AGE_UPPER_SWITCH,
+        )
+        rates_hat = rates
+        freqs_hat = params
+    else:
+        assert params.size == ages_idxs.size + rates.size + freqs.size
+        rates_hat = _unpack_log_rates(params[: rates.size])
+        ages_hat = _decode_age_params(
+            params[rates.size : rates.size + ages_idxs.size],
+            ages_base,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            dist_floor=DIST_FLOOR,
+            age_upper_switch=AGE_UPPER_SWITCH,
+        )
+        freqs_hat = params[-freqs.size :]
 
     # add final freq category for the remainder
-    freqs_hat = np.append(freqs_hat, 1. - freqs_hat.sum())
+    freqs_hat = np.append(freqs_hat, 1.0 - freqs_hat.sum())
 
     # calculate log-likelihood
     args = (rates_hat, ages_hat, edges, edata, freqs_hat, valid_loglik)
     return -log_likelihood_poisson_discrete(*args)
 
 
-
-def log_likelihood_poisson_discrete(rates_hat, ages_hat, edges, edata, freqs_hat, valid_loglik) -> float:
+def log_likelihood_poisson_discrete(
+    rates_hat, ages_hat, edges, edata, freqs_hat, valid_loglik
+) -> float:
     """Return the log-likelihood of the rates x ages params"""
     if valid_loglik is None:
         valid_loglik = -1.0
@@ -466,17 +514,25 @@ def log_likelihood_poisson_discrete(rates_hat, ages_hat, edges, edata, freqs_hat
     return float(loglik) if np.isfinite(loglik) else invalid_score
 
 
-
 if __name__ == "__main__":
+    import numpy as np
 
     import toytree
-    import numpy as np
+
     toytree.set_log_level("DEBUG")
 
     tree = get_tree_with_categorical_rates(ntips=50, nrates=2, seed=123)
-    res = edges_make_ultrametric_pl_discrete(tree, calibrations={-1: 1}, ncategories=2, full=True, max_fun=1e6, max_iter=1e6, max_refine=50)
+    res = edges_make_ultrametric_pl_discrete(
+        tree,
+        calibrations={-1: 1},
+        ncategories=2,
+        full=True,
+        max_fun=1e6,
+        max_iter=1e6,
+        max_refine=50,
+    )
     print(res)
     tree._draw_browser(tmpdir="~")
-    res['tree']._draw_browser(tmpdir="~")
+    res["tree"]._draw_browser(tmpdir="~")
     # c1, _, _ = tree.draw(ts='s', use_edge_lengths=True, scale_bar=True)
     # tree.write("/tmp/test.nwk")

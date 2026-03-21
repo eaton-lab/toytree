@@ -79,7 +79,10 @@ def add_linear_gradient(defs: xml.Element, gradient: LinearGradient) -> xml.Elem
     if not isinstance(gradient.id, str) or not gradient.id:
         raise ValueError("LinearGradient requires non-empty string 'id'.")
     for child in list(defs):
-        if _local_name(child.tag) == "linearGradient" and child.attrib.get("id") == gradient.id:
+        if (
+            _local_name(child.tag) == "linearGradient"
+            and child.attrib.get("id") == gradient.id
+        ):
             raise ValueError(f"Duplicate linearGradient id: '{gradient.id}'.")
 
     # raise if input gradient is empty
@@ -125,4 +128,3 @@ def ensure_linear_gradients(
         gid = lg.attrib["id"]
         mapping[gid] = f"url(#{gid})"
     return mapping
-

@@ -51,7 +51,19 @@ def _fit_clock_start(payload: dict[str, Any]) -> dict[str, Any]:
     fit = minimize(
         fun=objective_clock,
         x0=params,
-        args=(False, False, rate_init, age_params_init, ages_init, ages_idxs, ages_bounds, children_map, edges, edata, valid_loglik),
+        args=(
+            False,
+            False,
+            rate_init,
+            age_params_init,
+            ages_init,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            edges,
+            edata,
+            valid_loglik,
+        ),
         method="L-BFGS-B",
         bounds=bounds,
         options=dict(maxiter=int(max_iter), maxfun=int(max_fun)),
@@ -70,7 +82,17 @@ def _fit_clock_start(payload: dict[str, Any]) -> dict[str, Any]:
         fbools, fslice = fix_dict[fixed]
         rates_hat = _unpack_log_rates(current_params[:1])
         age_params_hat = current_params[1:]
-        args = fbools + (rates_hat, age_params_hat, ages_init, ages_idxs, ages_bounds, children_map, edges, edata, valid_loglik)
+        args = fbools + (
+            rates_hat,
+            age_params_hat,
+            ages_init,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            edges,
+            edata,
+            valid_loglik,
+        )
         ifit = minimize(
             fun=objective_clock,
             x0=current_params[fslice],
@@ -186,19 +208,27 @@ def edges_make_ultrametric_pl_clock(
     ages_bounds = [ages_bounds[i] for i in ages_idxs]
     rate_bounds = rates_bounds[0]
     age_params_init = _encode_age_params(
-        ages_init, ages_idxs, ages_bounds, children_map,
-        dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+        ages_init,
+        ages_idxs,
+        ages_bounds,
+        children_map,
+        dist_floor=DIST_FLOOR,
+        age_upper_switch=AGE_UPPER_SWITCH,
     )
 
-    bounds = [(
-        np.log(max(rate_bounds[0], RATE_FLOOR)),
-        np.log(max(rate_bounds[1], RATE_FLOOR)),
-    )] + [(None, None)] * age_params_init.size
+    bounds = [
+        (
+            np.log(max(rate_bounds[0], RATE_FLOOR)),
+            np.log(max(rate_bounds[1], RATE_FLOOR)),
+        )
+    ] + [(None, None)] * age_params_init.size
 
-    params = np.hstack([
-        _pack_log_rates(np.array([rate_init], dtype=float), rate_floor=RATE_FLOOR),
-        age_params_init,
-    ])
+    params = np.hstack(
+        [
+            _pack_log_rates(np.array([rate_init], dtype=float), rate_floor=RATE_FLOOR),
+            age_params_init,
+        ]
+    )
 
     # get loglik at a valid starting params to scale neg dist penalty
     valid_loglik = log_likelihood_poisson(rate_init, ages_init, edges, edata, None)
@@ -243,8 +273,13 @@ def edges_make_ultrametric_pl_clock(
 
     # transform tree with new ages
     ages = _decode_age_params(
-        current_params[1:], ages_init, ages_idxs, ages_bounds, children_map,
-        dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+        current_params[1:],
+        ages_init,
+        ages_idxs,
+        ages_bounds,
+        children_map,
+        dist_floor=DIST_FLOOR,
+        age_upper_switch=AGE_UPPER_SWITCH,
     )
     tree = tree.set_node_data("height", ages, inplace=inplace)
     rate = float(_unpack_log_rates(current_params[:1])[0])
@@ -317,15 +352,25 @@ def objective_clock(
         assert params.size == ages_idxs.size
         rate_hat = rate
         ages_hat = _decode_age_params(
-            params, ages_base, ages_idxs, ages_bounds, children_map,
-            dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+            params,
+            ages_base,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            dist_floor=DIST_FLOOR,
+            age_upper_switch=AGE_UPPER_SWITCH,
         )
     # [RATE] optimize rate while keeping ages fixed
     elif fixed_ages and not fixed_rate:
         assert params.size == 1
         ages_hat = _decode_age_params(
-            age_params, ages_base, ages_idxs, ages_bounds, children_map,
-            dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+            age_params,
+            ages_base,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            dist_floor=DIST_FLOOR,
+            age_upper_switch=AGE_UPPER_SWITCH,
         )
         rate_hat = _unpack_log_rates(params)
     # joint optimize rate and ages
@@ -333,20 +378,28 @@ def objective_clock(
         assert params.size == ages_idxs.size + 1
         rate_hat = _unpack_log_rates(params[:1])
         ages_hat = _decode_age_params(
-            params[1:], ages_base, ages_idxs, ages_bounds, children_map,
-            dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+            params[1:],
+            ages_base,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            dist_floor=DIST_FLOOR,
+            age_upper_switch=AGE_UPPER_SWITCH,
         )
     return -log_likelihood_poisson(rate_hat, ages_hat, edges, edata, valid_loglik)
 
 
 if __name__ == "__main__":
+    import numpy as np
 
     import toytree
-    import numpy as np
+
     toytree.set_log_level("DEBUG")
 
     tree = get_tree_with_categorical_rates(ntips=50, nrates=1, seed=123)
-    res = edges_make_ultrametric_pl_clock(tree, calibrations={-1: 50}, full=True, max_fun=1e6, max_iter=1e6, max_refine=50)
+    res = edges_make_ultrametric_pl_clock(
+        tree, calibrations={-1: 50}, full=True, max_fun=1e6, max_iter=1e6, max_refine=50
+    )
     print(res)
 
     # c1, _, _ = tree.draw(ts='s', use_edge_lengths=True, scale_bar=True)

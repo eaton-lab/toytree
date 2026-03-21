@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
 
+from conftest import PytestCompat
+
 import toytree
 
-
-
-from conftest import PytestCompat
 
 class TestRelabel(PytestCompat):
     def setUp(self):
@@ -70,7 +69,9 @@ class TestRelabel(PytestCompat):
             self.tree.relabel(fn="not_callable", inplace=False)
 
     def test_italic_and_bold_apply_last(self):
-        new = self.tree.relabel(delim="-", delim_idxs=0, fn=str.upper, italic=True, bold=True, inplace=False)
+        new = self.tree.relabel(
+            delim="-", delim_idxs=0, fn=str.upper, italic=True, bold=True, inplace=False
+        )
         self.assertEqual(new[0].name, "<b><i>A</i></b>")
         self.assertEqual(new[1].name, "<b><i>B</i></b>")
 
@@ -78,5 +79,3 @@ class TestRelabel(PytestCompat):
         tre = self.tree.set_node_data("name", {0: "<b><i>a-1</i></b>"}, inplace=False)
         new = tre.relabel(queries=[0], italic=True, bold=True, inplace=False)
         self.assertEqual(new[0].name, "<b><i>a-1</i></b>")
-
-

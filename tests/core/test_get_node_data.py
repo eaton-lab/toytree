@@ -1,27 +1,22 @@
 #!/usr/bin/env python
 
-"""Test cases for `ToyTree.set_node_data`
-
-"""
+"""Test cases for `ToyTree.set_node_data`"""
 
 import numpy as np
+from conftest import PytestCompat
+
 import toytree
 
-
-
-from conftest import PytestCompat
 
 class TestToyTreeGetNodeData(PytestCompat):
     def setUp(self):
         self.tree = toytree.rtree.imbtree(ntips=10, treeheight=10, seed=123)
 
-        colors = {0: 'red', 1: 'green', 2: 'orange'}
+        colors = {0: "red", 1: "green", 2: "orange"}
         ints = {0: 3, 1: 2, 2: 0}
-        floats = {0: 2e-9, 1: 3.03253859, 2: 10 / 3.}
+        floats = {0: 2e-9, 1: 3.03253859, 2: 10 / 3.0}
         mixed = {0: "red", 1: 3.03253859, 2: 0}
-        complex_types = {
-            0: {"red", "blue"}, 1: [3.03253859, 2.0], 2: np.array([0, 1])
-        }
+        complex_types = {0: {"red", "blue"}, 1: [3.03253859, 2.0], 2: np.array([0, 1])}
 
         self.tree.set_node_data("colors", colors, inplace=True)
         self.tree.set_node_data("ints", ints, inplace=True)
@@ -32,5 +27,3 @@ class TestToyTreeGetNodeData(PytestCompat):
     def test_todo(self):
         """Create tests..."""
         print(self.tree.get_node_data("complex_types"))
-
-

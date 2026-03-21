@@ -1,27 +1,28 @@
 #!/usr/bin/env python
 
-from typing import Any, Union
 from itertools import cycle
-from loguru import logger
+from typing import Any, Union
+
 import numpy as np
+from loguru import logger
+from scipy import stats
 from scipy.optimize import minimize
 from scipy.special import gammaln
-from scipy import stats
+
 from toytree.core import ToyTree
 from toytree.mod._src.penalized_likelihood.pl_utils import (
+    Calibrations,
+    _decode_age_params,
+    _encode_age_params,
+    _get_children_map_from_edges,
     _get_init_ages,
     _get_params_bounds,
     _pack_log_rates,
-    _unpack_log_rates,
-    _get_children_map_from_edges,
-    _encode_age_params,
-    _decode_age_params,
     _run_multistart,
     _select_best_multistart,
+    _unpack_log_rates,
     get_tree_with_uncorrelated_relaxed_rates,
-    Calibrations,
 )
-
 
 __all__ = ["edges_make_ultrametric_pl_relaxed"]
 
@@ -29,8 +30,6 @@ RATE_FLOOR = 1e-12
 DIST_FLOOR = 1e-12
 INVALID_LOG_LIK_DROP = 1e6
 AGE_UPPER_SWITCH = 1e6
-
-from toytree.core.apis import TreeModAPI, add_subpackage_method
 
 
 def _fit_relaxed_start(payload: dict[str, Any]) -> dict[str, Any]:
@@ -54,19 +53,51 @@ def _fit_relaxed_start(payload: dict[str, Any]) -> dict[str, Any]:
     fit = minimize(
         fun=objective_relaxed,
         x0=params,
-        args=(False, False, rates_init, age_params_init, ages_init, ages_idxs, ages_bounds, children_map, edges, edata, lam, valid_loglik),
+        args=(
+            False,
+            False,
+            rates_init,
+            age_params_init,
+            ages_init,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            edges,
+            edata,
+            lam,
+            valid_loglik,
+        ),
         method="L-BFGS-B",
         bounds=bounds,
         options=dict(maxiter=int(max_iter), maxfun=int(max_fun)),
     )
     if not fit.success:
         rng = np.random.default_rng(123 + start)
-        rates_seed = np.clip(rates_init * np.exp(rng.normal(0.0, 0.25, size=rates_init.size)), RATE_FLOOR, None)
-        params_seed = np.hstack([_pack_log_rates(rates_seed, rate_floor=RATE_FLOOR), age_params_init])
+        rates_seed = np.clip(
+            rates_init * np.exp(rng.normal(0.0, 0.25, size=rates_init.size)),
+            RATE_FLOOR,
+            None,
+        )
+        params_seed = np.hstack(
+            [_pack_log_rates(rates_seed, rate_floor=RATE_FLOOR), age_params_init]
+        )
         refit = minimize(
             fun=objective_relaxed,
             x0=params_seed,
-            args=(False, False, rates_seed, age_params_init, ages_init, ages_idxs, ages_bounds, children_map, edges, edata, lam, valid_loglik),
+            args=(
+                False,
+                False,
+                rates_seed,
+                age_params_init,
+                ages_init,
+                ages_idxs,
+                ages_bounds,
+                children_map,
+                edges,
+                edata,
+                lam,
+                valid_loglik,
+            ),
             method="L-BFGS-B",
             bounds=bounds,
             options=dict(maxiter=int(max_iter), maxfun=int(max_fun)),
@@ -88,7 +119,7 @@ def _fit_relaxed_start(payload: dict[str, Any]) -> dict[str, Any]:
         fixed = next(iter_fixed)
         fbools, fslice = fix_dict[fixed]
         rates_hat = _unpack_log_rates(current_params[:rsize])
-        age_params_hat = current_params[rsize:rsize + asize]
+        age_params_hat = current_params[rsize : rsize + asize]
         args = fbools + (
             rates_hat,
             age_params_hat,
@@ -221,14 +252,23 @@ def edges_make_ultrametric_pl_relaxed(
         for (lo, hi) in rates_bounds
     ]
     age_params_init = _encode_age_params(
-        ages_init, ages_idxs, ages_bounds, children_map, dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+        ages_init,
+        ages_idxs,
+        ages_bounds,
+        children_map,
+        dist_floor=DIST_FLOOR,
+        age_upper_switch=AGE_UPPER_SWITCH,
     )
     bounds = rates_bounds + [(None, None)] * age_params_init.size
 
     # get loglik at a valid starting params to scale neg dist penalty
-    valid_loglik = log_likelihood_poisson_relaxed(rates_init, ages_init, edges, edata, lam, None)
+    valid_loglik = log_likelihood_poisson_relaxed(
+        rates_init, ages_init, edges, edata, lam, None
+    )
 
-    params = np.hstack([_pack_log_rates(rates_init, rate_floor=RATE_FLOOR), age_params_init])
+    params = np.hstack(
+        [_pack_log_rates(rates_init, rate_floor=RATE_FLOOR), age_params_init]
+    )
     nstarts = max(1, int(nstarts))
     ncores = max(1, int(ncores))
     rng = np.random.default_rng(seed)
@@ -240,7 +280,7 @@ def edges_make_ultrametric_pl_relaxed(
         if start:
             sparams[:rsize] += rng.normal(0.0, 0.25, size=rsize)
             if asize:
-                sparams[rsize:rsize + asize] += rng.normal(0.0, 0.25, size=asize)
+                sparams[rsize : rsize + asize] += rng.normal(0.0, 0.25, size=asize)
         payloads.append(
             dict(
                 start=start,
@@ -272,7 +312,13 @@ def edges_make_ultrametric_pl_relaxed(
 
     # transform tree with new ages
     ages = _decode_age_params(
-        current_params[rsize:rsize + asize], ages_init, ages_idxs, ages_bounds, children_map, dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+        current_params[rsize : rsize + asize],
+        ages_init,
+        ages_idxs,
+        ages_bounds,
+        children_map,
+        dist_floor=DIST_FLOOR,
+        age_upper_switch=AGE_UPPER_SWITCH,
     )
     tree = tree.set_node_data("height", ages, inplace=inplace)
 
@@ -280,14 +326,18 @@ def edges_make_ultrametric_pl_relaxed(
     rates = _unpack_log_rates(current_params[:rsize])
 
     # Final fit for PHIIC calculation (Penalized Hierarchical Information Criterion)
-    loglik = log_likelihood_poisson_relaxed(rates, ages, edges, edata, lam, valid_loglik)
+    loglik = log_likelihood_poisson_relaxed(
+        rates, ages, edges, edata, lam, valid_loglik
+    )
     k = len(bounds)
     PHIIC = -2 * loglik + 2 * k
 
     # return as a tree or a dict
     if not full:
         return tree
-    raw_loglik = log_likelihood_poisson_relaxed(rates, ages, edges, edata, 0.0, valid_loglik)
+    raw_loglik = log_likelihood_poisson_relaxed(
+        rates, ages, edges, edata, 0.0, valid_loglik
+    )
     penalty = _relaxed_penalty(rates)
     return {
         "loglik": loglik,
@@ -323,7 +373,9 @@ def _relaxed_penalty(rates_hat: np.ndarray) -> float:
     return float(np.sum((ecdf - pcdf) ** 2))
 
 
-def log_likelihood_poisson_relaxed(rates_hat, ages_hat, edges, edata, lam, valid_loglik) -> float:
+def log_likelihood_poisson_relaxed(
+    rates_hat, ages_hat, edges, edata, lam, valid_loglik
+) -> float:
     """Return the penalized log-likelihood of the relaxed model."""
     if valid_loglik is None:
         valid_loglik = -1.0
@@ -371,7 +423,13 @@ def objective_relaxed(
     if fixed_ages and not fixed_rates:
         assert params.size == rates.size
         ages_hat = _decode_age_params(
-            age_params, ages_base, ages_idxs, ages_bounds, children_map, dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+            age_params,
+            ages_base,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            dist_floor=DIST_FLOOR,
+            age_upper_switch=AGE_UPPER_SWITCH,
         )
         rates_hat = _unpack_log_rates(params)
     # [AGES] optimize ages while keeping rates fixed
@@ -379,27 +437,50 @@ def objective_relaxed(
         assert params.size == ages_idxs.size
         rates_hat = rates
         ages_hat = _decode_age_params(
-            params, ages_base, ages_idxs, ages_bounds, children_map, dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+            params,
+            ages_base,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            dist_floor=DIST_FLOOR,
+            age_upper_switch=AGE_UPPER_SWITCH,
         )
     # joint optimize rates and ages
     else:
         assert params.size == ages_idxs.size + rates.size
-        rates_hat = _unpack_log_rates(params[:rates.size])
+        rates_hat = _unpack_log_rates(params[: rates.size])
         ages_hat = _decode_age_params(
-            params[rates.size:], ages_base, ages_idxs, ages_bounds, children_map, dist_floor=DIST_FLOOR, age_upper_switch=AGE_UPPER_SWITCH
+            params[rates.size :],
+            ages_base,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            dist_floor=DIST_FLOOR,
+            age_upper_switch=AGE_UPPER_SWITCH,
         )
-    return -log_likelihood_poisson_relaxed(rates_hat, ages_hat, edges, edata, lam, valid_loglik)
+    return -log_likelihood_poisson_relaxed(
+        rates_hat, ages_hat, edges, edata, lam, valid_loglik
+    )
 
 
 if __name__ == "__main__":
+    import numpy as np
 
     import toytree
-    import numpy as np
+
     toytree.set_log_level("DEBUG")
 
     tree = get_tree_with_uncorrelated_relaxed_rates(ntips=50, mean=3, sigma=3, seed=123)
-    res = edges_make_ultrametric_pl_relaxed(tree, lam=0.5, calibrations={-1: 50}, full=True, max_fun=1e6, max_iter=1e6, max_refine=50)
+    res = edges_make_ultrametric_pl_relaxed(
+        tree,
+        lam=0.5,
+        calibrations={-1: 50},
+        full=True,
+        max_fun=1e6,
+        max_iter=1e6,
+        max_refine=50,
+    )
     print(res)
 
     tree._draw_browser(tmpdir="~")
-    res['tree']._draw_browser(tmpdir="~")
+    res["tree"]._draw_browser(tmpdir="~")
