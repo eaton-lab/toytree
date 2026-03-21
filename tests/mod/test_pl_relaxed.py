@@ -1,5 +1,5 @@
-
 import numpy as np
+from conftest import PytestCompat
 
 from toytree.mod._src.penalized_likelihood.pl_relaxed import (
     edges_make_ultrametric_pl_relaxed,
@@ -9,12 +9,11 @@ from toytree.mod._src.penalized_likelihood.pl_utils import (
 )
 
 
-
-from conftest import PytestCompat
-
 class TestPenalizedLikelihoodRelaxed(PytestCompat):
     def test_relaxed_pl_makes_ultrametric(self):
-        tree = get_tree_with_uncorrelated_relaxed_rates(ntips=10, mean=3, sigma=3, seed=123)
+        tree = get_tree_with_uncorrelated_relaxed_rates(
+            ntips=10, mean=3, sigma=3, seed=123
+        )
         result = edges_make_ultrametric_pl_relaxed(
             tree,
             lam=0.5,
@@ -26,8 +25,6 @@ class TestPenalizedLikelihoodRelaxed(PytestCompat):
         )
         new_tree = result["tree"]
         heights = new_tree.get_node_data("height").values
-        tip_heights = heights[:new_tree.ntips]
+        tip_heights = heights[: new_tree.ntips]
         self.assertTrue(np.allclose(tip_heights, tip_heights[0]))
         self.assertIn("penalty", result)
-
-

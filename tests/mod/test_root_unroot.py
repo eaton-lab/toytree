@@ -17,18 +17,21 @@ Uses get_mrca_node(*query) to get new root edge.
 """
 
 import numpy as np
+from conftest import PytestCompat
+
 import toytree
 from toytree.utils import ToytreeError
 
 
-
-from conftest import PytestCompat
-
 class TestRoot(PytestCompat):
     def setUp(self):
-        self.czech = toytree.io.parse_newick_string("((C,D)1,(A,(B,X)3)2,E)R;", internal_labels="name")
+        self.czech = toytree.io.parse_newick_string(
+            "((C,D)1,(A,(B,X)3)2,E)R;", internal_labels="name"
+        )
         """: Example dataset with inner labels as edge data."""
-        self.supp = toytree.tree("(a,b,((c,d)CD[&support=100],(e,f)EF[&support=80])X[&support=90])AB;")
+        self.supp = toytree.tree(
+            "(a,b,((c,d)CD[&support=100],(e,f)EF[&support=80])X[&support=90])AB;"
+        )
         """: Tree w/ internal names and supports"""
         self.itree = toytree.rtree.imbtree(10, seed=123, treeheight=10)
         self.btree = toytree.rtree.baltree(10, seed=123, treeheight=10)
@@ -39,27 +42,28 @@ class TestRoot(PytestCompat):
         """Edge features are transferred on re-rooting."""
         # set a color feature to Nodes as 'ecolor' and 'ncolor' where
         # only ecolor will be treated as an edge feature.
-        colors = {'1': 'red', '2': 'green', '3': 'orange'}
+        colors = {"1": "red", "2": "green", "3": "orange"}
         tree = self.czech
         tree.set_node_data("ecolor", colors, inplace=True)
         tree.set_node_data("ncolor", colors, inplace=True)
 
         # style to draw the tree (used in docs example)
         kwargs = {
-            'layout': 'd',
-            'use_edge_lengths': False,
-            'node_sizes': 10,
-            'node_labels': 'name',
-            'node_labels_style': {
-                'font-size': 20,
-                'baseline-shift': 10,
-                '-toyplot-anchor-shift': 10,
-            }}
+            "layout": "d",
+            "use_edge_lengths": False,
+            "node_sizes": 10,
+            "node_labels": "name",
+            "node_labels_style": {
+                "font-size": 20,
+                "baseline-shift": 10,
+                "-toyplot-anchor-shift": 10,
+            },
+        }
 
         # draw original tree
         tree.draw(
-            node_colors=tree.get_node_data('ncolor', missing='black'),
-            edge_colors=tree.get_node_data('ecolor', missing='black'),
+            node_colors=tree.get_node_data("ncolor", missing="black"),
+            edge_colors=tree.get_node_data("ecolor", missing="black"),
             **kwargs,
         )
 
@@ -67,8 +71,8 @@ class TestRoot(PytestCompat):
         # feature.
         rtree = tree.root("X", edge_features=["ecolor"])
         rtree.draw(
-            node_colors=rtree.get_node_data('ncolor', missing='black'),
-            edge_colors=rtree.get_node_data('ecolor', missing='black'),
+            node_colors=rtree.get_node_data("ncolor", missing="black"),
+            edge_colors=rtree.get_node_data("ecolor", missing="black"),
             **kwargs,
         )
 
@@ -99,27 +103,25 @@ class TestRoot(PytestCompat):
         """
         s1 = self.supp
         s2 = s1.root("EF")  # unroot -> root
-        s3 = s2.unroot()    # root -> unroot
+        s3 = s2.unroot()  # root -> unroot
         s4 = s3.root("AB")  # diff unroot to diff root
         s5 = s4.root("EF")  # root -> diff root
 
         # for each internal Node in the original tree
-        for inode in s1[s1.ntips:-1]:
-
+        for inode in s1[s1.ntips : -1]:
             # get the descendants
             tips = inode.get_leaf_names()
             # print(f"tips={tips}")
 
             # for each unrooted or re-rooted tree
             for tree in (s1, s2, s3, s4, s5):
-
                 # get tips mrca on the new tree
                 mrca = tree.get_mrca_node(*tips)
 
                 # check that node has same support value still
                 if mrca.is_root():
                     clade = tree.get_ancestors(*tips)
-                    other = tree.get_mrca_node(*set(tree[:tree.ntips]) - set(clade))
+                    other = tree.get_mrca_node(*set(tree[: tree.ntips]) - set(clade))
                     # print(f"mrca={mrca} root {other}")
                     self.assertEqual(inode.support, other.support)
                 else:
@@ -182,15 +184,12 @@ class TestRoot(PytestCompat):
     def test_root_dist_user_setting(self):
         """The root_dist arg can be set by the user."""
 
-
-
     # def test_root_rooted_tree_on_current_root(self):
     #     """User attempts to root tree on current root or one of its children."""
     #     for tre in self.trees:
     #         new1 = tre.root(tre.treenode)
     #         new2 = tre.root(tre.treenode.children[0])
     #         new3 = tre.root(tre.treenode.children[1])
-
 
     # def test_root_tree_single_tip(self):
     #     """..."""
@@ -228,6 +227,3 @@ class TestRoot(PytestCompat):
     #         tre[0].feature1 = 3.0
     #         tre[1].feature2 = "A"
     #         tre.root('r0', "r3", edge_features=["feature1", "feature2"])
-
-
-

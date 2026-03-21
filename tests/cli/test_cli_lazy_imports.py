@@ -72,6 +72,22 @@ print("JSON:" + json.dumps(sorted(heavy)))
     assert heavy == []
 
 
+def test_import_toytree_annotate_stays_lightweight():
+    """Importing the annotate package should not import toyplot eagerly."""
+    code = r"""
+import json
+import sys
+import toytree.annotate  # noqa: F401
+mods = [
+    i for i in sys.modules
+    if i.startswith("toyplot") or i.startswith("toytree.drawing")
+]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    mods = _parse_heavy_list(_run_python(code))
+    assert mods == []
+
+
 def test_import_core_multitree_stays_lightweight():
     """Importing `toytree.core.multitree` should avoid heavy draw deps."""
     code = r"""
@@ -182,6 +198,30 @@ mods = [
         or i == "toytree.utils.src.exceptions"
         or i == "toytree.utils.src.scrollable_canvas"
         or i == "toytree.utils.src.style_axes"
+    )
+]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    mods = _parse_heavy_list(_run_python(code))
+    assert mods == []
+
+
+def test_tree_copy_and_root_avoid_plotting_stack_imports():
+    """Copying and rooting trees should not import annotate/drawing/toyplot."""
+    code = r"""
+import json
+import sys
+import toytree
+
+tree = toytree.tree("((a,b),c);")
+_ = tree.copy()
+_ = tree.root("a")
+mods = [
+    i for i in sys.modules
+    if (
+        i.startswith("toyplot")
+        or i.startswith("toytree.annotate")
+        or i.startswith("toytree.drawing")
     )
 ]
 print("JSON:" + json.dumps(sorted(mods)))

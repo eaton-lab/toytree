@@ -1,5 +1,5 @@
-
 import numpy as np
+from conftest import PytestCompat
 
 from toytree.mod._src.penalized_likelihood.pl_utils import (
     _decode_age_params,
@@ -9,9 +9,6 @@ from toytree.mod._src.penalized_likelihood.pl_utils import (
     _unpack_log_rates,
 )
 
-
-
-from conftest import PytestCompat
 
 class TestPenalizedLikelihoodUtils(PytestCompat):
     def test_pack_unpack_log_rates_roundtrip_with_floor(self):
@@ -34,7 +31,9 @@ class TestPenalizedLikelihoodUtils(PytestCompat):
         ages_bounds = [(0.01, 1e9), (0.02, 1e9)]
         ages = np.array([0.0, 0.0, 0.0, 0.4, 0.9], dtype=float)
         params = _encode_age_params(ages, ages_idxs, ages_bounds, cmap)
-        decoded = _decode_age_params(params, np.zeros_like(ages), ages_idxs, ages_bounds, cmap)
+        decoded = _decode_age_params(
+            params, np.zeros_like(ages), ages_idxs, ages_bounds, cmap
+        )
         self.assertTrue(np.allclose(decoded[ages_idxs], ages[ages_idxs], atol=1e-8))
         self.assertGreater(decoded[4], decoded[3])
 
@@ -60,5 +59,3 @@ class TestPenalizedLikelihoodUtils(PytestCompat):
         # bounded transforms should respect calibration upper bounds
         self.assertLessEqual(decoded[3], 0.25)
         self.assertLessEqual(decoded[4], 0.3)
-
-

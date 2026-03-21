@@ -4,8 +4,8 @@
 
 from __future__ import annotations
 
-from toytree.cli.main import setup_parsers
 from toytree.cli import subparsers
+from toytree.cli.main import setup_parsers
 
 
 def test_main_parser_uses_single_metavar_formatter():
@@ -24,4 +24,6 @@ def test_all_subcommand_parsers_use_single_metavar_formatter():
     assert parser_fns
     for parser_fn in parser_fns:
         parser = parser_fn()
-        assert isinstance(parser._get_formatter(), subparsers.SingleMetavarHelpFormatter)
+        assert isinstance(
+            parser._get_formatter(), subparsers.SingleMetavarHelpFormatter
+        )

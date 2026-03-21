@@ -25,9 +25,7 @@ from ._subparser_helpers import parse_bool, parse_bool_or_feature, parse_node_ma
 
 TMPDIR = gettempdir()
 SINGLE_TREE_INPUT_HELP = "tree input: file/path/url/newick; '-' or piped stdin"
-BINARY_OUTPUT_HELP = (
-    "write ToyTree in binary for faster piping with large trees"
-)
+BINARY_OUTPUT_HELP = "write ToyTree in binary for faster piping with large trees"
 
 
 class SingleMetavarHelpFormatter(RawDescriptionHelpFormatter):

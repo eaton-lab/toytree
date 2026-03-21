@@ -6,12 +6,11 @@
 - iter_quartets
 """
 
+from conftest import PytestCompat
+
 import toytree
 from toytree.enum import iter_bipartitions
 
-
-
-from conftest import PytestCompat
 
 class TestBipartitions(PytestCompat):
     def setUp(self):
@@ -25,57 +24,64 @@ class TestBipartitions(PytestCompat):
         """Bipartitions (left, right) for each edge in tree."""
         biparts = sorted(iter_bipartitions(self.tree1))
         BIPARTS = [
-            ({'c', 'd'}, {'a', 'b', 'e', 'f'}),
-            ({'e', 'f'}, {'a', 'b', 'c', 'd'}),
-            ({'c', 'd', 'e', 'f'}, {'a', 'b'}),
+            ({"c", "d"}, {"a", "b", "e", "f"}),
+            ({"e", "f"}, {"a", "b", "c", "d"}),
+            ({"c", "d", "e", "f"}, {"a", "b"}),
         ]
         self.assertEqual(biparts, BIPARTS)
 
         biparts = sorted(iter_bipartitions(self.tree1, sort=True))
         BIPARTS = [
-            ({'c', 'd'}, {'a', 'b', 'e', 'f'}),
-            ({'e', 'f'}, {'a', 'b', 'c', 'd'}),
-            ({'a', 'b'}, {'c', 'd', 'e', 'f'}),
+            ({"c", "d"}, {"a", "b", "e", "f"}),
+            ({"e", "f"}, {"a", "b", "c", "d"}),
+            ({"a", "b"}, {"c", "d", "e", "f"}),
         ]
         self.assertEqual(biparts, BIPARTS)
 
         biparts = sorted(iter_bipartitions(self.tree1, sort=True))
         BIPARTS = [
-            ({'c', 'd'}, {'a', 'b', 'e', 'f'}),
-            ({'e', 'f'}, {'a', 'b', 'c', 'd'}),
-            ({'a', 'b'}, {'c', 'd', 'e', 'f'}),
+            ({"c", "d"}, {"a", "b", "e", "f"}),
+            ({"e", "f"}, {"a", "b", "c", "d"}),
+            ({"a", "b"}, {"c", "d", "e", "f"}),
         ]
         self.assertEqual(biparts, BIPARTS)
 
         biparts = sorted(iter_bipartitions(self.tree1, include_internal_nodes=True))
         BIPARTS = [
-            ({'CD', 'c', 'd'}, {'AB', 'EF', 'X', 'a', 'b', 'e', 'f'}),
-            ({'EF', 'e', 'f'}, {'AB', 'CD', 'X', 'a', 'b', 'c', 'd'}),
-            ({'CD', 'EF', 'X', 'c', 'd', 'e', 'f'}, {'AB', 'a', 'b'}),
+            ({"CD", "c", "d"}, {"AB", "EF", "X", "a", "b", "e", "f"}),
+            ({"EF", "e", "f"}, {"AB", "CD", "X", "a", "b", "c", "d"}),
+            ({"CD", "EF", "X", "c", "d", "e", "f"}, {"AB", "a", "b"}),
         ]
         self.assertEqual(biparts, BIPARTS)
 
-        biparts = sorted(iter_bipartitions(self.tree1, include_internal_nodes=True, sort=True))
+        biparts = sorted(
+            iter_bipartitions(self.tree1, include_internal_nodes=True, sort=True)
+        )
         BIPARTS = [
-            ({'CD', 'c', 'd'}, {'AB', 'EF', 'X', 'a', 'b', 'e', 'f'}),
-            ({'EF', 'e', 'f'}, {'AB', 'CD', 'X', 'a', 'b', 'c', 'd'}),
-            ({'AB', 'a', 'b'}, {'CD', 'EF', 'X', 'c', 'd', 'e', 'f'}),
+            ({"CD", "c", "d"}, {"AB", "EF", "X", "a", "b", "e", "f"}),
+            ({"EF", "e", "f"}, {"AB", "CD", "X", "a", "b", "c", "d"}),
+            ({"AB", "a", "b"}, {"CD", "EF", "X", "c", "d", "e", "f"}),
         ]
         self.assertEqual(biparts, BIPARTS)
 
-        biparts = sorted(iter_bipartitions(
-            self.tree1, include_internal_nodes=True,
-            include_singleton_partitions=True, sort=True))
+        biparts = sorted(
+            iter_bipartitions(
+                self.tree1,
+                include_internal_nodes=True,
+                include_singleton_partitions=True,
+                sort=True,
+            )
+        )
         BIPARTS = [
-            ({'a'}, {'AB', 'CD', 'EF', 'X', 'b', 'c', 'd', 'e', 'f'}),
-            ({'b'}, {'AB', 'CD', 'EF', 'X', 'a', 'c', 'd', 'e', 'f'}),
-            ({'c'}, {'AB', 'CD', 'EF', 'X', 'a', 'b', 'd', 'e', 'f'}),
-            ({'d'}, {'AB', 'CD', 'EF', 'X', 'a', 'b', 'c', 'e', 'f'}),
-            ({'e'}, {'AB', 'CD', 'EF', 'X', 'a', 'b', 'c', 'd', 'f'}),
-            ({'f'}, {'AB', 'CD', 'EF', 'X', 'a', 'b', 'c', 'd', 'e'}),
-            ({'CD', 'c', 'd'}, {'AB', 'EF', 'X', 'a', 'b', 'e', 'f'}),
-            ({'EF', 'e', 'f'}, {'AB', 'CD', 'X', 'a', 'b', 'c', 'd'}),
-            ({'AB', 'a', 'b'}, {'CD', 'EF', 'X', 'c', 'd', 'e', 'f'}),
+            ({"a"}, {"AB", "CD", "EF", "X", "b", "c", "d", "e", "f"}),
+            ({"b"}, {"AB", "CD", "EF", "X", "a", "c", "d", "e", "f"}),
+            ({"c"}, {"AB", "CD", "EF", "X", "a", "b", "d", "e", "f"}),
+            ({"d"}, {"AB", "CD", "EF", "X", "a", "b", "c", "e", "f"}),
+            ({"e"}, {"AB", "CD", "EF", "X", "a", "b", "c", "d", "f"}),
+            ({"f"}, {"AB", "CD", "EF", "X", "a", "b", "c", "d", "e"}),
+            ({"CD", "c", "d"}, {"AB", "EF", "X", "a", "b", "e", "f"}),
+            ({"EF", "e", "f"}, {"AB", "CD", "X", "a", "b", "c", "d"}),
+            ({"AB", "a", "b"}, {"CD", "EF", "X", "c", "d", "e", "f"}),
         ]
         self.assertEqual(biparts, BIPARTS)
 
@@ -85,48 +91,62 @@ class TestBipartitions(PytestCompat):
         """
         biparts = sorted(iter_bipartitions(self.tree1, type=tuple))
         BIPARTS = [
-            (('c', 'd'), ('a', 'b', 'e', 'f')),
-            (('c', 'd', 'e', 'f'), ('a', 'b')),
-            (('e', 'f'), ('a', 'b', 'c', 'd')),
+            (("c", "d"), ("a", "b", "e", "f")),
+            (("c", "d", "e", "f"), ("a", "b")),
+            (("e", "f"), ("a", "b", "c", "d")),
         ]
         self.assertEqual(biparts, BIPARTS)
 
         biparts = sorted(iter_bipartitions(self.tree1, sort=True, type=tuple))
         BIPARTS = [
-            (('a', 'b'), ('c', 'd', 'e', 'f')),
-            (('c', 'd'), ('a', 'b', 'e', 'f')),
-            (('e', 'f'), ('a', 'b', 'c', 'd')),
+            (("a", "b"), ("c", "d", "e", "f")),
+            (("c", "d"), ("a", "b", "e", "f")),
+            (("e", "f"), ("a", "b", "c", "d")),
         ]
         self.assertEqual(biparts, BIPARTS)
 
-        biparts = sorted(iter_bipartitions(self.tree1, type=tuple, include_internal_nodes=True))
+        biparts = sorted(
+            iter_bipartitions(self.tree1, type=tuple, include_internal_nodes=True)
+        )
         BIPARTS = [
-            (('c', 'd', 'CD'), ('a', 'b', 'e', 'f', 'EF', 'X', 'AB')),
-            (('c', 'd', 'CD', 'e', 'f', 'EF', 'X'), ('a', 'b', 'AB')),
-            (('e', 'f', 'EF'), ('a', 'b', 'c', 'd', 'CD', 'X', 'AB'))]
-        self.assertEqual(biparts, BIPARTS)
-
-        biparts = sorted(iter_bipartitions(self.tree1, type=tuple, include_internal_nodes=True, sort=True))
-        BIPARTS = [
-            (('a', 'b', 'AB'), ('c', 'd', 'CD', 'e', 'f', 'EF', 'X')),
-            (('c', 'd', 'CD'), ('a', 'b', 'e', 'f', 'EF', 'X', 'AB')),
-            (('e', 'f', 'EF'), ('a', 'b', 'c', 'd', 'CD', 'X', 'AB')),
+            (("c", "d", "CD"), ("a", "b", "e", "f", "EF", "X", "AB")),
+            (("c", "d", "CD", "e", "f", "EF", "X"), ("a", "b", "AB")),
+            (("e", "f", "EF"), ("a", "b", "c", "d", "CD", "X", "AB")),
         ]
         self.assertEqual(biparts, BIPARTS)
 
-        biparts = sorted(iter_bipartitions(
-            self.tree1, type=tuple, include_internal_nodes=True,
-            include_singleton_partitions=True, sort=True))
+        biparts = sorted(
+            iter_bipartitions(
+                self.tree1, type=tuple, include_internal_nodes=True, sort=True
+            )
+        )
         BIPARTS = [
-            (('a',), ('b', 'c', 'd', 'CD', 'e', 'f', 'EF', 'X', 'AB')),
-            (('a', 'b', 'AB'), ('c', 'd', 'CD', 'e', 'f', 'EF', 'X')),
-            (('b',), ('a', 'c', 'd', 'CD', 'e', 'f', 'EF', 'X', 'AB')),
-            (('c',), ('a', 'b', 'd', 'CD', 'e', 'f', 'EF', 'X', 'AB')),
-            (('c', 'd', 'CD'), ('a', 'b', 'e', 'f', 'EF', 'X', 'AB')),
-            (('d',), ('a', 'b', 'c', 'CD', 'e', 'f', 'EF', 'X', 'AB')),
-            (('e',), ('a', 'b', 'c', 'd', 'CD', 'f', 'EF', 'X', 'AB')),
-            (('e', 'f', 'EF'), ('a', 'b', 'c', 'd', 'CD', 'X', 'AB')),
-            (('f',), ('a', 'b', 'c', 'd', 'CD', 'e', 'EF', 'X', 'AB'))]
+            (("a", "b", "AB"), ("c", "d", "CD", "e", "f", "EF", "X")),
+            (("c", "d", "CD"), ("a", "b", "e", "f", "EF", "X", "AB")),
+            (("e", "f", "EF"), ("a", "b", "c", "d", "CD", "X", "AB")),
+        ]
+        self.assertEqual(biparts, BIPARTS)
+
+        biparts = sorted(
+            iter_bipartitions(
+                self.tree1,
+                type=tuple,
+                include_internal_nodes=True,
+                include_singleton_partitions=True,
+                sort=True,
+            )
+        )
+        BIPARTS = [
+            (("a",), ("b", "c", "d", "CD", "e", "f", "EF", "X", "AB")),
+            (("a", "b", "AB"), ("c", "d", "CD", "e", "f", "EF", "X")),
+            (("b",), ("a", "c", "d", "CD", "e", "f", "EF", "X", "AB")),
+            (("c",), ("a", "b", "d", "CD", "e", "f", "EF", "X", "AB")),
+            (("c", "d", "CD"), ("a", "b", "e", "f", "EF", "X", "AB")),
+            (("d",), ("a", "b", "c", "CD", "e", "f", "EF", "X", "AB")),
+            (("e",), ("a", "b", "c", "d", "CD", "f", "EF", "X", "AB")),
+            (("e", "f", "EF"), ("a", "b", "c", "d", "CD", "X", "AB")),
+            (("f",), ("a", "b", "c", "d", "CD", "e", "EF", "X", "AB")),
+        ]
         self.assertEqual(biparts, BIPARTS)
 
     def test_iter_bipartitions_root_equality(self):
@@ -135,5 +155,3 @@ class TestBipartitions(PytestCompat):
         b3 = set(self.tree3.iter_bipartitions(type=tuple))
         self.assertEqual(b1, b2)
         self.assertEqual(b2, b3)
-
-

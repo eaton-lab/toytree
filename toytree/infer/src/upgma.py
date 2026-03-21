@@ -1,14 +1,13 @@
 #!/usr/bin/env python
 
-"""Infer a tree from a distance matrix using UPGMA clustering.
-
-"""
+"""Infer a tree from a distance matrix using UPGMA clustering."""
 
 import sys
+
 import numpy as np
 import pandas as pd
-import toytree
 
+import toytree
 
 __all__ = ["upgma_tree"]
 
@@ -42,7 +41,10 @@ def upgma_tree(data: pd.DataFrame | np.ndarray) -> toytree.ToyTree:
     # get names index from df or arr, do not allow replicate names
     index = data.index if isinstance(data, pd.DataFrame) else range(data.shape[0])
     if len(index) != len(set(index)):
-        print("identical names found in data, using int indices for upgma tree", file=sys.stderr)
+        print(
+            "identical names found in data, using int indices for upgma tree",
+            file=sys.stderr,
+        )
         index = range(data.shape[0])
 
     # store tip Nodes, and add ntips attribute.
@@ -54,7 +56,6 @@ def upgma_tree(data: pd.DataFrame | np.ndarray) -> toytree.ToyTree:
 
     # loop to cluster and reduce matrix until only 1 sample left.
     while arr.shape[0] > 1:
-
         # get ordered names from nodes dict
         names = list(nodes.keys())
 
@@ -89,7 +90,7 @@ def upgma_tree(data: pd.DataFrame | np.ndarray) -> toytree.ToyTree:
         nidxs = [i for i in range(arr.shape[0]) if i not in idxs]
 
         # fill kept rows into the new_arr
-        new_arr[:new_dim - 1, :][:, :new_dim - 1] = arr[nidxs, :][:, nidxs]
+        new_arr[: new_dim - 1, :][:, : new_dim - 1] = arr[nidxs, :][:, nidxs]
 
         # remove i,j from nodes, and get ntips of each.
         nti = nodes.pop(names[idxs[0]])._ntips
@@ -111,14 +112,13 @@ def upgma_tree(data: pd.DataFrame | np.ndarray) -> toytree.ToyTree:
     tree = toytree.ToyTree(nodes[new_name])
 
     # collapse polytomies (zero-dist) edges
-    to_collapse = [i for i in tree[tree.ntips:-1] if i._dist == 0]
+    to_collapse = [i for i in tree[tree.ntips : -1] if i._dist == 0]
     if to_collapse:
         toytree.mod.remove_nodes(tree, *to_collapse, inplace=True)
     return tree
 
 
 if __name__ == "__main__":
-
     # example from Felsenstein
     # DATA = pd.DataFrame(
     #     index=["dog", "bear", "raccoon", "weasel", "seal", "sea lion", "cat", "monkey"],
@@ -156,26 +156,31 @@ if __name__ == "__main__":
     DATA = pd.DataFrame(
         index=list("abcde"),
         columns=list("abcde"),
-        data=np.array([
-            [0.0, 2.0, 2.0, 3.0, 3.0],
-            [2.0, 0.0, 0.5, 3.0, 3.0],
-            [2.0, 0.5, 0.0, 3.0, 3.0],
-            [3.0, 3.0, 3.0, 0.0, 0.0],
-            [3.0, 3.0, 3.0, 0.0, 0.0],
-        ])
+        data=np.array(
+            [
+                [0.0, 2.0, 2.0, 3.0, 3.0],
+                [2.0, 0.0, 0.5, 3.0, 3.0],
+                [2.0, 0.5, 0.0, 3.0, 3.0],
+                [3.0, 3.0, 3.0, 0.0, 0.0],
+                [3.0, 3.0, 3.0, 0.0, 0.0],
+            ]
+        ),
     )
 
     TREE = upgma_tree(DATA)
-    DIST = [f"{i:.2f}" for i in TREE.get_node_data('dist')]
+    DIST = [f"{i:.2f}" for i in TREE.get_node_data("dist")]
     TREE._draw_browser(
-        ts='n',
+        ts="n",
         scale_bar=True,
         # node_labels=DIST,
         node_labels="name",
         node_sizes=15,
         node_mask=False,
         node_markers="r2x1",
-        width=400, height=400,
-        tip_labels_style={"anchor-shift": 20,},
+        width=400,
+        height=400,
+        tip_labels_style={
+            "anchor-shift": 20,
+        },
         tmpdir="~",
     )

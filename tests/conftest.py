@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import builtins
 from collections.abc import Callable
 from contextlib import contextmanager
-import builtins
 from pathlib import Path
 
 import numpy as np

@@ -115,7 +115,8 @@ def set_node_data(
         raise ToytreeError(
             f"cannot modify '{feature}' feature because it affects the "
             "tree topology. To modify topology see `toytree.mod` "
-            "subpackage functions.")
+            "subpackage functions."
+        )
 
     # try to convert data to a Dict[Node, Any] if it is a dict-like
     if data is None:
@@ -184,7 +185,7 @@ def set_node_data(
     # e.g., a dict, array, etc., then assign copies, otherwise if
     # this object is changed it affects the value of multiple Nodes
     for nidx, value in ndict.items():
-        if hasattr(value, 'copy'):
+        if hasattr(value, "copy"):
             setattr(tree[nidx], feature, value.copy())
         else:
             setattr(tree[nidx], feature, value)
@@ -282,9 +283,8 @@ def set_node_data_from_dataframe(
         else:
             first_col = table.columns[0]
             first_col_l = str(first_col).lower()
-            infer_first_col_query = (
-                (table_headers is not None)
-                or (first_col_l in {"query", "idx", "name"})
+            infer_first_col_query = (table_headers is not None) or (
+                first_col_l in {"query", "idx", "name"}
             )
             if infer_first_col_query:
                 query_series = table.iloc[:, 0]
@@ -344,8 +344,8 @@ def set_node_data_from_dataframe(
 
 
 if __name__ == "__main__":
-
     import toytree
+
     toytree.set_log_level("INFO")
 
     tree = toytree.rtree.unittree(ntips=10)
@@ -358,8 +358,8 @@ if __name__ == "__main__":
     new_tree = set_node_data(tree, feature="Ne", default=5000)
     new_tree = set_node_data(tree, feature="Ne", data={0: 1e5, 1: 1e6, 2: 1e3})
     new_tree = set_node_data(tree, feature="Ne", data={0: 1e5, 1: 1e6}, default=5000)
-    new_tree = set_node_data(tree, feature="Ne", data={'r0': 1e5, 'r1': 1e6})
-    new_tree = set_node_data(tree, feature="Ne", data={'r0': 1e5, '~r[2-5]+': 1e6})
+    new_tree = set_node_data(tree, feature="Ne", data={"r0": 1e5, "r1": 1e6})
+    new_tree = set_node_data(tree, feature="Ne", data={"r0": 1e5, "~r[2-5]+": 1e6})
     new_tree = set_node_data(tree, feature="Ne", data={11: 1e5}, inherit=True)
     new_tree = set_node_data(tree, feature="Ne", data={11: 1e5})
     new_tree = set_node_data(tree, feature="Ne", data=range(tree.nnodes))
@@ -380,4 +380,7 @@ if __name__ == "__main__":
     tre = tre.set_node_data("color", {i.idx: "red" for i in anc}, default="blue")
     print(tre.get_node_data())
 
-    tre.set_node_data("A", ['a'] * tre.nnodes, )
+    tre.set_node_data(
+        "A",
+        ["a"] * tre.nnodes,
+    )

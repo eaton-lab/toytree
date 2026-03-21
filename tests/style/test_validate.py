@@ -1,10 +1,4 @@
-
-
-
-"""TODO.
-
-"""
-
+"""TODO."""
 
 
 # validate_edge_widths(tree, 0)

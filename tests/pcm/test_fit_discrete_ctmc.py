@@ -1,4 +1,6 @@
 import io
+import re
+import warnings
 from contextlib import redirect_stderr
 
 import numpy as np
@@ -304,6 +306,56 @@ class TestDiscreteMarkovModelFit(PytestCompat):
         self.assertIn("1 non-missing internal node state(s)", err.getvalue())
         self.assertIn("treated as fixed constraints", err.getvalue())
         self.assertEqual(out["data"].shape[0], tree.nnodes)
+
+    def test_infer_ancestral_states_raises_on_zero_mass_posterior(self):
+        """Impossible CTMC constraints should raise instead of returning NaNs."""
+        tree = toytree.rtree.unittree(ntips=4, treeheight=1.0, seed=1)
+        data = pd.Series(
+            [0, 1, 1, 1, 0, np.nan, np.nan],
+            index=range(tree.nnodes),
+            name="X",
+            dtype=object,
+        )
+        fixed_rates = np.zeros((2, 2), dtype=float)
+
+        fit = fit_discrete_ctmc(
+            tree=tree,
+            data=data,
+            nstates=2,
+            model="ARD",
+            fixed_rates=fixed_rates,
+        )
+        self.assertTrue(np.isfinite(fit.log_likelihood))
+
+        err = io.StringIO()
+        with warnings.catch_warnings(record=True) as caught:
+            warnings.simplefilter("always")
+            with redirect_stderr(err):
+                with self.assertRaises(ToytreeError) as exc:
+                    infer_ancestral_states_discrete_ctmc(
+                        tree=tree,
+                        data=data,
+                        nstates=2,
+                        model="ARD",
+                        fixed_rates=fixed_rates,
+                    )
+
+        self.assertTrue(
+            re.search(
+                r"zero or invalid posterior mass at node \d+",
+                str(exc.exception),
+            )
+        )
+        self.assertIn("fixed_rates", str(exc.exception))
+        self.assertEqual(
+            [
+                warning
+                for warning in caught
+                if issubclass(warning.category, RuntimeWarning)
+            ],
+            [],
+        )
+        self.assertIn("1 non-missing internal node state(s)", err.getvalue())
 
     def test_infer_ancestral_states_inplace_mutates_input_tree(self):
         """inplace=True should write ancestral states and posteriors to tree."""

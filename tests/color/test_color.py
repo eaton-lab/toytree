@@ -1,21 +1,16 @@
 #!/usr/bin/env python
 
-"""Test converting user inputs of colors to ToyColor arrays.
-
-"""
+"""Test converting user inputs of colors to ToyColor arrays."""
 
 import numpy as np
 import toyplot
+from conftest import PytestCompat
+
 from toytree.color import ToyColor
 
 
-
-from conftest import PytestCompat
-
 class TestColorMethods(PytestCompat):
-
     def setUp(self):
-
         # lists of colors
         self.palette = toyplot.color.brewer.palette("BlueRed")
         self.map = toyplot.color.brewer.map("BlueRed")
@@ -32,10 +27,10 @@ class TestColorMethods(PytestCompat):
             toyplot.color.Palette()[0],
         ]
         self.mixed_multi_colors = [
-            ['blue', 'red'],
-            ['blue', (1, 0, 0, 0.5)],
+            ["blue", "red"],
+            ["blue", (1, 0, 0, 0.5)],
             [ToyColor((1, 0.5, 0.2, 1)), "blue"],
-            np.array([ToyColor('blue'), ToyColor('red')]),
+            np.array([ToyColor("blue"), ToyColor("red")]),
             self.palette,
             self.map.colors([0, 0.1, 0.5, 0.9]),
         ]
@@ -63,7 +58,10 @@ class TestColorMethods(PytestCompat):
         self.assertEqual(ToyColor((1, 0.2, 0.3, 0.7)).rgba, (1, 0.2, 0.3, 0.7))
 
     def test_rgba_to_arr(self):
-        self.assertEqual(ToyColor((1, 0.2, 0.3, 0.7)), np.array((1, 0.2, 0.3, 0.7), dtype=toyplot.color.dtype))
+        self.assertEqual(
+            ToyColor((1, 0.2, 0.3, 0.7)),
+            np.array((1, 0.2, 0.3, 0.7), dtype=toyplot.color.dtype),
+        )
 
     # ...
     def test_arr_to_css(self):

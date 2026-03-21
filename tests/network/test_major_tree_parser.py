@@ -28,6 +28,7 @@ def parse_major_tree_and_admixture_events(newick):
 
 from conftest import PytestCompat
 
+
 class TestMajorTreeParser(PytestCompat):
     def test_no_admixture_edges(self):
         newick = "((a,b),c);"
@@ -43,7 +44,9 @@ class TestMajorTreeParser(PytestCompat):
         self.assertAlmostEqual(event.gamma, 0.51, places=2)
         self.assertTrue(set(event.major_descendants))
         self.assertTrue(set(event.minor_descendants))
-        self.assertTrue(set(tree.get_tip_labels()).issuperset({"A", "B", "C", "D", "E", "O", "H7"}))
+        self.assertTrue(
+            set(tree.get_tip_labels()).issuperset({"A", "B", "C", "D", "E", "O", "H7"})
+        )
         self.assertTrue(
             set(tree.get_mrca_node("C", "D").get_leaf_names()).issuperset({"C", "D"})
         )
@@ -54,7 +57,9 @@ class TestMajorTreeParser(PytestCompat):
         self.assertEqual(set(events.keys()), {"H1", "H2"})
         self.assertAlmostEqual(events["H1"].gamma, 0.2, places=2)
         self.assertAlmostEqual(events["H2"].gamma, 0.3, places=2)
-        self.assertTrue(set(tree.get_tip_labels()).issuperset({"A", "B", "C", "D", "H1", "H2"}))
+        self.assertTrue(
+            set(tree.get_tip_labels()).issuperset({"A", "B", "C", "D", "H1", "H2"})
+        )
         self.assertTrue(
             set(tree.get_mrca_node("C", "D").get_leaf_names()).issuperset({"C", "D"})
         )

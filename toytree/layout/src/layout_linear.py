@@ -11,11 +11,13 @@ used then it requires a tree traversal and to make a copy of the
 style dict.
 """
 
-from typing import TypeVar, Optional, Sequence
+from typing import Optional, Sequence, TypeVar
+
 import numpy as np
-from toytree.utils import ToytreeError
-from toytree.style import TreeStyle
+
 from toytree.layout.src.layout_base import BaseLayout
+from toytree.style import TreeStyle
+from toytree.utils import ToytreeError
 
 ToyTree = TypeVar("ToyTree")
 Node = TypeVar("Node")
@@ -39,13 +41,14 @@ class LinearLayout(BaseLayout):
     positioning of internal nodes relative to their descendants or
     tips.
     """
+
     def __init__(
         self,
         tree: ToyTree,
         style: TreeStyle,
         fixed_order: Optional[Sequence[str]] = None,
         fixed_position: Optional[Sequence[float]] = None,
-        interior_algorithm: int = 0
+        interior_algorithm: int = 0,
     ):
         self.interior_algorithm = interior_algorithm
         super().__init__(tree, style, fixed_order, fixed_position)
@@ -61,7 +64,11 @@ class LinearLayout(BaseLayout):
             4 = trimmed mean of descendant tip positions
         """
         # generate new (x, y) linear coordinates
-        if bool(self.interior_algorithm) | (self.fixed_order is not None) | (self.fixed_position is not None):
+        if (
+            bool(self.interior_algorithm)
+            | (self.fixed_order is not None)
+            | (self.fixed_position is not None)
+        ):
             self.coords = self._get_fixed_order_and_position_coords()
         else:
             self.coords = np.array(list(self.tree._iter_node_coordinates()))
@@ -84,7 +91,7 @@ class LinearLayout(BaseLayout):
             self.angles = np.repeat(-90, self.tree.ntips)
             self.coords[:, 0] += self.style.xbaseline
             self.coords[:, 1] += self.style.ybaseline
-            self.tcoords = self.coords[:self.tree.ntips, :].copy()
+            self.tcoords = self.coords[: self.tree.ntips, :].copy()
             if self.style.tip_labels_align:
                 self.tcoords[:, 1] = self.style.ybaseline
 
@@ -93,7 +100,7 @@ class LinearLayout(BaseLayout):
             self.coords[:, 1] *= -1
             self.coords[:, 0] += self.style.xbaseline
             self.coords[:, 1] += self.style.ybaseline
-            self.tcoords = self.coords[:self.tree.ntips, :].copy()
+            self.tcoords = self.coords[: self.tree.ntips, :].copy()
             if self.style.tip_labels_align:
                 self.tcoords[:, 1] = self.style.ybaseline
 
@@ -102,7 +109,7 @@ class LinearLayout(BaseLayout):
             self.coords = self.coords[:, [1, 0]]
             self.coords[:, 0] += self.style.xbaseline
             self.coords[:, 1] += self.style.ybaseline
-            self.tcoords = self.coords[:self.tree.ntips, :].copy()
+            self.tcoords = self.coords[: self.tree.ntips, :].copy()
             if self.style.tip_labels_align:
                 self.tcoords[:, 0] = self.style.xbaseline
 
@@ -112,7 +119,7 @@ class LinearLayout(BaseLayout):
             self.coords[:, 0] *= -1
             self.coords[:, 0] += self.style.xbaseline
             self.coords[:, 1] += self.style.ybaseline
-            self.tcoords = self.coords[:self.tree.ntips, :].copy()
+            self.tcoords = self.coords[: self.tree.ntips, :].copy()
             if self.style.tip_labels_align:
                 self.tcoords[:, 0] = self.style.xbaseline
 
@@ -137,16 +144,18 @@ class LinearLayout(BaseLayout):
             positions = np.arange(self.tree.ntips)
         else:
             positions = np.array(self.fixed_position)
-            assert positions.size == self.tree.ntips, (
-                "fixed_position arg must be same len as ntips.")
+            assert (
+                positions.size == self.tree.ntips
+            ), "fixed_position arg must be same len as ntips."
 
         # get user fixed-order as the index of tip name strings
         if self.fixed_order is None:
             idxorder = np.arange(self.tree.ntips)
         else:
             idxorder = np.zeros(self.tree.ntips, dtype=int)
-            assert len(self.fixed_order) == self.tree.ntips, (
-                "fixed order arg must be same len as ntips.")
+            assert (
+                len(self.fixed_order) == self.tree.ntips
+            ), "fixed order arg must be same len as ntips."
 
             # get indices at which user wants Nodes to be displayed
             tipnames = self.tree.get_tip_labels()
@@ -165,10 +174,15 @@ class LinearLayout(BaseLayout):
                 # set internal node at midpoint between its children
                 # centered placement
                 if not self.interior_algorithm:
-                    newx = sum([
-                        coords[min(node.children).idx][0],
-                        coords[max(node.children).idx][0],
-                    ]) / 2
+                    newx = (
+                        sum(
+                            [
+                                coords[min(node.children).idx][0],
+                                coords[max(node.children).idx][0],
+                            ]
+                        )
+                        / 2
+                    )
                     # newx = np.mean([coords[i.idx][0] for i in node.children])
                 # mean placement over all descendant tip positions
                 elif self.interior_algorithm == 1:
@@ -190,7 +204,9 @@ class LinearLayout(BaseLayout):
                     elif maxd <= eps:
                         newx = maxx
                     else:
-                        newx = (((1 / mind) * minx) + ((1 / maxd) * maxx)) / ((1 / mind) + (1 / maxd))
+                        newx = (((1 / mind) * minx) + ((1 / maxd) * maxx)) / (
+                            (1 / mind) + (1 / maxd)
+                        )
                 # median over descendant tip x positions
                 elif self.interior_algorithm == 3:
                     tips = node.get_leaves()
@@ -198,26 +214,33 @@ class LinearLayout(BaseLayout):
                 # trimmed mean over descendant tip x positions
                 elif self.interior_algorithm == 4:
                     tips = node.get_leaves()
-                    vals = np.sort(np.array([coords[i.idx][0] for i in tips], dtype=float))
+                    vals = np.sort(
+                        np.array([coords[i.idx][0] for i in tips], dtype=float)
+                    )
                     nvals = vals.size
                     k = int(np.floor(0.1 * nvals))
                     if nvals >= 3 and (2 * k) < nvals:
-                        vals = vals[k:nvals - k]
+                        vals = vals[k : nvals - k]
                     newx = float(np.mean(vals))
                 # unknown mode -> fallback to default midpoint
                 else:
-                    newx = sum([
-                        coords[min(node.children).idx][0],
-                        coords[max(node.children).idx][0],
-                    ]) / 2
+                    newx = (
+                        sum(
+                            [
+                                coords[min(node.children).idx][0],
+                                coords[max(node.children).idx][0],
+                            ]
+                        )
+                        / 2
+                    )
 
                 coords.append((newx, node._height))
         return np.array(coords)
 
 
 if __name__ == "__main__":
-
     import toytree
+
     toytree.set_log_level("INFO")
 
     a = toytree.Node("a", dist=1.0)

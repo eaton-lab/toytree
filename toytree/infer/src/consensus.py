@@ -40,7 +40,9 @@ def _validate_shared_tips(trees: list[ToyTree]) -> frozenset[str]:
     for idx, tree in enumerate(trees[1:], start=1):
         tlabels = tree.get_tip_labels()
         if len(set(tlabels)) != len(tlabels):
-            raise ValueError(f"tip labels must be unique within each tree (tree index={idx}).")
+            raise ValueError(
+                f"tip labels must be unique within each tree (tree index={idx})."
+            )
         if frozenset(tlabels) != tips:
             raise ValueError("all trees must contain the same set of tip labels.")
     return tips
@@ -127,7 +129,9 @@ def check_trees_set_for_ultrametric(trees: list[ToyTree]) -> None:
             )
 
         # In an ultrametric tree, all tip heights are ~0 in toytree's representation.
-        tip_heights = np.fromiter((node._height for node in tre[: tre.ntips]), dtype=float)
+        tip_heights = np.fromiter(
+            (node._height for node in tre[: tre.ntips]), dtype=float
+        )
         if not np.allclose(tip_heights, 0.0, atol=1e-5):
             raise ValueError(
                 "input trees are not ultrametric. Cannot use option ultrametric=True "
@@ -135,7 +139,9 @@ def check_trees_set_for_ultrametric(trees: list[ToyTree]) -> None:
             )
 
 
-def get_clade_frequencies(trees: Iterable[ToyTree]) -> dict[frozenset[str], dict[str, object]]:
+def get_clade_frequencies(
+    trees: Iterable[ToyTree],
+) -> dict[frozenset[str], dict[str, object]]:
     """Return split frequencies and dist samples keyed by canonical clades."""
     # Validate input once and reuse normalized state in the full traversal.
     treelist = _as_treelist(trees)
@@ -152,7 +158,11 @@ def get_clade_frequencies(trees: Iterable[ToyTree]) -> dict[frozenset[str], dict
         rooted = tre.is_rooted()
         for node in tre[:-1]:
             # Canonicalize each node clade into a root-invariant split key.
-            clade = frozenset(node.get_leaf_names()) if not node.is_leaf() else frozenset((node.name,))
+            clade = (
+                frozenset(node.get_leaf_names())
+                if not node.is_leaf()
+                else frozenset((node.name,))
+            )
             key = _canonical_split(clade, all_tips)
             if key in seen:
                 continue
@@ -193,6 +203,7 @@ def get_consensus_clades(
     min_freq: float,
 ) -> dict[frozenset[str], dict[str, object]]:
     """Return non-conflicting clades above a frequency cutoff."""
+
     def _conflicts(a: frozenset[str], b: frozenset[str]) -> bool:
         if a.isdisjoint(b):
             return False
@@ -263,10 +274,12 @@ def build_consensus_tree(clades: dict[frozenset[str], dict[str, object]]) -> Toy
     return tree
 
 
-def _collect_source_node_maps(tree: ToyTree, all_tips: frozenset[str]) -> dict[frozenset[str], Node]:
+def _collect_source_node_maps(
+    tree: ToyTree, all_tips: frozenset[str]
+) -> dict[frozenset[str], Node]:
     """Map canonical split keys to source tree nodes."""
     cmap: dict[frozenset[str], Node] = {}
-    for node in tree[tree.ntips:]:
+    for node in tree[tree.ntips :]:
         clade = frozenset(node.get_leaf_names())
         key = _canonical_split(clade, all_tips)
         if key == all_tips:
@@ -298,7 +311,7 @@ def map_features_from_unrooted_trees_to_unrooted_tree(
 
     # Build lookup tables on target tree: internal split key -> node and tip name -> node.
     target_internal: dict[frozenset[str], Node] = {}
-    for node in out[out.ntips:]:
+    for node in out[out.ntips :]:
         clade = frozenset(node.get_leaf_names())
         target_internal[_canonical_split(clade, all_tips)] = node
     target_tips = {node.name: node for node in out[: out.ntips]}
@@ -338,7 +351,9 @@ def map_features_from_unrooted_trees_to_unrooted_tree(
                     if src_node.up is not None and src_node.up.is_root():
                         for child in src_node.get_sisters():
                             if child.is_leaf() and child.name in target_tips:
-                                tip_data[(target_tips[child.name].idx, efeat)].append(eval_)
+                                tip_data[(target_tips[child.name].idx, efeat)].append(
+                                    eval_
+                                )
 
         for tip in tre[: tre.ntips]:
             for feat in all_feats:
@@ -380,7 +395,9 @@ def map_features_from_rooted_trees_to_rooted_tree(
 
     out = tree.copy()
 
-    target_internal = {frozenset(node.get_leaf_names()): node for node in out[out.ntips:]}
+    target_internal = {
+        frozenset(node.get_leaf_names()): node for node in out[out.ntips :]
+    }
     target_tips = {node.name: node for node in out[: out.ntips]}
 
     feat_list = list(dict.fromkeys(_normalize_features(features)))
@@ -391,7 +408,7 @@ def map_features_from_rooted_trees_to_rooted_tree(
     tip_data: dict[tuple[int, str], list[float]] = defaultdict(list)
 
     for tre in treelist:
-        for node in tre[tre.ntips:]:
+        for node in tre[tre.ntips :]:
             clade = frozenset(node.get_leaf_names())
             tgt_node = target_internal.get(clade)
             if tgt_node is None:
@@ -520,10 +537,16 @@ def consensus_features(
     edge_feat_list = list(dict.fromkeys(edge_feat_list))
 
     treelist = _as_treelist(trees)
-    missing_features = [i for i in feat_list if not _feature_exists_anywhere(treelist, i)]
+    missing_features = [
+        i for i in feat_list if not _feature_exists_anywhere(treelist, i)
+    ]
     if missing_features:
-        raise ValueError(f"requested feature(s) not found in input trees: {missing_features}")
-    missing_edge_features = [i for i in edge_feat_list if not _edge_feature_exists_anywhere(treelist, i)]
+        raise ValueError(
+            f"requested feature(s) not found in input trees: {missing_features}"
+        )
+    missing_edge_features = [
+        i for i in edge_feat_list if not _edge_feature_exists_anywhere(treelist, i)
+    ]
     if missing_edge_features:
         raise ValueError(
             f"requested edge feature(s) not found in input trees: {missing_edge_features}"

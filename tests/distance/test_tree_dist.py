@@ -5,6 +5,7 @@
 import math
 
 import numpy as np
+from conftest import PytestCompat
 
 import toytree
 from toytree.distance import (
@@ -23,9 +24,6 @@ from toytree.distance._src.treedist_utils import (
 )
 from toytree.utils import ToytreeError
 
-
-
-from conftest import PytestCompat
 
 class TestTreeDistances(PytestCompat):
     def setUp(self):
@@ -143,5 +141,3 @@ class TestTreeDistances(PytestCompat):
         t2 = toytree.tree("((a:1,b:1),(c:1,e:1));")
         with self.assertRaises(AssertionError):
             get_treedist_kf_branch_score(t1, t2)
-
-

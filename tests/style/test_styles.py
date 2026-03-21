@@ -1,32 +1,23 @@
 #!/usr/bin/env python
 
-"""Tests using validate_style to test draw/style args.
-
-"""
+"""Tests using validate_style to test draw/style args."""
 
 import numpy as np
+from conftest import PytestCompat
+
 # import toyplot
 import toytree
+
 # from toytree.color import ToyColor
 from toytree.style import TreeStyle, validate_style
-from toytree.utils import ToytreeError
 from toytree.style.src.validate_data import (
     validate_mask,
     validate_numeric,
-    validate_markers,
-    validate_colors,
-    validate_hover,
-    validate_labels,
-    validate_admixture_edges,
 )
+from toytree.utils import ToytreeError
 
-
-
-
-from conftest import PytestCompat
 
 class TestValidateStyle(PytestCompat):
-
     def setUp(self):
         self.tree = toytree.rtree.unittree(10, seed=123)
         self.style = TreeStyle()
@@ -36,16 +27,14 @@ class TestValidateStyle(PytestCompat):
         """Copying a style should deepcopy (copies of substyles and dicts)."""
         _ = self.tree.style.copy()
 
-
     def test_style_raise_exception_on_validate_bad_color(self):
-        """show style in notebook without fail on complex settings."""
+        """Show style in notebook without fail on complex settings."""
         self.style.node_colors = "..."
         with self.assertRaises(ToytreeError):
             validate_style(self.tree, self.style)
 
 
 class TestValidateMask(PytestCompat):
-
     def setUp(self):
         self.tree = toytree.rtree.unittree(5, seed=123)
 
@@ -53,7 +42,7 @@ class TestValidateMask(PytestCompat):
         tests = [
             True,
             False,
-            np.zeros(self.tree.nnodes, dtype=np.bool_),        
+            np.zeros(self.tree.nnodes, dtype=np.bool_),
             np.ones(self.tree.nnodes, dtype=np.bool_),
             self.tree.get_node_mask(),
             self.tree.get_node_mask(2, 3, 4),
@@ -65,15 +54,14 @@ class TestValidateMask(PytestCompat):
         ]
         for arg in tests:
             validate_mask(
-                tree=self.tree, tree_style=self.tree.style,
-                style={"node_mask": arg})
+                tree=self.tree, tree_style=self.tree.style, style={"node_mask": arg}
+            )
 
     def test_style_raise_on_bad_mask(self):
         """..."""
 
 
 class TestValidateNumeric(PytestCompat):
-
     def setUp(self):
         self.tree = toytree.rtree.unittree(5, seed=123)
 
@@ -158,21 +146,19 @@ class TestValidateNumeric(PytestCompat):
     #         self.assertEqual(vals[0], 1 / 3.)
     #         self.assertTrue(isinstance(vals[1], np.float64))
 
-
-
     def test_style_validate_numeric_nnodes(self):
-        self.tree.style.node_sizes = 5.
+        self.tree.style.node_sizes = 5.0
         tests = [
             None,  # gets it from .style instead of from arg
-            np.full(self.tree.nnodes, 5.),
+            np.full(self.tree.nnodes, 5.0),
             np.arange(self.tree.nnodes, dtype=np.float64),
-            5.,
+            5.0,
             [0, 1, 2, 3, 4, 5, 6, 7, 8],
-            [0, 1, 2, 3, 4, 5., 6., 7., 8.],
-            [0, 1, 2, 3, 4, 5., 6., np.nan, np.nan],
-            ('dist',),
-            ('dist', 0, 5),
-            ('support', 0, 5, 5.),
+            [0, 1, 2, 3, 4, 5.0, 6.0, 7.0, 8.0],
+            [0, 1, 2, 3, 4, 5.0, 6.0, np.nan, np.nan],
+            ("dist",),
+            ("dist", 0, 5),
+            ("support", 0, 5, 5.0),
         ]
         for arg in tests:
             vals = validate_numeric(
@@ -180,14 +166,11 @@ class TestValidateNumeric(PytestCompat):
                 key="node_sizes",
                 tree_style=self.tree.style,
                 size=self.tree.nnodes,
-                style={"node_sizes": arg, "other": '...'})
+                style={"node_sizes": arg, "other": "..."},
+            )
             print(vals)
             self.assertTrue(len(vals) == self.tree.nnodes)
-            self.assertTrue(len(vals) == self.tree.nnodes)            
-
-
-
-
+            self.assertTrue(len(vals) == self.tree.nnodes)
 
     # def test_style_validate_multi_colors(self):
     #     """show style in notebook without fail on complex settings."""
@@ -196,6 +179,3 @@ class TestValidateNumeric(PytestCompat):
     #     # self.style.node_labels_style.stroke = ToyColor((1, 0, 0.5, 0.5))
     #     # self.style.edge_colors = (1, 0, 0.5, 0.5)
     #     validate_style(self.tree, self.style)
-
-
-

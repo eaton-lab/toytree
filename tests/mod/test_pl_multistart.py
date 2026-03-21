@@ -2,20 +2,26 @@
 
 
 import numpy as np
+from conftest import PytestCompat
 
-from toytree.mod._src.penalized_likelihood.pl_clock import edges_make_ultrametric_pl_clock
-from toytree.mod._src.penalized_likelihood.pl_discrete import edges_make_ultrametric_pl_discrete
-from toytree.mod._src.penalized_likelihood.pl_relaxed import edges_make_ultrametric_pl_relaxed
-from toytree.mod._src.penalized_likelihood.pl_correlated import edges_make_ultrametric_pl_correlated
+from toytree.mod._src.penalized_likelihood.pl_clock import (
+    edges_make_ultrametric_pl_clock,
+)
+from toytree.mod._src.penalized_likelihood.pl_correlated import (
+    edges_make_ultrametric_pl_correlated,
+)
+from toytree.mod._src.penalized_likelihood.pl_discrete import (
+    edges_make_ultrametric_pl_discrete,
+)
+from toytree.mod._src.penalized_likelihood.pl_relaxed import (
+    edges_make_ultrametric_pl_relaxed,
+)
 from toytree.mod._src.penalized_likelihood.pl_utils import (
     get_tree_with_categorical_rates,
-    get_tree_with_uncorrelated_relaxed_rates,
     get_tree_with_correlated_relaxed_rates,
+    get_tree_with_uncorrelated_relaxed_rates,
 )
 
-
-
-from conftest import PytestCompat
 
 class TestPenalizedLikelihoodMultistart(PytestCompat):
     def test_clock_multistart_full_fields(self):
@@ -70,10 +76,14 @@ class TestPenalizedLikelihoodMultistart(PytestCompat):
         self.assertTrue(np.isclose(cres["PHIIC"], dres["PHIIC"], atol=1e-9))
         self.assertTrue(np.isclose(cres["loglik"], dres["loglik"], atol=1e-9))
         self.assertEqual(dres["freqs"], [1.0])
-        self.assertTrue(np.isclose(float(dres["rates"][0]), float(cres["rate"]), atol=1e-9))
+        self.assertTrue(
+            np.isclose(float(dres["rates"][0]), float(cres["rate"]), atol=1e-9)
+        )
 
     def test_relaxed_multistart_parallel(self):
-        tree = get_tree_with_uncorrelated_relaxed_rates(ntips=10, mean=3, sigma=3, seed=123)
+        tree = get_tree_with_uncorrelated_relaxed_rates(
+            ntips=10, mean=3, sigma=3, seed=123
+        )
         res = edges_make_ultrametric_pl_relaxed(
             tree,
             lam=0.5,
@@ -90,7 +100,9 @@ class TestPenalizedLikelihoodMultistart(PytestCompat):
         self.assertTrue(res["tree"].is_ultrametric())
 
     def test_correlated_multistart_parallel(self):
-        tree = get_tree_with_correlated_relaxed_rates(ntips=10, mean=1.0, sigma=1.0, seed=123)
+        tree = get_tree_with_correlated_relaxed_rates(
+            ntips=10, mean=1.0, sigma=1.0, seed=123
+        )
         res = edges_make_ultrametric_pl_correlated(
             tree,
             lam=0.5,
@@ -105,5 +117,3 @@ class TestPenalizedLikelihoodMultistart(PytestCompat):
         )
         self.assertEqual(res["nstarts"], 2)
         self.assertTrue(res["tree"].is_ultrametric())
-
-

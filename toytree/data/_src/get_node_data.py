@@ -98,7 +98,8 @@ def get_node_data(
     elif isinstance(missing, (list, tuple)):
         assert len(missing) == len(features), (
             "when entering multiple missing values it must be the same "
-            "length as the number of features")
+            "length as the number of features"
+        )
     else:
         missing = [missing] * len(features)
 
@@ -110,7 +111,6 @@ def get_node_data(
     # store as ordered lists, and let pd.Series convert to dtype
     data = {}
     for fidx, feat in enumerate(features):
-
         # fill ordered list with Node value or missing value
         ofeat = []
         miss = missing[fidx]
@@ -200,18 +200,20 @@ def get_tip_data(
     format, but is slightly slower than accessing data directly
     from Nodes because it spends time type-checking missing data.
     """
-    data = tree.get_node_data(feature, missing).iloc[:tree.ntips]
+    data = tree.get_node_data(feature, missing).iloc[: tree.ntips]
     if names:
         labels = tree.get_tip_labels()
         if len(set(labels)) != len(labels):
-            raise ValueError("cannot return name-labeled tip data b/c names are not unique")
+            raise ValueError(
+                "cannot return name-labeled tip data b/c names are not unique"
+            )
         data.index = labels
     return data
 
 
 if __name__ == "__main__":
-
     import toytree
+
     toytree.set_log_level("INFO")
 
     tree = toytree.rtree.unittree(ntips=10)
@@ -220,4 +222,4 @@ if __name__ == "__main__":
     # print(get_node_data(tree, 'x'))
 
     tree = tree.set_node_data("x", {11: "red"}, inherit=True)
-    print(get_node_data(tree, 'x', missing='red'))
+    print(get_node_data(tree, "x", missing="red"))

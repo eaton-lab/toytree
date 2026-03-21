@@ -7,6 +7,7 @@ from contextlib import redirect_stdout
 from pathlib import Path
 
 import pandas as pd
+from conftest import PytestCompat
 from pandas.errors import ParserWarning
 
 import toytree
@@ -14,9 +15,6 @@ from toytree.cli.cli_set_node_data import run_set_node_data
 from toytree.cli.subparsers import get_parser_set_node_data
 from toytree.utils import ToytreeError
 
-
-
-from conftest import PytestCompat
 
 class TestSetNodeDataCLI(PytestCompat):
     def setUp(self):

@@ -4,7 +4,6 @@
 
 from __future__ import annotations
 
-
 import toytree
 from toytree.enum import _iter_unresolved_quartet_sets, iter_quartets
 
@@ -98,8 +97,8 @@ TREE1_UNRESOLVED = [
 ]
 
 
-
 from conftest import PytestCompat
+
 
 class TestQuartets(PytestCompat):
     """Validate quartet enumeration options and output ordering."""
@@ -336,5 +335,3 @@ class TestQuartets(PytestCompat):
         """Return all unresolved 4-tip combinations by feature."""
         parts = list(_iter_unresolved_quartet_sets(self.tree1, feature="name"))
         self.assertEqual(parts, TREE1_UNRESOLVED)
-
-

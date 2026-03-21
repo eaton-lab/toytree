@@ -1,15 +1,12 @@
 #!/usr/bin/env python
 
-"""Test Node distance functions
-
-"""
+"""Test Node distance functions"""
 
 import numpy as np
+from conftest import PytestCompat
+
 import toytree
 
-
-
-from conftest import PytestCompat
 
 class TestRoot(PytestCompat):
     def setUp(self):
@@ -21,7 +18,6 @@ class TestRoot(PytestCompat):
 
     def test_get_node_distance_matrix(self):
         for tree in self.trees:
-
             # check symmetry
             arr = tree.distance.get_node_distance_matrix()
             self.assertTrue(np.allclose(arr, arr.T))
@@ -38,12 +34,9 @@ class TestRoot(PytestCompat):
 
             # check distances among tips and/or internals by idx
             print(f1)
-            tree._draw_browser(ts='p')
+            tree._draw_browser(ts="p")
             for idx1 in range(tree.nnodes):
                 for idx2 in range(tree.nnodes):
                     dist = tree.distance.get_node_distance(idx1, idx2)
                     print(idx1, idx2, dist, arr[idx1, idx2])
                     self.assertAlmostEqual(dist, arr[idx1, idx2])
-
-
-

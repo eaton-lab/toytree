@@ -2,12 +2,10 @@
 
 """Tests for depth-N NNI/SPR move utilities."""
 
+from conftest import PytestCompat
 
 import toytree
 
-
-
-from conftest import PytestCompat
 
 class TestTreeMoveDepthN(PytestCompat):
     def setUp(self):
@@ -26,8 +24,14 @@ class TestTreeMoveDepthN(PytestCompat):
         self.assertEqual(len(tids), len(set(tids)))
 
     def test_iter_order_random_seed_reproducible(self):
-        t0 = [i.get_topology_id() for i in toytree.mod.iter_nni_n(self.tree, n=1, order="random", seed=5)]
-        t1 = [i.get_topology_id() for i in toytree.mod.iter_nni_n(self.tree, n=1, order="random", seed=5)]
+        t0 = [
+            i.get_topology_id()
+            for i in toytree.mod.iter_nni_n(self.tree, n=1, order="random", seed=5)
+        ]
+        t1 = [
+            i.get_topology_id()
+            for i in toytree.mod.iter_nni_n(self.tree, n=1, order="random", seed=5)
+        ]
         self.assertEqual(t0, t1)
 
     def test_move_nni_n_walk_and_sample(self):
@@ -43,5 +47,3 @@ class TestTreeMoveDepthN(PytestCompat):
         self.assertTrue(trees)
         moved = self.tree.mod.move_spr_n(n=1, mode="walk", seed=2)
         self.assertIsInstance(moved, toytree.ToyTree)
-
-

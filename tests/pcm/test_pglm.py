@@ -2,18 +2,15 @@
 
 """Tests for pruning-based phylogenetic logistic regression."""
 
-
 import numpy as np
 import pandas as pd
+from conftest import PytestCompat
 from scipy.special import expit
 
 import toytree
 from toytree.pcm.src.phylolinalg.pglm import PGLMResult
 from toytree.utils.src.exceptions import ToytreeError
 
-
-
-from conftest import PytestCompat
 
 class TestPGLM(PytestCompat):
     """Tests for phase-1 pruning-based binary phylogenetic GLM."""
@@ -429,5 +426,3 @@ class TestPGLM(PytestCompat):
         self.assertIn("response_transform_n=", btxt2)
         h3 = bfit2._repr_html_()
         self.assertIn("response_transform", h3)
-
-

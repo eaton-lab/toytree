@@ -102,13 +102,11 @@ def _quadripartition_counter_bruteforce(tree):
                 above = [_tips_reachable(sister, node.up) for sister in sisters]
             else:
                 above = [
-                    _tips_reachable(child, sisters[0])
-                    for child in sisters[0].children
+                    _tips_reachable(child, sisters[0]) for child in sisters[0].children
                 ]
         else:
             sisters = [
-                _tips_reachable(sister, node.up)
-                for sister in node.get_sisters()
+                _tips_reachable(sister, node.up) for sister in node.get_sisters()
             ]
             covered = set().union(*below, *sisters)
             above = sisters + [frozenset(all_tips - covered)]
@@ -130,8 +128,8 @@ def _quadripartition_counter_observed(tree):
     return counter
 
 
-
 from conftest import PytestCompat
+
 
 class TestQuadripartitions(PytestCompat):
     """Validate quadripartition enumeration and formatting options."""
@@ -373,5 +371,3 @@ class TestQuadripartitions(PytestCompat):
             checked += 1
 
         self.assertGreater(checked, 0)
-
-

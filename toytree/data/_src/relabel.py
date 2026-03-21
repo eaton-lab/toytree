@@ -87,7 +87,7 @@ def relabel(
 
     norm_queries = _normalize_queries(queries)
     if norm_queries is None:
-        nodes = list(tree[:tree.ntips] if tips_only else tree)
+        nodes = list(tree[: tree.ntips] if tips_only else tree)
     else:
         nodes = tree.get_nodes(*norm_queries)
         if tips_only:

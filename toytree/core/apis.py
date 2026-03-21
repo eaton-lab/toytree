@@ -33,13 +33,20 @@ ToyTree = TypeVar("ToyTree")
 
 
 class SubPackageAPI:
-    """API to acess methods from `toytree.mod` as `tree.mod.{function}`"""
+    """Expose subpackage methods like `toytree.mod.foo(tree)` as `tree.mod.foo()`."""
 
     def __init__(self, tree: ToyTree):
         self._tree = tree
         self._module_name = getattr(self, "_module_name", None)
 
     def __getattr__(self, name):
+        """Lazily resolve subpackage methods while ignoring special-method probes."""
+        # Special-method probes are common during deepcopy / pickle and should
+        # never trigger subpackage imports.
+        if name.startswith("__") and name.endswith("__"):
+            raise AttributeError(
+                f"{self.__class__.__name__!s} has no attribute {name!r}"
+            )
         if self._module_name:
             module = importlib.import_module(self._module_name)
             attr = getattr(self.__class__, name, None)
@@ -57,6 +64,7 @@ class SubPackageAPI:
         raise AttributeError(f"{self.__class__.__name__!s} has no attribute {name!r}")
 
     def __dir__(self):
+        """Return available API members, including lazily exposed module names."""
         if self._module_name:
             module = importlib.import_module(self._module_name)
             module_names = getattr(module, "__all__", None)
@@ -72,31 +80,31 @@ class SubPackageAPI:
 
 
 class TreeModAPI(SubPackageAPI):
-    """API to acess methods from `toytree.mod` as `tree.mod.{function}`"""
+    """Expose `toytree.mod` methods as `tree.mod.{function}`."""
 
     _module_name = "toytree.mod"
 
 
 class TreeDistanceAPI(SubPackageAPI):
-    """API to acess methods from `toytree.distance` as `tree.distance.{function}`"""
+    """Expose `toytree.distance` methods as `tree.distance.{function}`."""
 
     _module_name = "toytree.distance"
 
 
 class TreeEnumAPI(SubPackageAPI):
-    """API to acess methods from `toytree.pcm` as `tree.enum.{function}`"""
+    """Expose `toytree.enum` methods as `tree.enum.{function}`."""
 
     _module_name = "toytree.enum"
 
 
 class PhyloCompAPI(SubPackageAPI):
-    """API to acess methods from `toytree.pcm` as `tree.pcm.{function}`"""
+    """Expose `toytree.pcm` methods as `tree.pcm.{function}`."""
 
     _module_name = "toytree.pcm"
 
 
 class AnnotationAPI(SubPackageAPI):
-    """API to acess methods from `toytree.annotate` as `tree.annotate.{function}`"""
+    """Expose `toytree.annotate` methods as `tree.annotate.{function}`."""
 
     _module_name = "toytree.annotate"
 
@@ -166,7 +174,7 @@ if __name__ == "__main__":
     @add_toytree_method(ToyTree)
     @add_subpackage_method(TreeModAPI)
     def test(arg1: int, arg2: str) -> float:
-        """This is a test."""
+        """Return a test value."""
         return 32.0
 
     help(test)

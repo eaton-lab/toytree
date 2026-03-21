@@ -29,8 +29,10 @@ __all__ = [
 def get_qmatrix_er(nstates: int, rate: float):
     pass
 
+
 def get_qmatrix_sym(nstates: int, rates: List[float]):
     pass
+
 
 def get_qmatrix_ard(nstates: int, rates: List[float]):
     pass
@@ -39,7 +41,7 @@ def get_qmatrix_ard(nstates: int, rates: List[float]):
 def get_instaneous_transition_rate_matrix(
     nstates: int,
     rates: List[float],
-    ) -> pd.DataFrame:
+) -> pd.DataFrame:
     """Get an instantaneous transition rate matrix (Q matrix) from
 
     Parameters
@@ -63,16 +65,16 @@ def get_instaneous_transition_rate_matrix(
 
 
 def simulate_discrete_markov_data(
-    tree: 'ToyTree',
+    tree: "ToyTree",
     qmatrix: np.ndarray,
     nsims: int = 1,
     ancestral_state: Optional[np.ndarray] = None,
     seed: Optional[int] = None,
-    ) -> pd.DataFrame:
+) -> pd.DataFrame:
     """Return a DataFrame with simulated discrete trait values.
 
     The index (rows) are tip names and columns are the indices of
-    nsims replicate simulations. Trait values for internal nodes 
+    nsims replicate simulations. Trait values for internal nodes
     are not returned (see :func:`simulate_discrete_markov_data_on_tree`).
     Results can be treated like observed data, which is typically only
     available for tip nodes.
@@ -97,21 +99,20 @@ def simulate_discrete_markov_data(
     See Also
     --------
     :func:`simulate_discrete_markov_data_on_tree`
-        Return a list of ToyTree instances with simulated data 
+        Return a list of ToyTree instances with simulated data
         assigned to a feature named 'discrete' on every node.
     """
     model = DiscreteMarkovModelSim(tree, qmatrix, nsims, ancestral_state, seed)
-    return pd.DataFrame(
-        index=tree.get_tip_labels(), data=model._get_state_array().T)
+    return pd.DataFrame(index=tree.get_tip_labels(), data=model._get_state_array().T)
 
 
 def simulate_discrete_markov_data_on_tree(
-    tree: 'ToyTree',
+    tree: "ToyTree",
     qmatrix: np.ndarray,
     nsims: int = 1,
     ancestral_state: Optional[np.ndarray] = None,
     seed: int = None,
-    ) -> List['ToyTree']:
+) -> List["ToyTree"]:
     """Return a list of ToyTrees instance (or list of ToyTree instances) with
     simulated states assigned to every node of the tree.
 
@@ -144,19 +145,20 @@ def simulate_discrete_markov_data_on_tree(
     return model._get_state_tree()
 
 
-
 if __name__ == "__main__":
-
     import toytree
+
     TREE = toytree.rtree.unittree(10, treeheight=100, seed=123)
 
     # use a hand-made matrix
     ALPHA = 0.001
     BETA = 0.002
-    QMATRIX = np.array([
-        [-ALPHA, ALPHA],
-        [BETA, -BETA],
-    ])
+    QMATRIX = np.array(
+        [
+            [-ALPHA, ALPHA],
+            [BETA, -BETA],
+        ]
+    )
 
     # or generate a symmetric matrix
     QMATRIX = DiscreteMarkovModelQMatrix(nstates=3).get_rate_matrix(5e-3)
