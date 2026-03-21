@@ -29,14 +29,15 @@ References
 - ...
 """
 
-from typing import Mapping
 import itertools
-import pandas as pd
+from typing import Mapping
+
 import numpy as np
+import pandas as pd
+
+import toytree
 from toytree.core import ToyTree
 from toytree.core.apis import TreeDistanceAPI, add_subpackage_method
-import toytree
-
 
 __all__ = [
     "get_treedist_quartets",
@@ -223,7 +224,8 @@ def get_quartet_metric(
         return value
     raise ValueError(
         f"metric {metric} not recognized, must be one of "
-        f"{sorted(QUARTET_METRICS.keys())}.")
+        f"{sorted(QUARTET_METRICS.keys())}."
+    )
 
 
 @add_subpackage_method(TreeDistanceAPI)
@@ -316,7 +318,6 @@ def get_treedist_quartets(
 
 
 if __name__ == "__main__":
-
     TREE1 = toytree.rtree.unittree(6, seed=123)
     TREE2 = toytree.rtree.unittree(6, seed=321)
     TREE2 = TREE2.mod.collapse_nodes(8)

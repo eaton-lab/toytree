@@ -456,7 +456,22 @@ class DiscreteMarkovModelFit:
         for node in self.tree.treenode.traverse("preorder"):
             node_idx = node._idx
             node_post = up[node] * likelihoods[node]
-            node_post /= node_post.sum()
+            total = float(node_post.sum())
+            # Zero-mass posteriors indicate incompatible CTMC constraints or
+            # an impossible reconstruction; normalizing would silently emit NaNs.
+            if (
+                (not np.all(np.isfinite(node_post)))
+                or (not np.isfinite(total))
+                or (total <= 0.0)
+            ):
+                raise ToytreeError(
+                    "Ancestral-state inference produced zero or invalid "
+                    f"posterior mass at node {node_idx}. This usually means "
+                    "the observed states are incompatible with the fitted "
+                    "CTMC constraints, such as internal-node observations, "
+                    "fixed_rates, fixed_state_frequencies, or root_prior."
+                )
+            node_post /= total
             posterior[node_idx] = node_post
 
         prob_df = pd.DataFrame(
@@ -623,7 +638,9 @@ def infer_ancestral_states_discrete_ctmc(
     ToytreeError
         If ``data`` is not a feature name or pandas Series, if trait states are
         not all discrete ``int`` or ``str`` values, if state types are mixed,
-        or if model-fitting inputs are invalid.
+        if model-fitting inputs are invalid, or if the fitted CTMC constraints
+        yield zero posterior mass for one or more nodes during ancestral-state
+        reconstruction.
 
     Examples
     --------

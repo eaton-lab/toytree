@@ -209,13 +209,14 @@ def iter_bipartitions(
     else:
         # yield as type(*Nodes) or as type(feature(*Nodes))
         if feature is not None:
+
             def tformat(node_tuple):
                 return type(getattr(i, feature) for i in node_tuple)
         else:
             tformat = type
 
         # iterate over bipartitions and order items within
-        kwargs['feature'] = None
+        kwargs["feature"] = None
         for below, other in _iter_bipartition_sets(**kwargs):
             # optional: sort biparts by len or min name
             # always: if not type==set sort within by name
@@ -297,11 +298,11 @@ def _format_bipartition(
 
 
 if __name__ == "__main__":
-
     import toytree
 
     tree = toytree.rtree.unittree(10, seed=123)
 
     for bipart in tree.iter_bipartitions(
-        'idx', sort=True, include_singleton_partitions=True):
+        "idx", sort=True, include_singleton_partitions=True
+    ):
         print(bipart)

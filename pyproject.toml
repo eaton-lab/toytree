@@ -33,7 +33,7 @@ dependencies = [
     "numpy",
     "scipy",
     "pandas",
-    "toyplot",
+    "toyplot>=2.1.0",
     "loguru",
     "requests",
     "statsmodels",

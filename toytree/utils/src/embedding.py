@@ -8,11 +8,13 @@ Example
 """
 
 from typing import Mapping, Sequence
+
 import numpy as np
 import pandas as pd
+
 import toytree
 
-COLUMNS = ['start', 'stop', 'st_node', 'neff', 'nedges', 'dist', 'gidx']
+COLUMNS = ["start", "stop", "st_node", "neff", "nedges", "dist", "gidx"]
 
 
 def _get_fast_genealogy_embedding_table(
@@ -31,7 +33,7 @@ def _get_fast_genealogy_embedding_table(
     edge_encode = []
 
     # dict to update tips to their ancestor if already coalesced.
-    name_to_node = {i._name: i for i in genealogy[:genealogy.ntips]}
+    name_to_node = {i._name: i for i in genealogy[: genealogy.ntips]}
 
     # get table of gene tree node heights
     gt_node_heights = np.array([i._height for i in genealogy])
@@ -65,15 +67,17 @@ def _get_fast_genealogy_embedding_table(
         # iterate over internal nodes
         for gt_node in sorted(inodes, key=lambda x: x._height):
             # add interval from start to first coal, or coal to next coal
-            split_data.append([
-                start,
-                gt_node._height,
-                st_node._idx,
-                st_node.Ne,
-                len(edges),
-                0.,
-                gidx,
-            ])
+            split_data.append(
+                [
+                    start,
+                    gt_node._height,
+                    st_node._idx,
+                    st_node.Ne,
+                    len(edges),
+                    0.0,
+                    gidx,
+                ]
+            )
             edge_encode.append(sorted(edges))
 
             # update counters and indexers
@@ -83,20 +87,24 @@ def _get_fast_genealogy_embedding_table(
                 for child in gt_node._children:
                     edges.remove(child._idx)
             except KeyError as err:
-                raise ValueError("gene tree cannot be embedded in species tree.") from err
+                raise ValueError(
+                    "gene tree cannot be embedded in species tree."
+                ) from err
             for tip in gt_node.get_leaves():
                 name_to_node[tip.name] = gt_node
 
         # add non-coal interval
-        split_data.append([
-            start,
-            st_node._up._height if st_node._up else np.inf,
-            st_node._idx,
-            st_node.Ne,
-            len(edges),
-            0.,
-            gidx,
-        ])
+        split_data.append(
+            [
+                start,
+                st_node._up._height if st_node._up else np.inf,
+                st_node._idx,
+                st_node.Ne,
+                len(edges),
+                0.0,
+                gidx,
+            ]
+        )
         edge_encode.append(sorted(edges))
 
     # to array and calculate dists from start and stop
@@ -161,7 +169,9 @@ def get_genealogy_embedding_table(
 
     # concatenate
     embedding = pd.DataFrame(np.vstack(garrs), columns=COLUMNS)
-    embedding[["st_node", "nedges", "gidx"]] = embedding[["st_node", "nedges", "gidx"]].astype(int)
+    embedding[["st_node", "nedges", "gidx"]] = embedding[
+        ["st_node", "nedges", "gidx"]
+    ].astype(int)
 
     # return 'edges' column with lists of Node IDs
     if not encode:
@@ -180,8 +190,8 @@ def get_genealogy_embedding_table(
 
 
 if __name__ == "__main__":
-
     import ipcoal
+
     SPTREE = toytree.rtree.baltree(2, treeheight=1e6)
     MODEL = ipcoal.Model(SPTREE, Ne=200_000, nsamples=4, seed_trees=123)
     MODEL.sim_trees(2)
@@ -190,4 +200,4 @@ if __name__ == "__main__":
 
     # human readable embedding (2D) mostly for debugging and teaching.
     print(get_genealogy_embedding_table(MODEL.tree, GENEALOGIES, IMAP).head(10))
-    print('...')
+    print("...")

@@ -13,6 +13,7 @@ TODO
 """
 
 import numpy as np
+
 from toytree.core import ToyTree
 
 
@@ -21,7 +22,7 @@ def get_unlabeled_trees(ntips: int) -> int:
 
     Note
     ----
-    In contrast to labeled trees, all unlabeled trees for ntips are 
+    In contrast to labeled trees, all unlabeled trees for ntips are
     *not* equiprobable, since there are some topology shapes that can
     be formed more than others by swapping around the labels on a tree.
     ...
@@ -70,7 +71,6 @@ def get_probability_gene_tree_matches_species_tree(internal_branch: float) -> fl
     ----------
     - Pamilo and Nei (1988)
     """
-
     # a quartet (rooted three taxon) tree has no anomalies b/c
     λ = internal_branch
 

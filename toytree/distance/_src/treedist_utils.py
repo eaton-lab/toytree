@@ -7,15 +7,16 @@ References
 - https://ms609.github.io/TreeDist/reference/TreeDistance.html
 """
 
-from typing import Tuple, Sequence, Set
 # FIXME: support backup method old Python does not support
 # from functools import cache
 import itertools
+from typing import Sequence, Set, Tuple
 
-from scipy.special import factorial2
-from scipy.optimize import linear_sum_assignment
 import numpy as np
 import pandas as pd
+from scipy.optimize import linear_sum_assignment
+from scipy.special import factorial2
+
 from toytree import ToyTree, ToytreeError
 from toytree.core.apis import TreeDistanceAPI, add_subpackage_method
 
@@ -71,6 +72,7 @@ def _get_n_trees_matching_two_splits(ntips: int, size_a1: int, size_a2: int) -> 
 # Get matching split info for bipartitions
 ##################################################################
 
+
 def _get_two_splits_matching_split_dist(
     split1: Tuple[Tuple, Tuple],
     split2: Tuple[Tuple, Tuple],
@@ -87,6 +89,7 @@ def _get_two_splits_matching_split_dist(
 #################################################################
 # Get Nye similarity metric
 ##################################################################
+
 
 def _get_two_splits_nye_similarity(
     split1: Tuple[Tuple, Tuple],
@@ -127,6 +130,7 @@ def get_tree_splitwise_nye_similarity(tree: ToyTree) -> float:
 # >>> _get_phylo_info(4, 5)                         # 6.42...
 # >>> _get_split_phylo_info((0,1,2,3),(4,5,6,7,8))  # 6.42...
 ##################################################################
+
 
 def _get_phylo_prob(size_a: int, size_b: int) -> float:
     """Return prob that binary tree of size X contains split A|B."""
@@ -171,6 +175,7 @@ def get_tree_splitwise_phylo_info(tree: ToyTree) -> float:
 # >>> set2 = (tuple("ABC"), tuple("DEF"))
 # >>> _get_two_splits_shared_phylo_info(set1, set2)  # 1.222...
 ####################################################
+
 
 def _get_subset_superset(
     split1: Tuple[Tuple, Tuple],
@@ -264,6 +269,7 @@ def _get_two_splits_different_phylo_info(
 # Information theoretic alternative to matching split dist
 ####################################################
 
+
 def _get_two_splits_matching_split_phylo_info(
     split1: Tuple[Tuple, Tuple],
     split2: Tuple[Tuple, Tuple],
@@ -285,6 +291,7 @@ def _get_two_splits_matching_split_phylo_info(
 ####################################################
 # Get clustering entropy of bipartitions
 ####################################################
+
 
 # @cache
 def _entropy(*prob: float) -> float:
@@ -312,6 +319,7 @@ def get_tree_splitwise_entropy(tree: ToyTree) -> float:
 ####################################################
 # Get clustering entropy from PAIRS of bipartitions
 ####################################################
+
 
 def _get_two_splits_entropy(
     split1: Tuple[Tuple, Tuple],
@@ -352,6 +360,7 @@ def _get_two_splits_entropy_info_dist(
 # Get matching of bipartitions based on split similarity scores,
 # i.e., shared phylo info (spi) or mutual clustering info (msi)
 ####################################################################
+
 
 def _get_split_matching(
     biparts1: Sequence[Tuple[Tuple, Tuple]],
@@ -397,8 +406,8 @@ def _get_split_matching(
         maximize = True
     else:
         raise ToytreeError(
-            "split similarity metric must be in "
-            "('mci', 'spi', 'ms', 'msi', 'nye')")
+            "split similarity metric must be in " "('mci', 'spi', 'ms', 'msi', 'nye')"
+        )
 
     # get partitions in their input order.
     nb1 = len(biparts1)
@@ -464,8 +473,11 @@ def _report_matching(
 # Reference: https://ms609.github.io/TreeDist/reference/TreeDistance.html
 ####################################################################
 
+
 def get_trees_nye_similarity(
-    tree1: ToyTree, tree2: ToyTree, normalize: bool = False,
+    tree1: ToyTree,
+    tree2: ToyTree,
+    normalize: bool = False,
 ) -> float:
     """Return the Nye similarity between two trees.
 
@@ -486,10 +498,11 @@ def get_trees_nye_similarity(
 
 
 def get_trees_nye_dist(
-    tree1: ToyTree, tree2: ToyTree, normalize: bool = False,
+    tree1: ToyTree,
+    tree2: ToyTree,
+    normalize: bool = False,
 ) -> float:
-    """Return the Nye similarity distance between two trees.
-    """
+    """Return the Nye similarity distance between two trees."""
     nye = get_trees_nye_similarity(tree1, tree2, normalize=False)
     ind_info = sum(get_tree_splitwise_nye_similarity(i) for i in (tree1, tree2))
     if normalize:
@@ -498,7 +511,9 @@ def get_trees_nye_dist(
 
 
 def get_trees_matching_split_dist(
-    tree1: ToyTree, tree2: ToyTree, normalize: bool = False,
+    tree1: ToyTree,
+    tree2: ToyTree,
+    normalize: bool = False,
 ) -> float:
     """Return the matching split distance between two trees.
 
@@ -510,12 +525,16 @@ def get_trees_matching_split_dist(
     arr, indices = _get_split_matching(biparts1, biparts2, "ms")
     msd = arr[indices].sum()
     if normalize:
-        raise ToytreeError("normalize=True is not supported for matching split distance.")
+        raise ToytreeError(
+            "normalize=True is not supported for matching split distance."
+        )
     return msd
 
 
 def get_trees_matching_split_info(
-    tree1: ToyTree, tree2: ToyTree, normalize: bool = False,
+    tree1: ToyTree,
+    tree2: ToyTree,
+    normalize: bool = False,
 ) -> float:
     """Return the matching split info distance between two trees.
 
@@ -534,7 +553,9 @@ def get_trees_matching_split_info(
 
 
 def get_trees_matching_split_info_dist(
-    tree1: ToyTree, tree2: ToyTree, normalize: bool = False,
+    tree1: ToyTree,
+    tree2: ToyTree,
+    normalize: bool = False,
 ) -> float:
     """Return the matching split info distance between two trees.
 
@@ -550,7 +571,9 @@ def get_trees_matching_split_info_dist(
 
 
 def get_trees_shared_phylo_info(
-    tree1: ToyTree, tree2: ToyTree, normalize: bool = False,
+    tree1: ToyTree,
+    tree2: ToyTree,
+    normalize: bool = False,
 ) -> float:
     """Return SPI score as sum of shared phylo info on matched splits.
 
@@ -572,7 +595,9 @@ def get_trees_shared_phylo_info(
 
 
 def get_trees_shared_phylo_info_dist(
-    tree1: ToyTree, tree2: ToyTree, normalize: bool = False,
+    tree1: ToyTree,
+    tree2: ToyTree,
+    normalize: bool = False,
 ) -> float:
     """Return difference in phylogenetic information betweern two trees.
 
@@ -584,7 +609,7 @@ def get_trees_shared_phylo_info_dist(
     ind_info = sum(get_tree_splitwise_phylo_info(i) for i in (tree1, tree2))
     if normalize:
         if not ind_info:
-            return 0.
+            return 0.0
         return (ind_info - (2 * spi)) / ind_info
     return ind_info - (2 * spi)
 
@@ -611,11 +636,11 @@ def get_trees_shared_phylo_info_dist_from_biparts(
 
 
 def get_trees_mutual_clust_info(
-    tree1: ToyTree, tree2: ToyTree, normalize: bool = False,
+    tree1: ToyTree,
+    tree2: ToyTree,
+    normalize: bool = False,
 ) -> float:
-    """Return the mutual clustering information (cid).
-
-    """
+    """Return the mutual clustering information (cid)."""
     biparts1 = list(tree1.iter_bipartitions())
     biparts2 = list(tree2.iter_bipartitions())
     arr, indices = _get_split_matching(biparts1, biparts2, "mci")
@@ -628,11 +653,11 @@ def get_trees_mutual_clust_info(
 
 @add_subpackage_method(TreeDistanceAPI)
 def get_trees_mutual_clust_info_dist(
-    tree1: ToyTree, tree2: ToyTree, normalize: bool = False,
+    tree1: ToyTree,
+    tree2: ToyTree,
+    normalize: bool = False,
 ) -> float:
-    """Return the mutual clustering information distance (cid).
-
-    """
+    """Return the mutual clustering information distance (cid)."""
     mci = get_trees_mutual_clust_info(tree1, tree2, normalize=False)
     ind_info = sum(get_tree_splitwise_entropy(i) for i in (tree1, tree2))
     if normalize:
@@ -646,9 +671,7 @@ def get_trees_mutual_clust_info_dist_from_biparts(
     biparts2: Sequence[Tuple[Tuple, Tuple]],
     normalize: bool = False,
 ) -> float:
-    """Return the mutual clustering information distance (cid).
-
-    """
+    """Return the mutual clustering information distance (cid)."""
     arr, indices = _get_split_matching(biparts1, biparts2, "mci")
     mci = arr[indices].sum()
     info1 = sum(_get_split_entropy(b) for b in biparts1)
@@ -656,19 +679,18 @@ def get_trees_mutual_clust_info_dist_from_biparts(
     ind_info = info1 + info2
     if normalize:
         if not ind_info:
-            return 0.
+            return 0.0
         return (ind_info - (2 * mci)) / ind_info
     return ind_info - (2 * mci)
 
 
 if __name__ == "__main__":
-
     import toytree
 
     # trees from ?TreeDist::SharedPhylogeneticInfo
-    t1 = toytree.tree('((((a, b), c), d), (e, (f, (g, h))));')
-    t2 = toytree.tree('(((a, b), (c, d)), ((e, f), (g, h)));')
-    t3 = toytree.tree('((((h, b), c), d), (e, (f, (g, a))));')
+    t1 = toytree.tree("((((a, b), c), d), (e, (f, (g, h))));")
+    t2 = toytree.tree("(((a, b), (c, d)), ((e, f), (g, h)));")
+    t3 = toytree.tree("((((h, b), c), d), (e, (f, (g, a))));")
 
     # t1 = toytree.tree('((A, B), ((C, (D, E)), (F, (G, (H, I)))));')
     # t2 = toytree.tree('((A, B), ((C, D, (E, I)), (F, (G, H))));')
@@ -676,29 +698,28 @@ if __name__ == "__main__":
     # phy info for a split:
     # print(_get_phylo_info(0, 0))
 
-
     # phy info for a tree (all splits): SplitWiseInfo(tree1) = 22.54
-    print(get_tree_splitwise_phylo_info(t1)) # 22.54
-    print(get_tree_splitwise_phylo_info(t2)) # 19.36
+    print(get_tree_splitwise_phylo_info(t1))  # 22.54
+    print(get_tree_splitwise_phylo_info(t2))  # 19.36
 
-    print("MCI ", get_trees_mutual_clust_info(t1, t2)) # 3.03
-    print("nMCI", get_trees_mutual_clust_info(t1, t2, True)) # 0.6908
+    print("MCI ", get_trees_mutual_clust_info(t1, t2))  # 3.03
+    print("nMCI", get_trees_mutual_clust_info(t1, t2, True))  # 0.6908
 
-    print("CID ", get_trees_mutual_clust_info_dist(t1, t2)) # 2.71
-    print("nCID", get_trees_mutual_clust_info_dist(t1, t2, normalize=True)) # 0.3091
+    print("CID ", get_trees_mutual_clust_info_dist(t1, t2))  # 2.71
+    print("nCID", get_trees_mutual_clust_info_dist(t1, t2, normalize=True))  # 0.3091
 
-    print("MS ", get_trees_matching_split_dist(t1, t2)) # 6
+    print("MS ", get_trees_matching_split_dist(t1, t2))  # 6
 
-    print("MSI ", get_trees_matching_split_info(t1, t2)) # 17.09
-    print("nMSI", get_trees_matching_split_info(t1, t2, normalize=True)) # 0.815
+    print("MSI ", get_trees_matching_split_info(t1, t2))  # 17.09
+    print("nMSI", get_trees_matching_split_info(t1, t2, normalize=True))  # 0.815
 
-    print("MSID ", get_trees_matching_split_info_dist(t1, t2)) # 7.72
-    print("nMSID", get_trees_matching_split_info_dist(t1, t2, normalize=True)) # 0.185
+    print("MSID ", get_trees_matching_split_info_dist(t1, t2))  # 7.72
+    print("nMSID", get_trees_matching_split_info_dist(t1, t2, normalize=True))  # 0.185
 
-    print("NYE ", get_trees_nye_similarity(t1, t2)) # 3.8
-    print("nNYE ", get_trees_nye_similarity(t1, t2, normalize=True)) # 0.76
+    print("NYE ", get_trees_nye_similarity(t1, t2))  # 3.8
+    print("nNYE ", get_trees_nye_similarity(t1, t2, normalize=True))  # 0.76
 
-    print("NYED ", get_trees_nye_dist(t1, t2)) # 3.8
-    print("nNYED ", get_trees_nye_dist(t1, t2, normalize=True)) # 0.76
+    print("NYED ", get_trees_nye_dist(t1, t2))  # 3.8
+    print("nNYED ", get_trees_nye_dist(t1, t2, normalize=True))  # 0.76
 
-    _report_matching(t1, t2, 'ms')
+    _report_matching(t1, t2, "ms")

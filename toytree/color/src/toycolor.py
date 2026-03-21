@@ -2,7 +2,7 @@
 
 """ToyColor is a superclass of numpy array w/ the toyplot.color.dtype.
 
-It adds several functions for easily converting between color types, 
+It adds several functions for easily converting between color types,
 and for automatically parsing flexible input types.
 
 Note
@@ -16,9 +16,12 @@ single ToyColor or List[ToyColor].
 """
 
 from __future__ import annotations
-from typing import List, Any
+
+from typing import Any, List
+
 import numpy as np
 import toyplot.color
+
 from toytree.color.src.colorkit import ColorKit
 from toytree.utils import ToyColorError
 
@@ -115,7 +118,8 @@ class ToyColor(np.ndarray):
                 pass
 
         raise ToyColorError(
-            f"{color} ({type(color)}) is not a supported color argument.")
+            f"{color} ({type(color)}) is not a supported color argument."
+        )
 
 
 COLORMAP_ALONE_ERROR = """
@@ -132,7 +136,6 @@ Or, use the tuple type input syntax as a shortcut for color mapping:
 
 
 if __name__ == "__main__":
-
     import toyplot
     # tc = ToyColor((1, 0, 0.2, 0.7))
     # print(tc.colorkit.get_style_str(stroke=True))
@@ -168,8 +171,8 @@ if __name__ == "__main__":
         toyplot.color.Palette(),
         toyplot.color.brewer.map("BlueRed").colors([0, 2, 1]),
         list(toyplot.color.Palette()),
-        ['red', 'blue', 'green'],
-        ['red', toyplot.color.Palette()[0], "rgb(100%,50%,25%)"],
+        ["red", "blue", "green"],
+        ["red", toyplot.color.Palette()[0], "rgb(100%,50%,25%)"],
     ]
     for i in COLORS:
         c = ToyColor.color_expander(i)
@@ -177,7 +180,6 @@ if __name__ == "__main__":
             print(f"orig = {str(i):<50} | {repr(c)} | hex={c.hex}")
         else:
             print(f"orig = {str(type(i)):<50} | len={len(c)}, {repr([c[0], '...'])}")
-
 
     # NOT_SUPPORTED = [
     #     toyplot.color.brewer.map("Pastel1"),

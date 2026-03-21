@@ -4,8 +4,8 @@
 
 This class is used to get the (x,y) coordinates at which to place
 nodes on a set of Cartesian coordinate axes when plotting. The layout
-types currently supported are 'right', 'left', 'up', 'down', 
-'circular' and 'unrooted'. 
+types currently supported are 'right', 'left', 'up', 'down',
+'circular' and 'unrooted'.
 
 Note
 ----
@@ -13,9 +13,11 @@ The circular layout is projected into Cartesian coordinates at the
 end, not polar coordinates.
 """
 
-from typing import TypeVar, Sequence, Optional
 from abc import ABC
+from typing import Optional, Sequence, TypeVar
+
 import numpy as np
+
 from toytree.style import TreeStyle
 from toytree.utils import ToytreeError
 

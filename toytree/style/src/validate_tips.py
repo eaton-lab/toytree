@@ -11,13 +11,15 @@ Problem
 [ ] all substyles as dicts w/ keys converted to css style: (fill-opacity, -toyplot-anchor-shift)
 """
 
-from typing import Union, Any, Dict, TypeVar
+from typing import Any, Dict, TypeVar, Union
+
 import numpy as np
 import toyplot
+
 from toytree.color import ToyColor
-from toytree.style.src.validate_utils import check_arr
-from toytree.style.src.style_base import TipLabelStyle, TreeStyle
 from toytree.style.src.map_colors import get_color_mapped_values
+from toytree.style.src.style_base import TipLabelStyle, TreeStyle
+from toytree.style.src.validate_utils import check_arr
 
 ToyTree = TypeVar("ToyTree")
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -158,8 +160,7 @@ def validate_tip_labels_angles(
     style: TreeStyle,
     **kwargs,
 ) -> np.ndarray:
-    """Return array with tip label angles given the layout, or user setting.
-    """
+    """Return array with tip label angles given the layout, or user setting."""
     # get user value or style base value
     angles = kwargs.get("tip_labels_angles")
     if angles is None:
@@ -179,7 +180,9 @@ def validate_tip_labels_angles(
     elif isinstance(angles, (float, int, np.integer)):
         angles = np.repeat(angles, tree.ntips)
 
-    angles = check_arr(angles, "tip_labels_angles", tree.ntips, (int, float, np.integer))
+    angles = check_arr(
+        angles, "tip_labels_angles", tree.ntips, (int, float, np.integer)
+    )
     return angles
 
 
@@ -217,5 +220,4 @@ def validate_tip_labels_style(
 
 
 if __name__ == "__main__":
-
     pass

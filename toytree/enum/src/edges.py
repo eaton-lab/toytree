@@ -76,7 +76,6 @@ def iter_edges(
             yield (node, None)
 
 
-
 @add_toytree_method(ToyTree)
 def get_edges(
     self,
@@ -124,12 +123,12 @@ def get_edges(
 
 
 if __name__ == "__main__":
-
     import toytree
+
     tree = toytree.rtree.unittree(10, seed=123)
     edges = list(tree.iter_edges())
     print(edges)
-    print(tree.get_edges('idx', df=1))
+    print(tree.get_edges("idx", df=1))
 
     # not ideal, but the include_root option is available.
     # print(tree.get_edges('idx', df=1, include_root=True))

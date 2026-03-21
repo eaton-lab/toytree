@@ -12,10 +12,12 @@ Examples
 ((('a',), ('b',)), (('c', 'd'), ('e', 'f')))
 """
 
-from typing import TypeVar, Iterator, Tuple, Optional, Set, Callable, Sequence
 import itertools
+from typing import Callable, Iterator, Optional, Sequence, Set, Tuple, TypeVar
+
 from toytree import Node, ToyTree
 from toytree.core.apis import TreeEnumAPI, add_subpackage_method
+
 # from toytree.utils import ToytreeError
 
 Query = TypeVar("Query")
@@ -72,7 +74,6 @@ def _iter_quadripartition_sets(
 
     # build a cache of descendants for each Node.
     for node in tree[:-1]:
-
         # if tip simply store its info
         if node.is_leaf():
             cache[node] = {node}
@@ -98,12 +99,11 @@ def _iter_quadripartition_sets(
     if include_internal_nodes:
         nodes = set(cache)
     else:
-        nodes = set(tree.get_nodes()[:tree.ntips])
+        nodes = set(tree.get_nodes()[: tree.ntips])
 
     # iterate over internal nodes/edges in the tree
     topnode = tree.nnodes - 2 if tree.is_rooted() else tree.nnodes - 1
-    for node in tree[tree.ntips: topnode]:
-
+    for node in tree[tree.ntips : topnode]:
         # get >= 2 sets of nodes for children below
         below = [cache[i] for i in node.children]
 
@@ -236,13 +236,14 @@ def iter_quadripartitions(
     else:
         # yield as type(*Nodes) or as type(feature(*Nodes))
         if feature is not None:
+
             def tformat(node_tuple):
                 return type(getattr(i, feature) for i in node_tuple)
         else:
             tformat = type
 
         # iterate over bipartitions and order items within
-        kwargs['feature'] = None
+        kwargs["feature"] = None
         for below, other in _iter_quadripartition_sets(**kwargs):
             # optional: sort qparts by len or min name (p3, p2), (p1, p0)
             # always: if not type==set sort within by name
@@ -260,7 +261,7 @@ def iter_quadripartitions(
                 plen1 = len(p1) + len(p2)
                 plen2 = len(p3) + len(p4)
                 if plen1 > plen2:
-                    p1, p2, p3, p4 = p3, p4, p1, p2 
+                    p1, p2, p3, p4 = p3, p4, p1, p2
                 elif plen1 == plen2:
                     if min(min(p1), min(p2)) > min(min(p3), min(p4)):
                         p1, p2, p3, p4 = p3, p4, p1, p2
@@ -341,7 +342,6 @@ def format_quadripartition(
 
 
 if __name__ == "__main__":
-
     import toytree
 
     # newick = "((a,b)X,((c,d)Y,e)Z)R;"
@@ -350,8 +350,10 @@ if __name__ == "__main__":
     # tree = toytree.rtree.baltree(12, seed=1234).unroot()
     tree = toytree.tree("(a,b,((c,d)CD,(e,f)EF)X)AB;")
 
-    results = iter_quadripartitions(tree, type=list, sort=True, include_internal_nodes=True)
-    
+    results = iter_quadripartitions(
+        tree, type=list, sort=True, include_internal_nodes=True
+    )
+
     for item in results:
         print(item[1][0][0])
 
@@ -368,11 +370,9 @@ if __name__ == "__main__":
     #  (('c', 'd'), ('a', 'b', 'e', 'f')),
     #  (('e', 'f'), ('a', 'b', 'c', 'd'))]
 
-
     # tree = tree.root("X")
     # for i in sorted(iter_quadripartitions(tree, sort=True, collapse=True)):
     #     print(i)
-
 
     # convert consistent bipartitions to sets for easy comparison
     # x = set(tree.root('a').enum.iter_quadripartitions(type=tuple, sort=True))

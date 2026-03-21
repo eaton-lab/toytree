@@ -65,63 +65,62 @@ def concat_style_fix_color(style: Dict[str, str], extra: str = None) -> str:
 
 
 if __name__ == "__main__":
-
     # print("result", concat_style_fix_color({"fill": (0, 0, 0, 0)}))
     # print("result", concat_style_fix_color({"fill": (0., 0., 0., 0.)}))
     sty1 = {
-        "fill": ToyColor((0., 0., 0., 0.5)),
+        "fill": ToyColor((0.0, 0.0, 0.0, 0.5)),
         "fill-opacity": False,
     }
     print(f"result: '{concat_style_fix_color(sty1)}'")
 
     sty2 = {
-        "fill": ToyColor((0., 0., 0., 0.5)),
+        "fill": ToyColor((0.0, 0.0, 0.0, 0.5)),
         "fill-opacity": None,
     }
     print(f"result: '{concat_style_fix_color(sty2)}'")
 
     sty3 = {
-        "fill": ToyColor((0., 0., 0., 0.5)),
+        "fill": ToyColor((0.0, 0.0, 0.0, 0.5)),
         "fill-opacity": 1.0,
     }
     print(f"result: '{concat_style_fix_color(sty3)}'")
 
     sty4 = {
-        "stroke": ToyColor((0., 0., 0., 0.5)),
+        "stroke": ToyColor((0.0, 0.0, 0.0, 0.5)),
         "stroke-opacity": 0.1,
     }
     print(f"result: '{concat_style_fix_color(sty4)}'")
 
     sty5 = {
-        "stroke": ToyColor((0., 0., 0., 0.5)),
+        "stroke": ToyColor((0.0, 0.0, 0.0, 0.5)),
         "stroke-opacity": False,
     }
     print(f"result: '{concat_style_fix_color(sty5)}'")
 
     sty6 = {
-        "stroke": ToyColor((0., 0., 0., 0.5)),
+        "stroke": ToyColor((0.0, 0.0, 0.0, 0.5)),
         "stroke-opacity": None,
     }
     print(f"result: '{concat_style_fix_color(sty6)}'")
 
     sty7 = {
-        "stroke": ToyColor((0., 0., 0., 0.5)),
+        "stroke": ToyColor((0.0, 0.0, 0.0, 0.5)),
         "stroke-opacity": 1.0,
     }
     print(f"result: '{concat_style_fix_color(sty7)}'")
 
     sty8 = {
-        "fill": ToyColor((0., 0., 0., 0.5)),
+        "fill": ToyColor((0.0, 0.0, 0.0, 0.5)),
         "fill-opacity": 1.0,
-        "stroke": ToyColor((0., 0., 0., 0.5)),
+        "stroke": ToyColor((0.0, 0.0, 0.0, 0.5)),
         "stroke-opacity": 1.0,
     }
     print(f"result: '{concat_style_fix_color(sty8)}'")
 
     sty9 = {
-        "fill": ToyColor((0., 0., 0., 0.5)),
+        "fill": ToyColor((0.0, 0.0, 0.0, 0.5)),
         "fill-opacity": 1.0,
-        "stroke": ToyColor((0., 0., 0., 0.5)),
+        "stroke": ToyColor((0.0, 0.0, 0.0, 0.5)),
         "stroke-opacity": 1.0,
         "stroke-width": 3.0,
     }

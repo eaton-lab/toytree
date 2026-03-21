@@ -1,14 +1,12 @@
 #!/usr/bin/env python
 
-"""Functionality for displaying a Toyplot canvas in a web browser.
+"""Functionality for displaying a Toyplot canvas in a web browser."""
 
-"""
-
-from typing import Sequence, Union, TypeVar
-import xml.etree.ElementTree as xml
 import tempfile
 import webbrowser
+import xml.etree.ElementTree as xml
 from pathlib import Path
+from typing import Sequence, TypeVar, Union
 
 Canvas = TypeVar("Canvas")
 
@@ -46,7 +44,8 @@ def show(
         pass
     else:
         raise ValueError(
-            f"Expected toyplot.Canvas or List[toyplot.Canvas], not {canvases}")
+            f"Expected toyplot.Canvas or List[toyplot.Canvas], not {canvases}"
+        )
 
     # wrap the toytree as a html/svg element
     html = xml.Element("html")
@@ -71,8 +70,7 @@ def show(
 
 
 if __name__ == "__main__":
-
-    import toytree
+    pass
     # tre = toytree.rtree.unittree(10)
     # c, a, m = tre.draw()
     # show(c, tmpdir="~")

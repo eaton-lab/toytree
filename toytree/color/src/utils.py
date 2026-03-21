@@ -1,11 +1,10 @@
 #!/usr/bin/env python
 
-"""Utilities for working with colors.
+"""Utilities for working with colors."""
 
-"""
-
-from typing import Optional, TypeVar
 import itertools
+from typing import Optional, TypeVar
+
 import toyplot.color
 
 Palette = TypeVar("Palette")
@@ -18,7 +17,7 @@ COLORS2 = toyplot.color.brewer.palette("Dark2")
 def color_cycler(palette: Optional[Palette] = None):
     """Return an infinite cycling iterator over colors in a palette.
 
-    This returns a generator that will cycle the palette infinitely. 
+    This returns a generator that will cycle the palette infinitely.
     If palette is None it uses `toytree.color.COLORS1` palette.
 
     Note
@@ -59,7 +58,7 @@ def color_cycler(palette: Optional[Palette] = None):
 #     Note
 #     -----
 #     If the user sets fill-opacity or stroke-opacity in a style dict
-#     it overrules/clobbers any value in the 'a' of the rgba. 
+#     it overrules/clobbers any value in the 'a' of the rgba.
 #     """
 #     if "fill" in style:
 #         color = style["fill"]
@@ -125,7 +124,6 @@ def color_cycler(palette: Optional[Palette] = None):
 
 
 if __name__ == "__main__":
-
     col = toyplot.color.rgba(1.0, 0.5, 0.5, 0.5)
     sty = {"fill": col, "width": "20px", "height": "20px"}
     print(sty)

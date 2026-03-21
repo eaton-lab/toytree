@@ -6,12 +6,15 @@ These functions take a tree as input and use Node int idx labels
 to select Nodes.
 """
 
-from typing import TypeVar, Tuple, Union, Dict, Iterator
 import itertools
+from typing import Dict, Iterator, Tuple, TypeVar, Union
+
 import numpy as np
 import pandas as pd
+
 from toytree import Node, ToyTree
 from toytree.core.apis import TreeDistanceAPI, add_subpackage_method
+
 # from toytree.utils import ToytreeError
 
 # type aliases
@@ -148,9 +151,7 @@ def get_node_distance(
 
 @add_subpackage_method(TreeDistanceAPI)
 def get_node_distance_matrix(
-    tree: ToyTree,
-    topology_only: bool = False,
-    df: bool = False
+    tree: ToyTree, topology_only: bool = False, df: bool = False
 ) -> Union[np.array, pd.DataFrame]:
     """Return pairwise distances between all Nodes in a ToyTree.
 
@@ -189,7 +190,6 @@ def get_node_distance_matrix(
 
     # traverse tree in postorder, but first visit all tips (idxorder).
     for idx, node in enumerate(tree.traverse("postorder")):
-
         # init clade list to store descendants of this node
         clade_map[node] = [idx]
 
@@ -198,13 +198,14 @@ def get_node_distance_matrix(
 
         # build desc list from children desc lists
         for child in node._children:
-
             # store child's clade list to parent's clade list
             clade = clade_map[child]
             clade_map[node].extend(clade)
 
             # set dist from child's clade members to parent
-            arr[clade, idx] = arr[clade, max(clade)] + (1 if topology_only else child._dist)
+            arr[clade, idx] = arr[clade, max(clade)] + (
+                1 if topology_only else child._dist
+            )
 
         # set children clade's dists to each other
         for ch0, ch1 in itertools.combinations(node._children, 2):
@@ -222,9 +223,8 @@ def get_node_distance_matrix(
     # optionally format as dataframe
     if not df:
         return arr[idxorder][:, idxorder]
-    index = tree.get_tip_labels() + [str(i.idx) for i in tree[tree.ntips:]]
-    return pd.DataFrame(
-        arr[idxorder][:, idxorder], columns=index, index=index)
+    index = tree.get_tip_labels() + [str(i.idx) for i in tree[tree.ntips :]]
+    return pd.DataFrame(arr[idxorder][:, idxorder], columns=index, index=index)
 
 
 @add_subpackage_method(TreeDistanceAPI)
@@ -257,15 +257,13 @@ def get_internal_node_distance_matrix(
     """
     arr = get_node_distance_matrix(tree, topology_only=topology_only, df=df)
     if not df:
-        return arr[tree.ntips:, tree.ntips:]
-    return arr.iloc[tree.ntips:, tree.ntips:]
+        return arr[tree.ntips :, tree.ntips :]
+    return arr.iloc[tree.ntips :, tree.ntips :]
 
 
 @add_subpackage_method(TreeDistanceAPI)
 def get_tip_distance_matrix(
-    tree: ToyTree,
-    topology_only: bool = False,
-    df: bool = False
+    tree: ToyTree, topology_only: bool = False, df: bool = False
 ) -> Union[np.array, pd.DataFrame]:
     """Return pairwise distances between tip Nodes in a ToyTree.
 
@@ -293,8 +291,8 @@ def get_tip_distance_matrix(
     """
     arr = get_node_distance_matrix(tree, topology_only=topology_only, df=df)
     if not df:
-        return arr[:tree.ntips, :tree.ntips]
-    return arr.iloc[:tree.ntips, :tree.ntips]
+        return arr[: tree.ntips, : tree.ntips]
+    return arr.iloc[: tree.ntips, : tree.ntips]
 
 
 @add_subpackage_method(TreeDistanceAPI)
@@ -429,7 +427,6 @@ def get_farthest_node_distance(
 
 
 if __name__ == "__main__":
-
     import toytree
     # TREE = toytree.rtree.unittree(10, seed=123)
     # print(TREE.draw())

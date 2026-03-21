@@ -7,22 +7,26 @@ to handle them more nicely than other random errors. This includes
 adding a logging.error message.
 """
 
+
 class ToytreeError(Exception):
     """BaseClass for many custom exceptions or common user errors."""
 
 
 class ToytreeRegexError(Exception):
     """Exceptions for data getting/setting on Nodes."""
+
     pass
 
 
 class NodeDataError(Exception):
     """Exceptions for data getting/setting on Nodes."""
+
     pass
 
 
 class ToyColorError(ToytreeError):
     """Exceptions for parsing color inputs."""
+
     pass
 
 
@@ -40,6 +44,7 @@ class StyleColorMappingTupleError(ToytreeError):
 
 class TreeNodeError(ToytreeError):
     """Exceptions for operating on immutable attributes."""
+
     pass
 
 
@@ -89,10 +94,10 @@ If you want to root on the MRCA of these nodes try:
 """
 
 if __name__ == "__main__":
-
     # raise ValueError("HELLO WORLD")
     # raise ToytreeError("HELLO WORLD")
     import toytree
+
     tree = toytree.rtree.unittree(10)
     # tree.draw(node_colors=['red', 'blue'])
     raise ToytreeError("error ")

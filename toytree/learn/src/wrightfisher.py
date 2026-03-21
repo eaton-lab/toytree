@@ -6,11 +6,13 @@ This is used to demonstrate how genetic drift creates by allele
 frequency change over generations, and generates genealogies.
 """
 
-from typing import Optional, Dict
-import toyplot
+from typing import Dict, Optional
+
 import numpy as np
-from toytree import ToyTree, Node
-from toytree.color import COLORS1, COLORS2, ToyColor, ColorType
+import toyplot
+
+from toytree import Node, ToyTree
+from toytree.color import COLORS1, ColorType, ToyColor
 
 
 class WrightFisherPlot:
@@ -29,7 +31,7 @@ class WrightFisherPlot:
         """: toyplot Canvas."""
         self.axes: toyplot.coordinates.Cartesian = None
         """: toyplot cartesian axes."""
-        self.marks: Dict[str, 'toyplot.Mark'] = {}
+        self.marks: Dict[str, "toyplot.Mark"] = {}
         """: toyplot Marks."""
         self.time: int = time
         """: Number of discrete generations to simulate evolution."""
@@ -73,18 +75,20 @@ class WrightFisherPlot:
 
     def draw_diploids(self):
         """Adds a rectangle around pairs of gene copies to represent a diploid individual."""
-        self.marks['diploids'] = self.axes.rectangle(
+        self.marks["diploids"] = self.axes.rectangle(
             self.coords[:, 0][::2] - 0.25,
             self.coords[:, 0][::2] + 1.25,
             self.coords[:, 1][::2] - 0.25,
             self.coords[:, 1][::2] + 0.25,
             style={
-                "fill": "lightgrey", "stroke": "grey",
-                "stroke-opacity": 0.75, "stroke-width": 1.5,
+                "fill": "lightgrey",
+                "stroke": "grey",
+                "stroke-opacity": 0.75,
+                "stroke-width": 1.5,
             },
         )
 
-    def get_ancestry_edges(self, sort: bool=True) -> None:
+    def get_ancestry_edges(self, sort: bool = True) -> None:
         """Sample ancestor-descendant relationships and store to .edges.
 
         This defines the ancestry connecting all gene copies in each
@@ -92,13 +96,13 @@ class WrightFisherPlot:
         """
         # iterate over each generation adding pairs of node indices
         for gen in range(self.grid.shape[0] - 1, 0, -1):
-
             # children idxs span from left to right
             lower_idxs = self.grid[gen]
 
             # randomly sample parent idxs (some have many children, some none)
             upper_idxs = self.rng.choice(
-                self.grid[gen - 1], size=self.grid[gen - 1].size, replace=True)
+                self.grid[gen - 1], size=self.grid[gen - 1].size, replace=True
+            )
 
             # get sorting index for the upper idxs
             if sort:
@@ -117,12 +121,17 @@ class WrightFisherPlot:
         """Draw ancestry edges with information in .edges."""
         # style the graph
         style = {
-            "vlshow": False, "ecolor": "black", "ewidth": 1.25,
-            'vsize': 0, 'estyle': {}, 'eopacity': 0.6}
+            "vlshow": False,
+            "ecolor": "black",
+            "ewidth": 1.25,
+            "vsize": 0,
+            "estyle": {},
+            "eopacity": 0.6,
+        }
         style.update(kwargs)
 
         # add graph lines from lower_idxs to upper_idxs, using coordinates for all
-        self.marks['genealogy'] = self.axes.graph(
+        self.marks["genealogy"] = self.axes.graph(
             self.edges,
             vcoordinates=self.coords[sorted(np.unique(self.edges))],
             **style,
@@ -147,10 +156,10 @@ class WrightFisherPlot:
         style = {
             "vlshow": False,
             "vsize": 8,
-            "vmarker": 'o',
+            "vmarker": "o",
             "vcolor": "black",
-            "vstyle": {'stroke': 'black', 'stroke-width': 2},
-            "ecolor": 'black',
+            "vstyle": {"stroke": "black", "stroke-width": 2},
+            "ecolor": "black",
             "ewidth": 3,
             "estyle": {},
         }
@@ -160,15 +169,16 @@ class WrightFisherPlot:
             vcoordinates=self.coords[sorted(np.unique(self.sampled_edges))],
             **style,
         )
-        self.marks['genealogy'] = mark
+        self.marks["genealogy"] = mark
 
     def get_allele_states(self, allele_frequency=0.5):
         """Fills allele states based on ancestry edges."""
         if allele_frequency in [0, 1]:
             self.alleles[:] = 0
         else:
-            self.alleles[:2 * self.popsize] = self.rng.binomial(
-                n=1, p=allele_frequency, size=2 * self.popsize)
+            self.alleles[: 2 * self.popsize] = self.rng.binomial(
+                n=1, p=allele_frequency, size=2 * self.popsize
+            )
             for child in range(self.popsize * 2, self.popsize * 2 * self.time):
                 parent = self.edges[self.edges[:, 0] == child, 1][0]
                 self.alleles[child] = self.alleles[parent]
@@ -186,7 +196,7 @@ class WrightFisherPlot:
         """
         style = {
             "marker": "o",
-            "size": 6,  #self.canvas.width / self.grid.shape[1] / 7.5,
+            "size": 6,  # self.canvas.width / self.grid.shape[1] / 7.5,
             "mstyle": {
                 "stroke": "black",
                 "stroke-opacity": 0.75,
@@ -203,18 +213,18 @@ class WrightFisherPlot:
             rgb = [1 - i for i in color.rgba[:3]]
             color1 = color.css
             color2 = ToyColor(tuple(rgb + [1.0])).css
-        style['color'] = [color1 if i == 0 else color2 for i in self.alleles]
+        style["color"] = [color1 if i == 0 else color2 for i in self.alleles]
 
         # plot marks
         mark = self.axes.scatterplot(
-            self.coords[:, 0], self.coords[:, 1],
+            self.coords[:, 0],
+            self.coords[:, 1],
             **style,
         )
-        self.marks['haploids'] = mark
+        self.marks["haploids"] = mark
 
     def get_genealogy(self, nsamples: int) -> ToyTree:
         """Returns a toytree matching to the evolved genealogy."""
-
         raise NotImplementedError("Coming soon.")
         # build dict of samples {0: Node(), 1: Node(), 2: Node(), ...}
         nodes = {i: Node(name=i) for i in range(nsamples)}
@@ -294,7 +304,6 @@ def wright_fisher_simulation(
 
 
 if __name__ == "__main__":
-
     import toyplot.browser
 
     # wf = WrightFisherPlot(seed=None, time=40, popsize=16, width=500, height=800)
@@ -304,8 +313,12 @@ if __name__ == "__main__":
     # wf.add_haploids()            # this should go last
 
     wf = wright_fisher_simulation(
-        time=30, popsize=16, seed=123, nsamples=5,
-        width=500, height=500,
+        time=30,
+        popsize=16,
+        seed=123,
+        nsamples=5,
+        width=500,
+        height=500,
         show_diploids=True,
         node_size=6,
         allele_frequency=0.5,

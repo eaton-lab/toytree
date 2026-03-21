@@ -59,9 +59,11 @@ def _iter_unresolved_quartet_sets(tree: ToyTree, feature: str = None) -> Iterato
     if feature is None:
         sformat = set
     else:
+
         def sformat(qrt) -> Set[str]:
             return set(getattr(node, feature) for node in qrt)
-    for qrt in itertools.combinations(tree[:tree.ntips], 4):
+
+    for qrt in itertools.combinations(tree[: tree.ntips], 4):
         yield sformat(qrt)
 
 
@@ -129,7 +131,7 @@ def _iter_quartet_sets(
 @add_subpackage_method(TreeEnumAPI)
 def iter_quartets(
     tree: ToyTree,
-    feature: Optional[str] = 'name',
+    feature: Optional[str] = "name",
     type: Callable = set,
     sort: bool = False,
     collapse: bool = False,
@@ -184,12 +186,12 @@ def iter_quartets(
     if (type == set) and (collapse is True):  # noqa: E721
         collapse = False
         logger.warning(
-            "collapse argument cannot be used with type=set, using collapse=False")
+            "collapse argument cannot be used with type=set, using collapse=False"
+        )
 
     # quartet args
     kwargs = dict(tree=tree, feature=None, quadripartitions=quadripartitions)
     for i, j, x, y in _iter_quartet_sets(**kwargs):
-
         # sort within by min name
         if type != set:  # noqa: E721
             if i.name > j.name:
@@ -215,7 +217,6 @@ def iter_quartets(
 
 
 if __name__ == "__main__":
-
     import toytree
 
     tree = toytree.rtree.unittree(6, seed=123, random_names=True)

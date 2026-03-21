@@ -63,7 +63,9 @@ def _validate_inputs(
         raise ValueError(f"imap maps to unknown species labels (e.g., {ex}).")
 
 
-def _compute_desc_species(gtree: ToyTree, imap: Mapping[str, str]) -> dict[int, frozenset[str]]:
+def _compute_desc_species(
+    gtree: ToyTree, imap: Mapping[str, str]
+) -> dict[int, frozenset[str]]:
     """Compute descendant species sets for each gene-tree node."""
     desc: dict[int, frozenset[str]] = {}
     for node in gtree:
@@ -77,7 +79,9 @@ def _compute_desc_species(gtree: ToyTree, imap: Mapping[str, str]) -> dict[int, 
     return desc
 
 
-def _compute_lca_mapping(gtree: ToyTree, sptree: ToyTree, desc_species: Mapping[int, frozenset[str]]) -> dict[int, int]:
+def _compute_lca_mapping(
+    gtree: ToyTree, sptree: ToyTree, desc_species: Mapping[int, frozenset[str]]
+) -> dict[int, int]:
     """Map each gene-tree node to species-tree node idx by LCA mapping."""
     mapping: dict[int, int] = {}
     for node in gtree:
@@ -117,7 +121,9 @@ def _compute_losses(
         if sp_parent == sp_child:
             continue
 
-        dist = int(sptree.distance.get_node_distance(sp_parent, sp_child, topology_only=True))
+        dist = int(
+            sptree.distance.get_node_distance(sp_parent, sp_child, topology_only=True)
+        )
         if dist <= 0:
             continue
 
@@ -150,7 +156,9 @@ def _compute_extra_lineages(
             edge_counts[cur.idx] += 1
             if cur.up is None:
                 # Defensive guard against inconsistent mapping.
-                raise ValueError("Invalid mapping: child mapping is not within parent mapping path.")
+                raise ValueError(
+                    "Invalid mapping: child mapping is not within parent mapping path."
+                )
             cur = cur.up
 
     edge_extra = {eid: max(0, cnt - 1) for eid, cnt in edge_counts.items()}
@@ -250,9 +258,11 @@ def reconcile_gene_tree_dlc(
     # Compute duplication, loss, and coalescence-like components.
     dups = _compute_duplications(wtree, ns_map)
     losses_per_node, losses_total = _compute_losses(wtree, sptree, ns_map, dups)
-    coal_per_node, coal_total, _edge_counts = _compute_extra_lineages(wtree, sptree, ns_map)
+    coal_per_node, coal_total, _edge_counts = _compute_extra_lineages(
+        wtree, sptree, ns_map
+    )
 
-    dups_total = int(sum(1 for n in wtree[wtree.ntips:] if dups[n.idx]))
+    dups_total = int(sum(1 for n in wtree[wtree.ntips :] if dups[n.idx]))
     score = int(dups_total + losses_total + coal_total)
 
     # Annotate standardized reconciliation features onto the returned tree.
