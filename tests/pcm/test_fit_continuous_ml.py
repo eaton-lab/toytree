@@ -5,7 +5,7 @@ import pandas as pd
 import pytest
 
 import toytree
-from toytree.pcm.src.traits.fit_continuous_ml import FitContinuousMLResult
+from toytree.pcm.src.traits.fit_continuous_ml import PCMContinuousMLFitResult
 from toytree.utils import ToytreeError
 
 
@@ -23,9 +23,9 @@ def tree_with_x(make_unittree, add_feature_from_tip_series):
 
 
 def test_fit_accepts_feature_name_single_model(tree_with_x):
-    """Single-model fit returns one FitContinuousMLResult."""
+    """Single-model fit returns one PCMContinuousMLFitResult."""
     out = tree_with_x.pcm.fit_continuous_ml("X", model="BM")
-    assert isinstance(out, FitContinuousMLResult)
+    assert isinstance(out, PCMContinuousMLFitResult)
     assert out.model == "BM"
     assert np.isfinite(float(out.log_likelihood))
 
@@ -35,7 +35,7 @@ def test_fit_accepts_series(tree_with_x, tip_labels):
     series = tree_with_x.get_node_data("X", missing=np.nan).iloc[: tree_with_x.ntips]
     series.index = tip_labels(tree_with_x)
     out = toytree.pcm.fit_continuous_ml(tree_with_x, series, model="OU")
-    assert isinstance(out, FitContinuousMLResult)
+    assert isinstance(out, PCMContinuousMLFitResult)
     assert out.model == "OU"
     assert np.isfinite(float(out.sigma2))
 
@@ -49,7 +49,7 @@ def test_fit_none_returns_model_fits_and_aicc_table(tree_with_x):
     model_fits = out["model_fits"]
     table = out["model_table"]
     assert set(model_fits) == {"BM", "OU", "EB"}
-    assert all(isinstance(v, FitContinuousMLResult) for v in model_fits.values())
+    assert all(isinstance(v, PCMContinuousMLFitResult) for v in model_fits.values())
     assert "AIC" in table.columns
     assert "AICc" in table.columns
     assert "weight_AIC" in table.columns
@@ -106,11 +106,11 @@ def test_fit_accepts_new_bounds_arg_names(tree_with_x):
         model="OU",
         bounds_alpha=(1e-10, 10.0),
     )
-    assert isinstance(out, FitContinuousMLResult)
+    assert isinstance(out, PCMContinuousMLFitResult)
 
     out2 = tree_with_x.pcm.fit_continuous_ml(
         "X",
         model="EB",
         bounds_r=(-5.0, 5.0),
     )
-    assert isinstance(out2, FitContinuousMLResult)
+    assert isinstance(out2, PCMContinuousMLFitResult)

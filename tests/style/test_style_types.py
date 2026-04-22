@@ -6,7 +6,7 @@ from __future__ import annotations
 
 import pytest
 
-from toytree.style.src.style_types import (
+from toytree.core.style_types import (
     STYLE_DICTS,
     TreeStyleU,
     get_base_tree_style_by_name,

@@ -2,6 +2,7 @@
 
 """Tests for depth-N NNI/SPR move utilities."""
 
+import pytest
 from conftest import PytestCompat
 
 import toytree
@@ -47,3 +48,21 @@ class TestTreeMoveDepthN(PytestCompat):
         self.assertTrue(trees)
         moved = self.tree.mod.move_spr_n(n=1, mode="walk", seed=2)
         self.assertIsInstance(moved, toytree.ToyTree)
+
+
+def test_removed_highlight_kwargs_raise_type_error() -> None:
+    """Tree-move helpers should no longer accept highlight kwargs."""
+    tree = toytree.rtree.unittree(ntips=7, seed=123)
+
+    calls = [
+        lambda: toytree.mod.move_nni(tree, highlight=True),
+        lambda: toytree.mod.move_spr(tree, highlight=True),
+        lambda: list(toytree.mod.iter_nni_n(tree, highlight=True)),
+        lambda: list(toytree.mod.iter_spr_n(tree, highlight=True)),
+        lambda: toytree.mod.move_nni_n(tree, highlight=True),
+        lambda: toytree.mod.move_spr_n(tree, highlight=True),
+    ]
+
+    for call in calls:
+        with pytest.raises(TypeError):
+            call()

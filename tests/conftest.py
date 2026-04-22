@@ -243,6 +243,7 @@ def simulate_mv_continuous_tips(
         data = tree.pcm.simulate_multivariate_continuous_trait(
             model="bm",
             params=params,
+            names=["t0", "t1"],
             tips_only=True,
             seed=seed,
         )
@@ -275,8 +276,6 @@ def simulate_discrete_tips(
             seed=seed,
             **kwargs,
         )
-        if isinstance(data, pd.DataFrame):
-            data = data.iloc[:, 0]
         if set_tip_index:
             data.index = tip_labels(tree)
         if as_int:
@@ -408,7 +407,7 @@ def gradient_canvas_factory() -> Callable[[], object]:
         tree = toytree.rtree.bdtree(8, seed=123)
         tree.pcm.simulate_discrete_trait(
             3,
-            trait_name="X",
+            name="X",
             state_names="ABC",
             inplace=True,
             seed=123,

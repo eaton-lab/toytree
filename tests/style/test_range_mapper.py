@@ -9,7 +9,7 @@ import pandas as pd
 import pytest
 
 import toytree
-from toytree.style import get_range_mapped_feature, get_range_mapped_values
+from toytree.data import get_range_mapped_feature, get_range_mapped_values
 from toytree.utils import ToytreeError
 
 
@@ -17,6 +17,15 @@ def test_get_range_mapped_feature_from_tree_feature() -> None:
     """Map numeric tree feature values to a requested range."""
     tree = toytree.rtree.unittree(4).set_node_data("x", [0, 1, 2, 3, 4, 5, 6])
     vals = get_range_mapped_feature(tree, "x", min_value=1, max_value=5)
+    assert len(vals) == tree.nnodes
+    assert float(np.nanmin(vals)) == pytest.approx(1.0)
+    assert float(np.nanmax(vals)) == pytest.approx(5.0)
+
+
+def test_tree_get_range_mapped_feature_from_tree_feature() -> None:
+    """ToyTree should expose the feature range-mapper directly."""
+    tree = toytree.rtree.unittree(4).set_node_data("x", [0, 1, 2, 3, 4, 5, 6])
+    vals = tree.get_range_mapped_feature("x", min_value=1, max_value=5)
     assert len(vals) == tree.nnodes
     assert float(np.nanmin(vals)) == pytest.approx(1.0)
     assert float(np.nanmax(vals)) == pytest.approx(5.0)

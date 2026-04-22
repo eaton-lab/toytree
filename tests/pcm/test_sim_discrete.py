@@ -3,6 +3,7 @@ import pandas as pd
 import pytest
 
 from toytree.pcm.src.sim.sim_discrete import MarkovModel, simulate_discrete_trait
+from toytree.utils import ToytreeError
 
 
 @pytest.fixture
@@ -39,14 +40,13 @@ class TestDiscreteMarkovModelSim:
         np.testing.assert_allclose(model_a.relative_rates, model_b.relative_rates)
         np.testing.assert_allclose(model_a.state_frequencies, model_b.state_frequencies)
 
-    def test_simulate_returns_series_when_inplace_true_single_replicate(self, tree6):
-        """Single replicate returns Series and still writes to the tree."""
+    def test_simulate_returns_series_when_inplace_true(self, tree6):
+        """Simulation returns a Series and still writes to the tree."""
         data = simulate_discrete_trait(
             tree=tree6,
             nstates=3,
             model="ER",
-            nreplicates=1,
-            trait_name="X",
+            name="X",
             state_names=["A", "B", "C"],
             inplace=True,
             seed=123,
@@ -55,67 +55,47 @@ class TestDiscreteMarkovModelSim:
         assert data.name == "X"
         assert "X" in tree6.features
 
-    def test_default_output_states_are_strings_single_replicate(self, tree6):
-        """Default unlabeled states are numeric strings, not ints."""
+    def test_default_output_states_are_uppercase_strings(self, tree6):
+        """Small state spaces default to uppercase string labels."""
         data = simulate_discrete_trait(
             tree=tree6,
             nstates=3,
             model="ER",
-            nreplicates=1,
             seed=123,
         )
         assert isinstance(data, pd.Series)
         values = set(data.dropna().tolist())
-        assert values.issubset({"0", "1", "2"})
+        assert values.issubset({"A", "B", "C"})
         assert all(isinstance(i, str) for i in values)
 
-    def test_default_output_states_are_strings_multi_replicate(self, tree6):
-        """Default unlabeled states are numeric strings for DataFrame output."""
+    def test_large_state_spaces_fall_back_to_numeric_strings(self, tree6):
+        """Larger state spaces use numeric string labels by default."""
         data = simulate_discrete_trait(
             tree=tree6,
-            nstates=3,
+            nstates=27,
             model="ER",
-            nreplicates=3,
             seed=123,
         )
-        assert isinstance(data, pd.DataFrame)
-        values = set(pd.unique(data.to_numpy().ravel()))
-        assert values.issubset({"0", "1", "2"})
+        values = set(data.dropna().tolist())
+        assert values
         assert all(isinstance(i, str) for i in values)
+        assert all(value.isdigit() for value in values)
 
     def test_default_inplace_stores_strings(self, tree6):
-        """Default unlabeled states written to tree are strings."""
+        """Default labels written to the tree remain string-valued."""
         data = simulate_discrete_trait(
             tree=tree6,
             nstates=3,
             model="ER",
-            nreplicates=1,
-            trait_name="X",
+            name="X",
             inplace=True,
             seed=123,
         )
         vals = tree6.get_node_data("X").dropna().tolist()
         assert vals
         assert all(isinstance(i, str) for i in vals)
-        assert set(vals).issubset({"0", "1", "2"})
-        assert set(data.dropna().tolist()).issubset({"0", "1", "2"})
-
-    def test_simulate_returns_dataframe_when_inplace_true_multi_replicate(self, tree6):
-        """Multiple replicates return DataFrame and still write to the tree."""
-        data = simulate_discrete_trait(
-            tree=tree6,
-            nstates=3,
-            model="ER",
-            nreplicates=3,
-            trait_name="X",
-            state_names=["A", "B", "C"],
-            inplace=True,
-            seed=123,
-        )
-        assert isinstance(data, pd.DataFrame)
-        assert list(data.columns) == ["X_0", "X_1", "X_2"]
-        for col in data.columns:
-            assert col in tree6.features
+        assert set(vals).issubset({"A", "B", "C"})
+        assert set(data.dropna().tolist()).issubset({"A", "B", "C"})
 
     def test_simulate_tips_only_inplace_true_still_returns_data(self, tree6):
         """tips_only=True and inplace=True still returns the simulated object."""
@@ -123,9 +103,8 @@ class TestDiscreteMarkovModelSim:
             tree=tree6,
             nstates=2,
             model="ER",
-            nreplicates=1,
             tips_only=True,
-            trait_name="X",
+            name="X",
             state_names=["A", "B"],
             inplace=True,
             seed=123,
@@ -134,48 +113,24 @@ class TestDiscreteMarkovModelSim:
         assert data.shape[0] == tree6.ntips
         assert "X" in tree6.features
 
-    def test_state_names_override_default_string_labels(self, tree6):
-        """Custom state_names labels override default numeric-string labels."""
+    def test_state_names_override_default_labels(self, tree6):
+        """Custom state_names labels override default alphabetic labels."""
         data = simulate_discrete_trait(
             tree=tree6,
             nstates=3,
             model="ER",
-            nreplicates=1,
-            state_names=["A", "B", "C"],
+            state_names=["alpha", "beta", "gamma"],
             seed=123,
         )
         values = set(data.dropna().tolist())
-        assert values.issubset({"A", "B", "C"})
+        assert values.issubset({"alpha", "beta", "gamma"})
 
 
-# Additional source-driven tests.
-
-
-def test_nreplicates_less_than_one_is_coerced_to_single_series(tree6):
-    """Nreplicates < 1 is coerced to one replicate and returns Series."""
-    data = simulate_discrete_trait(
-        tree=tree6,
-        nstates=2,
-        model="ER",
-        nreplicates=0,
-        seed=123,
-    )
-    assert isinstance(data, pd.Series)
-    assert data.name == "t0"
-
-
-def test_default_single_replicate_name_is_t0(tree6):
-    """Single replicate default output name is t0."""
+def test_default_series_name_is_x(tree6):
+    """Single discrete simulations default to the Series name X."""
     data = simulate_discrete_trait(tree=tree6, nstates=2, model="ER", seed=123)
     assert isinstance(data, pd.Series)
-    assert data.name == "t0"
-
-
-def test_default_multi_replicate_column_names_are_t_series(tree6):
-    """Multiple replicate default output names follow t0, t1, ... pattern."""
-    data = simulate_discrete_trait(tree=tree6, nstates=2, model="ER", nreplicates=3)
-    assert isinstance(data, pd.DataFrame)
-    assert list(data.columns) == ["t0", "t1", "t2"]
+    assert data.name == "X"
 
 
 def test_root_state_is_respected_at_root_node(tree6):
@@ -185,9 +140,55 @@ def test_root_state_is_respected_at_root_node(tree6):
         nstates=3,
         model="ER",
         root_state=2,
-        nreplicates=1,
         state_names=["A", "B", "C"],
         seed=123,
     )
     root_idx = tree6.treenode.idx
     assert data.loc[root_idx] == "C"
+
+
+def test_lowercase_model_labels_are_accepted(tree6):
+    """Model labels are normalized to uppercase for convenience."""
+    data = simulate_discrete_trait(tree=tree6, nstates=2, model="er", seed=123)
+    assert isinstance(data, pd.Series)
+    assert data.name == "X"
+
+
+def test_seed_accepts_numpy_generator(tree6):
+    """Discrete simulation accepts a Generator as the seed argument."""
+    rng = np.random.default_rng(123)
+    data = simulate_discrete_trait(tree=tree6, nstates=2, model="ER", seed=rng)
+    assert isinstance(data, pd.Series)
+
+
+def test_removed_nreplicates_kwarg_raises(tree6):
+    """Multi-replicate output is no longer part of the public API."""
+    with pytest.raises(TypeError):
+        simulate_discrete_trait(  # type: ignore[call-arg]
+            tree=tree6,
+            nstates=2,
+            model="ER",
+            nreplicates=2,
+        )
+
+
+def test_blank_name_raises_toytree_error(tree6):
+    """Blank output names are rejected."""
+    with pytest.raises(ToytreeError, match="name must be a non-empty string"):
+        simulate_discrete_trait(
+            tree=tree6,
+            nstates=2,
+            model="ER",
+            name="  ",
+        )
+
+
+def test_state_names_must_match_nstates(tree6):
+    """Custom state labels must match the number of modeled states."""
+    with pytest.raises(ToytreeError, match="state_names length must match nstates"):
+        simulate_discrete_trait(
+            tree=tree6,
+            nstates=3,
+            model="ER",
+            state_names=["A", "B"],
+        )

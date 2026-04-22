@@ -8,7 +8,7 @@ with trees as data, or data on trees. All subpackages make use only of
 standard Python data science libs (e.g., numpy, scipy, pandas).
 """
 
-__version__ = "3.1.0.dev0"
+__version__ = "3.1.0.dev1"
 __author__ = "Deren Eaton"
 
 # toytree v3 supported subpackages (lazy-loaded for faster imports)
@@ -20,6 +20,7 @@ import importlib as _importlib
 _LAZY_SUBMODULES = {
     "annotate": "toytree.annotate",
     # "color": "toytree.color",
+    "core": "toytree.core",
     "data": "toytree.data",
     "distance": "toytree.distance",
     # "drawing": "toytree.drawing",

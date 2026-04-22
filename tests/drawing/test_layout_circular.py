@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 import toytree
+from toytree.core import TreeStyle
 from toytree.layout.src.layout_circular import CircularLayout, _parse_circular_layout
 from toytree.utils import ToytreeError
 
@@ -45,7 +46,7 @@ def test_parse_circular_layout_rejects_invalid_cases(layout):
 def test_circular_layout_uses_unit_depths_when_edge_lengths_are_zero():
     """Zero-length trees fall back to unit cladogram heights."""
     tree = toytree.tree("((a:0,b:0):0,(c:0,d:0):0);")
-    style = tree.style.copy()
+    style = TreeStyle()
     style.layout = "c"
     style.use_edge_lengths = True
 
@@ -61,7 +62,7 @@ def test_circular_layout_uses_unit_depths_when_edge_lengths_are_zero():
 def test_circular_layout_single_tip_tree_smoke():
     """A one-tip tree produces valid coordinate tables without special casing."""
     tree = toytree.tree("a;")
-    style = tree.style.copy()
+    style = TreeStyle()
     style.layout = "c0-180"
 
     layout = CircularLayout(tree, style)

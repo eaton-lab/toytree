@@ -28,6 +28,23 @@ class TestAnnotateAddTipMarkers(PytestCompat):
         self.assertIsNotNone(mark)
         self.assertEqual(mark.ntable.shape[0], self.tree.ntips)
 
+    def test_add_tip_markers_accepts_color_dict_format(self):
+        c, a, m = self.tree.draw(layout="d", edge_type="p")
+        mark = self.tree.annotate.add_tip_markers(
+            a,
+            marker="o",
+            size=8,
+            color={
+                "feature": "idx",
+                "cmap": "BlueRed",
+                "domain_min": 0,
+                "domain_max": self.tree.ntips - 1,
+            },
+        )
+        toyplot.html.render(c)
+        self.assertIsNotNone(mark)
+        self.assertEqual(mark.ntable.shape[0], self.tree.ntips)
+
     def test_add_tip_markers_mask_tuple_shortcut(self):
         c, a, m = self.tree.draw(layout="c", edge_type="p")
         mark = self.tree.annotate.add_tip_markers(

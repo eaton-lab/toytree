@@ -40,6 +40,18 @@ def test_draw_prefers_tree_style_over_ts_alias() -> None:
     assert mark.layout == "r"
 
 
+def test_tree_has_no_stored_style_attribute() -> None:
+    """ToyTree should no longer store persistent draw style state."""
+    tree = toytree.rtree.unittree(8, seed=20)
+
+    try:
+        _ = tree.style
+    except AttributeError:
+        pass
+    else:
+        raise AssertionError("ToyTree.style should not exist.")
+
+
 def test_draw_layout_none_keeps_base_style_layout() -> None:
     """layout=None should keep the base style layout."""
     tree = toytree.rtree.unittree(8, seed=3)

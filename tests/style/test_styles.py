@@ -9,11 +9,12 @@ from conftest import PytestCompat
 import toytree
 
 # from toytree.color import ToyColor
-from toytree.style import TreeStyle, validate_style
-from toytree.style.src.validate_data import (
+from toytree.core import TreeStyle
+from toytree.drawing.src.validate_data import (
     validate_mask,
     validate_numeric,
 )
+from toytree.drawing.src.validate_style import validate_style
 from toytree.utils import ToytreeError
 
 
@@ -25,7 +26,7 @@ class TestValidateStyle(PytestCompat):
 
     def test_style_copy(self):
         """Copying a style should deepcopy (copies of substyles and dicts)."""
-        _ = self.tree.style.copy()
+        _ = self.style.copy()
 
     def test_style_raise_exception_on_validate_bad_color(self):
         """Show style in notebook without fail on complex settings."""
@@ -54,7 +55,9 @@ class TestValidateMask(PytestCompat):
         ]
         for arg in tests:
             validate_mask(
-                tree=self.tree, tree_style=self.tree.style, style={"node_mask": arg}
+                tree=self.tree,
+                tree_style=TreeStyle(),
+                style={"node_mask": arg},
             )
 
     def test_style_raise_on_bad_mask(self):
@@ -67,12 +70,13 @@ class TestValidateNumeric(PytestCompat):
 
     def test_style_validate_numeric_int(self):
         tree = self.tree.copy()
-        tree.style.node_sizes = 10
+        style = TreeStyle()
+        style.node_sizes = 10
         vals = validate_numeric(
             tree=tree,
             key="node_sizes",
             size=tree.nnodes,
-            tree_style=tree.style,
+            tree_style=style,
             style={},
         )
         self.assertTrue(isinstance(vals, np.ndarray))
@@ -82,12 +86,13 @@ class TestValidateNumeric(PytestCompat):
 
     def test_style_validate_numeric_int_array(self):
         tree = self.tree.copy()
-        tree.style.node_sizes = np.arange(tree.nnodes)
+        style = TreeStyle()
+        style.node_sizes = np.arange(tree.nnodes)
         vals = validate_numeric(
             tree=tree,
             key="node_sizes",
             size=tree.nnodes,
-            tree_style=tree.style,
+            tree_style=style,
             style={},
         )
         self.assertTrue(isinstance(vals, np.ndarray))
@@ -96,13 +101,14 @@ class TestValidateNumeric(PytestCompat):
 
     def test_style_validate_numeric_float_with_nan(self):
         tree = self.tree.copy()
-        tree.style.node_sizes = np.ones(tree.nnodes)
-        tree.style.node_sizes[3] = np.nan
+        style = TreeStyle()
+        style.node_sizes = np.ones(tree.nnodes)
+        style.node_sizes[3] = np.nan
         vals = validate_numeric(
             tree=tree,
             key="node_sizes",
             size=tree.nnodes,
-            tree_style=tree.style,
+            tree_style=style,
             style={},
         )
         self.assertTrue(isinstance(vals, np.ndarray))
@@ -113,12 +119,13 @@ class TestValidateNumeric(PytestCompat):
     def test_style_validate_numeric_none(self):
         """None should return array of 0 of correct length"""
         tree = self.tree.copy()
-        tree.style.node_sizes = None
+        style = TreeStyle()
+        style.node_sizes = None
         vals = validate_numeric(
             tree=tree,
             key="node_sizes",
             size=tree.nnodes,
-            tree_style=tree.style,
+            tree_style=style,
             style={},
         )
         self.assertTrue(isinstance(vals, np.ndarray))
@@ -139,7 +146,7 @@ class TestValidateNumeric(PytestCompat):
     #             tree=tree,
     #             key="node_sizes",
     #             size=tree.nnodes,
-    #             tree_style=tree.style,
+    #             tree_style=TreeStyle(),
     #             style={},
     #         )
     #         self.assertTrue(isinstance(vals, np.ndarray))
@@ -147,9 +154,10 @@ class TestValidateNumeric(PytestCompat):
     #         self.assertTrue(isinstance(vals[1], np.float64))
 
     def test_style_validate_numeric_nnodes(self):
-        self.tree.style.node_sizes = 5.0
+        base_style = TreeStyle()
+        base_style.node_sizes = 5.0
         tests = [
-            None,  # gets it from .style instead of from arg
+            None,  # gets it from the base style instead of from arg
             np.full(self.tree.nnodes, 5.0),
             np.arange(self.tree.nnodes, dtype=np.float64),
             5.0,
@@ -164,7 +172,7 @@ class TestValidateNumeric(PytestCompat):
             vals = validate_numeric(
                 tree=self.tree,
                 key="node_sizes",
-                tree_style=self.tree.style,
+                tree_style=base_style,
                 size=self.tree.nnodes,
                 style={"node_sizes": arg, "other": "..."},
             )
