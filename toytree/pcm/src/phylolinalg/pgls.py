@@ -34,14 +34,14 @@ if TYPE_CHECKING:
     from toytree.core import ToyTree
 
 __all__ = [
-    "PGLSResult",
-    "PGLSPruningModel",
+    "PCMPGLSResult",
+    "PCMPGLSPruningModel",
     "pgls",
 ]
 
 
 @dataclass
-class PGLSResult:
+class PCMPGLSResult:
     """Container for pruning-based PGLS fit results.
 
     The object stores coefficient estimates, uncertainty summaries, fitted
@@ -102,7 +102,7 @@ class PGLSResult:
 
     def __repr__(self) -> str:
         """Return a statsmodels-like compact text summary."""
-        lines = ["PGLSResult", "-" * 10]
+        lines = ["PCMPGLSResult", "-" * 10]
         lines.append(
             f"response={self.response_name}  nobs={self.nobs}  "
             f"k_params={len(self.design_columns)}"
@@ -172,7 +172,7 @@ class PGLSResult:
         coef_html = tbl.to_html(border=0, classes="toytree-pgls-coef")
         return (
             "<div style='font-family:sans-serif;line-height:1.3;'>"
-            "<div style='font-weight:600;margin-bottom:4px;'>PGLSResult</div>"
+            "<div style='font-weight:600;margin-bottom:4px;'>PCMPGLSResult</div>"
             "<table style='border-collapse:collapse;margin-bottom:6px;'>"
             f"{meta_html}</table>"
             f"{coef_html}"
@@ -554,7 +554,7 @@ class PhyloPruningEngine:
         return float(quad), float(logdet)
 
 
-class PGLSPruningModel:
+class PCMPGLSPruningModel:
     """Gaussian PGLS fitted using pruning-based linear algebra."""
 
     def __init__(
@@ -640,7 +640,7 @@ class PGLSPruningModel:
             return np.inf
         return np.inf if not np.isfinite(stats.llf) else -float(stats.llf)
 
-    def fit(self, lambda_: float | None = None) -> PGLSResult:
+    def fit(self, lambda_: float | None = None) -> PCMPGLSResult:
         """Fit the linear PGLS model with fixed or optimized Pagel's lambda."""
         upper = float(_max_lambda(self.tree))
         if not np.isfinite(upper) or upper <= 0:
@@ -694,7 +694,7 @@ class PGLSPruningModel:
             name="resid",
         )
 
-        return PGLSResult(
+        return PCMPGLSResult(
             params=params,
             bse=bse,
             vcov=vcov_df,
@@ -721,7 +721,7 @@ def pgls(
     lambda_: float | None = None,
     y_stderr: str | Mapping | pd.Series | None = None,
     epsilon: float = 1e-12,
-) -> PGLSResult:
+) -> PCMPGLSResult:
     """Fit a linear-time phylogenetic GLS model using pruning recursions.
 
     This function fits a Gaussian phylogenetic linear model for a continuous
@@ -762,7 +762,7 @@ def pgls(
 
     Returns
     -------
-    PGLSResult
+    PCMPGLSResult
         A fitted pruning-based PGLS result object containing coefficient
         estimates, uncertainty summaries, fitted values, residuals, and model
         metadata including the fitted Pagel's lambda.
@@ -794,7 +794,9 @@ def pgls(
     Examples
     --------
     >>> tree = toytree.rtree.unittree(ntips=20, seed=123)
-    >>> dat = tree.pcm.simulate_multivariate_continuous_trait(model="bm", params=np.diag([0.5, 1.0]), tips_only=True, seed=123)
+    >>> dat = tree.pcm.simulate_multivariate_continuous_trait(
+    ...     model="bm", params=np.diag([0.5, 1.0]), tips_only=True, seed=123
+    ... )
     >>> fit = tree.pcm.pgls("t0 ~ t1", data=dat)
     >>> fit.params.index.tolist()
     ['Intercept', 't1']
@@ -808,7 +810,7 @@ def pgls(
         y_stderr=y_stderr,
         epsilon=epsilon,
     )
-    model = PGLSPruningModel(
+    model = PCMPGLSPruningModel(
         fit_tree,
         ymat,
         xmat,

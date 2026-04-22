@@ -30,13 +30,13 @@ _MODULE_EXPORTS = {
         "get_relative_evolutionary_divergence",
     ],
     "toytree.pcm.src.phylolinalg.pglm": [
-        "PGLMResult",
-        "PGLMPruningModel",
+        "PCMPGLMResult",
+        "PCMPGLMPruningModel",
         "pglm",
     ],
     "toytree.pcm.src.phylolinalg.pgls": [
-        "PGLSResult",
-        "PGLSPruningModel",
+        "PCMPGLSResult",
+        "PCMPGLSPruningModel",
         "pgls",
     ],
     "toytree.pcm.src.phylolinalg.pgls_infer": [
@@ -59,20 +59,23 @@ _MODULE_EXPORTS = {
         "simulate_pgls_trait",
     ],
     "toytree.pcm.src.sim.sim_stochastic_mapping": [
+        "PCMStochasticMapResult",
         "simulate_stochastic_map",
     ],
     "toytree.pcm.src.traits.aic_table": [
+        "PCMModelResult",
         "aic_table",
     ],
     "toytree.pcm.src.traits.fit_discrete_ctmc": [
+        "PCMDiscreteCTMCFitResult",
         "fit_discrete_ctmc",
         "infer_ancestral_states_discrete_ctmc",
     ],
     "toytree.pcm.src.traits.fit_continuous_ml": [
         "fit_continuous_ml",
         "infer_ancestral_states_continuous_ml",
-        "ContinuousMLModelFit",
-        "FitContinuousMLResult",
+        "PCMContinuousMLModelFit",
+        "PCMContinuousMLFitResult",
     ],
     "toytree.pcm.src.traits.pgls_matrix": [
         "pgls_matrix",

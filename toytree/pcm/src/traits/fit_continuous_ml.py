@@ -26,7 +26,7 @@ from scipy.optimize import minimize_scalar
 
 from toytree.core.apis import PhyloCompAPI, add_subpackage_method
 from toytree.data._src.expand_node_mapping import expand_node_mapping
-from toytree.pcm.src.traits.aic_table import ModelResult, aic_table
+from toytree.pcm.src.traits.aic_table import PCMModelResult, aic_table
 from toytree.utils.src.exceptions import ToytreeError
 
 if TYPE_CHECKING:
@@ -35,13 +35,13 @@ if TYPE_CHECKING:
 __all__ = [
     "fit_continuous_ml",
     "infer_ancestral_states_continuous_ml",
-    "ContinuousMLModelFit",
-    "FitContinuousMLResult",
+    "PCMContinuousMLModelFit",
+    "PCMContinuousMLFitResult",
 ]
 
 
 @dataclass
-class FitContinuousMLResult(ModelResult):
+class PCMContinuousMLFitResult(PCMModelResult):
     """Container for one fitted continuous-trait model.
 
     Parameters
@@ -82,7 +82,7 @@ class FitContinuousMLResult(ModelResult):
     def __repr__(self) -> str:
         """Return a concise text summary of one model fit."""
         return (
-            "FitContinuousMLResult(\n"
+            "PCMContinuousMLFitResult(\n"
             f"  model={self.model}, nobs={self.nobs}, nparams={self.nparams}\n"
             f"  log_likelihood={self.log_likelihood:.6g}\n"
             f"  mu={self.mu:.6g}, sigma2={self.sigma2:.6g}, "
@@ -92,7 +92,7 @@ class FitContinuousMLResult(ModelResult):
         )
 
 
-class ContinuousMLModelFit:
+class PCMContinuousMLModelFit:
     """Fit BM/OU/EB models for a single continuous trait.
 
     Parameters
@@ -327,10 +327,10 @@ class ContinuousMLModelFit:
         message: str,
         alpha: Optional[float],
         r: Optional[float],
-    ) -> FitContinuousMLResult:
+    ) -> PCMContinuousMLFitResult:
         """Build a typed model result object from numeric fit outputs."""
         nparams = 2 if model == "BM" else 3
-        return FitContinuousMLResult(
+        return PCMContinuousMLFitResult(
             model=model,
             log_likelihood=float(fit["loglik"]),
             nparams=int(nparams),
@@ -343,7 +343,7 @@ class ContinuousMLModelFit:
             optimizer_message=str(message),
         )
 
-    def fit_one(self, model: Literal["BM", "OU", "EB"]) -> FitContinuousMLResult:
+    def fit_one(self, model: Literal["BM", "OU", "EB"]) -> PCMContinuousMLFitResult:
         """Fit one selected model and return its ML estimates."""
         model = self._coerce_model(model)
         if model == "BM":
@@ -365,19 +365,19 @@ class ContinuousMLModelFit:
             r=r,
         )
 
-    def fit_all(self) -> dict[str, FitContinuousMLResult]:
+    def fit_all(self) -> dict[str, PCMContinuousMLFitResult]:
         """Fit BM, OU, and EB and return results keyed by model name."""
         return {m: self.fit_one(m) for m in ("BM", "OU", "EB")}
 
     def _infer_node_states(
         self,
-        model_fit: FitContinuousMLResult,
+        model_fit: PCMContinuousMLFitResult,
     ) -> tuple[pd.Series, pd.Series]:
         """Infer conditional node means and variances from one fitted model.
 
         Parameters
         ----------
-        model_fit : FitContinuousMLResult
+        model_fit : PCMContinuousMLFitResult
             A fitted model result containing ``model``, ``mu``, ``sigma2``, and
             optional ``alpha``/``r`` parameters.
 
@@ -459,7 +459,7 @@ def fit_continuous_ml(
     model: Optional[Literal["BM", "OU", "EB"]] = None,
     bounds_alpha: tuple[float, float] = (1e-12, 20.0),
     bounds_r: tuple[float, float] = (-20.0, 20.0),
-) -> FitContinuousMLResult | dict[str, object]:
+) -> PCMContinuousMLFitResult | dict[str, object]:
     """Fit continuous-trait ML models and optionally perform model selection.
 
     Parameters
@@ -478,17 +478,17 @@ def fit_continuous_ml(
 
     Returns
     -------
-    FitContinuousMLResult or dict[str, object]
-        If ``model`` is provided, returns one ``FitContinuousMLResult``.
-        If ``model`` is None, returns
-        ``{"model_fits": dict[str, FitContinuousMLResult], "model_table": DataFrame}``.
+    PCMContinuousMLFitResult or dict[str, object]
+        If ``model`` is provided, returns one ``PCMContinuousMLFitResult``.
+        If ``model`` is None, returns a dict with ``"model_fits"`` and
+        ``"model_table"`` entries.
 
     Raises
     ------
     ToytreeError
         If inputs are invalid or covariance operations fail numerically.
     """
-    fitter = ContinuousMLModelFit(
+    fitter = PCMContinuousMLModelFit(
         tree=tree,
         data=data,
         bounds_alpha=bounds_alpha,
@@ -536,7 +536,7 @@ def infer_ancestral_states_continuous_ml(
     dict[str, object]
         Dictionary with keys:
 
-        - ``"model_fit"``: fitted ``FitContinuousMLResult``.
+        - ``"model_fit"``: fitted ``PCMContinuousMLFitResult``.
         - ``"data"``: ``pd.DataFrame`` with ``{trait}_anc`` and
           ``{trait}_anc_var`` columns for all nodes.
 
@@ -545,7 +545,7 @@ def infer_ancestral_states_continuous_ml(
     ToytreeError
         If inputs are invalid or covariance operations fail numerically.
     """
-    fitter = ContinuousMLModelFit(
+    fitter = PCMContinuousMLModelFit(
         tree=tree,
         data=data,
         bounds_alpha=bounds_alpha,

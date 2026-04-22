@@ -7,6 +7,22 @@ from __future__ import annotations
 import importlib
 
 _LAZY_ATTRS = {
+    "PCMModelResult": (
+        "toytree.pcm.src.traits.aic_table",
+        "PCMModelResult",
+    ),
+    "PCMDiscreteCTMCFitResult": (
+        "toytree.pcm.src.traits.fit_discrete_ctmc",
+        "PCMDiscreteCTMCFitResult",
+    ),
+    "fit_discrete_ctmc": (
+        "toytree.pcm.src.traits.fit_discrete_ctmc",
+        "fit_discrete_ctmc",
+    ),
+    "infer_ancestral_states_discrete_ctmc": (
+        "toytree.pcm.src.traits.fit_discrete_ctmc",
+        "infer_ancestral_states_discrete_ctmc",
+    ),
     "fit_continuous_ml": (
         "toytree.pcm.src.traits.fit_continuous_ml",
         "fit_continuous_ml",
@@ -15,13 +31,13 @@ _LAZY_ATTRS = {
         "toytree.pcm.src.traits.fit_continuous_ml",
         "infer_ancestral_states_continuous_ml",
     ),
-    "ContinuousMLModelFit": (
+    "PCMContinuousMLModelFit": (
         "toytree.pcm.src.traits.fit_continuous_ml",
-        "ContinuousMLModelFit",
+        "PCMContinuousMLModelFit",
     ),
-    "FitContinuousMLResult": (
+    "PCMContinuousMLFitResult": (
         "toytree.pcm.src.traits.fit_continuous_ml",
-        "FitContinuousMLResult",
+        "PCMContinuousMLFitResult",
     ),
 }
 

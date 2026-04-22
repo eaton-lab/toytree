@@ -28,7 +28,7 @@ Generate tip predictors on the tree, then simulate a PGLS response:
 ...     nstates=2,
 ...     model="ER",
 ...     rate_scalar=0.8,
-...     trait_name="group",
+...     name="group",
 ...     tips_only=True,
 ...     inplace=True,
 ...     seed=2,
@@ -199,7 +199,7 @@ def simulate_pgls_trait(
     >>> tree.pcm.simulate_discrete_trait(
     ...     nstates=2,
     ...     model="ER",
-    ...     trait_name="ecotype",
+    ...     name="ecotype",
     ...     tips_only=True,
     ...     inplace=True,
     ...     seed=12,

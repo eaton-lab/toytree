@@ -15,15 +15,17 @@ References
 
 from __future__ import annotations
 
+import string
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Any, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Sequence
 
 import numpy as np
 import pandas as pd
 import scipy.linalg
 
 from toytree.core.apis import PhyloCompAPI, add_subpackage_method
+from toytree.utils.src.exceptions import ToytreeError
 
 if TYPE_CHECKING:
     from toytree.core import ToyTree
@@ -69,7 +71,7 @@ class MarkovModel:
     """: Equilibrium frequencies of the nstates."""
     rate_scalar: float = 1.0
     """: Rate scalar to multiple relative rates by."""
-    seed: Optional[int] = None
+    seed: int | np.random.Generator | None = None
     """: Random seed used if relative_rates is None."""
 
     # attributes filled after init.
@@ -81,8 +83,12 @@ class MarkovModel:
     """: Instantaneous rate matrix (Q)."""
 
     def __post_init__(self):
-        self.rng = np.random.default_rng(self.seed)
-        self.mtype = ModelType(self.mtype)
+        self.rng = (
+            self.seed
+            if isinstance(self.seed, np.random.Generator)
+            else np.random.default_rng(self.seed)
+        )
+        self.mtype = ModelType(str(self.mtype).upper())
         self._check_rates()
         self._check_freqs()
         self._set_transition_matrix()
@@ -276,13 +282,17 @@ class DiscreteMarkovSimulator:
     """: MarkovModel object with parameterized Q matrix."""
     root_state: Optional[int] = None
     """: Integer character state at the root."""
-    seed: Optional[int] = None
+    seed: int | np.random.Generator | None = None
     """: ..."""
     rng: np.random.Generator = field(init=False)
     """: ..."""
 
     def __post_init__(self):
-        self.rng = np.random.default_rng(self.seed)
+        self.rng = (
+            self.seed
+            if isinstance(self.seed, np.random.Generator)
+            else np.random.default_rng(self.seed)
+        )
 
     def _edge_sim(self, state: int, time: float) -> int:
         """Return the state at end of this time given starting state."""
@@ -306,16 +316,37 @@ class DiscreteMarkovSimulator:
             arr[node._idx] = state
         return arr
 
-    def run(self, nreplicates: int) -> pd.DataFrame:
-        """Return a DataFrame with simulated discrete (integer) data.
+    def run(self) -> np.ndarray:
+        """Return one simulated realization indexed by node idx."""
+        return self._traversal_sim()
 
-        Node idx labels as index, and columns labeled t0-t{replicates}.
-        """
-        arr = np.zeros((self.tree.nnodes, nreplicates), dtype=np.int64)
-        for ridx in range(nreplicates):
-            arr[:, ridx] = self._traversal_sim()
-        traits = [f"t{i}" for i in range(nreplicates)]
-        return pd.DataFrame(data=arr, index=range(self.tree.nnodes), columns=traits)
+
+def _coerce_trait_name(name: str) -> str:
+    """Return a validated trait name."""
+    name = str(name)
+    if not name.strip():
+        raise ToytreeError("name must be a non-empty string.")
+    return name
+
+
+def _default_state_names(nstates: int) -> list[str]:
+    """Return default state labels for a discrete simulation."""
+    if nstates <= len(string.ascii_uppercase):
+        return list(string.ascii_uppercase[:nstates])
+    return [str(i) for i in range(nstates)]
+
+
+def _coerce_state_names(
+    state_names: Sequence[Any] | None,
+    nstates: int,
+) -> list[Any]:
+    """Return validated state labels for a discrete simulation."""
+    if state_names is None:
+        return _default_state_names(nstates)
+    labels = list(state_names)
+    if len(labels) != nstates:
+        raise ToytreeError("state_names length must match nstates.")
+    return labels
 
 
 ####################################################################
@@ -327,7 +358,7 @@ def get_markov_model(
     rate_scalar: float = 1.0,
     relative_rates: Optional[np.ndarray] = None,
     state_frequencies: Optional[np.ndarray] = None,
-    seed: Optional[int] = None,
+    seed: int | np.random.Generator | None = None,
 ) -> MarkovModel:
     """Return a parameterized MarkovModel instance.
 
@@ -344,9 +375,8 @@ def get_markov_model(
     Parameters
     ----------
     nstates: int
-        The number of states to simulate. By default, output states are
-        labeled as numeric strings ``"0"`` to ``"{nstates - 1}"`` unless
-        you use ``state_names`` to provide custom labels.
+        The number of modeled states, ordered internally as state indices
+        ``0`` to ``nstates - 1``.
     model: str
         The Markov model name ("ER", "SYM", or "ARD"). This is used
         to either sample random valid parameters for a model of the
@@ -363,8 +393,8 @@ def get_markov_model(
     state_frequencies: Optional[numpy.ndarray]
         Equilibrium frequencies of states 0-n in order (must sum
         to one.
-    seed: Optional[int]
-        Integer seed for numpy random number generator.
+    seed: int | numpy.random.Generator | None
+        Seed or random-number generator used for any sampled parameters.
 
     Returns
     -------
@@ -399,13 +429,12 @@ def simulate_discrete_trait(
     state_frequencies: Optional[np.ndarray] = None,
     root_state: Optional[int] = None,
     rate_scalar: Optional[float] = 1.0,
-    nreplicates: int = 1,
     tips_only: bool = False,
-    trait_name: Optional[str] = None,
-    state_names: Optional[List[Any]] = None,
-    seed: Optional[int] = None,
+    name: str = "X",
+    state_names: Sequence[Any] | None = None,
+    seed: int | np.random.Generator | None = None,
     inplace: bool = False,
-) -> Union[pd.DataFrame, pd.Series]:
+) -> pd.Series:
     """Return trait values simulated under a discrete Markov model.
 
     The number of states and model type can be entered without any
@@ -420,8 +449,9 @@ def simulate_discrete_trait(
     tree: toytree.ToyTree
         The tree on which to simulate the trait, usually ultrametric.
     nstates: int
-        The number of states to simulate. States will be names as
-        integers 0-nstates, unless you use `state_names` to rename.
+        The number of states to simulate. By default, states are labeled
+        ``"A"``, ``"B"``, ``"C"``, ... for small state spaces and fall back
+        to numeric strings for larger ``nstates``.
     model: str
         The Markov model name ("ER", "SYM", or "ARD"). This is used
         to either sample random valid parameters for a model of the
@@ -441,66 +471,57 @@ def simulate_discrete_trait(
         as a unit scaler. Example, rate=1e-6 would mean that a 1
         in the relatives rates matrix represents 1 change per
         million edge length units on a tree. Default=1 (no scaling)
-    seed: Optional[int]
-        Integer seed for numpy random number generator.
     tips_only: bool
         If True values are only returned for tip Nodes, else values are
         returned for all Nodes in the tree.
-    state_names: Optional[List[Any]]
+    name : str, default="X"
+        Name for the returned Series and for inplace storage on the tree when
+        ``inplace=True``.
+    state_names: Sequence[Any] | None
         Labels to substitute for simulated integer state indices in the
-        entered order. If None, default labels are numeric strings.
-    nreplicates: int
-        If nreplicates is > 1 then a DataFrame is returned with
-        replicate numbers as columns. If nreplicates is <= 1 then a
-        single Series is returned.
-    trait_name: Optional[str]
-        Name for the returned trait(s). If provided and nreplicates is
-        1, the Series name is set to this value. If nreplicates is > 1,
-        columns are named `{trait_name}_0`, `{trait_name}_1`, etc. If
-        None, traits are named `t0`, `t1`, ... (current default).
+        entered order. If None, defaults are uppercase single-letter labels
+        for ``nstates <= 26`` and numeric strings otherwise.
+    seed : int | numpy.random.Generator | None
+        Seed or random-number generator.
     inplace: bool
         If True, simulated trait data are also written to the input tree as
-        node features. The simulated data object is still returned.
+        node features. The simulated Series is still returned.
+
+    Returns
+    -------
+    pandas.Series
+        Simulated trait values indexed by node idx, or by tip idx rows only if
+        ``tips_only=True``.
+
+    Raises
+    ------
+    ToytreeError
+        If ``name`` is blank or if ``state_names`` does not match ``nstates``.
 
     Examples
     --------
     >>> tree = toytree.rtree.unittree(10)
-    >>>
-    >>> # simulate a single trait
-    >>> toytree.pcm.simulate_discrete_trait(tree, 2, "ER")
-    >>> # 0    "1"
-    >>> # 1    "0"
-    >>> # 2    "1"
-    >>> # 3    "0"
-    >>> # 4    "0"
-    >>> # 5    "0"
-    >>> # Name: t0, dtype: object
-    >>>
-    >>> # simulate multiple replicate simulations
-    >>> toytree.pcm.simulate_discrete_trait(
-    >>>     tree=tree, nstates=2, model="ARD",
-    >>>     rate=0.1,
-    >>>     relative_rates=[[0, 2], [1, 0]],
-    >>>     state_frequencies=[0.4, 0.6],
-    >>>     nreplicates=5,
-    >>>     tips_only=True,
-    >>>     state_names=["A", "B"],
-    >>> )
-    >>>
-    >>> #     t0  t1  t2  t3  t4
-    >>> # 0   A   B   A   A   B
-    >>> # 1   B   B   A   B   B
-    >>> # 2   A   B   B   A   B
-    >>> # 3   A   B   B   B   B
-    >>> # 4   B   B   A   B   B
-    >>> # ...
+    >>> x = toytree.pcm.simulate_discrete_trait(tree, 3, "ER")
+    >>> x.name
+    'X'
+    >>> y = toytree.pcm.simulate_discrete_trait(
+    ...     tree=tree,
+    ...     nstates=3,
+    ...     model="SYM",
+    ...     name="ecotype",
+    ...     state_names=["A", "B", "C"],
+    ...     tips_only=True,
+    ... )
     """
+    name = _coerce_trait_name(name)
+    labels = _coerce_state_names(state_names, nstates)
     model = MarkovModel(
-        mtype=model,
+        mtype=str(model).upper(),
         nstates=nstates,
         relative_rates=relative_rates,
         state_frequencies=state_frequencies,
         rate_scalar=rate_scalar,
+        seed=seed,
     )
     simulator = DiscreteMarkovSimulator(
         tree=tree,
@@ -509,42 +530,20 @@ def simulate_discrete_trait(
         seed=seed,
     )
 
-    if nreplicates < 1:
-        nreplicates = 1
+    traits = pd.Series(
+        simulator.run(), index=range(tree.nnodes), name=name, dtype=object
+    )
 
-    # get DataFrame or Series result
-    traits = simulator.run(nreplicates)
-
-    # subsample to return only tips
     if tips_only:
-        traits = traits.iloc[: tree.ntips]
+        traits = traits.iloc[: tree.ntips].copy()
 
-    # convert internal integer state indices to user-facing labels. Defaults
-    # are numeric strings to encourage categorical treatment downstream.
-    if state_names is None:
-        state_names = [str(i) for i in range(nstates)]
-    for idx, value in enumerate(state_names):
+    # Convert integer state indices to user-facing categorical labels before
+    # optionally storing the result on the tree.
+    for idx, value in enumerate(labels):
         traits.replace(to_replace=idx, value=value, inplace=True)
 
-    # rename traits if user provided a trait_name
-    if trait_name is not None:
-        if nreplicates == 1:
-            traits.columns = [trait_name]
-        else:
-            traits.columns = [f"{trait_name}_{i}" for i in range(nreplicates)]
-
-    # return a Series if only one replicate
-    if nreplicates == 1:
-        series = traits.iloc[:, 0].copy()
-        if series.name is None:
-            series.name = traits.columns[0]
-        if inplace:
-            tree.set_node_data(series.name, series, inplace=True, default=np.nan)
-        return series
-
-    # store data to ToyTree or return as DataFrame
     if inplace:
-        tree.set_node_data_from_dataframe(traits, inplace=True)
+        tree.set_node_data(traits.name, traits, inplace=True, default=np.nan)
     return traits
 
 
@@ -568,21 +567,10 @@ if __name__ == "__main__":
         state_frequencies=[0.1, 0.3, 0.6],
         tips_only=True,
         root_state=0,
-        nreplicates=10,
-        state_names=["a", "b", "c"],
+        name="X",
+        state_names=["A", "B", "C"],
     )
-    # print(data.T)
-    # data = simulate_discrete_trait(tre, nstates=2, inplace=True)
     print(data)
-
-    # get many trees with traits simulated
-    # ...
-
-    # get a dataframe of tip or node traits
-    # ...
-
-    # get an array of many replicate sim data
-    # ...
 
     model = get_markov_model(
         model="SYM",

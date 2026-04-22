@@ -176,9 +176,7 @@ def _phylogenetic_signal_k_with_se(
 
 
 def _calculate_k(x: np.ndarray, V: np.ndarray, IV: np.ndarray = None) -> float:
-    """Return K statistic calculated for data x and variance-covariance
-    matrix V.
-    """
+    """Return K statistic calculated for data x and variance-covariance matrix V."""
     # compute PGLS mean (root state)
     n = x.size
     IV = IV if IV is not None else np.linalg.inv(V)
@@ -193,7 +191,7 @@ def _calculate_k(x: np.ndarray, V: np.ndarray, IV: np.ndarray = None) -> float:
 def _calculate_k_with_se(
     x: np.ndarray, V: np.ndarray, IV: np.ndarray, E: np.ndarray
 ) -> tuple[float, float]:
-    """ """
+    """Return K statistic and estimated sigma2 when measurement error is used."""
     # start using no error vcv
     a = np.sum(IV @ x) / np.sum(IV)
     n = x.size
@@ -284,23 +282,25 @@ if __name__ == "__main__":
 
     # generate test data
     tree = toytree.rtree.unittree(ntips=50, treeheight=1.0, seed=123)
-    traits = tree.pcm.simulate_continuous_trait("bm", params=1.0, seed=123, tips_only=True)
-    traits["se"] = np.random.default_rng(seed=123).uniform(0, 0.01, tree.ntips)
+    trait = tree.pcm.simulate_continuous_trait(
+        "bm", params=1.0, seed=123, tips_only=True
+    )
+    error = np.random.default_rng(seed=123).uniform(0, 0.01, tree.ntips)
 
     # write data
     tree.write("/tmp/test.nwk")
-    traits.to_csv("/tmp/test.csv")
+    trait.to_csv("/tmp/test.csv")
 
     #
-    k = phylogenetic_signal_k(tree=tree, data=traits.t0, nsims=1000)
+    k = phylogenetic_signal_k(tree=tree, data=trait, nsims=1000)
     logger.info(k)
 
-    k = phylogenetic_signal_k(tree=tree, data=traits.t0, error=traits.se, nsims=1000)
+    k = phylogenetic_signal_k(tree=tree, data=trait, error=error, nsims=1000)
     logger.info(k)
 
     #
-    k = phylogenetic_signal_k(tree=tree, data=traits.se, nsims=1000)
+    k = phylogenetic_signal_k(tree=tree, data=error, nsims=1000)
     logger.info(k)
 
-    k = phylogenetic_signal_k(tree=tree, data=traits.se, error=traits.se, nsims=1000)
+    k = phylogenetic_signal_k(tree=tree, data=error, error=error, nsims=1000)
     logger.info(k)
