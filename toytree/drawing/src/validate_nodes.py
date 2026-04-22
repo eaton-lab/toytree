@@ -11,11 +11,12 @@ Problem
 [ ] all substyles as dicts w/ keys converted to css style: (fill-opacity, -toyplot-anchor-shift)
 """
 
-from typing import Union, Dict, TypeVar
-import numpy as np
-from toytree.color import ToyColor
+from typing import Dict, TypeVar, Union
 
-from toytree.style.src.style_base import NodeStyle
+import numpy as np
+
+from toytree.color import ToyColor
+from toytree.core.style_base import NodeStyle
 
 ToyTree = TypeVar("ToyTree")
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -65,7 +66,6 @@ def validate_node_style(
 
 
 if __name__ == "__main__":
-
     import toytree
 
     tree = toytree.rtree.unittree(10, seed=123)

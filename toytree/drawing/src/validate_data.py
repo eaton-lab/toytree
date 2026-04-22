@@ -1,21 +1,21 @@
 #!/usr/bin/env python
 
-"""Testing simple alternative validation
+"""Testing simple alternative validation"""
 
-"""
-
-from typing import Union, Sequence, Mapping, Any, Dict, TypeVar, Tuple, Optional, List
+from collections.abc import Mapping as ABCMapping
 from copy import deepcopy
+from typing import Any, Dict, List, Mapping, Optional, Sequence, Tuple, TypeVar, Union
+
 import numpy as np
 import toyplot
-from toytree.color import ToyColor
-from toytree.utils import ToytreeError, ToyColorError
-from toytree.style.src.validate_utils import check_arr
-from toytree.style.src.style_base import NodeStyle, NodeLabelStyle, TreeStyle
-from toytree.style.src.map_values import get_range_mapped_feature
-from toytree.style.src.map_colors import get_color_mapped_feature
-from toytree.network.src.parse_network import AdmixtureEvent
 
+from toytree.color import ToyColor
+from toytree.core.style_base import NodeLabelStyle, NodeStyle, TreeStyle
+from toytree.data._src.map_colors import get_color_mapped_feature
+from toytree.data._src.map_values import get_range_mapped_feature
+from toytree.drawing.src.validate_utils import check_arr
+from toytree.network.src.parse_network import AdmixtureEvent
+from toytree.utils import ToyColorError, ToytreeError
 
 ToyTree = TypeVar("ToyTree")
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -34,10 +34,63 @@ __all__ = [
 ]
 
 
+_COLOR_MAP_DICT_ALLOWED_KEYS = frozenset(
+    {
+        "feature",
+        "cmap",
+        "domain_min",
+        "domain_max",
+        "nan_value",
+        "reverse",
+    }
+)
+
+
+def _coerce_color_mapping_dict(
+    colors: ABCMapping[str, Any],
+    *,
+    tips_only: bool,
+) -> dict[str, Any]:
+    """Return validated kwargs for explicit dict-format feature color mapping."""
+    if "tips_only" in colors:
+        raise ToytreeError(
+            "Dict-format color mapping does not accept 'tips_only'; "
+            "it is inferred from draw or annotation context."
+        )
+
+    unknown = set(colors) - _COLOR_MAP_DICT_ALLOWED_KEYS
+    if unknown:
+        allowed = ", ".join(sorted(_COLOR_MAP_DICT_ALLOWED_KEYS))
+        unknown_str = ", ".join(sorted(unknown))
+        raise ToytreeError(
+            f"Dict-format color mapping got unsupported keys: {unknown_str}. "
+            f"Allowed keys: {allowed}."
+        )
+
+    if "feature" not in colors:
+        raise ToytreeError("Dict-format color mapping requires a 'feature' key.")
+
+    feature = colors["feature"]
+    if not isinstance(feature, str):
+        raise ToytreeError(
+            "Dict-format color mapping requires 'feature' to be a string."
+        )
+
+    return {
+        "feature": feature,
+        "cmap": colors.get("cmap"),
+        "domain_min": colors.get("domain_min"),
+        "domain_max": colors.get("domain_max"),
+        "nan_value": colors.get("nan_value"),
+        "reverse": colors.get("reverse", False),
+        "tips_only": tips_only,
+    }
+
+
 def validate_mask(
     tree: ToyTree,
     tree_style: Optional[TreeStyle] = None,
-    style: Optional[Mapping[str, Any]] = None
+    style: Optional[Mapping[str, Any]] = None,
 ) -> np.ndarray:
     """Return a draw-ready boolean array controlling shown nodes.
 
@@ -112,7 +165,8 @@ def validate_numeric(
     if isinstance(values, (int, float)):
         values = np.repeat(values, size)
 
-    # expand str feature name to a tuple of (feature, min, max) so that nan is handled below
+    # Expand str feature names into a tuple of (feature, min, max) so
+    # downstream range mapping handles missing values consistently.
     elif isinstance(values, str):
         if size == tree.ntips:
             data = tree.get_tip_data(values)
@@ -184,7 +238,8 @@ def validate_colors(
     Only expand .node_colors into an array of size nnodes if there
     is variation among nodes.
 
-    node_colors: Union[None, Color, Sequence[Color], tuple[str, str]],
+    Explicit draw / annotation args can also use dict-format feature
+    mapping, e.g. ``{"feature": "dist", "cmap": "BlueRed"}``.
 
     Args
     ----
@@ -197,6 +252,7 @@ def validate_colors(
     """
     # get node_colors value, else get from TreeStyle, else None.
     colors = style.get(key)
+    colors_from_explicit_style = colors is not None
 
     # if None then try to get from TreeSTyle
     if colors is None:
@@ -209,6 +265,10 @@ def validate_colors(
     if colors is None:
         return None, None
 
+    if colors_from_explicit_style and isinstance(colors, ABCMapping):
+        kw = _coerce_color_mapping_dict(colors, tips_only=size == tree.ntips)
+        return get_color_mapped_feature(tree, **kw), None
+
     # do colormapping if colors is a str feature name
     if isinstance(colors, str) and colors in tree.features:
         # do not colormap feature if feature is already a valid list of colors
@@ -216,7 +276,7 @@ def validate_colors(
             colors = ToyColor.color_expander(tree.get_node_data(colors))
         # else colormap it
         except ToyColorError:
-            colors = (colors, )
+            colors = (colors,)
 
     # special (feature, cmap), but not single color as tuple (0, 0, 1, 1).
     if isinstance(colors, tuple) and isinstance(colors[0], str):
@@ -361,7 +421,6 @@ def validate_labels(
 
     # tuple (feature, str or Callable)
     if isinstance(labels, tuple) and isinstance(labels[0], str):
-
         # get feature data
         feature, *formatter = labels
         labels = tree.get_node_data(feature).values[:size]
@@ -376,11 +435,12 @@ def validate_labels(
                 labels = np.array([formatter(i, *args) for i in labels])
             else:
                 raise ToytreeError(
-                    "Tuple type label arg must be (feature, Callable, *args) or (feature, formatter).\n"
+                    "Tuple type label arg must be (feature, Callable, *args) "
+                    "or (feature, formatter).\n"
                     "Examples with Callable:\n"
                     ">>> node_labels=('dist', lambda x: round(x, 2)) \n"
                     ">>> node_labels=('dist', round, 2)\n"
-                    ">>> tip_labels=('name', lambda x: f'<i>{x}</i>')"
+                    ">>> tip_labels=('name', lambda x: f'<i>{x}</i>')\n"
                     "Examples with format string:\n"
                     ">>> node_labels=('dist', '{:.4g}')"
                 )
@@ -483,9 +543,8 @@ def validate_admixture_edges(
     tree: ToyTree,
     **kwargs,
 ) -> List[Tuple]:
-    """Return the aedges list with src,dest expanded to Nodes.
-    """
-    admixture_edges = kwargs['style'].get("admixture_edges")
+    """Return the aedges list with src,dest expanded to Nodes."""
+    admixture_edges = kwargs["style"].get("admixture_edges")
     if admixture_edges is None:
         return []
     if not admixture_edges:
@@ -497,13 +556,14 @@ def validate_admixture_edges(
     elif isinstance(admixture_edges, AdmixtureEvent):
         admixture_edges = [admixture_edges]
     if not isinstance(admixture_edges, list):
-        raise TypeError("admixture_edges must be a list[AdmixtureEvent] or List[tuple[int,int]]")
+        raise TypeError(
+            "admixture_edges must be a list[AdmixtureEvent] or List[tuple[int,int]]"
+        )
 
     # convert each one to a tuple (int, int, float, float, float, {}, str)
     aedges = []
     for idx, aedge in enumerate(admixture_edges):
         if isinstance(aedge, tuple):
-
             # create object
             aedge = AdmixtureEvent(
                 src=aedge[0],
@@ -536,7 +596,6 @@ def validate_admixture_edges(
 
 
 if __name__ == "__main__":
-
     import toytree
 
     tree = toytree.rtree.unittree(10, seed=123)
@@ -550,10 +609,18 @@ if __name__ == "__main__":
     # node_sizes = validate_node_sizes(tree, False)
     # print(node_sizes)
 
-    # node_labels_style = validate_node_labels_style(tree, style={"fill": "red", "fill-opacity": 0.1}, serialize=True, )
+    # node_labels_style = validate_node_labels_style(
+    #     tree,
+    #     style={"fill": "red", "fill-opacity": 0.1},
+    #     serialize=True,
+    # )
     # print(node_labels_style)
 
-    # node_style = validate_node_style(tree, style={"fill": "red", "fill-opacity": 0.1}, serialize=True)
+    # node_style = validate_node_style(
+    #     tree,
+    #     style={"fill": "red", "fill-opacity": 0.1},
+    #     serialize=True,
+    # )
     # print(node_style)
 
     # colors = validate_node_colors(tree, ['red'] * tree.nnodes)
@@ -562,6 +629,8 @@ if __name__ == "__main__":
     # colors = validate_node_colors(tree, ('idx', "Spectral"))
     # print(colors)
 
-    tree.style.admixture_edges = [(3, 4)]
-    aedges = validate_admixture_edges(tree, **{"style": {"admixture_edges": (2, 3)}})
+    aedges = validate_admixture_edges(
+        tree,
+        **{"style": {"admixture_edges": [(3, 4), (2, 3)]}},
+    )
     print(aedges)

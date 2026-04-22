@@ -2,17 +2,19 @@
 
 """Map feature values to colors for plotting."""
 
+from __future__ import annotations
+
 from collections.abc import Mapping
-from typing import Any, Optional, Sequence, TypeVar, Union
+from typing import Any, Optional, Sequence, TypeVar
 
 import numpy as np
 import pandas as pd
-import toyplot
 
-from toytree.color import ToyColor
+from toytree import ToyTree
+from toytree.core.apis import add_toytree_method
 from toytree.utils.src.exceptions import ToytreeError
 
-ToyTree = TypeVar("ToyTree")
+ToyTreeType = TypeVar("ToyTreeType")
 
 
 CMAP_ERROR = """
@@ -44,10 +46,11 @@ Consider selecting a LinearMap instead, such as 'Spectral'.
 """
 
 
+@add_toytree_method(ToyTree)
 def get_color_mapped_feature(
-    tree: ToyTree,
+    tree: ToyTreeType,
     feature: str,
-    cmap: Union[str, toyplot.color.Map] = None,
+    cmap: str | Any = None,
     domain_min: Optional[float] = None,
     domain_max: Optional[float] = None,
     nan_value: Optional[float] = None,
@@ -89,12 +92,10 @@ def get_color_mapped_feature(
     Examples
     --------
     >>> tree = toytree.rtree.unittree(4).set_node_data("x", [2, 2, 2, 0, 0, 0, 0])
-    >>> colors = toytree.style.get_color_mapped_feature(tree, "x", "Set2")
+    >>> colors = toytree.data.get_color_mapped_feature(tree, "x", "Set2")
     >>> len(colors) == tree.nnodes
     True
-    >>> tip_colors = toytree.style.get_color_mapped_feature(
-    ...     tree, "x", "Set2", tips_only=True
-    ... )
+    >>> tip_colors = tree.get_color_mapped_feature("x", "Set2", tips_only=True)
     >>> len(tip_colors) == tree.ntips
     True
     """
@@ -117,7 +118,7 @@ def get_color_mapped_feature(
 
 def get_color_mapped_values(
     data: pd.Series | Sequence[Any],
-    cmap: Union[str, toyplot.color.Map] = None,
+    cmap: str | Any = None,
     domain_min: Optional[float] = None,
     domain_max: Optional[float] = None,
     nan_value: Optional[float] = None,
@@ -156,23 +157,23 @@ def get_color_mapped_values(
 
     Examples
     --------
-    >>> colors = toytree.style.get_color_mapped_values([2, 2, 2, 0, 0, 0, 0], "Set2")
+    >>> colors = toytree.data.get_color_mapped_values([2, 2, 2, 0, 0, 0, 0], "Set2")
     >>> len(colors)
     7
 
     >>> series = pd.Series(["A", "B"], index=[0, 3])
-    >>> colors = toytree.style.get_color_mapped_values(series, "Set2")
+    >>> colors = toytree.data.get_color_mapped_values(series, "Set2")
     >>> len(colors)
     4
     >>> toytree.color.ToyColor(colors[1]) == toytree.color.ToyColor("transparent")
     True
 
     >>> data = np.array([1.0, np.nan, 2.0])
-    >>> colors = toytree.style.get_color_mapped_values(data, "BlueRed")
+    >>> colors = toytree.data.get_color_mapped_values(data, "BlueRed")
     >>> toytree.color.ToyColor(colors[1]) == toytree.color.ToyColor("transparent")
     True
 
-    >>> empty = toytree.style.get_color_mapped_values([], "BlueRed")
+    >>> empty = toytree.data.get_color_mapped_values([], "BlueRed")
     >>> len(empty)
     0
     """
@@ -189,38 +190,29 @@ def get_color_mapped_values(
 
     values = _coerce_values_data(data)
     values = np.asarray(values, dtype=object)
-
-    # Empty input always returns empty output, independent of colormap type.
     if values.size == 0:
         return np.array([], dtype=object)
 
-    # Missing-value handling is centralized so all branches treat np.nan, pd.NA,
-    # and None consistently, and missing values do not count as categories.
     missing_mask = pd.isna(values)
     valid_mask = ~missing_mask
-
-    # Use Spectral as default map if None provided.
     if cmap is None:
         cmap = "Spectral"
-
-    # store original cmap var before conversion to ColorMap
     cmap_orig = cmap
 
-    # If colormap is a string name, resolve it into a toyplot Map.
+    toyplot = _load_toyplot()
+    ToyColor = _load_toycolor()
+
     if isinstance(cmap, str):
-        # Try categorical brewer maps first.
         try:
             cmap = toyplot.color.brewer.map(
                 cmap, domain_min=domain_min, domain_max=domain_max, reverse=reverse
             )
         except KeyError:
-            # Then try continuous linear maps.
             try:
                 cmap = toyplot.color.linear.map(
                     cmap, domain_min=domain_min, domain_max=domain_max
                 )
             except KeyError:
-                # Finally try diverging maps.
                 try:
                     cmap = toyplot.color.diverging.map(
                         cmap,
@@ -228,27 +220,18 @@ def get_color_mapped_values(
                         domain_max=domain_max,
                         reverse=reverse,
                     )
-                except KeyError:
-                    msg = (
-                        "Invalid colormap arg for (feature, colormap) input.\n"
-                        + CMAP_ERROR
-                    )
-                    raise ToytreeError(msg)
+                except KeyError as exc:
+                    msg = "Invalid colormap arg for (feature, colormap) input.\n"
+                    raise ToytreeError(msg + CMAP_ERROR) from exc
 
-    # If cmap is not already Map/Palette, attempt palette coercion.
     if not isinstance(cmap, (toyplot.color.Map, toyplot.color.Palette)):
-        # try converting colormap to a Palette for ndarray or Sequence[Color]
-        # and add a transparent color at end to use for np.nan.
         try:
             cmap = toyplot.color.Palette(cmap, reverse=reverse)
             cmap += toyplot.color.Palette(["transparent"])
-        except Exception:
-            msg = "Invalid colormap arg for (feature, colormap) input.\n" + CMAP_ERROR
-            raise ToytreeError(msg)
+        except Exception as exc:
+            msg = "Invalid colormap arg for (feature, colormap) input.\n"
+            raise ToytreeError(msg + CMAP_ERROR) from exc
 
-    # --- colormap is now CategoricalMap, LinearMap or Palette ---
-
-    # If map is Categorical, treat incoming values as categories.
     if isinstance(cmap, toyplot.color.CategoricalMap):
         valid_values = np.asarray(values[valid_mask], dtype=object)
         if valid_values.size:
@@ -260,11 +243,9 @@ def get_color_mapped_values(
             categories = np.array([], dtype=object)
             valid_codes = np.array([], dtype=int)
 
-        # Missing values do not consume categorical slots.
         if (cmap.domain.max is not None) and (cmap.domain.max < len(categories)):
             raise ToytreeError(CATEGORICAL_TOO_FEW_CATEGORIES)
 
-        # Recreate brewer maps by observed category count when possible.
         if isinstance(cmap_orig, str) and len(categories):
             try:
                 cmap = toyplot.color.brewer.map(
@@ -287,7 +268,6 @@ def get_color_mapped_values(
         cvalues[valid_mask] = valid_codes
         colors = cmap.colors(cvalues)
 
-    # If cmap is an explicit palette, categories index directly into it.
     elif isinstance(cmap, toyplot.color.Palette):
         valid_values = np.asarray(values[valid_mask], dtype=object)
         if valid_values.size:
@@ -306,13 +286,9 @@ def get_color_mapped_values(
         cvalues[valid_mask] = valid_codes
         colors = np.array([cmap.color(int(i)) for i in cvalues])
 
-    # For linear maps, prefer numeric values but fall back to categorical ints.
     else:
-        # convert values to floats and fit colormap to data domain
         try:
             cvalues = np.asarray(values, dtype=float)
-
-        # but if data is categorical then convert data to ints
         except (TypeError, ValueError):
             valid_values = np.asarray(values[valid_mask], dtype=object)
             if valid_values.size:
@@ -326,7 +302,6 @@ def get_color_mapped_values(
             cvalues = np.zeros(values.size, dtype=int)
             cvalues[valid_mask] = valid_codes
 
-            # Recreate map using category count when data are non-numeric labels.
             try:
                 if isinstance(cmap_orig, str) and len(categories):
                     cmap = toyplot.color.brewer.map(
@@ -336,7 +311,6 @@ def get_color_mapped_values(
                         domain_max=domain_max,
                         reverse=reverse,
                     )
-            # try to convert linearmap to categorical
             except KeyError:
                 cmap = toyplot.color.brewer.map(
                     cmap_orig,
@@ -346,52 +320,27 @@ def get_color_mapped_values(
                     reverse=reverse,
                 )
 
-        # Fit colormap domain to non-missing values only.
         valid_cvalues = np.asarray(cvalues[valid_mask])
         if valid_cvalues.size:
             if cmap.domain.min is None:
                 cmap.domain.min = np.nanmin(valid_cvalues)
             if cmap.domain.max is None:
                 cmap.domain.max = np.nanmax(valid_cvalues)
-
-        # broadcast values to color map
         colors = cmap.colors(cvalues)
 
-    # Assign missing-value colors in one step using the shared missing mask.
-    if missing_mask.any():
-        if nan_value is None:
-            colors[missing_mask] = ToyColor((0, 0, 0, 0))
-        else:
-            colors[missing_mask] = cmap.color(nan_value)
+    if nan_value is None:
+        colors[missing_mask] = ToyColor((0, 0, 0, 0))
+    else:
+        colors[missing_mask] = cmap.color(nan_value)
     return colors
 
 
 def _coerce_values_data(data: pd.Series | Sequence[Any]) -> np.ndarray:
-    """Return a 1D values array from Series or Sequence input.
-
-    Parameters
-    ----------
-    data : pandas.Series or Sequence[Any]
-        Input values to map into colors.
-
-    Returns
-    -------
-    numpy.ndarray
-        One-dimensional object array. For Series input, values are projected
-        into dense idx space from 0 to max(idx), with missing idx positions
-        filled by NaN.
-
-    Raises
-    ------
-    ToytreeError
-        If Series index labels are invalid or if input is not one-dimensional.
-    """
-    # Branch 1: Series input is treated as sparse node-idx keyed values.
+    """Return object array from Series or Sequence input."""
     if isinstance(data, pd.Series):
         if data.empty:
             return np.array([], dtype=float)
 
-        # Validate index labels as integer-valued node idx values.
         idx = np.asarray(data.index)
         if np.issubdtype(idx.dtype, np.integer):
             idx = idx.astype(int, copy=False)
@@ -410,35 +359,25 @@ def _coerce_values_data(data: pd.Series | Sequence[Any]) -> np.ndarray:
         if np.unique(idx).size != idx.size:
             raise ToytreeError("Series index contains duplicate idx labels.")
 
-        # Project sparse values to dense idx space, filling absent idx with NaN.
         values = np.full(int(idx.max()) + 1, np.nan, dtype=object)
         values[idx] = data.to_numpy(dtype=object)
         return values
 
-    # Branch 2: Sequence input is interpreted in positional order.
     values = np.asarray(data, dtype=object)
     if values.ndim != 1:
         raise ToytreeError("data must be one-dimensional.")
     return values
 
 
-if __name__ == "__main__":
-    DATA = [
-        np.linspace(0, 1, 7),
-        [1, 1, 1, 0, 0, 0, 0],
-        [1] * 3 + [np.nan] * 4,
-        list("aaabbbb"),
-        ["a"] * 3 + [0] + [np.nan] * 3,
-    ]
+def _load_toyplot():
+    """Import toyplot only when a color-mapping helper is actually called."""
+    import toyplot
 
-    COLOR_MAPS = [
-        "BlueRed",
-        "Spectral",
-        toyplot.color.brewer.map("BlueRed"),
-        "Set2",
-    ]
+    return toyplot
 
-    for idx, values in enumerate(DATA):
-        for cmap in COLOR_MAPS:
-            print(f"dataset={idx}, colormap={cmap}")
-            print(get_color_mapped_values(values, cmap))
+
+def _load_toycolor():
+    """Import ToyColor only when a color-mapping helper is actually called."""
+    from toytree.color import ToyColor
+
+    return ToyColor

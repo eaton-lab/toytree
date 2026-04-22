@@ -2,6 +2,8 @@
 
 """Map numeric values into plotting ranges."""
 
+from __future__ import annotations
+
 from collections.abc import Mapping
 from typing import Any, Optional, Sequence, TypeVar
 
@@ -10,17 +12,20 @@ import pandas as pd
 from pandas.api.types import is_numeric_dtype
 from scipy.interpolate import interp1d
 
+from toytree import ToyTree
+from toytree.core.apis import add_toytree_method
 from toytree.utils import ToytreeError
 
-ToyTree = TypeVar("ToyTree")
+ToyTreeType = TypeVar("ToyTreeType")
 NAN_NOT_ALLOWED = (
     "NaN values are not allowed in feature range mapping when nan_values=None"
 )
 ONLY_NUMERIC_ALLOWED = "Only numeric dtypes can be used w/ tuple format (feature, ...)"
 
 
+@add_toytree_method(ToyTree)
 def get_range_mapped_feature(
-    tree: ToyTree,
+    tree: ToyTreeType,
     feature: str,
     min_value: float = 5,
     max_value: float = 15,
@@ -54,12 +59,12 @@ def get_range_mapped_feature(
     Examples
     --------
     >>> tree = toytree.rtree.unittree(4).set_node_data("x", [0, 1, 2, 3, 4, 5, 6])
-    >>> vals = toytree.style.get_range_mapped_feature(
+    >>> vals = toytree.data.get_range_mapped_feature(
     ...     tree, "x", min_value=1, max_value=5
     ... )
     >>> float(np.nanmin(vals)), float(np.nanmax(vals))
     (1.0, 5.0)
-    >>> tip_vals = toytree.style.get_range_mapped_feature(tree, "x", tips_only=True)
+    >>> tip_vals = tree.get_range_mapped_feature("x", tips_only=True)
     >>> len(tip_vals) == tree.ntips
     True
     """
@@ -117,16 +122,16 @@ def get_range_mapped_values(
 
     Examples
     --------
-    >>> toytree.style.get_range_mapped_values([0, 10, 20], min_value=2, max_value=4)
+    >>> toytree.data.get_range_mapped_values([0, 10, 20], min_value=2, max_value=4)
     array([2., 3., 4.])
 
     >>> series = pd.Series([0.0, 10.0], index=[0, 3])
-    >>> toytree.style.get_range_mapped_values(
+    >>> toytree.data.get_range_mapped_values(
     ...     series, min_value=1, max_value=3, nan_value=0
     ... )
     array([1., 0., 0., 3.])
 
-    >>> toytree.style.get_range_mapped_values([1.0, np.nan, 2.0], 1, 2, nan_value=None)
+    >>> toytree.data.get_range_mapped_values([1.0, np.nan, 2.0], 1, 2, nan_value=None)
     Traceback (most recent call last):
     ...
     toytree.utils.src.exceptions.ToytreeError: NaN values are not allowed...
@@ -146,57 +151,31 @@ def get_range_mapped_values(
     assert isinstance(min_value, (float, int)), "min_values must be int or float"
     assert isinstance(max_value, (float, int)), "min_values must be int or float"
 
-    # get mask of NaN values
     nan_mask = np.isnan(values)
     if all(nan_mask):
         if nan_value is None:
             raise ToytreeError(NAN_NOT_ALLOWED)
         return np.repeat(nan_value, len(values))
 
-    # build interpolator from x data values to y requested range.
     mapper = interp1d(
         x=(np.nanmin(values), np.nanmax(values)),
         y=(min_value, max_value),
     )
     mvalues = np.array([mapper(i) for i in values])
 
-    # handle nans in the data
     if nan_mask.sum():
         if nan_value is None:
             raise ToytreeError(NAN_NOT_ALLOWED)
         mvalues[nan_mask] = nan_value
-
-    # return the range mapped values
     return mvalues
 
 
 def _coerce_numeric_values_data(data: pd.Series | Sequence[Any]) -> np.ndarray:
-    """Return a 1D float array from Series or Sequence numeric input.
-
-    Parameters
-    ----------
-    data : pandas.Series or Sequence[Any]
-        Input values to coerce.
-
-    Returns
-    -------
-    numpy.ndarray
-        One-dimensional float array. For Series input, values are projected
-        into dense idx space from 0 to max(idx), with missing idx positions
-        filled by NaN.
-
-    Raises
-    ------
-    ToytreeError
-        If Series index labels are invalid, if values are non-numeric, or if
-        input is not one-dimensional after coercion.
-    """
-    # Branch 1: Series input is treated as sparse node-idx keyed values.
+    """Return a 1D float array from Series or Sequence numeric input."""
     if isinstance(data, pd.Series):
         if data.empty:
             return np.array([], dtype=float)
 
-        # Validate index labels as integer node idx values.
         idx = np.asarray(data.index)
         if not np.issubdtype(idx.dtype, np.integer):
             try:
@@ -210,15 +189,12 @@ def _coerce_numeric_values_data(data: pd.Series | Sequence[Any]) -> np.ndarray:
         if np.unique(idx).size != idx.size:
             raise ToytreeError("Series index contains duplicate idx labels.")
 
-        # Project sparse values to dense idx space, filling absent idx with NaN.
         values = np.full(int(idx.max()) + 1, np.nan, dtype=float)
         try:
             series_values = pd.to_numeric(data, errors="raise").to_numpy(dtype=float)
         except Exception as exc:
             raise ToytreeError(ONLY_NUMERIC_ALLOWED) from exc
         values[idx] = series_values
-
-    # Branch 2: Sequence input is interpreted as positional values directly.
     else:
         try:
             values = np.asarray(data, dtype=float)
@@ -227,67 +203,6 @@ def _coerce_numeric_values_data(data: pd.Series | Sequence[Any]) -> np.ndarray:
         if values.ndim != 1:
             raise ToytreeError("data must be one-dimensional.")
 
-    # Final guard to keep downstream mapping logic numeric-only.
     if not is_numeric_dtype(values):
         raise ToytreeError(ONLY_NUMERIC_ALLOWED)
     return values
-
-
-# def normalize_values(
-#     values: Sequence[Any],
-#     min_value: int = 2,
-#     max_value: int = 12,
-#     nbins: int = 10,
-# ) -> np.ndarray:
-#     """Distribute values into bins spaced at reasonable sizes for plotting.
-
-#     This is used in tree_style='p' to automatically scale Ne values
-#     to plot as edge widths. The input 'values' arg will usually be
-#     a pandas.Series.
-
-#     TODO: get_node_data dtype setting.., rename as discretize values?
-#     """
-#     # missing values are not allowed
-#     if np.isnan(values).any():
-#         raise ToytreeError(
-#             f"missing values are not allowed:\n{values}.")
-
-#     # make copy of original
-#     ovals = deepcopy(values)
-
-#     # if 6X min value is higher than max then add this
-#     # as a fake value to scale more nicely
-#     vals = list(values)
-#     if min(vals) * 6 > max(vals):
-#         vals.append(min(vals) * 6)
-
-#     # sorted vals list
-#     svals = sorted(vals)
-
-#     # put vals into bins
-#     bins = np.histogram(vals, bins=nbins)[0]
-
-#     # convert binned vals to widths in 2-12
-#     newvals = {}
-#     sizes = np.linspace(min_value, max_value, nbins)
-#     for idx, inbin in enumerate(bins):
-#         for _ in range(inbin):
-#             newvals[svals.pop(0)] = sizes[idx]
-#     return np.array([newvals[i] for i in ovals])
-
-
-if __name__ == "__main__":
-    # import ipcoal
-    import toytree
-
-    # generate a random species tree with 10 tips and a crown age of 10M generations
-    tree = toytree.rtree.unittree(10, treeheight=1e6, seed=123)
-    # create a new tree copy with Ne values mapped to nodes
-    vtree = tree.set_node_data(
-        feature="Ne",
-        data={i: 2e5 for i in (6, 7, 8, 9, 12, 15, 17)},
-        default=1e4,
-    )
-
-    print(vtree.get_node_data())
-    # vtree._draw_browser(...);

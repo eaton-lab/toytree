@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Class to store default and built-in tree styles for tree.style."""
+"""Classes defining default and built-in tree drawing styles."""
 
 from __future__ import annotations
 
@@ -10,10 +10,8 @@ from typing import (
     TYPE_CHECKING,
     Any,
     ClassVar,
-    Iterator,
     Literal,
     Sequence,
-    Tuple,
     TypeAlias,
     TypeVar,
 )
@@ -253,36 +251,18 @@ class TreeStyle:
     edge_align_style: EdgeAlignStyle = field(default_factory=EdgeAlignStyle)
     """: SubStyle dict for setting Aligned tip labels edges stroke, etc."""
 
-    # self.show_root_edge: bool = None
     use_edge_lengths: bool = True
     """: Plot topology with transformed edge lengths for easier viewing."""
     scale_bar: bool | int | float = False
     """: Modify Cartesian axes to show scale in 'dist' feature units."""
-    padding: float = 15.0
-    """: Modify Cartesian axes to set padding between Mark and axes in px units."""
-    xbaseline: float = 0.0
-    """: Shift tree on Cartesian axes so Node 0 is at (xbaseline, ybaseline)."""
-    ybaseline: float = 0.0
-    """: Shift tree on Cartesian axes so Node 0 is at (xbaseline, ybaseline)."""
+    padding: int | float = 15
+    """: Increase Canvas space around the drawing edges in px units."""
+    xbaseline: int | float = 0
+    """: Shift the tree horizontally by this many px units."""
+    ybaseline: int | float = 0
+    """: Shift the tree vertically by this many px units."""
     admixture_edges: AdmixtureArg = None
-
-    def __repr__(self):
-        """Return a serialized JSON formatted style dict."""
-        block = ["{"]
-        for key, val in self.__dict__.items():
-            if isinstance(val, SubStyle):
-                block.append(f"{key}: {val!r},")
-            else:
-                block.append(f"{key}: {val!r},")
-        block.append("}")
-        return "\n".join(block)
-
-    def __iter__(self) -> Iterator[str]:
-        """ToyTree is iterable, returning Nodes in idx order."""
-        return (i for i in self.__dict__)
-
-    def _items(self) -> Iterator[Tuple[str, Any]]:
-        return ((i, j) for i, j in self.__dict__.items())
+    """: Optional admixture edge specs rendered with the tree."""
 
     def copy(self) -> TreeStyle:
         """Return a deepcopy."""
@@ -291,10 +271,4 @@ class TreeStyle:
 
 if __name__ == "__main__":
     ts = TreeStyle()
-
-    ts.tip_labels_style.font_size = 15
-    ts.tip_labels_style["font_size"] = 16
-    ts.tip_labels_style["font-size"] = 17
-
-    print(ts.tip_labels_style)
-    print(ts.tip_labels_style.font_size)
+    print(ts)

@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 
-"""...
-
-"""
+"""..."""
 
 from typing import TypeVar
+
 import numpy as np
 import toyplot
+
 # from toytree.utils import ToytreeError
 from toytree.color import ToyColor
-from toytree.style.src.style_base import NodeLabelStyle, TreeStyle
-
+from toytree.core.style_base import NodeLabelStyle, TreeStyle
 
 ToyTree = TypeVar("ToyTree")
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -55,13 +54,15 @@ def validate_node_labels_style(
 
 
 if __name__ == "__main__":
-
     import toytree
+    from toytree.core import TreeStyle
 
     tree = toytree.rtree.unittree(5)
-    style = tree.style.copy()
+    style = TreeStyle()
 
     print(style.node_labels_style)
-    s = validate_node_labels_style(tree, style.node_labels_style, {"-toyplot-anchor-shift": 10}, copy=True)
+    s = validate_node_labels_style(
+        tree, style.node_labels_style, {"-toyplot-anchor-shift": 10}, copy=True
+    )
 
     print(s)

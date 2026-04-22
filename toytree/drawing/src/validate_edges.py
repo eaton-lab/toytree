@@ -5,7 +5,7 @@
 from typing import TypeVar
 
 from toytree.color import ToyColor
-from toytree.style.src.style_base import EdgeAlignStyle, EdgeStyle
+from toytree.core.style_base import EdgeAlignStyle, EdgeStyle
 from toytree.utils import ToytreeError
 
 ToyTree = TypeVar("ToyTree")

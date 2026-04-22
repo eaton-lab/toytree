@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Literal
 
-from toytree.style.src.style_base import TreeStyle
+from toytree.core.style_base import TreeStyle
 from toytree.utils import ToytreeError
 
 TreeStyleKey = Literal["n", "s", "p", "o", "c", "d", "b", "u", "r"]
@@ -168,7 +168,7 @@ class TreeStyleU(TreeStyle):
         """Apply unrooted-style node defaults."""
         self.node_style.stroke = None
         self.node_style.stroke_width = 1.5
-        self.node_style.fill = "white"  # do not set defaults that override
+        self.node_style.fill = "white"
 
 
 def get_base_tree_style_by_name(

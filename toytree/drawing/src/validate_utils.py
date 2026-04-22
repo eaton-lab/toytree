@@ -6,7 +6,7 @@ from typing import Any, Dict, Mapping, Sequence
 
 import numpy as np
 
-from toytree.style.src.style_base import SubStyle, TreeStyle
+from toytree.core.style_base import SubStyle, TreeStyle
 from toytree.utils import ToytreeError
 
 
@@ -63,12 +63,13 @@ def tree_style_to_css_dict(style: TreeStyle) -> Mapping[str, Any]:
 
 if __name__ == "__main__":
     import toytree
-    from toytree.style import validate_style
+    from toytree.core import TreeStyle
+    from toytree.drawing.src.validate_style import validate_style
 
     tree = toytree.rtree.rtree(5)
-    style = tree.style.copy()
+    style = TreeStyle()
     style = validate_style(tree, style)
 
-    print(substyle_dict_to_css_dict(tree.style.node_style))  # {"baseline_shift": 10}))
+    print(substyle_dict_to_css_dict(style.node_style))  # {"baseline_shift": 10}))
     # print(tree_style_to_css_dict(style))
     # tree_style_to_css_dict(style)
