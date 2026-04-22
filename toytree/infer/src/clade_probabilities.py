@@ -9,7 +9,6 @@ sptree = (...)
 
 """
 
-
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -18,16 +17,16 @@ from math import comb
 from typing import Dict, List, Tuple
 
 import numpy as np
-import toytree
-
 from scipy.signal import convolve2d
 from scipy.sparse import csr_matrix
 from scipy.sparse.linalg import expm_multiply
 
+import toytree
 
 # ----------------------------
 # Bitmask helpers
 # ----------------------------
+
 
 def _all_mask(n: int) -> int:
     return (1 << n) - 1
@@ -52,11 +51,14 @@ def _names_from_mask(mask: int, tips: List[str]) -> List[str]:
 # Tree traversal / descendant masks
 # ----------------------------
 
+
 def _postorder_nodes(tree: toytree.ToyTree):
     return list(tree.treenode.traverse("postorder"))
 
 
-def _descendant_masks(tree: toytree.ToyTree, name_to_bit: Dict[str, int]) -> Dict[object, int]:
+def _descendant_masks(
+    tree: toytree.ToyTree, name_to_bit: Dict[str, int]
+) -> Dict[object, int]:
     """Compute descendant bitmask for every Node in tree (postorder DP)."""
     masks: Dict[object, int] = {}
     for n in _postorder_nodes(tree):
@@ -70,7 +72,9 @@ def _descendant_masks(tree: toytree.ToyTree, name_to_bit: Dict[str, int]) -> Dic
     return masks
 
 
-def _find_mrca_by_masks(B_nodes_post: List[object], B_desc: Dict[object, int], S_mask: int) -> object:
+def _find_mrca_by_masks(
+    B_nodes_post: List[object], B_desc: Dict[object, int], S_mask: int
+) -> object:
     """
     MRCA is the smallest (fewest descendants) node whose descendant set contains S.
     Works even if S is not a species-tree clade.
@@ -102,12 +106,13 @@ def _ancestor_set_including(node: object) -> set:
 # Distribution container
 # ----------------------------
 
+
 @dataclass
 class Dist2D:
     # transient distribution over (i,j) lineage counts
     P: np.ndarray  # shape (Imax+1, Jmax+1)
-    pS: float      # success absorbing mass (only used on MRCA->root path)
-    pF: float      # failure absorbing mass
+    pS: float  # success absorbing mass (only used on MRCA->root path)
+    pF: float  # failure absorbing mass
 
 
 def _dist_leaf(in_S: bool) -> Dist2D:
@@ -148,8 +153,11 @@ def _merge_dists(children: List[Dist2D]) -> Dist2D:
 # CTMC generator build + branch propagation
 # ----------------------------
 
+
 @lru_cache(maxsize=None)
-def _build_ctmc(Imax: int, Jmax: int, success_mode: bool) -> Tuple[csr_matrix, Dict[Tuple[int, int], int], int, int | None]:
+def _build_ctmc(
+    Imax: int, Jmax: int, success_mode: bool
+) -> Tuple[csr_matrix, Dict[Tuple[int, int], int], int, int | None]:
     """
     Build sparse generator Q (row-vector convention dp/dt = p Q).
     States include:
@@ -222,7 +230,9 @@ def _build_ctmc(Imax: int, Jmax: int, success_mode: bool) -> Tuple[csr_matrix, D
     return Q, idx_map, idx_F, idx_S
 
 
-def _propagate_branch(dist: Dist2D, t: float, Imax: int, Jmax: int, success_mode: bool) -> Dist2D:
+def _propagate_branch(
+    dist: Dist2D, t: float, Imax: int, Jmax: int, success_mode: bool
+) -> Dist2D:
     """
     Push distribution through a branch of length t (coalescent units).
     Uses expm_multiply on sparse Q^T for column-vector probabilities.
@@ -289,12 +299,15 @@ def _eventual_success(i: int, j: int) -> float:
     rcross = i * j
     tot = rin + rout + rcross
     # cross => immediate failure (0 contribution)
-    return (rin / tot) * _eventual_success(i - 1, j) + (rout / tot) * _eventual_success(i, j - 1)
+    return (rin / tot) * _eventual_success(i - 1, j) + (rout / tot) * _eventual_success(
+        i, j - 1
+    )
 
 
 # ----------------------------
 # Main: clade probability for one clade mask S
 # ----------------------------
+
 
 def clade_probability_msc_dp(B: toytree.ToyTree, S_mask: int) -> float:
     """
@@ -332,7 +345,7 @@ def clade_probability_msc_dp(B: toytree.ToyTree, S_mask: int) -> float:
 
         # propagate along the branch from this node to its parent
         t = float(node.dist) if (node.dist is not None) else 0.0
-        success_mode = (node in anc)
+        success_mode = node in anc
         dist1 = _propagate_branch(dist0, t, Imax, Jmax, success_mode)
 
         dist_top[node] = dist1
@@ -361,14 +374,19 @@ def clade_probability_msc_dp(B: toytree.ToyTree, S_mask: int) -> float:
 # Compute probabilities for all internal clades in gene tree A
 # ----------------------------
 
-def gene_tree_clade_probs(A: toytree.ToyTree, B: toytree.ToyTree) -> Dict[Tuple[str, ...], float]:
+
+def gene_tree_clade_probs(
+    A: toytree.ToyTree, B: toytree.ToyTree
+) -> Dict[Tuple[str, ...], float]:
     """
     Return {clade_taxa_tuple: probability} for each internal clade in A (excluding root).
     """
     tipsB = B.get_tip_labels()
     tipsA = A.get_tip_labels()
     if set(tipsA) != set(tipsB):
-        raise ValueError("A and B must have identical tip label sets (one sample per species).")
+        raise ValueError(
+            "A and B must have identical tip label sets (one sample per species)."
+        )
 
     # fix a consistent bit order using B's tip ordering
     name_to_bit = {nm: (1 << i) for i, nm in enumerate(tipsB)}
@@ -401,8 +419,5 @@ if __name__ == "__main__":
     for clade, p in sorted(probs.items(), key=lambda x: (len(x[0]), x[0])):
         print(clade, p)
 
-
     # SPTREE = "(Alternanthera_philoxeroides:0.44798409,(Deeringia_amaranthoides:0.19414575,(Amaranthus_tricolor:0.0283318,((Amaranthus_fimbriatus:0.01043586,(Amaranthus_australis:0.01044097,Amaranthus_cannabinus:0.00931709):0.00774284):0.00099556,((Amaranthus_retroflexus:0.00663625,(Amaranthus_spinosus:0.0117843,(Amaranthus_hybridus_cp1:0.00268167,(Amaranthus_hybridus_cp2:0.00026998,(Amaranthus_caudatus:9.1e-07,Amaranthus_cruentus:7.973e-05):0.00019878):0.00184508):0.00406972):0.00163053):0.01313138,(Amaranthus_greggii:0.00890237,(Amaranthus_acanthochiton:0.00843022,((Amaranthus_floridanus:0.00101728,(Amaranthus_arenicola:0.00086006,Amaranthus_tuberculatus:0.00251385):9.1e-07):0.00471167,(Amaranthus_pumilus:0.00668091,(Amaranthus_palmeri:0.00079119,Amaranthus_watsonii:0.00277269):0.00304054):0.00274509):0.00023663):0.00184292):0.00609605):0.01011877):0.00477752):0.31228773):0.10280971);"
     # GTREE = """..."""
-
-

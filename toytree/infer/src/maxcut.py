@@ -44,14 +44,16 @@ A paper that describes the maxcut algorithm in more detail.
   IEEE/ACM Transactions on Computational Biology and Bioinformatics,
 """
 
-from typing import Union
 import itertools
 from collections import defaultdict
+from typing import Union
+
 import numpy as np
 import toyplot
-from toytree.core import ToyTree, Node
-from toytree.core.multitree import MultiTree
 from loguru import logger
+
+from toytree.core import Node, ToyTree
+from toytree.core.multitree import MultiTree
 
 # __all__ = [
 #     # "get_supertree_from_quartets_by_qmc"
@@ -64,10 +66,11 @@ from loguru import logger
 
 ##################################################################
 
+
 def get_weighted_quartets_from_trees(
     trees: Union[MultiTree, list[ToyTree]],
     normalize: bool = False,
-) -> dict[tuple[frozenset,frozenset],float]:
+) -> dict[tuple[frozenset, frozenset], float]:
     """Return {quartet: weight, ...} from a sequence of trees.
 
     The weight of each quartet is calculated as the number or
@@ -98,8 +101,9 @@ def get_weighted_quartets_from_trees(
 
 ##################################################################
 
+
 def get_graph_from_quartets_qmc(
-    quartets: dict[tuple[frozenset,frozenset],float],
+    quartets: dict[tuple[frozenset, frozenset], float],
     use_weights: bool = False,
 ) -> dict[frozenset, list[int, int]]:
     """Return {frozenset: weight} for each edge in a graph built from
@@ -148,14 +152,14 @@ def get_graph_from_quartets_qmc(
 # 6. Perform greedy search to propose +/- node swap from current
 ##################################################################
 
+
 def assign_random_points_on_sphere(ntips: int) -> np.ndarray:
-    """Return an array of ntips randomly assigned on a sphere.
-    """
+    """Return an array of ntips randomly assigned on a sphere."""
     points = []
     for _ in range(ntips):
         # generate random angles
         theta = np.random.uniform(0, 2 * np.pi)  # azimuthal angle
-        phi = np.random.uniform(0, np.pi)        # polar angle
+        phi = np.random.uniform(0, np.pi)  # polar angle
 
         # convert spherical coordinates to Cartesian coordinates
         x = np.sin(phi) * np.cos(theta)
@@ -177,7 +181,7 @@ def get_euclidean_dist_arr(points: np.ndarray) -> np.ndarray:
     diffs = points[:, np.newaxis, :] - points[np.newaxis, :, :]
 
     # Calculate the squared distances
-    squared_diffs = diffs ** 2
+    squared_diffs = diffs**2
 
     # Sum squared differences along the last axis and take the square root
     distances = np.sqrt(np.sum(squared_diffs, axis=-1))
@@ -189,9 +193,9 @@ def compute_center_of_mass(focal_point, other_points, weights):
 
     The center of mass (COM) point of a vertex is the closest point to
     all its neighbors, proportional to the edge weight to each neighbor.
-    For example,if a vertex has two neighbors with equal edge weights, 
+    For example,if a vertex has two neighbors with equal edge weights,
     its COM is in the middle of the line connecting these two neighbors,
-    and if one edge weight is twice the weight of the other, the COM is 
+    and if one edge weight is twice the weight of the other, the COM is
     on the (1/3, 2/3) point on that line.
 
     Here, a node should move towards those with negative distances
@@ -200,13 +204,13 @@ def compute_center_of_mass(focal_point, other_points, weights):
     """
     # Calculate the weighted sum of the neighboring points
     weighted_sum = np.sum(weights[:, np.newaxis] * other_points, axis=0)
-    
+
     # Normalize the weighted sum by the total weight (absolute sum of weights to handle negative weights)
-    total_weight = np.sum(np.abs(weights))    
+    total_weight = np.sum(np.abs(weights))
     if total_weight == 0:
         return focal_point  # If total weight is zero, return the focal point as the COM
     com_vector = weighted_sum / total_weight
-    
+
     # The center of mass may not be on the unit sphere, so normalize it
     # (Note: I'm not positive this is required)
     # return com_vector
@@ -215,9 +219,7 @@ def compute_center_of_mass(focal_point, other_points, weights):
 
 
 def get_centers_of_mass(points, edges, adists) -> tuple[np.ndarray, np.ndarray]:
-    """...
-
-    """
+    """..."""
     # iterate over points
     coms = []
     comdists = []
@@ -234,9 +236,9 @@ def get_centers_of_mass(points, edges, adists) -> tuple[np.ndarray, np.ndarray]:
         weights = adists[idxs].copy()
 
         # how to handle negative weights? Set negatives to zero.
-        #weights[weights < 0] = 0.
+        # weights[weights < 0] = 0.
         if not weights.sum():
-            weights[:] = 1.
+            weights[:] = 1.0
         else:
             weights = weights / weights.max()
             weights = weights * -1
@@ -255,7 +257,9 @@ def get_centers_of_mass(points, edges, adists) -> tuple[np.ndarray, np.ndarray]:
     return coms, comdists
 
 
-def sample_point_far_from_com(points, coms, comdists) -> tuple[int, tuple[float,float,float]]:
+def sample_point_far_from_com(
+    points, coms, comdists
+) -> tuple[int, tuple[float, float, float]]:
     """Return the index of the sampled point far from the COM.
     # Samples probabilitistically weighted by relative distance to COM.
 
@@ -263,7 +267,7 @@ def sample_point_far_from_com(points, coms, comdists) -> tuple[int, tuple[float,
     sum dist score (greedy algorithm).
 
     Parameters
-    -----------
+    ----------
     ...
     """
     idx = np.random.choice(range(points.shape[0]), p=comdists / sum(comdists))
@@ -271,23 +275,22 @@ def sample_point_far_from_com(points, coms, comdists) -> tuple[int, tuple[float,
 
 
 def move_point_by_distance_on_sphere(point, distance):
-    """Move a point by a given distance in a random direction a unit sphere.
-    """
+    """Move a point by a given distance in a random direction a unit sphere."""
     # Generate a random direction on the sphere by creating a random unit vector
     random_direction = np.random.randn(3)
     random_direction /= np.linalg.norm(random_direction)
-    
+
     # Use spherical linear interpolation (slerp) to move the point
     new_point = np.cos(distance) * point + np.sin(distance) * random_direction
-    
+
     # Ensure the result is still on the unit sphere by normalizing it
     new_point /= np.linalg.norm(new_point)
     return new_point
 
 
 def get_coordinate_shifted_towards_com(
-    point: tuple[float,float,float],
-    com: tuple[float,float,float],
+    point: tuple[float, float, float],
+    com: tuple[float, float, float],
     step: float,
 ) -> tuple[float, float, float]:
     """Return coordinate of point2 shifted closer to point1 on the unit sphere by a specified step.
@@ -307,7 +310,7 @@ def get_coordinate_shifted_towards_com(
 
     # Calculate the vector from point2 to point1
     direction = point1 - point2
-    
+
     # Calculate the shift amount
     shift_amount = step * np.linalg.norm(direction)
 
@@ -339,14 +342,13 @@ def get_cut_from_heuristic_sdp_embedding(graph, alpha, seed, iters):
 
     # get sumdist of alpha weighted edges
     proposed = points
-    edges, alpha_dists = get_edges_and_alpha_distances(nodes, graph, points, alpha)    
+    edges, alpha_dists = get_edges_and_alpha_distances(nodes, graph, points, alpha)
     sumdist = last_sum = sum(alpha_dists)
 
     # optimize: move points locally to optimize sumdist for current
     # alpha until there is no more improvement.
     # for i in range(iters):
     while 1:
-
         # sample a proposed shift
         com = get_center_of_mass(points, edges, alpha_dists)
         idx = sample_point_far_from_com(com, points)
@@ -357,7 +359,9 @@ def get_cut_from_heuristic_sdp_embedding(graph, alpha, seed, iters):
         proposed[idx] = pos
 
         # calculate score of proposal
-        edges, alpha_dists = get_edges_and_alpha_distances(nodes, graph, proposed, alpha)
+        edges, alpha_dists = get_edges_and_alpha_distances(
+            nodes, graph, proposed, alpha
+        )
         sumdist = sum(alpha_dists)
 
         # accept or reject proposal based on its score
@@ -370,7 +374,7 @@ def get_cut_from_heuristic_sdp_embedding(graph, alpha, seed, iters):
 
 def get_edges_and_alpha_distances(nodes, graph, points, alpha):
     """..."""
-    # calculate euclidean distances    
+    # calculate euclidean distances
     dists = get_euclidean_dist_arr(points)
     # get edges and weights as arrays using current alpha and Euclidean
     # dists to sum edges as (good_dists - bad_dists * alpha)
@@ -382,13 +386,13 @@ def get_edges_and_alpha_distances(nodes, graph, points, alpha):
         dgraph[edge] = (edist * good) - (alpha * (edist * bad))
     edges = np.array([tuple(nodes.index(i) for i in j) for j in graph])
     weights = np.array([dgraph[frozenset(i)] for i in dgraph])
-    return edges, weights    
+    return edges, weights
 
 
-def optimize_sphere_embedding(points, edges, weights): # nodes, graph, points, dists, alpha):
-    """...
-
-    """
+def optimize_sphere_embedding(
+    points, edges, weights
+):  # nodes, graph, points, dists, alpha):
+    """..."""
     # calculate center of mass (COM)
     com = get_center_of_mass(points, edges, weights)
 
@@ -396,12 +400,12 @@ def optimize_sphere_embedding(points, edges, weights): # nodes, graph, points, d
     idx = get_index_of_furthest_point_from_com(com, points)
 
     # get position 50% between that point and COM, but on the unit sphere.
-    new_coordinates_on_sphere = get_coordinate_shifted_towards_com(com, points[idx], 0.5)
+    new_coordinates_on_sphere = get_coordinate_shifted_towards_com(
+        com, points[idx], 0.5
+    )
     points[idx] = new_coordinates_on_sphere
     return points
     # repeat...
-
-
 
 
 def temp():
@@ -425,13 +429,12 @@ def temp():
             n0, n1 = nodes.index(node0), nodes.index(node1)
             # get distance and score
             edist = dists[n0, n1]
-            dist = 0.
+            dist = 0.0
             for good_edge in range(graph[edge][0]):
                 dist += edist
             for bad_edge in range(graph[edge][0]):
                 dist += -alpha * edist
             #
-
 
         # calculate COM of all Nodes
         centers = {}
@@ -444,8 +447,7 @@ def temp():
 
 
 def plot_sphere(sphere, points, graph):
-    """...
-    """
+    """..."""
     # ...
     e1 = []
     e2 = []
@@ -461,10 +463,11 @@ def plot_sphere(sphere, points, graph):
             w2.append(scores[1])
     e1 = np.array(e1)
     e2 = np.array(e2)
-    
+
     # ...
     c, a, m = toyplot.scatterplot(
-        sphere[:, 0], sphere[:, 1],
+        sphere[:, 0],
+        sphere[:, 1],
         opacity=0.1,
         size=(sphere[:, 2] * 4) + 5,
         width=350,
@@ -477,10 +480,10 @@ def plot_sphere(sphere, points, graph):
         vcoordinates=points[:, :2],
         vlshow=False,
         vsize=0,
-        #vsize=(points[:, 2] * 4) + 8,
-        #vcolor='red',
-        #vopacity=0.5,
-        #vlstyle={"font-size": "15px"},
+        # vsize=(points[:, 2] * 4) + 8,
+        # vcolor='red',
+        # vopacity=0.5,
+        # vlstyle={"font-size": "15px"},
     )
     a.graph(
         e2[:, 0],
@@ -491,7 +494,7 @@ def plot_sphere(sphere, points, graph):
         vlshow=False,
         vsize=0,
     )
-    a.scatterplot(0, 0, color='black')
+    a.scatterplot(0, 0, color="black")
     a.text(points[:, 0], points[:, 1], nodes, color="black", style={"font-size": 15})
     return c, a, m
 
@@ -516,11 +519,8 @@ def plot_sphere(sphere, points, graph):
 #     # for edge, (good_edges, bad_edges) in graph.items():
 
 
-
 def binary_search_optimize_alpha(dgraph):
-    """Return alpha minimizing ratio of +/- scores using binary search.
-
-    """
+    """Return alpha minimizing ratio of +/- scores using binary search."""
     # TODO: special care for alpha += 4
     # Singleton cuts have an alpha of 2 so we increase alpha to find
     # non-singleton cuts until we hit an empty cut.../?
@@ -533,15 +533,14 @@ def binary_search_optimize_alpha(dgraph):
     # If alpha > 4|Q| and a nonempty cut is returned, then G has a perfect cut.
 
     high = 1000
-    low = 0.
-    alpha = (high - low) / 2.
+    low = 0.0
+    alpha = (high - low) / 2.0
 
     # optimize score to zero
     while 1:
         # get the max value
         search = {
-            i: dgraph[i][0] * dgraph[i][2]
-            + (dgraph[i][1] * dgraph[i][2] * -alpha)
+            i: dgraph[i][0] * dgraph[i][2] + (dgraph[i][1] * dgraph[i][2] * -alpha)
             for i in dgraph
         }
         # score = max(search.values())
@@ -554,19 +553,18 @@ def binary_search_optimize_alpha(dgraph):
         # if score is negative then decrease alpha
         elif score < 0:
             high = alpha
-            alpha = (high - low) / 2.
+            alpha = (high - low) / 2.0
         # if score is positive but still far from zero increase alpha
         elif score > 0.1:
             low = alpha
-            alpha = (high + low) / 2.
+            alpha = (high + low) / 2.0
         else:
             break
     return score, alpha
 
 
 def get_random_3D_hyperplane() -> tuple[float, float, float]:
-    """Return a random hyperplane in 3D space through the origin.
-    """
+    """Return a random hyperplane in 3D space through the origin."""
     # Generate a random normal vector (a, b, c)
     normal_vector = np.random.randn(3)  # Generates a 3D vector with normal distribution
 
@@ -617,7 +615,9 @@ def get_maxcut_heuristic(graph):
     ntaxa = len(nodes)
 
 
-def get_maxcut_qmc(graph: dict[tuple[frozenset,frozenset]: int]) -> tuple[frozenset, frozenset]:
+def get_maxcut_qmc(
+    graph: dict[tuple[frozenset, frozenset] : int],
+) -> tuple[frozenset, frozenset]:
     """Return the cut that maximizes the parameterized qmc score.
 
     This tests every possible cut that bipartitions the taxon set
@@ -659,8 +659,8 @@ def get_maxcut_qmc(graph: dict[tuple[frozenset,frozenset]: int]) -> tuple[frozen
 
     # find alpha minimizing ratio of +/- scores using binary search
     high = 0.01
-    low = -1000.
-    alpha = (high + low) / 2.
+    low = -1000.0
+    alpha = (high + low) / 2.0
     while 1:
         search = {i: scores[i][0] + scores[i][1] * alpha for i in scores}
         score = max(search.values())
@@ -669,10 +669,10 @@ def get_maxcut_qmc(graph: dict[tuple[frozenset,frozenset]: int]) -> tuple[frozen
             break
         elif score < 0:
             low = alpha
-            alpha = (high + low) / 2.
+            alpha = (high + low) / 2.0
         elif score > 0.1:
             high = alpha
-            alpha = (high + low) / 2.
+            alpha = (high + low) / 2.0
         else:
             break
 
@@ -774,6 +774,7 @@ def get_part_size(object) -> int:
 
 class ArtificialTaxon:
     count = 0
+
     def __init__(self):
         self.name = f"x{ArtificialTaxon.count}"
         ArtificialTaxon.count += 1
@@ -890,11 +891,11 @@ def old_get_maxcut_quartet_supertree(
     while partitions:
         # sample next partition
         p = partitions.popleft()
-        print('part', p)
+        print("part", p)
 
         # create a Node
         node = Node(name="".join(sorted(p)))
-        print('node', node)
+        print("node", node)
 
         # connect it to a parent
         if not nodes:
@@ -911,12 +912,12 @@ def old_get_maxcut_quartet_supertree(
         if len(p) == 2:
             for child in p:
                 node._add_child(Node(name=child))
-            print('nodes', nodes)
+            print("nodes", nodes)
             continue
 
         # create a subgraph containing the remaining samples
         subgraph = {e: w for (e, w) in graph.items() if e.issubset(p)}
-        print('sub', subgraph)
+        print("sub", subgraph)
 
         # if no more edges to split a partition (e.g., hard polytomy)
         # if not subgraph:
@@ -933,11 +934,11 @@ def old_get_maxcut_quartet_supertree(
         if not all(bipart):
             for child in p:
                 node._add_child(Node(name=child))
-            print('nodes', nodes)
+            print("nodes", nodes)
             # raise SystemExit()
             continue
 
-        print('bipart', bipart)
+        print("bipart", bipart)
         for part in bipart:
             part = frozenset(part)
             partitions.append(part)
@@ -947,7 +948,9 @@ def old_get_maxcut_quartet_supertree(
     tree = toytree.ToyTree(treenode)
 
     # compute edge supports as the proportion of quartets supporting the split.
-    for node, bipart in zip(tree[tree.ntips:], tree.enum.iter_bipartitions(type=frozenset)):
+    for node, bipart in zip(
+        tree[tree.ntips :], tree.enum.iter_bipartitions(type=frozenset)
+    ):
         matched = 0
         disjunct = 0
         b0, b1 = bipart
@@ -966,7 +969,6 @@ def old_get_maxcut_quartet_supertree(
                 disjunct += wqrts[qrt]
         node.support = matched / (sum(wqrts.values()) - disjunct)
     return tree
-
 
 
 def get_maxcut_quartet_supertree(
@@ -1059,7 +1061,7 @@ def build_tree_from_deferred_clades(clades: list[frozenset]):
         nodes[arts] = children
         # {{x}: (a, b), {y}: (c, d), {x,y}: (e,f)}
         # {{x}: (a, b), {y}: (c, d), {z}: (f,g,h), {x,y,z}: (e,)}
-    logger.debug(('nodes', nodes))
+    logger.debug(("nodes", nodes))
 
     # iterate over artifical taxon set keys from smaller to larger
     snodes = sorted(nodes, key=len)
@@ -1089,8 +1091,8 @@ def build_tree_from_deferred_clades(clades: list[frozenset]):
 
 
 if __name__ == "__main__":
-
     import toytree
+
     toytree.set_log_level("DEBUG")
 
     trees = [
@@ -1164,18 +1166,16 @@ if __name__ == "__main__":
     #                 if not nqrts:
     #                     logger.info(part)
 
-            # for part, q in zip(bipart, qsets):
-            #     nqrts = len(q)
-            #     print(f"bipart {part} {nqrts} qrts ---------------")
-            #     if nqrts > 2:
-            #         subg = get_graph_from_quartets_qmc(q)
-            #         bipart = get_maxcut_qmc(subg)
-            #         qsets = get_subset_quartets(q, bipart[0])
-            #         for part, q in zip(bipart, qsets):
-            #             nqrts = len(q)
-            #             print(f"bipart {part} {nqrts} qrts ---------------")
-
-
+    # for part, q in zip(bipart, qsets):
+    #     nqrts = len(q)
+    #     print(f"bipart {part} {nqrts} qrts ---------------")
+    #     if nqrts > 2:
+    #         subg = get_graph_from_quartets_qmc(q)
+    #         bipart = get_maxcut_qmc(subg)
+    #         qsets = get_subset_quartets(q, bipart[0])
+    #         for part, q in zip(bipart, qsets):
+    #             nqrts = len(q)
+    #             print(f"bipart {part} {nqrts} qrts ---------------")
 
     # print("cut bipart---------------", q1)
     # subg = get_graph_from_quartets_qmc(q2)
@@ -1183,7 +1183,6 @@ if __name__ == "__main__":
     # bipart = get_maxcut_qmc(subg)
     # q1, q2 = get_subset_quartets(q1, bipart[1])
     # print(bipart)
-
 
     # subg = get_graph_from_quartets_qmc(q2)
     # bipart = get_maxcut_qmc(subg)
@@ -1197,9 +1196,6 @@ if __name__ == "__main__":
     #     print(i, q1[i])
     # for i in q2:
     #     print(i, q2[i])
-
-
-
 
     # print('graph------------')
     # g = get_graph_from_quartets_qmc(q)

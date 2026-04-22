@@ -15,7 +15,7 @@ OTT_ID: int
 NODE_ID: str
     A unique identifier for an internal node in the Open Tree synthetic
     tree. May or may not correspond to a taxonomic ID (OTT_ID). If so,
-    it will have an ID like "ott489154". If not, it is a common 
+    it will have an ID like "ott489154". If not, it is a common
     ancestor within the synthetic tree and will have an ID like
     "mrcaott770309ott489154".
 
@@ -24,16 +24,17 @@ Example
 ...
 """
 
-from typing import Sequence, List
-from urllib.parse import urljoin
 from re import match
-import requests
-from requests.models import HTTPError
+from typing import List, Sequence
+from urllib.parse import urljoin
+
 import pandas as pd
+import requests
 from loguru import logger
+from requests.models import HTTPError
+
 from toytree import tree
 from toytree.core import Node, ToyTree
-
 
 URI = "https://api.opentreeoflife.org/v3/"
 HEADERS_JSON = {"content-type": "application/json", "User-Agent": "toytree"}
@@ -67,7 +68,11 @@ def _query_to_node_ids(query: FLEX_QUERY) -> List[str]:
     return node_ids
 
 
-def get_matched_names(query: str | Sequence[str], do_approximate_matching: bool = False, context: str = None) -> dict[str, str]:
+def get_matched_names(
+    query: str | Sequence[str],
+    do_approximate_matching: bool = False,
+    context: str = None,
+) -> dict[str, str]:
     """Return name matching from Open Tree of Life tnrs.
 
     Performs an API call to the Open Tree of Life taxonomic name
@@ -96,8 +101,12 @@ def get_matched_names(query: str | Sequence[str], do_approximate_matching: bool 
         query = [query]
     url = urljoin(URI, "tnrs/match_names")
     json = {"names": query}
-    json = json if not do_approximate_matching else json | {"do_approximate_matching": True}
-    json = json if not context else json | {"context": context}    
+    json = (
+        json
+        if not do_approximate_matching
+        else json | {"do_approximate_matching": True}
+    )
+    json = json if not context else json | {"context": context}
     response = requests.post(url=url, headers=HEADERS_JSON, json=json)
     try:
         response.raise_for_status()
@@ -107,7 +116,9 @@ def get_matched_names(query: str | Sequence[str], do_approximate_matching: bool 
     return response.json()
 
 
-def get_taxon_id_table(query: str | Sequence[str], accept_synonym: bool=False) -> pd.DataFrame:
+def get_taxon_id_table(
+    query: str | Sequence[str], accept_synonym: bool = False
+) -> pd.DataFrame:
     """Return DataFrame of taxon name and ID matching by OTOL tnrs.
 
     This calls the Open Tree of Life Taxonomic Name Resolution Service
@@ -158,12 +169,12 @@ def get_taxon_id_table(query: str | Sequence[str], accept_synonym: bool=False) -
             taxon = matched_name
         data.append([query, taxon, taxon_rank, synonym, taxon_ott_id, ncbi, gbif])
 
-    columns=["query", "taxon", "rank", "is_synonym", "ott_id", "ncbi_id", "gbif_id"]
+    columns = ["query", "taxon", "rank", "is_synonym", "ott_id", "ncbi_id", "gbif_id"]
     return pd.DataFrame(data=data, columns=columns)
 
 
-def get_taxonomy() -> dict[str,str]:
-    """Return dict of metadata about the current version of the 
+def get_taxonomy() -> dict[str, str]:
+    """Return dict of metadata about the current version of the
     open tree of life taxonomy.
     """
     url = urljoin(URI, "taxonomy/about")
@@ -174,8 +185,13 @@ def get_taxonomy() -> dict[str,str]:
     return json
 
 
-def get_taxon_info(query: str | int | dict[str, int], include_lineage: bool=False, include_children: bool=False, include_terminal_descendants: bool=False) -> dict[str,str]:
-    """Return taxonomy info about a queried ID from open tree or other 
+def get_taxon_info(
+    query: str | int | dict[str, int],
+    include_lineage: bool = False,
+    include_children: bool = False,
+    include_terminal_descendants: bool = False,
+) -> dict[str, str]:
+    """Return taxonomy info about a queried ID from open tree or other
     sources.
 
     Parameters
@@ -184,7 +200,7 @@ def get_taxon_info(query: str | int | dict[str, int], include_lineage: bool=Fals
         An int ott_id, str node_id, or dict mapping a database name to
         its int id type, e.g., {'ncbi': 900}.
     include_lineage: bool
-        Whether to include info about all higher-level taxa that 
+        Whether to include info about all higher-level taxa that
         include this taxon. Default=False.
     include_children: bool
         Whether to include info about all child taxa. Default=False.
@@ -192,11 +208,11 @@ def get_taxon_info(query: str | int | dict[str, int], include_lineage: bool=Fals
         Whether to include a list of terminal OTT ids descended from this taxon.
 
     Examples
-    --------    
+    --------
     >>> get_taxon_info(900)
     >>> get_taxon_info("ott_900")
     >>> get_taxon_info({'ncbi': 123})
-    >>> get_taxon_info(900, include_lineage=True)    
+    >>> get_taxon_info(900, include_lineage=True)
     """
     # parse external database IDs if dict, else otol IDs
     if isinstance(query, dict):
@@ -210,11 +226,13 @@ def get_taxon_info(query: str | int | dict[str, int], include_lineage: bool=Fals
         json = {"ott_id": int(node_id.lstrip("ott_"))}
 
     # options
-    json.update({
-        "include_children": include_children,
-        "include_lineage": include_lineage,
-        "include_terminal_descendants": include_terminal_descendants,
-    })
+    json.update(
+        {
+            "include_children": include_children,
+            "include_lineage": include_lineage,
+            "include_terminal_descendants": include_terminal_descendants,
+        }
+    )
 
     # send post
     url = urljoin(URI, "taxonomy/taxon_info")
@@ -223,12 +241,18 @@ def get_taxon_info(query: str | int | dict[str, int], include_lineage: bool=Fals
         response.raise_for_status()
     except Exception as exc:
         logger.error(response.text)
-        raise exc    
+        raise exc
     json = response.json()
     return json
 
 
-def get_taxon_lineage(query: str | int, full_json: bool = False, rank_only: bool = False, max_height: int = None, top: str = None) -> dict[str, str]:
+def get_taxon_lineage(
+    query: str | int,
+    full_json: bool = False,
+    rank_only: bool = False,
+    max_height: int = None,
+    top: str = None,
+) -> dict[str, str]:
     """Return an ordered list of the taxonomic lineage from this node to root.
 
     Parameters
@@ -239,7 +263,7 @@ def get_taxon_lineage(query: str | int, full_json: bool = False, rank_only: bool
         If True the full JSON dict from open tree is returned, else a
         simplified dict is returned with only {rank: name}.
     rank_only: bool
-        If True then only 'ranked' taxa are included (e.g., genus, 
+        If True then only 'ranked' taxa are included (e.g., genus,
         family, order, class, phylum, kingdom, domain)
     max_height: int | None
         An optional max number of ancestor taxa to include.
@@ -277,13 +301,16 @@ def get_taxon_lineage(query: str | int, full_json: bool = False, rank_only: bool
     return lineage[:max_height]
 
 
-def get_taxon_parent(query: str | int, full_json: bool = False, rank_only: bool = False) -> dict[str, str]:
-    """Returns the nearest taxonomic parent of a query. 
-    """
+def get_taxon_parent(
+    query: str | int, full_json: bool = False, rank_only: bool = False
+) -> dict[str, str]:
+    """Returns the nearest taxonomic parent of a query."""
     return get_taxon_lineage(query, full_json, rank_only)[0]
 
 
-def get_taxon_descendants(query: str | int, min_rank: str="genus", terminal_only: bool = False) -> List[int]:
+def get_taxon_descendants(
+    query: str | int, min_rank: str = "genus", terminal_only: bool = False
+) -> List[int]:
     """Return list of open tree taxon IDs descended from a query and
     above a min_rank taxonomic minimum.
 
@@ -300,7 +327,9 @@ def get_taxon_descendants(query: str | int, min_rank: str="genus", terminal_only
         assert min_rank in RANKS
 
     # get the query as a node ID
-    assert isinstance(query, (str, int)), "query should be a node ID, taxon ID, or taxon name"
+    assert isinstance(
+        query, (str, int)
+    ), "query should be a node ID, taxon ID, or taxon name"
     query = [_query_to_node_ids(query)[0]]
 
     # traverse down tree stopping when min_rank it encountered
@@ -338,7 +367,7 @@ def get_taxon_id(query: str) -> int:
         if not item.get("matches"):
             logger.warning(f"no match for '{item['name']}'")
             return None
-        match = item["matches"][0]            
+        match = item["matches"][0]
         return int(match["taxon"]["ott_id"])
 
 
@@ -358,7 +387,9 @@ def get_node_id(query: str | int) -> str:
     return get_node_info(query)[0]["node_id"]
 
 
-def get_node_info(query: FLEX_QUERY, include_lineage: bool = False) -> List[dict[str,str]]:
+def get_node_info(
+    query: FLEX_QUERY, include_lineage: bool = False
+) -> List[dict[str, str]]:
     """Return a dict with information about one or more taxon nodes.
 
     The information lists the studies that include these nodes and
@@ -468,7 +499,8 @@ def get_synthetic_subtree(query: int | str, full_json: bool = False, **kwargs) -
     except HTTPError as exc:
         mrca = response.json()["broken"]["mrca"]
         logger.error(
-            f"Node is broken (i.e., not in synthetic tree) due to conflicts. Use '{mrca}' instead. See Error:\n{response.text}")
+            f"Node is broken (i.e., not in synthetic tree) due to conflicts. Use '{mrca}' instead. See Error:\n{response.text}"
+        )
         raise exc
     except Exception as exc:
         logger.error(response.text)
@@ -479,7 +511,12 @@ def get_synthetic_subtree(query: int | str, full_json: bool = False, **kwargs) -
     return json["newick"]
 
 
-def get_synthetic_induced_subtree(query: Sequence[int | str], full_json: bool = False, label_format: str = "name_and_id", insert_broken_nodes: bool = False) -> str:
+def get_synthetic_induced_subtree(
+    query: Sequence[int | str],
+    full_json: bool = False,
+    label_format: str = "name_and_id",
+    insert_broken_nodes: bool = False,
+) -> str:
     """Return a newick str of the subtree below an open tree node.
 
     Parameters
@@ -519,7 +556,7 @@ def get_synthetic_induced_subtree(query: Sequence[int | str], full_json: bool = 
         for key, val in json["broken"].items():
             node = tree.get_nodes("~" + val)[0]
             name = get_taxon_info(key)["name"]
-            child = Node(f"broken_{name}_{node.name}", dist=1.)
+            child = Node(f"broken_{name}_{node.name}", dist=1.0)
             child.broken = True
             node._add_child(child)
         tree._update()
@@ -532,8 +569,10 @@ def get_synthetic_induced_subtree(query: Sequence[int | str], full_json: bool = 
     return json["newick"]
 
 
-def get_taxonomy_induced_subtree(query: str | int, min_rank: str="genus") -> List[int]:
-    """Return a subtree below a taxonomic name or ID composed of 
+def get_taxonomy_induced_subtree(
+    query: str | int, min_rank: str = "genus"
+) -> List[int]:
+    """Return a subtree below a taxonomic name or ID composed of
     descendant taxa that are of a min_rank or above.
 
     Parameters
@@ -568,7 +607,7 @@ def get_taxonomy_induced_subtree(query: str | int, min_rank: str="genus") -> Lis
         for c in info["children"]:
             if not c["flags"]:
                 ott_id = c["ott_id"]
-                new_node = Node(name=ott_id, dist=1.)
+                new_node = Node(name=ott_id, dist=1.0)
                 new_node._taxon = c["name"]
                 node._add_child(new_node)
                 nodes[ott_id] = new_node
@@ -590,9 +629,9 @@ def get_supporting_studies(query: FLEX_QUERY) -> List[str]:
     Parameters
     ----------
     query: str | int | Sequence[str | int]
-        One or more node ID, taxon ID, or taxon names. If a single 
+        One or more node ID, taxon ID, or taxon names. If a single
         taxon is entered it will search studies for the full clade
-        below that node. If a number of queries are entered, the 
+        below that node. If a number of queries are entered, the
         studies are relevant to their induced subtree.
 
     Returns
@@ -628,10 +667,12 @@ def get_supporting_studies(query: FLEX_QUERY) -> List[str]:
 #         raise exc
 #     json = response.json()
 #     return json
-    # return [i["ot:studyId"] for i in json["matched_studies"]]
+# return [i["ot:studyId"] for i in json["matched_studies"]]
 
 
-def get_study_or_tree(study_id: str | int, tree_id: str | int = None, label_format: str = None) -> str:
+def get_study_or_tree(
+    study_id: str | int, tree_id: str | int = None, label_format: str = None
+) -> str:
     """Return tree or trees associated with a study or tree id.
 
     Parameters
@@ -663,7 +704,7 @@ def get_study_or_tree(study_id: str | int, tree_id: str | int = None, label_form
     elif label_format == "ottid":
         label = "?tip_label=ot:ottid"
     else:
-        label = "?tip_label=ot:originallabel"        
+        label = "?tip_label=ot:originallabel"
 
     # add tree id if provided
     if tree_id is not None:
@@ -683,16 +724,13 @@ def get_study_or_tree(study_id: str | int, tree_id: str | int = None, label_form
 
     # clean data b/c otol puts extra quotes around _some_ names
     return response.text
-    nex = response.text    
+    nex = response.text
     nex = nex.replace("'", "")
     return nex
 
 
-
 if __name__ == "__main__":
-
     import toytree
-    from json import dumps
 
     # find Orobanchaceae studies. Select pg_xxx label for one of them.
     # studies = find_studies("Pedicularis")
@@ -702,7 +740,6 @@ if __name__ == "__main__":
     # nwk = get_tree("ot_2304")
     # toytree.tree(nwk).ladderize()._draw_browser(tmpdir="~", scale_bar=True)
 
-    
     # ott_id = get_node_info("Boswellia")
     # print(ott_id)
     # print(mrca)
@@ -718,9 +755,9 @@ if __name__ == "__main__":
     # tre = get_synthetic_subtree("mrcaott96ott98")
     # print(tre.ntips)
 
-    # mrca = get_mrca_taxon_id(["Boswellia", "Canarium", "Bursera"])    
+    # mrca = get_mrca_taxon_id(["Boswellia", "Canarium", "Bursera"])
     # print(mrca)
-    # print(get_taxon_lineage("Boswellia sacra", full_json=False, rank_only=True, max_height=5))    
+    # print(get_taxon_lineage("Boswellia sacra", full_json=False, rank_only=True, max_height=5))
     # print(get_taxon_lineage("Boswellia sacra", full_json=False, rank_only=False, max_height=5))
     # print(get_taxon_lineage("Boswellia sacra", full_json=True, rank_only=True, max_height=3))
     # print(get_taxon_lineage("Boswellia sacra", full_json=True, rank_only=False, max_height=3))
@@ -745,7 +782,7 @@ if __name__ == "__main__":
 
     # 3. query the node info of one or more nodes (useful to find study trees)
     info = get_node_info(ott_id)
-    print(info)#["num_tips"])
+    print(info)  # ["num_tips"])
     raise SystemExit(0)
     # 4. get current taxonomy
     # _ = get_taxonomy()
@@ -758,14 +795,13 @@ if __name__ == "__main__":
     # 6. get a taxonomy resolved name search
     info = match_names("Pedicularis")
 
-    # 7. 
-
+    # 7.
 
     mrca = get_mrca_node_id([273185, 1009710])
     print(mrca)
 
     nwk = get_newick_from_id("mrcaott22343ott59373")
-    # nwk = get_newick_from_id(11726)    
+    # nwk = get_newick_from_id(11726)
     tree = toytree.tree(nwk)
     print(tree.ntips)
-    tree._draw_browser(tmpdir="~", ts='s', height=8000)
+    tree._draw_browser(tmpdir="~", ts="s", height=8000)

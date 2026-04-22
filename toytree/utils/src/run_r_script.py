@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""Call an R script to test a related function in R.
-"""
+"""Call an R script to test a related function in R."""
 
 import subprocess
 import tempfile
@@ -10,9 +9,9 @@ from textwrap import dedent
 
 def run_r_script(r_code: str) -> str:
     """Write an R script to temp, execute it, and return stdout.
-    
+
     Parameters
-    ----------    
+    ----------
     r_code: str
         The R code to execute.
     """
@@ -30,7 +29,6 @@ def run_r_script(r_code: str) -> str:
 
 
 if __name__ == "__main__":
-
     # Example usage
     r_script = dedent("""
     x <- rnorm(10)

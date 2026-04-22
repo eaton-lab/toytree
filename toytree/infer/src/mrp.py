@@ -11,7 +11,7 @@ that can be used for parsimony phylogenetic inference.
 def create_binary_matrix(tree: ToyTree, tipnames: list[str]) -> np.ndarray:
     """
     Convert a subtree to a binary matrix representation.
-    
+
     :param subtree: A list of lists where each inner list represents a bipartition.
     :param taxa: List of taxa names.
     :return: Binary matrix as a numpy array.
@@ -28,13 +28,12 @@ def create_binary_matrix(tree: ToyTree, tipnames: list[str]) -> np.ndarray:
                 matrix[tipnames.index(i), tipnames.index(k)] = 1
         for i in part2:
             for j in part2:
-                matrix[tipnames.index(i), tipnames.index(j)] = 1                
+                matrix[tipnames.index(i), tipnames.index(j)] = 1
             for k in part1:
-                matrix[tipnames.index(i), tipnames.index(k)] = 1                
+                matrix[tipnames.index(i), tipnames.index(k)] = 1
 
     matrix = np.zeros((len(tipnames), len(tipnames)), dtype=int)
     return matrix
-
 
 
 # NOTE: not implemented in current release.
@@ -64,7 +63,6 @@ def get_clade_frequencies_variable_names(trees: MultiTree) -> dict[tuple, float]
 
     # iterate over unique topologies
     for utree in trees:
-
         # store tipset count
         tipset = frozenset(utree.get_tip_labels())
         if tipset not in tipsets:
@@ -83,7 +81,7 @@ def get_clade_frequencies_variable_names(trees: MultiTree) -> dict[tuple, float]
                 biparts[bipart] = 1
             else:
                 biparts[bipart] += 1
-            
+
     # sort and convert counts to freqs
     for bipart in biparts:
         tipset = frozenset.union(*bipart)
@@ -95,11 +93,11 @@ def get_clade_frequencies_variable_names(trees: MultiTree) -> dict[tuple, float]
     return biparts
 
 
-
 # NOTE: not implemented in current release.
-def old_get_consensus_clades_variable_names(clades: dict[tuple, float], min_freq: float) -> dict[tuple, float]:
-    """Return dict with only non-conflicting clades above min_freq.
-    """
+def old_get_consensus_clades_variable_names(
+    clades: dict[tuple, float], min_freq: float
+) -> dict[tuple, float]:
+    """Return dict with only non-conflicting clades above min_freq."""
     keep = {}
     mark = []
     for bipart, freq in clades.items():
@@ -170,10 +168,12 @@ def old_get_consensus_clades_variable_names(clades: dict[tuple, float], min_freq
         keep.pop(clade)
     return keep
 
+
 # NOTE: this was moved here but may or may not be useful for MRP.
-def get_consensus_clades_variable_names(clades: dict[tuple, float], min_freq: float) -> dict[tuple, float]:
-    """Return dict with only non-conflicting clades above min_freq.
-    """
+def get_consensus_clades_variable_names(
+    clades: dict[tuple, float], min_freq: float
+) -> dict[tuple, float]:
+    """Return dict with only non-conflicting clades above min_freq."""
     keep = {}
     mark = []
     for bipart, freq in clades.items():
@@ -207,19 +207,18 @@ def get_consensus_clades_variable_names(clades: dict[tuple, float], min_freq: fl
 
         # store this bipartition
         if not conflict:
-            print('keep', bipart)
+            print("keep", bipart)
             keep[bipart] = freq
         # if conflicted w/ equal frequency then mark existing for removal
         else:
-            print('conflict', bipart, kbipart)
+            print("conflict", bipart, kbipart)
             if conflict and (freq == keep[kbipart]):
                 mark.append(kbipart)
 
     # remove any clades that conflicted w/ equal frequency
     for bipart in mark:
         keep.pop(bipart)
-    return keep    
-
+    return keep
 
 
 # NOTE: this was moved here but may or may not be useful for MRP.
@@ -233,7 +232,9 @@ def build_consensus_tree_variable_names(clades: dict[tuple, float]) -> ToyTree:
     sets_to_nodes = {}
 
     # sort clades by mean child size (largest first)
-    sbiparts = sorted(clades, key=lambda x: np.mean([len(x[1]), len(x[0])]), reverse=True)
+    sbiparts = sorted(
+        clades, key=lambda x: np.mean([len(x[1]), len(x[0])]), reverse=True
+    )
     for bipart in sbiparts:
         if bipart in sets_to_nodes:
             continue
@@ -241,7 +242,7 @@ def build_consensus_tree_variable_names(clades: dict[tuple, float]) -> ToyTree:
         # create the Node
         name = str(*bipart[0]) if len(bipart[0]) == 1 else ""
         node1 = Node(name=name, support=clades[bipart])
-        name = str(*bipart[1]) if len(bipart[1]) == 1 else ""        
+        name = str(*bipart[1]) if len(bipart[1]) == 1 else ""
         node2 = Node(name=name, support=clades[bipart])
 
         # connect nodes (visit existing smallest to largest)
@@ -251,7 +252,9 @@ def build_consensus_tree_variable_names(clades: dict[tuple, float]) -> ToyTree:
             b1, b2 = ebipart
             print("B", b1, b2)
             # if both a1 and a2 are a subset of b1 or b2
-            if (a1.issubset(b1) | a1.issubset(b2)) & (a2.issubset(b1) | a2.issubset(b2)):
+            if (a1.issubset(b1) | a1.issubset(b2)) & (
+                a2.issubset(b1) | a2.issubset(b2)
+            ):
                 if a1.issubset(b1):
                     enode = sets_to_nodes[ebipart][0]
                     enode._add_child(node1)
@@ -274,7 +277,10 @@ def build_consensus_tree_variable_names(clades: dict[tuple, float]) -> ToyTree:
 
     # create terminal Nodes
     for node in tree:
-        print(node, node.name, )
+        print(
+            node,
+            node.name,
+        )
 
     # return the TreeNode
     return tree

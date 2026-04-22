@@ -16,16 +16,15 @@ Examples
 
 """
 
-from typing import Union, Optional
+from typing import Union
+
 import numpy as np
-from numpy.typing import ArrayLike
 import pandas as pd
+from numpy.typing import ArrayLike
 from scipy import spatial
-import toytree
 
 
-def get_distance_matrix(
-    data: Union[np.ndarray, pd.DataFrame]) -> pd.DataFrame:
+def get_distance_matrix(data: Union[np.ndarray, pd.DataFrame]) -> pd.DataFrame:
     """Return pairwise distances between samples from a character data matrix.
 
     D measured between samples represents the Euclidean distance,
@@ -52,19 +51,17 @@ def get_distance_matrix(
 def get_expected_distance(
     time: float,
     length: int,
-    model: 'MutationModel',
-    ) -> pd.DataFrame:
-    """Return expected distance between two samples given a subst model.
-
-    """
+    model: "MutationModel",
+) -> pd.DataFrame:
+    """Return expected distance between two samples given a subst model."""
     raise NotImplementedError("TODO")
-
 
 
 ####################################################################
 ##
 ##
 ## should these take seqs as input, or diffs???
+
 
 def get_distance_JC69(seq1: ArrayLike, seq2: ArrayLike) -> float:
     """Return the JC69 distance between two sequences.
@@ -80,8 +77,7 @@ def get_distance_JC69(seq1: ArrayLike, seq2: ArrayLike) -> float:
 
 
 def get_distance_K2P(ntransitions: int, ntransversions: int, length: int) -> float:
-    """Return the K2P distance between two sequences...
-    """
+    """Return the K2P distance between two sequences..."""
 
 
 if __name__ == "__main__":

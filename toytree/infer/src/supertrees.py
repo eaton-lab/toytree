@@ -2,8 +2,6 @@
 
 """Implementatin of supertree inference methods.
 
-
-
 References
 ----------
 https://pubmed.ncbi.nlm.nih.gov/39119174/
@@ -11,11 +9,13 @@ https://pubmed.ncbi.nlm.nih.gov/39119174/
 
 import numpy as np
 from pandas import DataFrame
+
 from toytree.core import ToyTree
-from toytree.core.multitree import MultiTree
 
 
-def get_matrix_representation(tree: ToyTree, tip_labels: list[str], df: bool = False) -> np.ndarray:
+def get_matrix_representation(
+    tree: ToyTree, tip_labels: list[str], df: bool = False
+) -> np.ndarray:
     """Return a matrix representation of a set of rooted trees.
 
     This matrix can be analyzed using a phylogenetic inference tool
@@ -60,8 +60,8 @@ def get_matrix_representation(tree: ToyTree, tip_labels: list[str], df: bool = F
 
 
 if __name__ == "__main__":
-
     import toytree
+
     t0 = "((a,b),((c,d),f));"
     t1 = "((a,b),((c,d),e));"
     t2 = "((a,c),((b,d),(e,f)));"

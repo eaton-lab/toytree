@@ -60,7 +60,9 @@ class _CandidateScore:
     tested_local_nni: bool
 
 
-def _canonical_split_side(clade: frozenset[str], all_species: frozenset[str]) -> frozenset[str]:
+def _canonical_split_side(
+    clade: frozenset[str], all_species: frozenset[str]
+) -> frozenset[str]:
     """Return a root-invariant canonical side of a split."""
     other = all_species - clade
     if len(clade) < len(other):
@@ -70,7 +72,9 @@ def _canonical_split_side(clade: frozenset[str], all_species: frozenset[str]) ->
     return clade if tuple(sorted(clade)) <= tuple(sorted(other)) else other
 
 
-def _validate_inputs(species_tree: ToyTree, gene_tree: ToyTree, imap: Mapping[str, str]) -> None:
+def _validate_inputs(
+    species_tree: ToyTree, gene_tree: ToyTree, imap: Mapping[str, str]
+) -> None:
     """Validate trees and mapping."""
     # Validate object types before feature access.
     if not isinstance(species_tree, ToyTree):
@@ -104,7 +108,9 @@ def _validate_inputs(species_tree: ToyTree, gene_tree: ToyTree, imap: Mapping[st
         )
 
 
-def _descendant_species_sets(tree: ToyTree, imap: Mapping[str, str]) -> dict[int, frozenset[str]]:
+def _descendant_species_sets(
+    tree: ToyTree, imap: Mapping[str, str]
+) -> dict[int, frozenset[str]]:
     """Return descendant species sets for all nodes in idx order."""
     # Bottom-up cache used by overlap filtering and candidate scoring.
     desc: dict[int, frozenset[str]] = {}
@@ -146,7 +152,7 @@ def _species_tree_split_set(
     stree = species_tree.mod.prune(*species_subset)
     all_species = frozenset(stree.get_tip_labels())
     splits: set[frozenset[str]] = set()
-    for node in stree[stree.ntips:-1]:
+    for node in stree[stree.ntips : -1]:
         clade = frozenset(node.get_leaf_names())
         if 1 < len(clade) < (len(all_species) - 1):
             splits.add(_canonical_split_side(clade, all_species))
@@ -166,7 +172,7 @@ def _projected_gene_split_set(
     dups = _duplication_overlap_flags(gene_tree, desc)
     all_species = frozenset(species_subset)
     splits: set[frozenset[str]] = set()
-    for node in gene_tree[gene_tree.ntips:-1]:
+    for node in gene_tree[gene_tree.ntips : -1]:
         if dups[node.idx]:
             continue
         clade = frozenset(i for i in desc[node.idx] if i in all_species)
@@ -223,7 +229,11 @@ def _local_nni_variants(tree: ToyTree, node_idx: int) -> list[ToyTree]:
         ntree = tree.copy()
         nnode = ntree[node_idx]
         nparent = nnode.up
-        if nparent is None or (len(nnode.children) != 2) or (len(nparent.children) != 2):
+        if (
+            nparent is None
+            or (len(nnode.children) != 2)
+            or (len(nparent.children) != 2)
+        ):
             continue
         npick = ntree[pick.idx]
         nsister = [c for c in nparent.children if c is not nnode][0]
@@ -242,7 +252,7 @@ def _iter_local_nni_variants_all_edges(tree: ToyTree):
     # Deduplicate generated variants by topology id.
     seen = {tree.get_topology_id()}
     yield tree
-    for node in tree[tree.ntips:-1]:
+    for node in tree[tree.ntips : -1]:
         for var in _local_nni_variants(tree, node.idx)[1:]:
             tid = var.get_topology_id()
             if tid in seen:
@@ -328,7 +338,9 @@ def _infer_best_event(
     # Return an event with endpoint clades only; no extra metadata payload.
     event = AdmixtureEvent(
         src=_clade_tuple(frozenset(src_node.get_leaf_names())),
-        dst=None if dst_node is None else _clade_tuple(frozenset(dst_node.get_leaf_names())),
+        dst=None
+        if dst_node is None
+        else _clade_tuple(frozenset(dst_node.get_leaf_names())),
         src_dist=None,
         dst_dist=None,
         style={},
@@ -339,13 +351,15 @@ def _infer_best_event(
 
 def _max_internal_topo_distance(species_tree: ToyTree) -> int:
     """Return maximum topology-only distance among internal species-tree nodes."""
-    internals = [n.idx for n in species_tree[species_tree.ntips:]]
+    internals = [n.idx for n in species_tree[species_tree.ntips :]]
     if len(internals) < 2:
         return 1
     maxdist = 1
     for i, n0 in enumerate(internals[:-1]):
-        for n1 in internals[i + 1:]:
-            dist = int(species_tree.distance.get_node_distance(n0, n1, topology_only=True))
+        for n1 in internals[i + 1 :]:
+            dist = int(
+                species_tree.distance.get_node_distance(n0, n1, topology_only=True)
+            )
             if dist > maxdist:
                 maxdist = dist
     return maxdist
@@ -499,7 +513,7 @@ def alien_tree_index(
     _validate_inputs(species_tree, gene_tree, imap)
     if error_mode not in {"local_nni", "none"}:
         raise ValueError("error_mode must be one of: {'local_nni', 'none'}.")
-    if (not np.isfinite(min_score_z)):
+    if not np.isfinite(min_score_z):
         raise ValueError("min_score_z must be a finite float.")
 
     # Precompute mapped species sets per node for fast candidate evaluation.
@@ -511,7 +525,7 @@ def alien_tree_index(
     n_candidates_tested = 0
 
     # Score every internal node as a potential removable "alien" clade.
-    for node in gene_tree[gene_tree.ntips:-1]:
+    for node in gene_tree[gene_tree.ntips : -1]:
         tip_names = node.get_leaf_names()
         cand_species = desc_species[node.idx]
         rem_species = all_species - cand_species
@@ -549,15 +563,24 @@ def alien_tree_index(
             if error_mode == "local_nni":
                 before_variants = _local_nni_variants(gene_tree, node.idx)
                 rf_before = np.nanmin(
-                    [_rf_distance(species_tree, t, imap, normalize_rf) for t in before_variants]
+                    [
+                        _rf_distance(species_tree, t, imap, normalize_rf)
+                        for t in before_variants
+                    ]
                 )
             else:
                 rf_before = _rf_distance(species_tree, gene_tree, imap, normalize_rf)
 
             # Remove candidate clade and evaluate how much species/gene fit improves.
-            keep = [name for name in gene_tree.get_tip_labels() if name not in set(tip_names)]
+            keep = [
+                name
+                for name in gene_tree.get_tip_labels()
+                if name not in set(tip_names)
+            ]
             if len(keep) >= 4:
-                pruned = gene_tree.mod.prune(*keep, preserve_dists=True, require_root=False)
+                pruned = gene_tree.mod.prune(
+                    *keep, preserve_dists=True, require_root=False
+                )
                 rf_after = _rf_distance(species_tree, pruned, imap, normalize_rf)
 
             if not np.isnan(rf_before) and not np.isnan(rf_after):
@@ -649,17 +672,24 @@ def alien_tree_index(
 
     # Penalize ancestor-level candidates that are weaker than strong descendants.
     eps = 1e-12
-    base_by_idx = {int(idx): float(score) for idx, score in zip(data["node_idx"], data["alien_score_base"])}
+    base_by_idx = {
+        int(idx): float(score)
+        for idx, score in zip(data["node_idx"], data["alien_score_base"])
+    }
     desc_max_by_idx = _compute_descendant_max_base_scores(gene_tree, base_by_idx)
     data["best_descendant_alien_score_base"] = [
-        0.0 if np.isneginf(desc_max_by_idx[int(idx)]) else float(desc_max_by_idx[int(idx)])
+        0.0
+        if np.isneginf(desc_max_by_idx[int(idx)])
+        else float(desc_max_by_idx[int(idx)])
         for idx in data["node_idx"]
     ]
     ratio = data["best_descendant_alien_score_base"] / (data["alien_score_base"] + eps)
     data["lineage_redundancy"] = np.clip(ratio, 0.0, 1.0)
     data["lineage_nonredundancy"] = 1.0 - data["lineage_redundancy"]
     data["alien_score"] = data["alien_score_base"] * data["lineage_nonredundancy"]
-    data["alien_score_z"] = _leave_one_out_zscores(data["alien_score"].to_numpy(dtype=float))
+    data["alien_score_z"] = _leave_one_out_zscores(
+        data["alien_score"].to_numpy(dtype=float)
+    )
 
     # Build compact hit records for strong outliers.
     hits_df = data[data["alien_score_z"] >= float(min_score_z)].copy()
@@ -681,12 +711,18 @@ def alien_tree_index(
                 "alien_score": float(row.alien_score),
                 "alien_score_z": float(row.alien_score_z),
                 "stree_src_node_idx": int(row.src_node_idx),
-                "stree_dst_node_idx": None if pd.isna(row.dst_node_idx) else int(row.dst_node_idx),
-                "sptree_src": tuple(sorted(species_tree[int(row.src_node_idx)].get_leaf_names())),
+                "stree_dst_node_idx": None
+                if pd.isna(row.dst_node_idx)
+                else int(row.dst_node_idx),
+                "sptree_src": tuple(
+                    sorted(species_tree[int(row.src_node_idx)].get_leaf_names())
+                ),
                 "sptree_dst": (
                     None
                     if pd.isna(row.dst_node_idx)
-                    else tuple(sorted(species_tree[int(row.dst_node_idx)].get_leaf_names()))
+                    else tuple(
+                        sorted(species_tree[int(row.dst_node_idx)].get_leaf_names())
+                    )
                 ),
                 "event": event,
             }
@@ -724,7 +760,9 @@ def _simulate_dup_loss_null_gene_tree(
     target_species = max(2, min(target_species, len(species_labels)))
 
     keep_species = list(rng.choice(species_labels, size=target_species, replace=False))
-    gtree = species_tree.mod.prune(*keep_species, preserve_dists=True, require_root=False)
+    gtree = species_tree.mod.prune(
+        *keep_species, preserve_dists=True, require_root=False
+    )
 
     # Label retained tips as gene-copy IDs and initialize imap.
     # assign gene-copy labels and map.
@@ -823,9 +861,7 @@ def alien_tree_hybrid_null(
             min_score_z=min_score_z,
         )
         null_param[ridx] = (
-            float(nres["data"]["alien_score"].max())
-            if not nres["data"].empty
-            else 0.0
+            float(nres["data"]["alien_score"].max()) if not nres["data"].empty else 0.0
         )
 
     # Nonparametric null: matched random-prune values from observed candidates.
