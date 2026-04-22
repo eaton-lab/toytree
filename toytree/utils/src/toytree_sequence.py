@@ -2,10 +2,10 @@
 
 """Utilities for visualizing TreeSequences from tskit or SLiM.
 
-The :class:`ToyTreeSequence` class holds the tskit.trees.TreeSequence 
-object in its `.tree_sequence` attribute. It is primarily used to 
-generate drawings of one or more trees with the option to display 
-mutations, MutationTypes, and a chromosome structure. These latter 
+The :class:`ToyTreeSequence` class holds the tskit.trees.TreeSequence
+object in its `.tree_sequence` attribute. It is primarily used to
+generate drawings of one or more trees with the option to display
+mutations, MutationTypes, and a chromosome structure. These latter
 options are mostly for SLiM simulated TreeSequences.
 
 Examples
@@ -22,11 +22,13 @@ Examples
 >>> tts.draw_tree_sequence(max_trees=10, chromosome=...)
 """
 
-from typing import Optional, Iterable, Union, Dict, TypeVar, Collection, Mapping
-from loguru import logger
+from typing import Collection, Dict, Iterable, Mapping, Optional, TypeVar, Union
+
 import numpy as np
-from toytree.utils.src.toytree_sequence_drawing import ToyTreeSequenceDrawing
+from loguru import logger
+
 import toytree
+from toytree.utils.src.toytree_sequence_drawing import ToyTreeSequenceDrawing
 
 ToyTree = TypeVar("toytree.ToyTree")
 TskitTree = TypeVar("tskit.trees")
@@ -36,8 +38,8 @@ TreeSequence = TypeVar("tskit.trees.TreeSequence")
 class ToyTreeSequence:
     """Return an instance of a ToyTreeSequence.
 
-    ToyTreeSequence objects wrap around tskit.trees.TreeSequence 
-    objects to make it easier to extract subsamples from trees, and 
+    ToyTreeSequence objects wrap around tskit.trees.TreeSequence
+    objects to make it easier to extract subsamples from trees, and
     visualize one or multiple trees as a sequence.
 
     Parameters
@@ -49,10 +51,11 @@ class ToyTreeSequence:
     seed: int
         A random seed used to sample the samples to include in tree.
     name_dict: Mapping[int,str]
-        Optionally include a dictionary mapping tree sequence int node 
+        Optionally include a dictionary mapping tree sequence int node
         IDs to st names. If not provided then tip Nodes will be auto
         renamed from treesequence data as {pop-id}-{node-id}.
     """
+
     def __init__(
         self,
         tree_sequence: TreeSequence,
@@ -239,22 +242,24 @@ class ToyTreeSequence:
     ):
         # -> Tuple[toyplot.Canvas, toyplot.coordinates.cartesian, :
         """
-        Returns a toyplot Canvas, Axes, and list of marks composing 
-        a TreeSequenceDrawing with genealogies corresponding to 
+        Returns a toyplot Canvas, Axes, and list of marks composing
+        a TreeSequenceDrawing with genealogies corresponding to
         positions along a chromosome.
 
-        Parameters:
-        -----------
+        Parameters
+        ----------
         """
         # get list of trees.
         ntrees = len(self)
         tmax = start + min(ntrees, max_trees)
         tree_range = range(start, tmax)
         trees = [self.at_index(i) for i in tree_range]
-        breaks = self.tree_sequence.breakpoints(True)[start: tmax + 1]
+        breaks = self.tree_sequence.breakpoints(True)[start : tmax + 1]
         tsd = ToyTreeSequenceDrawing(
-            trees, breaks,
-            width=width, height=height,
+            trees,
+            breaks,
+            width=width,
+            height=height,
             scrollable=scrollable,
             **kwargs,
         )
@@ -266,7 +271,7 @@ class ToyTreeSequence:
         idx: Optional[int] = None,
         mutation_size: Union[int, Iterable[int]] = 8,
         mutation_style: Dict[str, str] = None,
-        mutation_color_palette: Iterable['color'] = None,
+        mutation_color_palette: Iterable["color"] = None,
         show_label=True,
         **kwargs,
     ):
@@ -287,7 +292,9 @@ class ToyTreeSequence:
             tree = self.at_site(site)
         else:
             ivals = list(self.tree_sequence.breakpoints())
-            label = f"tree in interval {idx} (sites {ivals[idx]:.0f}-{ivals[idx+1]:.0f})"
+            label = (
+                f"tree in interval {idx} (sites {ivals[idx]:.0f}-{ivals[idx+1]:.0f})"
+            )
             tree = self.at_index(idx)
 
         # draw the tree with kwargs
@@ -295,8 +302,10 @@ class ToyTreeSequence:
 
         # standard color palette for mtypes, or user-specified one.
         colormap = (
-            mutation_color_palette if mutation_color_palette is not None
-            else toytree.color.COLORS1)
+            mutation_color_palette
+            if mutation_color_palette is not None
+            else toytree.color.COLORS1
+        )
 
         # build mutation marker info
         xpos = []
@@ -308,7 +317,6 @@ class ToyTreeSequence:
         # whether multiple mutations occurred at a position. This
         # needs to be tested for both msprime and slim data types...
         for mut in tree.mutations:
-
             # get node id and time using the 'tsidx' (tskit node id)
             node = tree.tsidx_dict[mut.node]
             time = mut.time
@@ -334,7 +342,7 @@ class ToyTreeSequence:
 
             # try to extract mtype from metadata if present.
             try:
-                mtype = int(mut.metadata['mutation_list'][0]['mutation_type'])
+                mtype = int(mut.metadata["mutation_list"][0]["mutation_type"])
             except Exception:
                 mtype = 0
 
@@ -345,7 +353,8 @@ class ToyTreeSequence:
                 f"id: {mut.id}\n"
                 f"site: {mut.site:.0f}\n"
                 f"time: {mut.time:.0f}\n"
-                f"mtype: {mtype}")
+                f"mtype: {mtype}"
+            )
             titles.append(title)
 
         # update mutation style dict
@@ -355,8 +364,9 @@ class ToyTreeSequence:
 
         # draw the mutations
         mark2 = axes.scatterplot(
-            xpos, ypos,
-            marker='o',
+            xpos,
+            ypos,
+            marker="o",
             size=mutation_size,
             color=colors if colors else None,
             mstyle=mstyle,
@@ -370,15 +380,14 @@ class ToyTreeSequence:
 
 
 if __name__ == "__main__":
-
     # EXAMPLE
-    import ipcoal
     # import toyplot.browser
     # import pyslim
     toytree.set_log_level("DEBUG")
 
     # SLIM/shadie example
     import tskit
+
     TSFILE = "/tmp/test.trees"
     # full ts
     ts = tskit.load(TSFILE)

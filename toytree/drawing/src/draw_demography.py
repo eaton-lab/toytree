@@ -33,7 +33,7 @@ from pandas import DataFrame
 
 from toytree.color import ColorType
 from toytree.core import Canvas, Cartesian, Mark, Node, ToyTree
-from toytree.style import get_color_mapped_values, get_range_mapped_feature
+from toytree.data import get_color_mapped_values, get_range_mapped_feature
 from toytree.utils.src.embedding import get_genealogy_embedding_table
 
 # ToyTree = TypeVar("ToyTree")

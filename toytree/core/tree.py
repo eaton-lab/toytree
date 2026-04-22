@@ -58,7 +58,6 @@ if TYPE_CHECKING:
     from toytree.color.src.colorkit import ColorType
     from toytree.drawing import ToyTreeMark
     from toytree.network.src.parse_network import AdmixtureEvent
-    from toytree.style.src.style_base import TreeStyle
 else:
     ColorType = Any
     AdmixtureEvent = Any
@@ -80,6 +79,7 @@ TupleColorMap: TypeAlias = (
     | tuple[str, Any, int | float, int | float]
     | tuple[str, Any, int | float, int | float, int | float]
 )
+DrawColorMapArg: TypeAlias = TupleColorMap | Mapping[str, Any]
 UNPACKING_MSG = """\
 Use unpacking on collections:
 >>> query_list = [0, 1, 2]
@@ -99,6 +99,8 @@ _TOYTREE_METHOD_MODULES_BY_ATTR = {
     "set_node_data": "toytree.data._src.set_node_data",
     "set_node_data_from_dataframe": "toytree.data._src.set_node_data",
     "relabel": "toytree.data._src.relabel",
+    "get_color_mapped_feature": "toytree.data._src.map_colors",
+    "get_range_mapped_feature": "toytree.data._src.map_values",
 }
 
 
@@ -116,13 +118,6 @@ def _ensure_toytree_method_loaded(name: str) -> None:
     module_name = _TOYTREE_METHOD_MODULES_BY_ATTR.get(name)
     if module_name:
         import_module(module_name)
-
-
-def _new_tree_style() -> "TreeStyle":
-    """Return a default TreeStyle instance, importing style lazily."""
-    from toytree.style.src.style_base import TreeStyle
-
-    return TreeStyle()
 
 
 def _is_numpy_array_query(value: Any) -> bool:
@@ -187,8 +182,6 @@ class ToyTree(metaclass=ToyTreeMeta):
         The features names assigned to Nodes. A dynamic property.
     edge_features
         Set of feature names applying to edges, not nodes.
-    style: TreeStyle
-        Mutable dataclass with base drawing style.
     mod: TreeModAPI
         API to apply methods from `toytree.mod` to this tree.
     enum: TreeEnumAPI
@@ -212,7 +205,6 @@ class ToyTree(metaclass=ToyTreeMeta):
         self.treenode = treenode
         self.nnodes: int = 0
         self.ntips: int = 0
-        self._style: TreeStyle | None = None
         self.edge_features: Set = set(("dist", "support"))
         self._idx_dict: Dict[int, Node] = {}
         """Private dict mapping Node idx labels to Node instances."""
@@ -226,18 +218,6 @@ class ToyTree(metaclass=ToyTreeMeta):
 
         # update Node idxs, _idx_dict, nnodes, ntips, and Node heights
         self._update()
-
-    @property
-    def style(self) -> "TreeStyle":
-        """Mutable style object for default tree drawing settings."""
-        if self._style is None:
-            self._style = _new_tree_style()
-        return self._style
-
-    @style.setter
-    def style(self, value: "TreeStyle") -> None:
-        """Set the style object used as defaults for drawing."""
-        self._style = value
 
     #####################################################
     # DUNDERS
@@ -1120,7 +1100,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         tip_labels_colors: ColorType
         | Sequence[ColorType]
         | str
-        | TupleColorMap
+        | DrawColorMapArg
         | None = None,
         tip_labels_angles: int | float | Sequence[int | float] | None = None,
         tip_labels_style: Mapping[str, Any] | None = None,
@@ -1137,7 +1117,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         node_colors: ColorType
         | Sequence[ColorType]
         | str
-        | TupleColorMap
+        | DrawColorMapArg
         | None = None,
         node_style: Mapping[str, Any] | None = None,
         node_hover: bool | str | Sequence[str] | None = None,
@@ -1146,7 +1126,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         edge_colors: ColorType
         | Sequence[ColorType]
         | str
-        | TupleColorMap
+        | DrawColorMapArg
         | None = None,
         edge_widths: int
         | float
@@ -1190,7 +1170,6 @@ class ToyTree(metaclass=ToyTreeMeta):
             style modifications. Options include "n", "s", "p", "o",
             "c", "d", "b", "u", and "r"; you can also create your own
             style combinations (see docs).
-            Using a tree_style overrides any `ToyTree.style` dict.
         ts: str or None
             A shorter alias that can be used for `tree_style`.
         height: int or None
@@ -1223,12 +1202,16 @@ class ToyTree(metaclass=ToyTreeMeta):
             added to the plot; if False, no tip labels are added. If a
             list of tip labels is provided it must be the same len as
             ntips and is applied in Node idx order (0-ntips).
-        tip_labels_colors: Color or Sequence[Color] or (feature, colormap)
-            A valid toyplot Color, Sequence[Color] of len=ntips, or
-            tuple of (feature, colormap) to map colors to tip labels.
+        tip_labels_colors: Color, Sequence[Color], str, tuple, or dict
+            A valid toyplot Color or Sequence[Color] of len=ntips, or
+            a feature-to-color mapping. Feature mapping can be entered
+            as a feature-name string, tuple format
+            ``(feature, colormap[, domain_min, domain_max, nan_value])``,
+            or dict format
+            ``{"feature": ..., "cmap": ..., "domain_min": ..., ...}``.
         tip_labels_style: Dict[str, str]
             A dictionary of CSS style arguments to apply to text
-            tip labels. See tree.style for options.
+            tip labels. See `toytree.core.TipLabelStyle` for options.
         tip_labels_angles: int, Sequence[int], or None
             None will set angles based on layout method.
         tip_labels_align: bool
@@ -1257,7 +1240,7 @@ class ToyTree(metaclass=ToyTreeMeta):
             - tuple: `(feature, min, max[, nan])` for explicit mapping.
             Node size 0 is hidden. Nodes hidden by `node_mask` are not
             drawn regardless of size.
-        node_colors: Color, Sequence[Color], str, or tuple
+        node_colors: Color, Sequence[Color], str, tuple, or dict
             Controls node marker fill colors. Options from simple to
             complex:
             - single color: apply one color to all nodes.
@@ -1265,6 +1248,8 @@ class ToyTree(metaclass=ToyTreeMeta):
             - feature name (str): map a node feature to colors.
             - tuple: `(feature, colormap[, domain_min, domain_max])`
               for explicit feature-to-colormap mapping.
+            - dict: `{"feature": ..., "cmap": ..., "domain_min": ..., ...}`
+              for explicit keyword-style feature-to-colormap mapping.
             Any valid toyplot color type is accepted. If all nodes
             share one color, using `node_style={"fill": ...}` is more
             efficient. `node_colors` overrides `node_style["fill"]`.
@@ -1291,9 +1276,11 @@ class ToyTree(metaclass=ToyTreeMeta):
             instead of node coordinates. For separate edge annotation marks
             see `toytree.annotate.add_edge_markers` and
             `toytree.annotate.add_edge_labels`.
-        edge_colors: str or Sequence[str]
+        edge_colors: Color, Sequence[Color], str, tuple, or dict
             A color or collection of colors nnodes in length to apply
-            to edges in node idx order.
+            to edges in node idx order. Feature mapping can be entered
+            as a feature-name string, tuple format, or dict format as
+            described for `node_colors`.
         edge_widths: float or Sequence[float]
             A width arg in px units, or collection of widths to apply
             to edges in node idx order.
@@ -1301,10 +1288,10 @@ class ToyTree(metaclass=ToyTreeMeta):
             Edges can be phylogram ('p') or cladogram ('c') type.
         edge_style: Dict[str, Any]
             A dictionary of valid CSS style args to apply to edge
-            lines. See tree.style for available options.
+            lines. See `toytree.core.EdgeStyle` for available options.
         edge_align_style: Dict[str, Any]
             A dictionary of valid CSS style args to apply to aligned
-            edge lines. See tree.style for available options.
+            edge lines. See `toytree.core.EdgeAlignStyle` for options.
         use_edge_lengths: bool
             If True edge lengths ('dist' features of TreeNodes) are
             represented in drawings. If False all terminal edges are

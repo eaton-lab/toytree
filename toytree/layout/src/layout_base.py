@@ -18,7 +18,7 @@ from typing import Optional, Sequence, TypeVar
 
 import numpy as np
 
-from toytree.style import TreeStyle
+from toytree.core import TreeStyle
 from toytree.utils import ToytreeError
 
 ToyTree = TypeVar("ToyTree")

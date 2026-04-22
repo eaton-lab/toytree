@@ -15,15 +15,12 @@ from toyplot.canvas import Canvas
 from toyplot.coordinates import Cartesian
 
 # from toytree.annotate.src.add_scale_bar import add_axis_scale_bar_to_mark
+from toytree.core import TreeStyle, get_base_tree_style_by_name
 from toytree.drawing.src.mark_toytree import ToyTreeMark
 from toytree.drawing.src.setup_canvas import get_canvas_and_axes
+from toytree.drawing.src.validate_style import validate_style
+from toytree.drawing.src.validate_utils import tree_style_to_css_dict
 from toytree.layout import BaseLayout, CircularLayout, LinearLayout, UnrootedLayout
-from toytree.style import (
-    TreeStyle,
-    get_base_tree_style_by_name,
-    tree_style_to_css_dict,
-    validate_style,
-)
 
 # from toytree.utils import ToytreeError
 ToyTree = TypeVar("ToyTree")
@@ -142,14 +139,14 @@ def get_tree_style_updated_by_draw_args(tree: ToyTree, **kwargs) -> TreeStyle:
 
     1. ``tree_style`` if provided.
     2. ``ts`` shorthand from extra kwargs when ``tree_style`` is not set.
-    3. ``tree.style.tree_style`` when present.
-    4. Copy of ``tree.style``.
+    3. A fresh default ``TreeStyle()``.
 
     Unknown extra kwargs are ignored with a warning.
     """
     kwargs = _normalize_extra_kwargs(kwargs)
 
-    # get a TreeStyle COPY from tree.style or new ts TreeStyle()
+    # Resolve the draw base style from the explicit style selector or
+    # from a new default TreeStyle when no selector was provided.
     style = get_tree_style_base(tree, tree_style=kwargs.pop("tree_style", None))
 
     # special handling of tree_style='p' in case Ne is not a feature.
@@ -210,7 +207,7 @@ def draw_toytree(tree: ToyTree, **kwargs) -> Tuple[Canvas, Cartesian, ToyTreeMar
 
     Notes
     -----
-    Draw arguments override values in ``tree.style``. If ``tree_style``
+    Draw arguments override the selected base style. If ``tree_style``
     is provided then a built-in base style is selected before applying
     draw-specific overrides.
     """
@@ -287,17 +284,10 @@ def get_tree_style_base(tree: ToyTree, **kwargs) -> TreeStyle:
     else:
         tree_style = kwargs.get("ts")
 
-    # get new TreeStyle from user-entered arg (e.g., 's')
     if tree_style is not None:
         style = get_base_tree_style_by_name(tree_style)
-
-    # get new TreeStyle from tree.style.tree_style (e.g., 'n')
-    elif tree.style.tree_style is not None:
-        style = get_base_tree_style_by_name(tree.style.tree_style)
-
-    # get deepcopy of current TreeStyle in tree.style
     else:
-        style = tree.style.copy()
+        style = TreeStyle()
     return style
 
 

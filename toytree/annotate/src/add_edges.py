@@ -18,7 +18,7 @@ from toytree.core.apis import AnnotationAPI, add_subpackage_method
 from toytree.drawing import Cartesian, Mark
 from toytree.drawing.src.mark_annotation import AnnotationGradientLine, AnnotationLine
 from toytree.drawing.src.path_edges import get_tree_edge_polylines
-from toytree.style.src.validate_data import (
+from toytree.drawing.src.validate_data import (
     validate_colors,
     validate_mask,
     validate_numeric,
@@ -108,7 +108,7 @@ def add_edges(
     --------
     >>> tree = toytree.rtree.bdtree(20, seed=123)
     >>> tree.pcm.simulate_discrete_trait(
-    ...     3, trait_name="X", state_names="ABC", inplace=True
+    ...     3, name="X", state_names="ABC", inplace=True
     ... )
     >>> c, a, m = tree.draw(layout="c", edge_type="p")
     >>> tree.annotate.add_edges(

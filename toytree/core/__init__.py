@@ -26,11 +26,17 @@ from __future__ import annotations
 
 import importlib
 
-__all__ = ["ToyTree", "Node"]
+__all__ = ["ToyTree", "Node", "TreeStyle", "SubStyle", "get_base_tree_style_by_name"]
 
 _LAZY_ATTRS = {
     "ToyTree": ("toytree.core.tree", "ToyTree"),
     "Node": ("toytree.core.node", "Node"),
+    "TreeStyle": ("toytree.core.style_base", "TreeStyle"),
+    "SubStyle": ("toytree.core.style_base", "SubStyle"),
+    "get_base_tree_style_by_name": (
+        "toytree.core.style_types",
+        "get_base_tree_style_by_name",
+    ),
 }
 
 

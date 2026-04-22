@@ -15,8 +15,8 @@ from typing import Optional, Sequence, TypeVar
 
 import numpy as np
 
+from toytree.core import TreeStyle
 from toytree.layout.src.layout_base import BaseLayout
-from toytree.style import TreeStyle
 from toytree.utils import ToytreeError
 
 ToyTree = TypeVar("ToyTree")
@@ -27,13 +27,15 @@ Node = TypeVar("Node")
 
 # this enum not yet used
 class InteriorAlgorithm:
+    """Enumerate supported internal-node placement algorithms."""
+
     INTERMEDIATE = 0
     CENTERED = 1
     WEIGHTED = 2
 
 
 class LinearLayout(BaseLayout):
-    """Layout for linear drawing styles: "r", "l", "u", "d"
+    """Layout for linear drawing styles: ``r``, ``l``, ``u``, and ``d``.
 
     The interior_node_layout string is optionally entered as a
     number after the linear style, e.g., "r0", "r1", "u2", etc.
@@ -54,7 +56,7 @@ class LinearLayout(BaseLayout):
         super().__init__(tree, style, fixed_order, fixed_position)
 
     def run(self) -> None:
-        """Fills the .coords array with x, y coordinates.
+        """Fill ``.coords`` with x/y positions for the current layout.
 
         mode: int
             0 = midpoint of immediate children (default)
@@ -124,7 +126,7 @@ class LinearLayout(BaseLayout):
                 self.tcoords[:, 0] = self.style.xbaseline
 
     def _assign_unit_length_edges(self) -> None:
-        """When use_edge_length=False this sets all dists to unit 1"""
+        """Set all branch distances to unit length when disabled."""
         for node in self.tree:  # .traverse("postorder"):
             if node.is_leaf():
                 self.coords[node.idx, 1] = 0
@@ -141,9 +143,9 @@ class LinearLayout(BaseLayout):
         """
         # get user fixed-positions or use the default range of 0-Ntips
         if self.fixed_position is None:
-            positions = np.arange(self.tree.ntips)
+            positions = np.arange(self.tree.ntips, dtype=float)
         else:
-            positions = np.array(self.fixed_position)
+            positions = np.array(self.fixed_position, dtype=float)
             assert (
                 positions.size == self.tree.ntips
             ), "fixed_position arg must be same len as ntips."
@@ -159,17 +161,32 @@ class LinearLayout(BaseLayout):
 
             # get indices at which user wants Nodes to be displayed
             tipnames = self.tree.get_tip_labels()
+            tipnames_set = set(tipnames)
+            fixed_lookup = {}
             for idx, name in enumerate(self.fixed_order):
-                if name not in tipnames:
+                if name not in tipnames_set:
                     raise ToytreeError(f"name {name} not in tree.")
-                idxorder[tipnames.index(name)] = idx
+                fixed_lookup[name] = idx
+            for tip_idx, name in enumerate(tipnames):
+                idxorder[tip_idx] = fixed_lookup[name]
 
-        # return coordinates using the new fixed_order
-        coords = []
+        coords = np.zeros((self.tree.nnodes, 2), dtype=float)
+        if self.interior_algorithm == 1:
+            # Cache descendant x-sums/counts so centered cloud-tree layouts
+            # do one postorder pass instead of recomputing leaves per node.
+            desc_sums = np.zeros(self.tree.nnodes, dtype=float)
+            desc_counts = np.zeros(self.tree.nnodes, dtype=int)
+        else:
+            desc_sums = None
+            desc_counts = None
+
         for node in self.tree:  # .traverse("idxorder"):
+            coords[node.idx, 1] = node._height
             if node.is_leaf():
-                newx = positions[idxorder[node.idx]]
-                coords.append((newx, node._height))
+                coords[node.idx, 0] = positions[idxorder[node.idx]]
+                if desc_sums is not None and desc_counts is not None:
+                    desc_sums[node.idx] = coords[node.idx, 0]
+                    desc_counts[node.idx] = 1
             else:
                 # set internal node at midpoint between its children
                 # centered placement
@@ -177,25 +194,28 @@ class LinearLayout(BaseLayout):
                     newx = (
                         sum(
                             [
-                                coords[min(node.children).idx][0],
-                                coords[max(node.children).idx][0],
+                                coords[min(node.children).idx, 0],
+                                coords[max(node.children).idx, 0],
                             ]
                         )
                         / 2
                     )
-                    # newx = np.mean([coords[i.idx][0] for i in node.children])
                 # mean placement over all descendant tip positions
                 elif self.interior_algorithm == 1:
-                    tips = node.get_leaves()
-                    newx = float(np.mean([coords[i.idx][0] for i in tips]))
+                    child_idxs = [child.idx for child in node.children]
+                    total_sum = float(np.sum(desc_sums[child_idxs]))
+                    total_count = int(np.sum(desc_counts[child_idxs]))
+                    desc_sums[node.idx] = total_sum
+                    desc_counts[node.idx] = total_count
+                    newx = total_sum / total_count
                 # robust weighted midpoint of immediate children
                 elif self.interior_algorithm == 2:
                     minc = min(node.children)
                     maxc = max(node.children)
                     mind = minc.dist
                     maxd = maxc.dist
-                    minx = coords[minc.idx][0]
-                    maxx = coords[maxc.idx][0]
+                    minx = coords[minc.idx, 0]
+                    maxx = coords[maxc.idx, 0]
                     eps = 1e-12
                     if (mind <= eps) and (maxd <= eps):
                         newx = (minx + maxx) / 2
@@ -210,12 +230,12 @@ class LinearLayout(BaseLayout):
                 # median over descendant tip x positions
                 elif self.interior_algorithm == 3:
                     tips = node.get_leaves()
-                    newx = float(np.median([coords[i.idx][0] for i in tips]))
+                    newx = float(np.median([coords[i.idx, 0] for i in tips]))
                 # trimmed mean over descendant tip x positions
                 elif self.interior_algorithm == 4:
                     tips = node.get_leaves()
                     vals = np.sort(
-                        np.array([coords[i.idx][0] for i in tips], dtype=float)
+                        np.array([coords[i.idx, 0] for i in tips], dtype=float)
                     )
                     nvals = vals.size
                     k = int(np.floor(0.1 * nvals))
@@ -227,15 +247,15 @@ class LinearLayout(BaseLayout):
                     newx = (
                         sum(
                             [
-                                coords[min(node.children).idx][0],
-                                coords[max(node.children).idx][0],
+                                coords[min(node.children).idx, 0],
+                                coords[max(node.children).idx, 0],
                             ]
                         )
                         / 2
                     )
 
-                coords.append((newx, node._height))
-        return np.array(coords)
+                coords[node.idx, 0] = newx
+        return coords
 
 
 if __name__ == "__main__":

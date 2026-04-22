@@ -10,7 +10,6 @@ from copy import deepcopy
 from numbers import Integral
 from typing import TYPE_CHECKING, TypeVar
 
-from toytree.style import TreeStyle
 from toytree.utils import ToytreeError
 
 if TYPE_CHECKING:
@@ -553,6 +552,7 @@ class MultiTree:
         jitter: float = 0.0,
         idxs: int | Sequence[int] | None = None,
         interior_algorithm: int = 1,
+        per_tree: Sequence[dict | None] | None = None,
         **kwargs,
     ) -> tuple[Canvas | None, Cartesian, list[Mark]]:
         """Return an overlay drawing of multiple trees on one set of axes.
@@ -573,6 +573,10 @@ class MultiTree:
             Unlike ``MultiTree.draw()``, an empty selection is invalid.
         interior_algorithm : int, default=1
             Interior-node positioning algorithm forwarded to each tree draw.
+        per_tree : Sequence[dict | None] or None, default=None
+            Optional per-tree draw kwargs in rendered-tree order after
+            ``idxs`` selection. Each mapping overrides shared ``**kwargs``
+            for one rendered tree.
         **kwargs : dict
             Additional ``ToyTree.draw()`` styling arguments applied to the
             rendered trees.
@@ -598,15 +602,13 @@ class MultiTree:
             caller="draw_cloud_tree()",
         )
         selected = MultiTree([self.treelist[idx] for idx in indices])
+        selected._draw_fixed_order_cache = self._draw_fixed_order_cache
 
         draw_kwargs = dict(kwargs)
         draw_kwargs["jitter"] = jitter
-        draw_kwargs["axes"] = axes
-        draw_kwargs["idxs"] = None
-        draw_kwargs["tree_style"] = None
         draw_kwargs["fixed_order"] = fixed_order
         draw_kwargs["interior_algorithm"] = interior_algorithm
-        draw_kwargs["kwargs"] = {}
+        draw_kwargs["per_tree"] = per_tree
 
         marks = draw_cloudtree(selected, **draw_kwargs)
         canvas, axes = get_canvas_and_axes(
@@ -625,8 +627,13 @@ class MultiTree:
                 _normalize_draw_scale_factor,
             )
 
-            tree = max(selected, key=lambda item: item.treenode.height)
-            if tree.style.layout in ("r", "u"):
+            tallest_idx = max(
+                range(len(selected)),
+                key=lambda idx: selected[idx].treenode.height,
+            )
+            tree = selected[tallest_idx]
+            layout = getattr(marks[tallest_idx], "layout", "r")
+            if layout in ("r", "u"):
                 srange = (-tree.treenode.height, 0)
             else:
                 srange = (0, tree.treenode.height)
@@ -641,11 +648,6 @@ class MultiTree:
             axes.y.show = False
 
         return canvas, axes, marks
-
-    def reset_tree_styles(self) -> None:
-        """Reset ``.style`` on every tree to the default TreeStyle."""
-        for tree in self.treelist:
-            tree.style = TreeStyle()
 
     def get_tip_labels(self) -> Sequence[str]:
         """Return tip labels in the order of the first tree.
