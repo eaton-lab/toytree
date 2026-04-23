@@ -6,26 +6,26 @@ TODO
 ----
 This module is intended for the development of phylogenetic generalized
 least squares (PGLS) methods, including a phylogenetic ANOVA. Some
-pseudo-code is written but this is IN DEVELOPMENT, and not yet 
+pseudo-code is written but this is IN DEVELOPMENT, and not yet
 intended for use.
 
 References
 ----------
-Adams, D. C., & Collyer, M. L. (2018). Phylogenetic ANOVA: group-clade 
+Adams, D. C., & Collyer, M. L. (2018). Phylogenetic ANOVA: group-clade
 aggregation, biological challenges, and a refined permutation procedure.
 Evolution, 72(6), 1204-1215.
 
-Garland, T., Jr., A. W. Dickerman, C. M. Janis, & J. A. Jones. (1993) 
+Garland, T., Jr., A. W. Dickerman, C. M. Janis, & J. A. Jones. (1993)
 Phylogenetic analysis of covariance by computer simulation. Systematic
 Biology, 42, 265-292.
 
-Harmon, L. J., J. T. Weir, C. D. Brock, R. E. Glor, W. Challenger. 
+Harmon, L. J., J. T. Weir, C. D. Brock, R. E. Glor, W. Challenger.
 (2008) GEIGER: investigating evolutionary radiations. Bioinformatics,
-24, 129-131. 
+24, 129-131.
 
 Adams, D.C and M.L. Collyer. 2018. Multivariate phylogenetic anova:
-group-clade aggregation, biological challenges, and a refined 
-permutation procedure. Evolution. 72:1204-1215. 
+group-clade aggregation, biological challenges, and a refined
+permutation procedure. Evolution. 72:1204-1215.
 """
 
 from typing import Sequence
@@ -41,7 +41,7 @@ def anova(values: Sequence[float], groups: Sequence[str]) -> dict[str, float]:
     ANOVA is typically used to test for differences in means across
     different groups or treatments. It compares the variance within
     groups to the variance between groups to determine if group means
-    are significantly different. This method calls the scipy.stats 
+    are significantly different. This method calls the scipy.stats
     function `f_oneway` to run a one-way ANOVA.
 
     Parameters
@@ -62,6 +62,7 @@ def anova(values: Sequence[float], groups: Sequence[str]) -> dict[str, float]:
     >>> # {'F-statistic': 33.348302, 'p-value': 8.601108e-14}
     """
     from scipy.stats import f_oneway
+
     values = np.array(values)
     groups = np.array(groups)
     keys = set(groups)
@@ -70,7 +71,9 @@ def anova(values: Sequence[float], groups: Sequence[str]) -> dict[str, float]:
     return {"F-statistic": f_stat, "p-value": p_value}
 
 
-def phylogenetic_anova(trait: Sequence[float], group: Sequence[str], tree: ToyTree) -> dict[str, float]:
+def phylogenetic_anova(
+    trait: Sequence[float], group: Sequence[str], tree: ToyTree
+) -> dict[str, float]:
     """Generalized Least Squares...
 
     ANOVA is typically used to test for differences in means across
@@ -79,19 +82,19 @@ def phylogenetic_anova(trait: Sequence[float], group: Sequence[str], tree: ToyTr
     are significantly different. When the groups are related by a
     phylogeny, it is necessary to control for the fact that some are
     expected to be more similar to each other than others. This is
-    the goal of a phylogenetic ANOVA. 
+    the goal of a phylogenetic ANOVA.
 
-    This method calls the scipy.stats 
+    This method calls the scipy.stats
     function `f_oneway` to run a one-way ANOVA.
 
-    "How is the variation in a trait between different species 
+    "How is the variation in a trait between different species
     explained by their evolutionary history?"
 
     Look at that statistical significance of differences between groups.
     The null hypothesis is that there are no differences; the alternative
     hypothesis is that one or more groups differs from the others even
     after accounting for phylogeny. The key outputs are an F-statistic
-    and p-value. The F-statistic measures variation _between-groups_ 
+    and p-value. The F-statistic measures variation _between-groups_
     relative to variation _within-groups_. Larger values indicates
     larger relative differences between groups. The p-value tests the
     null hypothesis that there is no difference.
@@ -99,29 +102,33 @@ def phylogenetic_anova(trait: Sequence[float], group: Sequence[str], tree: ToyTr
 
     """
     # check that all 'group' categories are represented in the tree
-    assert set(tree.get_tip_labels()) == set(group), "Mismatch between tree and 'groups' (species)"
+    assert set(tree.get_tip_labels()) == set(
+        group
+    ), "Mismatch between tree and 'groups' (species)"
 
     # get phylogenetic variance-covariance matrix
     # raise warning if tree is not ultrametic?
 
 
-def phylogenetic_generalized_least_squares(values: Sequence[float], groups: Sequence[float], tree: ToyTree) -> dict[str, float]:
+def phylogenetic_generalized_least_squares(
+    values: Sequence[float], groups: Sequence[float], tree: ToyTree
+) -> dict[str, float]:
     """Returns a ... result of a phylogenetic generalized least squares
     analysis.
 
     Generalized least squares is used to model data where the errors
-    are not independent and identically distributed (i.i.d.). GLS 
-    allows for the modeling of heteroscedasticity (unequal variance) 
+    are not independent and identically distributed (i.i.d.). GLS
+    allows for the modeling of heteroscedasticity (unequal variance)
     and autocorrelation (dependence between error terms). When the
     values being modeled evolved on a phylogeny the variance-covariance
     matrix can be used to model the error structure.
 
-    A GLS model accounts for phylogenetic non-independence by 
+    A GLS model accounts for phylogenetic non-independence by
     incorporating the variance-covariance structure from the tree.
 
     DevNotes
     --------
-    This is an implementation in progress where we are trying to 
+    This is an implementation in progress where we are trying to
     implement PGLS using only scipy and not statsmodels.
 
     Example
@@ -130,7 +137,7 @@ def phylogenetic_generalized_least_squares(values: Sequence[float], groups: Sequ
     >>> values = tree.pcm.simulate_continuous_brownian(1.0, tips_only=True)
     >>> groups = tree.get_tip_labels()
     >>> phylogenetic_generalized_least_squares(values, groups, tree)
-    >>> # 
+    >>> #
     """
     from pandas import get_dummies
     from scipy.linalg import inv
@@ -143,7 +150,9 @@ def phylogenetic_generalized_least_squares(values: Sequence[float], groups: Sequ
     keys = set(groups)
 
     # check that tree tips match groups
-    assert set(tree.get_tip_labels()) == keys, "Mismatch between tree and 'groups' (species)"
+    assert (
+        set(tree.get_tip_labels()) == keys
+    ), "Mismatch between tree and 'groups' (species)"
 
     # The design matrix (e.g., intercept + group dummy variables)
     X = get_dummies(groups, drop_first=True).values
@@ -203,8 +212,8 @@ def phylogenetic_generalized_least_squares(values: Sequence[float], groups: Sequ
 
 
 def test_R_gls():
-    """Compare results to a pgls in R ...
-    """
+    """Compare results to a pgls in R ..."""
+
 
 def phyANOVA(tree, x, y):
     """
@@ -226,9 +235,7 @@ def phyANOVA(tree, x, y):
     # perform anova on linear model of y~x
 
 
-
 if __name__ == "__main__":
-
     import toytree
 
     # standard ANOVA on data with different means.
@@ -240,11 +247,12 @@ if __name__ == "__main__":
 
     # phylogenetic ANOVA
 
-
     # phylogenetic GLS
     tree = toytree.rtree.unittree(25, treeheight=1, seed=123).ladderize()
     tree.treenode.draw_ascii()
-    traits = tree.pcm.simulate_multivariate_continuous_trait(model="bm", params=np.diag([1, 2, 3]), tips_only=True)
+    traits = tree.pcm.simulate_multivariate_continuous_trait(
+        model="bm", params=np.diag([1, 2, 3]), tips_only=True
+    )
     print(traits)
     groups = tree.get_tip_labels()
     vcv = tree.pcm.get_vcv_matrix_from_tree(df=True)

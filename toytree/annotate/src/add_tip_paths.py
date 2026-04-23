@@ -27,8 +27,8 @@ from toytree.core import ToyTree
 from toytree.core.apis import AnnotationAPI, add_subpackage_method
 from toytree.drawing import Cartesian
 from toytree.drawing.src.mark_annotation import AnnotationTipPathMark
-from toytree.style.src.validate_data import validate_colors
-from toytree.style.src.validate_utils import substyle_dict_to_css_dict
+from toytree.drawing.src.validate_data import validate_colors
+from toytree.drawing.src.validate_utils import substyle_dict_to_css_dict
 from toytree.utils import ToytreeError
 
 __all__ = ["add_tip_paths"]

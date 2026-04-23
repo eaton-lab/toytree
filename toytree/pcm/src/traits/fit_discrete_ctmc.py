@@ -28,11 +28,11 @@ from scipy.optimize import minimize
 from toytree.core.apis import PhyloCompAPI, add_subpackage_method
 from toytree.data._src.expand_node_mapping import expand_node_mapping
 from toytree.pcm.src.sim.sim_discrete import MarkovModel
-from toytree.pcm.src.traits.aic_table import ModelResult
+from toytree.pcm.src.traits.aic_table import PCMModelResult
 from toytree.utils.src.exceptions import ToytreeError
 
 __all__ = [
-    # "FitMarkovModelResult",
+    "PCMDiscreteCTMCFitResult",
     # "DiscreteMarkovModelFit",
     "fit_discrete_ctmc",
     "infer_ancestral_states_discrete_ctmc",
@@ -40,8 +40,30 @@ __all__ = [
 
 
 @dataclass
-class FitMarkovModelResult(ModelResult):
-    """Container for fitted parameters and likelihood results."""
+class PCMDiscreteCTMCFitResult(PCMModelResult):
+    """Container for fitted discrete CTMC parameters and likelihood results.
+
+    Parameters
+    ----------
+    nstates : int
+        Number of modeled discrete states.
+    model : str
+        Fitted model name, such as ``"ER"``, ``"SYM"``, or ``"ARD"``.
+    relative_rates : numpy.ndarray
+        Estimated relative-rate matrix.
+    state_frequencies : numpy.ndarray
+        Estimated or fixed equilibrium state frequencies.
+    qmatrix : numpy.ndarray
+        Instantaneous transition-rate matrix.
+    log_likelihood : float
+        Maximized model log-likelihood.
+    nparams : int
+        Number of estimated model parameters.
+    fixed_rates : numpy.ndarray or None, default=None
+        Fixed relative-rate matrix used for custom models, if provided.
+    fixed_state_frequencies : numpy.ndarray or None, default=None
+        Fixed equilibrium frequencies, if provided.
+    """
 
     nstates: int
     model: str
@@ -54,6 +76,8 @@ class FitMarkovModelResult(ModelResult):
     fixed_state_frequencies: Optional[np.ndarray] = None
 
     def __repr__(self) -> str:
+        """Return a concise model-fit summary."""
+
         def _fmt_arr(arr: Optional[np.ndarray]) -> str:
             if arr is None:
                 return "None"
@@ -66,7 +90,7 @@ class FitMarkovModelResult(ModelResult):
             return f"<array {shape}>"
 
         return (
-            "FitMarkovModelResult(\n"
+            "PCMDiscreteCTMCFitResult(\n"
             f"  model={self.model}, nstates={self.nstates}, nparams={self.nparams}\n"
             f"  log_likelihood={self.log_likelihood:.6g}\n"
             f"  state_frequencies={_fmt_arr(self.state_frequencies)}\n"
@@ -492,7 +516,7 @@ class DiscreteMarkovModelFit:
         lik = np.clip(self._pruning_likelihood(qmatrix, freqs), 1e-300, None)
         return -float(np.log(lik))
 
-    def fit(self, compute_posteriors: bool = False) -> FitMarkovModelResult:
+    def fit(self, compute_posteriors: bool = False) -> PCMDiscreteCTMCFitResult:
         """Fit the model parameters with ML and return a result object.
 
         Parameters
@@ -507,7 +531,7 @@ class DiscreteMarkovModelFit:
             params = np.empty(0)
             qmatrix, rates, freqs = self._build_qmatrix(params)
             log_likelihood = -self._neg_log_likelihood(params)
-            return FitMarkovModelResult(
+            return PCMDiscreteCTMCFitResult(
                 nstates=self.nstates,
                 model=self.model,
                 relative_rates=rates,
@@ -523,7 +547,7 @@ class DiscreteMarkovModelFit:
         result = minimize(self._neg_log_likelihood, start, method="L-BFGS-B")
         qmatrix, rates, freqs = self._build_qmatrix(result.x)
 
-        return FitMarkovModelResult(
+        return PCMDiscreteCTMCFitResult(
             nstates=self.nstates,
             model=self.model,
             relative_rates=rates,
@@ -545,7 +569,7 @@ def fit_discrete_ctmc(
     fixed_rates: Optional[np.ndarray] = None,
     fixed_state_frequencies: Optional[np.ndarray] = None,
     root_prior: Optional[np.ndarray] = None,
-) -> FitMarkovModelResult:
+) -> PCMDiscreteCTMCFitResult:
     """Fit a discrete Markov model for one trait.
 
     Notes
@@ -624,7 +648,7 @@ def infer_ancestral_states_discrete_ctmc(
     dict[str, object]
         Dictionary with keys:
 
-        - ``"model_fit"``: fitted ``FitMarkovModelResult``.
+        - ``"model_fit"``: fitted ``PCMDiscreteCTMCFitResult``.
         - ``"data"``: ``pd.DataFrame`` indexed by numeric node idx labels.
 
         The dataframe contains:

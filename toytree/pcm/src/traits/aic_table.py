@@ -1,14 +1,25 @@
-
 from dataclasses import dataclass
 from typing import Literal, Optional
 
 import numpy as np
 import pandas as pd
 
+__all__ = ["PCMModelResult", "aic_table"]
+
 
 @dataclass
-class ModelResult:
-    """Minimal data required for model comparison."""
+class PCMModelResult:
+    """Minimal fit-result protocol for PCM model comparison.
+
+    Parameters
+    ----------
+    model : str
+        Model name shown in the comparison table.
+    log_likelihood : float
+        Maximized model log-likelihood.
+    nparams : int
+        Number of estimated model parameters.
+    """
 
     model: str
     log_likelihood: float
@@ -16,7 +27,7 @@ class ModelResult:
 
 
 def aic_table(
-    models: list[ModelResult],
+    models: list[PCMModelResult],
     nobs: Optional[int] = None,
     rank_by: Literal["AIC", "AICc"] = "AIC",
 ):
@@ -24,7 +35,7 @@ def aic_table(
 
     Parameters
     ----------
-    models: list[ModelResult]
+    models: list[PCMModelResult]
         Fitted model result objects with `model`, `log_likelihood`, and `nparams`.
     nobs: int | None
         Number of observations. If provided, AICc columns are computed.

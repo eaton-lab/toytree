@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 
-"""Outline of ideas for more phylocom metrics...
-
-"""
+"""Outline of ideas for more phylocom metrics..."""
 
 from dataclasses import dataclass
 from typing import Callable, TypeVar
@@ -49,7 +47,7 @@ class NullModel:
 
     def get_standard_effect_size(self):
         r"""Return effect size (Z-value).
-        
+
         $$ z = \frac{x - \mu}{\sigma} $$
         """
         return (self._statistic - self._mean) / self._std
@@ -62,25 +60,30 @@ class ShuffleTips(NullModel):
         for rep in range(self.size):
             pass
 
+
 class Richness(NullModel):
     """Randomize community abundances while maintaining species richness"""
+
 
 class Frequency(NullModel):
     """Randomize community abundances while maintaining species frequencies"""
 
+
 class SamplePool(NullModel):
     """Randomize community by sampling species from pool of species
-    occurring in at least one community (sample pool) with equal 
+    occurring in at least one community (sample pool) with equal
     probability.
     """
 
+
 class PhyloPool(NullModel):
     """Randomize community by sampling species from pool of species
-    occurring in at least one community (sample pool) with equal 
+    occurring in at least one community (sample pool) with equal
     probability.
-    
+
     Note: this description is same as above, probably a typo.
     """
+
 
 class IndependentSwap(NullModel):
     """Randomizes community data matrix with the independent swap
@@ -88,12 +91,12 @@ class IndependentSwap(NullModel):
     and sample species richness.
     """
 
+
 class TrialSwap(NullModel):
     """Randomizes community data matrix with the trial-swap algorithm
     (Miklos & Podani 2004) maintaining species occurrence frequency
     and sample species richness.
     """
-
 
 
 def get_faith_pd() -> float:
@@ -123,7 +126,7 @@ def get_species_richness() -> float:
 def get_phylogenetic_sorensen_index() -> float:
     """Return the Phylogenetic Sørensen Index of PhyloBetaDiversity.
 
-    This is a phylogenetic analog of the Sørensen index based on 
+    This is a phylogenetic analog of the Sørensen index based on
     the total length of edges shared and unshared between paired
     communities.
 
@@ -142,10 +145,11 @@ def get_phylogenetic_sorensen_index() -> float:
     >>> ...
     """
 
+
 def get_unifrac() -> float:
     """Return the Unifrac value of PhyloBetaDiversity.
-    
-    This measures the unique fraction of the phylogeny that is 
+
+    This measures the unique fraction of the phylogeny that is
     unshared between a pair of communities. This metric is mostly
     sensitive to dissimilarity at the tips of a phylogeny, but not
     among splits farther back in a tree.

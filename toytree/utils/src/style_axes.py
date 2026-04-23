@@ -5,15 +5,17 @@
 Set margin to 60.
 """
 
-from typing import Optional, Sequence, Tuple, Union, Mapping, Any
+from typing import Any, Mapping, Optional, Sequence, Tuple, Union
 
-import toyplot
 import numpy as np
+import toyplot
 from toyplot.canvas import Canvas
 from toyplot.coordinates import Cartesian
 
 
-def set_axes_ticks_external(axes: toyplot.coordinates.Cartesian) -> toyplot.coordinates.Cartesian:
+def set_axes_ticks_external(
+    axes: toyplot.coordinates.Cartesian,
+) -> toyplot.coordinates.Cartesian:
     """Add custom generic style to plot axes.
 
     Sets tick marks to extend 5px outside of spine, tick mark labels
@@ -43,7 +45,9 @@ def set_axes_ticks_external(axes: toyplot.coordinates.Cartesian) -> toyplot.coor
     return axes
 
 
-def set_axes_box_outline(axes: toyplot.coordinates.Cartesian) -> toyplot.coordinates.Cartesian:
+def set_axes_box_outline(
+    axes: toyplot.coordinates.Cartesian,
+) -> toyplot.coordinates.Cartesian:
     """Adds a box outline to plots.
 
     This is achieved by creating new axes objects that ignore the data
@@ -234,24 +238,27 @@ def debug_toyplot_canvas(
 
 
 if __name__ == "__main__":
+    import numpy as np
 
     import toytree
-    import numpy as np
 
     # ...
     tree = toytree.rtree.bdtree(50, b=5, d=2.5)
-    c1, a, m = tree.draw(scale_bar=True, width=300, height=225, tip_labels=False, padding=10)
+    c1, a, m = tree.draw(
+        scale_bar=True, width=300, height=225, tip_labels=False, padding=10
+    )
     a.x.label.text = "hello world"
     a.y.label.text = "hello world"
     set_axes_ticks_external(a)
     set_axes_box_outline(a)
-    c1.style['stroke-width'] = 1.5
+    c1.style["stroke-width"] = 1.5
 
     # ...
     heights = np.array(sorted([-i.height for i in tree.traverse() if not i.is_leaf()]))
     loglineages = np.log(np.arange(2, tree.ntips + 1))
     c2, a, m = toyplot.plot(
-        heights, loglineages,
+        heights,
+        loglineages,
         width=300,
         height=225,
         stroke_width=3,
@@ -260,6 +267,6 @@ if __name__ == "__main__":
     )
     set_axes_ticks_external(a)
     set_axes_box_outline(a)
-    c2.style['stroke'] = 'grey'
-    c2.style['stroke-width'] = 1.5
+    c2.style["stroke"] = "grey"
+    c2.style["stroke-width"] = 1.5
     toytree.utils.show([c1, c2])

@@ -50,6 +50,16 @@ class TestAnnotateAddEdges(PytestCompat):
         mark = self.tree.annotate.add_edges(a, mask=(1, 1, 1), color="red", width=2)
         self.assertIsNotNone(mark)
 
+    def test_add_edges_accepts_color_dict_format(self):
+        c, a, m = self.tree.draw(layout="d", edge_type="p")
+        mark = self.tree.annotate.add_edges(
+            a,
+            mask=(1, 1, 1),
+            color={"feature": "idx", "cmap": "BlueRed", "reverse": True},
+            width=2,
+        )
+        self.assertIsNotNone(mark)
+
     def test_add_edges_accepts_stroke_linejoin(self):
         c, a, m = self.tree.draw(layout="c", edge_type="p")
         mark = self.tree.annotate.add_edges(
@@ -147,7 +157,7 @@ class TestAnnotateAddEdges(PytestCompat):
 
     def test_add_edges_color_gradient_svg_defs_present(self):
         self.tree.pcm.simulate_discrete_trait(
-            3, trait_name="X", state_names="ABC", inplace=True, seed=123
+            3, name="X", state_names="ABC", inplace=True, seed=123
         )
         c, a, m = self.tree.draw(layout="c", edge_type="p")
         mark = self.tree.annotate.add_edges(
@@ -168,7 +178,7 @@ class TestAnnotateAddEdges(PytestCompat):
 
     def test_add_edges_color_gradient_paths_oriented_root_to_tip(self):
         self.tree.pcm.simulate_discrete_trait(
-            3, trait_name="X", state_names="ABC", inplace=True, seed=123
+            3, name="X", state_names="ABC", inplace=True, seed=123
         )
         c, a, m = self.tree.draw(layout="c", edge_type="p")
         gmark = self.tree.annotate.add_edges(
@@ -203,7 +213,7 @@ class TestAnnotateAddEdges(PytestCompat):
 
     def test_add_edges_gradient_scalar_opacity_on_group(self):
         self.tree.pcm.simulate_discrete_trait(
-            3, trait_name="X", state_names="ABC", inplace=True, seed=123
+            3, name="X", state_names="ABC", inplace=True, seed=123
         )
         c, a, m = self.tree.draw(layout="c", edge_type="p")
         self.tree.annotate.add_edges(
@@ -226,7 +236,7 @@ class TestAnnotateAddEdges(PytestCompat):
 
     def test_add_edges_gradient_array_opacity_on_paths(self):
         self.tree.pcm.simulate_discrete_trait(
-            3, trait_name="X", state_names="ABC", inplace=True, seed=123
+            3, name="X", state_names="ABC", inplace=True, seed=123
         )
         c, a, m = self.tree.draw(layout="d", edge_type="p")
         opac = np.linspace(0.1, 0.9, self.tree.nnodes)
@@ -245,7 +255,7 @@ class TestAnnotateAddEdges(PytestCompat):
 
     def test_add_edges_gradient_scalar_opacity_sets_group_opacity(self):
         self.tree.pcm.simulate_discrete_trait(
-            3, trait_name="X", state_names="ABC", inplace=True, seed=123
+            3, name="X", state_names="ABC", inplace=True, seed=123
         )
         c, a, m = self.tree.draw(layout="d", edge_type="p")
         self.tree.annotate.add_edges(

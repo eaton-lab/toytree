@@ -16,10 +16,10 @@ from toytree.annotate.src.checks import (
 )
 from toytree.core import ToyTree
 from toytree.core.apis import AnnotationAPI, add_subpackage_method
+from toytree.data import get_color_mapped_values
 from toytree.drawing import Cartesian, Mark
 from toytree.drawing.src.mark_annotation import AnnotationStochasticMapLine
-from toytree.style.src.map_colors import get_color_mapped_values
-from toytree.style.src.validate_data import validate_mask, validate_numeric
+from toytree.drawing.src.validate_data import validate_mask, validate_numeric
 from toytree.utils import ToytreeError
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -42,6 +42,15 @@ def _validate_data_frame(data: pd.DataFrame) -> None:
 
     if ("state" not in data.columns) and ("state_idx" not in data.columns):
         raise ToytreeError("data must include a 'state' or 'state_idx' column")
+
+
+def _coerce_stochastic_map_data(data) -> pd.DataFrame:
+    """Return a stochastic-map segment table from result object or DataFrame."""
+    if isinstance(data, pd.DataFrame):
+        return data
+    if hasattr(data, "segments"):
+        return data.segments
+    raise ToytreeError("data must be a pandas.DataFrame or PCMStochasticMapResult")
 
 
 def _get_branch_axis_endpoint(
@@ -117,10 +126,10 @@ def add_edge_stochastic_map(
         Tree associated with the existing drawing on ``axes``.
     axes : Cartesian
         Toyplot Cartesian axes containing a previously drawn tree mark.
-    data : pandas.DataFrame
-        Stochastic-map output table. Must include columns ``map_id``,
-        ``edge_id``, ``t_start``, and ``t_end`` and either ``state`` or
-        ``state_idx``.
+    data : pandas.DataFrame or PCMStochasticMapResult
+        Stochastic-map result object or segment table. Segment tables must
+        include columns ``map_id``, ``edge_id``, ``t_start``, and ``t_end`` and
+        either ``state`` or ``state_idx``.
     map_id : int, default=0
         Replicate identifier selected from ``data['map_id']``.
     color : None, str, toyplot.color.Map, or Sequence[Color], default=None
@@ -163,7 +172,7 @@ def add_edge_stochastic_map(
     >>> tree = toytree.rtree.unittree(20, seed=123)
     >>> tree.pcm.simulate_discrete_trait(
     ...     nstates=3,
-    ...     trait_name="X",
+    ...     name="X",
     ...     tips_only=True,
     ...     inplace=True,
     ...     seed=1,
@@ -173,6 +182,7 @@ def add_edge_stochastic_map(
     >>> c, a, m = tree.draw(edge_type="p")
     >>> tree.annotate.add_edge_stochastic_map(a, maps, map_id=1, color="Dark2", width=4)
     """
+    data = _coerce_stochastic_map_data(data)
     _validate_data_frame(data)
     map_id = int(map_id)
     width = float(width)

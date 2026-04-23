@@ -85,6 +85,15 @@ class TestContinuousBMSim:
         assert out.shape[0] == self.tree.nnodes
         assert list(out.columns) == ["a", "b"]
 
+    def test_multivariate_default_names_are_x_series(self):
+        """Default multivariate output names follow the X1, X2, ... pattern."""
+        out = self.tree.pcm.simulate_multivariate_continuous_trait(
+            model="bm",
+            params=np.array([[1.0, 0.3], [0.3, 2.0]]),
+            seed=18,
+        )
+        assert list(out.columns) == ["X1", "X2"]
+
     def test_multivariate_ou_a_zero_matches_bm_seeded(self):
         """Multivariate OU with zero A matches multivariate BM."""
         rmat = np.array([[1.0, 0.2], [0.2, 1.5]])

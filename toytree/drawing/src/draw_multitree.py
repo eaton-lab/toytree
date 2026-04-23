@@ -17,10 +17,12 @@ from toytree.annotate.src.add_scale_bar import (
     _add_axes_scale_bar_impl,
     _normalize_draw_scale_factor,
 )
+from toytree.core import get_base_tree_style_by_name
 from toytree.drawing.src.draw_toytree import (
     _get_tree_style_layout_mark,
     _normalize_extra_kwargs,
 )
+from toytree.drawing.src.fixed_order import resolve_fixed_order
 from toytree.drawing.src.setup_canvas import (
     get_circular_width_and_height,
     get_linear_width_and_height,
@@ -32,7 +34,6 @@ from toytree.drawing.src.setup_grid import (
     get_fallback_grid_canvas_size,
     get_grid_size_spec,
 )
-from toytree.style import get_base_tree_style_by_name
 from toytree.utils import ToytreeError
 
 MultiTree = TypeVar("MultiTree")
@@ -282,42 +283,18 @@ def _normalize_labels(
     return labels
 
 
-def _get_fixed_order_cache_key(
-    treelist: Sequence,
-) -> tuple[tuple[object, tuple[str, ...]], ...]:
-    """Return a cache key for inferred fixed-order tip labels."""
-    return tuple(
-        (
-            tree.get_topology_id(include_root=True),
-            tuple(tree.get_tip_labels()),
-        )
-        for tree in treelist
-    )
-
-
 def _resolve_fixed_order(
     mtree: MultiTree,
     treelist: Sequence,
     fixed_order: bool | Sequence[str] | None,
 ) -> Sequence[str] | None:
     """Return explicit or inferred fixed-order tip labels for rendering."""
-    if (fixed_order is None) or (fixed_order is False):
-        return None
-    if fixed_order is True:
-        if not treelist:
-            return None
-        if len(treelist) == 1:
-            return treelist[0].get_tip_labels()
-
-        cache_key = _get_fixed_order_cache_key(treelist)
-        cache = mtree._draw_fixed_order_cache
-        if cache_key not in cache:
-            cache[cache_key] = list(
-                toytree.MultiTree(list(treelist)).get_consensus_tree().get_tip_labels()
-            )
-        return cache[cache_key]
-
-    return fixed_order
+    return resolve_fixed_order(
+        mtree,
+        treelist,
+        fixed_order,
+        infer_when_missing=False,
+    )
 
 
 def _is_linear_layout(layout: str) -> bool:

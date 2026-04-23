@@ -21,7 +21,6 @@ UNDER DEVELOPMENT
 from typing import Iterator, Literal, Optional, TypeAlias
 
 import numpy as np
-from loguru import logger
 
 import toytree
 from toytree.core.apis import TreeModAPI, add_subpackage_method
@@ -42,7 +41,7 @@ __all__ = [
 
 
 # FIXME: needs further work.
-def move_spr_iter(tree: ToyTree, highlight: bool = False) -> Iterator[ToyTree]:
+def move_spr_iter(tree: ToyTree) -> Iterator[ToyTree]:
     """Yield all trees within 1 SPR move of input tree.
 
     Returns a generator function to iterate through each of the
@@ -122,30 +121,6 @@ def move_spr_iter(tree: ToyTree, highlight: bool = False) -> Iterator[ToyTree]:
                 ntree.treenode = new_node
             ntree._update()
 
-            # optionally add style highlights
-            if highlight:
-                ntree = style_tree(ntree)
-                ntree.style.node_colors = "white"
-                ntree.style.edge_colors = ["black"] * ntree.nnodes
-                ntree.style.edge_widths = [2] * ntree.nnodes
-
-                # color edge green
-                # ntree.style.edge_colors[new_node.idx] = toytree.color.COLORS2[0]
-                # ntree.style.edge_widths[new_node.idx] = 5
-
-                # # color edge orange
-                # ntree.style.edge_colors[subtree.idx] = toytree.color.COLORS2[1]
-                # ntree.style.edge_widths[subtree.idx] = 5
-
-                # # color clade 1 orange
-                # for edge in nchildren:
-                #     ntree.style.edge_colors[edge.idx] = toytree.color.COLORS2[1]
-                #     ntree.style.edge_widths[edge.idx] = 5
-
-                # # color clade 1 purple
-                # for edge in nsisters + (nparent,):
-                #     ntree.style.edge_colors[edge.idx] = toytree.color.COLORS2[2]
-                #     ntree.style.edge_widths[edge.idx] = 5
             yield ntree
 
 
@@ -193,7 +168,7 @@ def move_nni_iter(tree: ToyTree, node: Query):
     yield ntree
 
 
-def move_nni_iter_old(tree: ToyTree, highlight: bool = False) -> Iterator[ToyTree]:
+def move_nni_iter_old(tree: ToyTree) -> Iterator[ToyTree]:
     """Yield all trees within one NNI of input tree.
 
     Returns a generator function to iterate through each of the
@@ -202,18 +177,10 @@ def move_nni_iter_old(tree: ToyTree, highlight: bool = False) -> Iterator[ToyTre
     move operation is used to heuristically search tree space, and
     is best for finding small changes from the current tree.
 
-    Parameters
-    ----------
-    tree: ToyTree
-        Tree from which one NNI move will be performed.
-    highlight: bool
-        If True the returned tree's .style dict is modified to
-        highlight the swapped edges when drawn w/o a treestyle.
-
     Example
     -------
     >>> tree = toytree.rtree.unittree(ntips=5, seed=123)
-    >>> nni_gen = toytree.mod.move_nni_iter(tree, highlight=True)
+    >>> nni_gen = toytree.mod.move_nni_iter(tree)
     >>> for ntre in nni_gen:
     >>>     ntre.draw(layout='unrooted', use_edge_lengths=False)
     """
@@ -236,7 +203,6 @@ def move_nni_iter_old(tree: ToyTree, highlight: bool = False) -> Iterator[ToyTre
             npick = ntree[pick._idx]
             nsister = ntree[sister._idx]
             nchildren = nnode.children
-            nsisters = nnode.get_sisters()
 
             # collapse node (connect children to parent, remove self from parent)
             for child in nchildren:
@@ -256,26 +222,6 @@ def move_nni_iter_old(tree: ToyTree, highlight: bool = False) -> Iterator[ToyTre
             # logger.info(f"NNI: {nnode} | {npick} <--> {nsister}")
             ntree._update()
 
-            # optionally add style highlights
-            if highlight:
-                ntree = style_tree(ntree)
-                ntree.style.node_colors = "white"
-                ntree.style.edge_colors = ["black"] * ntree.nnodes
-                ntree.style.edge_widths = [2] * ntree.nnodes
-
-                # color edge green
-                ntree.style.edge_colors[new_node.idx] = toytree.color.COLORS2[0]
-                ntree.style.edge_widths[new_node.idx] = 5
-
-                # color clade 1 orange
-                for edge in nchildren:
-                    ntree.style.edge_colors[edge.idx] = toytree.color.COLORS2[1]
-                    ntree.style.edge_widths[edge.idx] = 5
-
-                # color clade 1 purple
-                for edge in nsisters + (nparent,):
-                    ntree.style.edge_colors[edge.idx] = toytree.color.COLORS2[2]
-                    ntree.style.edge_widths[edge.idx] = 5
             yield ntree
 
 
@@ -284,7 +230,6 @@ def move_nni(
     edge: Optional[int] = None,
     seed: Optional[int] = None,
     inplace: bool = False,
-    highlight: bool = False,
 ) -> ToyTree:
     """Return a tree one nearest-neighbor-interchange from current tree.
 
@@ -303,8 +248,6 @@ def move_nni(
         Seed for the numpy random number generator.
     inplace: bool
         If True the tree is modified inplace rather than copied.
-    highlight: bool
-        If True the .style dict is modified to highlight changes.
     """
     # work with unrooted tree, optionally as a copy (much slower).
     # TODO: can this be done without requiring unrooting?
@@ -330,8 +273,6 @@ def move_nni(
     pick = rng.choice(children)
     sisters = node.get_sisters()
     sister = sisters[0]
-    logger.info(f"NNI: edge={node}, swap={pick} <--> {sister}")
-
     # add labels when debugging
     # sister.label = "sister"
     # node.label = "node"
@@ -357,26 +298,6 @@ def move_nni(
     # update Node idxs and coordinates
     tree._update()
 
-    # optionally add style highlights
-    if highlight:
-        tree = style_tree(tree)
-        tree.style.node_colors = "white"
-        tree.style.edge_colors = ["black"] * tree.nnodes
-        tree.style.edge_widths = [2] * tree.nnodes
-
-        # color edge green
-        tree.style.edge_colors[new_node.idx] = toytree.color.COLORS2[0]
-        tree.style.edge_widths[new_node.idx] = 5
-
-        # color clade 1 orange
-        for edg in children:
-            tree.style.edge_colors[edg.idx] = toytree.color.COLORS2[1]
-            tree.style.edge_widths[edg.idx] = 5
-
-        # color clade 1 purple
-        for edg in sisters + (parent,):
-            tree.style.edge_colors[edg.idx] = toytree.color.COLORS2[2]
-            tree.style.edge_widths[edg.idx] = 5
     return tree
 
 
@@ -385,7 +306,6 @@ def move_spr(
     tree: ToyTree,
     seed: Optional[int] = None,
     inplace: bool = False,
-    highlight: bool = False,
 ) -> ToyTree:
     """Return a rooted ToyTree one SPR move from the current tree.
 
@@ -403,15 +323,11 @@ def move_spr(
         Seed for numpy random number generator.
     inplace: bool
         If True the tree is modified in place, else a copy is returned.
-    highlight: bool
-        If True the .style dict of the returned ToyTree will be
-        modified to show the edges that were involved in the tree
-        move if drawn without a tree_style argument.
 
     Examples
     --------
     >>> tree = toytree.rtree.unittree(ntips=8, seed=123)
-    >>> new_tree = toytree.mod.move_nni(tree, highlight=True)
+    >>> new_tree = toytree.mod.move_nni(tree)
     >>> tree.draw();
     >>> new_tree.draw();
     """
@@ -472,50 +388,6 @@ def move_spr(
         tree.treenode = new_node
     tree._update()
 
-    # optional: color edges of the subtree that was moved.
-    if highlight:
-        tree.style.edge_colors = ["black"] * tree.nnodes
-        tree.style.node_colors = ["white"] * tree.nnodes
-        tree.style.node_style.stroke_width = 1.5
-        tree.style.node_sizes = 8
-        tree.style.node_labels = "idx"
-        tree.style.node_labels_style.font_size = 12
-        tree.style.node_labels_style._toyplot_anchor_shift = -9
-        tree.style.node_labels_style.baseline_shift = 7.5
-        tree.style.use_edge_lengths = False
-
-        # tree.get_mrca_node(*tips)
-        for node in subtree._iter_descendants():
-            tree.style.edge_colors[node.idx] = toytree.color.COLORS2[3]
-            tree.style.node_colors[node.idx] = toytree.color.COLORS2[3]
-        tree.style.node_colors[new_node.idx] = toytree.color.COLORS2[3]
-    return tree
-
-
-def highlight_edges(tree: ToyTree, *edges: toytree.Node) -> ToyTree:
-    """Set colors to highlight edges in tree style dict."""
-    tree.style.edge_colors = ["black"] * tree.nnodes
-    tree.style.edge_widths = [2] * tree.nnodes
-    tree.style.node_colors = "white"
-    for idx, edge in enumerate(edges):
-        tree.style.edge_colors[edge.idx] = toytree.color.COLORS2[idx]
-        tree.style.edge_widths[edge.idx] *= 2
-    return tree
-
-
-def style_tree(tree: ToyTree) -> ToyTree:
-    """Add style to show parts of tree that moved."""
-    tree.style.layout = "unroot"
-    tree.style.use_edge_lengths = False
-    tree.style.node_style.stroke_width = 1.5
-    tree.style.node_sizes = 6
-    tree.style.node_labels = "idx"
-    tree.style.node_labels_style.font_size = 12
-    tree.style.node_labels_style._toyplot_anchor_shift = 8
-    tree.style.node_labels_style.baseline_shift = 8
-    tree.style.tip_labels_style._toyplot_anchor_shift = -8
-    tree.style.tip_labels_style.baseline_shift = 8
-    tree.style.tip_labels_style.font_size = 14
     return tree
 
 
@@ -533,7 +405,6 @@ def _iter_move_neighborhood_exact_n(
     move: Literal["nni", "spr"],
     order: Literal["random", "sorted"] = "random",
     seed: int | None = None,
-    highlight: bool = False,
 ) -> Iterator[ToyTree]:
     """Yield unique trees exactly n moves from input in unrooted space."""
     _validate_n_moves(n)
@@ -561,12 +432,10 @@ def _iter_move_neighborhood_exact_n(
             parents.sort(key=lambda i: i.get_topology_id())
 
         for parent in parents:
-            # Only the last expansion depth adds optional edge highlighting.
-            do_highlight = bool(highlight and depth == n)
             if move == "nni":
-                neighbors = move_nni_iter_old(parent, highlight=do_highlight)
+                neighbors = move_nni_iter_old(parent)
             else:
-                neighbors = move_spr_iter(parent, highlight=do_highlight)
+                neighbors = move_spr_iter(parent)
             for ntree in neighbors:
                 tid = ntree.get_topology_id()
                 if tid in seen:
@@ -594,7 +463,6 @@ def iter_nni_n(
     *,
     order: Literal["random", "sorted"] = "random",
     seed: int | None = None,
-    highlight: bool = False,
 ) -> Iterator[ToyTree]:
     """Yield unique trees that are exactly ``n`` NNI moves from input."""
     yield from _iter_move_neighborhood_exact_n(
@@ -603,7 +471,6 @@ def iter_nni_n(
         move="nni",
         order=order,
         seed=seed,
-        highlight=highlight,
     )
 
 
@@ -614,7 +481,6 @@ def iter_spr_n(
     *,
     order: Literal["random", "sorted"] = "random",
     seed: int | None = None,
-    highlight: bool = False,
 ) -> Iterator[ToyTree]:
     """Yield unique trees that are exactly ``n`` SPR moves from input."""
     yield from _iter_move_neighborhood_exact_n(
@@ -623,7 +489,6 @@ def iter_spr_n(
         move="spr",
         order=order,
         seed=seed,
-        highlight=highlight,
     )
 
 
@@ -642,7 +507,6 @@ def move_nni_n(
     *,
     seed: int | None = None,
     mode: Literal["walk", "sample"] = "walk",
-    highlight: bool = False,
     inplace: bool = False,
 ) -> ToyTree:
     """Return one tree exactly ``n`` NNI moves from input."""
@@ -656,10 +520,8 @@ def move_nni_n(
     if mode == "walk":
         rng = np.random.default_rng(seed)
         current = tree.unroot(inplace=True) if inplace else tree.unroot()
-        for step in range(n):
-            neighbors = list(
-                move_nni_iter_old(current, highlight=highlight and step == n - 1)
-            )
+        for _ in range(n):
+            neighbors = list(move_nni_iter_old(current))
             if not neighbors:
                 raise ToytreeError("No valid NNI neighbors were generated.")
             current = neighbors[int(rng.integers(len(neighbors)))]
@@ -670,9 +532,7 @@ def move_nni_n(
         return current
 
     # Sampling mode enumerates exact-depth neighborhood then samples one.
-    neighborhood = list(
-        iter_nni_n(tree, n=n, order="random", seed=seed, highlight=highlight)
-    )
+    neighborhood = list(iter_nni_n(tree, n=n, order="random", seed=seed))
     sample = _sample_tree_from_iter(neighborhood, seed=seed)
     if inplace:
         tree.treenode = sample.treenode
@@ -688,7 +548,6 @@ def move_spr_n(
     *,
     seed: int | None = None,
     mode: Literal["walk", "sample"] = "walk",
-    highlight: bool = False,
     inplace: bool = False,
 ) -> ToyTree:
     """Return one tree exactly ``n`` SPR moves from input."""
@@ -702,10 +561,8 @@ def move_spr_n(
     if mode == "walk":
         rng = np.random.default_rng(seed)
         current = tree.unroot(inplace=True) if inplace else tree.unroot()
-        for step in range(n):
-            neighbors = list(
-                move_spr_iter(current, highlight=highlight and step == n - 1)
-            )
+        for _ in range(n):
+            neighbors = list(move_spr_iter(current))
             if not neighbors:
                 raise ToytreeError("No valid SPR neighbors were generated.")
             current = neighbors[int(rng.integers(len(neighbors)))]
@@ -716,9 +573,7 @@ def move_spr_n(
         return current
 
     # Sampling mode enumerates exact-depth neighborhood then samples one.
-    neighborhood = list(
-        iter_spr_n(tree, n=n, order="random", seed=seed, highlight=highlight)
-    )
+    neighborhood = list(iter_spr_n(tree, n=n, order="random", seed=seed))
     sample = _sample_tree_from_iter(neighborhood, seed=seed)
     if inplace:
         tree.treenode = sample.treenode
@@ -951,8 +806,8 @@ if __name__ == "__main__":
     )
 
     # get mtree with all trees in NNI generator
-    GEN = move_nni_iter(TREE, highlight=True)
-    # GEN = move_spr_iter(TREE, highlight=True)
+    GEN = move_nni_iter_old(TREE)
+    # GEN = move_spr_iter(TREE)
     MTRE = toytree.mtree(list(GEN))
 
     # get shape of tree drawing grid

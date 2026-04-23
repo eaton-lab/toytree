@@ -52,9 +52,9 @@ from toytree.pcm import get_vcv_matrix_from_tree
 # TODO: simulate abundances as lognormally distributed?
 def simulate_community_data(
     tree: ToyTree,
-    scalar: float=0,
-    size: int=1,
-    seed: Optional[int]=None,
+    scalar: float = 0,
+    size: int = 1,
+    seed: Optional[int] = None,
 ) -> pd.DataFrame:
     r"""Return a binary (nsites, nspecies) community data matrix.
 
@@ -137,7 +137,6 @@ def get_community_metric(
 
 
 if __name__ == "__main__":
-
     # fetch a test dataset ...
     TREE = toytree.rtree.unittree(10, treeheight=10, seed=123)
     MATRIX = simulate_community_data(TREE, scalar=10, size=10, seed=123)

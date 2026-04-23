@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 
 import toytree
-from toytree.pcm.src.phylolinalg.pgls import PGLSResult
+from toytree.pcm.src.phylolinalg.pgls import PCMPGLSResult
 from toytree.utils import ToytreeError
 
 
@@ -40,13 +40,13 @@ def tree_tip_labels(tree, tip_labels):
 def test_basic_fit_and_api_exposure(tree, data):
     """Fit via package and tree APIs and inspect result structure."""
     fit = toytree.pcm.pgls(tree, "t0 ~ t1", data=data)
-    assert isinstance(fit, PGLSResult)
+    assert isinstance(fit, PCMPGLSResult)
     assert np.isfinite(fit.lambda_)
     assert "Intercept" in fit.params.index
     assert "t1" in fit.params.index
 
     fit2 = tree.pcm.pgls("t0 ~ t1", data=data)
-    assert isinstance(fit2, PGLSResult)
+    assert isinstance(fit2, PCMPGLSResult)
 
 
 def test_fixed_lambda_override(tree, data):
@@ -109,7 +109,7 @@ def test_repr_contains_key_fields(tree, data):
     """Include core metadata and coefficient names in text repr."""
     fit = toytree.pcm.pgls(tree, "t0 ~ t1", data=data)
     txt = repr(fit)
-    assert "PGLSResult" in txt
+    assert "PCMPGLSResult" in txt
     assert "lambda=" in txt
     assert "sigma2=" in txt
     assert "Intercept" in txt
@@ -120,7 +120,7 @@ def test_repr_html_contains_table(tree, data):
     fit = toytree.pcm.pgls(tree, "t0 ~ t1", data=data)
     txt = fit._repr_html_()
     assert isinstance(txt, str)
-    assert "PGLSResult" in txt
+    assert "PCMPGLSResult" in txt
     assert "<table" in txt
     assert "Intercept" in txt
 
@@ -153,7 +153,7 @@ def test_infer_node_states_pgls_basic_and_warning(tree, data):
     assert isinstance(out, dict)
     assert "model_fit" in out
     assert "data" in out
-    assert isinstance(out["model_fit"], PGLSResult)
+    assert isinstance(out["model_fit"], PCMPGLSResult)
     assert "mean" in out["data"].columns
     assert "variance" in out["data"].columns
     assert "fallback_residual_only" in out["data"].columns

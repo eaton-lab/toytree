@@ -80,7 +80,7 @@ def _coerce_trait_names_for_multivariate(
 ) -> list[str]:
     """Return validated trait names for multivariate outputs."""
     if names is None:
-        return [f"t{i}" for i in range(ntraits)]
+        return [f"X{i + 1}" for i in range(ntraits)]
     onames = [str(i) for i in names]
     if len(onames) != ntraits:
         raise ToytreeError("names length must match inferred trait dimension.")
@@ -309,7 +309,7 @@ def simulate_multivariate_continuous_trait(
     root_states : Sequence[float] | np.ndarray | None, default=None
         Root-state vector of length ``M``. If None, defaults to zeros.
     names : Sequence[str] | None, default=None
-        Output trait names. If None, names are ``t0..t{M-1}``.
+        Output trait names. If None, names are ``X1..XM``.
     tips_only : bool, default=False
         If True, return only tip rows.
     regime : str | pandas.Series | None, default=None

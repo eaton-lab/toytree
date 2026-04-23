@@ -123,7 +123,7 @@ class Parsimony:
         self.data = data
 
     def get_score(self, tree):
-        """Return parsimony score"""
+        """Return parsimony score."""
 
     def _fitch_algorithm(self):
         """Implement the fitch algorithm."""
@@ -158,7 +158,7 @@ class Parsimony:
 
 
 def convert_trait_to_idx_dict(tree: ToyTree, trait: Dict[str, Any]) -> Dict[int, Any]:
-    """ """
+    """Return a node-indexed trait mapping for parsimony utilities."""
     if isinstance(trait, str):
         trait = tree.get_node_data(trait).to_dict()
     else:
@@ -260,8 +260,8 @@ def consistency_and_retention_indices(
     -------
     >>> # generate random tree, simulate 4-state traits, calculate CI
     >>> tree = toytree.rtree.unittree(ntips=40)
-    >>> traits = tree.pcm.simulate_discrete_trait(nstates=4, tips_only=True, nreplicates=10)
-    >>> consistency_and_retention_indices(tree, traits.t0)
+    >>> trait = tree.pcm.simulate_discrete_trait(nstates=4, tips_only=True)
+    >>> consistency_and_retention_indices(tree, trait)
 
     References
     ----------
@@ -348,7 +348,6 @@ if __name__ == "__main__":
     import toytree
 
     tree = toytree.rtree.unittree(40, treeheight=1000, seed=123)
-    data = tree.pcm.simulate_discrete_trait(nstates=4, tips_only=True, nreplicates=4)
+    data = tree.pcm.simulate_discrete_trait(nstates=4, tips_only=True)
     print(data)
-    # print(fitch_parsimony_single(tree, data.t0))
-    print(consistency_and_retention_indices(tree, data.t0))
+    print(consistency_and_retention_indices(tree, data))

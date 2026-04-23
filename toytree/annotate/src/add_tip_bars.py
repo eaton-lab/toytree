@@ -25,8 +25,8 @@ from toytree.core.apis import AnnotationAPI, add_subpackage_method
 from toytree.drawing import Cartesian
 from toytree.drawing.src.mark_annotation import AnnotationTipBarMark
 from toytree.drawing.src.mark_toytree import set_marker_extents, set_tip_label_extents
-from toytree.style.src.validate_data import validate_colors
-from toytree.style.src.validate_utils import substyle_dict_to_css_dict
+from toytree.drawing.src.validate_data import validate_colors
+from toytree.drawing.src.validate_utils import substyle_dict_to_css_dict
 from toytree.utils import ToytreeError
 
 Color = TypeVar("Color", str, tuple, np.ndarray)

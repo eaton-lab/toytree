@@ -15,17 +15,17 @@ from toytree.core import ToyTree
 from toytree.core.apis import AnnotationAPI, add_subpackage_method
 from toytree.drawing import Cartesian, Mark
 from toytree.drawing.src.mark_annotation import AnnotationMarker
-from toytree.layout.src.get_edge_midpoints import get_edge_midpoints
-from toytree.style.src.validate_data import (
+from toytree.drawing.src.validate_data import (
     validate_colors,
     validate_labels,
     validate_markers,
     validate_mask,
     validate_numeric,
 )
-from toytree.style.src.validate_node_labels import validate_node_labels_style
-from toytree.style.src.validate_nodes import validate_node_style
-from toytree.style.src.validate_utils import substyle_dict_to_css_dict
+from toytree.drawing.src.validate_node_labels import validate_node_labels_style
+from toytree.drawing.src.validate_nodes import validate_node_style
+from toytree.drawing.src.validate_utils import substyle_dict_to_css_dict
+from toytree.layout.src.get_edge_midpoints import get_edge_midpoints
 from toytree.utils import ToytreeError
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
@@ -163,7 +163,7 @@ def add_edge_markers(
     yshift : float
         Shift marker vertically by px units (+=down, -=up).
     style : dict
-        Marker style dict. See `tree.style.node_style` for options.
+        Marker style dict. See `toytree.core.NodeStyle` for options.
 
     Returns
     -------
@@ -328,7 +328,7 @@ def add_edge_labels(
     yshift : int
         Shift label vertically by px units (+=down, -=up).
     style : dict
-        Style dict. See `tree.style.node_labels_style` for options.
+        Style dict. See `toytree.core.NodeLabelStyle` for options.
 
     Returns
     -------

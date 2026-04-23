@@ -17,9 +17,9 @@ import numpy as np
 import toyplot
 
 from toytree.color import ToyColor
-from toytree.style.src.map_colors import get_color_mapped_values
-from toytree.style.src.style_base import TipLabelStyle, TreeStyle
-from toytree.style.src.validate_utils import check_arr
+from toytree.core.style_base import TipLabelStyle, TreeStyle
+from toytree.data._src.map_colors import get_color_mapped_values
+from toytree.drawing.src.validate_utils import check_arr
 
 ToyTree = TypeVar("ToyTree")
 Color = TypeVar("Color", str, tuple, np.ndarray)

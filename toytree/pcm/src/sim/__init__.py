@@ -24,6 +24,7 @@ _MODULE_EXPORTS = {
         "simulate_pgls_trait",
     ],
     "toytree.pcm.src.sim.sim_stochastic_mapping": [
+        "PCMStochasticMapResult",
         "simulate_stochastic_map",
     ],
 }

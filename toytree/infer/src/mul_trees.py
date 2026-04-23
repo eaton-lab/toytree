@@ -33,9 +33,11 @@ Theoretical Computer Science, 937, 22-38.
 
 """
 
-from typing import Dict, Optional, Sequence, Union
 from itertools import combinations
+from typing import Dict, Optional, Sequence, Union
+
 import pandas as pd
+
 import toytree
 from toytree import ToyTree
 
@@ -136,7 +138,7 @@ def _count_duplications(gtree: ToyTree, sptree: ToyTree) -> int:
     >>> # 10    False
     """
     ndups = 0
-    for node in gtree[gtree.ntips:]:
+    for node in gtree[gtree.ntips :]:
         # if any descendants (not including self) trace back to the
         # same species tree interval then a duplication occurred
         node.duplication = False
@@ -154,7 +156,7 @@ def _count_duplications(gtree: ToyTree, sptree: ToyTree) -> int:
 
 def _count_duplications_new(gtree, sptree):
     ndups = 0
-    for node in gtree[gtree.ntips:]:
+    for node in gtree[gtree.ntips :]:
         # if any descendants (not including self) trace back to the
         # same species tree interval then a duplication occurred
         node.duplication = False
@@ -183,8 +185,9 @@ def _count_losses(gtree: ToyTree, sptree: ToyTree) -> int:
     # measure number of nodes between the sptree root and the min
     # sptree interval in which a gtree node must have occurred.
     for node in gtree:
-        node.depth = sptree.distance.get_node_distance(
-            -1, node.ns, topology_only=True) + 1
+        node.depth = (
+            sptree.distance.get_node_distance(-1, node.ns, topology_only=True) + 1
+        )
 
     # measure losses as ...
     for node in gtree[:-1]:
@@ -195,10 +198,7 @@ def _count_losses(gtree: ToyTree, sptree: ToyTree) -> int:
 
 
 def _count_losses_new(gtree: ToyTree, sptree: ToyTree) -> int:
-    """...
-
-
-    """
+    """..."""
     # expect = {}...
     losses = 0
     for node in gtree:
@@ -210,7 +210,9 @@ def _count_losses_new(gtree: ToyTree, sptree: ToyTree) -> int:
 
 
 def get_duplication_loss_coalescence(
-    gtree: ToyTree, sptree: ToyTree, imap: Optional[Dict[str, Sequence[str]]] = None,
+    gtree: ToyTree,
+    sptree: ToyTree,
+    imap: Optional[Dict[str, Sequence[str]]] = None,
 ) -> Dict[str, int]:
     """Returns a dict with duplication, loss, and coalescence info.
 
@@ -314,8 +316,9 @@ def get_multree_reconciliation_scores(
         sub_data.append(
             pd.DataFrame(
                 chunks,
-                columns=['sidx', 'gidx', 'sptree', 'gtree', 'dups', 'losses', 'score'],
-            ))
+                columns=["sidx", "gidx", "sptree", "gtree", "dups", "losses", "score"],
+            )
+        )
         full_data.append([sidx, newick_s, sub_data[-1].score.sum()])
 
     # concatenate dataframes into final df and relabel
@@ -337,9 +340,7 @@ def example_fig2_thomas():
     return tree
 
 
-
 if __name__ == "__main__":
-
     # set up a tree with one duplicated tip label
     tree = toytree.rtree.unittree(5, seed=123)
     tree1 = tree.mod.add_internal_node_and_child("r1", name="r1")
@@ -357,9 +358,8 @@ if __name__ == "__main__":
 
     # get mul-tree
     mul_tree = example_fig2_thomas()
-    mul_tree._draw_browser(tmpdir="~", ts='s', tip_labels_colors=("name", "Dark2"))
+    mul_tree._draw_browser(tmpdir="~", ts="s", tip_labels_colors=("name", "Dark2"))
     # full, sub = get_multree_reconciliation_scores(gtrees, [sptree_mul, sptree_mul2])
-
 
     # validation with ipcoal
     # import ipcoal

@@ -56,7 +56,6 @@ class TestDiscreteMarkovModelFit(PytestCompat):
             relative_rates=model.relative_rates,
             state_frequencies=model.state_frequencies,
             rate_scalar=model.rate_scalar,
-            nreplicates=1,
             tips_only=True,
             seed=123,
         )
@@ -81,11 +80,21 @@ class TestDiscreteMarkovModelFit(PytestCompat):
             tree=tree,
             nstates=2,
             model="ER",
-            nreplicates=2,
+            name="X",
             tips_only=True,
             seed=3,
         )
+        other = toytree.pcm.simulate_discrete_trait(
+            tree=tree,
+            nstates=2,
+            model="ER",
+            name="Y",
+            tips_only=True,
+            seed=4,
+        )
         data.index = tree.get_tip_labels()
+        other.index = tree.get_tip_labels()
+        data = pd.concat([data, other], axis=1)
         with self.assertRaises(ToytreeError):
             fit_discrete_ctmc(
                 tree=tree,
@@ -364,7 +373,7 @@ class TestDiscreteMarkovModelFit(PytestCompat):
             nstates=2,
             model="ER",
             tips_only=True,
-            trait_name="X",
+            name="X",
             state_names="AB",
             inplace=True,
             seed=12,

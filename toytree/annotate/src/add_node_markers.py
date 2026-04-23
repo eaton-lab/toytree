@@ -20,16 +20,16 @@ from toytree.core import ToyTree
 from toytree.core.apis import AnnotationAPI, add_subpackage_method
 from toytree.drawing import Cartesian, Mark
 from toytree.drawing.src.mark_annotation import AnnotationMarker, AnnotationRect
-from toytree.style.src.validate_data import (
+from toytree.drawing.src.validate_data import (
     validate_colors,
     validate_labels,
     validate_markers,
     validate_mask,
     validate_numeric,
 )
-from toytree.style.src.validate_node_labels import validate_node_labels_style
-from toytree.style.src.validate_nodes import validate_node_style
-from toytree.style.src.validate_utils import substyle_dict_to_css_dict
+from toytree.drawing.src.validate_node_labels import validate_node_labels_style
+from toytree.drawing.src.validate_nodes import validate_node_style
+from toytree.drawing.src.validate_utils import substyle_dict_to_css_dict
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = [
@@ -81,7 +81,7 @@ def add_node_markers(
         all nodes. A tuple of 3 booleans can be entered as a shortcut
         to (show_tips, show_internal, show_root).
     style: dict
-        Marker style dict. See `tree.style.node_style` for options.
+        Marker style dict. See `toytree.core.NodeStyle` for options.
     xshift: int
         Shift marker horizontally by px units (+=right, -=left).
     yshift: int
@@ -243,7 +243,7 @@ def add_node_labels(
     yshift: int
         Shift label vertically by px units (+=down, -=up).
     style: dict
-        Style dict. See `tree.style.node_labels_style` for options.
+        Style dict. See `toytree.core.NodeLabelStyle` for options.
 
     Examples
     --------
@@ -360,7 +360,7 @@ def add_node_bars(
     yshift: int
         Shift label vertically by px units (+=down, -=up).
     style: dict
-        Style dict. See `tree.style.node_labels_style` for options.
+        Style dict. See `toytree.core.NodeLabelStyle` for options.
     z_index: int
         Index of annotation (default=0). Lower index makes the bars
         appears behind other marks (e.g., tree or other annotations).
@@ -474,33 +474,3 @@ def add_node_bars(
 #     axes: Cartesian,
 # ):
 #     pass
-
-
-if __name__ == "__main__":
-    import toytree
-
-    # base tree drawing
-    tree = toytree.rtree.unittree(12)
-    c, a, m = tree.draw(layout="r", scale_bar=True, node_sizes=5, width=400)
-    m0 = tree.annotate.add_node_markers(
-        a,
-        # color="idx",
-        color=("idx",),
-        yshift=-15,
-        opacity=0.3,
-        # style={"fill-opacity": 0.1, "stroke-opacity": 0.5},
-    )
-    # m1 = tree.annotate.add_node_labels(a, font_size=20, yshift=-15)
-    # m2 = tree.annotate.add_node_bars(
-    #     a,
-    #     bar_min=tree.get_node_data("height").values * 0.8,
-    #     bar_max=tree.get_node_data("height").values * 2,
-    #     size=0.33,
-    #     z_index=-1,
-    #     color='purple',
-    #     opacity=1.0,
-    #     style={"fill-opacity": 0.3, "stroke": None},
-    #     # yshift=15,
-    #     # xshift=15,
-    # )
-    toytree.utils.show(c, tmpdir="~")

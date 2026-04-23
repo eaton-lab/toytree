@@ -404,19 +404,19 @@ def _relabel_tree_tips(tree: Any, label_by_ott: dict[int, str]) -> None:
 
 # Define absolute anchor depths (higher = deeper in time/broader taxa)
 DEFAULT_ANCHORS = {
-    'life': 100,
-    'domain': 90,
-    'kingdom': 80,
-    'phylum': 70,
-    'class': 60,
-    'order': 50,
-    'superfamily': 45,
-    'family': 40,
-    'subfamily': 35,
-    'tribe': 30,
-    'subtribe': 25,
-    'genus': 10,
-    'species': 0
+    "life": 100,
+    "domain": 90,
+    "kingdom": 80,
+    "phylum": 70,
+    "class": 60,
+    "order": 50,
+    "superfamily": 45,
+    "family": 40,
+    "subfamily": 35,
+    "tribe": 30,
+    "subtribe": 25,
+    "genus": 10,
+    "species": 0,
 }
 
 
@@ -447,14 +447,14 @@ def build_cophenetic_distance_matrix_from_taxonomy(
             # instead of 0.
             pinned.insert(0, (0, 0))
         if pinned[-1][0] != len(lineage) - 1:
-            pinned.append((len(lineage) - 1, anchors.get('life', 100)))
+            pinned.append((len(lineage) - 1, anchors.get("life", 100)))
 
         lineage_depths = [None] * len(lineage)
 
         # Linear interpolation between pinned anchors
         for p in range(len(pinned) - 1):
             idx1, val1 = pinned[p]
-            idx2, val2 = pinned[p+1]
+            idx2, val2 = pinned[p + 1]
 
             lineage_depths[idx1] = val1
             lineage_depths[idx2] = val2
@@ -471,8 +471,7 @@ def build_cophenetic_distance_matrix_from_taxonomy(
 
     # --- STEP 2: Average globally for consistent MRCA depths ---
     final_node_depths = {
-        node: sum(depths) / len(depths)
-        for node, depths in global_depths_temp.items()
+        node: sum(depths) / len(depths) for node, depths in global_depths_temp.items()
     }
 
     # --- STEP 3: Build the Cophenetic Pairwise Matrix ---
@@ -496,7 +495,7 @@ def build_cophenetic_distance_matrix_from_taxonomy(
                     break
 
             # Retrieve depths
-            mrca_depth = final_node_depths[mrca] if mrca else anchors.get('life', 100)
+            mrca_depth = final_node_depths[mrca] if mrca else anchors.get("life", 100)
             distance_matrix.at[taxon_a, taxon_b] = mrca_depth
             distance_matrix.at[taxon_b, taxon_a] = mrca_depth
     return distance_matrix, final_node_depths

@@ -56,7 +56,8 @@ def get_node_data(
     -------
     pd.DataFrame or pd.Series
         If a single feature is selected then a pd.Series will be
-        returned with tip node 'idx' attributes as the index.
+        returned with node 'idx' attributes as the index and the
+        selected feature name assigned to ``Series.name``.
         If multiple features are selected (or None, which selects
         all features) then a pd.DataFrame is returned with tip
         node 'idx' attributes as the index and feature names as
@@ -135,14 +136,14 @@ def get_node_data(
             ofeat.append(value)
 
         # allow pandas to infer dtype
-        series = pd.Series(ofeat)
+        series = pd.Series(ofeat, name=feat)
 
         # store Series to a dict
         data[feat] = series
 
     # if a single feature was selected return as a Series else DataFrame
     if len(features) == 1:
-        return series
+        return data[features[0]]
     return pd.DataFrame(data)
 
 

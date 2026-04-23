@@ -9,6 +9,10 @@ import importlib
 __all__ = [
     "get_node_data",
     "get_tip_data",
+    "get_color_mapped_feature",
+    "get_color_mapped_values",
+    "get_range_mapped_feature",
+    "get_range_mapped_values",
     "set_node_data",
     "set_node_data_from_dataframe",
     "relabel",
@@ -17,6 +21,22 @@ __all__ = [
 _LAZY_ATTRS = {
     "get_node_data": ("toytree.data._src.get_node_data", "get_node_data"),
     "get_tip_data": ("toytree.data._src.get_node_data", "get_tip_data"),
+    "get_color_mapped_feature": (
+        "toytree.data._src.map_colors",
+        "get_color_mapped_feature",
+    ),
+    "get_color_mapped_values": (
+        "toytree.data._src.map_colors",
+        "get_color_mapped_values",
+    ),
+    "get_range_mapped_feature": (
+        "toytree.data._src.map_values",
+        "get_range_mapped_feature",
+    ),
+    "get_range_mapped_values": (
+        "toytree.data._src.map_values",
+        "get_range_mapped_values",
+    ),
     "set_node_data": ("toytree.data._src.set_node_data", "set_node_data"),
     "set_node_data_from_dataframe": (
         "toytree.data._src.set_node_data",

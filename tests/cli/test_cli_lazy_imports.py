@@ -72,6 +72,85 @@ print("JSON:" + json.dumps(sorted(heavy)))
     assert heavy == []
 
 
+def test_import_toytree_data_does_not_eager_import_toyplot():
+    """Importing toytree.data should not import toyplot or drawing modules."""
+    code = r"""
+import json
+import sys
+import toytree.data  # noqa: F401
+mods = [
+    i for i in sys.modules
+    if i.startswith("toyplot") or i.startswith("toytree.drawing")
+]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    mods = _parse_heavy_list(_run_python(code))
+    assert mods == []
+
+
+def test_data_mapping_attrs_do_not_import_toyplot_until_called():
+    """Resolving data mapping helpers should stay lightweight until call-time."""
+    code = r"""
+import json
+import sys
+import toytree.data as data
+_ = data.get_color_mapped_feature
+_ = data.get_color_mapped_values
+mods = [
+    i for i in sys.modules
+    if i.startswith("toyplot") or i.startswith("toytree.color")
+]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    mods = _parse_heavy_list(_run_python(code))
+    assert mods == []
+
+
+def test_tree_mapping_method_attrs_do_not_import_toyplot_until_called():
+    """Resolving ToyTree mapping methods should stay lightweight until call-time."""
+    code = r"""
+import json
+import sys
+import toytree
+tree = toytree.tree("((a,b),c);")
+_ = tree.get_color_mapped_feature
+_ = tree.get_range_mapped_feature
+mods = [
+    i for i in sys.modules
+    if i.startswith("toyplot") or i.startswith("toytree.color")
+]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    mods = _parse_heavy_list(_run_python(code))
+    assert mods == []
+
+
+def test_style_compat_mapping_attr_stays_lightweight_and_warns_once():
+    """Deprecated style aliases should remain lazy and emit one warning."""
+    code = r"""
+import importlib
+import json
+import sys
+style = importlib.import_module("toytree.style")
+_ = style.get_color_mapped_feature
+_ = style.get_color_mapped_feature
+mods = [
+    i for i in sys.modules
+    if i.startswith("toyplot") or i.startswith("toytree.color")
+]
+print("JSON:" + json.dumps(sorted(mods)))
+"""
+    proc = subprocess.run(
+        [sys.executable, "-c", code],
+        capture_output=True,
+        text=True,
+    )
+    assert proc.returncode == 0, proc.stderr
+    mods = _parse_heavy_list(proc.stdout)
+    assert mods == []
+    assert proc.stderr.count("`toytree.style` is deprecated") == 1
+
+
 def test_import_toytree_annotate_stays_lightweight():
     """Importing the annotate package should not import toyplot eagerly."""
     code = r"""

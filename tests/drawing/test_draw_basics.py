@@ -127,16 +127,19 @@ class TestDrawMarkDomainExtent(PytestCompat):
         self.assertFalse(np.isclose(xmax - xmin, ymax - ymin))
 
     def test_extents_generic(self):
-        """ToyTreeMark extents return x and y always. This works b/c
-        we always care about both. Need to check, this may be different
-        than what toyplot does for most Marks. Adding a test here to
-        catch in case we ever change it.
-        """
+        """ToyTreeMark extents should follow the requested axis order."""
         c, a, m = self.rtree.draw(tip_labels=False, edge_widths=2)
         coordsx, extentsx = m.extents("x")
         coordsy, extentsy = m.extents("y")
-        self.assertIsNone(assert_allclose(coordsx, coordsy))
+        coordsxy, extentsxy = m.extents(["x", "y"])
+
+        self.assertEqual(len(coordsx), 1)
+        self.assertEqual(len(coordsy), 1)
+        self.assertEqual(len(coordsxy), 2)
+        self.assertIsNone(assert_allclose(coordsx[0], coordsxy[0]))
+        self.assertIsNone(assert_allclose(coordsy[0], coordsxy[1]))
         self.assertIsNone(assert_allclose(extentsx, extentsy))
+        self.assertIsNone(assert_allclose(extentsx, extentsxy))
 
     def test_extents_edge_widths(self):
         """Default extents are 2 * edge_width in every direction."""
@@ -173,7 +176,8 @@ class TestDrawMarkDomainExtent(PytestCompat):
         self.assertTrue(np.alltrue(ext2[2] == ext1[2]))
         self.assertTrue(np.alltrue(ext2[3] == ext1[3]))
 
-        # larger font-size should increase tip Node extents in right, up and down directions
+        # Larger font size should increase tip-node extents in the
+        # right, up, and down directions.
         self.assertTrue(
             np.alltrue(ext3[0][:ntips] == ext2[0][:ntips])
         )  # not in left dir

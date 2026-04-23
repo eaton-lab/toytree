@@ -20,7 +20,7 @@ from patsy import NAAction, PatsyError, build_design_matrices, dmatrices
 
 from toytree.core.apis import PhyloCompAPI, add_subpackage_method
 from toytree.data._src.expand_node_mapping import expand_node_mapping
-from toytree.pcm.src.phylolinalg.pgls import PGLSPruningModel, _prepare_pgls_inputs
+from toytree.pcm.src.phylolinalg.pgls import PCMPGLSPruningModel, _prepare_pgls_inputs
 from toytree.utils.src.exceptions import ToytreeError
 
 if TYPE_CHECKING:
@@ -541,7 +541,7 @@ def infer_node_states_pgls(
     Returns
     -------
     dict[str, object]
-        Dictionary with keys ``"model_fit"`` (a :class:`PGLSResult`) and
+        Dictionary with keys ``"model_fit"`` (a :class:`PCMPGLSResult`) and
         ``"data"`` (a DataFrame indexed by integer node idx containing inferred
         means, variances, and metadata columns).
 
@@ -578,7 +578,7 @@ def infer_node_states_pgls(
         y_stderr=y_stderr,
         epsilon=epsilon,
     )
-    fit_model = PGLSPruningModel(
+    fit_model = PCMPGLSPruningModel(
         fit_tree,
         ymat,
         xmat,

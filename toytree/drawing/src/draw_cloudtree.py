@@ -1,12 +1,11 @@
 #!/usr/bin/env python
 
-"""In development...
+"""Draw cloud-tree overlays by stacking many ``ToyTreeMark`` objects."""
 
-A CloudTreeMark is a Mark containing many overlapping trees. To reduce
-the html+css size we use a custom render function?
-"""
+from __future__ import annotations
 
-from typing import Sequence, TypeVar
+from collections.abc import Mapping, Sequence
+from typing import Any, TypeVar
 
 # from toytree import MultiTree
 from toytree.drawing import ToyTreeMark
@@ -14,14 +13,75 @@ from toytree.drawing.src.draw_toytree import (
     get_layout,
     get_tree_style_updated_by_draw_args,
 )
+from toytree.drawing.src.fixed_order import resolve_fixed_order
 
 # from toytree.core import Canvas, Cartesian
-from toytree.style import tree_style_to_css_dict
+from toytree.drawing.src.validate_utils import tree_style_to_css_dict
+from toytree.utils import ToytreeError
 
 # from toytree.drawing.src.mark_cloudtree import CloudTreeMark
 
 Mark = TypeVar("Mark")
 MultiTree = TypeVar("MultiTree")
+
+PER_TREE_FORBIDDEN_KEYS = frozenset(
+    {
+        "axes",
+        "fixed_order",
+        "fixed_position",
+        "height",
+        "idxs",
+        "interior_algorithm",
+        "jitter",
+        "layout",
+        "per_tree",
+        "scale_bar",
+        "tree_style",
+        "ts",
+        "width",
+    }
+)
+
+
+def _normalize_per_tree_kwargs(
+    per_tree: Sequence[Mapping[str, Any] | None] | None,
+    ntrees: int,
+) -> list[dict[str, Any]]:
+    """Return validated per-tree draw-override mappings."""
+    if per_tree is None:
+        return [{} for _ in range(ntrees)]
+
+    if isinstance(per_tree, (str, bytes, bytearray)) or isinstance(per_tree, Mapping):
+        raise ToytreeError("per_tree must be a sequence of mappings or None values.")
+
+    try:
+        entries = list(per_tree)
+    except TypeError as exc:
+        raise ToytreeError(
+            "per_tree must be a sequence of mappings or None values."
+        ) from exc
+
+    if len(entries) != ntrees:
+        raise ToytreeError("per_tree length must match the number of rendered trees.")
+
+    normalized: list[dict[str, Any]] = []
+    for idx, entry in enumerate(entries):
+        if entry is None:
+            normalized.append({})
+            continue
+        if not isinstance(entry, Mapping):
+            raise ToytreeError(
+                f"per_tree[{idx}] must be a mapping of draw kwargs or None."
+            )
+
+        forbidden = sorted(PER_TREE_FORBIDDEN_KEYS.intersection(entry))
+        if forbidden:
+            raise ToytreeError(
+                "per_tree entries cannot override cloud-level args: "
+                f"{', '.join(forbidden)}."
+            )
+        normalized.append(dict(entry))
+    return normalized
 
 
 def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:
@@ -31,49 +91,41 @@ def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:
     sets of edges, where each set can be individually styled. Only one
     set of tip labels is plotted.
     """
-    # which trees to plot
-    idxs = kwargs.get("idxs")
-    if idxs:
-        mtree = mtree.copy()
-        mtree.treelist = mtree.treelist[idxs]
+    shared_kwargs = dict(kwargs)
+    shared_kwargs.pop("jitter", None)
+    per_tree = _normalize_per_tree_kwargs(
+        shared_kwargs.pop("per_tree", None),
+        len(mtree),
+    )
+    fixed_order = resolve_fixed_order(
+        mtree,
+        mtree.treelist,
+        shared_kwargs.get("fixed_order"),
+        infer_when_missing=True,
+    )
+    fixed_position = shared_kwargs.get("fixed_position", None)
+    interior_algorithm = shared_kwargs.get("interior_algorithm", 1)
 
-    # TODO: allow jitter options along tip spread axis
-    jitter = kwargs.get("jitter", 0.0)
-
-    # get fixed order of tips from consensus tree if not provided.
-    fixed_order = kwargs.get("fixed_order", None)
-    if fixed_order in [True, False, None]:
-        fixed_order = mtree.get_consensus_tree().get_tip_labels()
-
-    # TODO
-    else:
-        # require that the user fixed_order argument includes all of
-        # the tips present across all the trees.
-        # assert len(fixed_order) == max_num_tips, "..."
-        pass
-
-    # get a dict mapping tips to indices for the full set of tips
-    # tip_pos = dict(zip(fixed_order, range(len(fixed_order))))
-
-    # iterate over trees and for each, allow the trees individual style
-    # to override any styles not fixed or from kwargs.
+    # Iterate over trees and resolve each draw from the explicit kwargs
+    # plus a fresh default TreeStyle.
     marks = []
     for tidx, tree in enumerate(mtree):
+        draw_kwargs = dict(shared_kwargs)
+        draw_kwargs.update(per_tree[tidx])
+
         # only show tips for the first tree
         if tidx:
-            kwargs["tip_labels"] = False
+            draw_kwargs["tip_labels"] = False
 
         # hard-coded to disallow some styles
-        kwargs["scale_bar"] = False
+        draw_kwargs["scale_bar"] = False
 
         # get the tree's style
-        style = get_tree_style_updated_by_draw_args(tree, **kwargs)
-
-        # using fixed order while allowing diff numbers of tips
-        # style.fixed_order = [tip_pos[i] for i in tree.get_tip_labels()]
+        style = get_tree_style_updated_by_draw_args(tree, **draw_kwargs)
 
         # override styles not set by user
-        style.edge_type = kwargs.get("edge_type", "c")
+        if draw_kwargs.get("edge_type") is None:
+            style.edge_type = "c"
         if style.edge_style.stroke_opacity is None:
             style.edge_style.stroke_opacity = 1 / len(mtree) * 3
 
@@ -82,8 +134,8 @@ def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:
             tree=tree,
             style=style,
             fixed_order=fixed_order,
-            fixed_position=kwargs.get("fixed_position", None),
-            interior_algorithm=kwargs.get("interior_algorithm", 1),
+            fixed_position=fixed_position,
+            interior_algorithm=interior_algorithm,
         )
 
         if style.tip_labels_angles is None:
@@ -93,6 +145,7 @@ def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:
             ntable=layout.coords,
             ttable=layout.tcoords,
             etable=tree.get_edges("idx"),
+            _toytree_source_tree=tree,
             **tree_style_to_css_dict(style),
         )
         marks.append(mark)

@@ -10,7 +10,7 @@ import pytest
 
 import toytree
 from toytree.color import ToyColor
-from toytree.style import get_color_mapped_feature, get_color_mapped_values
+from toytree.data import get_color_mapped_feature, get_color_mapped_values
 from toytree.utils import ToytreeError
 
 
@@ -18,6 +18,15 @@ def test_get_color_mapped_feature_from_tree_feature() -> None:
     """Map a named tree feature to colors."""
     tree = toytree.rtree.unittree(4).set_node_data("x", [2, 2, 2, 0, 0, 0, 0])
     colors = get_color_mapped_feature(tree, "x", "Set2")
+    cols = toytree.color.COLORS1
+    assert all(ToyColor(i) == ToyColor(cols[1]) for i in colors[:3])
+    assert all(ToyColor(i) == ToyColor(cols[0]) for i in colors[3:])
+
+
+def test_tree_get_color_mapped_feature_from_tree_feature() -> None:
+    """ToyTree should expose the feature color-mapper directly."""
+    tree = toytree.rtree.unittree(4).set_node_data("x", [2, 2, 2, 0, 0, 0, 0])
+    colors = tree.get_color_mapped_feature("x", "Set2")
     cols = toytree.color.COLORS1
     assert all(ToyColor(i) == ToyColor(cols[1]) for i in colors[:3])
     assert all(ToyColor(i) == ToyColor(cols[0]) for i in colors[3:])

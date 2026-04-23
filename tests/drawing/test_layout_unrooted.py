@@ -6,6 +6,7 @@ import numpy as np
 import pytest
 
 import toytree
+from toytree.core import TreeStyle
 from toytree.layout.src.layout_unrooted import (
     UnrootedLayout,
     equal_angle_algorithm,
@@ -18,13 +19,13 @@ def test_unrooted_layout_applies_baseline_translation():
     """Unrooted layouts should honor the same baselines as other layouts."""
     tree = toytree.rtree.unittree(12, seed=123)
 
-    base_style = tree.style.copy()
+    base_style = TreeStyle()
     base_style.layout = "unrooted"
     base_style.xbaseline = 0.0
     base_style.ybaseline = 0.0
     base = UnrootedLayout(tree, base_style)
 
-    shifted_style = tree.style.copy()
+    shifted_style = TreeStyle()
     shifted_style.layout = "unrooted"
     shifted_style.xbaseline = 10.5
     shifted_style.ybaseline = -7.25
@@ -38,7 +39,7 @@ def test_unrooted_layout_applies_baseline_translation():
 def test_unrooted_layout_pins_root_to_origin_by_default():
     """Unrooted layouts should center the tree root at the origin."""
     tree = toytree.rtree.unittree(12, seed=123)
-    style = tree.style.copy()
+    style = TreeStyle()
     style.layout = "unrooted"
     style.xbaseline = 0.0
     style.ybaseline = 0.0
@@ -51,7 +52,7 @@ def test_unrooted_layout_pins_root_to_origin_by_default():
 def test_unrooted_layout_pins_root_to_baseline():
     """Unrooted layouts should anchor the tree root at the baselines."""
     tree = toytree.rtree.unittree(12, seed=123)
-    style = tree.style.copy()
+    style = TreeStyle()
     style.layout = "unrooted"
     style.xbaseline = 10.5
     style.ybaseline = -7.25

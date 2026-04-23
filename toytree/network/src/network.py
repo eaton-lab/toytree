@@ -1,13 +1,15 @@
 #!/usr/bin/env python
 
-"""Possible Network Class Implementation. 
-    This file also contains old versions of network/src/parse_network functions
+"""Possible Network Class Implementation.
+This file also contains old versions of network/src/parse_network functions
 """
 
-from typing import Union, Tuple, List
 from pathlib import Path
+from typing import Tuple, Union
+
 import toytree
-#from toytree.io.src.parse import WHITE_SPACE
+
+# from toytree.io.src.parse import WHITE_SPACE
 
 
 class Network:
@@ -22,6 +24,7 @@ class Network:
     each node, but another traversal may be available that would also
     visit nodes connected by an admix edge sooner...
     """
+
     def __init__(self, network: Union[str, Path]):
         self.network = network
         # tree, admix = parse_network(net, disconnect=disconnect)
@@ -46,8 +49,7 @@ class Network:
         """Write network in extended format..."""
 
     def root(self):
-        """raise rootMisMatchError if direction doesn't work..."""
-
+        """Raise rootMisMatchError if direction doesn't work..."""
 
 
 # OLD IMPLEMENTATION FOR NetworkToMajorTree. NOW IN src/parse_network.py
@@ -76,7 +78,7 @@ class Network:
 #                 net = infile.readline()
 #         else:
 #             # trim off loglik and anything after it (TODO: keep loglik)
-#             if ";" in net: 
+#             if ";" in net:
 #                 net = net.split(";")[0] + ';'
 #         # strip whitespace
 #         net = WHITE_SPACE.sub("", net)
@@ -335,5 +337,3 @@ class Network:
 #     NET = "((r3,(r2,(r1, #HX))),(r0)#HX);"
 #     parse = NetworkParser(NET)
 #     # parse_network(NET)
-
-

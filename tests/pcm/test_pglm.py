@@ -8,7 +8,7 @@ from conftest import PytestCompat
 from scipy.special import expit
 
 import toytree
-from toytree.pcm.src.phylolinalg.pglm import PGLMResult
+from toytree.pcm.src.phylolinalg.pglm import PCMPGLMResult
 from toytree.utils.src.exceptions import ToytreeError
 
 
@@ -35,7 +35,7 @@ class TestPGLM(PytestCompat):
     def test_basic_fit_and_api_exposure(self):
         """Fit through package and tree APIs and inspect result structure."""
         fit = toytree.pcm.pglm(self.tree, "y ~ x", data=self.df)
-        self.assertIsInstance(fit, PGLMResult)
+        self.assertIsInstance(fit, PCMPGLMResult)
         self.assertEqual(fit.family, "binomial")
         self.assertEqual(fit.link, "logit")
         self.assertTrue(np.isfinite(fit.lambda_))
@@ -43,14 +43,14 @@ class TestPGLM(PytestCompat):
             ((fit.fitted_probabilities > 0) & (fit.fitted_probabilities < 1)).all()
         )
         fit2 = self.tree.pcm.pglm("y ~ x", data=self.df)
-        self.assertIsInstance(fit2, PGLMResult)
+        self.assertIsInstance(fit2, PCMPGLMResult)
 
     def test_bool_and_two_level_string_responses(self):
         """Accept bool and two-level string binary responses."""
         dfb = self.df.copy()
         dfb["y"] = dfb["y"].astype(bool)
         fitb = toytree.pcm.pglm(self.tree, "y ~ x", data=dfb)
-        self.assertIsInstance(fitb, PGLMResult)
+        self.assertIsInstance(fitb, PCMPGLMResult)
         self.assertIsNotNone(fitb.response_levels)
 
         dfs = self.df.copy()
@@ -345,12 +345,12 @@ class TestPGLM(PytestCompat):
         """Provide useful text and HTML representations."""
         fit = toytree.pcm.pglm(self.tree, "y ~ x", data=self.df, lambda_=1.0)
         txt = repr(fit)
-        self.assertIn("PGLMResult", txt)
+        self.assertIn("PCMPGLMResult", txt)
         self.assertIn("family=binomial", txt)
         self.assertIn("lambda=", txt)
         self.assertIn("pseudo_R2=", txt)
         h = fit._repr_html_()
-        self.assertIn("PGLMResult", h)
+        self.assertIn("PCMPGLMResult", h)
         self.assertIn("<table", h)
         self.assertIn("Intercept", h)
 

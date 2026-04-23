@@ -17,11 +17,12 @@ from toytree.core.apis import AnnotationAPI, add_subpackage_method
 from toytree.data._src.expand_node_mapping import expand_node_mapping
 from toytree.drawing import Cartesian, Mark
 from toytree.drawing.src.mark_pie import PieChartMark
-from toytree.style import check_arr, get_color_mapped_values
-from toytree.style.src.validate_data import (
+from toytree.data import get_color_mapped_values
+from toytree.drawing.src.validate_data import (
     validate_mask,
     validate_numeric,
 )
+from toytree.drawing.src.validate_utils import check_arr
 
 Color = TypeVar("Color", str, tuple, np.ndarray)
 __all__ = [

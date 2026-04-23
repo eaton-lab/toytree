@@ -15,8 +15,8 @@ Example
 >>> traits = tree.pcm.simulate_multivariate_continuous_trait(
 ...     model="bm", params=np.diag([0.1, 0.001]), seed=123, tips_only=True
 ... )
->>> phylogenetic_signal_lambda(tree, traits.t0, traits.t1)
->>> # {'lambda': 1.095589, 'sig2': 0.004051, 'P-value': 0.041663, 'LR_test': 4.148850, ...}
+>>> phylogenetic_signal_lambda(tree, traits.X1, traits.X2)
+>>> # {'lambda': 1.095589, 'sig2': 0.004051, ...}
 """
 
 from __future__ import annotations
@@ -80,8 +80,8 @@ def phylogenetic_signal_lambda(
     >>> traits = tree.pcm.simulate_multivariate_continuous_trait(
     ...     model="bm", params=np.diag([0.1, 0.001]), seed=123, tips_only=True
     ... )
-    >>> phylogenetic_signal_lambda(tree, traits.t0, traits.t1)
-    >>> # {'lambda': 1.095589, 'sig2': 0.004051, 'P-value': 0.041663, 'LR_test': 4.148850, ...}
+    >>> phylogenetic_signal_lambda(tree, traits.X1, traits.X2)
+    >>> # {'lambda': 1.095589, 'sig2': 0.004051, ...}
     """
     # [optional] get data as features from the tree
     if isinstance(data, str):
@@ -183,7 +183,7 @@ def _phylogenetic_signal_λ_w_se(
 
 
 def _λ_transform(V: np.ndarray, λ: float) -> np.ndarray:
-    """Scale VCV by a lambda parameter (in place!)
+    """Scale VCV by a lambda parameter in place.
 
     The internal edges (off-diagonals) are multipled by lambda, while
     the terminal edges are
@@ -399,28 +399,28 @@ if __name__ == "__main__":
 
     # generate test data
     tree = toytree.rtree.unittree(ntips=50, treeheight=1.0, seed=123)
-    traits = tree.pcm.simulate_continuous_trait(
+    trait = tree.pcm.simulate_continuous_trait(
         "bm", params=1.0, seed=123, tips_only=True
     )
-    traits["se"] = np.random.default_rng(seed=123).uniform(0, 0.01, tree.ntips)
+    error = np.random.default_rng(seed=123).uniform(0, 0.01, tree.ntips)
 
     # write data
     tree.write("/tmp/test.nwk")
-    traits.to_csv("/tmp/test.csv")
+    trait.to_csv("/tmp/test.csv")
 
-    res = phylogenetic_signal_lambda(tree, traits.t0)
+    res = phylogenetic_signal_lambda(tree, trait)
     print(res)
-    res = phylogenetic_signal_lambda(tree, traits.t0, traits.se, intervals=20)
+    res = phylogenetic_signal_lambda(tree, trait, error, intervals=20)
     print(res)
-    res = phylogenetic_signal_lambda(tree, traits.se, intervals=20)
+    res = phylogenetic_signal_lambda(tree, error, intervals=20)
     print(res)
-    # res = phylogenetic_signal_lambda(tree, traits.se, traits.se, intervals=25)
+    # res = phylogenetic_signal_lambda(tree, error, error, intervals=25)
     # print(res)
 
     # maxλ = max_λ(tree)
     # V = tree.pcm.get_vcv_matrix_from_tree()
-    # x = traits.t0
-    # E = traits.t1.values ** 2
+    # x = trait.values
+    # E = error ** 2
     # print(_likelihood_λ(0.9, V, x))
     # print(_likelihood_λ_w_se((0.9, 0.1), V, x, E))
     # print(_likelihood_λ_w_se((0.9, 0.01), V, x, E))
@@ -428,13 +428,13 @@ if __name__ == "__main__":
     # print(_likelihood_λ_w_se((1.096, 4.05e-3), V, x, E))
 
 
-#### t0
+#### X
 # Phylogenetic signal lambda : 1.0174
 # logL(lambda) : 81.0235
 # LR(lambda=0) : 7.51733
 # P-value (based on LR test) : 0.00611082
 
-#### t1
+#### se
 # Phylogenetic signal lambda : 1.06847
 # logL(lambda) : 204.894
 # LR(lambda=0) : 11.2749

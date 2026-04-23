@@ -8,13 +8,13 @@ import importlib
 
 _MODULE_EXPORTS = {
     "toytree.pcm.src.phylolinalg.pglm": [
-        "PGLMResult",
-        "PGLMPruningModel",
+        "PCMPGLMResult",
+        "PCMPGLMPruningModel",
         "pglm",
     ],
     "toytree.pcm.src.phylolinalg.pgls": [
-        "PGLSResult",
-        "PGLSPruningModel",
+        "PCMPGLSResult",
+        "PCMPGLSPruningModel",
         "pgls",
     ],
     "toytree.pcm.src.phylolinalg.pgls_infer": [

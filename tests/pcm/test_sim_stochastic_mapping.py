@@ -25,6 +25,7 @@ def tree_data_fit(
         seed=123,
         as_int=True,
         set_tip_index=True,
+        state_names=range(2),
     )
     tree = add_feature_from_tip_series(
         tree=tree,
@@ -50,7 +51,7 @@ def test_feature_name_input_and_schema(tree_data_fit):
         nreplicates=2,
         seed=1,
     )
-    assert isinstance(out, pd.DataFrame)
+    assert isinstance(out, toytree.pcm.PCMStochasticMapResult)
     for col in [
         "map_id",
         "edge_id",
@@ -64,8 +65,8 @@ def test_feature_name_input_and_schema(tree_data_fit):
         "time_abs_start",
         "time_abs_end",
     ]:
-        assert col in out.columns
-    assert sorted(out["map_id"].unique().tolist()) == [0, 1]
+        assert col in out.segments.columns
+    assert sorted(out.segments["map_id"].unique().tolist()) == [0, 1]
 
 
 def test_series_input(tree_data_fit):
@@ -78,8 +79,8 @@ def test_series_input(tree_data_fit):
         nreplicates=1,
         seed=2,
     )
-    assert isinstance(out, pd.DataFrame)
-    assert out["map_id"].nunique() == 1
+    assert isinstance(out, toytree.pcm.PCMStochasticMapResult)
+    assert out.segments["map_id"].nunique() == 1
 
 
 def test_duration_sums_match_edge_lengths(tree_data_fit):
@@ -92,7 +93,7 @@ def test_duration_sums_match_edge_lengths(tree_data_fit):
         seed=3,
     )
     dists = tree.get_node_data("dist").to_numpy(dtype=float)
-    sums = out.groupby(["map_id", "edge_id"], as_index=False)["duration"].sum()
+    sums = out.segments.groupby(["map_id", "edge_id"], as_index=False)["duration"].sum()
     edges = tree.get_edges("idx")
     for _, row in sums.iterrows():
         edge_id = int(row["edge_id"])
@@ -115,7 +116,14 @@ def test_seed_reproducibility(tree_data_fit):
         nreplicates=2,
         seed=11,
     )
-    pd.testing.assert_frame_equal(a.reset_index(drop=True), b.reset_index(drop=True))
+    pd.testing.assert_frame_equal(
+        a.segments.reset_index(drop=True),
+        b.segments.reset_index(drop=True),
+    )
+    pd.testing.assert_frame_equal(
+        a.node_states.reset_index(drop=True),
+        b.node_states.reset_index(drop=True),
+    )
 
 
 def test_uniformization_and_rejection_engines(tree_data_fit):
@@ -135,27 +143,90 @@ def test_uniformization_and_rejection_engines(tree_data_fit):
         seed=22,
         engine="rejection",
     )
-    assert isinstance(uni, pd.DataFrame)
-    assert isinstance(rej, pd.DataFrame)
-    assert set(uni.columns) == set(rej.columns)
+    assert isinstance(uni, toytree.pcm.PCMStochasticMapResult)
+    assert isinstance(rej, toytree.pcm.PCMStochasticMapResult)
+    assert set(uni.segments.columns) == set(rej.segments.columns)
 
 
-def test_return_summary(tree_data_fit):
-    """Return summary tables with consistent dwell and segment totals."""
+def test_summary_tables(tree_data_fit):
+    """Return result summary tables with consistent dwell and segment totals."""
     tree, _, fit = tree_data_fit
     out = tree.pcm.simulate_stochastic_map(
         data="X",
         model_fit=fit,
         nreplicates=3,
         seed=12,
-        return_summary=True,
     )
-    assert set(out.keys()) == {"segments", "dwell", "transitions"}
-    seg = out["segments"]
-    dwell = out["dwell"]
-    total_seg = float(seg["duration"].sum())
-    total_dwell = float(dwell["total_time"].sum())
+    total_seg = float(out.segments["duration"].sum())
+    total_dwell = float(out.dwell["total_time"].sum())
     assert total_seg == pytest.approx(total_dwell, abs=1e-6)
+    assert set(out.events.columns) >= {"from_state", "to_state", "time_from_parent"}
+    assert set(out.edge_dwell.columns) >= {"edge_id", "state", "prop_edge_time"}
+    assert set(out.edge_transitions.columns) >= {"edge_id", "count", "any_transition"}
+    assert set(out.dwell_stats.columns) >= {"mean_total_time", "q975_total_time"}
+    assert set(out.transition_stats.columns) >= {"mean", "prob_nonzero"}
+    assert set(out.edge_transition_stats.columns) >= {"edge_id", "mean"}
+
+
+def test_event_direction_from_segments():
+    """Events should be reported in parent-to-child evolutionary direction."""
+    segments = pd.DataFrame(
+        {
+            "map_id": [0, 0],
+            "edge_id": [0, 0],
+            "child": [0, 0],
+            "parent": [1, 1],
+            "state_idx": [1, 0],
+            "state": ["derived", "ancestral"],
+            "t_start": [0.0, 0.4],
+            "t_end": [0.4, 1.0],
+            "duration": [0.4, 0.6],
+            "time_abs_start": [0.0, 0.4],
+            "time_abs_end": [0.4, 1.0],
+        }
+    )
+    node_states = pd.DataFrame(
+        {
+            "map_id": [0, 0],
+            "node": [0, 1],
+            "state_idx": [1, 0],
+            "state": ["derived", "ancestral"],
+        }
+    )
+    edge_table = pd.DataFrame(
+        {"edge_id": [0], "child": [0], "parent": [1], "length": [1.0]}
+    )
+    out = toytree.pcm.PCMStochasticMapResult(
+        segments=segments,
+        node_states=node_states,
+        edge_table=edge_table,
+        state_labels=("ancestral", "derived"),
+        model="ER",
+        engine="uniformization",
+        nreplicates=1,
+    )
+    event = out.events.iloc[0]
+    assert event["from_state"] == "ancestral"
+    assert event["to_state"] == "derived"
+    assert float(event["time_from_child"]) == pytest.approx(0.4)
+    assert float(event["time_from_parent"]) == pytest.approx(0.6)
+    assert out.transition_probability("ancestral", "derived", edge_id=0) == 1.0
+    assert out.transition_probability("derived", "ancestral", edge_id=0) == 0.0
+
+
+def test_node_state_probabilities(tree_data_fit):
+    """Return sampled node state frequencies that sum to one per node."""
+    tree, _, fit = tree_data_fit
+    out = tree.pcm.simulate_stochastic_map(
+        data="X",
+        model_fit=fit,
+        nreplicates=4,
+        seed=33,
+    )
+    assert out.node_states.shape[0] == tree.nnodes * 4
+    probs = out.node_state_probs
+    sums = probs.groupby("node")["probability"].sum()
+    assert np.allclose(sums, 1.0)
 
 
 def test_reject_non_discrete_state_values():
@@ -225,8 +296,8 @@ def test_accepts_posterior_vector_input(tree_data_fit):
         nreplicates=2,
         seed=31,
     )
-    assert isinstance(out, pd.DataFrame)
-    assert sorted(out["map_id"].unique().tolist()) == [0, 1]
+    assert isinstance(out, toytree.pcm.PCMStochasticMapResult)
+    assert sorted(out.segments["map_id"].unique().tolist()) == [0, 1]
 
 
 def test_rejects_mixed_scalar_and_vector_input(tree_data_fit):

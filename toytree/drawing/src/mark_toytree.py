@@ -103,7 +103,7 @@ class ToyTreeMark(Mark):
 
     def extents(
         self, axis: Union[str, Sequence[str]]
-    ) -> Tuple[Tuple[np.ndarray], Tuple[np.ndarray]]:
+    ) -> Tuple[Tuple[np.ndarray, ...], Tuple[np.ndarray, ...]]:
         """Return extents defined by tip labels and Node markers.
 
         This is extra padding to ensure node markers, e.g., circle doesn't
@@ -118,9 +118,11 @@ class ToyTreeMark(Mark):
 
         Returns
         -------
-        coords: Tuple[np.ndarray, np.ndarray]
+        coords: tuple[np.ndarray, ...]
+            Coordinate arrays in the order requested by ``axis``.
         extents: Tuple[np.ndarray, np.ndarray, np.ndarray, np.ndarray]
-        Each ndarray is len=nnodes.
+            Left, right, top, and bottom extent arrays. Each ndarray is
+            length ``nnodes``.
         """
         axes = (
             [axis]

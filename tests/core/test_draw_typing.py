@@ -24,7 +24,7 @@ class TestDrawTyping(PytestCompat):
     def test_draw_uses_condensed_tuple_aliases(self):
         sig = inspect.signature(toytree.ToyTree.draw)
         self.assertIn("TupleRangeMap", str(sig.parameters["node_sizes"].annotation))
-        self.assertIn("TupleColorMap", str(sig.parameters["node_colors"].annotation))
+        self.assertIn("DrawColorMapArg", str(sig.parameters["node_colors"].annotation))
 
     def test_draw_accepts_interior_algorithm(self):
         tree = toytree.rtree.unittree(8, seed=123)

@@ -3,11 +3,10 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Dict, Iterable, List, Tuple, Union, TypeVar
 import re
+from dataclasses import dataclass, field
 from pathlib import Path
-
+from typing import Dict, Iterable, List, Tuple, TypeVar, Union
 
 ToyTree = TypeVar("ToyTree")
 Node = TypeVar("Node")
@@ -17,6 +16,7 @@ __all__ = ["AdmixtureEvent", "parse_network"]
 @dataclass
 class AdmixtureEvent:
     """Container describing one hybridization event."""
+
     src: Tuple[str, ...] | int | Node
     dst: Tuple[str, ...] | int | Node
     src_dist: float | None = None
@@ -65,9 +65,12 @@ def _group_hybrid_nodes(nodes: Iterable[Node]) -> Dict[str, List[Node]]:
     grouped: Dict[str, List[Node]] = {}
     for node in nodes:
         label, gamma = _extract_gamma(node.name)
-        node.gamma = gamma if gamma else 0.
+        node.gamma = gamma if gamma else 0.0
         grouped.setdefault(label, []).append(node)
-    grouped = {i.lstrip("#"): sorted(j, key=lambda x: len(x.name)) for (i, j) in grouped.items()}
+    grouped = {
+        i.lstrip("#"): sorted(j, key=lambda x: len(x.name))
+        for (i, j) in grouped.items()
+    }
     return grouped
 
 
@@ -87,7 +90,7 @@ def _get_gamma_value(nodes: Iterable[Node]) -> float:
 def parse_network(
     newick: Union[str, Path],
     keep_src_edges: bool = True,
-    ) -> Tuple[ToyTree, Dict[str, AdmixtureEvent]]:
+) -> Tuple[ToyTree, Dict[str, AdmixtureEvent]]:
     """Return the major tree and admixture events parsed from a network."""
     from toytree.io.src.treeio import tree as treeio
 
@@ -111,12 +114,11 @@ def parse_network(
         hid, (dst, src) = grouped.popitem()
 
         # get dst.dist measured from first true (non-unary) descendant node
-        dist = 0.
+        dist = 0.0
         n = dst.children
         while len(n) == 1:
             dist += n[0].dist
             n = n[0].children
-
 
         # store admixture event
         # style = {'stroke': next(colors), 'stroke-width': 10 * src.gamma, 'stroke-dasharray': "3,5"}
@@ -126,7 +128,7 @@ def parse_network(
                 dst=dst.get_leaf_names(),  #
                 src_dist=0.0,
                 dst_dist=dist,  # dst.dist,
-                meta={"label": hid, 'gamma': src.gamma},
+                meta={"label": hid, "gamma": src.gamma},
                 # label=f"γ={src.gamma}",
                 # label=f"{hid};γ={src.gamma}",
                 # hid=hid,
@@ -141,10 +143,15 @@ def parse_network(
 
     # relabel hybrid tips in tree and admix events
     for ae in events:
-        ae.src = [i if "-gamma-" not in i else i.lstrip("#").split("-gamma-")[0] for i in ae.src]
-        ae.dst = [i if "-gamma-" not in i else i.lstrip("#").split("-gamma-")[0] for i in ae.dst]
+        ae.src = [
+            i if "-gamma-" not in i else i.lstrip("#").split("-gamma-")[0]
+            for i in ae.src
+        ]
+        ae.dst = [
+            i if "-gamma-" not in i else i.lstrip("#").split("-gamma-")[0]
+            for i in ae.dst
+        ]
     return tree, events
-
 
 
 if __name__ == "__main__":

@@ -10,7 +10,7 @@ import toyplot.html
 from conftest import PytestCompat
 
 import toytree
-from toytree.style.src.map_colors import get_color_mapped_values
+from toytree.data import get_color_mapped_values
 from toytree.utils import ToytreeError
 
 
@@ -24,7 +24,7 @@ class TestAnnotateAddEdgeStochasticMap(PytestCompat):
         self.tree.pcm.simulate_discrete_trait(
             nstates=3,
             model="ER",
-            trait_name="X",
+            name="X",
             tips_only=True,
             inplace=True,
             seed=1,
@@ -49,7 +49,7 @@ class TestAnnotateAddEdgeStochasticMap(PytestCompat):
 
     def test_add_edge_stochastic_map_selects_by_map_id_value(self):
         """Select map rows by map_id value rather than positional index."""
-        maps = self.maps.copy()
+        maps = self.maps.segments.copy()
         maps["map_id"] = maps["map_id"] + 10
         c, a, m = self.tree.draw(layout="r", edge_type="p")
         mark = self.tree.annotate.add_edge_stochastic_map(a, maps, map_id=11)
@@ -74,7 +74,7 @@ class TestAnnotateAddEdgeStochasticMap(PytestCompat):
     def test_add_edge_stochastic_map_state_idx_fallback(self):
         """Color-map by state_idx when a state label column is unavailable."""
         c, a, m = self.tree.draw(layout="r", edge_type="p")
-        maps = self.maps.drop(columns=["state"])
+        maps = self.maps.segments.drop(columns=["state"])
         mark = self.tree.annotate.add_edge_stochastic_map(a, maps, map_id=0)
         self.assertIsNotNone(mark)
         self.assertEqual(len(mark.colors), len(mark.xpaths))
@@ -85,15 +85,16 @@ class TestAnnotateAddEdgeStochasticMap(PytestCompat):
         with self.assertRaises(ToytreeError):
             self.tree.annotate.add_edge_stochastic_map(
                 a,
-                self.maps.drop(columns=["t_start"]),
+                self.maps.segments.drop(columns=["t_start"]),
             )
 
     def test_add_edge_stochastic_map_adds_span_segment_for_rectangular_p(self):
         """Add one orthogonal span segment per represented edge."""
         c, a, m = self.tree.draw(layout="d", edge_type="p")
         mark = self.tree.annotate.add_edge_stochastic_map(a, self.maps, map_id=0)
-        nrows = int((self.maps["map_id"] == 0).sum())
-        nedges = int(self.maps.loc[self.maps["map_id"] == 0, "edge_id"].nunique())
+        segments = self.maps.segments
+        nrows = int((segments["map_id"] == 0).sum())
+        nedges = int(segments.loc[segments["map_id"] == 0, "edge_id"].nunique())
         self.assertEqual(len(mark.xpaths), nrows + nedges)
 
     def test_add_edge_stochastic_map_span_color_matches_depth_end_state(self):

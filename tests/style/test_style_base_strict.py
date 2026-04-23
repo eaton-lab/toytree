@@ -9,12 +9,12 @@ import inspect
 import pytest
 
 import toytree
-from toytree.style.src.style_base import NodeStyle, TipLabelStyle, TreeStyle
-from toytree.style.src.validate_edges import (
+from toytree.core.style_base import NodeStyle, TipLabelStyle, TreeStyle
+from toytree.drawing.src.validate_edges import (
     validate_edge_align_style,
     validate_edge_style,
 )
-from toytree.style.src.validate_utils import (
+from toytree.drawing.src.validate_utils import (
     substyle_dict_to_css_dict,
     tree_style_to_css_dict,
 )

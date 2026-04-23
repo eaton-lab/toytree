@@ -37,11 +37,11 @@ from toytree.utils.src.exceptions import ToytreeError
 if TYPE_CHECKING:
     from toytree.core import ToyTree
 
-__all__ = ["PGLMResult", "PGLMPruningModel", "pglm"]
+__all__ = ["PCMPGLMResult", "PCMPGLMPruningModel", "pglm"]
 
 
 @dataclass
-class PGLMResult:
+class PCMPGLMResult:
     """Container for pruning-based phylogenetic GLM fit results."""
 
     params: pd.Series
@@ -114,7 +114,7 @@ class PGLMResult:
 
     def __repr__(self) -> str:
         """Return a compact text summary."""
-        lines = ["PGLMResult", "-" * 10]
+        lines = ["PCMPGLMResult", "-" * 10]
         lines.append(
             f"response={self.response_name}  nobs={self.nobs}  "
             f"k_params={len(self.design_columns)}"
@@ -209,7 +209,7 @@ class PGLMResult:
         coef_html = tbl.to_html(border=0, classes="toytree-pglm-coef")
         return (
             "<div style='font-family:sans-serif;line-height:1.3;'>"
-            "<div style='font-weight:600;margin-bottom:4px;'>PGLMResult</div>"
+            "<div style='font-weight:600;margin-bottom:4px;'>PCMPGLMResult</div>"
             "<table style='border-collapse:collapse;margin-bottom:6px;'>"
             f"{meta_html}</table>"
             f"{coef_html}{msg_html}</div>"
@@ -329,7 +329,7 @@ def _apply_beta_boundary_squeeze(
     return y_new, bool(n_changed), n_changed
 
 
-class PGLMPruningModel:
+class PCMPGLMPruningModel:
     """Phylogenetic GLM using pruning-based IRLS for supported families."""
 
     def __init__(
@@ -653,7 +653,7 @@ class PGLMPruningModel:
             best_fit = self.fit_fixed_lambda(lambda_, dispersion=best_disp)
         return best_fit, best_disp, bool(opt.success), str(opt.message)
 
-    def fit(self, lambda_: float | None = None) -> PGLMResult:
+    def fit(self, lambda_: float | None = None) -> PCMPGLMResult:
         """Fit the model with fixed or optimized Pagel's lambda."""
         upper = float(_max_lambda(self.tree))
         if not np.isfinite(upper) or upper <= 0:
@@ -774,7 +774,7 @@ class PGLMPruningModel:
             name="resid_response",
         )
 
-        return PGLMResult(
+        return PCMPGLMResult(
             params=params,
             bse=bse,
             vcov=vcov_df,
@@ -816,7 +816,7 @@ def pglm(
     max_iter: int = 100,
     tol: float = 1e-8,
     epsilon: float = 1e-12,
-) -> PGLMResult:
+) -> PCMPGLMResult:
     """Fit a pruning-based phylogenetic generalized linear model.
 
     This method uses pruning-based IRLS updates with Pagel's lambda to fit
@@ -884,7 +884,7 @@ def pglm(
 
     Returns
     -------
-    PGLMResult
+    PCMPGLMResult
         A fitted pruning-based phylogenetic GLM result object. The ``firth``
         field reports whether a Firth-style penalty was applied. It is applied
         automatically for implemented binomial and poisson families and not
@@ -986,7 +986,7 @@ def pglm(
     # flag on the result object for transparency but do not expose it in the
     # public API.
     auto_firth = bool(spec.supports_firth and spec.implemented)
-    model = PGLMPruningModel(
+    model = PCMPGLMPruningModel(
         fit_tree,
         y,
         xmat,
