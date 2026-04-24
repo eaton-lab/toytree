@@ -97,16 +97,20 @@ def run_make_ultrametric(args):
     if args.lam is not None and args.lam < 0:
         raise ToytreeError("--lam must be >= 0.")
     report_full = bool((args.full or args.json) and args.method != "extend")
-    force_full = bool(report_full or (args.estimate is not None))
-    if args.method == "discrete" and args.estimate is None and args.ncat is None:
-        raise ToytreeError(
-            "--ncat is required when --method discrete is used without --estimate."
-        )
+    has_ncat_search = bool(
+        args.method == "discrete" and args.ncat and len(args.ncat) > 1
+    )
+    force_full = bool(report_full or has_ncat_search)
+    if args.method == "discrete" and args.ncat is None:
+        raise ToytreeError("--ncat is required when --method discrete is used.")
+    ncategories = None
+    if args.ncat is not None:
+        ncategories = args.ncat[0] if len(args.ncat) == 1 else list(args.ncat)
 
     result = tre.mod.edges_make_ultrametric(
         method=args.method,
         calibrations=calibrations,
-        ncategories=None if args.ncat is None else int(args.ncat),
+        ncategories=ncategories,
         lam=args.lam,
         full=force_full,
         inplace=False,
@@ -116,18 +120,17 @@ def run_make_ultrametric(args):
         nstarts=args.nstarts,
         ncores=args.ncores,
         seed=args.seed,
-        estimate=args.estimate,
     )
     if force_full:
         if args.json:
             payload = {"method": args.method}
-            if args.estimate is not None:
+            if has_ncat_search:
                 payload["search"] = _jsonify_value(result.get("search", []))
-                payload["estimated_parameter"] = _jsonify_value(
-                    result.get("estimated_parameter")
+                payload["selected_ncategories"] = _jsonify_value(
+                    result.get("selected_ncategories")
                 )
-                payload["estimated_value"] = _jsonify_value(
-                    result.get("estimated_value")
+                payload["selection_criterion"] = _jsonify_value(
+                    result.get("selection_criterion")
                 )
             if report_full:
                 for key, val in result.items():
@@ -135,20 +138,20 @@ def run_make_ultrametric(args):
                         payload[str(key)] = _jsonify_value(val)
             print(json.dumps(payload, ensure_ascii=False, indent=2), file=sys.stderr)
         else:
-            if args.estimate is not None:
+            if has_ncat_search:
                 for rec in result.get("search", []):
                     cand = rec.get("candidate")
                     phiic = rec.get("PHIIC")
                     conv = rec.get("converged")
                     print(
-                        f"estimate candidate={cand} PHIIC={phiic} converged={conv}",
+                        f"ncat candidate={cand} PHIIC={phiic} converged={conv}",
                         file=sys.stderr,
                     )
                 print(
                     (
-                        "estimated_parameter="
-                        f"{result.get('estimated_parameter')} "
-                        f"estimated_value={result.get('estimated_value')}"
+                        "selected_ncategories="
+                        f"{result.get('selected_ncategories')} "
+                        f"selection_criterion={result.get('selection_criterion')}"
                     ),
                     file=sys.stderr,
                 )

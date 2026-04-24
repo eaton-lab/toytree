@@ -1540,7 +1540,7 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
             $ make-ultrametric -i TREE.nwk -m relaxed --lam 0.5 -c -1=1.0 > UTREE.nwk
             $ make-ultrametric -i TREE.nwk -m correlated --lam 0.5 -c -1=1.0 > UTREE.nwk
             $ make-ultrametric -i TREE.nwk -m correlated --lam 0.5 --nstarts 8 --ncores 4 --seed 123 > UTREE.nwk
-            $ make-ultrametric -i TREE.nwk -m discrete --estimate 5 -c -1=1.0 > UTREE.nwk
+            $ make-ultrametric -i TREE.nwk -m discrete --ncat 1 2 4 -c -1=1.0 > UTREE.nwk
             $ make-ultrametric -i TREE.nwk -m correlated --lam 0.5 --json > UTREE.nwk 2> fit.json
             $ make-ultrametric -i TREE.nwk -m clock -c AB=0.8-1.2 CD=0.4
             $ cat TREE.nwk | make-ultrametric -i - --method extend
@@ -1613,9 +1613,10 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
     method_group.add_argument(
         "--ncat",
         type=int,
+        nargs="+",
         default=None,
         metavar="int",
-        help="discrete only: number of rate categories (required unless --estimate is set)",
+        help="discrete only: one or more rate-category values; multiple values select by PHIIC",
     )
     method_group.add_argument(
         "--lam",
@@ -1624,14 +1625,6 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
         metavar="float",
         help="relaxed/correlated only: penalty lambda; lower=weaker regularization [1.0]",
     )
-    method_group.add_argument(
-        "--estimate",
-        type=int,
-        default=None,
-        metavar="int",
-        help="estimate ncat/lam by PHIIC using this many candidate values",
-    )
-
     opt_group = p.add_argument_group(title="Optimization")
     opt_group.add_argument(
         "--max-iter",

@@ -9,10 +9,12 @@ import numpy as np
 from loguru import logger
 
 from toytree.core import ToyTree
+from toytree.utils import ToytreeError
 
 Calibrations = Dict[int, Tuple[float, float]]
 PARAM_MIN = 1e-8
 PARAM_MAX = 1e8
+FINAL_AGE_NEGATIVE_TOL = 1e-8
 
 
 def _pack_log_rates(rates: np.ndarray, rate_floor: float = 1e-12) -> np.ndarray:
@@ -120,6 +122,133 @@ def _age_has_upper(
     lo: float, hi: float, dist_floor: float, age_upper_switch: float
 ) -> bool:
     return np.isfinite(hi) and (hi < age_upper_switch) and (hi > lo + dist_floor)
+
+
+def _coerce_calibration_interval(calib: Any) -> tuple[float, float]:
+    """Return one calibration coerced to a finite closed interval."""
+    if isinstance(calib, (float, int)):
+        lo = hi = float(calib)
+    else:
+        try:
+            lo, hi = calib
+        except Exception as exc:  # pragma: no cover
+            raise ToytreeError(
+                "calibrations must be numeric ages or (min_age, max_age) pairs."
+            ) from exc
+        lo = float(lo)
+        hi = float(hi)
+    if not (np.isfinite(lo) and np.isfinite(hi)):
+        raise ToytreeError("calibrations must contain only finite numeric ages.")
+    if lo > hi:
+        raise ToytreeError(
+            f"invalid calibration interval ({lo}, {hi}): min_age cannot exceed max_age."
+        )
+    return lo, hi
+
+
+def _normalize_calibrations(
+    tree: ToyTree,
+    calibrations: dict[Any, Any] | None,
+    dist_floor: float = 1e-12,
+) -> dict[int, tuple[float, float]]:
+    """Return calibrations normalized to node idx keys after validation."""
+    if not calibrations:
+        return {}
+
+    normalized: dict[int, tuple[float, float]] = {}
+    for selector, calib in calibrations.items():
+        node = tree.get_nodes(selector)[0]
+        normalized[node.idx] = _coerce_calibration_interval(calib)
+
+    for desc_idx, (desc_min, _) in normalized.items():
+        for anc in tree[desc_idx].iter_ancestors():
+            anc_bounds = normalized.get(anc.idx)
+            if anc_bounds is None:
+                continue
+            if desc_min + dist_floor > anc_bounds[1]:
+                raise ToytreeError(
+                    "incompatible calibrations: descendant node "
+                    f"{desc_idx} minimum age {desc_min} exceeds ancestor node "
+                    f"{anc.idx} maximum age {anc_bounds[1]} after enforcing "
+                    "positive branch lengths."
+                )
+    return normalized
+
+
+def _raise_invalid_final_ages(
+    edges: np.ndarray,
+    dists: np.ndarray,
+    reason: str,
+) -> None:
+    """Raise a consistent error for invalid finalized ages."""
+    bad = np.where(~np.isfinite(dists) | (dists <= 0))[0]
+    if bad.size:
+        eidx = int(bad[0])
+    else:
+        eidx = int(np.argmin(dists))
+    child, parent = [int(i) for i in edges[eidx]]
+    dist = float(dists[eidx])
+    raise ToytreeError(
+        "ultrametric fit produced invalid final node ages: "
+        f"branch {child}->{parent} has length {dist:.6g}. {reason}"
+    )
+
+
+def _finalize_ultrametric_ages(
+    tree: ToyTree,
+    ages: np.ndarray,
+    calibrations: dict[int, tuple[float, float]] | None = None,
+    dist_floor: float = 1e-12,
+    negative_tol: float = FINAL_AGE_NEGATIVE_TOL,
+) -> np.ndarray:
+    """Return finalized ages with tiny topology jitter repaired."""
+    ages_hat = np.asarray(ages, dtype=float).copy()
+    if np.any(~np.isfinite(ages_hat)):
+        raise ToytreeError("ultrametric fit produced non-finite node ages.")
+
+    edges = tree.get_edges("idx")
+    children = edges[:, 0]
+    parents = edges[:, 1]
+    dists = ages_hat[parents] - ages_hat[children]
+    min_dist = float(dists.min()) if dists.size else np.inf
+    if min_dist < -negative_tol:
+        _raise_invalid_final_ages(
+            edges,
+            dists,
+            "This usually indicates incompatible calibrations or optimizer failure.",
+        )
+
+    if np.any(dists <= dist_floor):
+        # Project small post-fit violations back onto a strictly positive tree.
+        for node in tree[tree.ntips :]:
+            child_idxs = np.fromiter((i.idx for i in node.children), dtype=int)
+            if not child_idxs.size:
+                continue
+            min_age = np.nextafter(
+                float(ages_hat[child_idxs].max()) + dist_floor,
+                np.inf,
+            )
+            if ages_hat[node.idx] < min_age:
+                ages_hat[node.idx] = min_age
+
+    if calibrations:
+        for nidx, (lo, hi) in calibrations.items():
+            age = float(ages_hat[nidx])
+            if age < lo - negative_tol or age > hi + negative_tol:
+                raise ToytreeError(
+                    "ultrametric fit repair would violate calibration bounds at "
+                    f"node {nidx}: repaired age {age:.6g} is outside "
+                    f"[{lo:.6g}, {hi:.6g}]."
+                )
+
+    dists = ages_hat[parents] - ages_hat[children]
+    if np.any(~np.isfinite(dists)) or np.any(dists <= dist_floor):
+        _raise_invalid_final_ages(
+            edges,
+            dists,
+            "Final age repair could not recover a strictly positive ultrametric tree.",
+        )
+    return ages_hat
 
 
 def _encode_age_params(
@@ -241,7 +370,8 @@ def _get_init_ages(
                 # divide span into nnodes on path intervals
                 span = max_age - min_age
                 ages[nidx] = max_age - span / nsplits
-                # logger.debug(f"{path}, nidx={nidx}, cidx={cidx}, pidx={pidx}, nsplits={nsplits}, min_age={min_age:.2f}, max_age={max_age:.2f} | set {nidx} to {ages[nidx]:.2f}")
+                # Historical debug output kept here as a guide for how
+                # starting ages are interpolated along calibrated paths.
 
     # get age edge lengths
     children = edges[:, 0]
@@ -302,8 +432,7 @@ def _get_params_bounds(
 
 
 def get_tree_with_categorical_rates(ntips: int, nrates: int, seed: int) -> ToyTree:
-    """Return a ToyTree with edge dists scaled to reflect randomly
-    assigned categorical rate variation.
+    """Return a ToyTree with edges scaled by categorical rate variation.
 
     Rate categories are evenly assigned (linspace) between 1 and 10
     and each edge is randomly assigned to a category. The rate scaler
@@ -328,8 +457,7 @@ def get_tree_with_categorical_rates(ntips: int, nrates: int, seed: int) -> ToyTr
 def get_tree_with_uncorrelated_relaxed_rates(
     ntips: int, mean: float = 1.0, sigma: float = 1.0, seed: int = None
 ) -> ToyTree:
-    """Return a ToyTree with edge dists scaled to reflect uncorrelated
-    relaxed clock rates.
+    """Return a ToyTree with edges scaled by uncorrelated relaxed-clock rates.
 
     A gamma distribution is parameterized with a shape and scale to
     match the desired mean and sigma values, and each branch dist
@@ -357,8 +485,7 @@ def get_tree_with_uncorrelated_relaxed_rates(
 def get_tree_with_correlated_relaxed_rates(
     ntips: int, mean: float = 0.0, sigma: float = 1.0, seed: int = None
 ) -> ToyTree:
-    """Return a ToyTree with edge dists scaled to reflect uncorrelated
-    relaxed clock rates.
+    """Return a ToyTree with edges scaled by correlated relaxed-clock rates.
 
     A gamma distribution is parameterized with a shape and scale to
     match the desired mean and sigma values, and each branch dist

@@ -14,9 +14,11 @@ from toytree.mod._src.penalized_likelihood.pl_utils import (
     Calibrations,
     _decode_age_params,
     _encode_age_params,
+    _finalize_ultrametric_ages,
     _get_children_map_from_edges,
     _get_init_ages,
     _get_params_bounds,
+    _normalize_calibrations,
     _pack_log_rates,
     _run_multistart,
     _select_best_multistart,
@@ -183,6 +185,11 @@ def edges_make_ultrametric_pl_clock(
     """
     if calibrations is None:
         calibrations = {}
+    calibrations = _normalize_calibrations(
+        tree,
+        calibrations,
+        dist_floor=DIST_FLOOR,
+    )
 
     # get init and fixed node ages that make tree ultrametric
     ages_init, _ = _get_init_ages(tree, calibrations)
@@ -268,7 +275,8 @@ def edges_make_ultrametric_pl_clock(
     if not best["converged"]:
         logger.warning(f"Best multistart fit did not converge: {best['message']}")
     logger.debug(
-        f"clock multistart best objective={best['objective']}, start={best['start']}, nstarts={nstarts}"
+        "clock multistart best objective="
+        f"{best['objective']}, start={best['start']}, nstarts={nstarts}"
     )
 
     # transform tree with new ages
@@ -280,6 +288,12 @@ def edges_make_ultrametric_pl_clock(
         children_map,
         dist_floor=DIST_FLOOR,
         age_upper_switch=AGE_UPPER_SWITCH,
+    )
+    ages = _finalize_ultrametric_ages(
+        tree,
+        ages,
+        calibrations=calibrations,
+        dist_floor=DIST_FLOOR,
     )
     tree = tree.set_node_data("height", ages, inplace=inplace)
     rate = float(_unpack_log_rates(current_params[:1])[0])
