@@ -1,0 +1,116 @@
+/*
+Style executed plain-text outputs on markdown pages while keeping code cells in
+the normal Material styling. This covers two markdown-only cases:
+1. notebook-derived markdown pages marked by `.nb-md-page-hook`;
+2. manual markdown pages that use explicit ` ```output ` fenced blocks.
+*/
+
+.md-typeset .nb-md-page-hook {
+  display: none;
+}
+
+.md-typeset .nb-md-page-hook ~ .language-python.highlight + .language-text.highlight,
+.md-typeset .language-output.highlight {
+  position: relative;
+  margin-top: -0.4rem;
+  margin-bottom: 1rem;
+  border-left: 0.12rem solid rgba(107, 127, 250, 0.3);
+  border-radius: 0.2rem;
+  /*background-color: var(--md-default-bg-color);*/
+  background-color: rgba(104, 122, 250, 0.05);
+  /*box-shadow: inset 0 0 0 1px rgba(104, 122, 250, 0.2);*/
+}
+
+.md-typeset .nb-md-page-hook ~ .language-python.highlight + .language-text.highlight pre,
+.md-typeset .language-output.highlight pre {
+  margin: 0;
+  background: transparent;
+  box-shadow: none;
+}
+
+.md-typeset .nb-md-page-hook ~ .language-python.highlight + .language-text.highlight pre > code,
+.md-typeset .language-output.highlight pre > code {
+  background-color: transparent;
+}
+
+.md-typeset .nb-md-page-hook ~ .language-python.highlight + .language-text.highlight code,
+.md-typeset .language-output.highlight code,
+.md-typeset .nb-md-page-hook ~ .language-python.highlight + .language-text.highlight code span,
+.md-typeset .language-output.highlight code span {
+  color: var(--md-default-fg-color);
+}
+
+/*
+Override Material's default comment token color with a darker cyan so comments
+remain visually distinct in rendered code cells and fenced code blocks.
+*/
+.md-typeset .highlight .c,
+.md-typeset .highlight .c1,
+.md-typeset .highlight .ch,
+.md-typeset .highlight .cm,
+.md-typeset .highlight .cp,
+.md-typeset .highlight .cpf,
+.md-typeset .highlight .cs {
+  color: #005f5f !important;
+  font-style: italic;
+}
+
+/*
+Add a thin notebook-like outline to code blocks on markdown pages without
+changing plain-text output cells. Use an inset outline on the code surface so
+the frame stays tight to the cell instead of wrapping the whole highlight box.
+*/
+.md-typeset .highlight:not(.language-output):not(.language-text) pre > code {
+  box-shadow: inset 0 0 0 1px rgba(15, 23, 42, 0.12);
+}
+
+/*
+Match pandas HTML tables on markdown pages to the compact Jupyter-style
+dataframe rendering instead of leaving them with browser default table chrome.
+Target only `.dataframe` tables so ordinary docs tables keep the site theme.
+*/
+.md-typeset table.dataframe {
+  border-collapse: collapse;
+  border-spacing: 0;
+  border: none;
+  color: var(--md-default-fg-color);
+  font-size: 0.65rem;
+  table-layout: auto;
+  width: auto;
+  max-width: 100%;
+  margin: 0 0 1em;
+  background: transparent;
+}
+
+.md-typeset table.dataframe thead {
+  border-bottom: 0.05rem solid var(--md-typeset-table-color);
+  vertical-align: bottom;
+}
+
+.md-typeset table.dataframe td,
+.md-typeset table.dataframe th,
+.md-typeset table.dataframe tr {
+  vertical-align: middle;
+  padding: 0.5em 0.75em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+  text-align: right;
+}
+
+.md-typeset table.dataframe th {
+  font-weight: 700;
+}
+
+.md-typeset table.dataframe tbody tr:nth-child(odd) {
+  background: var(--md-default-bg-color);
+}
+
+.md-typeset table.dataframe tbody tr:nth-child(even) {
+  background: var(--md-typeset-table-color--light);
+}
+
+.md-typeset table.dataframe tbody tr:hover {
+  background: var(--md-code-bg-color);
+}

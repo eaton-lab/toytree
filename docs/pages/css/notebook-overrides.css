@@ -1,0 +1,40 @@
+/*
+Hide Jupyter prompt chrome in mkdocs-jupyter pages while retaining notebook
+cell bodies and rich output. This targets presentation only; rendering still
+comes from mkdocs-jupyter + nbconvert.
+*/
+
+.jupyter-wrapper {
+  /* Collapse the default 64px prompt gutter used by nbconvert templates. */
+  --jp-cell-prompt-width: 0px;
+}
+
+.jupyter-wrapper .jp-InputPrompt,
+.jupyter-wrapper .jp-OutputPrompt,
+.jupyter-wrapper .jp-Collapser {
+  display: none !important;
+}
+
+.jupyter-wrapper .jp-Cell-inputWrapper,
+.jupyter-wrapper .jp-Cell-outputWrapper,
+.jupyter-wrapper .jp-OutputArea-child {
+  gap: 0;
+}
+
+.jupyter-wrapper .jp-Cell-inputArea,
+.jupyter-wrapper .jp-Cell-outputArea {
+  margin-left: 0 !important;
+}
+
+/* Remove extra left padding once prompt / collapser elements are hidden. */
+.jupyter-wrapper .jp-CodeCell .jp-InputArea-editor,
+.jupyter-wrapper .jp-RenderedHTMLCommon,
+.jupyter-wrapper .jp-RenderedText,
+.jupyter-wrapper .jp-OutputArea-output {
+  margin-left: 0 !important;
+}
+
+/* Add the same thin notebook-like outline to rendered code input cells. */
+.jupyter-wrapper .jp-InputArea-editor {
+  box-shadow: 0 0 0 1px rgba(15, 23, 42, 0.14);
+}
