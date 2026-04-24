@@ -55,6 +55,9 @@ test = [
     "pytest",
     "pytest-cov",
 ]
+export = [
+    "cairosvg",
+]
 external = [
     "ipcoal",
 ]
