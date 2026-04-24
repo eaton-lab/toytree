@@ -14,9 +14,11 @@ from toytree.mod._src.penalized_likelihood.pl_utils import (
     Calibrations,
     _decode_age_params,
     _encode_age_params,
+    _finalize_ultrametric_ages,
     _get_children_map_from_edges,
     _get_init_ages,
     _get_params_bounds,
+    _normalize_calibrations,
     _pack_log_rates,
     _run_multistart,
     _select_best_multistart,
@@ -30,6 +32,11 @@ RATE_FLOOR = 1e-12
 DIST_FLOOR = 1e-12
 INVALID_LOG_LIK_DROP = 1e6
 AGE_UPPER_SWITCH = 1e6
+
+
+def _invalid_objective(valid_loglik: float) -> float:
+    """Return the finite objective value used for invalid fits."""
+    return float(-(valid_loglik - INVALID_LOG_LIK_DROP))
 
 
 def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
@@ -51,6 +58,7 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
     max_fun = payload["max_fun"]
     max_refine = payload["max_refine"]
 
+    invalid_objective = _invalid_objective(valid_loglik)
     fit = minimize(
         fun=objective_correlated,
         x0=params,
@@ -108,7 +116,7 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
         if refit.fun < fit.fun:
             fit = refit
 
-    current_loglik = fit.fun
+    current_loglik = float(fit.fun)
     current_params = fit.x.copy()
     rsize = rates_init.size
     asize = ages_idxs.size
@@ -144,9 +152,9 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
             bounds=bounds[fslice],
             options=dict(maxiter=int(max_iter), maxfun=int(max_fun)),
         )
-        delta = ifit.fun - current_loglik
+        delta = float(ifit.fun) - current_loglik
         if delta <= 0:
-            current_loglik = ifit.fun
+            current_loglik = float(ifit.fun)
             current_params[fslice] = ifit.x
             fit = ifit
             if abs(delta) < 1e-9:
@@ -154,11 +162,16 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
         iter_refine += 1
         if iter_refine > max_refine:
             break
+    converged = bool(fit.success)
+    message = str(fit.message)
+    if current_loglik >= invalid_objective - 1e-9:
+        converged = False
+        message = "invalid objective plateau from infeasible start"
     return {
         "start": start,
         "objective": float(current_loglik),
-        "converged": bool(fit.success),
-        "message": str(fit.message),
+        "converged": converged,
+        "message": message,
         "nfev": int(getattr(fit, "nfev", -1)),
         "nit": int(getattr(fit, "nit", -1)),
         "params": current_params,
@@ -187,6 +200,11 @@ def edges_make_ultrametric_pl_correlated(
     """
     if calibrations is None:
         calibrations = {}
+    calibrations = _normalize_calibrations(
+        tree,
+        calibrations,
+        dist_floor=DIST_FLOOR,
+    )
 
     # get init and fixed node ages that make tree ultrametric
     ages_init, _ = _get_init_ages(tree, calibrations)
@@ -249,8 +267,6 @@ def edges_make_ultrametric_pl_correlated(
         sparams = params.copy()
         if start:
             sparams[:rsize] += rng.normal(0.0, 0.25, size=rsize)
-            if asize:
-                sparams[rsize : rsize + asize] += rng.normal(0.0, 0.25, size=asize)
         payloads.append(
             dict(
                 start=start,
@@ -278,7 +294,8 @@ def edges_make_ultrametric_pl_correlated(
     if not best["converged"]:
         logger.warning(f"Best multistart fit did not converge: {best['message']}")
     logger.debug(
-        f"correlated multistart best objective={best['objective']}, start={best['start']}, nstarts={nstarts}"
+        "correlated multistart best objective="
+        f"{best['objective']}, start={best['start']}, nstarts={nstarts}"
     )
 
     ages = _decode_age_params(
@@ -290,26 +307,33 @@ def edges_make_ultrametric_pl_correlated(
         dist_floor=DIST_FLOOR,
         age_upper_switch=AGE_UPPER_SWITCH,
     )
+    ages = _finalize_ultrametric_ages(
+        tree,
+        ages,
+        calibrations=calibrations,
+        dist_floor=DIST_FLOOR,
+    )
     tree = tree.set_node_data("height", ages, inplace=inplace)
     rates = _unpack_log_rates(current_params[:rsize])
 
-    loglik = log_likelihood_poisson_correlated(
+    penalized_loglik = log_likelihood_poisson_correlated(
         rates, ages, edges, edata, parent_edges, lam, valid_loglik
     )
+    loglik = log_likelihood_poisson_correlated(
+        rates, ages, edges, edata, parent_edges, 0.0, valid_loglik
+    )
+    penalty = _correlated_penalty(rates, parent_edges)
     k = len(bounds)
-    phiic = -2 * loglik + 2 * k
+    phiic = -2 * loglik + 2 * k + lam * penalty
 
     if not full:
         return tree
 
-    raw_loglik = log_likelihood_poisson_correlated(
-        rates, ages, edges, edata, parent_edges, 0.0, valid_loglik
-    )
-    penalty = _correlated_penalty(rates, parent_edges)
     return {
         "loglik": loglik,
-        "raw_loglik": raw_loglik,
+        "penalized_loglik": penalized_loglik,
         "penalty": penalty,
+        "k": k,
         "PHIIC": phiic,
         "rates": list(rates),
         "tree": tree,

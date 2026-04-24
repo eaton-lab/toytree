@@ -22,7 +22,10 @@ from toytree.utils import ToytreeError
 
 
 class TestMakeUltrametricCLI(PytestCompat):
+    """CLI regression tests for make-ultrametric."""
+
     def setUp(self):
+        """Create a temporary non-ultrametric input tree."""
         self.tmpdir = Path(tempfile.mkdtemp(prefix="toytree-cli-make-ultrametric-"))
         self.tree_path = self.tmpdir / "tree.nwk"
         # non-ultrametric input
@@ -37,6 +40,7 @@ class TestMakeUltrametricCLI(PytestCompat):
         return stream.getvalue().strip()
 
     def test_extend_method_makes_tree_ultrametric(self):
+        """Extend mode should emit an ultrametric tree."""
         out_nwk = self._run_capture_stdout(
             ["-i", str(self.tree_path), "--method", "extend"]
         )
@@ -44,6 +48,7 @@ class TestMakeUltrametricCLI(PytestCompat):
         self.assertTrue(tree.is_ultrametric())
 
     def test_extend_method_full_flag_is_silently_ignored(self):
+        """Extend mode should ignore full summaries and just write the tree."""
         args = self.parser.parse_args(
             ["-i", str(self.tree_path), "--method", "extend", "--full"]
         )
@@ -83,15 +88,17 @@ class TestMakeUltrametricCLI(PytestCompat):
         payload = json.loads(err.getvalue().strip())
         self.assertEqual(payload["method"], "correlated")
 
-    def test_discrete_estimate_json_summary(self):
-        """Discrete estimate mode should emit search payload as JSON to stderr."""
+    def test_discrete_candidate_list_json_summary(self):
+        """Discrete candidate lists should emit search payload as JSON to stderr."""
         args = self.parser.parse_args(
             [
                 "-i",
                 str(self.tree_path),
                 "--method",
                 "discrete",
-                "--estimate",
+                "--ncat",
+                "1",
+                "2",
                 "3",
                 "--max-iter",
                 "200",
@@ -111,9 +118,10 @@ class TestMakeUltrametricCLI(PytestCompat):
         payload = json.loads(err.getvalue().strip())
         self.assertEqual(payload["method"], "discrete")
         self.assertIn("search", payload)
-        self.assertIn("estimated_parameter", payload)
+        self.assertIn("selected_ncategories", payload)
 
     def test_discrete_requires_ncategories(self):
+        """Discrete mode should require at least one ncategory value."""
         args = self.parser.parse_args(
             ["-i", str(self.tree_path), "--method", "discrete"]
         )
@@ -121,6 +129,7 @@ class TestMakeUltrametricCLI(PytestCompat):
             run_make_ultrametric(args)
 
     def test_lam_must_be_non_negative(self):
+        """Negative lambda values should be rejected."""
         args = self.parser.parse_args(
             ["-i", str(self.tree_path), "--method", "relaxed", "--lam", "-0.1"]
         )
@@ -128,6 +137,7 @@ class TestMakeUltrametricCLI(PytestCompat):
             run_make_ultrametric(args)
 
     def test_parse_calibrations_single_and_range(self):
+        """CLI calibration parsing should support fixed ages and ranges."""
         tree = toytree.tree("((a:1,b:1):1,c:1);")
         cals = _parse_calibrations(tree, ["-1=1.0", "a=0.1-0.2"])
         self.assertIn(tree[-1].idx, cals)
@@ -135,6 +145,7 @@ class TestMakeUltrametricCLI(PytestCompat):
         self.assertEqual(cals[tree[0].idx], (0.1, 0.2))
 
     def test_cli_calibrations_accept_negative_node_query_token(self):
+        """Negative node queries should be normalized before parsing."""
         argv = normalize_calibration_argv(
             ["-i", str(self.tree_path), "--method", "clock", "-c", "-1=1.0"]
         )
@@ -142,6 +153,7 @@ class TestMakeUltrametricCLI(PytestCompat):
         self.assertEqual(args.calibrations, [f"{NEGATIVE_CAL_QUERY_PREFIX}1=1.0"])
 
     def test_correlated_method_runs(self):
+        """Correlated PL mode should run and emit an ultrametric tree."""
         out_nwk = self._run_capture_stdout(
             [
                 "-i",
@@ -167,14 +179,17 @@ class TestMakeUltrametricCLI(PytestCompat):
         tree = toytree.tree(out_nwk)
         self.assertTrue(tree.is_ultrametric())
 
-    def test_discrete_estimate_runs_without_ncat(self):
+    def test_discrete_candidate_list_runs(self):
+        """Discrete candidate lists should select and emit one ultrametric tree."""
         out_nwk = self._run_capture_stdout(
             [
                 "-i",
                 str(self.tree_path),
                 "--method",
                 "discrete",
-                "--estimate",
+                "--ncat",
+                "1",
+                "2",
                 "3",
                 "--max-iter",
                 "200",
@@ -187,9 +202,9 @@ class TestMakeUltrametricCLI(PytestCompat):
         tree = toytree.tree(out_nwk)
         self.assertTrue(tree.is_ultrametric())
 
-    def test_estimate_invalid_for_clock(self):
-        args = self.parser.parse_args(
-            ["-i", str(self.tree_path), "--method", "clock", "--estimate", "3"]
-        )
-        with self.assertRaises(ToytreeError):
-            run_make_ultrametric(args)
+    def test_removed_estimate_flag_fails_at_parse_time(self):
+        """The removed estimate flag should be rejected by the parser."""
+        with self.assertRaises(SystemExit):
+            self.parser.parse_args(
+                ["-i", str(self.tree_path), "--method", "clock", "--estimate", "3"]
+            )

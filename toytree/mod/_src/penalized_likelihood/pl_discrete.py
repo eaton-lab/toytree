@@ -17,9 +17,11 @@ from toytree.mod._src.penalized_likelihood.pl_utils import (
     Calibrations,
     _decode_age_params,
     _encode_age_params,
+    _finalize_ultrametric_ages,
     _get_children_map_from_edges,
     _get_init_ages,
     _get_params_bounds,
+    _normalize_calibrations,
     _pack_log_rates,
     _run_multistart,
     _select_best_multistart,
@@ -139,7 +141,7 @@ def _fit_discrete_start(payload: dict[str, Any]) -> dict[str, Any]:
 def edges_make_ultrametric_pl_discrete(
     tree: ToyTree,
     ncategories: int,
-    calibrations: Calibrations = {},
+    calibrations: Calibrations | None = None,
     full: bool = False,
     inplace: bool = False,
     max_iter: int = 1e5,
@@ -149,8 +151,9 @@ def edges_make_ultrametric_pl_discrete(
     ncores: int = 1,
     seed: int | None = None,
 ) -> Union[ToyTree, dict[str, Any]]:
-    """Return a tree made ultrametric under a discrete model with N
-    rate categories under penalized likelihood.
+    """Return a tree made ultrametric under a discrete penalized-likelihood model.
+
+    This variant fits ``ncategories`` discrete rate categories.
 
     Edges are scaled while assuming a edge rates are drawn from N
     discrete distributions. The number of parameters in this model is
@@ -213,11 +216,18 @@ def edges_make_ultrametric_pl_discrete(
     >>>     else:
     >>>         node._dist = node._dist * rng.gamma(shape=3, scale=5.0)
     >>> tree.mod.edges_make_ultrametric_pl_discrete(tree, 2, full=True)
-    >>> # {'loglik': -82.42541, 'PHIIC': 216.85082, 'rates': [4.12272, 17.56474], 'freqs': [0.53751, 0.46248], 'tree': <toytree.ToyTree at 0x791451cb5190>, 'converged': True}
+    >>> # {'loglik': -82.42541, 'PHIIC': 216.85082, ...}
 
     """
     # ncategories cannot exceed number of edges
     ncategories = min(ncategories, tree.nedges)
+    if calibrations is None:
+        calibrations = {}
+    calibrations = _normalize_calibrations(
+        tree,
+        calibrations,
+        dist_floor=DIST_FLOOR,
+    )
 
     # strict identity with clock model when ncategories == 1.
     if int(ncategories) == 1:
@@ -341,7 +351,8 @@ def edges_make_ultrametric_pl_discrete(
     if not best["converged"]:
         logger.warning(f"Best multistart fit did not converge: {best['message']}")
     logger.debug(
-        f"discrete multistart best objective={best['objective']}, start={best['start']}, nstarts={nstarts}"
+        "discrete multistart best objective="
+        f"{best['objective']}, start={best['start']}, nstarts={nstarts}"
     )
 
     # transform tree with new ages
@@ -353,6 +364,12 @@ def edges_make_ultrametric_pl_discrete(
         children_map,
         dist_floor=DIST_FLOOR,
         age_upper_switch=AGE_UPPER_SWITCH,
+    )
+    ages = _finalize_ultrametric_ages(
+        tree,
+        ages,
+        calibrations=calibrations,
+        dist_floor=DIST_FLOOR,
     )
     tree = tree.set_node_data("height", ages, inplace=inplace)
 
@@ -479,7 +496,7 @@ def objective_discrete(
 def log_likelihood_poisson_discrete(
     rates_hat, ages_hat, edges, edata, freqs_hat, valid_loglik
 ) -> float:
-    """Return the log-likelihood of the rates x ages params"""
+    """Return the log-likelihood of the rates x ages params."""
     if valid_loglik is None:
         valid_loglik = -1.0
     invalid_score = valid_loglik - INVALID_LOG_LIK_DROP
