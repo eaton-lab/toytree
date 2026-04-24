@@ -1,12 +1,12 @@
 #!/usr/bin/env python
 
-"""Calculate parsimony score of a tree topology given data.
+"""Calculate Fitch parsimony scores and related homoplasy indices.
 
 TODO
 ----
 - support DNA IUPAC models where ambiguous states are automatically
 expanded.
-- support non DNA (arbitrary multistate including binary) data.
+- support ambiguity-aware state models and character matrices.
 - vectorize to be faster.
 - vectorize RI/CI to apply over trait matrix
 
@@ -28,7 +28,10 @@ References
 - https://telliott99.blogspot.com/2010/03/fitch-and-sankoff-algorithms-for.html
 """
 
-from typing import Any, Dict
+from __future__ import annotations
+
+from collections.abc import Mapping
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -107,44 +110,44 @@ __all__ = [
 #     return score
 
 
-class Parsimony:
-    """Return a phylogenetic tree inferred by Maximum Parsimony.
+# class Parsimony:
+#     """Return a phylogenetic tree inferred by Maximum Parsimony.
 
-    Examples
-    --------
-    >>> toytree.set_log_level("DEBUG")  # print verbose information
-    >>> data = ...
-    >>> starting_tree = ... distance tree.
-    >>> tool = Parsimony(data)
-    >>> tool.get_score(tree=tree, )
-    """
+#     Examples
+#     --------
+#     >>> toytree.set_log_level("DEBUG")  # print verbose information
+#     >>> data = ...
+#     >>> starting_tree = ... distance tree.
+#     >>> tool = Parsimony(data)
+#     >>> tool.get_score(tree=tree, )
+#     """
 
-    def __init__(self, data: ...):
-        self.data = data
+#     def __init__(self, data: ...):
+#         self.data = data
 
-    def get_score(self, tree):
-        """Return parsimony score."""
+#     def get_score(self, tree):
+#         """Return parsimony score."""
 
-    def _fitch_algorithm(self):
-        """Implement the fitch algorithm."""
+#     def _fitch_algorithm(self):
+#         """Implement the fitch algorithm."""
 
-    def _sankoff_algorithm(self):
-        """Implement the Sankoff algorithm.
+#     def _sankoff_algorithm(self):
+#         """Implement the Sankoff algorithm.
 
-        The strength of the Sankoff algorithm is that it allows a
-        variety of cost matrices to be used. This is in principal
-        closer to ML, where we would define a substitution model.
-        Here the cost matrix is not inferred, but a priori defined
-        by the user.
+#         The strength of the Sankoff algorithm is that it allows a
+#         variety of cost matrices to be used. This is in principal
+#         closer to ML, where we would define a substitution model.
+#         Here the cost matrix is not inferred, but a priori defined
+#         by the user.
 
-        """
+#         """
 
-    def _tree_move(self, method: str):
-        """Return a ToyTree that is one 'move' from the current tree.
+#     def _tree_move(self, method: str):
+#         """Return a ToyTree that is one 'move' from the current tree.
 
-        >>> NNITreeSearcher(scorer)
-        """
-        pass
+#         >>> NNITreeSearcher(scorer)
+#         """
+#         pass
 
 
 # class Fitch:
@@ -157,24 +160,139 @@ class Parsimony:
 #     pass
 
 
-def convert_trait_to_idx_dict(tree: ToyTree, trait: Dict[str, Any]) -> Dict[int, Any]:
-    """Return a node-indexed trait mapping for parsimony utilities."""
+_MISSING = object()
+_PARSIMONY_ROWS = ("fitch_parsimony_score", "CI", "RI", "RCI")
+
+
+def convert_trait_to_idx_dict(
+    tree: ToyTree,
+    trait: str | Mapping[Any, Any] | pd.Series,
+) -> dict[int, Any]:
+    """Return a complete tip-indexed trait mapping for parsimony utilities.
+
+    Parameters
+    ----------
+    tree: ToyTree
+        Tree whose tips define the expected trait mapping.
+    trait: str | Mapping | pd.Series
+        A feature name on the tree or a mapping from tip selectors to
+        discrete states. Selectors may be tip idx labels, tip names, or
+        tip ``Node`` objects.
+
+    Returns
+    -------
+    dict[int, Any]
+        Discrete trait states keyed by tip idx.
+
+    Raises
+    ------
+    TypeError
+        If ``trait`` cannot be interpreted as a mapping of discrete states.
+    ValueError
+        If any tip states are missing, ambiguous selectors match multiple
+        nodes, internal nodes are supplied, or any state values are missing
+        or unhashable.
+    """
     if isinstance(trait, str):
-        trait = tree.get_node_data(trait).to_dict()
+        series = tree.get_tip_data(trait, missing=_MISSING)
+        missing = [int(idx) for idx, value in series.items() if value is _MISSING]
+        if missing:
+            raise ValueError(
+                "trait feature is missing values for one or more tips: "
+                f"{missing[:5]}"
+            )
+        normalized = {int(idx): value for idx, value in series.items()}
     else:
         try:
-            trait = dict(trait)
+            mapping = dict(trait)
         except Exception as exc:
             raise TypeError("trait input could not be cast to a dict.") from exc
 
-    # if dict names are str cast to int idx labels
-    if any(isinstance(i, str) for i in trait):
-        trait = {tree[i].idx: j for (i, j) in trait.items()}
-    return trait
+        normalized: dict[int, Any] = {}
+        for query, value in mapping.items():
+            nodes = tree.get_nodes(query)
+            if len(nodes) != 1:
+                raise ValueError(
+                    "trait selectors must identify exactly one tip node. "
+                    f"Selector {query!r} matched {len(nodes)} nodes."
+                )
+            node = nodes[0]
+            if not node.is_leaf():
+                raise ValueError(
+                    "trait mappings must be defined on tips only. "
+                    f"Selector {query!r} resolved to internal node {node.idx}."
+                )
+            normalized[node.idx] = value
+
+        expected = {node.idx for node in tree[: tree.ntips]}
+        missing = sorted(expected - set(normalized))
+        if missing:
+            raise ValueError(
+                "trait input is missing values for one or more tips: " f"{missing[:5]}"
+            )
+
+    for idx, value in normalized.items():
+        is_missing = value is _MISSING
+        if not is_missing:
+            try:
+                missing_value = pd.isna(value)
+            except Exception:
+                missing_value = False
+            if isinstance(missing_value, (np.ndarray, pd.Series)):
+                missing_value = bool(np.all(missing_value))
+            is_missing = bool(missing_value)
+        if is_missing:
+            raise ValueError(f"trait value for tip {idx} is missing.")
+        try:
+            hash(value)
+        except TypeError as exc:
+            raise ValueError(
+                "trait values must be discrete, hashable states. "
+                f"Tip {idx} has unsupported value {value!r}."
+            ) from exc
+    return normalized
 
 
-def fitch_parsimony_score(tree: ToyTree, trait: Dict[int, Any]) -> int:
-    """Return Fitch parsimony score given a tree and single trait.
+def _get_parsimony_step_bounds(trait: Mapping[int, Any]) -> tuple[int, int]:
+    """Return the minimum and maximum possible steps for one character."""
+    states = list(trait.values())
+    counts = pd.Series(states, dtype=object).value_counts()
+    min_changes = max(0, int(counts.size) - 1)
+    max_changes = len(states) - int(counts.max())
+    return min_changes, max_changes
+
+
+def _get_ci_ri_rci(
+    score: int,
+    min_changes: int,
+    max_changes: int,
+) -> tuple[float, float, float]:
+    """Return CI, RI, and RCI for one observed parsimony score."""
+    ci = min_changes / score if score > 0 else 1.0
+    ri = (
+        1.0
+        if min_changes == max_changes
+        else (max_changes - score) / (max_changes - min_changes)
+    )
+    ri = max(0.0, min(1.0, float(ri)))
+    return float(ci), ri, float(ci * ri)
+
+
+def _permutation_pvalues(
+    observed: float,
+    null: np.ndarray,
+) -> tuple[float, float]:
+    """Return one-sided permutation p-values for greater/less alternatives."""
+    p_greater = (np.sum(null >= observed) + 1) / (null.size + 1)
+    p_less = (np.sum(null <= observed) + 1) / (null.size + 1)
+    return float(p_greater), float(p_less)
+
+
+def fitch_parsimony_score(
+    tree: ToyTree,
+    trait: str | Mapping[Any, Any] | pd.Series,
+) -> int:
+    """Return the Fitch parsimony score for one unordered discrete trait.
 
     For didactic purposes this function will also store a feature named
     'fitch' to every Node which can be examined/visualized afterwards.
@@ -182,15 +300,26 @@ def fitch_parsimony_score(tree: ToyTree, trait: Dict[int, Any]) -> int:
     Parameters
     ----------
     tree: ToyTree
-        A tree on which to count state changes.
-    trait: str | Dict | pd.Series
-        A dict mapping tip node idx to a discrete character state.
+        A tree on which to count state changes. Only topology matters;
+        rooting does not affect the score.
+    trait: str | Mapping | pd.Series
+        A feature name on the tree or a mapping from tip selectors to a
+        discrete character state. Selectors may be tip idx labels, tip
+        names, or tip ``Node`` objects.
 
     Returns
     -------
     int
         The minimum changes required for trait data to evolve on this tree.
+
+    Notes
+    -----
+    This implementation currently assumes a single unordered discrete
+    character on the tips. It annotates each node with a temporary
+    ``fitch`` attribute containing the reconstructed state set.
     """
+    trait = convert_trait_to_idx_dict(tree, trait)
+
     # counter to keep track of change events
     nchanges = 0
 
@@ -218,46 +347,76 @@ def fitch_parsimony_score(tree: ToyTree, trait: Dict[int, Any]) -> int:
 
 def consistency_and_retention_indices(
     tree: ToyTree,
-    trait: Dict[str, Any],
+    trait: str | Mapping[Any, Any] | pd.Series,
     npermutations: int = 10_000,
-    left_tailed: bool = False,
-    rng: int = None,
-) -> pd.Series:
-    """Return CI, RI, and RCI indices for a discrete trait.
+    rng: None | int | np.random.Generator = None,
+) -> pd.DataFrame:
+    """Return parsimony indices and permutation tests for one trait.
 
-    Computes the consistency (CI), retention (RI), and rescaled
-    consistency index(RCI) for a discrete trait.
-    The CI and RI compare the observed changes in a trait across a tree
-    topology to the minimum and maximum changes as a measure of homoplasy.
-    To assess significance, trait values are randomly permuted across
-    the tips of the tree and the proportion of tests above or below the
-    observed statistic is returned.
+    This function summarizes four related quantities for a single
+    unordered discrete character on the tips of a tree:
 
-    If the observed CI > null (left-tailed=False) at p<0.05 it is
-    evidence of phylogenetic signal; if observed CI < null (left-tailed
-    True) at p<0.05 it is evidence of homoplasy. If RI is high (1.0)
-    there is no homoplasy; if ~0.5 half is due to shared ancestry; if
-    0.0 it is as homoplasious as possible. The RCI rescales the CI
-    for comparing characters on trees of different sizes or shapes.
+    - Fitch parsimony score ``s``: the observed minimum number of
+      state changes on the tree.
+    - Consistency index ``CI = m / s``: the fraction of observed
+      changes explained by the minimum possible number of changes.
+      Lower values indicate more homoplasy.
+    - Retention index ``RI = (g - s) / (g - m)``: the proportion of
+      the character's extra steps that are still retained as synapomorphy
+      rather than homoplasy. Here ``m`` is the minimum possible number
+      of steps for the observed set of states and ``g`` is the maximum
+      possible number of steps for the observed tip-state frequencies.
+    - Rescaled consistency index ``RCI = CI * RI``: a size-adjusted
+      combination of CI and RI that is often more comparable across
+      characters and trees than CI alone.
+
+    To assess whether the observed statistic is unusually high or low,
+    the observed tip states are permuted across the same tip labels while
+    preserving the state counts. The returned table includes p-values for
+    two one-sided alternatives:
+
+    - ``p_value_greater``: p-value for the alternative that the observed
+      statistic is greater than the permuted null expectation.
+    - ``p_value_less``: p-value for the alternative that the observed
+      statistic is less than the permuted null expectation.
+
+    For ``CI``, ``RI``, and ``RCI``, unusually large values are generally
+    interpreted as stronger phylogenetic structure and unusually small
+    values as greater homoplasy. For the Fitch score, the direction is
+    reversed: unusually small scores imply stronger phylogenetic structure.
 
     Parameters
     ----------
-    tree:
-        A ToyTree (only topology is used, rooting doesn't matter.)
-    trait: str | Dict[str|int, Any] | pd.Series
-        A feature name or trait values as a dict or Series mapping
-        tip names or idx labels to discrete trait values.
+    tree: ToyTree
+        A tree on which to evaluate one tip-mapped discrete character.
+        Only topology matters; rooting does not affect these indices.
+    trait: str | Mapping | pd.Series
+        A feature name on the tree or a mapping from tip selectors to
+        discrete trait values. Selectors may be tip idx labels, tip
+        names, or tip ``Node`` objects.
     npermutations: int
-        The number of permutations to test significance.
-    left_tailed: bool
-        If True the test statistic is left_tailed: it computes the N
-        permutations <= the observed data, rather than the N >= the
-        observed data.
-    rng: None | int | np.random.RandomState
-        Random seed for permutations.
+        Number of tip-state permutations used to build the null
+        distribution for each statistic.
+    rng: None | int | np.random.Generator
+        Random seed or generator used for permutations.
 
-    Example
+    Returns
     -------
+    pd.DataFrame
+        A table indexed by statistic name with columns:
+
+        - ``observed``
+        - ``null_mean``
+        - ``p_value_greater``
+        - ``p_value_less``
+        - ``signal_tail``
+
+        The table has rows for ``fitch_parsimony_score``, ``CI``, ``RI``,
+        and ``RCI``. Metadata about the permutation test are stored in
+        ``DataFrame.attrs``.
+
+    Examples
+    --------
     >>> # generate random tree, simulate 4-state traits, calculate CI
     >>> tree = toytree.rtree.unittree(ntips=40)
     >>> trait = tree.pcm.simulate_discrete_trait(nstates=4, tips_only=True)
@@ -266,81 +425,77 @@ def consistency_and_retention_indices(
     References
     ----------
     - Fitch, Walter M. (1971) Systematic Biology 20 (4)
+    - Farris, James S. (1989) Cladistics 5 (4)
     - Klingenberg and Gidaszewski (2010) Systematic Biology 59 (3)
     """
-    # get parsimony score
+    if int(npermutations) < 1:
+        raise ValueError("npermutations must be >= 1.")
+    npermutations = int(npermutations)
+
+    generator = (
+        rng if isinstance(rng, np.random.Generator) else np.random.default_rng(rng)
+    )
+
     trait = convert_trait_to_idx_dict(tree, trait)
     score = fitch_parsimony_score(tree, trait)
+    min_changes, max_changes = _get_parsimony_step_bounds(trait)
+    ci, ri, rci = _get_ci_ri_rci(score, min_changes, max_changes)
 
-    # get CI and RI for trait
-    nstates = len(set(trait.values()))
-    min_changes = max(0, nstates - 1)
-    max_changes = tree.ntips - 1
-    ci = min_changes / score if score > 0 else 1.0
-    ri = (
-        1.0
-        if min_changes == max_changes
-        else (max_changes - score) / (max_changes - min_changes)
-    )
-    ri = max(0.0, min(1.0, ri))
-    rci = ci * ri
-
-    # get CI and RI for permutated traits
-    rng = np.random.default_rng(rng)
-    permuted_cis = np.zeros(npermutations)
-    permuted_ris = np.zeros(npermutations)
-    permuted_rcis = np.zeros(npermutations)
-    permuted_score = np.zeros(npermutations)
-    nsamp = len(trait)
+    permuted_scores = np.zeros(npermutations, dtype=float)
+    permuted_cis = np.zeros(npermutations, dtype=float)
+    permuted_ris = np.zeros(npermutations, dtype=float)
+    permuted_rcis = np.zeros(npermutations, dtype=float)
     keys = list(trait)
-    values = list(trait.values())
+    values = np.array(list(trait.values()), dtype=object)
     for i in range(npermutations):
-        ptrait = dict(zip(keys, rng.choice(values, size=nsamp, replace=False)))
+        ptrait = dict(zip(keys, generator.permutation(values)))
         score_ = fitch_parsimony_score(tree, ptrait)
-        ci_ = min_changes / score_ if score_ > 0 else 1.0
-        ri_ = (
-            1.0
-            if min_changes == max_changes
-            else (max_changes - score_) / (max_changes - min_changes)
-        )
-        ri_ = max(0.0, min(1.0, ri_))
-        rci_ = ci_ * ri_
+        ci_, ri_, rci_ = _get_ci_ri_rci(score_, min_changes, max_changes)
         permuted_cis[i] = ci_
         permuted_ris[i] = ri_
         permuted_rcis[i] = rci_
-        permuted_score[i] = score_
+        permuted_scores[i] = score_
 
-    # number of tests <= or >= the observed statistic
-    if left_tailed:
-        count_ci = np.sum(permuted_cis <= ci)
-        count_ri = np.sum(permuted_ris <= ri)
-        count_rci = np.sum(permuted_rcis <= rci)
-    else:
-        count_ci = np.sum(permuted_cis >= ci)
-        count_ri = np.sum(permuted_ris >= ri)
-        count_rci = np.sum(permuted_rcis >= rci)
+    rows = {
+        "fitch_parsimony_score": {
+            "observed": float(score),
+            "null_mean": float(permuted_scores.mean()),
+            "signal_tail": "less",
+        },
+        "CI": {
+            "observed": ci,
+            "null_mean": float(permuted_cis.mean()),
+            "signal_tail": "greater",
+        },
+        "RI": {
+            "observed": ri,
+            "null_mean": float(permuted_ris.mean()),
+            "signal_tail": "greater",
+        },
+        "RCI": {
+            "observed": rci,
+            "null_mean": float(permuted_rcis.mean()),
+            "signal_tail": "greater",
+        },
+    }
+    null_map = {
+        "fitch_parsimony_score": permuted_scores,
+        "CI": permuted_cis,
+        "RI": permuted_ris,
+        "RCI": permuted_rcis,
+    }
+    for name in _PARSIMONY_ROWS:
+        p_greater, p_less = _permutation_pvalues(rows[name]["observed"], null_map[name])
+        rows[name]["p_value_greater"] = p_greater
+        rows[name]["p_value_less"] = p_less
 
-    ci_pvalue = (count_ci + 1) / (npermutations + 1)
-    ri_pvalue = (count_ri + 1) / (npermutations + 1)
-    rci_pvalue = (count_rci + 1) / (npermutations + 1)
-
-    # return as series
-    return pd.Series(
-        {
-            "CI": ci,
-            "CI_permuted_mean": permuted_cis.mean(),
-            "CI_p-value": ci_pvalue,
-            "RI": ri,
-            "RI_permuted_mean": permuted_ris.mean(),
-            "RI_p-value": ri_pvalue,
-            "RCI": rci,
-            "RCI_permuted_mean": permuted_rcis.mean(),
-            "RCI_p-value": rci_pvalue,
-            "fitch_parsimony_score": score,
-            "fitch_parsimony_score_permuted_mean": permuted_score.mean(),
-            "npermutations": npermutations,
-        }
-    )
+    result = pd.DataFrame.from_dict(rows, orient="index")[
+        ["observed", "null_mean", "p_value_greater", "p_value_less", "signal_tail"]
+    ]
+    result.index.name = "statistic"
+    result.attrs["npermutations"] = npermutations
+    result.attrs["null_model"] = "tip_state_permutation_preserving_state_counts"
+    return result
 
 
 if __name__ == "__main__":
