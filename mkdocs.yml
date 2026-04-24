@@ -110,7 +110,7 @@ nav:
           - consensus trees: infer-consensus.md
           - neighbor joining: infer-neighbor-joining.md
           - upgma: infer-upgma.md
-          - parsimony indices: infer-parsimony.md
+          - parsimony indices: pcm-parsimony-CI-RI.md
           - duplication loss coalescence: infer-dlc.md
 
       - '[pcm]':
