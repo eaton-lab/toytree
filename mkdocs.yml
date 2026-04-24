@@ -14,6 +14,7 @@ plugins:
 
 extra_css:
   - css/notebook-markdown.css
+  - css/notebook-overrides.css
   - https://unpkg.com/katex@0/dist/katex.min.css
 
 extra_javascript:
@@ -57,17 +58,40 @@ nav:
       - 'Drawing':
           - drawing basics: drawing-basics.md
           - drawing options: drawing-options.md
-          - coordinates and axes: drawing-coordinates.md
           - built-in tree styles: drawing-tree-styles.md
+          - coordinates and axes: drawing-coordinates.md
           - save/export drawings: drawing-save.md
           - range-mapping data: drawing-range-mapping.md
           - color-mapping data: drawing-color-mapping.md
+          - toytree + toyplot: drawing-toytree-toyplot.md
           - multitree draw grid: drawing-mtree-grid.md
           - multitree draw cloud: drawing-mtree-cloud.md
+          # - demographic models: drawing-demography.md
+          # - tree sequences: drawing-tree-sequences.md
 
       - '[annotate]':
-          - add_edges: anno-add-edges.md
-          - add_tip_labels: anno-add_tip_labels.md
+          - tip annotations:
+            - add_tip_text: anno-add-tip-text.md
+            - add_tip_tiles: anno-add-tip-tiles.md
+            - add_tip_bars: anno-add-tip-bars.md
+            - add_tip_paths: anno-add-tip-paths.md
+            # -add_tip_boxplots: ...
+            # -add_tip_matrix: ...
+            # -add_tip_histograms: ...
+          - edge annotations:
+            - add_edges: anno-add-edges.md
+            - add_edge_markers: anno-add-edge-markers.md
+            - add_edge_labels: anno-add-edge-labels.md
+            # - add_edge_...
+          - node annotations:
+            - add_node_markers: ...
+            - add_node_labels: ...
+            - add_node_bars: ...
+            # - add_node_histograms: ...
+          - axes/scale annotations:
+            - add_axes_scale_bar_to_tree: ...
+            - add_axes_scale_bar_to_mark: ...
+            # - add_axes_color_scale_to_mark: ...
 
       - '[mod]':
           - rooting:
@@ -96,7 +120,7 @@ nav:
           - fit pgls (Gaussian): ...
           - fit pglm (non-Gaussian): ...
           - ancestral state reconstruction: ...
-          - stochastic map: ...
+          - stochastic map: pcm-stochastic-mapping.md
           - phylogenetic anova: ...
           - phylogenetic signal: ...
           - vcv matrix: ...
@@ -121,5 +145,6 @@ nav:
   - Cookbooks:
       - CLI pipelines: cli-pipelines.md
       - Debug canvas: debug-canvas.md
+      # - Tree-to-tree: co-phylogeny-plot.md
 
   - FAQs: FAQs.md
