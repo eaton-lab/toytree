@@ -49,6 +49,7 @@ def run_relabel(args):
     tre = tre.relabel(
         queries=args.nodes,
         fn=fn,
+        imap=args.imap,
         delim=args.delim,
         delim_idxs=args.delim_idxs,
         delim_join=args.delim_join,
