@@ -2137,6 +2137,7 @@ def get_parser_relabel(parser: ArgumentParser | None = None) -> ArgumentParser:
             Examples
             --------
             $ relabel -i TRE.nwk --strip '_-'
+            $ relabel -i TRE.nwk --imap IMAP.txt
             $ relabel -i TRE.nwk --delim '|' --delim-idxs 0 2 --delim-join '_'
             $ relabel -i TRE.nwk -n '~^DE' --append '_X'
             $ relabel -i TRE.nwk --prepend 'sp_' --stripleft '._'
@@ -2206,6 +2207,12 @@ def get_parser_relabel(parser: ArgumentParser | None = None) -> ArgumentParser:
         default=True,
         metavar="bool",
         help="relabel only tips (true/false) [default: true]",
+    )
+    relabel_group.add_argument(
+        "--imap",
+        type=Path,
+        metavar="path",
+        help="optional whitespace-delimited tip-to-name mapping table",
     )
     relabel_group.add_argument(
         "--delim", type=str, metavar="str", help="delimiter for splitting names"

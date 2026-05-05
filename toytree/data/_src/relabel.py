@@ -4,7 +4,11 @@
 
 from __future__ import annotations
 
-from typing import Callable, Sequence, TypeVar, Union
+import re
+import sys
+from collections.abc import Mapping as MappingABC
+from pathlib import Path
+from typing import Any, Callable, Mapping, Sequence, TypeVar, Union
 
 from toytree import Node, ToyTree
 from toytree.core.apis import add_toytree_method
@@ -34,11 +38,102 @@ def _normalize_delim_idxs(delim_idxs):
     return [int(i) for i in delim_idxs]
 
 
+def _load_imap_file(path: str | Path) -> dict[str, str]:
+    """Load whitespace-delimited tip-name mappings from file."""
+    path = Path(path).expanduser()
+    mapping: dict[str, str] = {}
+    try:
+        with path.open("r", encoding="utf-8") as handle:
+            for lnum, line in enumerate(handle, start=1):
+                stripped = line.strip()
+                if (not stripped) or stripped.startswith("#"):
+                    continue
+                parts = stripped.split()
+                if len(parts) < 2:
+                    raise ToytreeError(
+                        "imap file must have at least two whitespace-delimited "
+                        f"columns on line {lnum}."
+                    )
+                mapping[parts[0]] = parts[1]
+    except OSError as exc:
+        raise ToytreeError(f"could not read imap file '{path}': {exc}") from exc
+    if not mapping:
+        raise ToytreeError("imap file did not contain any usable selector/name rows.")
+    return mapping
+
+
+def _coerce_imap_mapping(
+    imap: Mapping[str, Any] | str | Path | None,
+) -> dict[str, Any]:
+    """Return imap as a selector->replacement mapping."""
+    if imap is None:
+        return {}
+    if isinstance(imap, MappingABC):
+        raw = dict(imap)
+    elif isinstance(imap, (str, Path)):
+        raw = _load_imap_file(imap)
+    else:
+        raise ToytreeError("imap must be a mapping, file path string, Path, or None.")
+
+    mapping: dict[str, Any] = {}
+    for key, value in raw.items():
+        if not isinstance(key, str):
+            raise ToytreeError("imap selectors must be strings.")
+        mapping[key] = value
+    return mapping
+
+
+def _match_tip_selector(tree: ToyTree, selector: str) -> list[Node]:
+    """Return tip Nodes matched by one exact-name or regex selector."""
+    nodes = list(tree[: tree.ntips])
+    if selector.startswith("~"):
+        try:
+            regex = re.compile(selector[1:])
+        except re.error as exc:
+            msg = f"invalid regex query '{selector}' raised re.error:\n{exc}"
+            raise ToytreeError(msg) from exc
+        return [node for node in nodes if regex.search(node.name)]
+    return [node for node in nodes if node.name == selector]
+
+
+def _resolve_tip_imap(
+    tree: ToyTree,
+    imap: Mapping[str, Any] | str | Path | None,
+) -> dict[Node, Any]:
+    """Resolve imap selectors to uniquely matched tip Nodes."""
+    mapping = _coerce_imap_mapping(imap)
+    resolved: dict[Node, Any] = {}
+    selectors: dict[Node, str] = {}
+    for selector, value in mapping.items():
+        matches = _match_tip_selector(tree, selector)
+        if not matches:
+            print(
+                f"WARNING: imap selector '{selector}' did not match any tip names.",
+                file=sys.stderr,
+            )
+            continue
+        if len(matches) > 1:
+            names = ", ".join(node.name for node in matches)
+            raise ToytreeError(
+                f"imap selector '{selector}' matched multiple tips: {names}."
+            )
+        node = matches[0]
+        if node in resolved:
+            raise ToytreeError(
+                "imap selectors "
+                f"'{selectors[node]}' and '{selector}' both matched tip '{node.name}'."
+            )
+        resolved[node] = value
+        selectors[node] = selector
+    return resolved
+
+
 @add_toytree_method(ToyTree)
 def relabel(
     tree: ToyTree,
     queries: Union[Query, Sequence[Query], None] = None,
     fn: Callable[[str], str] | None = None,
+    imap: Mapping[str, Any] | str | Path | None = None,
     delim: str | None = None,
     delim_idxs: int | Sequence[int] | None = None,
     delim_join: str = "_",
@@ -58,6 +153,11 @@ def relabel(
     fn: Callable[[str], str] | None
         Optional callable transform applied to each selected name after
         delimiter processing.
+    imap: Mapping[str, Any] | str | Path | None
+        Optional tip-name remapping entered as a selector->replacement
+        mapping or as a whitespace-delimited file path. Selectors target
+        current tip names only, and strings prefixed with ``~`` are
+        treated as regex queries that must still match exactly one tip.
     delim: str | None
         Optional delimiter used to split names before selecting parts.
     delim_idxs: int | Sequence[int] | None
@@ -78,12 +178,16 @@ def relabel(
 
     Notes
     -----
-    Empty node names are skipped and left unchanged.
+    Empty node names are skipped and left unchanged. When ``imap`` is
+    provided its replacements are resolved against current tip names
+    before any transforms, then applied afterward as the final override
+    on those matched tips.
     """
     if fn is not None and not callable(fn):
         raise ToytreeError("fn must be callable or None.")
 
     tree = tree if inplace else tree.copy()
+    resolved_imap = _resolve_tip_imap(tree, imap)
 
     norm_queries = _normalize_queries(queries)
     if norm_queries is None:
@@ -128,4 +232,12 @@ def relabel(
                 if not has_bold:
                     new_name = f"<b>{new_name}</b>"
             node.name = new_name
+
+    for node, new_name in resolved_imap.items():
+        if new_name is None:
+            continue
+        new_name = str(new_name)
+        if new_name == "":
+            continue
+        node.name = new_name
     return tree

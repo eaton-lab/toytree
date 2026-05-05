@@ -1,5 +1,9 @@
 #!/usr/bin/env python
 
+import io
+import tempfile
+from contextlib import redirect_stderr
+from pathlib import Path
 
 from conftest import PytestCompat
 
@@ -11,6 +15,7 @@ class TestRelabel(PytestCompat):
         self.tree = toytree.tree("((a-1:1,b-2:1):1,c-3:1);")
         # assign internal names for tests that include non-tip nodes
         self.tree = self.tree.set_node_data("name", {3: "I-1", 4: "R-1"}, inplace=False)
+        self.tmpdir = Path(tempfile.mkdtemp(prefix="toytree-core-relabel-"))
 
     def test_default_tips_only(self):
         new = self.tree.relabel(fn=str.upper, inplace=False)
@@ -79,3 +84,59 @@ class TestRelabel(PytestCompat):
         tre = self.tree.set_node_data("name", {0: "<b><i>a-1</i></b>"}, inplace=False)
         new = tre.relabel(queries=[0], italic=True, bold=True, inplace=False)
         self.assertEqual(new[0].name, "<b><i>a-1</i></b>")
+
+    def test_imap_dict_exact_tip_names(self):
+        new = self.tree.relabel(imap={"a-1": "alpha", "c-3": "charlie"}, inplace=False)
+        self.assertEqual(new[0].name, "alpha")
+        self.assertEqual(new[1].name, "b-2")
+        self.assertEqual(new[2].name, "charlie")
+
+    def test_imap_dict_regex_selector(self):
+        tre = toytree.tree("((aa:1,ab:1):1,c:1);")
+        new = tre.relabel(imap={"~^ab$": "beta"}, inplace=False)
+        self.assertEqual(new[0].name, "aa")
+        self.assertEqual(new[1].name, "beta")
+        self.assertEqual(new[2].name, "c")
+
+    def test_imap_file_ignores_extra_columns(self):
+        imap = self.tmpdir / "imap.txt"
+        imap.write_text("a-1 alpha extra\nc-3 charlie ignored\n", encoding="utf-8")
+        new = self.tree.relabel(imap=imap, inplace=False)
+        self.assertEqual(new[0].name, "alpha")
+        self.assertEqual(new[2].name, "charlie")
+
+    def test_imap_warns_on_unmatched_and_continues(self):
+        buf = io.StringIO()
+        with redirect_stderr(buf):
+            new = self.tree.relabel(
+                imap={"missing": "X", "a-1": "alpha"},
+                inplace=False,
+            )
+        self.assertEqual(new[0].name, "alpha")
+        self.assertEqual(new[1].name, "b-2")
+        self.assertIn(
+            "WARNING: imap selector 'missing' did not match any tip names.",
+            buf.getvalue(),
+        )
+
+    def test_imap_raises_on_ambiguous_selector(self):
+        tre = toytree.tree("((aa:1,ab:1):1,c:1);")
+        with self.assertRaisesRegex(Exception, "matched multiple tips"):
+            tre.relabel(imap={"~^a": "ambig"}, inplace=False)
+
+    def test_imap_raises_when_two_selectors_hit_same_tip(self):
+        tre = toytree.tree("((aa:1,ab:1):1,c:1);")
+        with self.assertRaisesRegex(Exception, "both matched tip 'aa'"):
+            tre.relabel(imap={"aa": "alpha", "~^aa$": "beta"}, inplace=False)
+
+    def test_imap_applies_after_other_transforms(self):
+        new = self.tree.relabel(
+            delim="-",
+            delim_idxs=0,
+            fn=str.upper,
+            imap={"a-1": "alpha"},
+            inplace=False,
+        )
+        self.assertEqual(new[0].name, "alpha")
+        self.assertEqual(new[1].name, "B")
+        self.assertEqual(new[2].name, "C")
