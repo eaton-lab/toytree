@@ -70,6 +70,79 @@ class TestDrawCLI(PytestCompat):
         args = self.parser.parse_args(["-i", "((a,b),c);", "-f", "PNG"])
         self.assertEqual(args.format, "png")
 
+    def test_parser_accepts_node_labels_style(self):
+        """Accept node-label style entries through short and long options."""
+        for option in ("-L", "--node-labels-style"):
+            with self.subTest(option=option):
+                args = self.parser.parse_args(
+                    [
+                        "-i",
+                        "((a,b),c);",
+                        option,
+                        "font-size=12px",
+                        "fill=red",
+                    ]
+                )
+                self.assertEqual(
+                    args.node_labels_style,
+                    ["font-size=12px", "fill=red"],
+                )
+
+    def test_draw_applies_node_labels_style(self):
+        """Apply CLI node-label styles to the rendered node-label group."""
+        output = self.tmpdir / "styled-node-labels"
+        args = self.parser.parse_args(
+            [
+                "-i",
+                "((a,b),c);",
+                "-o",
+                str(output),
+                "-f",
+                "svg",
+                "-nl",
+                "idx",
+                "-L",
+                "font-size=12px",
+                "fill=red",
+            ]
+        )
+        self.assertEqual(run_draw(args), 0)
+
+        svg = output.with_suffix(".svg").read_text(encoding="utf-8")
+        start = svg.index('<g class="toytree-NodeLabels"')
+        end = svg.index('<g class="toytree-TipLabels"', start)
+        node_labels_svg = svg[start:end]
+        self.assertIn("font-size:12px", node_labels_svg)
+        self.assertIn("fill:rgb(100.0%,0.0%,0.0%)", node_labels_svg)
+
+    def test_draw_rejects_malformed_node_labels_style(self):
+        """Report malformed node-label style entries without a traceback."""
+        cmd = [
+            sys.executable,
+            "-m",
+            "toytree.cli.main",
+            "draw",
+            "-i",
+            "((a,b),c);",
+            "-o",
+            str(self.tmpdir / "tree"),
+            "-L",
+            "font-size",
+        ]
+        proc = subprocess.run(cmd, capture_output=True, text=True)
+        self.assertEqual(proc.returncode, 1)
+        self.assertIn(
+            "Error: --node-labels-style expects key=value entries",
+            proc.stderr,
+        )
+        self.assertNotIn("Traceback", proc.stderr)
+
+    def test_draw_help_includes_node_labels_style(self):
+        """Document the node-label style option and a visible-label example."""
+        help_text = self.parser.format_help()
+        self.assertIn("-L, --node-labels-style", help_text)
+        self.assertIn("-nl idx -L font-size=12px fill=red", help_text)
+
     def test_draw_accepts_binary_input_path_ascii_mode(self):
         """Render deprecated text mode from a binary input path."""
         tree = toytree.tree("((a:1,b:1):1,c:1);")

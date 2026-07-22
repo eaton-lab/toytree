@@ -100,10 +100,23 @@ class TestRelabel(PytestCompat):
 
     def test_imap_file_ignores_extra_columns(self):
         imap = self.tmpdir / "imap.txt"
-        imap.write_text("a-1 alpha extra\nc-3 charlie ignored\n", encoding="utf-8")
+        imap.write_text("a-1\talpha\textra\nc-3\tcharlie\tignored\n", encoding="utf-8")
         new = self.tree.relabel(imap=imap, inplace=False)
         self.assertEqual(new[0].name, "alpha")
         self.assertEqual(new[2].name, "charlie")
+
+    def test_imap_file_preserves_spaces_in_new_names(self):
+        imap = self.tmpdir / "imap_spaces.txt"
+        imap.write_text("a-1\talpha one\nc-3\tcharlie three\n", encoding="utf-8")
+        new = self.tree.relabel(imap=imap, inplace=False)
+        self.assertEqual(new[0].name, "alpha one")
+        self.assertEqual(new[2].name, "charlie three")
+
+    def test_imap_file_row_without_tab_raises_clear_error(self):
+        imap = self.tmpdir / "imap_bad.txt"
+        imap.write_text("a-1 alpha\n", encoding="utf-8")
+        with self.assertRaisesRegex(Exception, "two tab-delimited columns"):
+            self.tree.relabel(imap=imap, inplace=False)
 
     def test_imap_warns_on_unmatched_and_continues(self):
         buf = io.StringIO()

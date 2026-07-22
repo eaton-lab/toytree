@@ -39,7 +39,7 @@ def _normalize_delim_idxs(delim_idxs):
 
 
 def _load_imap_file(path: str | Path) -> dict[str, str]:
-    """Load whitespace-delimited tip-name mappings from file."""
+    """Load tab-delimited tip-name mappings from file."""
     path = Path(path).expanduser()
     mapping: dict[str, str] = {}
     try:
@@ -48,10 +48,10 @@ def _load_imap_file(path: str | Path) -> dict[str, str]:
                 stripped = line.strip()
                 if (not stripped) or stripped.startswith("#"):
                     continue
-                parts = stripped.split()
+                parts = line.rstrip("\r\n").split("\t")
                 if len(parts) < 2:
                     raise ToytreeError(
-                        "imap file must have at least two whitespace-delimited "
+                        "imap file must have at least two tab-delimited "
                         f"columns on line {lnum}."
                     )
                 mapping[parts[0]] = parts[1]
@@ -155,7 +155,7 @@ def relabel(
         delimiter processing.
     imap: Mapping[str, Any] | str | Path | None
         Optional tip-name remapping entered as a selector->replacement
-        mapping or as a whitespace-delimited file path. Selectors target
+        mapping or as a tab-delimited file path. Selectors target
         current tip names only, and strings prefixed with ``~`` are
         treated as regex queries that must still match exactly one tip.
     delim: str | None

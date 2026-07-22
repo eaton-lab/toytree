@@ -89,6 +89,7 @@ def run_draw(args):
 
     # parse dict-style cli inputs
     node_style = _parse_style_kv(args.node_style, "--node-style")
+    node_labels_style = _parse_style_kv(args.node_labels_style, "--node-labels-style")
     edge_style = _parse_style_kv(args.edge_style, "--edge-style")
     tip_labels_style = _parse_style_kv(args.tip_labels_style, "--tip-labels-style")
 
@@ -108,6 +109,7 @@ def run_draw(args):
         node_sizes=_scalar_or_list(args.node_sizes),
         node_colors=_scalar_or_list(args.node_colors),
         node_labels=args.node_labels,
+        node_labels_style=node_labels_style,
         edge_widths=_scalar_or_list(args.edge_widths),
         edge_colors=_scalar_or_list(args.edge_colors),
         edge_type=args.edge_type,

@@ -12,6 +12,7 @@ from typing import TYPE_CHECKING, Any
 from toytree.utils import ToytreeError
 
 if TYPE_CHECKING:
+    from toytree.core.multitree import MultiTree
     from toytree.core.tree import ToyTree
 
 
@@ -95,6 +96,33 @@ def deserialize_tree_binary(data: bytes) -> "ToyTree":
     return ToyTree(node)
 
 
+def _select_tree_index(
+    tree: "ToyTree | MultiTree",
+    tree_index: int | None,
+) -> "ToyTree":
+    """Return one tree, optionally selecting from a parsed ``MultiTree``."""
+    from toytree.core.multitree import MultiTree
+    from toytree.io.src.parse import _warn_multiple_trees
+
+    if isinstance(tree, MultiTree):
+        if tree_index is None:
+            _warn_multiple_trees(tree.ntrees)
+            return tree[0]
+        if tree_index < 0 or tree_index >= tree.ntrees:
+            raise ToytreeError(
+                f"--index {tree_index} is out of range for input containing "
+                f"{tree.ntrees} trees."
+            )
+        return tree[tree_index]
+
+    if tree_index in (None, 0):
+        return tree
+
+    raise ToytreeError(
+        f"--index {tree_index} is invalid for input containing a single tree."
+    )
+
+
 def _parse_tree_from_bytes(
     data: bytes,
     internal_labels: str | None = None,
@@ -103,9 +131,9 @@ def _parse_tree_from_bytes(
     feature_assignment: str = "=",
     feature_unpack: str = "|",
     prefer_text: bool = False,
-) -> "ToyTree":
+) -> "ToyTree | MultiTree":
     """Parse bytes as binary transport payload or text tree data."""
-    from toytree.io.src.treeio import tree as parse_tree
+    from toytree.io.src.parse import parse_tree_object
 
     if prefer_text:
         try:
@@ -114,7 +142,7 @@ def _parse_tree_from_bytes(
             text = None
         if text is not None:
             try:
-                return parse_tree(
+                return parse_tree_object(
                     text,
                     internal_labels=internal_labels,
                     feature_prefix=feature_prefix,
@@ -135,7 +163,7 @@ def _parse_tree_from_bytes(
             "could not parse tree input as binary transport payload or UTF-8 text."
         ) from exc
     try:
-        return parse_tree(
+        return parse_tree_object(
             text,
             internal_labels=internal_labels,
             feature_prefix=feature_prefix,
@@ -157,9 +185,10 @@ def read_tree_auto(
     feature_delim: str = ",",
     feature_assignment: str = "=",
     feature_unpack: str = "|",
+    tree_index: int | None = None,
 ) -> "ToyTree":
     """Read tree from CLI input, auto-detecting binary or text for stdin/path."""
-    from toytree.io.src.treeio import tree as parse_tree
+    from toytree.io.src.parse import parse_tree_object
 
     stripped = input_arg.strip()
 
@@ -167,7 +196,7 @@ def read_tree_auto(
         data = sys.stdin.buffer.read()
         if not data:
             raise ToytreeError("no data received on stdin.")
-        return _parse_tree_from_bytes(
+        parsed = _parse_tree_from_bytes(
             data,
             internal_labels=internal_labels,
             feature_prefix=feature_prefix,
@@ -176,9 +205,10 @@ def read_tree_auto(
             feature_unpack=feature_unpack,
             prefer_text=_bytes_look_like_text_tree(data),
         )
+        return _select_tree_index(parsed, tree_index)
 
     if _looks_like_inline_tree_text(stripped):
-        return parse_tree(
+        parsed = parse_tree_object(
             input_arg,
             internal_labels=internal_labels,
             feature_prefix=feature_prefix,
@@ -186,9 +216,10 @@ def read_tree_auto(
             feature_assignment=feature_assignment,
             feature_unpack=feature_unpack,
         )
+        return _select_tree_index(parsed, tree_index)
 
     if stripped.startswith(("http://", "https://")):
-        return parse_tree(
+        parsed = parse_tree_object(
             input_arg,
             internal_labels=internal_labels,
             feature_prefix=feature_prefix,
@@ -196,11 +227,12 @@ def read_tree_auto(
             feature_assignment=feature_assignment,
             feature_unpack=feature_unpack,
         )
+        return _select_tree_index(parsed, tree_index)
 
     path = Path(input_arg)
     if path.exists():
         data = path.read_bytes()
-        return _parse_tree_from_bytes(
+        parsed = _parse_tree_from_bytes(
             data,
             internal_labels=internal_labels,
             feature_prefix=feature_prefix,
@@ -211,8 +243,9 @@ def read_tree_auto(
                 _path_has_text_tree_suffix(path) or _bytes_look_like_text_tree(data)
             ),
         )
+        return _select_tree_index(parsed, tree_index)
 
-    return parse_tree(
+    parsed = parse_tree_object(
         input_arg,
         internal_labels=internal_labels,
         feature_prefix=feature_prefix,
@@ -220,6 +253,7 @@ def read_tree_auto(
         feature_assignment=feature_assignment,
         feature_unpack=feature_unpack,
     )
+    return _select_tree_index(parsed, tree_index)
 
 
 def write_tree_output(

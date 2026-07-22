@@ -1,7 +1,9 @@
 #!/usr/bin/env python
 
+import io
 import pickle
 import tempfile
+from contextlib import redirect_stderr
 from pathlib import Path
 from unittest.mock import Mock, patch
 
@@ -67,6 +69,30 @@ class TestTreeTransport(PytestCompat):
         self.assertIsInstance(tre, ToyTree)
         self.assertEqual(tre.ntips, self.tree.ntips)
 
+    def test_read_tree_auto_multitree_text_path_warns_and_uses_first_by_default(self):
+        path = self.tmpdir / "trees.nwk"
+        path.write_text("((a,b),c);\n((a,c),b);\n", encoding="utf-8")
+        err = io.StringIO()
+        with redirect_stderr(err):
+            tre = read_tree_auto(str(path))
+        self.assertEqual(tre.write(dist_formatter=None), "((a,b),c);")
+        self.assertIn("Loading only the first tree", err.getvalue())
+
+    def test_read_tree_auto_multitree_text_path_selects_by_index(self):
+        path = self.tmpdir / "trees_idx.nwk"
+        path.write_text("((a,b),c);\n((a,c),b);\n", encoding="utf-8")
+        err = io.StringIO()
+        with redirect_stderr(err):
+            tre = read_tree_auto(str(path), tree_index=1)
+        self.assertEqual(tre.write(dist_formatter=None), "((a,c),b);")
+        self.assertEqual(err.getvalue(), "")
+
+    def test_read_tree_auto_multitree_text_path_rejects_bad_index(self):
+        path = self.tmpdir / "trees_oob.nwk"
+        path.write_text("((a,b),c);\n((a,c),b);\n", encoding="utf-8")
+        with self.assertRaisesRegex(ToytreeError, "--index 2 is out of range"):
+            read_tree_auto(str(path), tree_index=2)
+
     def test_read_tree_auto_binary_path(self):
         path = self.tmpdir / "tree.bin"
         path.write_bytes(serialize_tree_binary(self.tree))
@@ -74,6 +100,21 @@ class TestTreeTransport(PytestCompat):
         self.assertIsInstance(tre, ToyTree)
         self.assertEqual(tre.ntips, self.tree.ntips)
         self.assertEqual(tre.get_tip_labels(), self.tree.get_tip_labels())
+
+    def test_read_tree_auto_binary_path_accepts_index_zero(self):
+        path = self.tmpdir / "tree_idx0.bin"
+        path.write_bytes(serialize_tree_binary(self.tree))
+        tre = read_tree_auto(str(path), tree_index=0)
+        self.assertEqual(tre.get_tip_labels(), self.tree.get_tip_labels())
+
+    def test_read_tree_auto_binary_path_rejects_nonzero_index(self):
+        path = self.tmpdir / "tree_idx1.bin"
+        path.write_bytes(serialize_tree_binary(self.tree))
+        with self.assertRaisesRegex(
+            ToytreeError,
+            "--index 1 is invalid for input containing a single tree",
+        ):
+            read_tree_auto(str(path), tree_index=1)
 
     def test_read_tree_auto_legacy_pickled_toytree_raises(self):
         path = self.tmpdir / "legacy-tree.bin"
