@@ -89,7 +89,7 @@ class TestRelabelCLI(PytestCompat):
     def test_imap_file_renames_tips_and_ignores_extra_columns(self):
         imap = self.tmpdir / "imap.txt"
         imap.write_text(
-            "aa|x alpha extra\nab|y beta ignored\n",
+            "aa|x\talpha\textra\nab|y\tbeta\tignored\n",
             encoding="utf-8",
         )
         out_nwk, err = self._run_capture(
@@ -101,10 +101,25 @@ class TestRelabelCLI(PytestCompat):
         self.assertEqual(tree[1].name, "beta")
         self.assertEqual(tree[2].name, "c|z")
 
+    def test_imap_file_supports_new_names_with_spaces(self):
+        imap = self.tmpdir / "imap_spaces.txt"
+        imap.write_text(
+            "aa|x\talpha one\nab|y\tbeta two\n",
+            encoding="utf-8",
+        )
+        out = self.tmpdir / "imap_spaces.bin"
+        args = self.parser.parse_args(
+            ["-i", str(self.tree_path), "--imap", str(imap), "-b", "-o", str(out)]
+        )
+        run_relabel(args)
+        tree = read_tree_auto(str(out))
+        self.assertEqual(tree[0].name, "alpha one")
+        self.assertEqual(tree[1].name, "beta two")
+
     def test_imap_warns_on_unmatched_and_still_writes_tree(self):
         imap = self.tmpdir / "imap_warn.txt"
         imap.write_text(
-            "missing nope\nc|z charlie\n",
+            "missing\tnope\nc|z\tcharlie\n",
             encoding="utf-8",
         )
         out_nwk, err = self._run_capture(
@@ -119,7 +134,7 @@ class TestRelabelCLI(PytestCompat):
 
     def test_imap_overrides_prior_transforms(self):
         imap = self.tmpdir / "imap_override.txt"
-        imap.write_text("aa|x alpha\n", encoding="utf-8")
+        imap.write_text("aa|x\talpha\n", encoding="utf-8")
         out_nwk, _ = self._run_capture(
             [
                 "-i",

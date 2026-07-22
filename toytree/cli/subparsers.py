@@ -482,6 +482,9 @@ def get_parser_io(parser: ArgumentParser | None = None) -> ArgumentParser:
             # convert binary back to Newick text
             $ io -i TRE.bin > TRE.nwk
 
+            # select a specific tree from multitree input by 0-index
+            $ io -i TREES.nwk --index 1
+
             # write Nexus using flag or output suffix
             $ io -i TRE.bin --nexus -o TRE.nex
             $ io -i TRE.bin -o TRE.nexus
@@ -540,6 +543,13 @@ def get_parser_io(parser: ArgumentParser | None = None) -> ArgumentParser:
         type=str,
         metavar="str",
         help="parse internal newick labels as this feature (overrides auto-detect)",
+    )
+    io_group.add_argument(
+        "--index",
+        type=int,
+        default=None,
+        metavar="int",
+        help="select a 0-indexed tree from multitree input [default: first tree]",
     )
     io_group.add_argument(
         "-x",
@@ -682,6 +692,7 @@ def get_parser_draw(parser: ArgumentParser | None = None) -> ArgumentParser:
             $ draw -i TRE.nwk -v -ta
             $ draw -i TRE.nwk -v -ta false
             $ draw -i TRE.nwk -v -N fill=red -E stroke=pink -T font-size=10px fill=blue
+            $ draw -i TRE.nwk -v -nl idx -L font-size=12px fill=red
             $ root -i TRE.nwk -n R | draw -i - -v
             """
         ),
@@ -819,6 +830,14 @@ def get_parser_draw(parser: ArgumentParser | None = None) -> ArgumentParser:
         type=str,
         metavar="str",
         help="node labels feature or literal",
+    )
+    node_group.add_argument(
+        "-L",
+        "--node-labels-style",
+        type=str,
+        metavar="str",
+        nargs="+",
+        help="node-label style key=value args",
     )
     node_group.add_argument(
         "-N",
@@ -2212,7 +2231,7 @@ def get_parser_relabel(parser: ArgumentParser | None = None) -> ArgumentParser:
         "--imap",
         type=Path,
         metavar="path",
-        help="optional whitespace-delimited tip-to-name mapping table",
+        help="optional tab-delimited tip-to-name mapping table",
     )
     relabel_group.add_argument(
         "--delim", type=str, metavar="str", help="delimiter for splitting names"

@@ -51,13 +51,13 @@ def run_io(args) -> None:
     # without parsing/re-serializing the tree object.
     if args.binary_out:
         input_bytes: bytes | None = None
-        if input_arg == "-":
+        if input_arg == "-" and args.index is None:
             input_bytes = sys.stdin.buffer.read()
             if not input_bytes:
                 raise ToytreeError("no data received on stdin.")
         else:
             path = Path(input_arg)
-            if path.exists():
+            if path.exists() and args.index is None:
                 input_bytes = path.read_bytes()
         if input_bytes is not None and is_binary_tree_payload(input_bytes):
             if args.output:
@@ -74,6 +74,7 @@ def run_io(args) -> None:
         feature_delim=args.in_feature_delim,
         feature_assignment=args.in_feature_assignment,
         feature_unpack=args.in_feature_unpack,
+        tree_index=args.index,
     )
 
     # Binary mode is a direct transport of the in-memory tree object.

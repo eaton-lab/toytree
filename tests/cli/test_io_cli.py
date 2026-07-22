@@ -4,7 +4,7 @@
 
 import io
 import tempfile
-from contextlib import redirect_stdout
+from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
 
 from conftest import PytestCompat
@@ -35,6 +35,14 @@ class TestIOCLI(PytestCompat):
         with redirect_stdout(stream):
             run_io(args)
         return stream.getvalue().strip()
+
+    def _run_capture(self, argv):
+        args = self.parser.parse_args(argv)
+        out = io.StringIO()
+        err = io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            run_io(args)
+        return out.getvalue().strip(), err.getvalue()
 
     def test_default_newick_roundtrip_keeps_support_and_features(self):
         """Default text mode should keep support labels and metadata features."""
@@ -254,5 +262,70 @@ class TestIOCLI(PytestCompat):
         with self.assertRaisesRegex(
             ToytreeError,
             "--features-pack cannot match --features-delim or --features-assignment",
+        ):
+            run_io(args)
+
+    def test_multitree_input_warns_and_uses_first_tree_by_default(self):
+        """Multitree text input should warn and emit the first tree by default."""
+        mtree_path = self.tmpdir / "trees.nwk"
+        mtree_path.write_text("((a,b),c);\n((a,c),b);\n", encoding="utf-8")
+
+        out, err = self._run_capture(["-i", str(mtree_path)])
+
+        self.assertIn("Loading only the first tree", err)
+        self.assertEqual(toytree.tree(out).write(dist_formatter=None), "((a,b),c);")
+
+    def test_multitree_input_selects_requested_tree_without_warning(self):
+        """Explicit --index should select one multitree entry without warning."""
+        mtree_path = self.tmpdir / "trees_idx.nwk"
+        mtree_path.write_text("((a,b),c);\n((a,c),b);\n", encoding="utf-8")
+
+        out, err = self._run_capture(["-i", str(mtree_path), "--index", "1"])
+
+        self.assertEqual(err, "")
+        self.assertEqual(toytree.tree(out).write(dist_formatter=None), "((a,c),b);")
+
+    def test_multitree_input_index_zero_suppresses_default_warning(self):
+        """Explicit --index 0 should select the first tree without warning."""
+        mtree_path = self.tmpdir / "trees_zero.nwk"
+        mtree_path.write_text("((a,b),c);\n((a,c),b);\n", encoding="utf-8")
+
+        out, err = self._run_capture(["-i", str(mtree_path), "--index", "0"])
+
+        self.assertEqual(err, "")
+        self.assertEqual(toytree.tree(out).write(dist_formatter=None), "((a,b),c);")
+
+    def test_multitree_input_rejects_negative_index(self):
+        """Negative --index values should raise a clear range error."""
+        mtree_path = self.tmpdir / "trees_neg.nwk"
+        mtree_path.write_text("((a,b),c);\n((a,c),b);\n", encoding="utf-8")
+        args = self.parser.parse_args(["-i", str(mtree_path), "--index", "-1"])
+
+        with self.assertRaisesRegex(ToytreeError, "--index -1 is out of range"):
+            run_io(args)
+
+    def test_multitree_input_rejects_out_of_range_index(self):
+        """Out-of-range --index values should raise a clear range error."""
+        mtree_path = self.tmpdir / "trees_oob.nwk"
+        mtree_path.write_text("((a,b),c);\n((a,c),b);\n", encoding="utf-8")
+        args = self.parser.parse_args(["-i", str(mtree_path), "--index", "2"])
+
+        with self.assertRaisesRegex(ToytreeError, "--index 2 is out of range"):
+            run_io(args)
+
+    def test_single_tree_input_accepts_index_zero(self):
+        """Single-tree input should allow explicit --index 0."""
+        out, err = self._run_capture(["-i", str(self.tree_path), "--index", "0"])
+
+        self.assertEqual(err, "")
+        self.assertEqual(toytree.tree(out).ntips, 3)
+
+    def test_single_tree_input_rejects_nonzero_index(self):
+        """Single-tree input should reject nonzero indexes."""
+        args = self.parser.parse_args(["-i", str(self.tree_path), "--index", "1"])
+
+        with self.assertRaisesRegex(
+            ToytreeError,
+            "--index 1 is invalid for input containing a single tree",
         ):
             run_io(args)
