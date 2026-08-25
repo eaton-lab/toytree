@@ -1,16 +1,10 @@
 #!/usr/bin/env python
 
-"""Fit discrete Markov models to traits using maximum likelihood.
+"""Fit direct-Q discrete Markov models to traits using maximum likelihood.
 
-This module provides a compact, fully working implementation of
-Felsenstein's pruning algorithm for discrete-state traits under
-continuous-time Markov models. It aligns with the simulator's
-parameterization where off-diagonal rates follow:
-
-    q_ij = rate_scalar * r_ij * pi_j
-
-with r_ij representing relative rates and pi_j the stationary
-frequencies. Diagonal elements are set so each row sums to zero.
+The off-diagonal entries of Q are parameterized directly under ER, SYM, and
+ARD constraints. Stationary frequencies are derived from Q and are separate
+from the root-state prior used by Felsenstein's pruning algorithm.
 """
 
 from __future__ import annotations
@@ -51,8 +45,12 @@ class PCMDiscreteCTMCFitResult(PCMModelResult):
         Fitted model name, such as ``"ER"``, ``"SYM"``, or ``"ARD"``.
     relative_rates : numpy.ndarray
         Estimated relative-rate matrix.
-    state_frequencies : numpy.ndarray
-        Estimated or fixed equilibrium state frequencies.
+    state_frequencies : numpy.ndarray or None
+        Unique stationary frequencies derived from Q, if they exist.
+    root_prior : numpy.ndarray
+        Root-state prior used to compute the likelihood.
+    state_labels : tuple
+        State labels in Q-matrix order.
     qmatrix : numpy.ndarray
         Instantaneous transition-rate matrix.
     log_likelihood : float
@@ -61,19 +59,18 @@ class PCMDiscreteCTMCFitResult(PCMModelResult):
         Number of estimated model parameters.
     fixed_rates : numpy.ndarray or None, default=None
         Fixed relative-rate matrix used for custom models, if provided.
-    fixed_state_frequencies : numpy.ndarray or None, default=None
-        Fixed equilibrium frequencies, if provided.
     """
 
     nstates: int
     model: str
     relative_rates: np.ndarray
-    state_frequencies: np.ndarray
+    state_frequencies: Optional[np.ndarray]
+    root_prior: np.ndarray
+    state_labels: tuple
     qmatrix: np.ndarray
     log_likelihood: float
     nparams: int
     fixed_rates: Optional[np.ndarray] = None
-    fixed_state_frequencies: Optional[np.ndarray] = None
 
     def __repr__(self) -> str:
         """Return a concise model-fit summary."""
@@ -94,10 +91,10 @@ class PCMDiscreteCTMCFitResult(PCMModelResult):
             f"  model={self.model}, nstates={self.nstates}, nparams={self.nparams}\n"
             f"  log_likelihood={self.log_likelihood:.6g}\n"
             f"  state_frequencies={_fmt_arr(self.state_frequencies)}\n"
+            f"  root_prior={_fmt_arr(self.root_prior)}\n"
             f"  relative_rates={_fmt_arr(self.relative_rates)}\n"
             f"  qmatrix={_fmt_arr(self.qmatrix)}\n"
             f"  fixed_rates={_fmt_arr(self.fixed_rates)}\n"
-            f"  fixed_state_frequencies={_fmt_arr(self.fixed_state_frequencies)}\n"
             ")"
         )
 
@@ -105,7 +102,7 @@ class PCMDiscreteCTMCFitResult(PCMModelResult):
 class DiscreteMarkovModelFit:
     """Fit a discrete Markov model (ER, SYM, ARD) using ML.
 
-    The model uses the same reversible parameterization as the simulator
+    The model uses the same direct-Q parameterization as the simulator
     (see :class:`MarkovModel`) and computes likelihoods using
     Felsenstein's pruning algorithm on a fixed tree.
 
@@ -123,11 +120,11 @@ class DiscreteMarkovModelFit:
     fixed_rates: Optional[np.ndarray]
         Optional (nstates x nstates) matrix of fixed off-diagonal rates.
         Use np.nan for entries to estimate. Diagonal is ignored.
-    fixed_state_frequencies: Optional[np.ndarray]
-        Optional fixed stationary frequencies (length nstates).
     root_prior: Optional[np.ndarray]
-        Optional prior for the root state. If None, uses stationary
-        frequencies for the model.
+        Optional prior for the root state. This is separate from the Q
+        parameterization and its derived stationary frequencies, but it enters
+        the likelihood and can therefore affect fitted rate estimates. If
+        None, uses the unique stationary distribution implied by Q.
     rate_scalar: float
         Scalar applied to Q construction only in fixed-rate workflows
         (i.e., when fixed_rates specifies at least one fixed
@@ -141,7 +138,6 @@ class DiscreteMarkovModelFit:
         nstates: int,
         model: str,
         fixed_rates: Optional[np.ndarray] = None,
-        fixed_state_frequencies: Optional[np.ndarray] = None,
         root_prior: Optional[np.ndarray] = None,
         rate_scalar: float = 1.0,
     ) -> None:
@@ -162,14 +158,10 @@ class DiscreteMarkovModelFit:
 
         self.fixed_rates = self._coerce_fixed_rates(fixed_rates)
         self._validate_rate_scalar_usage()
-        self.fixed_state_frequencies = self._coerce_fixed_frequencies(
-            fixed_state_frequencies
-        )
         self.root_prior = self._coerce_root_prior(root_prior)
         self.tip_states = self._encode_tip_states()
         self.state_names = self._build_state_names()
         self._rate_param_info = self._build_rate_parameterization()
-        self._freq_param_info = self._build_frequency_parameterization()
 
     def _coerce_data(self, data: Union[str, pd.Series]) -> pd.Series:
         """Ensure data are a single-trait Series in node index order."""
@@ -217,6 +209,11 @@ class DiscreteMarkovModelFit:
         if fixed_rates.shape != (self.nstates, self.nstates):
             raise ToytreeError("fixed_rates must be shape (nstates, nstates)")
         np.fill_diagonal(fixed_rates, 0.0)
+        entered = fixed_rates[~np.isnan(fixed_rates)]
+        if np.any(~np.isfinite(entered)) or np.any(entered < 0.0):
+            raise ToytreeError(
+                "fixed_rates must contain non-negative numeric values or np.nan"
+            )
         if self.model in {"ER", "SYM"}:
             # Symmetric models require each mirrored pair to be specified
             # together (both fixed or both NaN), and fixed values must match.
@@ -250,19 +247,6 @@ class DiscreteMarkovModelFit:
                 "or use rate_scalar=1.0."
             )
 
-    def _coerce_fixed_frequencies(
-        self, fixed_state_frequencies: Optional[np.ndarray]
-    ) -> Optional[np.ndarray]:
-        """Validate optional fixed stationary frequencies."""
-        if fixed_state_frequencies is None:
-            return None
-        fixed_state_frequencies = np.array(fixed_state_frequencies, dtype=float)
-        if fixed_state_frequencies.shape != (self.nstates,):
-            raise ToytreeError("fixed_state_frequencies must have length nstates")
-        if not np.isclose(fixed_state_frequencies.sum(), 1.0):
-            raise ToytreeError("fixed_state_frequencies must sum to 1")
-        return fixed_state_frequencies
-
     def _coerce_root_prior(
         self, root_prior: Optional[np.ndarray]
     ) -> Optional[np.ndarray]:
@@ -272,6 +256,8 @@ class DiscreteMarkovModelFit:
         root_prior = np.array(root_prior, dtype=float)
         if root_prior.shape != (self.nstates,):
             raise ToytreeError("root_prior must have length nstates")
+        if np.any(~np.isfinite(root_prior)) or np.any(root_prior < 0.0):
+            raise ToytreeError("root_prior must contain finite non-negative values")
         if not np.isclose(root_prior.sum(), 1.0):
             raise ToytreeError("root_prior must sum to 1")
         return root_prior
@@ -317,17 +303,6 @@ class DiscreteMarkovModelFit:
                     fixed_values[(i, j)] = self.fixed_rates[i, j]
         return {"mode": "ard", "free": free_positions, "fixed": fixed_values}
 
-    def _build_frequency_parameterization(self) -> Dict[str, object]:
-        """Determine how stationary frequencies are handled."""
-        if self.model == "ER":
-            return {
-                "mode": "fixed",
-                "values": np.repeat(1.0 / self.nstates, self.nstates),
-            }
-        if self.fixed_state_frequencies is not None:
-            return {"mode": "fixed", "values": self.fixed_state_frequencies}
-        return {"mode": "free"}
-
     def _params_to_rates(self, params: np.ndarray) -> np.ndarray:
         """Construct relative rates from the parameter vector."""
         k = self.nstates
@@ -363,58 +338,29 @@ class DiscreteMarkovModelFit:
         np.fill_diagonal(rates, 0.0)
         return rates
 
-    def _params_to_frequencies(self, params: np.ndarray, offset: int) -> np.ndarray:
-        """Construct stationary frequencies from the parameter vector."""
-        info = self._freq_param_info
-        if info["mode"] == "fixed":
-            return info["values"]
-        raw = np.zeros(self.nstates)
-        raw[: self.nstates - 1] = params[offset : offset + self.nstates - 1]
-        raw[self.nstates - 1] = 0.0
-        weights = np.exp(raw)
-        return weights / weights.sum()
-
     def _parameter_count(self) -> int:
         """Return number of free parameters in the model."""
         rate_info = self._rate_param_info
-        freq_info = self._freq_param_info
 
         if rate_info["mode"] == "er-fixed":
-            rate_params = 0
-        elif rate_info["mode"] == "er-free":
-            rate_params = 1
-        else:
-            rate_params = len(rate_info["free"])
-
-        freq_params = 0
-        if freq_info["mode"] == "free":
-            freq_params = self.nstates - 1
-        return rate_params + freq_params
-
-    def _split_params(self, params: np.ndarray) -> Tuple[np.ndarray, int]:
-        """Return parameters for rates and the offset for frequencies."""
-        rate_info = self._rate_param_info
+            return 0
         if rate_info["mode"] == "er-free":
-            return params[:1], 1
-        if rate_info["mode"] == "er-fixed":
-            return np.empty(0), 0
-        return params[: len(rate_info["free"])], len(rate_info["free"])
+            return 1
+        return len(rate_info["free"])
 
     def _build_qmatrix(
         self, params: np.ndarray
-    ) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
-        """Construct Q matrix plus relative rates and frequencies."""
-        rate_params, offset = self._split_params(params)
-        rates = self._params_to_rates(rate_params)
-        freqs = self._params_to_frequencies(params, offset)
+    ) -> Tuple[np.ndarray, np.ndarray, Optional[np.ndarray], np.ndarray]:
+        """Construct Q, rates, stationary frequencies, and root prior."""
+        rates = self._params_to_rates(params)
         model = MarkovModel(
             nstates=self.nstates,
             mtype=self.model,
             relative_rates=rates,
-            state_frequencies=freqs,
+            root_prior=self.root_prior,
             rate_scalar=self.rate_scalar,
         )
-        return model.qmatrix, rates, freqs
+        return model.qmatrix, rates, model.state_frequencies, model.root_prior
 
     def _compute_conditional_likelihoods(
         self, qmatrix: np.ndarray
@@ -440,25 +386,23 @@ class DiscreteMarkovModelFit:
             likelihoods[node] = node_lik
         return likelihoods
 
-    def _pruning_likelihood(self, qmatrix: np.ndarray, freqs: np.ndarray) -> float:
+    def _pruning_likelihood(self, qmatrix: np.ndarray, root_prior: np.ndarray) -> float:
         """Compute likelihood with pruning algorithm."""
         likelihoods = self._compute_conditional_likelihoods(qmatrix)
 
         root = self.tree.treenode
-        prior = self.root_prior if self.root_prior is not None else freqs
         root_lik = likelihoods[root]
-        return float((root_lik * prior).sum())
+        return float((root_lik * root_prior).sum())
 
     def _compute_node_posteriors(
-        self, qmatrix: np.ndarray, freqs: np.ndarray
+        self, qmatrix: np.ndarray, root_prior: np.ndarray
     ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         """Return posterior state probabilities and inferred states per node."""
         likelihoods = self._compute_conditional_likelihoods(qmatrix)
         nstates = self.nstates
 
-        prior = self.root_prior if self.root_prior is not None else freqs
         up: Dict[object, np.ndarray] = {}
-        up[self.tree.treenode] = prior.copy()
+        up[self.tree.treenode] = root_prior.copy()
 
         for node in self.tree.treenode.traverse("preorder"):
             if node.is_leaf():
@@ -493,7 +437,7 @@ class DiscreteMarkovModelFit:
                     f"posterior mass at node {node_idx}. This usually means "
                     "the observed states are incompatible with the fitted "
                     "CTMC constraints, such as internal-node observations, "
-                    "fixed_rates, fixed_state_frequencies, or root_prior."
+                    "fixed_rates, or root_prior."
                 )
             node_post /= total
             posterior[node_idx] = node_post
@@ -512,8 +456,8 @@ class DiscreteMarkovModelFit:
 
     def _neg_log_likelihood(self, params: np.ndarray) -> float:
         """Negative log-likelihood for optimizer."""
-        qmatrix, _, freqs = self._build_qmatrix(params)
-        lik = np.clip(self._pruning_likelihood(qmatrix, freqs), 1e-300, None)
+        qmatrix, _, _, root_prior = self._build_qmatrix(params)
+        lik = np.clip(self._pruning_likelihood(qmatrix, root_prior), 1e-300, None)
         return -float(np.log(lik))
 
     def fit(self, compute_posteriors: bool = False) -> PCMDiscreteCTMCFitResult:
@@ -529,33 +473,35 @@ class DiscreteMarkovModelFit:
         nparams = self._parameter_count()
         if nparams == 0:
             params = np.empty(0)
-            qmatrix, rates, freqs = self._build_qmatrix(params)
+            qmatrix, rates, freqs, root_prior = self._build_qmatrix(params)
             log_likelihood = -self._neg_log_likelihood(params)
             return PCMDiscreteCTMCFitResult(
                 nstates=self.nstates,
                 model=self.model,
                 relative_rates=rates,
                 state_frequencies=freqs,
+                root_prior=root_prior,
+                state_labels=tuple(self.state_names),
                 qmatrix=qmatrix,
                 log_likelihood=log_likelihood,
                 fixed_rates=self.fixed_rates,
-                fixed_state_frequencies=self.fixed_state_frequencies,
                 nparams=0,
             )
 
         start = np.zeros(nparams)
         result = minimize(self._neg_log_likelihood, start, method="L-BFGS-B")
-        qmatrix, rates, freqs = self._build_qmatrix(result.x)
+        qmatrix, rates, freqs, root_prior = self._build_qmatrix(result.x)
 
         return PCMDiscreteCTMCFitResult(
             nstates=self.nstates,
             model=self.model,
             relative_rates=rates,
             state_frequencies=freqs,
+            root_prior=root_prior,
+            state_labels=tuple(self.state_names),
             qmatrix=qmatrix,
             log_likelihood=-result.fun,
             fixed_rates=self.fixed_rates,
-            fixed_state_frequencies=self.fixed_state_frequencies,
             nparams=nparams,
         )
 
@@ -567,7 +513,6 @@ def fit_discrete_ctmc(
     nstates: int,
     model: str,
     fixed_rates: Optional[np.ndarray] = None,
-    fixed_state_frequencies: Optional[np.ndarray] = None,
     root_prior: Optional[np.ndarray] = None,
 ) -> PCMDiscreteCTMCFitResult:
     """Fit a discrete Markov model for one trait.
@@ -584,7 +529,6 @@ def fit_discrete_ctmc(
         nstates=nstates,
         model=model,
         fixed_rates=fixed_rates,
-        fixed_state_frequencies=fixed_state_frequencies,
         root_prior=root_prior,
     )
     return fitter.fit(compute_posteriors=False)
@@ -597,7 +541,6 @@ def infer_ancestral_states_discrete_ctmc(
     nstates: int,
     model: str,
     fixed_rates: Optional[np.ndarray] = None,
-    fixed_state_frequencies: Optional[np.ndarray] = None,
     root_prior: Optional[np.ndarray] = None,
     inplace: bool = False,
 ) -> Dict[str, object]:
@@ -634,11 +577,12 @@ def infer_ancestral_states_discrete_ctmc(
         values for fixed entries and ``np.nan`` for free entries. Diagonal
         entries are ignored and set to zero. For ``ER`` and ``SYM`` models,
         mirrored off-diagonal entries must be specified symmetrically.
-    fixed_state_frequencies : np.ndarray | None
-        Optional stationary state frequencies vector of length ``nstates``.
     root_prior : np.ndarray | None
         Optional root-state prior probability vector of length ``nstates``.
-        If None, stationary frequencies are used.
+        This is not a separate parameter of Q and does not directly set its
+        stationary frequencies. It does enter the likelihood and can therefore
+        affect fitted rate estimates. If None, Q's unique stationary
+        distribution is used.
     inplace : bool
         If True, write inferred states and posterior tuples to the input tree
         as node features. If False, the input tree is not modified.
@@ -730,12 +674,11 @@ def infer_ancestral_states_discrete_ctmc(
         nstates=nstates,
         model=model,
         fixed_rates=fixed_rates,
-        fixed_state_frequencies=fixed_state_frequencies,
         root_prior=root_prior,
     )
     result = fitter.fit(compute_posteriors=False)
     node_probs, node_states = fitter._compute_node_posteriors(
-        result.qmatrix, result.state_frequencies
+        result.qmatrix, result.root_prior
     )
     probs_by_node = node_probs.to_numpy()
     if inplace:

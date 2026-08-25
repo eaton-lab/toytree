@@ -36,6 +36,50 @@ __all__ = [
 ]
 
 
+def get_stationary_frequencies(qmatrix: np.ndarray) -> Optional[np.ndarray]:
+    """Return the unique stationary distribution of Q, or None.
+
+    A reducible CTMC can have more than one stationary distribution. In that
+    case there is no model-implied default distribution for the root.
+    """
+    qmatrix = np.asarray(qmatrix, dtype=float)
+    basis = scipy.linalg.null_space(qmatrix.T)
+    if basis.shape[1] != 1:
+        return None
+    freqs = basis[:, 0]
+    if freqs.sum() < 0.0:
+        freqs = -freqs
+    total = float(freqs.sum())
+    if (not np.isfinite(total)) or np.isclose(total, 0.0):
+        return None
+    freqs = freqs / total
+    tol = 1e-10
+    if np.any(freqs < -tol):
+        return None
+    freqs = np.clip(freqs, 0.0, None)
+    freqs /= freqs.sum()
+    if not np.allclose(freqs @ qmatrix, 0.0, atol=1e-8, rtol=1e-8):
+        return None
+    return freqs
+
+
+def _coerce_root_prior(
+    root_prior: Optional[np.ndarray],
+    nstates: int,
+) -> Optional[np.ndarray]:
+    """Return a validated root-state probability vector."""
+    if root_prior is None:
+        return None
+    prior = np.asarray(root_prior, dtype=float)
+    if prior.shape != (nstates,):
+        raise ToytreeError("root_prior must have length nstates")
+    if np.any(~np.isfinite(prior)) or np.any(prior < 0.0):
+        raise ToytreeError("root_prior must contain finite non-negative values")
+    if not np.isclose(prior.sum(), 1.0):
+        raise ToytreeError("root_prior must sum to 1")
+    return prior
+
+
 class ModelType(Enum):
     """Supported named Markov model types to be fit or simulated.
 
@@ -67,8 +111,8 @@ class MarkovModel:
     relative_rates: Optional[np.ndarray] = None
     """: Relative transition rates. If not entered then values are
     sampled within model constraints given the random seed."""
-    state_frequencies: Optional[np.ndarray] = None
-    """: Equilibrium frequencies of the nstates."""
+    root_prior: Optional[np.ndarray] = None
+    """: Root-state distribution. If None, use the stationary distribution."""
     rate_scalar: float = 1.0
     """: Rate scalar to multiple relative rates by."""
     seed: int | np.random.Generator | None = None
@@ -81,6 +125,8 @@ class MarkovModel:
     """: Instantaneous rate matrix (Q), retained for backward compatibility."""
     qmatrix: np.ndarray = field(init=False)
     """: Instantaneous rate matrix (Q)."""
+    state_frequencies: Optional[np.ndarray] = field(init=False)
+    """: Unique stationary distribution implied by Q, if one exists."""
 
     def __post_init__(self):
         self.rng = (
@@ -90,8 +136,17 @@ class MarkovModel:
         )
         self.mtype = ModelType(str(self.mtype).upper())
         self._check_rates()
-        self._check_freqs()
         self._set_transition_matrix()
+        self.state_frequencies = get_stationary_frequencies(self.qmatrix)
+        entered_prior = _coerce_root_prior(self.root_prior, self.nstates)
+        if entered_prior is None:
+            if self.state_frequencies is None:
+                raise ToytreeError(
+                    "root_prior is required when Q has no unique stationary "
+                    "distribution"
+                )
+            entered_prior = self.state_frequencies.copy()
+        self.root_prior = entered_prior
 
     def _check_rates(self):
         """Check the relative rates matrix given mtype and nstates.
@@ -126,7 +181,7 @@ class MarkovModel:
 
         # if user entered rates then check that they are valid.
         else:
-            rates = np.array(rates)
+            rates = np.array(rates, dtype=float)
             # check if singular for ER model
             if self.mtype.name == "ER":
                 if rates.size == 1:
@@ -147,64 +202,30 @@ class MarkovModel:
                 f"be shape ({self.nstates}, {self.nstates})."
             )
             np.fill_diagonal(rates, 0)
+        rates = np.asarray(rates, dtype=float)
+        offdiag = ~np.eye(self.nstates, dtype=bool)
+        if np.any(~np.isfinite(rates[offdiag])) or np.any(rates[offdiag] < 0.0):
+            raise ToytreeError(
+                "relative_rates must contain finite non-negative off-diagonal values"
+            )
         self.relative_rates = rates
 
-    def _check_freqs(self):
-        """Check stationary frequencies array given model and nstates.
-
-        Entered values are checked for correct size and that they
-        sum to one. If no values are entered then a uniform frequency
-        of the correct size is sampled for ER, or a random sample that
-        sums to one is sampled for SYM and ARD.
-
-        Examples
-        --------
-        >>> MarkovModel(3, "ER").state_frequencies
-        [1/3, 1/3, 1/3]
-        """
-        freqs = self.state_frequencies
-        if freqs is None:
-            if self.mtype.name in ("SYM", "ARD"):
-                freqs = self.rng.uniform(0.5, 2, self.nstates)
-                freqs /= freqs.sum()
-            else:
-                freqs = np.repeat(1.0 / self.nstates, self.nstates)
-        else:
-            freqs = np.array(freqs)
-            if self.mtype.name in ("SYM", "ARD"):
-                assert (
-                    freqs.size == self.nstates
-                ), f"states_frequencies should be len={self.nstates}."
-            else:
-                fixed = np.repeat(1.0 / self.nstates, self.nstates)
-                assert np.allclose(freqs, fixed), (
-                    f"ER model with nstates={self.nstates} has fixed state "
-                    f"frequences: {fixed}. See SYM or ARD models."
-                )
-                freqs = fixed
-        assert np.allclose(
-            sum(freqs), 1.0
-        ), f"state_frequencies must sum to 1. You entered: {freqs}"
-        self.state_frequencies = freqs
-
     def _set_transition_matrix(self):
-        """Set the instantaneous rate matrix (Q) using relative rates.
+        """Set Q directly from the off-diagonal relative rates.
 
-        The instantaneous rate matrix has off-diagonal entries defined as:
-        q_ij = rate_scalar * r_ij * pi_j
-        where r_ij are relative rates and pi_j are equilibrium frequencies.
-        Diagonal entries are then set to the negative row sums so that each
-        row of Q sums to zero, as required for a continuous-time Markov model.
+        Off-diagonal entries are q_ij = rate_scalar * r_ij. Diagonal entries
+        are the negative row sums.
 
         Examples
         --------
         >>> MarkovModel(3, "ER").transition_matrix
-        [[-2/3, 1/3, 1/3]
-         [1/3, -2/3, 1/3]
-         [1/3, 1/3, -2/3]]
+        [[-2, 1, 1]
+         [1, -2, 1]
+         [1, 1, -2]]
         """
-        # off-diagonal rates follow a reversible form: q_ij = r_ij * pi_j
-        trans_mat = self.relative_rates * self.state_frequencies
+        if (not np.isfinite(self.rate_scalar)) or self.rate_scalar < 0.0:
+            raise ToytreeError("rate_scalar must be finite and non-negative")
+        trans_mat = np.asarray(self.relative_rates, dtype=float).copy()
         np.fill_diagonal(trans_mat, 0)
         trans_mat *= self.rate_scalar
 
@@ -221,7 +242,7 @@ class MarkovModel:
 
         This represents the probability that over the length of time
         a character starting in one state will transition to another:
-        >>> Q_ij = rate_scalar * r_ij * pi_j
+        >>> Q_ij = rate_scalar * r_ij
         >>> Q_ii = -sum(Q_ij)
         >>> P(t) = expm(Q * time)
 
@@ -280,8 +301,6 @@ class DiscreteMarkovSimulator:
     """: ToyTree with edge lengths in units of ..."""
     model: MarkovModel
     """: MarkovModel object with parameterized Q matrix."""
-    root_state: Optional[int] = None
-    """: Integer character state at the root."""
     seed: int | np.random.Generator | None = None
     """: ..."""
     rng: np.random.Generator = field(init=False)
@@ -303,11 +322,9 @@ class DiscreteMarkovSimulator:
         """Traverse tree from root to tips simulating trait."""
         arr = np.zeros(self.tree.nnodes, dtype=np.int64)
 
-        # sample a random root state
-        if self.root_state is None:
-            arr[-1] = self.rng.multinomial(1, self.model.state_frequencies).argmax()
-        else:
-            arr[-1] = self.root_state
+        # MarkovModel resolves a missing root prior to the stationary
+        # distribution during construction.
+        arr[-1] = self.rng.multinomial(1, self.model.root_prior).argmax()
 
         # traverse down tree simulating traits
         for node in self.tree[::-1][1:]:
@@ -357,7 +374,7 @@ def get_markov_model(
     model: str = "ER",
     rate_scalar: float = 1.0,
     relative_rates: Optional[np.ndarray] = None,
-    state_frequencies: Optional[np.ndarray] = None,
+    root_prior: Optional[np.ndarray] = None,
     seed: int | np.random.Generator | None = None,
 ) -> MarkovModel:
     """Return a parameterized MarkovModel instance.
@@ -368,7 +385,7 @@ def get_markov_model(
     is used primarily for didactic purposes, and is also used
     internally in functions such as :meth:`~toytree.pcm.simulate_discrete_trait`.
 
-    It checks that the user input for rates and state_frequencies
+    It checks that the user input for rates and root_prior
     is valid given the model type and number of states, and can
     return random valid paramterizations for each model type.
 
@@ -390,9 +407,10 @@ def get_markov_model(
         The relative transition rates between states as an array
         of size (nstates x nstates). Values on the diagonal are
         ignored. Only relative differences matter. See rate.
-    state_frequencies: Optional[numpy.ndarray]
-        Equilibrium frequencies of states 0-n in order (must sum
-        to one.
+    root_prior: Optional[numpy.ndarray]
+        Root-state probabilities in state-index order. This does not alter Q
+        or its derived stationary frequencies. If None, the unique stationary
+        distribution of Q is used.
     seed: int | numpy.random.Generator | None
         Seed or random-number generator used for any sampled parameters.
 
@@ -414,7 +432,7 @@ def get_markov_model(
         nstates=nstates,
         rate_scalar=rate_scalar,
         relative_rates=relative_rates,
-        state_frequencies=state_frequencies,
+        root_prior=root_prior,
         seed=seed,
     )
     return model
@@ -426,8 +444,7 @@ def simulate_discrete_trait(
     nstates: int,
     model: str = "ER",
     relative_rates: Optional[np.ndarray] = None,
-    state_frequencies: Optional[np.ndarray] = None,
-    root_state: Optional[int] = None,
+    root_prior: Optional[np.ndarray] = None,
     rate_scalar: Optional[float] = 1.0,
     tips_only: bool = False,
     name: str = "X",
@@ -438,8 +455,8 @@ def simulate_discrete_trait(
     """Return trait values simulated under a discrete Markov model.
 
     The number of states and model type can be entered without any
-    parameters to the Markov model (e.g., relative rates and/or
-    state_frequencies) to generate a random set of parameters that
+    parameters to the Markov model (e.g., relative rates and/or a
+    root prior) to generate a random set of parameters that
     are valid under the specified model. Or, if parameters are entered
     then they are checked for validity with the specified model type,
     and then used to parameterize the Markov model simulation.
@@ -460,12 +477,11 @@ def simulate_discrete_trait(
         The relative transition rates between states as an array
         of size (nstates x nstates). Values on the diagonal are
         ignored. Only relative differences matter. See rate_scalar.
-    state_frequencies: Optional[numpy.ndarray]
-        Equilibrium frequencies of states 0-n in order (must sum
-        to one.
-    root_state: Optional[int]
-        The state at the root node (start of simulation). If None a
-        state is randomly uniformly sampled from nstates.
+    root_prior: Optional[numpy.ndarray]
+        Root-state probabilities in state-index order. The supplied prior
+        affects only root sampling, not Q or its stationary frequencies. If
+        None, the root is sampled from Q's unique stationary distribution.
+        A one-hot vector fixes the root to one state.
     rate_scalar: float
         A scalar by which the Q-matrix will be multipled to act
         as a unit scaler. Example, rate=1e-6 would mean that a 1
@@ -519,14 +535,13 @@ def simulate_discrete_trait(
         mtype=str(model).upper(),
         nstates=nstates,
         relative_rates=relative_rates,
-        state_frequencies=state_frequencies,
+        root_prior=root_prior,
         rate_scalar=rate_scalar,
         seed=seed,
     )
     simulator = DiscreteMarkovSimulator(
         tree=tree,
         model=model,
-        root_state=root_state,
         seed=seed,
     )
 
@@ -564,9 +579,8 @@ if __name__ == "__main__":
         nstates=3,
         model="SYM",
         rate_scalar=1.0,
-        state_frequencies=[0.1, 0.3, 0.6],
+        root_prior=[0.1, 0.3, 0.6],
         tips_only=True,
-        root_state=0,
         name="X",
         state_names=["A", "B", "C"],
     )
@@ -575,7 +589,7 @@ if __name__ == "__main__":
     model = get_markov_model(
         model="SYM",
         nstates=3,
-        state_frequencies=[0.1, 0.2, 0.7],
+        root_prior=[0.1, 0.2, 0.7],
         rate_scalar=0.1,
     )
     print(model)

@@ -55,7 +55,9 @@ def _fit_summary_payload(
         "AIC": float(aic),
         "AICc": float(aicc),
         "BIC": float(bic),
+        "state_labels": _jsonify(fit.state_labels),
         "state_frequencies": _jsonify(fit.state_frequencies),
+        "root_prior": _jsonify(fit.root_prior),
         "relative_rates": _jsonify(fit.relative_rates),
         "qmatrix": _jsonify(fit.qmatrix),
     }

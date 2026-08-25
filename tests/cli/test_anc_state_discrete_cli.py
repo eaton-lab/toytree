@@ -78,6 +78,26 @@ class TestAncStateDiscreteCLI(PytestCompat):
         posterior = obj.get_node_data("X_anc_posterior").dropna().iloc[0]
         self.assertFalse(isinstance(posterior, str))
 
+    def test_json_summary_reports_stationary_and_root_distributions(self):
+        """Expose derived frequencies separately from the resolved root prior."""
+        _, err = self._run_capture(
+            [
+                "-i",
+                str(self.tree_path),
+                "-f",
+                "X",
+                "-n",
+                "2",
+                "-m",
+                "ER",
+                "--json",
+            ]
+        )
+        payload = json.loads(err)
+        self.assertEqual(payload["state_labels"], ["A", "B"])
+        self.assertEqual(payload["state_frequencies"], [0.5, 0.5])
+        self.assertEqual(payload["root_prior"], [0.5, 0.5])
+
     def test_missing_trait_feature_raises(self):
         """Trait lookup should fail when requested feature is not on the tree."""
         args = self.parser.parse_args(["-i", str(self.tree_path), "-f", "Z", "-n", "2"])

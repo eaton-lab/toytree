@@ -97,8 +97,8 @@ class TestAnnotateAddEdgeStochasticMap(PytestCompat):
         nedges = int(segments.loc[segments["map_id"] == 0, "edge_id"].nunique())
         self.assertEqual(len(mark.xpaths), nrows + nedges)
 
-    def test_add_edge_stochastic_map_span_color_matches_depth_end_state(self):
-        """Use depth-end state color for the rectangular span segment."""
+    def test_add_edge_stochastic_map_span_color_matches_parent_state(self):
+        """Use the parentward state color for the rectangular span segment."""
         tree = toytree.rtree.unittree(ntips=2, seed=123)
         c, a, m = tree.draw(layout="d", edge_type="p")
         edges = tree.get_edges("idx")
@@ -129,8 +129,8 @@ class TestAnnotateAddEdgeStochasticMap(PytestCompat):
         )
 
         expected = np.asarray(get_color_mapped_values(["A", "B"], cmap="Set2"))
-        self.assertEqual(mark.colors[2].tobytes(), expected[1].tobytes())
-        self.assertEqual(mark.colors[2].tobytes(), mark.colors[1].tobytes())
+        self.assertEqual(mark.colors[2].tobytes(), expected[0].tobytes())
+        self.assertEqual(mark.colors[2].tobytes(), mark.colors[0].tobytes())
 
     def test_add_edge_stochastic_map_accepts_stroke_linejoin(self):
         """Accept stroke-linejoin and include it in rendered style."""

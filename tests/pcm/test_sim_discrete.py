@@ -16,13 +16,13 @@ class TestDiscreteMarkovModelSim:
     """Tests discrete CTMC simulation utilities."""
 
     def test_qmatrix_er_construction(self):
-        """Ensure ER model builds expected reversible Q matrix."""
+        """Ensure ER model places relative rates directly in Q."""
         model = MarkovModel(nstates=3, mtype="ER", rate_scalar=1.0)
         expected = np.array(
             [
-                [-2.0 / 3.0, 1.0 / 3.0, 1.0 / 3.0],
-                [1.0 / 3.0, -2.0 / 3.0, 1.0 / 3.0],
-                [1.0 / 3.0, 1.0 / 3.0, -2.0 / 3.0],
+                [-2.0, 1.0, 1.0],
+                [1.0, -2.0, 1.0],
+                [1.0, 1.0, -2.0],
             ]
         )
         np.testing.assert_allclose(model.qmatrix, expected, rtol=1e-8, atol=1e-12)
@@ -32,6 +32,33 @@ class TestDiscreteMarkovModelSim:
             rtol=1e-8,
             atol=1e-12,
         )
+        np.testing.assert_allclose(model.state_frequencies, np.repeat(1 / 3, 3))
+
+    def test_ard_stationary_frequencies_are_derived_from_q(self):
+        """Derive, rather than independently parameterize, ARD frequencies."""
+        rates = np.array([[0.0, 2.0], [1.0, 0.0]])
+        model = MarkovModel(nstates=2, mtype="ARD", relative_rates=rates)
+        np.testing.assert_allclose(model.qmatrix, [[-2.0, 2.0], [1.0, -1.0]])
+        np.testing.assert_allclose(model.state_frequencies, [1 / 3, 2 / 3])
+        np.testing.assert_allclose(
+            model.state_frequencies @ model.qmatrix,
+            [0, 0],
+            atol=1e-12,
+        )
+
+    def test_nonunique_stationary_distribution_requires_root_prior(self):
+        """Require an explicit root distribution when Q has no unique one."""
+        rates = np.zeros((2, 2), dtype=float)
+        with pytest.raises(ToytreeError, match="root_prior is required"):
+            MarkovModel(nstates=2, mtype="ARD", relative_rates=rates)
+        model = MarkovModel(
+            nstates=2,
+            mtype="ARD",
+            relative_rates=rates,
+            root_prior=[0.25, 0.75],
+        )
+        assert model.state_frequencies is None
+        np.testing.assert_allclose(model.root_prior, [0.25, 0.75])
 
     def test_seed_reproducibility_for_parameters(self):
         """Ensure seeded models produce identical random parameters."""
@@ -133,18 +160,26 @@ def test_default_series_name_is_x(tree6):
     assert data.name == "X"
 
 
-def test_root_state_is_respected_at_root_node(tree6):
-    """Provided root_state is enforced at the root in output."""
+def test_one_hot_root_prior_is_respected_at_root_node(tree6):
+    """A one-hot root prior fixes the simulated root state."""
     data = simulate_discrete_trait(
         tree=tree6,
         nstates=3,
         model="ER",
-        root_state=2,
+        root_prior=[0.0, 0.0, 1.0],
         state_names=["A", "B", "C"],
         seed=123,
     )
     root_idx = tree6.treenode.idx
     assert data.loc[root_idx] == "C"
+
+
+def test_removed_root_state_and_state_frequencies_raise(tree6):
+    """Removed root-distribution keywords are not compatibility aliases."""
+    with pytest.raises(TypeError):
+        simulate_discrete_trait(tree6, 2, root_state=1)
+    with pytest.raises(TypeError):
+        simulate_discrete_trait(tree6, 2, state_frequencies=[0.5, 0.5])
 
 
 def test_lowercase_model_labels_are_accepted(tree6):
