@@ -56,14 +56,16 @@ var modules={};
 
 
 ### Data annotations
-Annotations are commonly used to display data on trees, such as support values on edges of a tree and trait values on the leaf or internal nodes of a tree. As discussed in our documentation section about tree [Data](https://eaton-lab.org/toytree/data/), it is important to be careful when entering data manually to ensure the correct data is assigned to the correct Nodes in a tree. This is often best accomplished by assigning data to the Nodes of a tree directly, and then extracting the data in the correct plotting order using `get_node_data()`, or selecting the feature by name within a drawing function. Below is an example annotation function where we select the "height" and "dist" features of Nodes directly from the tree, and use toytree's "tuple syntax" to indicate that these values should be [color mapped](https://eaton-lab.org/toytree/color-mapping/) and [range mapped](https://eaton-lab.org/toytree/range-mapping/), respectively, to translate them to colors and appropriate ranges of values for plotting. 
+Annotations are commonly used to display data on trees, such as support values on edges of a tree and trait values on the leaf or internal nodes of a tree. As discussed in our documentation section about tree [Data](https://eaton-lab.org/toytree/data/), it is important to be careful when entering data manually to ensure the correct data is assigned to the correct Nodes in a tree. This is often best accomplished by assigning data to the Nodes of a tree directly, and then extracting the data in the correct plotting order using `get_node_data()`, or selecting the feature by name within a drawing function. Below is an example annotation function where we select the "height" and "dist" features of Nodes directly from the tree, and use toytree's "tuple syntax" to indicate that these values should be [color mapped](https://eaton-lab.org/toytree/drawing-color-mapping/) and [range mapped](https://eaton-lab.org/toytree/drawing-range-mapping/), respectively, to translate them to colors and appropriate ranges of values for plotting. 
 
 
 ```python
 # draw the tree
 canvas, axes, m0 = tree.draw(tip_labels=False)
-# add markers to all nodes 
-m2 = tree.annotate.add_node_markers(axes, mask=False, color=("height", "Spectral"), size=("dist", 5, 15))
+# add markers to all nodes
+m2 = tree.annotate.add_node_markers(
+    axes, mask=False, color=("height", "Spectral"), size=("dist", 5, 15)
+)
 ```
 
 
@@ -87,10 +89,14 @@ canvas, axes, m0 = tree.draw(tip_labels=False)
 m1 = tree.annotate.add_tip_text(axes, labels="name", color="red", offset_depth=10)
 
 # add height label to each node
-m2 = tree.annotate.add_node_labels(axes, labels="height", color="purple", font_size=10, xshift=18)
+m2 = tree.annotate.add_node_labels(
+    axes, labels="height", color="purple", font_size=10, xshift=18
+)
 
-# add idx label above each edge 
-m3 = tree.annotate.add_edge_labels(axes, labels="idx", color="blue", yshift=10, mask=False)
+# add idx label above each edge
+m3 = tree.annotate.add_edge_labels(
+    axes, labels="idx", color="blue", yshift=10, mask=False
+)
 ```
 
 
@@ -112,13 +118,17 @@ canvas, axes, m0 = tree.draw()
 m1 = tree.annotate.add_tip_markers(axes, marker="o", size=10, color="red")
 
 # add markers to the right of each leaf node colored by 'dist' feature
-m2 = tree.annotate.add_tip_markers(axes, marker="s", size=14, color=("dist",), xshift=45)
+m2 = tree.annotate.add_tip_markers(
+    axes, marker="s", size=14, color=("dist",), xshift=45
+)
 
 # add markers to one or more nodes
 m3 = tree.annotate.add_node_markers(axes, marker="^", size=14, color="blue")
 
 # add markers one or more edges
-m4 = tree.annotate.add_edge_markers(axes, marker="s", size=10, color="purple", mask=False)
+m4 = tree.annotate.add_edge_markers(
+    axes, marker="s", size=10, color="purple", mask=False
+)
 ```
 
 
@@ -136,8 +146,10 @@ You can layer annotations on top of each other. For example, it may often be use
 # draw tree with unrooted layout
 canvas, axes, m0 = tree.draw()
 
-# add rectangle markers to edges 
-m1 = tree.annotate.add_edge_markers(axes, marker="r2x1", size=15, color="lightgrey", mask=False)
+# add rectangle markers to edges
+m1 = tree.annotate.add_edge_markers(
+    axes, marker="r2x1", size=15, color="lightgrey", mask=False
+)
 # add labels on top of edge markers
 m2 = tree.annotate.add_edge_labels(axes, labels="idx", font_size=10, mask=False)
 ```
@@ -169,7 +181,9 @@ m3 = tree.annotate.add_node_markers(axes, color="yellow", mask=mask, xshift=-8)
 
 # mask=boolean array: add a single marker and shift position by n pixels
 mask = tree.get_node_mask(5)
-m4 = tree.annotate.add_node_markers(axes, color="orange", mask=mask, xshift=-35, size=15)
+m4 = tree.annotate.add_node_markers(
+    axes, color="orange", mask=mask, xshift=-35, size=15
+)
 ```
 
 
@@ -193,7 +207,7 @@ The `add_node_bars` method can be used to add barplots spanning from a min to ma
 
 ```python
 # draw tree with unrooted layout
-canvas, axes, m0 = tree.draw(layout='d')
+canvas, axes, m0 = tree.draw(layout="d")
 
 # create new features to serve as min, max of trait
 tree.set_node_data("min_b", [i.height * 0.5 for i in tree], inplace=True)
@@ -205,7 +219,7 @@ tree.annotate.add_node_bars(
     bar_min="min_b",
     bar_max="max_b",
     size=0.33,
-    color='purple', 
+    color="purple",
     opacity=0.4,
 );
 ```
@@ -227,6 +241,7 @@ canvas, axes, m0 = tree.draw()
 
 # generate random pie-like (proportion) data array
 import numpy as np
+
 ncategories = 3
 arr = np.random.random(size=(tree.nnodes, ncategories))
 arr = (arr.T / arr.sum(axis=1)).T
@@ -235,7 +250,7 @@ print(arr)
 # add pie charts to all internal Nodes
 tree.annotate.add_node_pie_charts(
     axes=axes,
-    data=arr, 
+    data=arr,
     size=18,
     istroke_width=0.75,
     istroke="black",

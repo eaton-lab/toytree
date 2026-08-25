@@ -46,6 +46,12 @@ Homepage = "https://eaton-lab.org/toytree"
 toytree = "toytree.cli.main:main"
 
 [project.optional-dependencies]
+docs = [
+    "jupyter",
+    "nbconvert",
+    "pymdown-extensions",
+    "zensical",
+]
 dev = [
     "ruff",
     "pytest",

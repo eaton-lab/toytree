@@ -50,6 +50,6 @@ $ pip install -e . --no-deps
 Building the documentation
 ---------------------------
 ```bash
-$ pip install zensical nbconvert jupyter
+$ python -m pip install -e '.[docs]'
 $ python -m zensical build -f mkdocs.yml
 ```

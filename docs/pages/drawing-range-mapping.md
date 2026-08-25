@@ -1,0 +1,330 @@
+<div class="nb-md-page-hook" aria-hidden="true"></div>
+
+# Range Mapping
+Range mapping projects numeric data into a plotting range that is more useful for visualization, such as marker sizes in pixels or edge widths. This is most useful when a tree feature spans values that are too small or too large to use directly in a drawing. See also [Color Mapping](/drawing-color-mapping/) for mapping values to colors.
+
+
+
+```python
+import numpy as np
+
+import toytree
+```
+
+<div class="admonition tip">
+  <p class="admonition-title">Take Home</p>
+  <p>
+      Range mapping lets you enter a tree feature using tuple syntax <b>(feature, min_value, max_value, nan_value)</b> so `toytree` can project the raw values into a usable plotting range. This is commonly used for `node_sizes` and `edge_widths`.
+  </p>
+</div>
+
+
+
+```python
+# example: map node sizes to node idx values in range (12-25) px
+tree = toytree.rtree.bdtree(10, seed=123)
+tree.draw(ts="s", node_sizes=("idx", 12, 25));
+```
+
+
+<div class="toyplot" id="tc002715641934b35960630ebbe875892" style="text-align:center"><svg class="toyplot-canvas-Canvas" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="300.0px" height="309.875px" viewBox="0 0 300.0 309.875" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;border-color:#292724;border-style:none;border-width:1.0;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" id="t8b8dde5b18af4cea847d5bf14add391d"><g class="toyplot-coordinates-Cartesian" id="td54d8bc5b3a343fcb12cf6973952bc8e"><clipPath id="tc45b61289d20473fa07f1ca5c9180a89"><rect x="35.0" y="35.0" width="230.0" height="239.875"></rect></clipPath><g clip-path="url(#tc45b61289d20473fa07f1ca5c9180a89)"><g class="toytree-mark-Toytree" id="tbf161654bc86453182cce09f0f901a6b"><g class="toytree-Edges" style="stroke:rgb(14.5%,14.5%,14.5%);stroke-opacity:1.0;stroke-linecap:round;stroke-width:2.0;fill:none"><path d="M 135.9 236.9 L 135.9 253.0 L 211.3 253.0" id="11,0" style=""></path><path d="M 173.6 220.8 L 173.6 231.5 L 211.3 231.5" id="10,1" style=""></path><path d="M 173.6 220.8 L 173.6 210.1 L 211.3 210.1" id="10,2" style=""></path><path d="M 173.6 177.9 L 173.6 188.6 L 211.3 188.6" id="12,3" style=""></path><path d="M 173.6 177.9 L 173.6 167.2 L 211.3 167.2" id="12,4" style=""></path><path d="M 173.6 135.0 L 173.6 145.7 L 211.3 145.7" id="13,5" style=""></path><path d="M 173.6 135.0 L 173.6 124.3 L 211.3 124.3" id="13,6" style=""></path><path d="M 135.9 86.7 L 135.9 102.8 L 211.3 102.8" id="16,7" style=""></path><path d="M 173.6 70.6 L 173.6 81.3 L 211.3 81.3" id="15,8" style=""></path><path d="M 173.6 70.6 L 173.6 59.9 L 211.3 59.9" id="15,9" style=""></path><path d="M 135.9 236.9 L 135.9 220.8 L 173.6 220.8" id="11,10" style=""></path><path d="M 60.6 179.2 L 60.6 236.9 L 135.9 236.9" id="18,11" style=""></path><path d="M 135.9 156.4 L 135.9 177.9 L 173.6 177.9" id="14,12" style=""></path><path d="M 135.9 156.4 L 135.9 135.0 L 173.6 135.0" id="14,13" style=""></path><path d="M 98.2 121.6 L 98.2 156.4 L 135.9 156.4" id="17,14" style=""></path><path d="M 135.9 86.7 L 135.9 70.6 L 173.6 70.6" id="16,15" style=""></path><path d="M 98.2 121.6 L 98.2 86.7 L 135.9 86.7" id="17,16" style=""></path><path d="M 60.6 179.2 L 60.6 121.6 L 98.2 121.6" id="18,17" style=""></path></g><g class="toytree-AdmixEdges" style="fill:rgb(0.0%,0.0%,0.0%);fill-opacity:0.0;stroke:rgb(90.6%,54.1%,76.5%);stroke-opacity:0.6;font-size:14px;stroke-linecap:round;stroke-width:5"></g><g class="toytree-Nodes" style="fill:rgb(82.7%,82.7%,82.7%);fill-opacity:1.0;stroke:rgb(14.5%,14.5%,14.5%);stroke-opacity:1.0;stroke-width:1.5"><g id="Node-0" transform="translate(211.305,252.975)"><circle r="6.0"></circle></g><g id="Node-1" transform="translate(211.305,231.521)"><circle r="6.361111111111111"></circle></g><g id="Node-2" transform="translate(211.305,210.067)"><circle r="6.722222222222222"></circle></g><g id="Node-3" transform="translate(211.305,188.613)"><circle r="7.083333333333333"></circle></g><g id="Node-4" transform="translate(211.305,167.159)"><circle r="7.444444444444445"></circle></g><g id="Node-5" transform="translate(211.305,145.706)"><circle r="7.805555555555555"></circle></g><g id="Node-6" transform="translate(211.305,124.252)"><circle r="8.166666666666666"></circle></g><g id="Node-7" transform="translate(211.305,102.798)"><circle r="8.527777777777779"></circle></g><g id="Node-8" transform="translate(211.305,81.3439)"><circle r="8.88888888888889"></circle></g><g id="Node-9" transform="translate(211.305,59.89)"><circle r="9.25"></circle></g><g id="Node-10" transform="translate(173.617,220.794)"><circle r="9.61111111111111"></circle></g><g id="Node-11" transform="translate(135.929,236.885)"><circle r="9.972222222222221"></circle></g><g id="Node-12" transform="translate(173.617,177.886)"><circle r="10.333333333333332"></circle></g><g id="Node-13" transform="translate(173.617,134.979)"><circle r="10.694444444444445"></circle></g><g id="Node-14" transform="translate(135.929,156.433)"><circle r="11.055555555555555"></circle></g><g id="Node-15" transform="translate(173.617,70.6169)"><circle r="11.416666666666668"></circle></g><g id="Node-16" transform="translate(135.929,86.7074)"><circle r="11.777777777777779"></circle></g><g id="Node-17" transform="translate(98.2407,121.57)"><circle r="12.13888888888889"></circle></g><g id="Node-18" transform="translate(60.5527,179.227)"><circle r="12.5"></circle></g></g><g class="toytree-NodeLabels" style="font-family:Helvetica;font-size:9px;font-weight:300;vertical-align:baseline;white-space:pre;stroke:none"><g class="toytree-NodeLabel" transform="translate(211.305,252.975)"><text x="-2.5020000000000002" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">0</text></g><g class="toytree-NodeLabel" transform="translate(211.305,231.521)"><text x="-2.5020000000000002" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">1</text></g><g class="toytree-NodeLabel" transform="translate(211.305,210.067)"><text x="-2.5020000000000002" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">2</text></g><g class="toytree-NodeLabel" transform="translate(211.305,188.613)"><text x="-2.5020000000000002" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">3</text></g><g class="toytree-NodeLabel" transform="translate(211.305,167.159)"><text x="-2.5020000000000002" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">4</text></g><g class="toytree-NodeLabel" transform="translate(211.305,145.706)"><text x="-2.5020000000000002" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">5</text></g><g class="toytree-NodeLabel" transform="translate(211.305,124.252)"><text x="-2.5020000000000002" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">6</text></g><g class="toytree-NodeLabel" transform="translate(211.305,102.798)"><text x="-2.5020000000000002" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">7</text></g><g class="toytree-NodeLabel" transform="translate(211.305,81.3439)"><text x="-2.5020000000000002" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">8</text></g><g class="toytree-NodeLabel" transform="translate(211.305,59.89)"><text x="-2.5020000000000002" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">9</text></g><g class="toytree-NodeLabel" transform="translate(173.617,220.794)"><text x="-5.0040000000000004" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">10</text></g><g class="toytree-NodeLabel" transform="translate(135.929,236.885)"><text x="-5.0040000000000004" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">11</text></g><g class="toytree-NodeLabel" transform="translate(173.617,177.886)"><text x="-5.0040000000000004" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">12</text></g><g class="toytree-NodeLabel" transform="translate(173.617,134.979)"><text x="-5.0040000000000004" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">13</text></g><g class="toytree-NodeLabel" transform="translate(135.929,156.433)"><text x="-5.0040000000000004" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">14</text></g><g class="toytree-NodeLabel" transform="translate(173.617,70.6169)"><text x="-5.0040000000000004" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">15</text></g><g class="toytree-NodeLabel" transform="translate(135.929,86.7074)"><text x="-5.0040000000000004" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">16</text></g><g class="toytree-NodeLabel" transform="translate(98.2407,121.57)"><text x="-5.0040000000000004" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">17</text></g><g class="toytree-NodeLabel" transform="translate(60.5527,179.227)"><text x="-5.0040000000000004" y="2.2995" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">18</text></g></g><g class="toytree-TipLabels" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;font-weight:300;vertical-align:baseline;white-space:pre;stroke:none"><g class="toytree-TipLabel" transform="translate(211.305,252.975)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r0</text></g><g class="toytree-TipLabel" transform="translate(211.305,231.521)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r1</text></g><g class="toytree-TipLabel" transform="translate(211.305,210.067)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r2</text></g><g class="toytree-TipLabel" transform="translate(211.305,188.613)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r3</text></g><g class="toytree-TipLabel" transform="translate(211.305,167.159)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r4</text></g><g class="toytree-TipLabel" transform="translate(211.305,145.706)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r5</text></g><g class="toytree-TipLabel" transform="translate(211.305,124.252)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r6</text></g><g class="toytree-TipLabel" transform="translate(211.305,102.798)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r7</text></g><g class="toytree-TipLabel" transform="translate(211.305,81.3439)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r8</text></g><g class="toytree-TipLabel" transform="translate(211.305,59.89)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r9</text></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+})();</script></div></div>
+
+
+## Example Data
+To demonstrate range mapping we will use a small birth-death tree with three numeric node features. Feature "X" contains small values between 0 and 1. Feature "Y" contains much larger values between 100 and 1000. Feature "Z" starts from the same values as "X" but includes missing values on some nodes.
+
+
+
+```python
+tree = toytree.rtree.bdtree(10, seed=123)
+rng = np.random.default_rng(seed=123)
+tree.set_node_data("X", rng.uniform(0, 1, tree.nnodes), inplace=True)
+tree.set_node_data("Y", rng.uniform(1e2, 1e3, tree.nnodes), inplace=True)
+tree.set_node_data("Z", {i: i.X for i in tree[12:]}, inplace=True);
+```
+
+
+```python
+tree.get_node_data(["X", "Y", "Z"])
+```
+
+
+
+
+<div>
+<style scoped>
+    .dataframe tbody tr th:only-of-type {
+        vertical-align: middle;
+    }
+
+    .dataframe tbody tr th {
+        vertical-align: top;
+    }
+
+    .dataframe thead th {
+        text-align: right;
+    }
+</style>
+<table border="1" class="dataframe">
+  <thead>
+    <tr style="text-align: right;">
+      <th></th>
+      <th>X</th>
+      <th>Y</th>
+      <th>Z</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <th>0</th>
+      <td>0.682352</td>
+      <td>566.348533</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>1</th>
+      <td>0.053821</td>
+      <td>308.400062</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>2</th>
+      <td>0.220360</td>
+      <td>249.313594</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>3</th>
+      <td>0.184372</td>
+      <td>548.010072</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>4</th>
+      <td>0.175906</td>
+      <td>624.452177</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>5</th>
+      <td>0.812095</td>
+      <td>265.904189</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>6</th>
+      <td>0.923345</td>
+      <td>113.405425</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>7</th>
+      <td>0.276574</td>
+      <td>524.019906</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>8</th>
+      <td>0.819755</td>
+      <td>755.418995</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>9</th>
+      <td>0.889893</td>
+      <td>926.740443</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>10</th>
+      <td>0.512970</td>
+      <td>662.980605</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>11</th>
+      <td>0.244965</td>
+      <td>925.410315</td>
+      <td>NaN</td>
+    </tr>
+    <tr>
+      <th>12</th>
+      <td>0.824242</td>
+      <td>878.221226</td>
+      <td>0.824242</td>
+    </tr>
+    <tr>
+      <th>13</th>
+      <td>0.213763</td>
+      <td>296.328586</td>
+      <td>0.213763</td>
+    </tr>
+    <tr>
+      <th>14</th>
+      <td>0.741467</td>
+      <td>879.514688</td>
+      <td>0.741467</td>
+    </tr>
+    <tr>
+      <th>15</th>
+      <td>0.629940</td>
+      <td>757.676743</td>
+      <td>0.629940</td>
+    </tr>
+    <tr>
+      <th>16</th>
+      <td>0.927407</td>
+      <td>350.078761</td>
+      <td>0.927407</td>
+    </tr>
+    <tr>
+      <th>17</th>
+      <td>0.231908</td>
+      <td>817.339198</td>
+      <td>0.231908</td>
+    </tr>
+    <tr>
+      <th>18</th>
+      <td>0.799125</td>
+      <td>878.699542</td>
+      <td>0.799125</td>
+    </tr>
+  </tbody>
+</table>
+</div>
+
+
+
+## Visualizing Raw Data
+Raw feature values often do not translate directly into readable marker sizes or line widths. Very small values can make markers nearly invisible, while very large values can overwhelm the drawing. Range mapping solves that by preserving the relative ordering of the data while projecting it into a more useful plotting interval.
+
+
+
+```python
+# raw "X" data values are too small to use for node_sizes
+tree.draw(node_sizes="X");
+```
+
+
+<div class="toyplot" id="tf9bc421e6c47476abad45df0633fb872" style="text-align:center"><svg class="toyplot-canvas-Canvas" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="300.0px" height="275.0px" viewBox="0 0 300.0 275.0" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;border-color:#292724;border-style:none;border-width:1.0;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" id="t3714ee1cdd4b4eecbc012b92144feb65"><g class="toyplot-coordinates-Cartesian" id="tfcdf133acf174b51b0dc57f8ae4c2597"><clipPath id="ta06ada231a244d5aa721c95317792c22"><rect x="35.0" y="35.0" width="230.0" height="205.0"></rect></clipPath><g clip-path="url(#ta06ada231a244d5aa721c95317792c22)"><g class="toytree-mark-Toytree" id="tdc4a9507f7b9454f982e0c886138108d"><g class="toytree-Edges" style="stroke:rgb(14.5%,14.5%,14.5%);stroke-opacity:1.0;stroke-linecap:round;stroke-width:2.0;fill:none"><path d="M 94.9 204.9 L 94.9 218.3 L 209.5 218.3" id="11,0" style=""></path><path d="M 205.1 191.4 L 205.1 200.4 L 209.5 200.4" id="10,1" style=""></path><path d="M 205.1 191.4 L 205.1 182.4 L 209.5 182.4" id="10,2" style=""></path><path d="M 196.7 155.5 L 196.7 164.4 L 209.5 164.4" id="12,3" style=""></path><path d="M 196.7 155.5 L 196.7 146.5 L 209.5 146.5" id="12,4" style=""></path><path d="M 206.4 119.5 L 206.4 128.5 L 209.5 128.5" id="13,5" style=""></path><path d="M 206.4 119.5 L 206.4 110.6 L 209.5 110.6" id="13,6" style=""></path><path d="M 161.1 79.1 L 161.1 92.6 L 209.5 92.6" id="16,7" style=""></path><path d="M 163.9 65.6 L 163.9 74.6 L 209.5 74.6" id="15,8" style=""></path><path d="M 163.9 65.6 L 163.9 56.7 L 209.5 56.7" id="15,9" style=""></path><path d="M 94.9 204.9 L 94.9 191.4 L 205.1 191.4" id="11,10" style=""></path><path d="M 51.5 156.6 L 51.5 204.9 L 94.9 204.9" id="18,11" style=""></path><path d="M 176.9 137.5 L 176.9 155.5 L 196.7 155.5" id="14,12" style=""></path><path d="M 176.9 137.5 L 176.9 119.5 L 206.4 119.5" id="14,13" style=""></path><path d="M 104.1 108.3 L 104.1 137.5 L 176.9 137.5" id="17,14" style=""></path><path d="M 161.1 79.1 L 161.1 65.6 L 163.9 65.6" id="16,15" style=""></path><path d="M 104.1 108.3 L 104.1 79.1 L 161.1 79.1" id="17,16" style=""></path><path d="M 51.5 156.6 L 51.5 108.3 L 104.1 108.3" id="18,17" style=""></path></g><g class="toytree-AdmixEdges" style="fill:rgb(0.0%,0.0%,0.0%);fill-opacity:0.0;stroke:rgb(90.6%,54.1%,76.5%);stroke-opacity:0.6;font-size:14px;stroke-linecap:round;stroke-width:5"></g><g class="toytree-Nodes" style="fill:rgb(40.0%,76.1%,64.7%);fill-opacity:1.0;stroke:rgb(14.9%,14.9%,14.9%);stroke-opacity:1.0;stroke-width:1.5"><g id="Node-10" transform="translate(205.069,191.398)"><circle r="0.25648522761476594"></circle></g><g id="Node-11" transform="translate(94.9365,204.873)"><circle r="0.12248230053439824"></circle></g><g id="Node-12" transform="translate(196.658,155.466)"><circle r="0.41212079804870566"></circle></g><g id="Node-13" transform="translate(206.399,119.534)"><circle r="0.10688148168754774"></circle></g><g id="Node-14" transform="translate(176.887,137.5)"><circle r="0.37073352611735483"></circle></g><g id="Node-15" transform="translate(163.945,65.6356)"><circle r="0.3149701022948404"></circle></g><g id="Node-16" transform="translate(161.132,79.1102)"><circle r="0.4637036292625835"></circle></g><g id="Node-17" transform="translate(104.097,108.305)"><circle r="0.11595409430320941"></circle></g><g id="Node-18" transform="translate(51.5002,156.589)"><circle r="0.39956256431004145"></circle></g></g><g class="toytree-TipLabels" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;font-weight:300;vertical-align:baseline;white-space:pre;stroke:none"><g class="toytree-TipLabel" transform="translate(209.456,218.347)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r0</text></g><g class="toytree-TipLabel" transform="translate(209.456,200.381)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r1</text></g><g class="toytree-TipLabel" transform="translate(209.456,182.415)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r2</text></g><g class="toytree-TipLabel" transform="translate(209.456,164.449)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r3</text></g><g class="toytree-TipLabel" transform="translate(209.456,146.483)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r4</text></g><g class="toytree-TipLabel" transform="translate(209.456,128.517)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r5</text></g><g class="toytree-TipLabel" transform="translate(209.456,110.551)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r6</text></g><g class="toytree-TipLabel" transform="translate(209.456,92.5848)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r7</text></g><g class="toytree-TipLabel" transform="translate(209.456,74.6187)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r8</text></g><g class="toytree-TipLabel" transform="translate(209.456,56.6526)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r9</text></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+})();</script></div></div>
+
+
+
+```python
+# raw "Y" data values are too large to use for node_sizes
+tree.draw(node_sizes="Y", height=350, width=350);
+```
+
+
+<div class="toyplot" id="td6ff83bcb0a442ceba4a4ddc2e0f019f" style="text-align:center"><svg class="toyplot-canvas-Canvas" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="350.0px" height="350.0px" viewBox="0 0 350.0 350.0" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;border-color:#292724;border-style:none;border-width:1.0;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" id="t59f86bcfb16a4010a29adc5ee63ba4c8"><g class="toyplot-coordinates-Cartesian" id="tb3c6e8d3dbef4f37a2c9b5018f981ab8"><clipPath id="t0f90174872da4bd98b15b67bf7665d11"><rect x="35.0" y="35.0" width="280.0" height="280.0"></rect></clipPath><g clip-path="url(#t0f90174872da4bd98b15b67bf7665d11)"><g class="toytree-mark-Toytree" id="tbed9b438269f45f0b3e897dc3d711584"><g class="toytree-Edges" style="stroke:rgb(14.5%,14.5%,14.5%);stroke-opacity:1.0;stroke-linecap:round;stroke-width:2.0;fill:none"><path d="M 160.2 199.8 L 160.2 204.3 L 199.4 204.3" id="11,0" style=""></path><path d="M 197.9 195.3 L 197.9 198.3 L 199.4 198.3" id="10,1" style=""></path><path d="M 197.9 195.3 L 197.9 192.3 L 199.4 192.3" id="10,2" style=""></path><path d="M 195.1 183.3 L 195.1 186.3 L 199.4 186.3" id="12,3" style=""></path><path d="M 195.1 183.3 L 195.1 180.3 L 199.4 180.3" id="12,4" style=""></path><path d="M 198.4 171.3 L 198.4 174.3 L 199.4 174.3" id="13,5" style=""></path><path d="M 198.4 171.3 L 198.4 168.3 L 199.4 168.3" id="13,6" style=""></path><path d="M 182.9 157.8 L 182.9 162.3 L 199.4 162.3" id="16,7" style=""></path><path d="M 183.9 153.3 L 183.9 156.3 L 199.4 156.3" id="15,8" style=""></path><path d="M 183.9 153.3 L 183.9 150.3 L 199.4 150.3" id="15,9" style=""></path><path d="M 160.2 199.8 L 160.2 195.3 L 197.9 195.3" id="11,10" style=""></path><path d="M 145.4 183.7 L 145.4 199.8 L 160.2 199.8" id="18,11" style=""></path><path d="M 188.3 177.3 L 188.3 183.3 L 195.1 183.3" id="14,12" style=""></path><path d="M 188.3 177.3 L 188.3 171.3 L 198.4 171.3" id="14,13" style=""></path><path d="M 163.4 167.6 L 163.4 177.3 L 188.3 177.3" id="17,14" style=""></path><path d="M 182.9 157.8 L 182.9 153.3 L 183.9 153.3" id="16,15" style=""></path><path d="M 163.4 167.6 L 163.4 157.8 L 182.9 157.8" id="17,16" style=""></path><path d="M 145.4 183.7 L 145.4 167.6 L 163.4 167.6" id="18,17" style=""></path></g><g class="toytree-AdmixEdges" style="fill:rgb(0.0%,0.0%,0.0%);fill-opacity:0.0;stroke:rgb(90.6%,54.1%,76.5%);stroke-opacity:0.6;font-size:14px;stroke-linecap:round;stroke-width:5"></g><g class="toytree-Nodes" style="fill:rgb(40.0%,76.1%,64.7%);fill-opacity:1.0;stroke:rgb(14.9%,14.9%,14.9%);stroke-opacity:1.0;stroke-width:1.5"><g id="Node-10" transform="translate(197.939,195.307)"><circle r="331.4903025809588"></circle></g><g id="Node-11" transform="translate(160.234,199.804)"><circle r="462.70515764642107"></circle></g><g id="Node-12" transform="translate(195.06,183.316)"><circle r="439.1106129921987"></circle></g><g id="Node-13" transform="translate(198.395,171.324)"><circle r="148.16429296249459"></circle></g><g id="Node-14" transform="translate(188.291,177.32)"><circle r="439.7573438322093"></circle></g><g id="Node-15" transform="translate(183.86,153.337)"><circle r="378.8383713670642"></circle></g><g id="Node-16" transform="translate(182.897,157.834)"><circle r="175.0393806345175"></circle></g><g id="Node-17" transform="translate(163.37,167.577)"><circle r="408.66959893255904"></circle></g><g id="Node-18" transform="translate(145.363,183.691)"><circle r="439.3497707796814"></circle></g></g><g class="toytree-TipLabels" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;font-weight:300;vertical-align:baseline;white-space:pre;stroke:none"><g class="toytree-TipLabel" transform="translate(199.441,204.301)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r0</text></g><g class="toytree-TipLabel" transform="translate(199.441,198.305)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r1</text></g><g class="toytree-TipLabel" transform="translate(199.441,192.309)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r2</text></g><g class="toytree-TipLabel" transform="translate(199.441,186.314)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r3</text></g><g class="toytree-TipLabel" transform="translate(199.441,180.318)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r4</text></g><g class="toytree-TipLabel" transform="translate(199.441,174.322)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r5</text></g><g class="toytree-TipLabel" transform="translate(199.441,168.327)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r6</text></g><g class="toytree-TipLabel" transform="translate(199.441,162.331)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r7</text></g><g class="toytree-TipLabel" transform="translate(199.441,156.335)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r8</text></g><g class="toytree-TipLabel" transform="translate(199.441,150.34)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r9</text></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+})();</script></div></div>
+
+
+## Using Range Mapping
+Range mapping projects a set of values into a new numeric interval while preserving their relative positions. For example, a feature that ranges from about 0.05 to 0.95 can be mapped into marker sizes from 5 to 15 pixels.
+
+### Tuple syntax
+**Range mapping uses tuple syntax `(feature, min_value, max_value, nan_value)`.** The feature name is required. For most drawing style arguments the remaining values default to `(5, 20, 0)`. For `edge_widths` the defaults are `(2, 5, 0)`. That is why the same feature can be reused across different visual channels without manual rescaling first.
+
+
+
+```python
+# project "X" values to pixel range using auto args for min,max,nan
+tree.draw(node_sizes=("X",));
+```
+
+
+<div class="toyplot" id="taca51636ed3846e09e0925d21e3c6531" style="text-align:center"><svg class="toyplot-canvas-Canvas" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="300.0px" height="304.98738750952964px" viewBox="0 0 300.0 304.98738750952964" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;border-color:#292724;border-style:none;border-width:1.0;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" id="t34fca2c2f64f446a84df1a22b2b51175"><g class="toyplot-coordinates-Cartesian" id="te78af613260b4b31971bec8121013298"><clipPath id="t33d2e0e6daca4eb9b75c2056bc50c82a"><rect x="35.0" y="35.0" width="230.0" height="234.98738750952964"></rect></clipPath><g clip-path="url(#t33d2e0e6daca4eb9b75c2056bc50c82a)"><g class="toytree-mark-Toytree" id="td3f25942263d45b5864c998a02b8fa9d"><g class="toytree-Edges" style="stroke:rgb(14.5%,14.5%,14.5%);stroke-opacity:1.0;stroke-linecap:round;stroke-width:2.0;fill:none"><path d="M 100.0 230.9 L 100.0 246.4 L 210.8 246.4" id="11,0" style=""></path><path d="M 206.5 215.4 L 206.5 225.7 L 210.8 225.7" id="10,1" style=""></path><path d="M 206.5 215.4 L 206.5 205.1 L 210.8 205.1" id="10,2" style=""></path><path d="M 198.4 174.0 L 198.4 184.4 L 210.8 184.4" id="12,3" style=""></path><path d="M 198.4 174.0 L 198.4 163.7 L 210.8 163.7" id="12,4" style=""></path><path d="M 207.8 132.6 L 207.8 143.0 L 210.8 143.0" id="13,5" style=""></path><path d="M 207.8 132.6 L 207.8 122.3 L 210.8 122.3" id="13,6" style=""></path><path d="M 164.0 86.0 L 164.0 101.6 L 210.8 101.6" id="16,7" style=""></path><path d="M 166.7 70.5 L 166.7 80.9 L 210.8 80.9" id="15,8" style=""></path><path d="M 166.7 70.5 L 166.7 60.2 L 210.8 60.2" id="15,9" style=""></path><path d="M 100.0 230.9 L 100.0 215.4 L 206.5 215.4" id="11,10" style=""></path><path d="M 57.9 175.3 L 57.9 230.9 L 100.0 230.9" id="18,11" style=""></path><path d="M 179.3 153.3 L 179.3 174.0 L 198.4 174.0" id="14,12" style=""></path><path d="M 179.3 153.3 L 179.3 132.6 L 207.8 132.6" id="14,13" style=""></path><path d="M 108.8 119.7 L 108.8 153.3 L 179.3 153.3" id="17,14" style=""></path><path d="M 164.0 86.0 L 164.0 70.5 L 166.7 70.5" id="16,15" style=""></path><path d="M 108.8 119.7 L 108.8 86.0 L 164.0 86.0" id="17,16" style=""></path><path d="M 57.9 175.3 L 57.9 119.7 L 108.8 119.7" id="18,17" style=""></path></g><g class="toytree-AdmixEdges" style="fill:rgb(0.0%,0.0%,0.0%);fill-opacity:0.0;stroke:rgb(90.6%,54.1%,76.5%);stroke-opacity:0.6;font-size:14px;stroke-linecap:round;stroke-width:5"></g><g class="toytree-Nodes" style="fill:rgb(40.0%,76.1%,64.7%);fill-opacity:1.0;stroke:rgb(14.9%,14.9%,14.9%);stroke-opacity:1.0;stroke-width:1.5"><g id="Node-10" transform="translate(206.528,215.4)"><circle r="6.441935686048529"></circle></g><g id="Node-11" transform="translate(99.9718,230.924)"><circle r="4.141025009109528"></circle></g><g id="Node-12" transform="translate(198.39,174.002)"><circle r="9.114291831733112"></circle></g><g id="Node-13" transform="translate(207.815,132.604)"><circle r="3.8731495870138533"></circle></g><g id="Node-14" transform="translate(179.261,153.303)"><circle r="8.403647534992414"></circle></g><g id="Node-15" transform="translate(166.739,70.5078)"><circle r="7.446156082742668"></circle></g><g id="Node-16" transform="translate(164.018,86.032)"><circle r="10.0"></circle></g><g id="Node-17" transform="translate(108.835,119.668)"><circle r="4.0289317903577215"></circle></g><g id="Node-18" transform="translate(57.946,175.296)"><circle r="8.898659421886883"></circle></g></g><g class="toytree-TipLabels" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;font-weight:300;vertical-align:baseline;white-space:pre;stroke:none"><g class="toytree-TipLabel" transform="translate(210.772,246.448)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r0</text></g><g class="toytree-TipLabel" transform="translate(210.772,225.749)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r1</text></g><g class="toytree-TipLabel" transform="translate(210.772,205.051)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r2</text></g><g class="toytree-TipLabel" transform="translate(210.772,184.352)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r3</text></g><g class="toytree-TipLabel" transform="translate(210.772,163.653)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r4</text></g><g class="toytree-TipLabel" transform="translate(210.772,142.954)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r5</text></g><g class="toytree-TipLabel" transform="translate(210.772,122.255)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r6</text></g><g class="toytree-TipLabel" transform="translate(210.772,101.556)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r7</text></g><g class="toytree-TipLabel" transform="translate(210.772,80.8572)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r8</text></g><g class="toytree-TipLabel" transform="translate(210.772,60.1584)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r9</text></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+})();</script></div></div>
+
+
+
+```python
+# project very small "X" values to pixel range 5-15
+tree.draw(node_sizes=("X", 5, 15));
+```
+
+
+<div class="toyplot" id="t4cf247d605894e3c991b12fb9e9337cc" style="text-align:center"><svg class="toyplot-canvas-Canvas" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="300.0px" height="279.59159167301976px" viewBox="0 0 300.0 279.59159167301976" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;border-color:#292724;border-style:none;border-width:1.0;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" id="t5f91c86673d64321bbeea30196783554"><g class="toyplot-coordinates-Cartesian" id="t148572c6fdfa4d69a47cbed658cc23a3"><clipPath id="t22322738cfc642d7bb57635ba84d1455"><rect x="35.0" y="35.0" width="230.0" height="209.59159167301976"></rect></clipPath><g clip-path="url(#t22322738cfc642d7bb57635ba84d1455)"><g class="toytree-mark-Toytree" id="t771a5b0a54b54027b60624bf94829a68"><g class="toytree-Edges" style="stroke:rgb(14.5%,14.5%,14.5%);stroke-opacity:1.0;stroke-linecap:round;stroke-width:2.0;fill:none"><path d="M 98.7 208.9 L 98.7 222.6 L 210.5 222.6" id="11,0" style=""></path><path d="M 206.2 195.2 L 206.2 204.3 L 210.5 204.3" id="10,1" style=""></path><path d="M 206.2 195.2 L 206.2 186.1 L 210.5 186.1" id="10,2" style=""></path><path d="M 198.0 158.6 L 198.0 167.8 L 210.5 167.8" id="12,3" style=""></path><path d="M 198.0 158.6 L 198.0 149.5 L 210.5 149.5" id="12,4" style=""></path><path d="M 207.5 122.1 L 207.5 131.2 L 210.5 131.2" id="13,5" style=""></path><path d="M 207.5 122.1 L 207.5 112.9 L 210.5 112.9" id="13,6" style=""></path><path d="M 163.3 80.9 L 163.3 94.6 L 210.5 94.6" id="16,7" style=""></path><path d="M 166.1 67.2 L 166.1 76.3 L 210.5 76.3" id="15,8" style=""></path><path d="M 166.1 67.2 L 166.1 58.1 L 210.5 58.1" id="15,9" style=""></path><path d="M 98.7 208.9 L 98.7 195.2 L 206.2 195.2" id="11,10" style=""></path><path d="M 56.4 159.8 L 56.4 208.9 L 98.7 208.9" id="18,11" style=""></path><path d="M 178.7 140.3 L 178.7 158.6 L 198.0 158.6" id="14,12" style=""></path><path d="M 178.7 140.3 L 178.7 122.1 L 207.5 122.1" id="14,13" style=""></path><path d="M 107.7 110.6 L 107.7 140.3 L 178.7 140.3" id="17,14" style=""></path><path d="M 163.3 80.9 L 163.3 67.2 L 166.1 67.2" id="16,15" style=""></path><path d="M 107.7 110.6 L 107.7 80.9 L 163.3 80.9" id="17,16" style=""></path><path d="M 56.4 159.8 L 56.4 110.6 L 107.7 110.6" id="18,17" style=""></path></g><g class="toytree-AdmixEdges" style="fill:rgb(0.0%,0.0%,0.0%);fill-opacity:0.0;stroke:rgb(90.6%,54.1%,76.5%);stroke-opacity:0.6;font-size:14px;stroke-linecap:round;stroke-width:5"></g><g class="toytree-Nodes" style="fill:rgb(40.0%,76.1%,64.7%);fill-opacity:1.0;stroke:rgb(14.9%,14.9%,14.9%);stroke-opacity:1.0;stroke-width:1.5"><g id="Node-10" transform="translate(206.17,195.2)"><circle r="5.127957124032353"></circle></g><g id="Node-11" transform="translate(98.7391,208.914)"><circle r="3.5940166727396856"></circle></g><g id="Node-12" transform="translate(197.966,158.627)"><circle r="6.909527887822074"></circle></g><g id="Node-13" transform="translate(207.468,122.054)"><circle r="3.4154330580092354"></circle></g><g id="Node-14" transform="translate(178.68,140.34)"><circle r="6.435765023328276"></circle></g><g id="Node-15" transform="translate(166.055,67.1941)"><circle r="5.797437388495112"></circle></g><g id="Node-16" transform="translate(163.312,80.909)"><circle r="7.5"></circle></g><g id="Node-17" transform="translate(107.675,110.625)"><circle r="3.5192878602384807"></circle></g><g id="Node-18" transform="translate(56.368,159.769)"><circle r="6.765772947924589"></circle></g></g><g class="toytree-TipLabels" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;font-weight:300;vertical-align:baseline;white-space:pre;stroke:none"><g class="toytree-TipLabel" transform="translate(210.45,222.629)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r0</text></g><g class="toytree-TipLabel" transform="translate(210.45,204.343)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r1</text></g><g class="toytree-TipLabel" transform="translate(210.45,186.056)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r2</text></g><g class="toytree-TipLabel" transform="translate(210.45,167.77)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r3</text></g><g class="toytree-TipLabel" transform="translate(210.45,149.483)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r4</text></g><g class="toytree-TipLabel" transform="translate(210.45,131.197)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r5</text></g><g class="toytree-TipLabel" transform="translate(210.45,112.91)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r6</text></g><g class="toytree-TipLabel" transform="translate(210.45,94.6239)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r7</text></g><g class="toytree-TipLabel" transform="translate(210.45,76.3374)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r8</text></g><g class="toytree-TipLabel" transform="translate(210.45,58.0509)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r9</text></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+})();</script></div></div>
+
+
+
+```python
+# project very large "Y" values to pixel range 5-15
+tree.draw(node_sizes=("Y", 5, 15));
+```
+
+
+<div class="toyplot" id="t6e5ec03a23ee4e6099d8c6cf6720582f" style="text-align:center"><svg class="toyplot-canvas-Canvas" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="300.0px" height="275.0px" viewBox="0 0 300.0 275.0" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;border-color:#292724;border-style:none;border-width:1.0;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" id="t1bca39cbcd3a470e8cf49b3a44ec8af2"><g class="toyplot-coordinates-Cartesian" id="t62b214737c1c4fdbba491bef1a7957a9"><clipPath id="t0d8efadd934b4ead9b9aaf9a1f8fd840"><rect x="35.0" y="35.0" width="230.0" height="205.0"></rect></clipPath><g clip-path="url(#t0d8efadd934b4ead9b9aaf9a1f8fd840)"><g class="toytree-mark-Toytree" id="td5556f957c4f4b5794d80a3017e7dd38"><g class="toytree-Edges" style="stroke:rgb(14.5%,14.5%,14.5%);stroke-opacity:1.0;stroke-linecap:round;stroke-width:2.0;fill:none"><path d="M 99.0 205.1 L 99.0 218.4 L 210.5 218.4" id="11,0" style=""></path><path d="M 206.2 191.7 L 206.2 200.6 L 210.5 200.6" id="10,1" style=""></path><path d="M 206.2 191.7 L 206.2 182.8 L 210.5 182.8" id="10,2" style=""></path><path d="M 198.1 156.1 L 198.1 165.0 L 210.5 165.0" id="12,3" style=""></path><path d="M 198.1 156.1 L 198.1 147.2 L 210.5 147.2" id="12,4" style=""></path><path d="M 207.5 120.5 L 207.5 129.4 L 210.5 129.4" id="13,5" style=""></path><path d="M 207.5 120.5 L 207.5 111.6 L 210.5 111.6" id="13,6" style=""></path><path d="M 163.5 80.5 L 163.5 93.8 L 210.5 93.8" id="16,7" style=""></path><path d="M 166.2 67.1 L 166.2 76.0 L 210.5 76.0" id="15,8" style=""></path><path d="M 166.2 67.1 L 166.2 58.2 L 210.5 58.2" id="15,9" style=""></path><path d="M 99.0 205.1 L 99.0 191.7 L 206.2 191.7" id="11,10" style=""></path><path d="M 56.7 157.2 L 56.7 205.1 L 99.0 205.1" id="18,11" style=""></path><path d="M 178.8 138.3 L 178.8 156.1 L 198.1 156.1" id="14,12" style=""></path><path d="M 178.8 138.3 L 178.8 120.5 L 207.5 120.5" id="14,13" style=""></path><path d="M 107.9 109.4 L 107.9 138.3 L 178.8 138.3" id="17,14" style=""></path><path d="M 163.5 80.5 L 163.5 67.1 L 166.2 67.1" id="16,15" style=""></path><path d="M 107.9 109.4 L 107.9 80.5 L 163.5 80.5" id="17,16" style=""></path><path d="M 56.7 157.2 L 56.7 109.4 L 107.9 109.4" id="18,17" style=""></path></g><g class="toytree-AdmixEdges" style="fill:rgb(0.0%,0.0%,0.0%);fill-opacity:0.0;stroke:rgb(90.6%,54.1%,76.5%);stroke-opacity:0.6;font-size:14px;stroke-linecap:round;stroke-width:5"></g><g class="toytree-Nodes" style="fill:rgb(40.0%,76.1%,64.7%);fill-opacity:1.0;stroke:rgb(14.9%,14.9%,14.9%);stroke-opacity:1.0;stroke-width:1.5"><g id="Node-10" transform="translate(206.244,191.715)"><circle r="5.87852894714209"></circle></g><g id="Node-11" transform="translate(98.9944,205.062)"><circle r="7.491823004821459"></circle></g><g id="Node-12" transform="translate(198.054,156.121)"><circle r="7.201726745024372"></circle></g><g id="Node-13" transform="translate(207.54,120.527)"><circle r="3.6245252995521358"></circle></g><g id="Node-14" transform="translate(178.801,138.324)"><circle r="7.209678337247574"></circle></g><g id="Node-15" transform="translate(166.197,67.1359)"><circle r="6.460676128397667"></circle></g><g id="Node-16" transform="translate(163.458,80.4836)"><circle r="3.9549560211290173"></circle></g><g id="Node-17" transform="translate(107.915,109.404)"><circle r="6.827452757009448"></circle></g><g id="Node-18" transform="translate(56.6949,157.233)"><circle r="7.204667203535728"></circle></g></g><g class="toytree-TipLabels" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;font-weight:300;vertical-align:baseline;white-space:pre;stroke:none"><g class="toytree-TipLabel" transform="translate(210.517,218.41)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r0</text></g><g class="toytree-TipLabel" transform="translate(210.517,200.613)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r1</text></g><g class="toytree-TipLabel" transform="translate(210.517,182.816)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r2</text></g><g class="toytree-TipLabel" transform="translate(210.517,165.019)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r3</text></g><g class="toytree-TipLabel" transform="translate(210.517,147.222)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r4</text></g><g class="toytree-TipLabel" transform="translate(210.517,129.425)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r5</text></g><g class="toytree-TipLabel" transform="translate(210.517,111.628)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r6</text></g><g class="toytree-TipLabel" transform="translate(210.517,93.8314)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r7</text></g><g class="toytree-TipLabel" transform="translate(210.517,76.0344)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r8</text></g><g class="toytree-TipLabel" transform="translate(210.517,58.2374)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r9</text></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+})();</script></div></div>
+
+
+
+```python
+# project very small "Z" values to pixel range 5-15, with NaN values set to 0
+tree.draw(node_sizes=("Z", 5, 15, 0));
+```
+
+
+<div class="toyplot" id="t012c86107f0145128c66c7955d9577a0" style="text-align:center"><svg class="toyplot-canvas-Canvas" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="300.0px" height="275.0px" viewBox="0 0 300.0 275.0" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;border-color:#292724;border-style:none;border-width:1.0;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" id="t3887fefd1ef043dc91917627149c9422"><g class="toyplot-coordinates-Cartesian" id="tf868fe00a4494a45a877418ab97c1ccd"><clipPath id="t1792d70732394f3db5109bb1ef430de1"><rect x="35.0" y="35.0" width="230.0" height="205.0"></rect></clipPath><g clip-path="url(#t1792d70732394f3db5109bb1ef430de1)"><g class="toytree-mark-Toytree" id="te1bf32206aea4e9bbdbfa8f1e75244a4"><g class="toytree-Edges" style="stroke:rgb(14.5%,14.5%,14.5%);stroke-opacity:1.0;stroke-linecap:round;stroke-width:2.0;fill:none"><path d="M 98.6 204.9 L 98.6 218.3 L 210.4 218.3" id="11,0" style=""></path><path d="M 206.1 191.4 L 206.1 200.4 L 210.4 200.4" id="10,1" style=""></path><path d="M 206.1 191.4 L 206.1 182.4 L 210.4 182.4" id="10,2" style=""></path><path d="M 197.9 155.5 L 197.9 164.4 L 210.4 164.4" id="12,3" style=""></path><path d="M 197.9 155.5 L 197.9 146.5 L 210.4 146.5" id="12,4" style=""></path><path d="M 207.4 119.5 L 207.4 128.5 L 210.4 128.5" id="13,5" style=""></path><path d="M 207.4 119.5 L 207.4 110.6 L 210.4 110.6" id="13,6" style=""></path><path d="M 163.3 79.1 L 163.3 92.6 L 210.4 92.6" id="16,7" style=""></path><path d="M 166.0 65.6 L 166.0 74.6 L 210.4 74.6" id="15,8" style=""></path><path d="M 166.0 65.6 L 166.0 56.7 L 210.4 56.7" id="15,9" style=""></path><path d="M 98.6 204.9 L 98.6 191.4 L 206.1 191.4" id="11,10" style=""></path><path d="M 56.2 156.6 L 56.2 204.9 L 98.6 204.9" id="18,11" style=""></path><path d="M 178.6 137.5 L 178.6 155.5 L 197.9 155.5" id="14,12" style=""></path><path d="M 178.6 137.5 L 178.6 119.5 L 207.4 119.5" id="14,13" style=""></path><path d="M 107.6 108.3 L 107.6 137.5 L 178.6 137.5" id="17,14" style=""></path><path d="M 163.3 79.1 L 163.3 65.6 L 166.0 65.6" id="16,15" style=""></path><path d="M 107.6 108.3 L 107.6 79.1 L 163.3 79.1" id="17,16" style=""></path><path d="M 56.2 156.6 L 56.2 108.3 L 107.6 108.3" id="18,17" style=""></path></g><g class="toytree-AdmixEdges" style="fill:rgb(0.0%,0.0%,0.0%);fill-opacity:0.0;stroke:rgb(90.6%,54.1%,76.5%);stroke-opacity:0.6;font-size:14px;stroke-linecap:round;stroke-width:5"></g><g class="toytree-Nodes" style="fill:rgb(40.0%,76.1%,64.7%);fill-opacity:1.0;stroke:rgb(14.9%,14.9%,14.9%);stroke-opacity:1.0;stroke-width:1.5"><g id="Node-10" transform="translate(206.143,191.398)"><circle r="0.0"></circle></g><g id="Node-11" transform="translate(98.6432,204.873)"><circle r="0.0"></circle></g><g id="Node-12" transform="translate(197.933,155.466)"><circle r="6.777191290332804"></circle></g><g id="Node-13" transform="translate(207.441,119.534)"><circle r="2.5"></circle></g><g id="Node-14" transform="translate(178.635,137.5)"><circle r="6.1972487025111285"></circle></g><g id="Node-15" transform="translate(166.002,65.6356)"><circle r="5.415859091447427"></circle></g><g id="Node-16" transform="translate(163.257,79.1102)"><circle r="7.5"></circle></g><g id="Node-17" transform="translate(107.585,108.305)"><circle r="2.6271307383428857"></circle></g><g id="Node-18" transform="translate(56.2452,156.589)"><circle r="6.601217996298087"></circle></g></g><g class="toytree-TipLabels" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;font-weight:300;vertical-align:baseline;white-space:pre;stroke:none"><g class="toytree-TipLabel" transform="translate(210.425,218.347)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r0</text></g><g class="toytree-TipLabel" transform="translate(210.425,200.381)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r1</text></g><g class="toytree-TipLabel" transform="translate(210.425,182.415)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r2</text></g><g class="toytree-TipLabel" transform="translate(210.425,164.449)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r3</text></g><g class="toytree-TipLabel" transform="translate(210.425,146.483)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r4</text></g><g class="toytree-TipLabel" transform="translate(210.425,128.517)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r5</text></g><g class="toytree-TipLabel" transform="translate(210.425,110.551)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r6</text></g><g class="toytree-TipLabel" transform="translate(210.425,92.5848)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r7</text></g><g class="toytree-TipLabel" transform="translate(210.425,74.6187)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r8</text></g><g class="toytree-TipLabel" transform="translate(210.425,56.6526)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r9</text></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+})();</script></div></div>
+
+
+### Missing Data Values
+Missing numeric values are represented as `np.nan`. During range mapping you can decide how those values should be plotted by setting `nan_value`. The default is `0`, which usually hides missing node sizes or edge widths, but you can choose any other fallback value if you want missing data to remain visible.
+
+
+
+```python
+tree.draw(node_sizes=("Z", 5, 15, 10));
+```
+
+
+<div class="toyplot" id="td892f7434c244a089f5ef12c289c1e36" style="text-align:center"><svg class="toyplot-canvas-Canvas" xmlns:toyplot="http://www.sandia.gov/toyplot" xmlns:xlink="http://www.w3.org/1999/xlink" xmlns="http://www.w3.org/2000/svg" width="300.0px" height="275.0px" viewBox="0 0 300.0 275.0" preserveAspectRatio="xMidYMid meet" style="background-color:transparent;border-color:#292724;border-style:none;border-width:1.0;fill:rgb(16.1%,15.3%,14.1%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;opacity:1.0;stroke:rgb(16.1%,15.3%,14.1%);stroke-opacity:1.0;stroke-width:1.0" id="t09e1fab8e2d04a98bfd1d37406c4dfcf"><g class="toyplot-coordinates-Cartesian" id="tac560b47bf9f4bb684f142fd0554f08c"><clipPath id="tc2c5c48668b545adbba1e300ebce3974"><rect x="35.0" y="35.0" width="230.0" height="205.0"></rect></clipPath><g clip-path="url(#tc2c5c48668b545adbba1e300ebce3974)"><g class="toytree-mark-Toytree" id="t669eec546356469880ee785116563e4d"><g class="toytree-Edges" style="stroke:rgb(14.5%,14.5%,14.5%);stroke-opacity:1.0;stroke-linecap:round;stroke-width:2.0;fill:none"><path d="M 98.6 204.9 L 98.6 218.3 L 210.4 218.3" id="11,0" style=""></path><path d="M 206.1 191.4 L 206.1 200.4 L 210.4 200.4" id="10,1" style=""></path><path d="M 206.1 191.4 L 206.1 182.4 L 210.4 182.4" id="10,2" style=""></path><path d="M 197.9 155.5 L 197.9 164.4 L 210.4 164.4" id="12,3" style=""></path><path d="M 197.9 155.5 L 197.9 146.5 L 210.4 146.5" id="12,4" style=""></path><path d="M 207.4 119.5 L 207.4 128.5 L 210.4 128.5" id="13,5" style=""></path><path d="M 207.4 119.5 L 207.4 110.6 L 210.4 110.6" id="13,6" style=""></path><path d="M 163.3 79.1 L 163.3 92.6 L 210.4 92.6" id="16,7" style=""></path><path d="M 166.0 65.6 L 166.0 74.6 L 210.4 74.6" id="15,8" style=""></path><path d="M 166.0 65.6 L 166.0 56.7 L 210.4 56.7" id="15,9" style=""></path><path d="M 98.6 204.9 L 98.6 191.4 L 206.1 191.4" id="11,10" style=""></path><path d="M 56.2 156.6 L 56.2 204.9 L 98.6 204.9" id="18,11" style=""></path><path d="M 178.6 137.5 L 178.6 155.5 L 197.9 155.5" id="14,12" style=""></path><path d="M 178.6 137.5 L 178.6 119.5 L 207.4 119.5" id="14,13" style=""></path><path d="M 107.6 108.3 L 107.6 137.5 L 178.6 137.5" id="17,14" style=""></path><path d="M 163.3 79.1 L 163.3 65.6 L 166.0 65.6" id="16,15" style=""></path><path d="M 107.6 108.3 L 107.6 79.1 L 163.3 79.1" id="17,16" style=""></path><path d="M 56.2 156.6 L 56.2 108.3 L 107.6 108.3" id="18,17" style=""></path></g><g class="toytree-AdmixEdges" style="fill:rgb(0.0%,0.0%,0.0%);fill-opacity:0.0;stroke:rgb(90.6%,54.1%,76.5%);stroke-opacity:0.6;font-size:14px;stroke-linecap:round;stroke-width:5"></g><g class="toytree-Nodes" style="fill:rgb(40.0%,76.1%,64.7%);fill-opacity:1.0;stroke:rgb(14.9%,14.9%,14.9%);stroke-opacity:1.0;stroke-width:1.5"><g id="Node-10" transform="translate(206.143,191.398)"><circle r="5.0"></circle></g><g id="Node-11" transform="translate(98.6432,204.873)"><circle r="5.0"></circle></g><g id="Node-12" transform="translate(197.933,155.466)"><circle r="6.777191290332804"></circle></g><g id="Node-13" transform="translate(207.441,119.534)"><circle r="2.5"></circle></g><g id="Node-14" transform="translate(178.635,137.5)"><circle r="6.1972487025111285"></circle></g><g id="Node-15" transform="translate(166.002,65.6356)"><circle r="5.415859091447427"></circle></g><g id="Node-16" transform="translate(163.257,79.1102)"><circle r="7.5"></circle></g><g id="Node-17" transform="translate(107.585,108.305)"><circle r="2.6271307383428857"></circle></g><g id="Node-18" transform="translate(56.2452,156.589)"><circle r="6.601217996298087"></circle></g></g><g class="toytree-TipLabels" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0;font-family:Helvetica;font-size:12px;font-weight:300;vertical-align:baseline;white-space:pre;stroke:none"><g class="toytree-TipLabel" transform="translate(210.425,218.347)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r0</text></g><g class="toytree-TipLabel" transform="translate(210.425,200.381)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r1</text></g><g class="toytree-TipLabel" transform="translate(210.425,182.415)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r2</text></g><g class="toytree-TipLabel" transform="translate(210.425,164.449)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r3</text></g><g class="toytree-TipLabel" transform="translate(210.425,146.483)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r4</text></g><g class="toytree-TipLabel" transform="translate(210.425,128.517)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r5</text></g><g class="toytree-TipLabel" transform="translate(210.425,110.551)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r6</text></g><g class="toytree-TipLabel" transform="translate(210.425,92.5848)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r7</text></g><g class="toytree-TipLabel" transform="translate(210.425,74.6187)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r8</text></g><g class="toytree-TipLabel" transform="translate(210.425,56.6526)"><text x="15.0" y="3.066" style="fill:rgb(14.5%,14.5%,14.5%);fill-opacity:1.0">r9</text></g></g></g></g></g></svg><div class="toyplot-behavior"><script>(function()
+{
+var modules={};
+})();</script></div></div>
+
+
+### Discrete Data Values
+Range mapping only applies to numeric data. Discrete or categorical traits should usually be represented with color mapping or marker-shape choices instead of projected numeric sizes.
+
+
+## Get Range-Mapped Data
+The tuple syntax used in drawing functions calls the same range-mapping helper that is available as a public data utility. Use `toytree.data.get_range_mapped_feature()` when you want the mapped numeric values directly, for example to inspect them, reuse them across multiple drawings, or pass them into your own plotting code.
+
+
+
+```python
+toytree.data.get_range_mapped_feature(
+    tree, "X", min_value=2, max_value=15, nan_value=0
+)
+
+```
+
+
+
+
+    array([11.35328489,  2.        ,  4.47829579,  3.94275072,  3.81676794,
+           13.2840094 , 14.93954874,  5.31483464, 13.39800011, 14.44173875,
+            8.83268852,  4.84444335, 13.46477251,  4.38012595, 12.23298906,
+           10.57333721, 15.        ,  4.65014844, 13.09100966])
+
+

@@ -46,7 +46,7 @@ The Toyplot source code follows the PEP-8 Style Guide for Python Code.
 
 ## Documentation workflow
 The docs site is built with `zensical` using `mkdocs.yml` as the top-level
-config. Notebook sources live in `docs/source` and published pages plus static
+config. Notebook sources live in `docs/src` and published pages plus static
 site assets live in `docs/pages`.
 
 Build and serve locally:
@@ -57,10 +57,10 @@ python -m zensical serve -f mkdocs.yml
 ```
 
 ## Notebook to Markdown docs pages
-Visualization-heavy docs pages are authored as notebooks in `docs/source` and
+Visualization-heavy docs pages are authored as notebooks in `docs/src` and
 published as Markdown pages in `docs/pages`. The recommended workflow is:
 
-1. Edit the source notebook in `docs/source`.
+1. Edit the source notebook in `docs/src`.
 2. Execute and convert it with `docs/nb_to_md.py`.
 3. Commit the generated `.md` page and any generated `<page>_files/` assets.
 4. Point `mkdocs.yml` nav at the published `.md` page.
@@ -82,7 +82,7 @@ python docs/nb_to_md.py --no-execute quick_guide
 Important behavior:
 
 - `docs/nb_to_md.py` executes notebooks in a temporary working directory, so
-  failed runs do not partially rewrite the source notebooks in `docs/source`.
+  failed runs do not partially rewrite the source notebooks in `docs/src`.
 - `nbconvert --to markdown` preserves executed outputs, including inline
   HTML / SVG / JS figures such as Toyplot drawings.
 - Notebook-derived markdown pages get a hidden `.nb-md-page-hook` marker so

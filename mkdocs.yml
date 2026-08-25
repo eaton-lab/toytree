@@ -96,7 +96,7 @@ nav:
       - '[mod]':
           - rooting:
             - outgroup: mod-rooting-outgroup.md
-            - mad - minimal ancestor deviation: mod-rooting-mad.md
+            - branch-length rooting: mod-rooting-branch-length.md
             - dlc - duplication loss coalescence: mod-rooting-dlc.md
           - topology changes: mod-topology.md
           - edge/dist changes: mod-edges.md

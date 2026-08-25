@@ -3,16 +3,19 @@
 Install the local docs toolchain:
 
 ```bash
-pip install zensical nbconvert jupyter
+python -m pip install -e '.[docs]'
 ```
 
 Docs source layout:
 
-- `docs/source/`: notebook sources
+- `docs/src/`: notebook sources
 - `docs/pages/`: published Markdown pages and published static assets
 - `docs/pages/css/`: site styling
 - `docs/pages/javascripts/`: site JavaScript
 - `docs/pages/assets/`: static assets
+
+See [`DEVELOPMENT.md`](DEVELOPMENT.md) for the complete authoring, conversion,
+and publication workflow.
 
 Build and serve the docs locally:
 
