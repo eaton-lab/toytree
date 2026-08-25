@@ -45,8 +45,8 @@ class TestDiscreteMarkovModelFit(PytestCompat):
         self.assertTrue(np.isfinite(result.log_likelihood))
         self.assertEqual(result.nstates, 3)
 
-    def test_fit_with_fixed_rates_and_frequencies(self):
-        """Fit with fixed parameters should recover the expected Q matrix."""
+    def test_fit_with_fixed_rates(self):
+        """Fixed off-diagonal rates should be placed directly in Q."""
         tree = toytree.rtree.unittree(ntips=4, treeheight=1.0, seed=123)
         model = MarkovModel(nstates=2, mtype="ER", rate_scalar=1.0)
         data = toytree.pcm.simulate_discrete_trait(
@@ -54,7 +54,6 @@ class TestDiscreteMarkovModelFit(PytestCompat):
             nstates=2,
             model="ER",
             relative_rates=model.relative_rates,
-            state_frequencies=model.state_frequencies,
             rate_scalar=model.rate_scalar,
             tips_only=True,
             seed=123,
@@ -67,11 +66,66 @@ class TestDiscreteMarkovModelFit(PytestCompat):
             nstates=2,
             model="ER",
             fixed_rates=model.relative_rates,
-            fixed_state_frequencies=model.state_frequencies,
         )
         np.testing.assert_allclose(result.qmatrix, model.qmatrix)
         self.assertTrue(np.isfinite(result.log_likelihood))
         self.assertEqual(result.nparams, 0)
+        np.testing.assert_allclose(result.state_frequencies, [0.5, 0.5])
+        np.testing.assert_allclose(result.root_prior, [0.5, 0.5])
+
+    def test_direct_q_parameter_counts(self):
+        """Count rate parameters only for conventional ER, SYM, and ARD."""
+        tree = toytree.rtree.unittree(ntips=6, treeheight=1.0, seed=7)
+        data = pd.Series(
+            [0, 1, 2, 0, 1, 2],
+            index=tree.get_tip_labels(),
+            name="X",
+        )
+        expected = {"ER": 1, "SYM": 3, "ARD": 6}
+        for model, nparams in expected.items():
+            fitter = DiscreteMarkovModelFit(
+                tree=tree,
+                data=data,
+                nstates=3,
+                model=model,
+            )
+            self.assertEqual(fitter._parameter_count(), nparams)
+
+    def test_fixed_root_prior_does_not_change_q_or_parameter_count(self):
+        """A caller-supplied root prior is separate from Q and AIC counts."""
+        tree = toytree.rtree.unittree(ntips=4, treeheight=1.0, seed=8)
+        data = pd.Series([0, 1, 0, 1], index=tree.get_tip_labels(), name="X")
+        rates = np.array([[0.0, 2.0], [1.0, 0.0]])
+        result = fit_discrete_ctmc(
+            tree=tree,
+            data=data,
+            nstates=2,
+            model="ARD",
+            fixed_rates=rates,
+            root_prior=[1.0, 0.0],
+        )
+        np.testing.assert_allclose(result.qmatrix, [[-2.0, 2.0], [1.0, -1.0]])
+        np.testing.assert_allclose(result.state_frequencies, [1 / 3, 2 / 3])
+        np.testing.assert_allclose(result.root_prior, [1.0, 0.0])
+        self.assertEqual(result.nparams, 0)
+        table = toytree.pcm.aic_table([result])
+        self.assertAlmostEqual(
+            float(table.iloc[0]["AIC"]),
+            -2.0 * result.log_likelihood,
+        )
+
+    def test_removed_fixed_state_frequencies_keyword_raises(self):
+        """The removed frequency-fitting argument has no compatibility alias."""
+        tree = toytree.rtree.unittree(ntips=4, treeheight=1.0, seed=9)
+        data = pd.Series([0, 1, 0, 1], index=tree.get_tip_labels(), name="X")
+        with self.assertRaises(TypeError):
+            fit_discrete_ctmc(
+                tree=tree,
+                data=data,
+                nstates=2,
+                model="ER",
+                fixed_state_frequencies=[0.5, 0.5],
+            )
 
     def test_fit_rejects_dataframe_input(self):
         """Fit should reject multi-trait DataFrame input."""
@@ -333,6 +387,7 @@ class TestDiscreteMarkovModelFit(PytestCompat):
             nstates=2,
             model="ARD",
             fixed_rates=fixed_rates,
+            root_prior=[1.0, 0.0],
         )
         self.assertTrue(np.isfinite(fit.log_likelihood))
 
@@ -347,6 +402,7 @@ class TestDiscreteMarkovModelFit(PytestCompat):
                         nstates=2,
                         model="ARD",
                         fixed_rates=fixed_rates,
+                        root_prior=[1.0, 0.0],
                     )
 
         self.assertTrue(

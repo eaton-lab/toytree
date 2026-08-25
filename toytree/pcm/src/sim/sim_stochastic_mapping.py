@@ -55,30 +55,15 @@ def _coerce_series_to_all_nodes(tree, data: Union[str, pd.Series]) -> pd.Series:
     return pd.Series(arr, index=range(tree.nnodes), name=name)
 
 
-def _is_missing_value(value: object) -> bool:
-    """Return True if a value should be treated as missing."""
-    if value is None:
-        return True
-    try:
-        out = pd.isna(value)
-    except Exception:
-        return False
-    if isinstance(out, (bool, np.bool_)):
-        return bool(out)
-    return False
-
-
-def _is_vector_like(value: object) -> bool:
-    """Return True if value is tuple/list/ndarray."""
-    return isinstance(value, (tuple, list, np.ndarray))
-
-
 def _validate_state_types(series: pd.Series) -> None:
     """Require int or str states (missing can be NaN)."""
-    observed = series.dropna().unique().tolist()
     valid_types = (int, np.integer, str)
     cleaned = []
-    for v in observed:
+    for v in series.tolist():
+        if v is None:
+            continue
+        if isinstance(v, (float, np.floating)) and np.isnan(v):
+            continue
         if isinstance(v, bool):
             raise ToytreeError("trait states must be int or str")
         if isinstance(v, (float, np.floating)):
@@ -100,83 +85,14 @@ def _normalize_integer_float_states(series: pd.Series) -> pd.Series:
     """Cast integer-valued float states to int (keep NaN as missing)."""
     out = series.copy()
     for idx, val in out.items():
-        if pd.isna(val):
+        if val is None:
             continue
-        if isinstance(val, (float, np.floating)) and float(val).is_integer():
-            out.at[idx] = int(val)
+        if isinstance(val, (float, np.floating)):
+            if np.isnan(val):
+                continue
+            if float(val).is_integer():
+                out.at[idx] = int(val)
     return out
-
-
-def _coerce_mapping_inputs(
-    series: pd.Series,
-    nstates: int,
-) -> tuple[str, pd.Series, np.ndarray, np.ndarray]:
-    """Return parsed mapping inputs for scalar-state or posterior mode."""
-    observed = [i for i in series.tolist() if not _is_missing_value(i)]
-    if not observed:
-        fit_data = series.copy()
-        return (
-            "state",
-            fit_data,
-            np.full((series.size, nstates), np.nan, dtype=float),
-            np.full(series.size, -1, dtype=int),
-        )
-
-    has_vectors = any(_is_vector_like(i) for i in observed)
-    has_scalars = any(not _is_vector_like(i) for i in observed)
-    if has_vectors and has_scalars:
-        raise ToytreeError(
-            "data cannot mix scalar states with posterior vectors. "
-            "Use scalar states only, or posterior vectors for all non-missing nodes."
-        )
-
-    if not has_vectors:
-        fit_data = _normalize_integer_float_states(series)
-        _validate_state_types(fit_data)
-        return (
-            "state",
-            fit_data,
-            np.full((series.size, nstates), np.nan, dtype=float),
-            np.full(series.size, -1, dtype=int),
-        )
-
-    entered_posteriors = np.full((series.size, nstates), np.nan, dtype=float)
-    fixed_from_onehot = np.full(series.size, -1, dtype=int)
-    fit_data = pd.Series(np.nan, index=series.index, name=series.name, dtype=object)
-
-    for idx, value in series.items():
-        if _is_missing_value(value):
-            continue
-        if not _is_vector_like(value):
-            raise ToytreeError(
-                "posterior mode requires all non-missing node entries to be "
-                "tuple/list/array probability vectors."
-            )
-        arr = np.asarray(value, dtype=float).reshape(-1)
-        if arr.size != nstates:
-            raise ToytreeError(
-                f"posterior vector length must equal nstates ({nstates})."
-            )
-        if np.any(~np.isfinite(arr)):
-            raise ToytreeError("posterior vectors must contain finite values.")
-        if np.any(arr < 0.0):
-            raise ToytreeError("posterior vectors must be non-negative.")
-        ssum = float(arr.sum())
-        if not np.isclose(ssum, 1.0, atol=1e-8, rtol=0.0):
-            raise ToytreeError("posterior vectors must sum to 1.")
-        nidx = int(idx)
-        entered_posteriors[nidx] = arr
-
-        # Derive fixed constraints from one-hot rows while retaining posterior mode.
-        midx = int(np.argmax(arr))
-        is_one_hot = np.isclose(arr[midx], 1.0, atol=1e-8, rtol=0.0) and np.all(
-            np.isclose(np.delete(arr, midx), 0.0, atol=1e-8, rtol=0.0)
-        )
-        if is_one_hot:
-            fixed_from_onehot[nidx] = midx
-            fit_data.at[idx] = midx
-
-    return "posterior", fit_data, entered_posteriors, fixed_from_onehot
 
 
 def _simulate_path_unconditioned(
@@ -435,7 +351,8 @@ class PCMStochasticMapResult:
     segments : pandas.DataFrame
         One row per sampled branch segment. Required columns include
         ``map_id``, ``edge_id``, ``child``, ``parent``, ``state_idx``,
-        ``state``, ``t_start``, ``t_end``, and ``duration``.
+        ``state``, ``t_start``, ``t_end``, and ``duration``. Segment times
+        originate at the parent and increase toward the child.
     node_states : pandas.DataFrame
         Sampled node states for each replicate with columns ``map_id``,
         ``node``, ``state_idx``, and ``state``.
@@ -669,26 +586,26 @@ class PCMStochasticMapResult:
                 continue
             length = float(edge_lengths.loc[int(edge_id)])
             for idx in range(1, subdf.shape[0]):
-                childward = subdf.iloc[idx - 1]
-                parentward = subdf.iloc[idx]
+                parentward = subdf.iloc[idx - 1]
+                childward = subdf.iloc[idx]
                 from_idx = int(parentward["state_idx"])
                 to_idx = int(childward["state_idx"])
                 if from_idx == to_idx:
                     continue
-                time_from_child = float(parentward["t_start"])
+                time_from_parent = float(childward["t_start"])
                 rows.append(
                     {
                         "map_id": int(map_id),
                         "edge_id": int(edge_id),
-                        "child": int(parentward["child"]),
-                        "parent": int(parentward["parent"]),
+                        "child": int(childward["child"]),
+                        "parent": int(childward["parent"]),
                         "from_state_idx": from_idx,
                         "to_state_idx": to_idx,
                         "from_state": labels[from_idx],
                         "to_state": labels[to_idx],
-                        "time_from_parent": float(length - time_from_child),
-                        "time_from_child": time_from_child,
-                        "time_abs": float(parentward["time_abs_start"]),
+                        "time_from_parent": time_from_parent,
+                        "time_from_child": float(length - time_from_parent),
+                        "time_abs": float(childward["time_abs_start"]),
                     }
                 )
         return pd.DataFrame(
@@ -916,19 +833,9 @@ def simulate_stochastic_map(
 ) -> PCMStochasticMapResult:
     """Sample stochastic character maps for one discrete trait under MK.
 
-    The ``data`` argument supports two input modes:
-
-    - Scalar-state mode: non-missing entries are discrete scalar states
-      (int/str), treated as hard constraints.
-    - Posterior-vector mode: non-missing entries are tuple/list/array vectors
-      of length ``model_fit.nstates`` that sum to 1. In this mode, all
-      non-missing entries must be vector format (no scalar/vector mixing).
-      One-hot vectors (e.g., ``(1, 0, 0)``) are treated as fixed constraints.
-      Non-one-hot vectors are sampled directly. Missing nodes are sampled from
-      model-based posterior probabilities.
-
-    Posterior vectors are input constraints only. The returned object stores
-    stochastic-map branch intervals and lazily computed summary tables.
+    Non-missing observations must be discrete scalar states. Tip observations
+    and any scalar internal-node constraints are incorporated through pruning
+    before node states are sampled jointly from root to tips.
 
     Parameters
     ----------
@@ -936,10 +843,8 @@ def simulate_stochastic_map(
         Input tree on which to map discrete-state histories.
     data : str | pandas.Series
         Trait states as feature name or Series. Values can be provided for all
-        nodes or tips only.
-        Non-missing entries may be scalar states or posterior vectors, but
-        cannot mix formats. Posterior vectors must be non-negative, finite,
-        length ``model_fit.nstates``, and sum to 1.
+        nodes or tips only. Non-missing entries must be scalar int or str
+        states from the data used to fit ``model_fit``.
     model_fit : PCMDiscreteCTMCFitResult
         A fitted MK model result from ``fit_discrete_ctmc``.
     nreplicates : int, default=1
@@ -982,15 +887,6 @@ def simulate_stochastic_map(
     >>> result = tree.pcm.simulate_stochastic_map(data=tip_data, model_fit=fit, seed=2)
     >>> result.segments.head()
 
-    Use posterior node constraints from ancestral-state inference:
-
-    >>> result = tree.pcm.infer_ancestral_states_discrete_ctmc(
-    ...     "X", nstates=3, model="ER"
-    ... )
-    >>> fit = result["model_fit"]
-    >>> post = result["data"]["X_anc_posterior"]
-    >>> result2 = tree.pcm.simulate_stochastic_map(data=post, model_fit=fit, seed=3)
-    >>> result2.edge_transition_stats.head()
     """
     if not isinstance(model_fit, PCMDiscreteCTMCFitResult):
         raise ToytreeError(
@@ -1005,41 +901,38 @@ def simulate_stochastic_map(
         raise ToytreeError("engine must be one of: 'uniformization', 'rejection'")
 
     series = _coerce_series_to_all_nodes(tree, data)
-    mode, fit_data, entered_posteriors, fixed_from_onehot = _coerce_mapping_inputs(
-        series,
-        nstates=int(model_fit.nstates),
-    )
+    _validate_state_types(series)
+    fit_data = _normalize_integer_float_states(series)
 
     fitter = DiscreteMarkovModelFit(
         tree=tree,
         data=fit_data,
         nstates=int(model_fit.nstates),
         model=model_fit.model,
-        fixed_rates=model_fit.fixed_rates,
-        fixed_state_frequencies=model_fit.fixed_state_frequencies,
-        root_prior=None,
+        fixed_rates=model_fit.relative_rates,
+        root_prior=model_fit.root_prior,
         rate_scalar=1.0,
     )
 
     qmatrix = np.array(model_fit.qmatrix, dtype=float)
-    node_probs, _ = fitter._compute_node_posteriors(
-        qmatrix, model_fit.state_frequencies
-    )
-    posterior = node_probs.to_numpy(dtype=float)
-
-    fixed_states = np.full(tree.nnodes, -1, dtype=int)
-    if mode == "state":
-        for idx, val in enumerate(fitter.tip_states):
-            if not np.isnan(val):
-                fixed_states[idx] = int(val)
-    else:
-        fixed_states[:] = fixed_from_onehot
+    state_labels = list(model_fit.state_labels)
+    if tuple(fitter.state_names) != tuple(state_labels):
+        raise ToytreeError(
+            "mapping observations must use the same state labels and ordering "
+            "as model_fit"
+        )
+    likelihoods = fitter._compute_conditional_likelihoods(qmatrix)
+    root_prior = np.asarray(model_fit.root_prior, dtype=float)
 
     edges = tree.get_edges("idx")
     dists = tree.get_node_data("dist").to_numpy(dtype=float)
     heights = tree.get_node_data("height").to_numpy(dtype=float)
-    state_labels = list(node_probs.columns)
     rng = np.random.default_rng(seed)
+    transition_matrices = {
+        node._idx: expm(qmatrix * float(node.dist))
+        for node in tree.treenode.traverse("preorder")
+        if not node.is_root()
+    }
 
     edge_table = pd.DataFrame(
         {
@@ -1054,19 +947,33 @@ def simulate_stochastic_map(
     node_rows: list[dict] = []
     for map_id in range(nreplicates):
         sampled_node_states = np.full(tree.nnodes, -1, dtype=int)
-        for nidx in range(tree.nnodes):
-            if fixed_states[nidx] >= 0:
-                sampled_node_states[nidx] = fixed_states[nidx]
-                continue
-            if mode == "posterior" and np.all(np.isfinite(entered_posteriors[nidx])):
-                probs = entered_posteriors[nidx].astype(float)
-            else:
-                probs = posterior[nidx].astype(float)
-            psum = float(probs.sum())
-            if psum <= 0.0:
-                raise ToytreeError(f"invalid posterior probabilities at node {nidx}")
-            probs /= psum
-            sampled_node_states[nidx] = int(rng.choice(len(probs), p=probs))
+        root = tree.treenode
+        root_weights = root_prior * likelihoods[root]
+        root_mass = float(root_weights.sum())
+        if (not np.isfinite(root_mass)) or root_mass <= 0.0:
+            raise ToytreeError(
+                "root prior and observed states have zero compatible probability"
+            )
+        sampled_node_states[root._idx] = int(
+            rng.choice(len(root_weights), p=root_weights / root_mass)
+        )
+
+        # Sample a jointly compatible ancestral-state realization. Each child
+        # is conditioned on its sampled parent and its descendant subtree.
+        for parent_node in root.traverse("preorder"):
+            parent_state = int(sampled_node_states[parent_node._idx])
+            for child_node in parent_node.children:
+                pmat = transition_matrices[child_node._idx]
+                weights = pmat[parent_state] * likelihoods[child_node]
+                mass = float(weights.sum())
+                if (not np.isfinite(mass)) or mass <= 0.0:
+                    raise ToytreeError(
+                        "observations have zero conditional probability on edge "
+                        f"{parent_node._idx}->{child_node._idx}"
+                    )
+                sampled_node_states[child_node._idx] = int(
+                    rng.choice(len(weights), p=weights / mass)
+                )
 
         for nidx, state_idx in enumerate(sampled_node_states):
             state_idx = int(state_idx)
@@ -1083,8 +990,8 @@ def simulate_stochastic_map(
             child = int(child)
             parent = int(parent)
             length = float(dists[child])
-            start_state = int(sampled_node_states[child])
-            end_state = int(sampled_node_states[parent])
+            start_state = int(sampled_node_states[parent])
+            end_state = int(sampled_node_states[child])
 
             if eng == "rejection":
                 segs = _sample_branch_history_rejection(
@@ -1117,7 +1024,7 @@ def simulate_stochastic_map(
                         max_attempts=int(max_branch_attempts),
                     )
 
-            base_abs = float(heights[child])
+            parent_height = float(heights[parent])
             for state_idx, t_start, t_end in segs:
                 rows.append(
                     {
@@ -1130,8 +1037,8 @@ def simulate_stochastic_map(
                         "t_start": float(t_start),
                         "t_end": float(t_end),
                         "duration": float(t_end - t_start),
-                        "time_abs_start": base_abs + float(t_start),
-                        "time_abs_end": base_abs + float(t_end),
+                        "time_abs_start": parent_height - float(t_start),
+                        "time_abs_end": parent_height - float(t_end),
                     }
                 )
 

@@ -299,10 +299,12 @@ def add_edge_stochastic_map(
                 f0 = max(0.0, min(1.0, t_start / blen))
                 f1 = max(0.0, min(1.0, t_end / blen))
 
-            x0 = float(cx + ((ax - cx) * f0))
-            y0 = float(cy + ((ay - cy) * f0))
-            x1 = float(cx + ((ax - cx) * f1))
-            y1 = float(cy + ((ay - cy) * f1))
+            # Segment times originate at the parentward branch-axis endpoint
+            # and increase toward the child.
+            x0 = float(ax + ((cx - ax) * f0))
+            y0 = float(ay + ((cy - ay) * f0))
+            x1 = float(ax + ((cx - ax) * f1))
+            y1 = float(ay + ((cy - ay) * f1))
 
             xpaths.append(np.array([x0 + xshift, x1 + xshift], dtype=float))
             ypaths.append(np.array([y0 + yshift, y1 + yshift], dtype=float))
@@ -310,17 +312,17 @@ def add_edge_stochastic_map(
             opacities_by_path.append(float(edge_opacity[edge_id]))
 
         # For rectangular phylograms, also draw the orthogonal span segment.
-        # It uses the color at the depth-end of the branch segment.
+        # It uses the parentward (first) segment color.
         if (mark.edge_type == "p") and (mark.layout in ("u", "d", "l", "r")):
-            end_row = edf.sort_values(["t_end", "t_start"]).iloc[-1]
-            end_color_idx = int(end_row["_color_idx"])
+            start_row = edf.sort_values(["t_start", "t_end"]).iloc[0]
+            start_color_idx = int(start_row["_color_idx"])
             xpaths.append(
                 np.array([float(ax + xshift), float(px + xshift)], dtype=float)
             )
             ypaths.append(
                 np.array([float(ay + yshift), float(py + yshift)], dtype=float)
             )
-            colors_by_path.append(seg_colors[end_color_idx])
+            colors_by_path.append(seg_colors[start_color_idx])
             opacities_by_path.append(float(edge_opacity[edge_id]))
 
     if not xpaths:

@@ -101,6 +101,32 @@ def test_duration_sums_match_edge_lengths(tree_data_fit):
         assert float(row["duration"]) == pytest.approx(float(dists[child]), abs=1e-6)
 
 
+def test_segments_run_from_sampled_parent_to_sampled_child(tree_data_fit):
+    """Segment endpoints and times follow evolutionary direction."""
+    tree, _, fit = tree_data_fit
+    out = tree.pcm.simulate_stochastic_map(
+        data="X",
+        model_fit=fit,
+        nreplicates=2,
+        seed=4,
+    )
+    states = out.node_states.set_index(["map_id", "node"])["state_idx"]
+    heights = tree.get_node_data("height").to_numpy(dtype=float)
+    edge_table = out.edge_table.set_index("edge_id")
+    for (map_id, edge_id), frame in out.segments.groupby(["map_id", "edge_id"]):
+        frame = frame.sort_values("t_start")
+        edge = edge_table.loc[edge_id]
+        parent = int(edge["parent"])
+        child = int(edge["child"])
+        length = float(edge["length"])
+        assert int(frame.iloc[0]["state_idx"]) == int(states.loc[(map_id, parent)])
+        assert int(frame.iloc[-1]["state_idx"]) == int(states.loc[(map_id, child)])
+        assert float(frame.iloc[0]["t_start"]) == pytest.approx(0.0)
+        assert float(frame.iloc[-1]["t_end"]) == pytest.approx(length)
+        assert float(frame.iloc[0]["time_abs_start"]) == pytest.approx(heights[parent])
+        assert float(frame.iloc[-1]["time_abs_end"]) == pytest.approx(heights[child])
+
+
 def test_seed_reproducibility(tree_data_fit):
     """Return identical maps for repeated calls with the same seed."""
     tree, _, fit = tree_data_fit
@@ -148,6 +174,39 @@ def test_uniformization_and_rejection_engines(tree_data_fit):
     assert set(uni.segments.columns) == set(rej.segments.columns)
 
 
+def test_irreversible_maps_follow_q_and_carry_root_prior():
+    """Joint maps preserve an explicit root and forbid reverse transitions."""
+    tree = toytree.rtree.unittree(ntips=4, treeheight=2.0, seed=12)
+    data = pd.Series(
+        [0, 1, 1, 1],
+        index=tree.get_tip_labels(),
+        name="X",
+    )
+    rates = np.array([[0.0, 2.0], [0.0, 0.0]])
+    fit = tree.pcm.fit_discrete_ctmc(
+        data=data,
+        nstates=2,
+        model="ARD",
+        fixed_rates=rates,
+        root_prior=[1.0, 0.0],
+    )
+    out = tree.pcm.simulate_stochastic_map(
+        data=data,
+        model_fit=fit,
+        nreplicates=10,
+        seed=19,
+    )
+    root_idx = tree.treenode.idx
+    root_states = out.node_states.loc[out.node_states["node"] == root_idx, "state_idx"]
+    assert root_states.eq(0).all()
+    assert not (
+        out.events["from_state_idx"].eq(1) & out.events["to_state_idx"].eq(0)
+    ).any()
+    for tip_idx, observed in enumerate(data.to_numpy()):
+        mapped = out.node_states.loc[out.node_states["node"] == tip_idx, "state_idx"]
+        assert mapped.eq(int(observed)).all()
+
+
 def test_summary_tables(tree_data_fit):
     """Return result summary tables with consistent dwell and segment totals."""
     tree, _, fit = tree_data_fit
@@ -176,13 +235,13 @@ def test_event_direction_from_segments():
             "edge_id": [0, 0],
             "child": [0, 0],
             "parent": [1, 1],
-            "state_idx": [1, 0],
-            "state": ["derived", "ancestral"],
+            "state_idx": [0, 1],
+            "state": ["ancestral", "derived"],
             "t_start": [0.0, 0.4],
             "t_end": [0.4, 1.0],
             "duration": [0.4, 0.6],
-            "time_abs_start": [0.0, 0.4],
-            "time_abs_end": [0.4, 1.0],
+            "time_abs_start": [1.0, 0.6],
+            "time_abs_end": [0.6, 0.0],
         }
     )
     node_states = pd.DataFrame(
@@ -208,8 +267,8 @@ def test_event_direction_from_segments():
     event = out.events.iloc[0]
     assert event["from_state"] == "ancestral"
     assert event["to_state"] == "derived"
-    assert float(event["time_from_child"]) == pytest.approx(0.4)
-    assert float(event["time_from_parent"]) == pytest.approx(0.6)
+    assert float(event["time_from_child"]) == pytest.approx(0.6)
+    assert float(event["time_from_parent"]) == pytest.approx(0.4)
     assert out.transition_probability("ancestral", "derived", edge_id=0) == 1.0
     assert out.transition_probability("derived", "ancestral", edge_id=0) == 0.0
 
@@ -279,66 +338,3 @@ def test_requires_model_fit(tree_data_fit):
     tree, _, _ = tree_data_fit
     with pytest.raises(ToytreeError):
         tree.pcm.simulate_stochastic_map(data="X", model_fit=None)
-
-
-def test_accepts_posterior_vector_input(tree_data_fit):
-    """Accept posterior vectors as node constraints for simulation."""
-    tree, data, fit = tree_data_fit
-    result = tree.pcm.infer_ancestral_states_discrete_ctmc(
-        data,
-        nstates=2,
-        model="ER",
-    )
-    post = result["data"][f"{data.name}_anc_posterior"]
-    out = tree.pcm.simulate_stochastic_map(
-        data=post,
-        model_fit=fit,
-        nreplicates=2,
-        seed=31,
-    )
-    assert isinstance(out, toytree.pcm.PCMStochasticMapResult)
-    assert sorted(out.segments["map_id"].unique().tolist()) == [0, 1]
-
-
-def test_rejects_mixed_scalar_and_vector_input(tree_data_fit):
-    """Reject mixing scalar states and posterior vectors in one call."""
-    tree, data, fit = tree_data_fit
-    mixed = pd.Series(np.nan, index=range(tree.nnodes), dtype=object, name="X")
-    mixed.iloc[0] = 0
-    mixed.iloc[1] = (0.1, 0.9)
-    with pytest.raises(ToytreeError):
-        tree.pcm.simulate_stochastic_map(
-            data=mixed,
-            model_fit=fit,
-        )
-
-
-def test_rejects_invalid_posterior_vectors(tree_data_fit):
-    """Reject invalid posterior rows by length/value/sum constraints."""
-    tree, _, fit = tree_data_fit
-    bad_len = pd.Series(
-        [(1.0, 0.0, 0.0)] + [np.nan] * (tree.nnodes - 1),
-        index=range(tree.nnodes),
-        dtype=object,
-        name="X",
-    )
-    with pytest.raises(ToytreeError):
-        tree.pcm.simulate_stochastic_map(data=bad_len, model_fit=fit)
-
-    bad_sum = pd.Series(
-        [(0.2, 0.2)] + [np.nan] * (tree.nnodes - 1),
-        index=range(tree.nnodes),
-        dtype=object,
-        name="X",
-    )
-    with pytest.raises(ToytreeError):
-        tree.pcm.simulate_stochastic_map(data=bad_sum, model_fit=fit)
-
-    bad_neg = pd.Series(
-        [(-0.1, 1.1)] + [np.nan] * (tree.nnodes - 1),
-        index=range(tree.nnodes),
-        dtype=object,
-        name="X",
-    )
-    with pytest.raises(ToytreeError):
-        tree.pcm.simulate_stochastic_map(data=bad_neg, model_fit=fit)
