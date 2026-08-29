@@ -1,0 +1,47 @@
+{
+  "study_version": 2,
+  "development_seed": 30260826,
+  "confirmation_seed": 40260826,
+  "simulation": {
+    "models": ["clock", "discrete", "uncorrelated_lognormal", "correlated"],
+    "tracks": ["count", "gamma"],
+    "baseline_rate": 50.0,
+    "gamma_shape": 100.0,
+    "discrete_multipliers": [0.6, 1.4],
+    "uncorrelated_log_sigma": 0.65,
+    "correlated_log_sigma": 0.30
+  },
+  "fit": {
+    "max_iter": 1000,
+    "max_fun": 3000,
+    "max_refine": 4,
+    "nstarts": null,
+    "ncategories": 2
+  },
+  "candidates": {
+    "ncategories": [2, 3, 4],
+    "lambdas": [0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0]
+  },
+  "pilot": {
+    "replicates": 5,
+    "ntips": [12, 24],
+    "calibration": "root_and_internal_interval",
+    "fixed_age_controls": 2
+  },
+  "confirmation": {
+    "primary_replicates": 50,
+    "primary_ntips": [8, 24],
+    "primary_calibrations": ["root", "root_and_internal_interval"],
+    "cv_replicates": 50,
+    "cv_ntips": 12,
+    "cv_calibration": "root_and_internal_interval"
+  },
+  "release_gates": {
+    "convergence_wilson_lower": 0.98,
+    "normalized_internal_age_mae_median": 0.08,
+    "normalized_internal_age_absolute_bias": 0.03,
+    "log_rate_spearman_median": 0.75,
+    "population_regret_median": 0.10,
+    "population_regret_90th_percentile": 0.35
+  }
+}

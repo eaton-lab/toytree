@@ -1,0 +1,10 @@
+{
+  "cache_schema_version": 1,
+  "config_hash": "81a10d39791f3cbd50b6fa0fd810158f5810edba5371cf7fdc540d5a6a984c86",
+  "numpy": "2.4.6",
+  "platform": "Linux-7.0.0-28-generic-x86_64-with-glibc2.39",
+  "python": "3.11.9 (main, Apr 19 2024, 16:48:06) [GCC 11.2.0]",
+  "scipy": "1.15.1",
+  "source_hash": "6571d2842cbcda2aeb6cf6fd5a20fac102aa9e90810ff320631ddcc4117580f0",
+  "toytree": "3.1.0.dev1"
+}

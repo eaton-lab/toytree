@@ -1,0 +1,7 @@
+{
+  "python": "3.11.9 (main, Apr 19 2024, 16:48:06) [GCC 11.2.0]",
+  "platform": "Linux-7.0.0-28-generic-x86_64-with-glibc2.39",
+  "numpy": "2.4.6",
+  "scipy": "1.15.1",
+  "toytree": "3.1.0.dev1"
+}

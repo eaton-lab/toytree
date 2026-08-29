@@ -1,0 +1,9 @@
+{
+  "config_hash": "fb834723aa1c45e5420425c989c2e6b7c450ec39b8f2b32d11c5aebfafef509f",
+  "numpy": "2.4.6",
+  "platform": "Linux-7.0.0-28-generic-x86_64-with-glibc2.39",
+  "python": "3.11.9 (main, Apr 19 2024, 16:48:06) [GCC 11.2.0]",
+  "scipy": "1.15.1",
+  "source_hash": "a6d0c9ce258ad24c88ea6ab0a1e42864c1c26a2bfb6c3f7c6ca71894ed4f4026",
+  "toytree": "3.1.0.dev1"
+}

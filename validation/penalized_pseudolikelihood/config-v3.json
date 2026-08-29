@@ -1,0 +1,137 @@
+{
+  "study_version": 3,
+  "development_seed": 50260829,
+  "confirmation_seed": 60260829,
+  "optimizer_diagnostic_seed": 70260829,
+  "optimizer_diagnostic": {
+    "tracks": ["gamma", "count"],
+    "sigmas": [0.1, 0.2, 0.3, 0.6],
+    "lambdas_per_sigma": 3,
+    "one_start_convergence": 0.98,
+    "objective_gap_95th_percentile": 1e-6,
+    "objective_gap_maximum": 1e-4
+  },
+  "simulation": {
+    "baseline_rate": 1.0,
+    "gamma_shape": 100.0,
+    "correlated_log_sigmas": [0.1, 0.2, 0.3, 0.6]
+  },
+  "fit": {
+    "max_iter": 5000,
+    "max_fun": 10000,
+    "max_refine": 4,
+    "nstarts": 4
+  },
+  "lambdas": [
+    0.0001,
+    0.0003,
+    0.001,
+    0.003,
+    0.01,
+    0.03,
+    0.1,
+    0.3,
+    1.0,
+    3.0,
+    10.0,
+    30.0,
+    100.0,
+    300.0,
+    1000.0,
+    3000.0,
+    10000.0
+  ],
+  "smoke": [
+    {
+      "name": "continuous-main",
+      "track": "gamma",
+      "ntips": 8,
+      "calibration": "root_and_internal_interval",
+      "sigmas": [0.3],
+      "lambdas": [0.01, 1.0, 100.0],
+      "replicates": 1,
+      "release_gate": false
+    }
+  ],
+  "pilot": [
+    {
+      "name": "continuous-main",
+      "track": "gamma",
+      "ntips": 24,
+      "calibration": "root_and_internal_interval",
+      "replicates": 5,
+      "release_gate": true
+    },
+    {
+      "name": "continuous-fixed-age",
+      "track": "gamma",
+      "ntips": 24,
+      "calibration": "fixed_internal_ages",
+      "replicates": 2,
+      "release_gate": true
+    },
+    {
+      "name": "continuous-high-signal",
+      "track": "gamma",
+      "ntips": 24,
+      "calibration": "root_and_internal_interval",
+      "baseline_rate": 50.0,
+      "replicates": 2,
+      "release_gate": false
+    },
+    {
+      "name": "count-zero-stress",
+      "track": "count",
+      "ntips": 12,
+      "calibration": "root_and_internal_interval",
+      "baseline_rate": 50.0,
+      "replicates": 2,
+      "release_gate": false
+    }
+  ],
+  "confirmation": [
+    {
+      "name": "continuous-main",
+      "track": "gamma",
+      "ntips": 24,
+      "calibration": "root_and_internal_interval",
+      "replicates": 25,
+      "release_gate": true
+    },
+    {
+      "name": "continuous-fixed-age",
+      "track": "gamma",
+      "ntips": 24,
+      "calibration": "fixed_internal_ages",
+      "replicates": 10,
+      "release_gate": true
+    },
+    {
+      "name": "continuous-high-signal",
+      "track": "gamma",
+      "ntips": 24,
+      "calibration": "root_and_internal_interval",
+      "baseline_rate": 50.0,
+      "replicates": 10,
+      "release_gate": false
+    },
+    {
+      "name": "count-zero-stress",
+      "track": "count",
+      "ntips": 12,
+      "calibration": "root_and_internal_interval",
+      "baseline_rate": 50.0,
+      "replicates": 10,
+      "release_gate": false
+    }
+  ],
+  "release_gates": {
+    "dataset_convergence": 0.98,
+    "fold_convergence": 0.98,
+    "population_regret_median": 0.15,
+    "population_regret_90th_percentile": 0.50,
+    "age_rmse_ratio_median": 1.25,
+    "rate_spearman_delta_median": -0.10,
+    "boundary_selection_fraction": 0.40
+  }
+}

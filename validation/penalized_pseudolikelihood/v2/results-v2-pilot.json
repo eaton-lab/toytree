@@ -1,0 +1,4006 @@
+{
+  "all_release_gates_passed": false,
+  "cross_validation": {
+    "datasets": [
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.0001,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "discrete(K=4)",
+        "oracle_population_risk": 0.5924291591408463,
+        "population_regret": 0.9283854838633195,
+        "replicate": 0,
+        "seed": 30260906,
+        "selected_config": {
+          "lam": 0.0001,
+          "method": "correlated"
+        },
+        "selected_population_risk": 1.5208146430041658,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=100)",
+        "oracle_population_risk": 0.567017169854116,
+        "population_regret": 0.11472011790399583,
+        "replicate": 1,
+        "seed": 30260907,
+        "selected_config": {
+          "lam": 1.0,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 0.6817372877581118,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.0001,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=10000)",
+        "oracle_population_risk": 0.331106436672104,
+        "population_regret": 0.0017535593329350285,
+        "replicate": 2,
+        "seed": 30260908,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.332859996005039,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 2
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=1000)",
+        "oracle_population_risk": 0.6551566218374582,
+        "population_regret": 0.0017297530642979009,
+        "replicate": 3,
+        "seed": 30260909,
+        "selected_config": {
+          "method": "discrete",
+          "ncategories": 2
+        },
+        "selected_population_risk": 0.656886374901756,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.0001,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=10000)",
+        "oracle_population_risk": 0.48583323775548615,
+        "population_regret": 0.01094548726412975,
+        "replicate": 4,
+        "seed": 30260910,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.4967787250196159,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=100)",
+        "oracle_population_risk": 0.506761187995354,
+        "population_regret": 0.021290041237489787,
+        "replicate": 0,
+        "seed": 30260911,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.5280512292328438,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.0001,
+          "method": "correlated"
+        },
+        "ntips": 24,
+        "oracle_label": "discrete(K=3)",
+        "oracle_population_risk": 0.8050714390196865,
+        "population_regret": 0.6221088397631904,
+        "replicate": 1,
+        "seed": 30260912,
+        "selected_config": {
+          "lam": 0.0001,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 1.427180278782877,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.0001,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "clock",
+        "oracle_population_risk": 0.3996044883463776,
+        "population_regret": 0.5920543975418056,
+        "replicate": 2,
+        "seed": 30260913,
+        "selected_config": {
+          "lam": 0.0001,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 0.9916588858881832,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.0001,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=100)",
+        "oracle_population_risk": 0.37230630222857214,
+        "population_regret": 0.01050821008980618,
+        "replicate": 3,
+        "seed": 30260914,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.3828145123183783,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 10.0,
+          "method": "correlated"
+        },
+        "ntips": 24,
+        "oracle_label": "discrete(K=4)",
+        "oracle_population_risk": 0.36631475688246146,
+        "population_regret": 0.0019046652535577024,
+        "replicate": 4,
+        "seed": 30260915,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.36821942213601916,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 100.0,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "clock",
+        "oracle_population_risk": 0.003714248086771278,
+        "population_regret": 0.0040194114547562765,
+        "replicate": 0,
+        "seed": 30260917,
+        "selected_config": {
+          "lam": 100.0,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 0.007733659541527555,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 2
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=10000)",
+        "oracle_population_risk": 0.08112619157094278,
+        "population_regret": 1.5254388826740906e-05,
+        "replicate": 1,
+        "seed": 30260919,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.08114144595976952,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=10)",
+        "oracle_population_risk": 0.44832342320477386,
+        "population_regret": 0.04149308463616985,
+        "replicate": 0,
+        "seed": 30260920,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.4898165078409437,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.1,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=100)",
+        "oracle_population_risk": 0.5144590209297442,
+        "population_regret": 0.012961044628666096,
+        "replicate": 1,
+        "seed": 30260921,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.5274200655584103,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 10000.0,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=10)",
+        "oracle_population_risk": 0.45162829414153244,
+        "population_regret": 0.03213283566148328,
+        "replicate": 2,
+        "seed": 30260922,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.4837611298030157,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 10000.0,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "discrete(K=2)",
+        "oracle_population_risk": 0.3494843239835177,
+        "population_regret": 0.5364359618560997,
+        "replicate": 3,
+        "seed": 30260923,
+        "selected_config": {
+          "lam": 0.1,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 0.8859202858396173,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "discrete(K=2)",
+        "oracle_population_risk": 0.4220790254809286,
+        "population_regret": 1.2480733863284854e-05,
+        "replicate": 4,
+        "seed": 30260924,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.4220915062147919,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=100)",
+        "oracle_population_risk": 0.3808155695157763,
+        "population_regret": 0.009704564761921386,
+        "replicate": 0,
+        "seed": 30260925,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.39052013427769766,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.1,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=100)",
+        "oracle_population_risk": 0.792323033719794,
+        "population_regret": 0.6252840602050216,
+        "replicate": 1,
+        "seed": 30260926,
+        "selected_config": {
+          "lam": 0.1,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 1.4176070939248155,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=10)",
+        "oracle_population_risk": 0.6358071150557167,
+        "population_regret": 0.09680910501072948,
+        "replicate": 2,
+        "seed": 30260927,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.7326162200664462,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 10000.0,
+          "method": "correlated"
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=10)",
+        "oracle_population_risk": 0.5967158153346579,
+        "population_regret": 0.08269643697688167,
+        "replicate": 3,
+        "seed": 30260928,
+        "selected_config": {
+          "lam": 10000.0,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 0.6794122523115396,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=100)",
+        "oracle_population_risk": 0.45095002194669137,
+        "population_regret": 0.007944315177583039,
+        "replicate": 4,
+        "seed": 30260929,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.4588943371242744,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 10.0,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=1000)",
+        "oracle_population_risk": 0.2135438304559078,
+        "population_regret": 0.0036257367256812834,
+        "replicate": 0,
+        "seed": 30260931,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.21716956718158908,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=10)",
+        "oracle_population_risk": 0.15657680847944502,
+        "population_regret": 0.02616456275358095,
+        "replicate": 1,
+        "seed": 30260933,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 0.18274137123302597,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 10.0,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=10)",
+        "oracle_population_risk": 1.1517717435232908,
+        "population_regret": 0.26162919720829336,
+        "replicate": 0,
+        "seed": 30260934,
+        "selected_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 1.4134009407315842,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.0001,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=100)",
+        "oracle_population_risk": 0.5622044803575443,
+        "population_regret": 0.22568896686557938,
+        "replicate": 1,
+        "seed": 30260935,
+        "selected_config": {
+          "lam": 0.0001,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 0.7878934472231237,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.0001,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=10)",
+        "oracle_population_risk": 0.9134055540404585,
+        "population_regret": 2.1358223177304385,
+        "replicate": 2,
+        "seed": 30260936,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 3.049227871770897,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.0001,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=1)",
+        "oracle_population_risk": 0.4512121061502656,
+        "population_regret": 1.5985439401968506,
+        "replicate": 3,
+        "seed": 30260937,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 2.0497560463471163,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.0001,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=1)",
+        "oracle_population_risk": 1.472558296500899,
+        "population_regret": 0.5769275538048275,
+        "replicate": 4,
+        "seed": 30260938,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 2.0494858503057265,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=1)",
+        "oracle_population_risk": 0.6077076084463502,
+        "population_regret": 0.07402216860435729,
+        "replicate": 0,
+        "seed": 30260939,
+        "selected_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 0.6817297770507075,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=10)",
+        "oracle_population_risk": 0.6796012090535131,
+        "population_regret": 0.319232376539734,
+        "replicate": 1,
+        "seed": 30260940,
+        "selected_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 0.9988335855932471,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 3
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=1)",
+        "oracle_population_risk": 0.8954910841014486,
+        "population_regret": 1.1113853755566678,
+        "replicate": 2,
+        "seed": 30260941,
+        "selected_config": {
+          "method": "discrete",
+          "ncategories": 3
+        },
+        "selected_population_risk": 2.0068764596581166,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=0.1)",
+        "oracle_population_risk": 0.9791671473418617,
+        "population_regret": 0.7929087363706906,
+        "replicate": 3,
+        "seed": 30260942,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 1.7720758837125523,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=1)",
+        "oracle_population_risk": 0.790955537537014,
+        "population_regret": 0.10948058875552313,
+        "replicate": 4,
+        "seed": 30260943,
+        "selected_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 0.9004361262925371,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "clock"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=1)",
+        "oracle_population_risk": 0.5799926050351402,
+        "population_regret": 1.9384219266786302,
+        "replicate": 0,
+        "seed": 30260945,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 2.5184145317137703,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "clock"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=0.1)",
+        "oracle_population_risk": 0.19496767593844033,
+        "population_regret": 2.2398527179091947,
+        "replicate": 1,
+        "seed": 30260947,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 2.434820393847635,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.01,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=1)",
+        "oracle_population_risk": 0.9257540447851395,
+        "population_regret": 0.11520490451861509,
+        "replicate": 0,
+        "seed": 30260948,
+        "selected_config": {
+          "lam": 0.1,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 1.0409589493037545,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.001,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=0.01)",
+        "oracle_population_risk": 0.7760890674947114,
+        "population_regret": 0.0,
+        "replicate": 1,
+        "seed": 30260949,
+        "selected_config": {
+          "lam": 0.01,
+          "method": "correlated"
+        },
+        "selected_population_risk": 0.7760890674947114,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 10.0,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=0.1)",
+        "oracle_population_risk": 0.7354822188443871,
+        "population_regret": 22.00285208040991,
+        "replicate": 2,
+        "seed": 30260950,
+        "selected_config": {
+          "lam": 1000.0,
+          "method": "correlated"
+        },
+        "selected_population_risk": 22.738334299254294,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.01,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=0.0001)",
+        "oracle_population_risk": 1.2281769918843415,
+        "population_regret": 15.209542816647373,
+        "replicate": 3,
+        "seed": 30260951,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 16.437719808531714,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=0.001)",
+        "oracle_population_risk": 0.7378873063695426,
+        "population_regret": 11.148834479704096,
+        "replicate": 4,
+        "seed": 30260952,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 11.886721786073638,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.01,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=0.01)",
+        "oracle_population_risk": 0.9536986840524078,
+        "population_regret": 13.263825749408973,
+        "replicate": 0,
+        "seed": 30260953,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 14.21752443346138,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=0.1)",
+        "oracle_population_risk": 1.0933092515184488,
+        "population_regret": 14.198532450754149,
+        "replicate": 1,
+        "seed": 30260954,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 15.291841702272597,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.01,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=0.01)",
+        "oracle_population_risk": 0.949082665488587,
+        "population_regret": 11.495539039535739,
+        "replicate": 2,
+        "seed": 30260955,
+        "selected_config": {
+          "method": "discrete",
+          "ncategories": 3
+        },
+        "selected_population_risk": 12.444621705024327,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 2
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=0.01)",
+        "oracle_population_risk": 0.8871315019821681,
+        "population_regret": 10.997407810994266,
+        "replicate": 3,
+        "seed": 30260956,
+        "selected_config": {
+          "method": "discrete",
+          "ncategories": 2
+        },
+        "selected_population_risk": 11.884539312976434,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 3
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=0.01)",
+        "oracle_population_risk": 1.1761661559677867,
+        "population_regret": 19.091557283724683,
+        "replicate": 4,
+        "seed": 30260957,
+        "selected_config": {
+          "method": "discrete",
+          "ncategories": 3
+        },
+        "selected_population_risk": 20.26772343969247,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "clock"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=0.0001)",
+        "oracle_population_risk": 1.2431074388345815,
+        "population_regret": 18.707262966891495,
+        "replicate": 0,
+        "seed": 30260959,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 19.950370405726076,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 3
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=0.1)",
+        "oracle_population_risk": 1.3177222234214587,
+        "population_regret": 21.327582113799977,
+        "replicate": 1,
+        "seed": 30260961,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 22.645304337221436,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 10.0,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=0.1)",
+        "oracle_population_risk": 0.8414631269022158,
+        "population_regret": 9.310714290064462,
+        "replicate": 0,
+        "seed": 30260962,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 10.152177416966678,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 4
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=1)",
+        "oracle_population_risk": 0.7969900516401401,
+        "population_regret": 3.95510617453625,
+        "replicate": 1,
+        "seed": 30260963,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 4.75209622617639,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.0001,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=1)",
+        "oracle_population_risk": 0.6166212531158414,
+        "population_regret": 1.2925288814027018,
+        "replicate": 2,
+        "seed": 30260964,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 1.9091501345185433,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 2
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=0.1)",
+        "oracle_population_risk": 0.7968551096262089,
+        "population_regret": 16.3560736695739,
+        "replicate": 3,
+        "seed": 30260965,
+        "selected_config": {
+          "method": "discrete",
+          "ncategories": 2
+        },
+        "selected_population_risk": 17.152928779200106,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.1,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=0.1)",
+        "oracle_population_risk": 1.0115011325847496,
+        "population_regret": 0.0,
+        "replicate": 4,
+        "seed": 30260966,
+        "selected_config": {
+          "lam": 0.1,
+          "method": "correlated"
+        },
+        "selected_population_risk": 1.0115011325847496,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 3
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=1)",
+        "oracle_population_risk": 0.9384855575424054,
+        "population_regret": 3.4482288624595716,
+        "replicate": 0,
+        "seed": 30260967,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 4.386714420001977,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=1)",
+        "oracle_population_risk": 0.913231857636771,
+        "population_regret": 0.08624859621315506,
+        "replicate": 1,
+        "seed": 30260968,
+        "selected_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 0.999480453849926,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 4
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=1)",
+        "oracle_population_risk": 0.9949660848476193,
+        "population_regret": 2.1441931256778552,
+        "replicate": 2,
+        "seed": 30260969,
+        "selected_config": {
+          "method": "discrete",
+          "ncategories": 4
+        },
+        "selected_population_risk": 3.1391592105254746,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 3
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=1)",
+        "oracle_population_risk": 0.979626480100602,
+        "population_regret": 4.636768711889598,
+        "replicate": 3,
+        "seed": 30260970,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 5.6163951919902,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.0001,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=1)",
+        "oracle_population_risk": 0.5915452090527208,
+        "population_regret": 0.36467846950114347,
+        "replicate": 4,
+        "seed": 30260971,
+        "selected_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 0.9562236785538643,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 10.0,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=1)",
+        "oracle_population_risk": 0.924276268989428,
+        "population_regret": 1.4640161236678808,
+        "replicate": 0,
+        "seed": 30260973,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 2.3882923926573087,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 4
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=1)",
+        "oracle_population_risk": 0.980784773217222,
+        "population_regret": 3.5021311656293315,
+        "replicate": 1,
+        "seed": 30260975,
+        "selected_config": {
+          "method": "discrete",
+          "ncategories": 4
+        },
+        "selected_population_risk": 4.482915938846554,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 4
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=0.01)",
+        "oracle_population_risk": 1.1079081161241826,
+        "population_regret": 316.9724772827208,
+        "replicate": 0,
+        "seed": 30260976,
+        "selected_config": {
+          "method": "discrete",
+          "ncategories": 2
+        },
+        "selected_population_risk": 318.08038539884495,
+        "track": "gamma",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "clock"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=0.0001)",
+        "oracle_population_risk": 1.5192505177857725,
+        "population_regret": 30.467986794011424,
+        "replicate": 1,
+        "seed": 30260977,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 31.987237311797195,
+        "track": "gamma",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 4
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=0.1)",
+        "oracle_population_risk": 0.88871345340267,
+        "population_regret": 40.57169059359387,
+        "replicate": 2,
+        "seed": 30260978,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 41.460404046996544,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=0.0001)",
+        "oracle_population_risk": 0.8930942742350028,
+        "population_regret": 21.847530262260094,
+        "replicate": 3,
+        "seed": 30260979,
+        "selected_config": {
+          "lam": 10.0,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 22.740624536495098,
+        "track": "gamma",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=0.0001)",
+        "oracle_population_risk": 0.9457688895101947,
+        "population_regret": 38.43504677428149,
+        "replicate": 4,
+        "seed": 30260980,
+        "selected_config": {
+          "method": "discrete",
+          "ncategories": 3
+        },
+        "selected_population_risk": 39.38081566379169,
+        "track": "gamma",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.1,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=0.0001)",
+        "oracle_population_risk": 0.7107492314546466,
+        "population_regret": 20.513578912381316,
+        "replicate": 0,
+        "seed": 30260981,
+        "selected_config": {
+          "method": "discrete",
+          "ncategories": 2
+        },
+        "selected_population_risk": 21.22432814383596,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 3
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=0.01)",
+        "oracle_population_risk": 0.9528980044098774,
+        "population_regret": 97.14715045047141,
+        "replicate": 1,
+        "seed": 30260982,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 98.10004845488129,
+        "track": "gamma",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.01,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=0.01)",
+        "oracle_population_risk": 1.1204378037947134,
+        "population_regret": 0.0,
+        "replicate": 2,
+        "seed": 30260983,
+        "selected_config": {
+          "lam": 0.01,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 1.1204378037947134,
+        "track": "gamma",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.01,
+          "method": "correlated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=0.1)",
+        "oracle_population_risk": 0.7423808631053012,
+        "population_regret": 145.75998236030236,
+        "replicate": 3,
+        "seed": 30260984,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 146.50236322340766,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.01,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=0.01)",
+        "oracle_population_risk": 1.2278945100111585,
+        "population_regret": 50.522178120168086,
+        "replicate": 4,
+        "seed": 30260985,
+        "selected_config": {
+          "method": "discrete",
+          "ncategories": 2
+        },
+        "selected_population_risk": 51.75007263017925,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.1,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=0.01)",
+        "oracle_population_risk": 1.158186477205961,
+        "population_regret": 79.56631532623416,
+        "replicate": 0,
+        "seed": 30260987,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 80.72450180344012,
+        "track": "gamma",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 10.0,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=0.0001)",
+        "oracle_population_risk": 0.7829190999056536,
+        "population_regret": 176.87712379371362,
+        "replicate": 1,
+        "seed": 30260989,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 177.66004289361928,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.01,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=10)",
+        "oracle_population_risk": 0.6130576961548972,
+        "population_regret": 0.16596366914962912,
+        "replicate": 0,
+        "seed": 30260990,
+        "selected_config": {
+          "lam": 0.01,
+          "method": "correlated"
+        },
+        "selected_population_risk": 0.7790213653045264,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "method": "discrete",
+          "ncategories": 4
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=10)",
+        "oracle_population_risk": 0.7159525928620105,
+        "population_regret": 0.10117667303471689,
+        "replicate": 1,
+        "seed": 30260991,
+        "selected_config": {
+          "method": "discrete",
+          "ncategories": 2
+        },
+        "selected_population_risk": 0.8171292658967274,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=10)",
+        "oracle_population_risk": 0.5996434523140637,
+        "population_regret": 0.618318197971238,
+        "replicate": 2,
+        "seed": 30260992,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 1.2179616502853017,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 10.0,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=10)",
+        "oracle_population_risk": 0.4741792320828116,
+        "population_regret": 0.07549523497281102,
+        "replicate": 3,
+        "seed": 30260993,
+        "selected_config": {
+          "lam": 10.0,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 0.5496744670556226,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1000.0,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=10)",
+        "oracle_population_risk": 0.7022794022992561,
+        "population_regret": 0.8539876460996084,
+        "replicate": 4,
+        "seed": 30260994,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 1.5562670483988645,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 10.0,
+          "method": "correlated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=1)",
+        "oracle_population_risk": 0.7377608860787572,
+        "population_regret": 0.05392630343832505,
+        "replicate": 0,
+        "seed": 30260995,
+        "selected_config": {
+          "lam": 10.0,
+          "method": "correlated"
+        },
+        "selected_population_risk": 0.7916871895170823,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.0001,
+          "method": "correlated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=1)",
+        "oracle_population_risk": 0.5436034947718202,
+        "population_regret": 0.6212955948879351,
+        "replicate": 1,
+        "seed": 30260996,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 1.1648990896597553,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=10)",
+        "oracle_population_risk": 0.7532889030903749,
+        "population_regret": 1.8764406824833637,
+        "replicate": 2,
+        "seed": 30260997,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 2.6297295855737386,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.0001,
+          "method": "correlated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=10)",
+        "oracle_population_risk": 0.811325098134204,
+        "population_regret": 0.5029954871893219,
+        "replicate": 3,
+        "seed": 30260998,
+        "selected_config": {
+          "lam": 0.0001,
+          "method": "correlated"
+        },
+        "selected_population_risk": 1.3143205853235258,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "correlated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=10)",
+        "oracle_population_risk": 1.0445777127903901,
+        "population_regret": 0.4528751796193877,
+        "replicate": 4,
+        "seed": 30260999,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 1.4974528924097779,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.001,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=10)",
+        "oracle_population_risk": 0.19944506955179972,
+        "population_regret": 0.3668289003735241,
+        "replicate": 0,
+        "seed": 30261001,
+        "selected_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 0.5662739699253239,
+        "track": "count",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=10)",
+        "oracle_population_risk": 0.5795260235701062,
+        "population_regret": 0.5706021427585121,
+        "replicate": 1,
+        "seed": 30261003,
+        "selected_config": {
+          "lam": 100.0,
+          "method": "correlated"
+        },
+        "selected_population_risk": 1.1501281663286183,
+        "track": "count",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=0.1)",
+        "oracle_population_risk": 0.8275749791659788,
+        "population_regret": 7.030244744626905,
+        "replicate": 0,
+        "seed": 30261004,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 7.8578197237928835,
+        "track": "gamma",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=0.01)",
+        "oracle_population_risk": 1.1348332705980633,
+        "population_regret": 0.0,
+        "replicate": 1,
+        "seed": 30261005,
+        "selected_config": {
+          "lam": 0.01,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 1.1348332705980633,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.1,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=0.1)",
+        "oracle_population_risk": 1.1184913943644308,
+        "population_regret": 4.617485977797144,
+        "replicate": 2,
+        "seed": 30261006,
+        "selected_config": {
+          "lam": 100.0,
+          "method": "correlated"
+        },
+        "selected_population_risk": 5.7359773721615746,
+        "track": "gamma",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.001,
+          "method": "uncorrelated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=0.1)",
+        "oracle_population_risk": 0.7403088617601022,
+        "population_regret": 7.8192481595668255,
+        "replicate": 3,
+        "seed": 30261007,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 8.559557021326928,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.1,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=0.0001)",
+        "oracle_population_risk": 0.9185287083242089,
+        "population_regret": 16.10433583665622,
+        "replicate": 4,
+        "seed": 30261008,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 17.02286454498043,
+        "track": "gamma",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "correlated"
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=0.0001)",
+        "oracle_population_risk": 0.8737248541593239,
+        "population_regret": 91.39414806508728,
+        "replicate": 0,
+        "seed": 30261009,
+        "selected_config": {
+          "lam": 100.0,
+          "method": "correlated"
+        },
+        "selected_population_risk": 92.2678729192466,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "correlated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=0.01)",
+        "oracle_population_risk": 0.7414293587790906,
+        "population_regret": 119.60283111479853,
+        "replicate": 1,
+        "seed": 30261010,
+        "selected_config": {
+          "method": "discrete",
+          "ncategories": 2
+        },
+        "selected_population_risk": 120.34426047357762,
+        "track": "gamma",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.1,
+          "method": "correlated"
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=0.01)",
+        "oracle_population_risk": 1.485493498604509,
+        "population_regret": 6.470783332650257,
+        "replicate": 2,
+        "seed": 30261011,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 7.956276831254765,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "correlated"
+        },
+        "ntips": 24,
+        "oracle_label": "uncorrelated(lam=0.01)",
+        "oracle_population_risk": 1.1419466024731184,
+        "population_regret": 18.168896587866897,
+        "replicate": 3,
+        "seed": 30261012,
+        "selected_config": {
+          "method": "clock"
+        },
+        "selected_population_risk": 19.310843190340016,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "correlated"
+        },
+        "ntips": 24,
+        "oracle_label": "correlated(lam=0.1)",
+        "oracle_population_risk": 1.0405301672351457,
+        "population_regret": 0.010875056833562269,
+        "replicate": 4,
+        "seed": 30261013,
+        "selected_config": {
+          "lam": 0.1,
+          "method": "uncorrelated"
+        },
+        "selected_population_risk": 1.051405224068708,
+        "track": "gamma",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 0.01,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "correlated(lam=1)",
+        "oracle_population_risk": 0.6656254908163229,
+        "population_regret": 1.5639630415503922,
+        "replicate": 0,
+        "seed": 30261015,
+        "selected_config": {
+          "lam": 10.0,
+          "method": "correlated"
+        },
+        "selected_population_risk": 2.2295885323667153,
+        "track": "gamma",
+        "true_family_is_oracle": true
+      },
+      {
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": true,
+        "message": "",
+        "minimum_cv_config": {
+          "lam": 1.0,
+          "method": "correlated"
+        },
+        "ntips": 12,
+        "oracle_label": "uncorrelated(lam=0.1)",
+        "oracle_population_risk": 1.0849743529713687,
+        "population_regret": 1.629192623593312,
+        "replicate": 1,
+        "seed": 30261017,
+        "selected_config": {
+          "lam": 10.0,
+          "method": "correlated"
+        },
+        "selected_population_risk": 2.7141669765646808,
+        "track": "gamma",
+        "true_family_is_oracle": false
+      }
+    ],
+    "summary": {
+      "fixed_age_controls": [
+        {
+          "converged": true,
+          "family": "clock",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "lam": 100.0,
+            "method": "correlated"
+          },
+          "ntips": 12,
+          "oracle_label": "clock",
+          "oracle_population_risk": 0.003714248086771278,
+          "population_regret": 0.0040194114547562765,
+          "replicate": 0,
+          "seed": 30260917,
+          "selected_config": {
+            "lam": 100.0,
+            "method": "uncorrelated"
+          },
+          "selected_population_risk": 0.007733659541527555,
+          "track": "count",
+          "true_family_is_oracle": true
+        },
+        {
+          "converged": true,
+          "family": "clock",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "method": "discrete",
+            "ncategories": 2
+          },
+          "ntips": 12,
+          "oracle_label": "uncorrelated(lam=10000)",
+          "oracle_population_risk": 0.08112619157094278,
+          "population_regret": 1.5254388826740906e-05,
+          "replicate": 1,
+          "seed": 30260919,
+          "selected_config": {
+            "method": "clock"
+          },
+          "selected_population_risk": 0.08114144595976952,
+          "track": "count",
+          "true_family_is_oracle": false
+        },
+        {
+          "converged": true,
+          "family": "clock",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "lam": 10.0,
+            "method": "correlated"
+          },
+          "ntips": 12,
+          "oracle_label": "correlated(lam=1000)",
+          "oracle_population_risk": 0.2135438304559078,
+          "population_regret": 0.0036257367256812834,
+          "replicate": 0,
+          "seed": 30260931,
+          "selected_config": {
+            "method": "clock"
+          },
+          "selected_population_risk": 0.21716956718158908,
+          "track": "gamma",
+          "true_family_is_oracle": false
+        },
+        {
+          "converged": true,
+          "family": "clock",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "lam": 1.0,
+            "method": "correlated"
+          },
+          "ntips": 12,
+          "oracle_label": "uncorrelated(lam=10)",
+          "oracle_population_risk": 0.15657680847944502,
+          "population_regret": 0.02616456275358095,
+          "replicate": 1,
+          "seed": 30260933,
+          "selected_config": {
+            "method": "clock"
+          },
+          "selected_population_risk": 0.18274137123302597,
+          "track": "gamma",
+          "true_family_is_oracle": false
+        },
+        {
+          "converged": true,
+          "family": "discrete",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "method": "clock"
+          },
+          "ntips": 12,
+          "oracle_label": "uncorrelated(lam=1)",
+          "oracle_population_risk": 0.5799926050351402,
+          "population_regret": 1.9384219266786302,
+          "replicate": 0,
+          "seed": 30260945,
+          "selected_config": {
+            "method": "clock"
+          },
+          "selected_population_risk": 2.5184145317137703,
+          "track": "count",
+          "true_family_is_oracle": false
+        },
+        {
+          "converged": true,
+          "family": "discrete",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "method": "clock"
+          },
+          "ntips": 12,
+          "oracle_label": "correlated(lam=0.1)",
+          "oracle_population_risk": 0.19496767593844033,
+          "population_regret": 2.2398527179091947,
+          "replicate": 1,
+          "seed": 30260947,
+          "selected_config": {
+            "method": "clock"
+          },
+          "selected_population_risk": 2.434820393847635,
+          "track": "count",
+          "true_family_is_oracle": false
+        },
+        {
+          "converged": true,
+          "family": "discrete",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "method": "clock"
+          },
+          "ntips": 12,
+          "oracle_label": "correlated(lam=0.0001)",
+          "oracle_population_risk": 1.2431074388345815,
+          "population_regret": 18.707262966891495,
+          "replicate": 0,
+          "seed": 30260959,
+          "selected_config": {
+            "method": "clock"
+          },
+          "selected_population_risk": 19.950370405726076,
+          "track": "gamma",
+          "true_family_is_oracle": false
+        },
+        {
+          "converged": true,
+          "family": "discrete",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "method": "discrete",
+            "ncategories": 3
+          },
+          "ntips": 12,
+          "oracle_label": "uncorrelated(lam=0.1)",
+          "oracle_population_risk": 1.3177222234214587,
+          "population_regret": 21.327582113799977,
+          "replicate": 1,
+          "seed": 30260961,
+          "selected_config": {
+            "method": "clock"
+          },
+          "selected_population_risk": 22.645304337221436,
+          "track": "gamma",
+          "true_family_is_oracle": false
+        },
+        {
+          "converged": true,
+          "family": "uncorrelated",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "lam": 10.0,
+            "method": "correlated"
+          },
+          "ntips": 12,
+          "oracle_label": "uncorrelated(lam=1)",
+          "oracle_population_risk": 0.924276268989428,
+          "population_regret": 1.4640161236678808,
+          "replicate": 0,
+          "seed": 30260973,
+          "selected_config": {
+            "method": "clock"
+          },
+          "selected_population_risk": 2.3882923926573087,
+          "track": "count",
+          "true_family_is_oracle": true
+        },
+        {
+          "converged": true,
+          "family": "uncorrelated",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "method": "discrete",
+            "ncategories": 4
+          },
+          "ntips": 12,
+          "oracle_label": "uncorrelated(lam=1)",
+          "oracle_population_risk": 0.980784773217222,
+          "population_regret": 3.5021311656293315,
+          "replicate": 1,
+          "seed": 30260975,
+          "selected_config": {
+            "method": "discrete",
+            "ncategories": 4
+          },
+          "selected_population_risk": 4.482915938846554,
+          "track": "count",
+          "true_family_is_oracle": true
+        },
+        {
+          "converged": true,
+          "family": "uncorrelated",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "lam": 0.1,
+            "method": "correlated"
+          },
+          "ntips": 12,
+          "oracle_label": "uncorrelated(lam=0.01)",
+          "oracle_population_risk": 1.158186477205961,
+          "population_regret": 79.56631532623416,
+          "replicate": 0,
+          "seed": 30260987,
+          "selected_config": {
+            "method": "clock"
+          },
+          "selected_population_risk": 80.72450180344012,
+          "track": "gamma",
+          "true_family_is_oracle": true
+        },
+        {
+          "converged": true,
+          "family": "uncorrelated",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "lam": 10.0,
+            "method": "uncorrelated"
+          },
+          "ntips": 12,
+          "oracle_label": "correlated(lam=0.0001)",
+          "oracle_population_risk": 0.7829190999056536,
+          "population_regret": 176.87712379371362,
+          "replicate": 1,
+          "seed": 30260989,
+          "selected_config": {
+            "method": "clock"
+          },
+          "selected_population_risk": 177.66004289361928,
+          "track": "gamma",
+          "true_family_is_oracle": false
+        },
+        {
+          "converged": true,
+          "family": "correlated",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "lam": 0.001,
+            "method": "correlated"
+          },
+          "ntips": 12,
+          "oracle_label": "uncorrelated(lam=10)",
+          "oracle_population_risk": 0.19944506955179972,
+          "population_regret": 0.3668289003735241,
+          "replicate": 0,
+          "seed": 30261001,
+          "selected_config": {
+            "lam": 0.001,
+            "method": "uncorrelated"
+          },
+          "selected_population_risk": 0.5662739699253239,
+          "track": "count",
+          "true_family_is_oracle": false
+        },
+        {
+          "converged": true,
+          "family": "correlated",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "lam": 1.0,
+            "method": "correlated"
+          },
+          "ntips": 12,
+          "oracle_label": "correlated(lam=10)",
+          "oracle_population_risk": 0.5795260235701062,
+          "population_regret": 0.5706021427585121,
+          "replicate": 1,
+          "seed": 30261003,
+          "selected_config": {
+            "lam": 100.0,
+            "method": "correlated"
+          },
+          "selected_population_risk": 1.1501281663286183,
+          "track": "count",
+          "true_family_is_oracle": true
+        },
+        {
+          "converged": true,
+          "family": "correlated",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "lam": 0.01,
+            "method": "correlated"
+          },
+          "ntips": 12,
+          "oracle_label": "correlated(lam=1)",
+          "oracle_population_risk": 0.6656254908163229,
+          "population_regret": 1.5639630415503922,
+          "replicate": 0,
+          "seed": 30261015,
+          "selected_config": {
+            "lam": 10.0,
+            "method": "correlated"
+          },
+          "selected_population_risk": 2.2295885323667153,
+          "track": "gamma",
+          "true_family_is_oracle": true
+        },
+        {
+          "converged": true,
+          "family": "correlated",
+          "fixed_ages": true,
+          "message": "",
+          "minimum_cv_config": {
+            "lam": 1.0,
+            "method": "correlated"
+          },
+          "ntips": 12,
+          "oracle_label": "uncorrelated(lam=0.1)",
+          "oracle_population_risk": 1.0849743529713687,
+          "population_regret": 1.629192623593312,
+          "replicate": 1,
+          "seed": 30261017,
+          "selected_config": {
+            "lam": 10.0,
+            "method": "correlated"
+          },
+          "selected_population_risk": 2.7141669765646808,
+          "track": "gamma",
+          "true_family_is_oracle": false
+        }
+      ],
+      "methods": {
+        "clock": {
+          "converged": 20,
+          "gate_checks": {
+            "all_datasets_scored": true,
+            "median_population_regret": true,
+            "p90_population_regret": false
+          },
+          "median_population_regret": 0.026711438449486535,
+          "n": 20,
+          "p90_population_regret": 0.6224263618073735,
+          "passed": false,
+          "true_family_oracle_rate": 0.05
+        },
+        "correlated": {
+          "converged": 20,
+          "gate_checks": {
+            "all_datasets_scored": true,
+            "median_population_regret": false,
+            "p90_population_regret": false
+          },
+          "median_population_regret": 0.7376416204937717,
+          "n": 20,
+          "p90_population_regret": 25.49142173558904,
+          "passed": false,
+          "true_family_oracle_rate": 0.65
+        },
+        "discrete": {
+          "converged": 20,
+          "gate_checks": {
+            "all_datasets_scored": true,
+            "median_population_regret": false,
+            "p90_population_regret": false
+          },
+          "median_population_regret": 1.3549646578767591,
+          "n": 20,
+          "p90_population_regret": 15.597744263355109,
+          "passed": false,
+          "true_family_oracle_rate": 0.0
+        },
+        "uncorrelated": {
+          "converged": 20,
+          "gate_checks": {
+            "all_datasets_scored": true,
+            "median_population_regret": false,
+            "p90_population_regret": false
+          },
+          "median_population_regret": 12.833393979819181,
+          "n": 20,
+          "p90_population_regret": 102.00843364145457,
+          "passed": false,
+          "true_family_oracle_rate": 0.65
+        }
+      }
+    }
+  },
+  "mode": "pilot",
+  "primary": {
+    "replicates": [
+      {
+        "age_bias": 0.019168766887087674,
+        "age_mae": 0.02260490915915474,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30260826,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.011448488179024318,
+        "age_mae": 0.017196538420053628,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30260827,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.030970883924125184,
+        "age_mae": 0.03132003861261993,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 2,
+        "seed": 30260828,
+        "track": "count"
+      },
+      {
+        "age_bias": -0.018644661101734083,
+        "age_mae": 0.027309142337675642,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 3,
+        "seed": 30260829,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.017406801459706602,
+        "age_mae": 0.02145766106594979,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 4,
+        "seed": 30260830,
+        "track": "count"
+      },
+      {
+        "age_bias": -0.0085539768800458,
+        "age_mae": 0.018914266962089216,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 0,
+        "seed": 30260831,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.02183546746711576,
+        "age_mae": 0.029826307092756032,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 1,
+        "seed": 30260832,
+        "track": "count"
+      },
+      {
+        "age_bias": -0.004892399944021298,
+        "age_mae": 0.03377519537487078,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 2,
+        "seed": 30260833,
+        "track": "count"
+      },
+      {
+        "age_bias": -0.0013189733748981336,
+        "age_mae": 0.02508980609553563,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 3,
+        "seed": 30260834,
+        "track": "count"
+      },
+      {
+        "age_bias": -0.006098678808935443,
+        "age_mae": 0.020371778571878333,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 4,
+        "seed": 30260835,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.005174143851021961,
+        "age_mae": 0.00809302365129898,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30260836,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.0074701365681479285,
+        "age_mae": 0.011745241548748548,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30260837,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.006070091705227303,
+        "age_mae": 0.008100662121373515,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 2,
+        "seed": 30260838,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.0013059865552232117,
+        "age_mae": 0.0038502903151542314,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 3,
+        "seed": 30260839,
+        "track": "gamma"
+      },
+      {
+        "age_bias": -0.0031244576469905065,
+        "age_mae": 0.006296795939483352,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 4,
+        "seed": 30260840,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.00040089142198544415,
+        "age_mae": 0.005324996363106856,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 0,
+        "seed": 30260841,
+        "track": "gamma"
+      },
+      {
+        "age_bias": -0.010898529075975147,
+        "age_mae": 0.01249675944812737,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 1,
+        "seed": 30260842,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.0004502275457440679,
+        "age_mae": 0.006312050864983715,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 2,
+        "seed": 30260843,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.0022508399697099752,
+        "age_mae": 0.007961527102117663,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 3,
+        "seed": 30260844,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.0021858046890999017,
+        "age_mae": 0.009726187965869179,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 4,
+        "seed": 30260845,
+        "track": "gamma"
+      },
+      {
+        "age_bias": -0.004600904308355899,
+        "age_mae": 0.023978213733207913,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30260846,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.01594169338661581,
+        "age_mae": 0.0419292308121019,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30260847,
+        "track": "count"
+      },
+      {
+        "age_bias": -0.039910044287490704,
+        "age_mae": 0.05575642964071632,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 2,
+        "seed": 30260848,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.059281624064919616,
+        "age_mae": 0.06666171433304763,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 3,
+        "seed": 30260849,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.07658467837271067,
+        "age_mae": 0.15060549689175118,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 4,
+        "seed": 30260850,
+        "track": "count"
+      },
+      {
+        "age_bias": -0.009283343255673931,
+        "age_mae": 0.05607899338921995,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 24,
+        "replicate": 0,
+        "seed": 30260851,
+        "track": "count"
+      },
+      {
+        "age_bias": -0.01022869502011418,
+        "age_mae": 0.04698658847760404,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 24,
+        "replicate": 1,
+        "seed": 30260852,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.023352925456883146,
+        "age_mae": 0.04637966358708969,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 24,
+        "replicate": 2,
+        "seed": 30260853,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.030157568988910647,
+        "age_mae": 0.04572154970024841,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 24,
+        "replicate": 3,
+        "seed": 30260854,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.015284684148233679,
+        "age_mae": 0.037807476982671354,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 24,
+        "replicate": 4,
+        "seed": 30260855,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.0015666693240879638,
+        "age_mae": 0.07051588085961243,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30260856,
+        "track": "gamma"
+      },
+      {
+        "age_bias": -0.018995287584968115,
+        "age_mae": 0.02155603873551997,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30260857,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.014062958026484213,
+        "age_mae": 0.029999343985604422,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 2,
+        "seed": 30260858,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.019707890608992328,
+        "age_mae": 0.045085999284369245,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 3,
+        "seed": 30260859,
+        "track": "gamma"
+      },
+      {
+        "age_bias": -0.035672748891453214,
+        "age_mae": 0.05639245943230227,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 4,
+        "seed": 30260860,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.012396159006190935,
+        "age_mae": 0.06713638153972779,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 24,
+        "replicate": 0,
+        "seed": 30260861,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.01879839119559356,
+        "age_mae": 0.032206365314968996,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 24,
+        "replicate": 1,
+        "seed": 30260862,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.0065370830996021876,
+        "age_mae": 0.028192780237215612,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 24,
+        "replicate": 2,
+        "seed": 30260863,
+        "track": "gamma"
+      },
+      {
+        "age_bias": -0.004067444691000153,
+        "age_mae": 0.019156556696165263,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 24,
+        "replicate": 3,
+        "seed": 30260864,
+        "track": "gamma"
+      },
+      {
+        "age_bias": -0.005017968124636591,
+        "age_mae": 0.01542853301001282,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": false,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 24,
+        "replicate": 4,
+        "seed": 30260865,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.03949047056842739,
+        "age_mae": 0.057169698263527316,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.11688311688311688,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30260866,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.034963023541517244,
+        "age_mae": 0.048324317466444014,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.7594579333709771,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30260867,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.07287292440529859,
+        "age_mae": 0.07287292440529859,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.7967250141163186,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 2,
+        "seed": 30260868,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.04952357689914227,
+        "age_mae": 0.0694581932817219,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.4568040654997177,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 3,
+        "seed": 30260869,
+        "track": "count"
+      },
+      {
+        "age_bias": -0.004912947253983383,
+        "age_mae": 0.05503411767348023,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.23433088650479958,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 4,
+        "seed": 30260870,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.03638996845605366,
+        "age_mae": 0.05877198333310722,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.6319457292630279,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 0,
+        "seed": 30260871,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.016406174857506894,
+        "age_mae": 0.08115128245749247,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.6291088498304039,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 1,
+        "seed": 30260872,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.08640132457817472,
+        "age_mae": 0.09545806375712225,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.7398704902867714,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 2,
+        "seed": 30260873,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.0325052396743513,
+        "age_mae": 0.0512246364568784,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.49836571076164043,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 3,
+        "seed": 30260874,
+        "track": "count"
+      },
+      {
+        "age_bias": -0.0014506643570707113,
+        "age_mae": 0.060546716841708155,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.3827937095282146,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 4,
+        "seed": 30260875,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.01981032555956599,
+        "age_mae": 0.05753917196396006,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.7447769621682666,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30260876,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.038590960865812776,
+        "age_mae": 0.04429470626268197,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.8170525127046867,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30260877,
+        "track": "gamma"
+      },
+      {
+        "age_bias": -0.051570420483071366,
+        "age_mae": 0.051570420483071366,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.647656691134952,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 2,
+        "seed": 30260878,
+        "track": "gamma"
+      },
+      {
+        "age_bias": -0.09319952445432624,
+        "age_mae": 0.0936774440481895,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.3167701863354037,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 3,
+        "seed": 30260879,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.013839746931454894,
+        "age_mae": 0.028903076605927402,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.9006211180124224,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 4,
+        "seed": 30260880,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.03944463575123229,
+        "age_mae": 0.06163820367689414,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.7050878815911192,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 0,
+        "seed": 30260881,
+        "track": "gamma"
+      },
+      {
+        "age_bias": -0.003844511793894536,
+        "age_mae": 0.0422984465417574,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.6249152019734814,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 1,
+        "seed": 30260882,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.021657603551121514,
+        "age_mae": 0.03910991011781801,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.6714153561517113,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 2,
+        "seed": 30260883,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.025723104965432196,
+        "age_mae": 0.047992936504303814,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.7501079247610237,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 3,
+        "seed": 30260884,
+        "track": "gamma"
+      },
+      {
+        "age_bias": -0.007613085436589878,
+        "age_mae": 0.06113877220716878,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.7361702127659574,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 4,
+        "seed": 30260885,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.042041668621378835,
+        "age_mae": 0.0532453987308032,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.497459062676454,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30260886,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.014025531184473035,
+        "age_mae": 0.02865013334022002,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.753811405985319,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30260887,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.008540582687212358,
+        "age_mae": 0.02384016179577667,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.9322416713721063,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 2,
+        "seed": 30260888,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.0037815385471152013,
+        "age_mae": 0.03203497696152826,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.9178198615077567,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 3,
+        "seed": 30260889,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.0014365938968231825,
+        "age_mae": 0.03901880120530319,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.7165443252399775,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 4,
+        "seed": 30260890,
+        "track": "count"
+      },
+      {
+        "age_bias": -0.012039617618452559,
+        "age_mae": 0.04011254740688714,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.8946654332408264,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 0,
+        "seed": 30260891,
+        "track": "count"
+      },
+      {
+        "age_bias": -0.01412872262761377,
+        "age_mae": 0.02338558204814787,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.7868882793836529,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 1,
+        "seed": 30260892,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.02367642744449772,
+        "age_mae": 0.03253200057091374,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.880604378661733,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 2,
+        "seed": 30260893,
+        "track": "count"
+      },
+      {
+        "age_bias": -0.0046493143164736605,
+        "age_mae": 0.033969474398128155,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.5432624113475176,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 3,
+        "seed": 30260894,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.02825659258707295,
+        "age_mae": 0.04670210452481245,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.7961147086031451,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 4,
+        "seed": 30260895,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.006237502824816219,
+        "age_mae": 0.015906712504236267,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.917560700169396,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30260896,
+        "track": "gamma"
+      },
+      {
+        "age_bias": -0.004710004449238193,
+        "age_mae": 0.00812827487260775,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.8294748729531339,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30260897,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.015205591553130747,
+        "age_mae": 0.03018753931642174,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.9457933370976851,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 2,
+        "seed": 30260898,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.009464274490939045,
+        "age_mae": 0.01416279769054758,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.9333709768492378,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 3,
+        "seed": 30260899,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.021560130776417892,
+        "age_mae": 0.02195607706474117,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.8023715415019763,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 4,
+        "seed": 30260900,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.005798206055728833,
+        "age_mae": 0.0284460489719208,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.9518963922294171,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 0,
+        "seed": 30260901,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.007600148275775648,
+        "age_mae": 0.020509509982671915,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.9164970706136293,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 1,
+        "seed": 30260902,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.010425921338509501,
+        "age_mae": 0.01305159970539613,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.889855072463768,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 2,
+        "seed": 30260903,
+        "track": "gamma"
+      },
+      {
+        "age_bias": -0.030638699991643478,
+        "age_mae": 0.03936260725647931,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.7971014492753623,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 3,
+        "seed": 30260904,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.02674299229377244,
+        "age_mae": 0.04139776183912122,
+        "calibration": "root_and_internal_interval",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": false,
+        "log_rate_spearman": 0.8122725871107,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 24,
+        "replicate": 4,
+        "seed": 30260905,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": true,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30260916,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": true,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30260918,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": true,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30260930,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "clock",
+        "fixed_ages": true,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30260932,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": true,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30260944,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": true,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30260946,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": true,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30260958,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "discrete",
+        "fixed_ages": true,
+        "log_rate_spearman": null,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30260960,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": true,
+        "log_rate_spearman": 0.8994918125352909,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30260972,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": true,
+        "log_rate_spearman": 0.7933370976849238,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30260974,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": true,
+        "log_rate_spearman": 0.9841897233201583,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30260986,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "uncorrelated",
+        "fixed_ages": true,
+        "log_rate_spearman": 0.9751552795031055,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30260988,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": true,
+        "log_rate_spearman": 0.8441558441558443,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30261000,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": true,
+        "log_rate_spearman": 0.8339920948616601,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30261002,
+        "track": "count"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": true,
+        "log_rate_spearman": 0.9412761151891589,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 0,
+        "seed": 30261014,
+        "track": "gamma"
+      },
+      {
+        "age_bias": 0.0,
+        "age_mae": 0.0,
+        "calibration": "fixed_internal_ages",
+        "converged": true,
+        "family": "correlated",
+        "fixed_ages": true,
+        "log_rate_spearman": 0.5787690570299266,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "ntips": 12,
+        "replicate": 1,
+        "seed": 30261016,
+        "track": "gamma"
+      }
+    ],
+    "summary": {
+      "fixed_age_controls": {
+        "clock": {
+          "median_log_rate_spearman": null,
+          "n": 4
+        },
+        "correlated": {
+          "median_log_rate_spearman": 0.8390739695087522,
+          "n": 4
+        },
+        "discrete": {
+          "median_log_rate_spearman": null,
+          "n": 4
+        },
+        "uncorrelated": {
+          "median_log_rate_spearman": 0.9373235460191982,
+          "n": 4
+        }
+      },
+      "methods": {
+        "clock": {
+          "absolute_age_bias": 0.0036303426695309463,
+          "converged": 20,
+          "convergence_wilson_lower": 0.8388748419471806,
+          "gate_checks": {
+            "age_bias": true,
+            "age_mae": true,
+            "convergence": false
+          },
+          "median_age_mae": 0.0148466489340905,
+          "median_log_rate_spearman": null,
+          "n": 20,
+          "passed": false
+        },
+        "correlated": {
+          "absolute_age_bias": 0.007931367178712099,
+          "converged": 20,
+          "convergence_wilson_lower": 0.8388748419471806,
+          "gate_checks": {
+            "age_bias": true,
+            "age_mae": true,
+            "convergence": false,
+            "rate_spearman": true
+          },
+          "median_age_mae": 0.02941883632832088,
+          "median_log_rate_spearman": 0.8550396258074335,
+          "n": 20,
+          "passed": false
+        },
+        "discrete": {
+          "absolute_age_bias": 0.0082947944757766,
+          "converged": 20,
+          "convergence_wilson_lower": 0.8388748419471806,
+          "gate_checks": {
+            "age_bias": true,
+            "age_mae": true,
+            "convergence": false
+          },
+          "median_age_mae": 0.04540377449230883,
+          "median_log_rate_spearman": null,
+          "n": 20,
+          "passed": false
+        },
+        "uncorrelated": {
+          "absolute_age_bias": 0.01825139634130778,
+          "converged": 20,
+          "convergence_wilson_lower": 0.8388748419471806,
+          "gate_checks": {
+            "age_bias": true,
+            "age_mae": true,
+            "convergence": false,
+            "rate_spearman": false
+          },
+          "median_age_mae": 0.05735443511374369,
+          "median_log_rate_spearman": 0.6595360236433316,
+          "n": 20,
+          "passed": false
+        }
+      }
+    }
+  },
+  "release_eligible": false,
+  "study_version": 2
+}

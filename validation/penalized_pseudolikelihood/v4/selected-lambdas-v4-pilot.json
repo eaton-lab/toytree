@@ -1,0 +1,12 @@
+{
+  "selected_lambdas": {
+    "gamma": {
+      "relaxed": 10000.0,
+      "uncorrelated_lognormal": 1.0
+    },
+    "lognormal": {
+      "relaxed": 100.0,
+      "uncorrelated_lognormal": 1.0
+    }
+  }
+}

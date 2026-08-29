@@ -11,3 +11,6 @@ toytree.egg-info/
 site/
 .idea/
 .ruff_cache
+
+# resumable statistical-validation fit caches (commit summaries only)
+validation/**/cache-v*/

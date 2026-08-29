@@ -1,0 +1,1073 @@
+{
+  "discrete": [
+    {
+      "cell": "discrete|24|root_and_internal_interval|low",
+      "fits": [
+        {
+          "converged": false,
+          "message": "RuntimeError: all starts failed with non-finite objective: ToytreeError: cannot decode node 44 age: effective lower bound 1 is not below upper bound 1.",
+          "nstarts": 1
+        },
+        {
+          "best_start": 1,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -57.58385972343435
+        },
+        {
+          "best_start": 5,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -57.58384009824864
+        }
+      ],
+      "replicate": 19,
+      "seed": 20263645
+    },
+    {
+      "cell": "discrete|24|root_and_internal_interval|low",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -63.5911418134087
+        },
+        {
+          "best_start": 2,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -63.58019806798965
+        },
+        {
+          "best_start": 7,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -63.56195436624165
+        }
+      ],
+      "replicate": 24,
+      "seed": 20263650
+    },
+    {
+      "cell": "discrete|24|root_and_internal_interval|low",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -61.26324541802434
+        },
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -61.26324541802434
+        },
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -61.26324541802434
+        }
+      ],
+      "replicate": 34,
+      "seed": 20263660
+    },
+    {
+      "cell": "discrete|24|root_and_internal_interval|low",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -63.25891685379302
+        },
+        {
+          "best_start": 1,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -63.258900452291215
+        },
+        {
+          "best_start": 1,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -63.258900452291215
+        }
+      ],
+      "replicate": 40,
+      "seed": 20263666
+    },
+    {
+      "cell": "discrete|24|root_and_internal_interval|low",
+      "fits": [
+        {
+          "converged": false,
+          "message": "RuntimeError: all starts failed with non-finite objective: ToytreeError: cannot decode node 26 age: effective lower bound 0.93062 is not below upper bound 0.93062.",
+          "nstarts": 1
+        },
+        {
+          "best_start": 3,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -71.52476823873239
+        },
+        {
+          "best_start": 4,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -71.52474062689332
+        }
+      ],
+      "replicate": 57,
+      "seed": 20263683
+    },
+    {
+      "cell": "discrete|24|root_and_internal_interval|low",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -64.23950329522468
+        },
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -64.23950329522468
+        },
+        {
+          "best_start": 6,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -64.22035309615895
+        }
+      ],
+      "replicate": 106,
+      "seed": 20263732
+    },
+    {
+      "cell": "discrete|24|root_and_internal_interval|low",
+      "fits": [
+        {
+          "converged": false,
+          "message": "RuntimeError: all starts failed with non-finite objective: ToytreeError: cannot decode node 28 age: effective lower bound 0.766487 is not below upper bound 0.766487.",
+          "nstarts": 1
+        },
+        {
+          "best_start": 3,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -65.42978557234804
+        },
+        {
+          "best_start": 7,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -65.42881548378912
+        }
+      ],
+      "replicate": 198,
+      "seed": 20263824
+    },
+    {
+      "cell": "discrete|24|root_and_internal_interval|moderate",
+      "fits": [
+        {
+          "converged": false,
+          "message": "RuntimeError: all starts failed with non-finite objective: ToytreeError: cannot decode node 38 age: effective lower bound 0.710693 is not below upper bound 0.710693.",
+          "nstarts": 1
+        },
+        {
+          "best_start": 1,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -61.720262532999314
+        },
+        {
+          "best_start": 7,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -61.72019081743112
+        }
+      ],
+      "replicate": 10,
+      "seed": 20263836
+    },
+    {
+      "cell": "discrete|24|root_and_internal_interval|moderate",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -82.64594161441234
+        },
+        {
+          "best_start": 2,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -82.15428279244509
+        },
+        {
+          "best_start": 2,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -82.15428279244509
+        }
+      ],
+      "replicate": 53,
+      "seed": 20263879
+    },
+    {
+      "cell": "discrete|24|root_and_internal_interval|moderate",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -60.315729095405544
+        },
+        {
+          "best_start": 2,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -60.31571907229682
+        },
+        {
+          "best_start": 2,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -60.31571907229682
+        }
+      ],
+      "replicate": 120,
+      "seed": 20263946
+    },
+    {
+      "cell": "discrete|24|root_and_internal_interval|moderate",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -61.351585345673236
+        },
+        {
+          "best_start": 3,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -61.351542079216344
+        },
+        {
+          "best_start": 3,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -61.351542079216344
+        }
+      ],
+      "replicate": 131,
+      "seed": 20263957
+    },
+    {
+      "cell": "discrete|24|root|low",
+      "fits": [
+        {
+          "converged": false,
+          "message": "RuntimeError: all starts failed with non-finite objective: ToytreeError: cannot decode node 33 age: effective lower bound 1 is not below upper bound 1.",
+          "nstarts": 1
+        },
+        {
+          "best_start": 1,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -76.59683555133847
+        },
+        {
+          "best_start": 1,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -76.59683555133847
+        }
+      ],
+      "replicate": 3,
+      "seed": 20263229
+    },
+    {
+      "cell": "discrete|24|root|low",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -63.64667617736817
+        },
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -63.64667617736817
+        },
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -63.64667617736817
+        }
+      ],
+      "replicate": 27,
+      "seed": 20263253
+    },
+    {
+      "cell": "discrete|24|root|low",
+      "fits": [
+        {
+          "converged": false,
+          "message": "RuntimeError: all starts failed with non-finite objective: ToytreeError: cannot decode node 36 age: effective lower bound 1 is not below upper bound 1.",
+          "nstarts": 1
+        },
+        {
+          "best_start": 2,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -66.95072237095145
+        },
+        {
+          "best_start": 7,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -66.94748001660744
+        }
+      ],
+      "replicate": 92,
+      "seed": 20263318
+    },
+    {
+      "cell": "discrete|24|root|low",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -67.90678179709217
+        },
+        {
+          "best_start": 3,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -67.90675188414839
+        },
+        {
+          "best_start": 3,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -67.90675188414839
+        }
+      ],
+      "replicate": 146,
+      "seed": 20263372
+    },
+    {
+      "cell": "discrete|24|root|low",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -63.773016211040066
+        },
+        {
+          "best_start": 1,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -63.77301575626668
+        },
+        {
+          "best_start": 1,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -63.77301575626668
+        }
+      ],
+      "replicate": 176,
+      "seed": 20263402
+    },
+    {
+      "cell": "discrete|24|root|low",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -70.99918048337878
+        },
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -70.99918048337878
+        },
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -70.99918048337878
+        }
+      ],
+      "replicate": 179,
+      "seed": 20263405
+    },
+    {
+      "cell": "discrete|24|root|low",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -77.03714064183195
+        },
+        {
+          "best_start": 3,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -65.10575349775931
+        },
+        {
+          "best_start": 3,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -65.10575349775931
+        }
+      ],
+      "replicate": 188,
+      "seed": 20263414
+    },
+    {
+      "cell": "discrete|24|root|moderate",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -77.3130753599943
+        },
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -77.3130753599943
+        },
+        {
+          "best_start": 5,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -77.31307393468683
+        }
+      ],
+      "replicate": 3,
+      "seed": 20263429
+    },
+    {
+      "cell": "discrete|24|root|moderate",
+      "fits": [
+        {
+          "converged": false,
+          "message": "RuntimeError: all starts failed with non-finite objective: ToytreeError: cannot decode node 43 age: effective lower bound 1 is not below upper bound 1.",
+          "nstarts": 1
+        },
+        {
+          "best_start": 1,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -74.04994712509803
+        },
+        {
+          "best_start": 4,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -74.04994468564098
+        }
+      ],
+      "replicate": 9,
+      "seed": 20263435
+    },
+    {
+      "cell": "discrete|24|root|moderate",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -66.11435903152226
+        },
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -66.11435903152226
+        },
+        {
+          "best_start": 7,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -66.11435059785305
+        }
+      ],
+      "replicate": 32,
+      "seed": 20263458
+    },
+    {
+      "cell": "discrete|24|root|moderate",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -66.4032593466924
+        },
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -66.4032593466924
+        },
+        {
+          "best_start": 6,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -66.40306844804418
+        }
+      ],
+      "replicate": 40,
+      "seed": 20263466
+    },
+    {
+      "cell": "discrete|24|root|moderate",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -75.06054452259531
+        },
+        {
+          "best_start": 1,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -75.03602162954223
+        },
+        {
+          "best_start": 5,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -75.03565603410291
+        }
+      ],
+      "replicate": 96,
+      "seed": 20263522
+    },
+    {
+      "cell": "discrete|24|root|moderate",
+      "fits": [
+        {
+          "converged": false,
+          "message": "RuntimeError: all starts failed with non-finite objective: ToytreeError: cannot decode node 38 age: effective lower bound 1 is not below upper bound 1.",
+          "nstarts": 1
+        },
+        {
+          "best_start": 3,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -63.0312216958927
+        },
+        {
+          "best_start": 5,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -63.03120319505922
+        }
+      ],
+      "replicate": 187,
+      "seed": 20263613
+    },
+    {
+      "cell": "discrete|8|root_and_internal_interval|low",
+      "fits": [
+        {
+          "converged": false,
+          "message": "RuntimeError: all starts failed with non-finite objective: ToytreeError: cannot decode node 12 age: effective lower bound 0.416113 is not below upper bound 0.416113.",
+          "nstarts": 1
+        },
+        {
+          "best_start": 2,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -24.177394661955482
+        },
+        {
+          "best_start": 7,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -24.1773943670736
+        }
+      ],
+      "replicate": 2,
+      "seed": 20262828
+    },
+    {
+      "cell": "discrete|8|root_and_internal_interval|low",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -23.27342336594503
+        },
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -23.27342336594503
+        },
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -23.27342336594503
+        }
+      ],
+      "replicate": 19,
+      "seed": 20262845
+    },
+    {
+      "cell": "discrete|8|root_and_internal_interval|low",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+          "nstarts": 1,
+          "pseudologlik": -25.338046791173397
+        },
+        {
+          "best_start": 3,
+          "converged": true,
+          "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+          "nstarts": 4,
+          "pseudologlik": -25.338046745085833
+        },
+        {
+          "best_start": 6,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -25.338046706534108
+        }
+      ],
+      "replicate": 38,
+      "seed": 20262864
+    },
+    {
+      "cell": "discrete|8|root_and_internal_interval|low",
+      "fits": [
+        {
+          "converged": false,
+          "message": "RuntimeError: all starts failed with non-finite objective: ToytreeError: cannot decode node 10 age: effective lower bound 1 is not below upper bound 1.",
+          "nstarts": 1
+        },
+        {
+          "best_start": 3,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -25.451758398259244
+        },
+        {
+          "best_start": 6,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -25.451758186721964
+        }
+      ],
+      "replicate": 96,
+      "seed": 20262922
+    },
+    {
+      "cell": "discrete|8|root_and_internal_interval|low",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -17.671475298280875
+        },
+        {
+          "best_start": 1,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -17.671467717720148
+        },
+        {
+          "best_start": 7,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -17.671467711497336
+        }
+      ],
+      "replicate": 197,
+      "seed": 20263023
+    },
+    {
+      "cell": "discrete|8|root_and_internal_interval|moderate",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -20.471033684618206
+        },
+        {
+          "best_start": 1,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -20.47103287463873
+        },
+        {
+          "best_start": 1,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -20.47103287463873
+        }
+      ],
+      "replicate": 172,
+      "seed": 20263198
+    },
+    {
+      "cell": "discrete|8|root_and_internal_interval|moderate",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -25.168560530351407
+        },
+        {
+          "best_start": 2,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -25.168559982765586
+        },
+        {
+          "best_start": 2,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -25.168559982765586
+        }
+      ],
+      "replicate": 186,
+      "seed": 20263212
+    },
+    {
+      "cell": "discrete|8|root|low",
+      "fits": [
+        {
+          "best_start": 0,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 1,
+          "pseudologlik": -26.120239877729038
+        },
+        {
+          "best_start": 3,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -26.120239837150923
+        },
+        {
+          "best_start": 3,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -26.120239837150923
+        }
+      ],
+      "replicate": 16,
+      "seed": 20262442
+    },
+    {
+      "cell": "discrete|8|root|moderate",
+      "fits": [
+        {
+          "converged": false,
+          "message": "RuntimeError: all starts failed with non-finite objective: ToytreeError: cannot decode node 11 age: effective lower bound 1 is not below upper bound 1.",
+          "nstarts": 1
+        },
+        {
+          "best_start": 1,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 4,
+          "pseudologlik": -27.704410980816263
+        },
+        {
+          "best_start": 5,
+          "converged": true,
+          "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+          "nstarts": 8,
+          "pseudologlik": -27.70441097980147
+        }
+      ],
+      "replicate": 155,
+      "seed": 20262781
+    }
+  ],
+  "discrete_failed_seeds": 33,
+  "uncorrelated_fixed_age": {
+    "median_log_rate_spearman": 0.9296703296703297,
+    "n": 20,
+    "rows": [
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9296703296703297,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 0,
+        "seed": 20264026
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9164835164835166,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 1,
+        "seed": 20264027
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9296703296703297,
+        "message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "replicate": 2,
+        "seed": 20264028
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9208791208791209,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 3,
+        "seed": 20264029
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9648351648351648,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 4,
+        "seed": 20264030
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.8505494505494505,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 5,
+        "seed": 20264031
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9340659340659341,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 6,
+        "seed": 20264032
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9428571428571428,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 7,
+        "seed": 20264033
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9428571428571428,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 8,
+        "seed": 20264034
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.8681318681318682,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 9,
+        "seed": 20264035
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9648351648351648,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 10,
+        "seed": 20264036
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.8857142857142857,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 11,
+        "seed": 20264037
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9736263736263736,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 12,
+        "seed": 20264038
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9076923076923077,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 13,
+        "seed": 20264039
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9296703296703297,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 14,
+        "seed": 20264040
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9736263736263736,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 15,
+        "seed": 20264041
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9120879120879121,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 16,
+        "seed": 20264042
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9208791208791209,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 18,
+        "seed": 20264044
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9604395604395607,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 19,
+        "seed": 20264045
+      },
+      {
+        "cell": "uncorrelated|8|root|low",
+        "converged": true,
+        "log_rate_spearman": 0.9516483516483516,
+        "message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "replicate": 20,
+        "seed": 20264046
+      }
+    ]
+  }
+}

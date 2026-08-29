@@ -1,0 +1,38 @@
+{
+  "study_version": 4,
+  "development_seed": 50260829,
+  "confirmation_seed": 60260829,
+  "simulation": {
+    "baseline_rate": 50.0,
+    "lognormal_log_sigma": 0.65,
+    "gamma_shape": 100.0
+  },
+  "fit": {
+    "max_iter": 1000,
+    "max_fun": 3000,
+    "max_refine": 4,
+    "nstarts": 1
+  },
+  "pilot": {
+    "replicates": 20,
+    "ntips": 24,
+    "calibration": "root_and_internal_interval",
+    "lambdas": [0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0]
+  },
+  "confirmation": {
+    "replicates": 50,
+    "ntips": [12, 24],
+    "calibrations": ["root", "root_and_internal_interval"],
+    "tracks": ["count", "gamma"],
+    "fixed_age_controls": 20
+  },
+  "release_gates": {
+    "convergence_rate": 0.98,
+    "normalized_internal_age_mae_median": 0.08,
+    "normalized_internal_age_absolute_bias": 0.03,
+    "fixed_age_log_rate_spearman_median": 0.85,
+    "noninferiority_ratio": 1.10,
+    "bootstrap_replicates": 10000,
+    "bootstrap_seed": 70260829
+  }
+}

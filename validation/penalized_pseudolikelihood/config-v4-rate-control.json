@@ -1,0 +1,8 @@
+{
+  "seed": 80260829,
+  "replicates": 100,
+  "ntips": 24,
+  "track": "gamma",
+  "minimum_convergence_rate": 0.98,
+  "minimum_median_log_rate_spearman": 0.85
+}

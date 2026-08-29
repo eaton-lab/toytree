@@ -1,0 +1,1733 @@
+{
+  "seeds": [
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260826,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260827,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260828,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260829,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260830,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260831,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260832,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260833,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260834,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260835,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260836,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260837,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260838,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260839,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260840,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260841,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260842,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260843,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260844,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260845,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260846,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260847,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260848,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260849,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260850,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260851,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260852,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260853,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260854,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260855,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260856,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260857,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260858,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260859,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260860,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260861,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260862,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260863,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260864,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260865,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260866,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260867,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260868,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260869,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260870,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260871,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260872,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260873,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260874,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260875,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260876,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260877,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260878,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260879,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260880,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260881,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260882,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260883,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260884,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260885,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260886,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260887,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260888,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260889,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260890,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260891,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260892,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260893,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260894,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260895,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260896,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260897,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260898,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260899,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260900,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260901,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260902,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260903,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260904,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "primary",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260905,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260906,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260907,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260908,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260909,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260910,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260911,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260912,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260913,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260914,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260915,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260916,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260917,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260918,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260919,
+      "track": "count"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260920,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260921,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260922,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260923,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260924,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260925,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260926,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260927,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260928,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260929,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260930,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260931,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260932,
+      "track": "gamma"
+    },
+    {
+      "family": "clock",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260933,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260934,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260935,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260936,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260937,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260938,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260939,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260940,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260941,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260942,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260943,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260944,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260945,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260946,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260947,
+      "track": "count"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260948,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260949,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260950,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260951,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260952,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260953,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260954,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260955,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260956,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260957,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260958,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260959,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260960,
+      "track": "gamma"
+    },
+    {
+      "family": "discrete",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260961,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260962,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260963,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260964,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260965,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260966,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260967,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260968,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260969,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260970,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260971,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260972,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260973,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260974,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260975,
+      "track": "count"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260976,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260977,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260978,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260979,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260980,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260981,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260982,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260983,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260984,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260985,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260986,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260987,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260988,
+      "track": "gamma"
+    },
+    {
+      "family": "uncorrelated",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260989,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30260990,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30260991,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30260992,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30260993,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30260994,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30260995,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30260996,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30260997,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30260998,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30260999,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30261000,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30261001,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30261002,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30261003,
+      "track": "count"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30261004,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30261005,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 2,
+      "seed": 30261006,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 3,
+      "seed": 30261007,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 4,
+      "seed": 30261008,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 0,
+      "seed": 30261009,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 1,
+      "seed": 30261010,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 2,
+      "seed": 30261011,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 3,
+      "seed": 30261012,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": false,
+      "kind": "cv",
+      "ntips": 24,
+      "replicate": 4,
+      "seed": 30261013,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30261014,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 0,
+      "seed": 30261015,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": true,
+      "kind": "primary",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30261016,
+      "track": "gamma"
+    },
+    {
+      "family": "correlated",
+      "fixed_ages": true,
+      "kind": "cv",
+      "ntips": 12,
+      "replicate": 1,
+      "seed": 30261017,
+      "track": "gamma"
+    }
+  ],
+  "study_version": 2
+}

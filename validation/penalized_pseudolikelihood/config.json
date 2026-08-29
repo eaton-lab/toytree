@@ -1,0 +1,37 @@
+{
+  "study_version": 1,
+  "seed": 20260826,
+  "primary": {
+    "replicates_per_cell": 200,
+    "models": ["clock", "discrete", "uncorrelated_lognormal", "correlated"],
+    "ntips": [8, 24],
+    "calibrations": ["root", "root_and_internal_interval"],
+    "noise": {
+      "low": {"gamma_shape": 200.0},
+      "moderate": {"gamma_shape": 50.0}
+    },
+    "fit": {
+      "lambda": 1.0,
+      "ncategories": 2,
+      "max_iter": 1000,
+      "max_fun": 3000,
+      "max_refine": 4,
+      "nstarts": 1
+    }
+  },
+  "cross_validation": {
+    "replicates_per_family": 50,
+    "ntips": 12,
+    "ncategories": [2, 3, 4],
+    "lambdas": [0.0001, 0.001, 0.01, 0.1, 1.0, 10.0, 100.0, 1000.0, 10000.0],
+    "noise_gamma_shape": 100.0
+  },
+  "release_gates": {
+    "convergence_wilson_lower": 0.98,
+    "normalized_internal_age_mae_median": {"low": 0.08, "moderate": 0.15},
+    "normalized_internal_age_absolute_bias": {"low": 0.03, "moderate": 0.05},
+    "low_noise_log_rate_spearman_median": 0.75,
+    "cv_oracle_excess_median": 0.10,
+    "cv_oracle_excess_90th_percentile": 0.35
+  }
+}

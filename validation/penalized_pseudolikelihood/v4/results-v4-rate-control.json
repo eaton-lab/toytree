@@ -1,0 +1,19 @@
+{
+  "convergence_rate": 1.0,
+  "design": {
+    "internal_ages": "fixed_at_truth",
+    "ntips": 24,
+    "observation_track": "gamma",
+    "rate_process": "iid_lognormal",
+    "replicates": 100
+  },
+  "gate_checks": {
+    "convergence": true,
+    "rate_recovery": true
+  },
+  "median_log_rate_spearman": 0.947641073080481,
+  "median_observed_rate_spearman": 0.9845205057045945,
+  "passed": true,
+  "source_hash": "1ca96d273818f23eee4dd7ed4979dbda37429fa83ac147aef70e0c958dfa864a",
+  "study_version": "4-rate-control"
+}
