@@ -4,22 +4,22 @@
 import numpy as np
 from conftest import PytestCompat
 
-from toytree.mod._src.penalized_likelihood.pl_clock import (
-    edges_make_ultrametric_pl_clock,
+from toytree.mod._src.penalized_pseudolikelihood.clock import (
+    edges_make_ultrametric_clock,
 )
-from toytree.mod._src.penalized_likelihood.pl_correlated import (
-    edges_make_ultrametric_pl_correlated,
+from toytree.mod._src.penalized_pseudolikelihood.correlated import (
+    edges_make_ultrametric_correlated,
 )
-from toytree.mod._src.penalized_likelihood.pl_discrete import (
-    edges_make_ultrametric_pl_discrete,
+from toytree.mod._src.penalized_pseudolikelihood.discrete import (
+    edges_make_ultrametric_discrete,
 )
-from toytree.mod._src.penalized_likelihood.pl_relaxed import (
-    edges_make_ultrametric_pl_relaxed,
+from toytree.mod._src.penalized_pseudolikelihood.uncorrelated_lognormal import (
+    edges_make_ultrametric_uncorrelated_lognormal,
 )
-from toytree.mod._src.penalized_likelihood.pl_utils import (
+from toytree.mod._src.penalized_pseudolikelihood.utils import (
     get_tree_with_categorical_rates,
-    get_tree_with_correlated_relaxed_rates,
-    get_tree_with_uncorrelated_relaxed_rates,
+    get_tree_with_correlated_rates,
+    get_tree_with_uncorrelated_rates,
 )
 
 
@@ -29,7 +29,7 @@ class TestPenalizedLikelihoodMultistart(PytestCompat):
     def test_clock_multistart_full_fields(self):
         """Clock fits should expose multistart metadata."""
         tree = get_tree_with_categorical_rates(ntips=10, nrates=1, seed=123)
-        res = edges_make_ultrametric_pl_clock(
+        res = edges_make_ultrametric_clock(
             tree,
             calibrations={-1: 1.0},
             full=True,
@@ -58,10 +58,12 @@ class TestPenalizedLikelihoodMultistart(PytestCompat):
             ncores=1,
             seed=11,
         )
-        r1 = edges_make_ultrametric_pl_discrete(tree, **kw)
-        r2 = edges_make_ultrametric_pl_discrete(tree, **kw)
+        r1 = edges_make_ultrametric_discrete(tree, **kw)
+        r2 = edges_make_ultrametric_discrete(tree, **kw)
         self.assertEqual(r1["best_start"], r2["best_start"])
-        self.assertTrue(np.isclose(r1["PHIIC"], r2["PHIIC"]))
+        self.assertTrue(np.isclose(r1["pseudologlik"], r2["pseudologlik"]))
+        self.assertTrue(np.allclose(r1["rates"], r2["rates"]))
+        self.assertTrue(np.allclose(r1["weights"], r2["weights"]))
 
     def test_discrete_ncat1_matches_clock(self):
         """One discrete rate category should reduce exactly to the clock model."""
@@ -76,21 +78,20 @@ class TestPenalizedLikelihoodMultistart(PytestCompat):
             ncores=1,
             seed=5,
         )
-        cres = edges_make_ultrametric_pl_clock(tree, **kwargs)
-        dres = edges_make_ultrametric_pl_discrete(tree, ncategories=1, **kwargs)
-        self.assertTrue(np.isclose(cres["PHIIC"], dres["PHIIC"], atol=1e-9))
-        self.assertTrue(np.isclose(cres["loglik"], dres["loglik"], atol=1e-9))
-        self.assertEqual(dres["freqs"], [1.0])
+        cres = edges_make_ultrametric_clock(tree, **kwargs)
+        dres = edges_make_ultrametric_discrete(tree, ncategories=1, **kwargs)
+        self.assertTrue(
+            np.isclose(cres["pseudologlik"], dres["pseudologlik"], atol=1e-9)
+        )
+        self.assertEqual(dres["weights"], [1.0])
         self.assertTrue(
             np.isclose(float(dres["rates"][0]), float(cres["rate"]), atol=1e-9)
         )
 
-    def test_relaxed_multistart_parallel(self):
-        """Relaxed fits should support multistart execution in parallel."""
-        tree = get_tree_with_uncorrelated_relaxed_rates(
-            ntips=10, mean=3, sigma=3, seed=123
-        )
-        res = edges_make_ultrametric_pl_relaxed(
+    def test_uncorrelated_lognormal_multistart_parallel(self):
+        """Lognormal fits should support multistart execution in parallel."""
+        tree = get_tree_with_uncorrelated_rates(ntips=10, mean=3, sigma=3, seed=123)
+        res = edges_make_ultrametric_uncorrelated_lognormal(
             tree,
             lam=0.5,
             calibrations={-1: 1.0},
@@ -107,10 +108,8 @@ class TestPenalizedLikelihoodMultistart(PytestCompat):
 
     def test_correlated_multistart_parallel(self):
         """Correlated fits should support multistart execution in parallel."""
-        tree = get_tree_with_correlated_relaxed_rates(
-            ntips=10, mean=1.0, sigma=1.0, seed=123
-        )
-        res = edges_make_ultrametric_pl_correlated(
+        tree = get_tree_with_correlated_rates(ntips=10, mean=1.0, sigma=1.0, seed=123)
+        res = edges_make_ultrametric_correlated(
             tree,
             lam=0.5,
             calibrations={-1: 1.0},
@@ -124,3 +123,19 @@ class TestPenalizedLikelihoodMultistart(PytestCompat):
         )
         self.assertEqual(res["nstarts"], 2)
         self.assertTrue(res["tree"].is_ultrametric())
+
+    def test_discrete_default_uses_four_starts(self):
+        """Discrete fits should use the validated four-start default."""
+        tree = get_tree_with_categorical_rates(ntips=6, nrates=2, seed=321)
+        result = edges_make_ultrametric_discrete(
+            tree,
+            ncategories=2,
+            calibrations={-1: 1.0},
+            full=True,
+            max_iter=300,
+            max_fun=600,
+            max_refine=2,
+            ncores=1,
+            seed=9,
+        )
+        self.assertEqual(result["nstarts"], 4)

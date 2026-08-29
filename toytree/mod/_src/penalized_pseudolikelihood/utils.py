@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 
-"""General utilities for penalized likehood functions and testing."""
+"""Utilities for branch-length penalized pseudolikelihood fitting."""
 
 from concurrent.futures import ProcessPoolExecutor, as_completed
+from numbers import Real
 from typing import Any, Callable, Dict, Tuple
 
 import numpy as np
@@ -111,22 +112,89 @@ def _get_children_map_from_edges(edges: np.ndarray) -> Dict[int, np.ndarray]:
 
 
 def _sigmoid(x: np.ndarray) -> np.ndarray:
-    return 1.0 / (1.0 + np.exp(-x))
+    values = np.asarray(x, dtype=float)
+    result = np.empty_like(values)
+    positive = values >= 0.0
+    result[positive] = 1.0 / (1.0 + np.exp(-values[positive]))
+    exp_values = np.exp(values[~positive])
+    result[~positive] = exp_values / (1.0 + exp_values)
+    return result
 
 
 def _logit(p: np.ndarray) -> np.ndarray:
     return np.log(p / (1.0 - p))
 
 
-def _age_has_upper(
-    lo: float, hi: float, dist_floor: float, age_upper_switch: float
-) -> bool:
-    return np.isfinite(hi) and (hi < age_upper_switch) and (hi > lo + dist_floor)
+def _validate_branch_lengths(tree: ToyTree) -> np.ndarray:
+    """Return edge lengths after validating the PL working likelihood input."""
+    dists = tree.get_node_data("dist").to_numpy(dtype=float)[:-1]
+    if np.any(~np.isfinite(dists)):
+        raise ToytreeError("branch lengths must be finite for penalized likelihood.")
+    if np.any(dists < 0.0):
+        raise ToytreeError(
+            "branch lengths must be non-negative for penalized likelihood."
+        )
+    return dists
+
+
+def _validate_lambda(lam: Any) -> float:
+    """Return a finite, strictly positive smoothing parameter."""
+    if isinstance(lam, bool) or not isinstance(lam, Real):
+        raise ToytreeError("lam must be a finite positive real number.")
+    value = float(lam)
+    if not np.isfinite(value) or value <= 0.0:
+        raise ToytreeError("lam must be a finite positive real number.")
+    return value
+
+
+def _validate_ncategories(ncategories: Any, nedges: int) -> int:
+    """Return a validated scalar discrete-category count."""
+    if isinstance(ncategories, bool) or not isinstance(ncategories, (int, np.integer)):
+        raise ToytreeError("ncategories must be a positive integer.")
+    value = int(ncategories)
+    if value < 1:
+        raise ToytreeError("ncategories must be >= 1.")
+    if value > int(nedges):
+        raise ToytreeError(
+            f"ncategories ({value}) cannot exceed the number of edges ({nedges})."
+        )
+    return value
+
+
+def _validate_observation_mask(mask: Any, nedges: int) -> np.ndarray:
+    """Return a Boolean mask selecting observed branch lengths.
+
+    This is private machinery for terminal-edge cross-validation. Excluded
+    branches remain in the topology and smoothing penalty but make no
+    contribution to the fractional-Poisson pseudolikelihood.
+    """
+    if mask is None:
+        return np.ones(int(nedges), dtype=bool)
+    values = np.asarray(mask)
+    if values.shape != (int(nedges),):
+        raise ToytreeError(
+            f"observation mask must have shape ({nedges},), not {values.shape}."
+        )
+    if values.dtype != np.bool_:
+        raise ToytreeError("observation mask must contain only Boolean values.")
+    if not np.any(values):
+        raise ToytreeError("observation mask must retain at least one edge.")
+    return values.copy()
+
+
+def _result_observation_metadata() -> dict[str, str]:
+    """Return the declared branch-length pseudolikelihood observation model."""
+    return {
+        "observation_model": "fractional_poisson",
+        "branch_length_units": "substitutions_per_site",
+    }
 
 
 def _coerce_calibration_interval(calib: Any) -> tuple[float, float]:
     """Return one calibration coerced to a finite closed interval."""
-    if isinstance(calib, (float, int)):
+    if isinstance(calib, bool):
+        raise ToytreeError("calibration ages must be numeric, not boolean.")
+    if isinstance(calib, Real):
         lo = hi = float(calib)
     else:
         try:
@@ -139,6 +207,8 @@ def _coerce_calibration_interval(calib: Any) -> tuple[float, float]:
         hi = float(hi)
     if not (np.isfinite(lo) and np.isfinite(hi)):
         raise ToytreeError("calibrations must contain only finite numeric ages.")
+    if lo < 0.0 or hi < 0.0:
+        raise ToytreeError("calibration ages must be non-negative.")
     if lo > hi:
         raise ToytreeError(
             f"invalid calibration interval ({lo}, {hi}): min_age cannot exceed max_age."
@@ -157,7 +227,22 @@ def _normalize_calibrations(
 
     normalized: dict[int, tuple[float, float]] = {}
     for selector, calib in calibrations.items():
-        node = tree.get_nodes(selector)[0]
+        nodes = tree.get_nodes(selector)
+        if len(nodes) != 1:
+            raise ToytreeError(
+                f"calibration selector {selector!r} matched {len(nodes)} nodes; "
+                "selectors must match exactly one internal node."
+            )
+        node = nodes[0]
+        if node.is_leaf():
+            raise ToytreeError(
+                "tip calibrations are not supported; heterochronous tips are "
+                "not implemented."
+            )
+        if node.idx in normalized:
+            raise ToytreeError(
+                f"multiple calibration selectors resolve to node {node.idx}."
+            )
         normalized[node.idx] = _coerce_calibration_interval(calib)
 
     for desc_idx, (desc_min, _) in normalized.items():
@@ -173,6 +258,62 @@ def _normalize_calibrations(
                     "positive branch lengths."
                 )
     return normalized
+
+
+def _get_effective_age_bounds(
+    tree: ToyTree,
+    calibrations: Calibrations,
+    dist_floor: float = 1e-12,
+) -> tuple[np.ndarray, np.ndarray, set[int]]:
+    """Return topology-propagated lower/upper bounds and fixed node indices."""
+    active = dict(calibrations)
+    if not active:
+        active[tree.treenode.idx] = (1.0, 1.0)
+
+    lower = np.zeros(tree.nnodes, dtype=float)
+    upper = np.full(tree.nnodes, np.inf, dtype=float)
+    fixed: set[int] = set()
+    for nidx, (lo, hi) in active.items():
+        lower[int(nidx)] = float(lo)
+        upper[int(nidx)] = float(hi)
+        if np.isclose(lo, hi, atol=0.0, rtol=0.0):
+            fixed.add(int(nidx))
+
+    # Minimum feasible ages flow from tips toward the root.
+    for node in tree.treenode.traverse("postorder"):
+        if node.is_leaf():
+            continue
+        child_min = max(lower[child.idx] for child in node.children) + dist_floor
+        lower[node.idx] = max(lower[node.idx], child_min)
+
+    # Maximum feasible ages flow from calibrated ancestors toward descendants.
+    for node in tree.treenode.traverse("preorder"):
+        if node.is_root() or node.is_leaf():
+            continue
+        parent_upper = upper[node.up.idx]
+        if np.isfinite(parent_upper):
+            upper[node.idx] = min(upper[node.idx], parent_upper - dist_floor)
+
+    for node in tree[tree.ntips :]:
+        nidx = node.idx
+        lo = float(lower[nidx])
+        hi = float(upper[nidx])
+        if nidx in fixed:
+            requested = float(active[nidx][0])
+            tol = max(1e-12, abs(requested) * 1e-12)
+            if lo > requested + tol or hi < requested - tol:
+                raise ToytreeError(
+                    f"infeasible fixed calibration at node {nidx}: age "
+                    f"{requested:.6g} conflicts with topology or another calibration."
+                )
+            lower[nidx] = requested
+            upper[nidx] = requested
+        elif np.isfinite(hi) and lo >= hi:
+            raise ToytreeError(
+                f"infeasible calibration interval at node {nidx}: effective "
+                f"lower bound {lo:.6g} is not below upper bound {hi:.6g}."
+            )
+    return lower, upper, fixed
 
 
 def _raise_invalid_final_ages(
@@ -257,7 +398,6 @@ def _encode_age_params(
     ages_bounds: list[tuple[float, float]],
     children_map: Dict[int, np.ndarray],
     dist_floor: float = 1e-12,
-    age_upper_switch: float = 1e6,
 ) -> np.ndarray:
     """Encode ages as unconstrained parameters using monotone transforms."""
     params = []
@@ -267,8 +407,27 @@ def _encode_age_params(
         child_max = float(ages_hat[child_idxs].max()) if child_idxs.size else 0.0
         lo_eff = max(float(lo), child_max + dist_floor)
         age = max(float(ages_hat[int(nidx)]), lo_eff + dist_floor)
-        if _age_has_upper(lo_eff, float(hi), dist_floor, age_upper_switch):
-            p = np.clip((age - lo_eff) / (float(hi) - lo_eff), 1e-8, 1 - 1e-8)
+        if np.isfinite(hi):
+            if lo_eff >= float(hi):
+                raise ToytreeError(
+                    f"cannot encode node {int(nidx)} age: effective lower bound "
+                    f"{lo_eff:.6g} is not below upper bound {float(hi):.6g}."
+                )
+            width = float(hi) - lo_eff
+            # Keep the transform materially inside its open interval. A plain
+            # machine-epsilon clip is too small: at large optimizer values the
+            # sigmoid rounds to one, so a descendant can equal its propagated
+            # upper bound and collapse its ancestor's feasible interval.
+            absolute_margin = max(
+                2.0 * dist_floor,
+                8.0 * np.spacing(max(abs(lo_eff), abs(float(hi)), 1.0)),
+            )
+            fraction_margin = min(0.25, absolute_margin / width)
+            p = np.clip(
+                (age - lo_eff) / width,
+                fraction_margin,
+                1.0 - fraction_margin,
+            )
             z = float(_logit(np.array([p]))[0])
         else:
             z = float(np.log(max(age - lo_eff, dist_floor)))
@@ -284,7 +443,6 @@ def _decode_age_params(
     ages_bounds: list[tuple[float, float]],
     children_map: Dict[int, np.ndarray],
     dist_floor: float = 1e-12,
-    age_upper_switch: float = 1e6,
 ) -> np.ndarray:
     """Decode unconstrained age params to valid ages in postorder."""
     ages_hat = np.asarray(ages_base, dtype=float).copy()
@@ -292,10 +450,25 @@ def _decode_age_params(
         child_idxs = children_map.get(int(nidx), np.array([], dtype=int))
         child_max = float(ages_hat[child_idxs].max()) if child_idxs.size else 0.0
         lo_eff = max(float(lo), child_max + dist_floor)
-        if _age_has_upper(lo_eff, float(hi), dist_floor, age_upper_switch):
-            age = lo_eff + (float(hi) - lo_eff) * float(_sigmoid(np.array([z]))[0])
+        if np.isfinite(hi):
+            if lo_eff >= float(hi):
+                raise ToytreeError(
+                    f"cannot decode node {int(nidx)} age: effective lower bound "
+                    f"{lo_eff:.6g} is not below upper bound {float(hi):.6g}."
+                )
+            width = float(hi) - lo_eff
+            absolute_margin = max(
+                2.0 * dist_floor,
+                8.0 * np.spacing(max(abs(lo_eff), abs(float(hi)), 1.0)),
+            )
+            fraction_margin = min(0.25, absolute_margin / width)
+            fraction = float(_sigmoid(np.array([z]))[0])
+            fraction = float(
+                np.clip(fraction, fraction_margin, 1.0 - fraction_margin)
+            )
+            age = lo_eff + width * fraction
         else:
-            age = lo_eff + float(np.exp(z))
+            age = lo_eff + float(np.exp(np.clip(z, -700.0, 700.0)))
         ages_hat[int(nidx)] = age
     return ages_hat
 
@@ -319,71 +492,43 @@ def _get_init_ages(
     mult: float
         A root multiplier to help fit starting internal age values.
     """
-    # get edge idx array
     edges = tree.get_edges("idx")
+    lower, upper, fixed = _get_effective_age_bounds(tree, calibrations)
+    active = dict(calibrations)
+    if not active:
+        active[tree.treenode.idx] = (1.0, 1.0)
 
-    # get array with tips at zero and internal at nan
-    ages = np.zeros(tree.nnodes)
-    ages[tree.ntips :] = np.nan
+    ages = np.zeros(tree.nnodes, dtype=float)
+    for node in tree.treenode.traverse("postorder"):
+        if node.is_leaf():
+            continue
+        nidx = node.idx
+        child_max = max(float(ages[child.idx]) for child in node.children)
+        lo_eff = max(float(lower[nidx]), child_max + 1e-12)
+        hi = float(upper[nidx])
+        if nidx in fixed:
+            age = float(active[nidx][0])
+            if age < lo_eff:
+                raise ToytreeError(
+                    f"fixed calibration at node {nidx} is not older than its children."
+                )
+        elif np.isfinite(hi):
+            if lo_eff >= hi:
+                raise ToytreeError(
+                    f"cannot initialize node {nidx}: no feasible age interval."
+                )
+            age = lo_eff + 0.5 * (hi - lo_eff)
+        else:
+            increment = max(1.0, abs(lo_eff) * max(mult - 1.0, 0.5))
+            age = lo_eff + increment
+        ages[nidx] = age
 
-    # set internal nodes to their calibration midpoints
-    if not calibrations:
-        calibrations = {tree[-1].idx: (1.0, 1.0)}
-    for nidx, calib in calibrations.items():
-        if isinstance(calib, (float, int)):
-            calib = (float(calib), float(calib))
-        span = calib[1] - calib[0]
-        ages[nidx] = calib[0] + span / 2.0
-        # logger.debug(f"setting calibration: node {nidx} age to {ages[nidx]}")
-
-    # set root age (if not calibrated) to mult of max internal age
-    if np.isnan(ages[-1]):
-        ages[-1] = mult * max(ages[:-1])
-
-    # sort edge paths (e.g., (node, node.up, node.up.up)) so that
-    # the paths with more calibrations are done first, and when tied,
-    # the longer path is selected first.
-    paths = [i.iter_ancestors(include_self=True) for i in tree[: tree.ntips]]
-    paths = [tuple(i._idx for i in j) for j in paths]
-    spaths = sorted(
-        paths,
-        key=lambda x: (np.sum(~np.isnan([ages[i] for i in x])), len),
-        reverse=True,
-    )
-
-    # iterate over path to set init age of nodes, e.g., [(5, 9, 10), (4, 7, 9, 10), ...]
-    for path in spaths:
-        for nidx in path[::-1]:
-            idx = path.index(nidx)
-            age = ages[nidx]
-            if np.isnan(age):
-                # get age of first calibrated ancestor
-                idx_p = path.index(nidx) + 1
-                pidx = path[idx_p]
-                idx_c = np.nanargmax([ages[i] for i in path[:idx]])
-                cidx = path[idx_c]
-                max_age = ages[pidx]
-                min_age = ages[cidx]
-                # number of nodes between cidx and pidx
-                nsplits = idx_p - idx_c
-
-                # divide span into nnodes on path intervals
-                span = max_age - min_age
-                ages[nidx] = max_age - span / nsplits
-                # Historical debug output kept here as a guide for how
-                # starting ages are interpolated along calibrated paths.
-
-    # get age edge lengths
     children = edges[:, 0]
     parents = edges[:, 1]
     dists = ages[parents] - ages[children]
-
-    # success, return results
-    if all(dists >= 0):
-        return ages, dists
-    if mult > 100:
-        raise Exception("cannot find good starting values")
-    return _get_init_ages(tree, calibrations, mult * 1.5)
+    if np.any(dists <= 0.0):
+        raise ToytreeError("cannot construct feasible initial node ages.")
+    return ages, dists
 
 
 def _get_params_bounds(
@@ -403,28 +548,12 @@ def _get_params_bounds(
     calibrations
         ...
     """
-    # if no calibrations set the treenode to 1.
-    if not calibrations:
-        calibrations = {tree[-1].idx: (1.0, 1.0)}
-
-    # set bounds for all internal nodes to min,max
-    ages_bounds = {}
-    for node in tree[tree.ntips :]:
-        ages_bounds[node._idx] = (PARAM_MIN, PARAM_MAX)
-
-    # set stricter bounds on calibrated nodes, unless fixed age, then remove.
-    fixed = []
-    for selector, calib in calibrations.items():
-        node = tree.get_nodes(selector)[0]
-        nidx = node._idx
-        if isinstance(calib, (float, int)):
-            calib = (float(calib), float(calib))
-        cmin, cmax = calib
-        if cmin != cmax:
-            ages_bounds[nidx] = (cmin, cmax)
-        else:
-            fixed.append(nidx)
-    ages_bounds = {i: j for (i, j) in ages_bounds.items() if i not in fixed}
+    lower, upper, fixed = _get_effective_age_bounds(tree, calibrations)
+    ages_bounds = {
+        node.idx: (float(lower[node.idx]), float(upper[node.idx]))
+        for node in tree[tree.ntips :]
+        if node.idx not in fixed
+    }
 
     # get indices of edge rates that need to be estimated (all)
     rates_bounds = {i: (PARAM_MIN, PARAM_MAX) for i in np.arange(tree.nnodes - 1)}
@@ -454,7 +583,7 @@ def get_tree_with_categorical_rates(ntips: int, nrates: int, seed: int) -> ToyTr
     return tree
 
 
-def get_tree_with_uncorrelated_relaxed_rates(
+def get_tree_with_uncorrelated_rates(
     ntips: int, mean: float = 1.0, sigma: float = 1.0, seed: int = None
 ) -> ToyTree:
     """Return a ToyTree with edges scaled by uncorrelated relaxed-clock rates.
@@ -482,7 +611,7 @@ def get_tree_with_uncorrelated_relaxed_rates(
     return tree
 
 
-def get_tree_with_correlated_relaxed_rates(
+def get_tree_with_correlated_rates(
     ntips: int, mean: float = 0.0, sigma: float = 1.0, seed: int = None
 ) -> ToyTree:
     """Return a ToyTree with edges scaled by correlated relaxed-clock rates.
@@ -512,5 +641,5 @@ def get_tree_with_correlated_relaxed_rates(
 if __name__ == "__main__":
     rng = np.random.default_rng(123)
 
-    t = get_tree_with_uncorrelated_relaxed_rates(ntips=50, mean=3, sigma=3)
+    t = get_tree_with_uncorrelated_rates(ntips=50, mean=3, sigma=3)
     t._draw_browser(tmpdir="~")

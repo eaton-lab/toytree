@@ -9,7 +9,7 @@
 >>> tree = tree.mod.edges_scale_to_root_height()
 >>> tree = tree.mod.edges_slide_nodes()
 >>> tree = tree.mod.edges_align_tips_by_extending()
->>> tree = tree.mod.edges_align_tips_by_penalized_likelihood()
+>>> tree = tree.mod.edges_make_ultrametric(method="clock")
 >>> tree = tree.mod.add_internal_node()
 >>> tree = tree.mod.add_leaf_node()
 >>> tree = tree.mod.move_clade()
@@ -59,20 +59,26 @@ _MODULE_EXPORTS = {
         "root_on_minimal_ancestor_deviation",
         "root_on_minimal_dlc",
     ],
-    "toytree.mod._src.penalized_likelihood.pl_clock": [
-        "edges_make_ultrametric_pl_clock"
+    "toytree.mod._src.penalized_pseudolikelihood.clock": [
+        "edges_make_ultrametric_clock"
     ],
-    "toytree.mod._src.penalized_likelihood.pl_discrete": [
-        "edges_make_ultrametric_pl_discrete"
+    "toytree.mod._src.penalized_pseudolikelihood.discrete": [
+        "edges_make_ultrametric_discrete"
     ],
-    "toytree.mod._src.penalized_likelihood.pl_relaxed": [
-        "edges_make_ultrametric_pl_relaxed"
+    "toytree.mod._src.penalized_pseudolikelihood.relaxed": [
+        "edges_make_ultrametric_relaxed"
     ],
-    "toytree.mod._src.penalized_likelihood.pl_correlated": [
-        "edges_make_ultrametric_pl_correlated"
+    "toytree.mod._src.penalized_pseudolikelihood.uncorrelated_lognormal": [
+        "edges_make_ultrametric_uncorrelated_lognormal"
     ],
-    "toytree.mod._src.penalized_likelihood.pl_make_ultrametric": [
+    "toytree.mod._src.penalized_pseudolikelihood.correlated": [
+        "edges_make_ultrametric_correlated"
+    ],
+    "toytree.mod._src.penalized_pseudolikelihood.make_ultrametric": [
         "edges_make_ultrametric"
+    ],
+    "toytree.mod._src.penalized_pseudolikelihood.lambda_cv": [
+        "edges_make_ultrametric_correlated_lambda_cv"
     ],
     "toytree.mod._src.tree_move": [
         "move_nni_n",

@@ -1542,9 +1542,10 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
             | make-ultrametric: transform a tree to ultrametric branch lengths
             -------------------------------------------------------------------------
             | method=extend      : fast tip-extension alignment.
-            | method=clock       : strict-clock penalized-likelihood fit.
-            | method=discrete    : ncat rate classes penalized-likelihood fit.
-            | method=relaxed     : uncorrelated relaxed-clock penalized-likelihood fit.
+            | method=clock       : strict-clock branch-length pseudolikelihood fit.
+            | method=discrete    : ncat branchwise finite-mixture fit.
+            | method=relaxed: ape::chronos Gamma-CDF relaxed-rate fit.
+            | method=uncorrelated_lognormal: scale-invariant centered log-rate fit.
             | method=correlated  : correlated relaxed-clock penalized-likelihood fit.
             -------------------------------------------------------------------------
             """
@@ -1557,13 +1558,17 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
             $ make-ultrametric -i TREE.nwk -m clock -c -1=1.0 > UTREE.nwk
             $ make-ultrametric -i TREE.nwk -m discrete --ncat 3 -c -1=1.0 > UTREE.nwk
             $ make-ultrametric -i TREE.nwk -m relaxed --lam 0.5 -c -1=1.0 > UTREE.nwk
+            $ make-ultrametric -i TREE.nwk -m uncorrelated_lognormal \\
+                --lam 0.5 -c -1=1.0 > UTREE.nwk
             $ make-ultrametric -i TREE.nwk -m correlated --lam 0.5 -c -1=1.0 > UTREE.nwk
-            $ make-ultrametric -i TREE.nwk -m correlated --lam 0.5 --nstarts 8 --ncores 4 --seed 123 > UTREE.nwk
-            $ make-ultrametric -i TREE.nwk -m discrete --ncat 1 2 4 -c -1=1.0 > UTREE.nwk
-            $ make-ultrametric -i TREE.nwk -m correlated --lam 0.5 --json > UTREE.nwk 2> fit.json
+            $ make-ultrametric -i TREE.nwk -m correlated --lam 0.5 \\
+                --nstarts 8 --ncores 4 --seed 123 > UTREE.nwk
+            $ make-ultrametric -i TREE.nwk -m correlated --lam 0.5 \\
+                --json > UTREE.nwk 2> fit.json
             $ make-ultrametric -i TREE.nwk -m clock -c AB=0.8-1.2 CD=0.4
             $ cat TREE.nwk | make-ultrametric -i - --method extend
-            $ make-ultrametric -i TREE.nwk -m relaxed -b | root -i - --mad > UTREE.nwk
+            $ make-ultrametric -i TREE.nwk -m uncorrelated_lognormal \\
+                --lam 0.5 -b | root -i - --mad > UTREE.nwk
             """
         ),
     )
@@ -1617,9 +1622,19 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
         "--method",
         type=str,
         default="extend",
-        choices=("extend", "clock", "discrete", "relaxed", "correlated"),
+        choices=(
+            "extend",
+            "clock",
+            "discrete",
+            "relaxed",
+            "uncorrelated_lognormal",
+            "correlated",
+        ),
         metavar="method",
-        help="method: extend|clock|discrete|relaxed|correlated [extend]",
+        help=(
+            "method: extend|clock|discrete|relaxed|uncorrelated_lognormal|"
+            "correlated [extend]"
+        ),
     )
     method_group.add_argument(
         "-c",
@@ -1627,22 +1642,27 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
         type=str,
         nargs="*",
         metavar="query=value",
-        help="clock/discrete/relaxed/correlated: one or more query=value or query=min-max entries",
+        help=(
+            "clock/discrete/relaxed/uncorrelated_lognormal/correlated: "
+            "internal-node query=value or query=min-max entries"
+        ),
     )
     method_group.add_argument(
         "--ncat",
         type=int,
-        nargs="+",
         default=None,
         metavar="int",
-        help="discrete only: one or more rate-category values; multiple values select by PHIIC",
+        help="discrete only: one positive integer rate-category count",
     )
     method_group.add_argument(
         "--lam",
         type=float,
         default=None,
         metavar="float",
-        help="relaxed/correlated only: penalty lambda; lower=weaker regularization [1.0]",
+        help=(
+            "relaxed/uncorrelated_lognormal/correlated only: required positive "
+            "penalty lambda"
+        ),
     )
     opt_group = p.add_argument_group(title="Optimization")
     opt_group.add_argument(
@@ -1669,9 +1689,9 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
     opt_group.add_argument(
         "--nstarts",
         type=int,
-        default=1,
+        default=None,
         metavar="int",
-        help="PL only: number of starts; best fit retained [1]",
+        help="PL only: starts; defaults to discrete=4, otherwise=1",
     )
     opt_group.add_argument(
         "--ncores",

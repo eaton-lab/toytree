@@ -336,7 +336,7 @@ print("JSON:" + json.dumps(sorted(mods)))
     assert mods == []
 
 
-def test_unittree_runtime_does_not_import_penalized_likelihood_stack():
+def test_unittree_runtime_does_not_import_penalized_pseudolikelihood_stack():
     """Executing unittree generation should not import PL optimization modules."""
     code = r"""
 import contextlib
@@ -348,7 +348,7 @@ with contextlib.redirect_stdout(io.StringIO()):
     main.main("rtree -n 6 -m u --seed 1")
 mods = [
     i for i in sys.modules
-    if i.startswith("toytree.mod._src.penalized_likelihood")
+    if i.startswith("toytree.mod._src.penalized_pseudolikelihood")
 ]
 print("JSON:" + json.dumps(sorted(mods)))
 """

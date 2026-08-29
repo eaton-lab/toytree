@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from itertools import cycle
+"""Independent branch-rate penalized branch-length pseudolikelihoods."""
+
 from typing import Any, Union
 
 import numpy as np
@@ -10,7 +11,8 @@ from scipy.optimize import minimize
 from scipy.special import gammaln
 
 from toytree.core import ToyTree
-from toytree.mod._src.penalized_likelihood.pl_utils import (
+from toytree.core.apis import TreeModAPI, add_subpackage_method
+from toytree.mod._src.penalized_pseudolikelihood.utils import (
     Calibrations,
     _decode_age_params,
     _encode_age_params,
@@ -20,18 +22,24 @@ from toytree.mod._src.penalized_likelihood.pl_utils import (
     _get_params_bounds,
     _normalize_calibrations,
     _pack_log_rates,
+    _result_observation_metadata,
     _run_multistart,
     _select_best_multistart,
     _unpack_log_rates,
-    get_tree_with_uncorrelated_relaxed_rates,
+    _validate_branch_lengths,
+    _validate_lambda,
+    _validate_observation_mask,
+    get_tree_with_uncorrelated_rates,
 )
 
-__all__ = ["edges_make_ultrametric_pl_relaxed"]
+__all__ = [
+    "edges_make_ultrametric_relaxed",
+    "edges_make_ultrametric_uncorrelated_lognormal",
+]
 
 RATE_FLOOR = 1e-12
 DIST_FLOOR = 1e-12
 INVALID_LOG_LIK_DROP = 1e6
-AGE_UPPER_SWITCH = 1e6
 
 
 def _invalid_objective(valid_loglik: float) -> float:
@@ -39,7 +47,7 @@ def _invalid_objective(valid_loglik: float) -> float:
     return float(-(valid_loglik - INVALID_LOG_LIK_DROP))
 
 
-def _fit_relaxed_start(payload: dict[str, Any]) -> dict[str, Any]:
+def _fit_independent_start(payload: dict[str, Any]) -> dict[str, Any]:
     start = int(payload["start"])
     params = payload["params"]
     bounds = payload["bounds"]
@@ -53,13 +61,15 @@ def _fit_relaxed_start(payload: dict[str, Any]) -> dict[str, Any]:
     edata = payload["edata"]
     lam = payload["lam"]
     valid_loglik = payload["valid_loglik"]
+    observation_mask = payload["observation_mask"]
     max_iter = payload["max_iter"]
     max_fun = payload["max_fun"]
     max_refine = payload["max_refine"]
+    model = payload["model"]
 
     invalid_objective = _invalid_objective(valid_loglik)
     fit = minimize(
-        fun=objective_relaxed,
+        fun=objective_independent,
         x0=params,
         args=(
             False,
@@ -74,6 +84,8 @@ def _fit_relaxed_start(payload: dict[str, Any]) -> dict[str, Any]:
             edata,
             lam,
             valid_loglik,
+            observation_mask,
+            model,
         ),
         method="L-BFGS-B",
         bounds=bounds,
@@ -86,11 +98,12 @@ def _fit_relaxed_start(payload: dict[str, Any]) -> dict[str, Any]:
             RATE_FLOOR,
             None,
         )
+        age_seed = age_params_init + rng.normal(0.0, 0.25, size=age_params_init.size)
         params_seed = np.hstack(
-            [_pack_log_rates(rates_seed, rate_floor=RATE_FLOOR), age_params_init]
+            [_pack_log_rates(rates_seed, rate_floor=RATE_FLOOR), age_seed]
         )
         refit = minimize(
-            fun=objective_relaxed,
+            fun=objective_independent,
             x0=params_seed,
             args=(
                 False,
@@ -105,6 +118,8 @@ def _fit_relaxed_start(payload: dict[str, Any]) -> dict[str, Any]:
                 edata,
                 lam,
                 valid_loglik,
+                observation_mask,
+                model,
             ),
             method="L-BFGS-B",
             bounds=bounds,
@@ -117,46 +132,43 @@ def _fit_relaxed_start(payload: dict[str, Any]) -> dict[str, Any]:
     current_params = fit.x.copy()
     rsize = rates_init.size
     asize = ages_idxs.size
-    fix_dict = {
+    blocks = {
         "rates": [(False, True), slice(None, rsize)],
-        "ages": [(True, False), slice(rsize, rsize + asize)],
     }
-    iter_fixed = cycle(fix_dict)
-    iter_refine = 0
-    while 1:
-        fixed = next(iter_fixed)
-        fbools, fslice = fix_dict[fixed]
-        rates_hat = _unpack_log_rates(current_params[:rsize])
-        age_params_hat = current_params[rsize : rsize + asize]
-        args = fbools + (
-            rates_hat,
-            age_params_hat,
-            ages_init,
-            ages_idxs,
-            ages_bounds,
-            children_map,
-            edges,
-            edata,
-            lam,
-            valid_loglik,
-        )
-        ifit = minimize(
-            fun=objective_relaxed,
-            x0=current_params[fslice],
-            args=args,
-            method="L-BFGS-B",
-            bounds=bounds[fslice],
-            options=dict(maxiter=int(max_iter), maxfun=int(max_fun)),
-        )
-        delta = float(ifit.fun) - current_loglik
-        if delta <= 0:
-            current_loglik = float(ifit.fun)
-            current_params[fslice] = ifit.x
-            fit = ifit
-            if abs(delta) < 1e-9:
-                break
-        iter_refine += 1
-        if iter_refine > max_refine:
+    if asize:
+        blocks["ages"] = [(True, False), slice(rsize, rsize + asize)]
+    for _ in range(max(0, int(max_refine))):
+        cycle_start = current_loglik
+        for fbools, fslice in blocks.values():
+            rates_hat = _unpack_log_rates(current_params[:rsize])
+            age_params_hat = current_params[rsize : rsize + asize]
+            args = fbools + (
+                rates_hat,
+                age_params_hat,
+                ages_init,
+                ages_idxs,
+                ages_bounds,
+                children_map,
+                edges,
+                edata,
+                lam,
+                valid_loglik,
+                observation_mask,
+                model,
+            )
+            ifit = minimize(
+                fun=objective_independent,
+                x0=current_params[fslice],
+                args=args,
+                method="L-BFGS-B",
+                bounds=bounds[fslice],
+                options=dict(maxiter=int(max_iter), maxfun=int(max_fun)),
+            )
+            if float(ifit.fun) <= current_loglik:
+                current_loglik = float(ifit.fun)
+                current_params[fslice] = ifit.x
+                fit = ifit
+        if abs(cycle_start - current_loglik) < 1e-9:
             break
     converged = bool(fit.success)
     message = str(fit.message)
@@ -174,8 +186,9 @@ def _fit_relaxed_start(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def edges_make_ultrametric_pl_relaxed(
+def _edges_make_ultrametric_independent(
     tree: ToyTree,
+    model: str,
     lam: float,
     calibrations: Calibrations | None = None,
     full: bool = False,
@@ -186,26 +199,24 @@ def edges_make_ultrametric_pl_relaxed(
     nstarts: int = 1,
     ncores: int = 1,
     seed: int | None = None,
+    _observation_mask: np.ndarray | None = None,
 ) -> Union[ToyTree, dict[str, Any]]:
-    """Return a tree made ultrametric under a relaxed-clock PL model.
-
-    Edges are scaled while allowing each edge to have its own rate,
-    and a penalty is applied to discourage excessive variation away
-    from a gamma distribution of rates.
+    """Return a tree fitted with the selected independent-rate penalty.
 
     Parameters
     ----------
     tree: ToyTree
         A ToyTree with non-ultrametric edge lengths.
+    model: {"relaxed", "uncorrelated_lognormal"}
+        Independent branch-rate penalty model.
     lam: float
-        Lambda rate variation penalty parameter of Sanderson's
-        relaxed model. Lower values allow more rate variation.
+        Positive multiplier on the selected rate-distribution penalty.
     calibrations: dict[int, (float, float)]
         A dict mapping node selectors (e.g., idx labels) to calibrated
         ages as a single value or a tuple of (min, max) age.
     full: bool
         If full=True a dictionary is returned with the modified tree,
-        log-likelihood score, and PHIIC score.
+        raw and penalized working log-likelihoods and penalty metadata.
     inplace: bool
         If True the tree is modified in-place and returned, else a
         copy is returned.
@@ -234,8 +245,9 @@ def edges_make_ultrametric_pl_relaxed(
     dict
         An alternative option to return a dict with the new scaled tree
         as well as statistics on the model fit including likelihood,
-        PHIIC, and rates.
+        raw and penalized working log-likelihoods, penalty, and rates.
     """
+    lam = _validate_lambda(lam)
     if calibrations is None:
         calibrations = {}
     calibrations = _normalize_calibrations(
@@ -252,9 +264,10 @@ def edges_make_ultrametric_pl_relaxed(
 
     # get edges, dists and log-factorial-dists from rate-x-time edges
     edges = tree.get_edges("idx")
-    dists_o = tree.get_node_data("dist").values[:-1]
+    dists_o = _validate_branch_lengths(tree)
     dists_lf = gammaln(dists_o + 1.0)
     edata = np.vstack([dists_o, dists_lf]).T
+    observation_mask = _validate_observation_mask(_observation_mask, tree.nedges)
 
     # get starting rates as old/new edge dists.
     rates_init = dists_o / (ages_init[edges[:, 1]] - ages_init[edges[:, 0]])
@@ -277,13 +290,12 @@ def edges_make_ultrametric_pl_relaxed(
         ages_bounds,
         children_map,
         dist_floor=DIST_FLOOR,
-        age_upper_switch=AGE_UPPER_SWITCH,
     )
     bounds = rates_bounds + [(None, None)] * age_params_init.size
 
     # get loglik at a valid starting params to scale neg dist penalty
-    valid_loglik = log_likelihood_poisson_relaxed(
-        rates_init, ages_init, edges, edata, lam, None
+    valid_loglik = _independent_branch_pseudologlik(
+        rates_init, ages_init, edges, edata, lam, None, observation_mask, model
     )
 
     params = np.hstack(
@@ -299,6 +311,8 @@ def edges_make_ultrametric_pl_relaxed(
         sparams = params.copy()
         if start:
             sparams[:rsize] += rng.normal(0.0, 0.25, size=rsize)
+            if asize:
+                sparams[rsize : rsize + asize] += rng.normal(0.0, 0.25, size=asize)
         payloads.append(
             dict(
                 start=start,
@@ -314,18 +328,20 @@ def edges_make_ultrametric_pl_relaxed(
                 edata=edata,
                 lam=lam,
                 valid_loglik=valid_loglik,
+                observation_mask=observation_mask,
                 max_iter=max_iter,
                 max_fun=max_fun,
                 max_refine=max_refine,
+                model=model,
             )
         )
-    starts = _run_multistart(_fit_relaxed_start, payloads, ncores=ncores)
+    starts = _run_multistart(_fit_independent_start, payloads, ncores=ncores)
     best = _select_best_multistart(starts)
     current_params = best["params"]
     if not best["converged"]:
         logger.warning(f"Best multistart fit did not converge: {best['message']}")
     logger.debug(
-        "relaxed multistart best objective="
+        f"{model} multistart best objective="
         f"{best['objective']}, start={best['start']}, nstarts={nstarts}"
     )
 
@@ -337,7 +353,6 @@ def edges_make_ultrametric_pl_relaxed(
         ages_bounds,
         children_map,
         dist_floor=DIST_FLOOR,
-        age_upper_switch=AGE_UPPER_SWITCH,
     )
     ages = _finalize_ultrametric_ages(
         tree,
@@ -350,26 +365,41 @@ def edges_make_ultrametric_pl_relaxed(
     # get rates params
     rates = _unpack_log_rates(current_params[:rsize])
 
-    penalized_loglik = log_likelihood_poisson_relaxed(
-        rates, ages, edges, edata, lam, valid_loglik
+    penalized_pseudologlik = _independent_branch_pseudologlik(
+        rates, ages, edges, edata, lam, valid_loglik, observation_mask, model
     )
-    loglik = log_likelihood_poisson_relaxed(
-        rates, ages, edges, edata, 0.0, valid_loglik
+    pseudologlik = _independent_branch_pseudologlik(
+        rates, ages, edges, edata, 0.0, valid_loglik, observation_mask, model
     )
-    penalty = _relaxed_penalty(rates)
-    k = len(bounds)
-    PHIIC = -2 * loglik + 2 * k + lam * penalty
+    penalty = _rate_penalty(rates, model)
+    time_dists = ages[edges[:, 1]] - ages[edges[:, 0]]
+    expected = time_dists * rates
 
     # return as a tree or a dict
     if not full:
         return tree
     return {
-        "loglik": loglik,
-        "penalized_loglik": penalized_loglik,
+        "model": model,
+        "pseudologlik": pseudologlik,
+        "penalized_pseudologlik": penalized_pseudologlik,
+        **_result_observation_metadata(),
         "penalty": penalty,
-        "k": k,
-        "PHIIC": PHIIC,
+        "penalty_model": (
+            "summed_centered_log_rate_dispersion"
+            if model == "uncorrelated_lognormal"
+            else "chronos_gamma_cdf"
+        ),
+        "scale_invariant": model == "uncorrelated_lognormal",
+        "lam": lam,
+        "nparams": len(bounds),
         "rates": list(rates),
+        "profiled_mean_rate": (
+            float(np.exp(np.mean(np.log(rates))))
+            if model == "uncorrelated_lognormal"
+            else float(np.mean(rates))
+        ),
+        "expected_branch_lengths": expected.tolist(),
+        "observed_branch_lengths": dists_o.tolist(),
         "tree": tree,
         "converged": bool(best["converged"]),
         "optimizer_message": str(best["message"]),
@@ -390,18 +420,117 @@ def edges_make_ultrametric_pl_relaxed(
     }
 
 
+@add_subpackage_method(TreeModAPI)
+def edges_make_ultrametric_uncorrelated_lognormal(
+    tree: ToyTree,
+    lam: float,
+    calibrations: Calibrations | None = None,
+    full: bool = False,
+    inplace: bool = False,
+    max_iter: int = 100_000,
+    max_fun: int = 100_000,
+    max_refine: int = 20,
+    nstarts: int = 1,
+    ncores: int = 1,
+    seed: int | None = None,
+    _observation_mask: np.ndarray | None = None,
+) -> Union[ToyTree, dict[str, Any]]:
+    """Fit independent branch rates with a centered lognormal penalty.
+
+    This scale-invariant penalized/MAP-like model estimates one rate per
+    branch and profiles their common mean on the log scale.
+    """
+    return _edges_make_ultrametric_independent(
+        tree=tree,
+        model="uncorrelated_lognormal",
+        lam=lam,
+        calibrations=calibrations,
+        full=full,
+        inplace=inplace,
+        max_iter=max_iter,
+        max_fun=max_fun,
+        max_refine=max_refine,
+        nstarts=nstarts,
+        ncores=ncores,
+        seed=seed,
+        _observation_mask=_observation_mask,
+    )
+
+
+@add_subpackage_method(TreeModAPI)
+def edges_make_ultrametric_relaxed(
+    tree: ToyTree,
+    lam: float,
+    calibrations: Calibrations | None = None,
+    full: bool = False,
+    inplace: bool = False,
+    max_iter: int = 100_000,
+    max_fun: int = 100_000,
+    max_refine: int = 20,
+    nstarts: int = 1,
+    ncores: int = 1,
+    seed: int | None = None,
+    _observation_mask: np.ndarray | None = None,
+) -> Union[ToyTree, dict[str, Any]]:
+    """Fit ape::chronos-compatible non-correlated relaxed rates.
+
+    The penalty compares the empirical CDF of raw branch rates with a Gamma
+    CDF whose shape is the mean raw rate and whose scale is one. Consequently,
+    this model is intentionally not invariant to a change of time units.
+    """
+    return _edges_make_ultrametric_independent(
+        tree=tree,
+        model="relaxed",
+        lam=lam,
+        calibrations=calibrations,
+        full=full,
+        inplace=inplace,
+        max_iter=max_iter,
+        max_fun=max_fun,
+        max_refine=max_refine,
+        nstarts=nstarts,
+        ncores=ncores,
+        seed=seed,
+        _observation_mask=_observation_mask,
+    )
+
+
+def _uncorrelated_lognormal_penalty(rates_hat: np.ndarray) -> float:
+    """Return summed centered log-rate dispersion."""
+    log_rates = np.log(np.clip(np.asarray(rates_hat, dtype=float), RATE_FLOOR, None))
+    centered = log_rates - float(np.mean(log_rates))
+    return float(np.sum(centered * centered))
+
+
 def _relaxed_penalty(rates_hat: np.ndarray) -> float:
-    """Return the relaxed clock penalty score for rates."""
-    alpha = max(float(rates_hat.mean()), RATE_FLOOR)
-    pcdf = np.sort(stats.gamma.cdf(rates_hat, a=alpha))
-    ecdf = np.arange(1, rates_hat.size + 1) / rates_hat.size
+    """Return the Gamma-CDF penalty used by ape::chronos model=relaxed."""
+    rates = np.clip(np.asarray(rates_hat, dtype=float), RATE_FLOOR, None)
+    alpha = max(float(np.mean(rates)), RATE_FLOOR)
+    pcdf = stats.gamma.cdf(np.sort(rates), a=alpha, scale=1.0)
+    ecdf = np.arange(1, rates.size + 1, dtype=float) / rates.size
     return float(np.sum((ecdf - pcdf) ** 2))
 
 
-def log_likelihood_poisson_relaxed(
-    rates_hat, ages_hat, edges, edata, lam, valid_loglik
+def _rate_penalty(rates_hat: np.ndarray, model: str) -> float:
+    """Return the configured independent-rate penalty."""
+    if model == "uncorrelated_lognormal":
+        return _uncorrelated_lognormal_penalty(rates_hat)
+    if model == "relaxed":
+        return _relaxed_penalty(rates_hat)
+    raise ValueError(f"unsupported independent-rate model: {model!r}")
+
+
+def _independent_branch_pseudologlik(
+    rates_hat,
+    ages_hat,
+    edges,
+    edata,
+    lam,
+    valid_loglik,
+    observation_mask=None,
+    model="uncorrelated_lognormal",
 ) -> float:
-    """Return the penalized log-likelihood of the relaxed model."""
+    """Return independent-rate penalized branch-length pseudologlikelihood."""
     if valid_loglik is None:
         valid_loglik = -1.0
 
@@ -419,16 +548,18 @@ def log_likelihood_poisson_relaxed(
         return valid_loglik - INVALID_LOG_LIK_DROP
 
     # calculate loglik
-    loglik = np.sum(edata[:, 0] * np.log(pdists) - pdists - edata[:, 1])
-    if not np.isfinite(loglik):
+    mask = _validate_observation_mask(observation_mask, edges.shape[0])
+    terms = edata[:, 0] * np.log(pdists) - pdists - edata[:, 1]
+    pseudologlik = np.sum(terms[mask])
+    if not np.isfinite(pseudologlik):
         return valid_loglik - INVALID_LOG_LIK_DROP
-    penalty = _relaxed_penalty(rates_hat)
+    penalty = _rate_penalty(rates_hat, model)
     if not np.isfinite(penalty):
         return valid_loglik - INVALID_LOG_LIK_DROP
-    return loglik - lam * penalty
+    return float(pseudologlik - lam * penalty)
 
 
-def objective_relaxed(
+def objective_independent(
     params,
     fixed_rates,
     fixed_ages,
@@ -442,8 +573,10 @@ def objective_relaxed(
     edata,
     lam,
     valid_loglik,
+    observation_mask,
+    model,
 ):
-    """Return neg log-likelihood under relaxed clock model."""
+    """Return negative penalized pseudologlikelihood under this model."""
     # [RATES] optimize rates while keeping ages fixed
     if fixed_ages and not fixed_rates:
         assert params.size == rates.size
@@ -454,7 +587,6 @@ def objective_relaxed(
             ages_bounds,
             children_map,
             dist_floor=DIST_FLOOR,
-            age_upper_switch=AGE_UPPER_SWITCH,
         )
         rates_hat = _unpack_log_rates(params)
     # [AGES] optimize ages while keeping rates fixed
@@ -468,7 +600,6 @@ def objective_relaxed(
             ages_bounds,
             children_map,
             dist_floor=DIST_FLOOR,
-            age_upper_switch=AGE_UPPER_SWITCH,
         )
     # joint optimize rates and ages
     else:
@@ -481,10 +612,16 @@ def objective_relaxed(
             ages_bounds,
             children_map,
             dist_floor=DIST_FLOOR,
-            age_upper_switch=AGE_UPPER_SWITCH,
         )
-    return -log_likelihood_poisson_relaxed(
-        rates_hat, ages_hat, edges, edata, lam, valid_loglik
+    return -_independent_branch_pseudologlik(
+        rates_hat,
+        ages_hat,
+        edges,
+        edata,
+        lam,
+        valid_loglik,
+        observation_mask,
+        model,
     )
 
 
@@ -495,8 +632,8 @@ if __name__ == "__main__":
 
     toytree.set_log_level("DEBUG")
 
-    tree = get_tree_with_uncorrelated_relaxed_rates(ntips=50, mean=3, sigma=3, seed=123)
-    res = edges_make_ultrametric_pl_relaxed(
+    tree = get_tree_with_uncorrelated_rates(ntips=50, mean=3, sigma=3, seed=123)
+    res = edges_make_ultrametric_uncorrelated_lognormal(
         tree,
         lam=0.5,
         calibrations={-1: 50},

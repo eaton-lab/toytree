@@ -77,7 +77,16 @@ def _parse_calibrations(
                 f"calibration query '{query}' matched {len(nodes)} nodes; "
                 "must match exactly one node."
             )
-        calibrations[nodes[0].idx] = _parse_calibration_value(value)
+        if nodes[0].is_leaf():
+            raise ValueError(
+                "tip calibrations are not supported; heterochronous tips are "
+                "not implemented."
+            )
+        calibration = _parse_calibration_value(value)
+        values = (calibration,) if isinstance(calibration, float) else calibration
+        if any(i < 0.0 for i in values):
+            raise ValueError("calibration ages must be non-negative.")
+        calibrations[nodes[0].idx] = calibration
     return calibrations
 
 
@@ -94,71 +103,42 @@ def run_make_ultrametric(args):
         resolve_input_arg(args.input), internal_labels=args.internal_labels
     )
     calibrations = _parse_calibrations(tre, args.calibrations)
-    if args.lam is not None and args.lam < 0:
-        raise ToytreeError("--lam must be >= 0.")
     report_full = bool((args.full or args.json) and args.method != "extend")
-    has_ncat_search = bool(
-        args.method == "discrete" and args.ncat and len(args.ncat) > 1
-    )
-    force_full = bool(report_full or has_ncat_search)
     if args.method == "discrete" and args.ncat is None:
         raise ToytreeError("--ncat is required when --method discrete is used.")
-    ncategories = None
-    if args.ncat is not None:
-        ncategories = args.ncat[0] if len(args.ncat) == 1 else list(args.ncat)
 
-    result = tre.mod.edges_make_ultrametric(
-        method=args.method,
-        calibrations=calibrations,
-        ncategories=ncategories,
-        lam=args.lam,
-        full=force_full,
-        inplace=False,
-        max_iter=args.max_iter,
-        max_fun=args.max_fun,
-        max_refine=args.max_refine,
-        nstarts=args.nstarts,
-        ncores=args.ncores,
-        seed=args.seed,
-    )
-    if force_full:
+    if args.method == "extend":
+        if calibrations or args.ncat is not None or args.lam is not None:
+            raise ToytreeError(
+                "calibrations, --ncat, and --lam are not valid with --method extend."
+            )
+        result = tre.mod.edges_extend_tips_to_align(inplace=False)
+    else:
+        result = tre.mod.edges_make_ultrametric(
+            method=args.method,
+            calibrations=calibrations,
+            ncategories=args.ncat,
+            lam=args.lam,
+            full=report_full,
+            inplace=False,
+            max_iter=args.max_iter,
+            max_fun=args.max_fun,
+            max_refine=args.max_refine,
+            nstarts=args.nstarts,
+            ncores=args.ncores,
+            seed=args.seed,
+        )
+    if report_full:
         if args.json:
             payload = {"method": args.method}
-            if has_ncat_search:
-                payload["search"] = _jsonify_value(result.get("search", []))
-                payload["selected_ncategories"] = _jsonify_value(
-                    result.get("selected_ncategories")
-                )
-                payload["selection_criterion"] = _jsonify_value(
-                    result.get("selection_criterion")
-                )
-            if report_full:
-                for key, val in result.items():
-                    if key != "tree":
-                        payload[str(key)] = _jsonify_value(val)
+            for key, val in result.items():
+                if key != "tree":
+                    payload[str(key)] = _jsonify_value(val)
             print(json.dumps(payload, ensure_ascii=False, indent=2), file=sys.stderr)
         else:
-            if has_ncat_search:
-                for rec in result.get("search", []):
-                    cand = rec.get("candidate")
-                    phiic = rec.get("PHIIC")
-                    conv = rec.get("converged")
-                    print(
-                        f"ncat candidate={cand} PHIIC={phiic} converged={conv}",
-                        file=sys.stderr,
-                    )
-                print(
-                    (
-                        "selected_ncategories="
-                        f"{result.get('selected_ncategories')} "
-                        f"selection_criterion={result.get('selection_criterion')}"
-                    ),
-                    file=sys.stderr,
-                )
-            if report_full:
-                for key, val in result.items():
-                    if key != "tree":
-                        print(f"{key}={val}", file=sys.stderr)
+            for key, val in result.items():
+                if key != "tree":
+                    print(f"{key}={val}", file=sys.stderr)
         tre = result["tree"]
     else:
         tre = result

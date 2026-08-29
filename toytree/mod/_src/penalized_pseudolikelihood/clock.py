@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
-from itertools import cycle
+"""Strict-clock branch-length pseudolikelihood fitting."""
+
 from typing import Any, Union
 
 import numpy as np
@@ -10,7 +11,7 @@ from scipy.special import gammaln
 
 from toytree.core import ToyTree
 from toytree.core.apis import TreeModAPI, add_subpackage_method
-from toytree.mod._src.penalized_likelihood.pl_utils import (
+from toytree.mod._src.penalized_pseudolikelihood.utils import (
     Calibrations,
     _decode_age_params,
     _encode_age_params,
@@ -20,16 +21,18 @@ from toytree.mod._src.penalized_likelihood.pl_utils import (
     _get_params_bounds,
     _normalize_calibrations,
     _pack_log_rates,
+    _result_observation_metadata,
     _run_multistart,
     _select_best_multistart,
     _unpack_log_rates,
+    _validate_branch_lengths,
+    _validate_observation_mask,
     get_tree_with_categorical_rates,
 )
 
-__all__ = ["edges_make_ultrametric_pl_clock"]
+__all__ = ["edges_make_ultrametric_clock"]
 RATE_FLOOR = 1e-12
 DIST_FLOOR = 1e-12
-AGE_UPPER_SWITCH = 1e6
 
 
 def _fit_clock_start(payload: dict[str, Any]) -> dict[str, Any]:
@@ -46,6 +49,7 @@ def _fit_clock_start(payload: dict[str, Any]) -> dict[str, Any]:
     edges = payload["edges"]
     edata = payload["edata"]
     valid_loglik = payload["valid_loglik"]
+    observation_mask = payload["observation_mask"]
     max_iter = payload["max_iter"]
     max_fun = payload["max_fun"]
     max_refine = payload["max_refine"]
@@ -65,6 +69,7 @@ def _fit_clock_start(payload: dict[str, Any]) -> dict[str, Any]:
             edges,
             edata,
             valid_loglik,
+            observation_mask,
         ),
         method="L-BFGS-B",
         bounds=bounds,
@@ -73,45 +78,41 @@ def _fit_clock_start(payload: dict[str, Any]) -> dict[str, Any]:
 
     current_loglik = fit.fun
     current_params = fit.x.copy()
-    iter_refine = 0
-    fix_dict = {
+    blocks = {
         "rates": [(False, True), slice(None, 1)],
-        "ages": [(True, False), slice(1, None)],
     }
-    iter_fixed = cycle(fix_dict)
-    while 1:
-        fixed = next(iter_fixed)
-        fbools, fslice = fix_dict[fixed]
-        rates_hat = _unpack_log_rates(current_params[:1])
-        age_params_hat = current_params[1:]
-        args = fbools + (
-            rates_hat,
-            age_params_hat,
-            ages_init,
-            ages_idxs,
-            ages_bounds,
-            children_map,
-            edges,
-            edata,
-            valid_loglik,
-        )
-        ifit = minimize(
-            fun=objective_clock,
-            x0=current_params[fslice],
-            args=args,
-            method="L-BFGS-B",
-            bounds=bounds[fslice],
-            options=dict(maxiter=int(max_iter), maxfun=int(max_fun)),
-        )
-        delta = ifit.fun - current_loglik
-        if delta <= 0:
-            current_loglik = ifit.fun
-            current_params[fslice] = ifit.x
-            fit = ifit
-            if abs(delta) < 1e-9:
-                break
-        iter_refine += 1
-        if iter_refine > max_refine:
+    if ages_idxs.size:
+        blocks["ages"] = [(True, False), slice(1, None)]
+    for _ in range(max(0, int(max_refine))):
+        cycle_start = float(current_loglik)
+        for fbools, fslice in blocks.values():
+            rates_hat = _unpack_log_rates(current_params[:1])
+            age_params_hat = current_params[1:]
+            args = fbools + (
+                rates_hat,
+                age_params_hat,
+                ages_init,
+                ages_idxs,
+                ages_bounds,
+                children_map,
+                edges,
+                edata,
+                valid_loglik,
+                observation_mask,
+            )
+            ifit = minimize(
+                fun=objective_clock,
+                x0=current_params[fslice],
+                args=args,
+                method="L-BFGS-B",
+                bounds=bounds[fslice],
+                options=dict(maxiter=int(max_iter), maxfun=int(max_fun)),
+            )
+            if float(ifit.fun) <= float(current_loglik):
+                current_loglik = float(ifit.fun)
+                current_params[fslice] = ifit.x
+                fit = ifit
+        if abs(cycle_start - float(current_loglik)) < 1e-9:
             break
 
     return {
@@ -126,7 +127,7 @@ def _fit_clock_start(payload: dict[str, Any]) -> dict[str, Any]:
 
 
 @add_subpackage_method(TreeModAPI)
-def edges_make_ultrametric_pl_clock(
+def edges_make_ultrametric_clock(
     tree: ToyTree,
     calibrations: Calibrations | None = None,
     full: bool = False,
@@ -137,6 +138,7 @@ def edges_make_ultrametric_pl_clock(
     nstarts: int = 1,
     ncores: int = 1,
     seed: int | None = None,
+    _observation_mask: np.ndarray | None = None,
 ) -> Union[ToyTree, dict[str, Any]]:
     """Return a tree made ultrametric under a molecular clock.
 
@@ -152,7 +154,7 @@ def edges_make_ultrametric_pl_clock(
         ages as a single value or a tuple of (min, max) age.
     full: bool
         If full=True a dictionary is returned with the modified tree,
-        log-likelihood score, and PHIIC score.
+        working log-likelihood score, rate, and optimizer metadata.
     inplace: bool
         If True the tree is modified in-place and returned, else a
         copy is returned.
@@ -180,8 +182,8 @@ def edges_make_ultrametric_pl_clock(
         need to be stored.
     dict
         An alternative option to return a dict with the new scaled tree
-        as well as statistics on the model fit including likelihood,
-        PHIIC, and rate.
+        as well as statistics on the model fit including its working
+        likelihood and rate.
     """
     if calibrations is None:
         calibrations = {}
@@ -199,13 +201,14 @@ def edges_make_ultrametric_pl_clock(
 
     # get edges, dists and log-factorial-dists from rate-x-time edges
     edges = tree.get_edges("idx")
-    dists_o = tree.get_node_data("dist").values[:-1]
+    dists_o = _validate_branch_lengths(tree)
     dists_lf = gammaln(dists_o + 1)
     # dists_lf = np.log(factorial(dists_o))
     edata = np.vstack([dists_o, dists_lf]).T
+    observation_mask = _validate_observation_mask(_observation_mask, tree.nedges)
 
     # get starting rate in clock model as old/new treenode height
-    rate_init = tree.treenode.height / ages_init[-1]
+    rate_init = max(float(tree.treenode.height / ages_init[-1]), RATE_FLOOR)
 
     # get indices of which node ages will be estimated
     ages_idxs = np.array(sorted(ages_bounds))
@@ -220,7 +223,6 @@ def edges_make_ultrametric_pl_clock(
         ages_bounds,
         children_map,
         dist_floor=DIST_FLOOR,
-        age_upper_switch=AGE_UPPER_SWITCH,
     )
 
     bounds = [
@@ -238,7 +240,9 @@ def edges_make_ultrametric_pl_clock(
     )
 
     # get loglik at a valid starting params to scale neg dist penalty
-    valid_loglik = log_likelihood_poisson(rate_init, ages_init, edges, edata, None)
+    valid_loglik = _poisson_branch_pseudologlik(
+        rate_init, ages_init, edges, edata, None, observation_mask
+    )
 
     nstarts = max(1, int(nstarts))
     ncores = max(1, int(ncores))
@@ -264,6 +268,7 @@ def edges_make_ultrametric_pl_clock(
                 edges=edges,
                 edata=edata,
                 valid_loglik=valid_loglik,
+                observation_mask=observation_mask,
                 max_iter=max_iter,
                 max_fun=max_fun,
                 max_refine=max_refine,
@@ -287,7 +292,6 @@ def edges_make_ultrametric_pl_clock(
         ages_bounds,
         children_map,
         dist_floor=DIST_FLOOR,
-        age_upper_switch=AGE_UPPER_SWITCH,
     )
     ages = _finalize_ultrametric_ages(
         tree,
@@ -298,20 +302,27 @@ def edges_make_ultrametric_pl_clock(
     tree = tree.set_node_data("height", ages, inplace=inplace)
     rate = float(_unpack_log_rates(current_params[:1])[0])
 
-    # Final fit for PHIIC calculation (Penalized Hierarchical Information Criterion)
-    loglik = log_likelihood_poisson(rate, ages, edges, edata, valid_loglik)
-    k = len(bounds)
-    PHIIC = -2 * loglik + 2 * k
+    pseudologlik = _poisson_branch_pseudologlik(
+        rate, ages, edges, edata, valid_loglik, observation_mask
+    )
+    time_dists = ages[edges[:, 1]] - ages[edges[:, 0]]
+    expected = time_dists * rate
 
     # return as a tree or a dict
     if not full:
         return tree
     return {
-        "loglik": loglik,
-        "PHIIC": PHIIC,
+        "model": "clock",
+        "pseudologlik": pseudologlik,
+        "penalized_pseudologlik": pseudologlik,
+        **_result_observation_metadata(),
+        "nparams": len(bounds),
         "rate": rate,
+        "expected_branch_lengths": expected.tolist(),
+        "observed_branch_lengths": dists_o.tolist(),
         "tree": tree,
         "converged": bool(best["converged"]),
+        "optimizer_message": str(best["message"]),
         "nstarts": nstarts,
         "ncores": max(1, min(ncores, nstarts)),
         "best_start": int(best["start"]),
@@ -329,8 +340,10 @@ def edges_make_ultrametric_pl_clock(
     }
 
 
-def log_likelihood_poisson(rates_hat, ages_hat, edges, edata, valid_loglik) -> float:
-    """Return the log-likelihood of the rates x ages params."""
+def _poisson_branch_pseudologlik(
+    rates_hat, ages_hat, edges, edata, valid_loglik, observation_mask=None
+) -> float:
+    """Return the fractional-Poisson branch-length pseudologlikelihood."""
     # get dists given the new age estimates
     dists_hat = ages_hat[edges[:, 1]] - ages_hat[edges[:, 0]]
 
@@ -342,8 +355,10 @@ def log_likelihood_poisson(rates_hat, ages_hat, edges, edata, valid_loglik) -> f
     pdists = dists_hat * rates_hat
 
     # calculate loglik
-    loglik = np.sum(edata[:, 0] * np.log(pdists) - pdists - edata[:, 1])
-    return loglik if loglik is not None else -np.inf
+    mask = _validate_observation_mask(observation_mask, edges.shape[0])
+    terms = edata[:, 0] * np.log(pdists) - pdists - edata[:, 1]
+    pseudologlik = np.sum(terms[mask])
+    return float(pseudologlik) if np.isfinite(pseudologlik) else -np.inf
 
 
 def objective_clock(
@@ -359,6 +374,7 @@ def objective_clock(
     edges,
     edata,
     valid_loglik,
+    observation_mask,
 ):
     """Return neg log-likelihood under clock model."""
     # [AGES] optimize ages while keeping rate fixed
@@ -372,7 +388,6 @@ def objective_clock(
             ages_bounds,
             children_map,
             dist_floor=DIST_FLOOR,
-            age_upper_switch=AGE_UPPER_SWITCH,
         )
     # [RATE] optimize rate while keeping ages fixed
     elif fixed_ages and not fixed_rate:
@@ -384,7 +399,6 @@ def objective_clock(
             ages_bounds,
             children_map,
             dist_floor=DIST_FLOOR,
-            age_upper_switch=AGE_UPPER_SWITCH,
         )
         rate_hat = _unpack_log_rates(params)
     # joint optimize rate and ages
@@ -398,9 +412,10 @@ def objective_clock(
             ages_bounds,
             children_map,
             dist_floor=DIST_FLOOR,
-            age_upper_switch=AGE_UPPER_SWITCH,
         )
-    return -log_likelihood_poisson(rate_hat, ages_hat, edges, edata, valid_loglik)
+    return -_poisson_branch_pseudologlik(
+        rate_hat, ages_hat, edges, edata, valid_loglik, observation_mask
+    )
 
 
 if __name__ == "__main__":
@@ -411,7 +426,7 @@ if __name__ == "__main__":
     toytree.set_log_level("DEBUG")
 
     tree = get_tree_with_categorical_rates(ntips=50, nrates=1, seed=123)
-    res = edges_make_ultrametric_pl_clock(
+    res = edges_make_ultrametric_clock(
         tree, calibrations={-1: 50}, full=True, max_fun=1e6, max_iter=1e6, max_refine=50
     )
     print(res)
