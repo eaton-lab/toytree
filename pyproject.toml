@@ -55,6 +55,12 @@ test = [
     "pytest",
     "pytest-cov",
 ]
+docs = [
+    "jupyter",
+    "nbconvert",
+    "pymdown-extensions",
+    "zensical",
+]
 export = [
     "cairosvg",
 ]

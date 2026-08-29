@@ -459,11 +459,13 @@ toytree distance -i TREE1.nwk -j TREE2.nwk -m quartet-all --json
 ### `make-ultrametric`
 
 Convert branch lengths to an ultrametric tree using a fast extension method or
-one of the penalized-likelihood models.
+one of the branch-length pseudolikelihood models.
 
 ```bash
 toytree make-ultrametric -i TREE.nwk -m extend > UTREE.nwk
+toytree make-ultrametric -i TREE.nwk -m discrete --ncat 2 > UTREE.nwk
 toytree make-ultrametric -i TREE.nwk -m relaxed --lam 0.5 > UTREE.nwk
+toytree make-ultrametric -i TREE.nwk -m uncorrelated_lognormal --lam 0.5 > UTREE.nwk
 toytree make-ultrametric -i TREE.nwk -m correlated --lam 0.5 --nstarts 8 --ncores 4 --seed 123 > UTREE.nwk
 ```
 

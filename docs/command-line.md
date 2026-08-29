@@ -227,14 +227,16 @@ toytree distance -i TREE1.nwk -j TREE2.nwk -m quartet-all --json
 ## `make-ultrametric`
 
 `make-ultrametric` provides fast edge-extension alignment and several
-penalized-likelihood models.
+branch-length pseudolikelihood models.
 
 ```bash
 # fast alignment method
 toytree make-ultrametric -i TREE.nwk -m extend > UTREE.nwk
 
-# penalized-likelihood methods
+# pseudolikelihood models use explicit settings
+toytree make-ultrametric -i TREE.nwk -m discrete --ncat 2 > UTREE.nwk
 toytree make-ultrametric -i TREE.nwk -m relaxed --lam 0.5 > UTREE.nwk
+toytree make-ultrametric -i TREE.nwk -m uncorrelated_lognormal --lam 0.5 > UTREE.nwk
 toytree make-ultrametric -i TREE.nwk -m correlated --lam 0.5 --nstarts 8 --ncores 4 --seed 123 > UTREE.nwk
 ```
 

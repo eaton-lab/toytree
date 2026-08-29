@@ -100,7 +100,7 @@ nav:
             - dlc - duplication loss coalescence: mod-rooting-dlc.md
           - topology changes: mod-topology.md
           - edge/dist changes: mod-edges.md
-          - make ultrametric: mod-make-ultrametric.md
+          - make ultrametric: make-ultrametric.md
 
       - '[distance]':
           - tree distances: distance-tree.md
