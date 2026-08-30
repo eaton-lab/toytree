@@ -118,6 +118,29 @@ def test_v3_correlated_lambda_validation_cache_and_rescore_smoke(tmp_path: Path)
     assert score.returncode == 0, score.stderr
     assert result_path.exists()
 
+    diagnostic_script = script.with_name("diagnose_lambda_selection_v3.py")
+    diagnostic = subprocess.run(
+        [
+            sys.executable,
+            str(diagnostic_script),
+            "--mode",
+            "smoke",
+            "--output-dir",
+            str(tmp_path),
+            "--bootstrap-replicates",
+            "20",
+        ],
+        cwd=Path(__file__).parents[2],
+        capture_output=True,
+        text=True,
+    )
+    assert diagnostic.returncode == 0, diagnostic.stderr
+    artifact = tmp_path / "diagnostics-v3-smoke.json"
+    contents = artifact.read_text()
+    assert '"diagnostic_only": true' in contents
+    assert '"changes_public_selector": false' in contents
+    assert '"pearson_mean_minimum"' in contents
+
 
 def test_v4_independent_rate_validation_cache_and_rescore_smoke(tmp_path: Path):
     """The independent-rate study checkpoints paired fits and rescoring."""

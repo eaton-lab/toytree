@@ -121,6 +121,20 @@ remote progress monitoring. Return and commit only
 `seeds-v3-confirmation.json`; the large cache directory is intentionally
 gitignored.
 
+The frozen confirmation did not pass its lambda-selection gates. Diagnose the
+selection framework from the retained caches without refitting:
+
+    python validation/penalized_pseudolikelihood/diagnose_lambda_selection_v3.py \
+      --mode confirmation --bootstrap-replicates 2000
+
+This diagnostic reproduces the current minimum-mean-Pearson selector, compares
+four prespecified cache-only alternatives, evaluates Gamma and count tracks
+with their data-generating variances, and measures paired-fold bootstrap
+stability. It writes `v3/diagnostics-v3-confirmation.json`; commit that compact
+artifact but not `cache-v3/`. The diagnostic does not change the public
+selector or retroactively reinterpret confirmation as passing. Any improved
+rule must be validated later with a fresh seed stream.
+
 
 ## Version 1 archived study
 
