@@ -1,0 +1,84 @@
+{
+  "study_version": 5,
+  "development_seed": 90260829,
+  "bootstrap_seed": 91260829,
+  "bootstrap_replicates": 500,
+  "simulation": {
+    "baseline_rate": 1.0,
+    "gamma_shape": 100.0,
+    "correlated_log_sigmas": [0.2, 0.6]
+  },
+  "fit": {
+    "max_iter": 5000,
+    "max_fun": 10000,
+    "max_refine": 4,
+    "nstarts": 4
+  },
+  "lambdas": [
+    1e-8,
+    3e-8,
+    1e-7,
+    3e-7,
+    1e-6,
+    3e-6,
+    1e-5,
+    3e-5,
+    0.0001,
+    0.0003,
+    0.001,
+    0.003,
+    0.01,
+    0.03,
+    0.1,
+    0.3,
+    1.0,
+    3.0,
+    10.0,
+    30.0,
+    100.0,
+    300.0,
+    1000.0,
+    3000.0,
+    10000.0
+  ],
+  "smoke": [
+    {
+      "name": "pipeline-smoke",
+      "ntips": [6],
+      "calibrations": ["fixed_internal_ages"],
+      "gamma_shapes": [100.0],
+      "sigmas": [0.2],
+      "lambdas": [0.0001, 1.0, 10000.0],
+      "replicates": 1
+    }
+  ],
+  "pilot": [
+    {
+      "name": "fixed-age-identifiability",
+      "ntips": [24, 48, 96],
+      "calibrations": ["fixed_internal_ages"],
+      "gamma_shapes": [100.0, 400.0],
+      "sigmas": [0.2, 0.6],
+      "replicates": 2
+    },
+    {
+      "name": "chronogram-calibration-density",
+      "ntips": [48, 96],
+      "calibrations": [
+        "root_and_internal_interval",
+        "root_and_three_internal_intervals"
+      ],
+      "gamma_shapes": [100.0],
+      "sigmas": [0.2, 0.6],
+      "replicates": 2
+    }
+  ],
+  "decision_gates": {
+    "dataset_convergence": 0.98,
+    "fold_convergence": 0.98,
+    "population_regret_median": 0.15,
+    "population_regret_90th_percentile": 0.50,
+    "age_rmse_ratio_median": 1.25,
+    "rate_spearman_delta_median": -0.10
+  }
+}

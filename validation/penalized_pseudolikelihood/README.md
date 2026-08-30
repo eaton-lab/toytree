@@ -3,6 +3,11 @@
 This directory contains the pinned simulation and predictive-validation study
 for ToyTree's ultrametric branch-length pseudolikelihood models.
 
+## Version 5: correlated-lambda identifiability
+
+The development-only v5 design and run instructions are recorded in
+[README-v5.md](README-v5.md). It does not change the public LOOCV selector.
+
 ## Version 4: independent-rate models
 
 Version 4 pins the `ape::chronos` Gamma-CDF `relaxed` objective and evaluates
