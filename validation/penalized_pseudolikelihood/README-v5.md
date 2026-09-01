@@ -33,3 +33,14 @@ Only a condition meeting the pinned predictive, recovery, and convergence
 gates becomes a candidate for a separately seeded confirmation study. Until
 such a confirmation is designed and passes, correlated-lambda selection
 remains unvalidated.
+
+After scoring, compare the current Pearson selector with relative-squared and
+Gamma-deviance scores using only the retained caches:
+
+    python validation/penalized_pseudolikelihood/diagnose_lambda_selection_v5.py \
+      --mode pilot --bootstrap-replicates 2000
+
+This writes `v5/diagnostics-v5-pilot.json`. It also reports lambda ranges that
+remain within 15% and 50% of the population-oracle risk and summarizes failed
+folds and full fits by condition, lambda, and optimizer message. It never calls
+a fitting function and does not change the public selector.
