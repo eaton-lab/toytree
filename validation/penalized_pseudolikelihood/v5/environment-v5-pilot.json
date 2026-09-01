@@ -1,0 +1,10 @@
+{
+  "cache_schema_version": 1,
+  "config_hash": "1a88ebee58bb307ef64610079bd91fed8ae2b1201e8be8497a80e4d55cbfad50",
+  "numpy": "2.5.2",
+  "platform": "Linux-5.15.0-157-generic-x86_64-with-glibc2.35",
+  "python": "3.14.7 | packaged by conda-forge | (main, Aug 26 2026, 21:34:29) [GCC 15.3.0]",
+  "scipy": "1.18.1",
+  "source_hash": "d49ca84cc45aeaa1595b65d0475a91901aa8d1e7ff4924a3cab258dd715dda3c",
+  "toytree": "3.1.0.dev1"
+}

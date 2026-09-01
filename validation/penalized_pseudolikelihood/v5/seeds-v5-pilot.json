@@ -1,0 +1,366 @@
+{
+  "datasets": [
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 100.0,
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260829,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 100.0,
+      "ntips": 24,
+      "replicate": 1,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260830,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 100.0,
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260831,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 100.0,
+      "ntips": 24,
+      "replicate": 1,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260832,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 400.0,
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260833,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 400.0,
+      "ntips": 24,
+      "replicate": 1,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260834,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 400.0,
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260835,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 400.0,
+      "ntips": 24,
+      "replicate": 1,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260836,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 100.0,
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260837,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 100.0,
+      "ntips": 48,
+      "replicate": 1,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260838,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 100.0,
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260839,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 100.0,
+      "ntips": 48,
+      "replicate": 1,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260840,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 400.0,
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260841,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 400.0,
+      "ntips": 48,
+      "replicate": 1,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260842,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 400.0,
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260843,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 400.0,
+      "ntips": 48,
+      "replicate": 1,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260844,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 100.0,
+      "ntips": 96,
+      "replicate": 0,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260845,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 100.0,
+      "ntips": 96,
+      "replicate": 1,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260846,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 100.0,
+      "ntips": 96,
+      "replicate": 0,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260847,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 100.0,
+      "ntips": 96,
+      "replicate": 1,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260848,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 400.0,
+      "ntips": 96,
+      "replicate": 0,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260849,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 400.0,
+      "ntips": 96,
+      "replicate": 1,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260850,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 400.0,
+      "ntips": 96,
+      "replicate": 0,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260851,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "fixed_internal_ages",
+      "gamma_shape": 400.0,
+      "ntips": 96,
+      "replicate": 1,
+      "scenario": "fixed-age-identifiability",
+      "seed": 90260852,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "root_and_internal_interval",
+      "gamma_shape": 100.0,
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260853,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "root_and_internal_interval",
+      "gamma_shape": 100.0,
+      "ntips": 48,
+      "replicate": 1,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260854,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "root_and_internal_interval",
+      "gamma_shape": 100.0,
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260855,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "root_and_internal_interval",
+      "gamma_shape": 100.0,
+      "ntips": 48,
+      "replicate": 1,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260856,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "root_and_three_internal_intervals",
+      "gamma_shape": 100.0,
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260857,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "root_and_three_internal_intervals",
+      "gamma_shape": 100.0,
+      "ntips": 48,
+      "replicate": 1,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260858,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "root_and_three_internal_intervals",
+      "gamma_shape": 100.0,
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260859,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "root_and_three_internal_intervals",
+      "gamma_shape": 100.0,
+      "ntips": 48,
+      "replicate": 1,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260860,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "root_and_internal_interval",
+      "gamma_shape": 100.0,
+      "ntips": 96,
+      "replicate": 0,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260861,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "root_and_internal_interval",
+      "gamma_shape": 100.0,
+      "ntips": 96,
+      "replicate": 1,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260862,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "root_and_internal_interval",
+      "gamma_shape": 100.0,
+      "ntips": 96,
+      "replicate": 0,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260863,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "root_and_internal_interval",
+      "gamma_shape": 100.0,
+      "ntips": 96,
+      "replicate": 1,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260864,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "root_and_three_internal_intervals",
+      "gamma_shape": 100.0,
+      "ntips": 96,
+      "replicate": 0,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260865,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "root_and_three_internal_intervals",
+      "gamma_shape": 100.0,
+      "ntips": 96,
+      "replicate": 1,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260866,
+      "sigma": 0.2
+    },
+    {
+      "calibration": "root_and_three_internal_intervals",
+      "gamma_shape": 100.0,
+      "ntips": 96,
+      "replicate": 0,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260867,
+      "sigma": 0.6
+    },
+    {
+      "calibration": "root_and_three_internal_intervals",
+      "gamma_shape": 100.0,
+      "ntips": 96,
+      "replicate": 1,
+      "scenario": "chronogram-calibration-density",
+      "seed": 90260868,
+      "sigma": 0.6
+    }
+  ],
+  "mode": "pilot",
+  "study_version": 5
+}
