@@ -9,7 +9,9 @@ import toytree
 from toytree.mod._src.penalized_pseudolikelihood import lambda_cv
 from toytree.mod._src.penalized_pseudolikelihood.lambda_cv import (
     _fit_correlated_cv_fold,
+    _fit_correlated_cv_path,
     _normalize_lambdas,
+    _prediction_score,
     edges_make_ultrametric_correlated_lambda_cv,
 )
 from toytree.utils import ToytreeError
@@ -179,3 +181,69 @@ class TestCorrelatedLambdaCV(PytestCompat):
         self.assertTrue(
             hasattr(tree.mod, "edges_make_ultrametric_correlated_lambda_cv")
         )
+
+    def test_gamma_prediction_score_matches_unit_deviance(self):
+        """The private Gamma selector uses the matching held-edge deviance."""
+        observed = 2.0
+        predicted = 1.0
+        expected = 2.0 * (2.0 - np.log(2.0) - 1.0)
+        self.assertTrue(
+            np.isclose(
+                _prediction_score(observed, predicted, "multiplicative_gamma"),
+                expected,
+            )
+        )
+
+    def test_lambda_path_runs_strong_to_weak_with_warm_starts(self):
+        """Adjacent candidates reuse only converged stronger-smoothing fits."""
+        calls = []
+        payloads = [
+            {"lam": lam, "candidate_index": idx, "fold": 0}
+            for idx, lam in enumerate((0.1, 10.0, 1.0))
+        ]
+
+        def fake_fold(payload):
+            calls.append((payload["lam"], "initial_rates" in payload))
+            return {
+                "converged": True,
+                "_warm_rates": [float(payload["lam"])],
+                "_warm_ages": [0.0, 1.0],
+            }
+
+        with patch.object(lambda_cv, "_fit_correlated_cv_fold", fake_fold):
+            results = _fit_correlated_cv_path(payloads)
+
+        self.assertEqual(calls, [(10.0, False), (1.0, True), (0.1, True)])
+        self.assertEqual([result["candidate_index"] for result in results], [1, 2, 0])
+        self.assertTrue(all("_warm_rates" not in result for result in results))
+
+    def test_private_gamma_cv_reports_matching_score(self):
+        """Validation studies can pair Gamma fitting with Gamma scoring."""
+        tree = toytree.tree("((a:1,b:1):1,(c:1,d:1):1);")
+
+        def fake_folds(payloads, ncores):
+            return [
+                {
+                    "candidate_index": payload["candidate_index"],
+                    "fold": payload["fold"],
+                    "converged": True,
+                    "score": float(payload["candidate_index"] + 1),
+                }
+                for payload in payloads
+            ]
+
+        with (
+            patch.object(lambda_cv, "_run_fold_payloads", fake_folds),
+            patch.object(
+                lambda_cv,
+                "edges_make_ultrametric_correlated",
+                return_value={"converged": True},
+            ),
+        ):
+            result = edges_make_ultrametric_correlated_lambda_cv(
+                tree,
+                lambdas=[0.1, 1.0],
+                _observation_loss="multiplicative_gamma",
+            )
+        self.assertEqual(result["score"], "gamma_deviance")
+        self.assertEqual(result["observation_loss"], "multiplicative_gamma")

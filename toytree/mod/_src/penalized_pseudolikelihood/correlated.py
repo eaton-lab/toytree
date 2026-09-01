@@ -36,11 +36,40 @@ __all__ = ["edges_make_ultrametric_correlated"]
 RATE_FLOOR = 1e-12
 DIST_FLOOR = 1e-12
 INVALID_LOG_LIK_DROP = 1e6
+CORRELATED_OBSERVATION_LOSSES = frozenset(
+    {"fractional_poisson", "multiplicative_gamma"}
+)
 
 
 def _invalid_objective(valid_loglik: float) -> float:
     """Return the finite objective value used for invalid fits."""
     return float(-(valid_loglik - INVALID_LOG_LIK_DROP))
+
+
+def _validate_correlated_observation_loss(value: str) -> str:
+    """Return a supported private correlated branch-observation loss."""
+    if value not in CORRELATED_OBSERVATION_LOSSES:
+        choices = ", ".join(sorted(CORRELATED_OBSERVATION_LOSSES))
+        raise ValueError(f"_observation_loss must be one of: {choices}.")
+    return value
+
+
+def _validate_correlated_warm_start(
+    values: Any,
+    size: int,
+    name: str,
+    *,
+    positive: bool,
+) -> np.ndarray | None:
+    """Return one validated private warm-start vector."""
+    if values is None:
+        return None
+    array = np.asarray(values, dtype=float)
+    if array.shape != (size,) or np.any(~np.isfinite(array)):
+        raise ValueError(f"{name} must contain {size} finite values.")
+    if positive and np.any(array <= 0.0):
+        raise ValueError(f"{name} values must be strictly positive.")
+    return array.copy()
 
 
 def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
@@ -62,6 +91,8 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
     max_iter = payload["max_iter"]
     max_fun = payload["max_fun"]
     max_refine = payload["max_refine"]
+    retry_multiplier = payload["retry_multiplier"]
+    observation_loss = payload["observation_loss"]
 
     invalid_objective = _invalid_objective(valid_loglik)
     joint_args = (
@@ -79,6 +110,7 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
         lam,
         valid_loglik,
         observation_mask,
+        observation_loss,
     )
     fit = minimize(
         fun=objective_correlated_with_gradient,
@@ -145,6 +177,7 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
                 lam,
                 valid_loglik,
                 observation_mask,
+                observation_loss,
             )
             ifit = minimize(
                 fun=objective_correlated_with_gradient,
@@ -195,6 +228,46 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
         current_loglik = polish_objective
         current_params = polish.x.copy()
 
+    optimizer_retries = 0
+    if (
+        not polish.success
+        and "ITERATIONS" in str(polish.message).upper()
+        and int(retry_multiplier) > 1
+    ):
+        optimizer_retries = 1
+        retry_start_objective = current_loglik
+        retry = minimize(
+            fun=objective_correlated_with_gradient,
+            x0=current_params,
+            args=joint_args,
+            method="L-BFGS-B",
+            jac=True,
+            bounds=bounds,
+            options=dict(
+                maxiter=int(max_iter) * int(retry_multiplier),
+                maxfun=int(max_fun) * int(retry_multiplier),
+                ftol=1e-12,
+                gtol=1e-6,
+            ),
+        )
+        total_nfev += int(getattr(retry, "nfev", 0))
+        total_nit += int(getattr(retry, "nit", 0))
+        retry_objective = float(retry.fun)
+        retry_tolerance = 1e-10 * max(1.0, abs(retry_start_objective))
+        retry_is_finite = bool(
+            np.isfinite(retry_objective) and np.all(np.isfinite(retry.x))
+        )
+        if (
+            retry_is_finite
+            and retry_objective <= retry_start_objective + retry_tolerance
+        ):
+            polish = retry
+            polish_objective = retry_objective
+            polish_is_finite = True
+            polish_did_not_worsen = True
+            current_loglik = retry_objective
+            current_params = retry.x.copy()
+
     jac = np.asarray(getattr(polish, "jac", np.array([])), dtype=float)
     gradient_max_abs = (
         float(np.max(np.abs(jac))) if jac.size and np.all(np.isfinite(jac)) else None
@@ -219,6 +292,7 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
         "refinement_cycles": refinement_cycles,
         "final_joint_converged": bool(polish.success),
         "gradient_max_abs": gradient_max_abs,
+        "optimizer_retries": optimizer_retries,
         "params": current_params,
     }
 
@@ -237,6 +311,10 @@ def edges_make_ultrametric_correlated(
     ncores: int = 1,
     seed: int | None = None,
     _observation_mask: np.ndarray | None = None,
+    _observation_loss: str = "fractional_poisson",
+    _initial_rates: Any = None,
+    _initial_ages: Any = None,
+    _retry_multiplier: int = 4,
 ) -> Union[ToyTree, dict[str, Any]]:
     """Return a tree made ultrametric under a correlated relaxed-clock model.
 
@@ -246,6 +324,14 @@ def edges_make_ultrametric_correlated(
     root log-rate equal to their mean.
     """
     lam = _validate_lambda(lam)
+    observation_loss = _validate_correlated_observation_loss(_observation_loss)
+    if isinstance(_retry_multiplier, bool) or not isinstance(
+        _retry_multiplier, (int, np.integer)
+    ):
+        raise ValueError("_retry_multiplier must be a positive integer.")
+    retry_multiplier = int(_retry_multiplier)
+    if retry_multiplier < 1:
+        raise ValueError("_retry_multiplier must be a positive integer.")
     if calibrations is None:
         calibrations = {}
     calibrations = _normalize_calibrations(
@@ -256,6 +342,11 @@ def edges_make_ultrametric_correlated(
 
     # get init and fixed node ages that make tree ultrametric
     ages_init, _ = _get_init_ages(tree, calibrations)
+    initial_ages = _validate_correlated_warm_start(
+        _initial_ages, tree.nnodes, "_initial_ages", positive=False
+    )
+    if initial_ages is not None:
+        ages_init = initial_ages
 
     # get bounds on params that need to be inferred; are not fixed
     rates_bounds, ages_bounds = _get_params_bounds(tree, calibrations)
@@ -266,19 +357,31 @@ def edges_make_ultrametric_correlated(
     dists_lf = gammaln(dists_o + 1.0)
     edata = np.vstack([dists_o, dists_lf]).T
     observation_mask = _validate_observation_mask(_observation_mask, tree.nedges)
+    if observation_loss == "multiplicative_gamma" and np.any(
+        dists_o[observation_mask] <= 0.0
+    ):
+        raise ValueError(
+            "multiplicative_gamma requires strictly positive observed branches."
+        )
 
     # get starting rates as old/new edge dists.
     init_times = ages_init[edges[:, 1]] - ages_init[edges[:, 0]]
     rates_init = np.clip(dists_o / init_times, RATE_FLOOR, None)
+    initial_rates = _validate_correlated_warm_start(
+        _initial_rates, tree.nedges, "_initial_rates", positive=True
+    )
     # Strong smoothing is poorly conditioned when optimization starts from
     # raw edgewise rates. Center at the fixed-age common-rate estimate and
     # shrink only the initial log-rate deviations as lambda increases.
-    observed_total = float(np.sum(dists_o[observation_mask]))
-    time_total = float(np.sum(init_times[observation_mask]))
-    common_rate = max(observed_total / time_total, RATE_FLOOR)
-    log_deviations = np.log(rates_init) - np.mean(np.log(rates_init))
-    init_shrinkage = 1.0 / (1.0 + np.sqrt(lam))
-    rates_init = np.exp(np.log(common_rate) + init_shrinkage * log_deviations)
+    if initial_rates is None:
+        observed_total = float(np.sum(dists_o[observation_mask]))
+        time_total = float(np.sum(init_times[observation_mask]))
+        common_rate = max(observed_total / time_total, RATE_FLOOR)
+        log_deviations = np.log(rates_init) - np.mean(np.log(rates_init))
+        init_shrinkage = 1.0 / (1.0 + np.sqrt(lam))
+        rates_init = np.exp(np.log(common_rate) + init_shrinkage * log_deviations)
+    else:
+        rates_init = initial_rates
 
     # map edges to their parent edge index for correlation penalty.
     child_to_eidx = {int(child): idx for idx, (child, _) in enumerate(edges)}
@@ -316,6 +419,7 @@ def edges_make_ultrametric_correlated(
         lam,
         None,
         observation_mask,
+        observation_loss,
     )
 
     params = np.hstack(
@@ -353,6 +457,8 @@ def edges_make_ultrametric_correlated(
                 max_iter=max_iter,
                 max_fun=max_fun,
                 max_refine=max_refine,
+                retry_multiplier=retry_multiplier,
+                observation_loss=observation_loss,
             )
         )
     starts = _run_multistart(_fit_correlated_start, payloads, ncores=ncores)
@@ -391,6 +497,7 @@ def edges_make_ultrametric_correlated(
         lam,
         valid_loglik,
         observation_mask,
+        observation_loss,
     )
     pseudologlik = _correlated_branch_pseudologlik(
         rates,
@@ -401,6 +508,7 @@ def edges_make_ultrametric_correlated(
         0.0,
         valid_loglik,
         observation_mask,
+        observation_loss,
     )
     penalty = _correlated_penalty(rates, parent_edges)
     basal = parent_edges < 0
@@ -415,7 +523,14 @@ def edges_make_ultrametric_correlated(
         "model": "correlated",
         "pseudologlik": pseudologlik,
         "penalized_pseudologlik": penalized_pseudologlik,
-        **_result_observation_metadata(),
+        **(
+            _result_observation_metadata()
+            if observation_loss == "fractional_poisson"
+            else {
+                "observation_model": "multiplicative_gamma_working_loss",
+                "branch_length_units": "substitutions_per_site",
+            }
+        ),
         "penalty": penalty,
         "penalty_model": "summed_log_rate_autocorrelation",
         "scale_invariant": True,
@@ -433,6 +548,8 @@ def edges_make_ultrametric_correlated(
         "refinement_cycles": int(best.get("refinement_cycles", -1)),
         "final_joint_converged": bool(best.get("final_joint_converged", False)),
         "gradient_max_abs": best.get("gradient_max_abs"),
+        "optimizer_retries": int(best.get("optimizer_retries", 0)),
+        "observation_loss": observation_loss,
         "nstarts": nstarts,
         "ncores": max(1, min(ncores, nstarts)),
         "best_start": int(best["start"]),
@@ -447,6 +564,7 @@ def edges_make_ultrametric_correlated(
                 "refinement_cycles": int(i.get("refinement_cycles", -1)),
                 "final_joint_converged": bool(i.get("final_joint_converged", False)),
                 "gradient_max_abs": i.get("gradient_max_abs"),
+                "optimizer_retries": int(i.get("optimizer_retries", 0)),
             }
             for i in starts
         ],
@@ -480,6 +598,7 @@ def _correlated_branch_pseudologlik(
     lam,
     valid_loglik,
     observation_mask=None,
+    observation_loss="fractional_poisson",
 ) -> float:
     """Return correlated penalized branch-length pseudologlikelihood."""
     if valid_loglik is None:
@@ -495,7 +614,14 @@ def _correlated_branch_pseudologlik(
         return valid_loglik - INVALID_LOG_LIK_DROP
 
     mask = _validate_observation_mask(observation_mask, edges.shape[0])
-    terms = edata[:, 0] * np.log(pdists) - pdists - edata[:, 1]
+    observation_loss = _validate_correlated_observation_loss(observation_loss)
+    if observation_loss == "fractional_poisson":
+        terms = edata[:, 0] * np.log(pdists) - pdists - edata[:, 1]
+    else:
+        if np.any(edata[mask, 0] <= 0.0):
+            return valid_loglik - INVALID_LOG_LIK_DROP
+        ratio = edata[:, 0] / pdists
+        terms = -(ratio - np.log(ratio) - 1.0)
     pseudologlik = np.sum(terms[mask])
     if not np.isfinite(pseudologlik):
         return valid_loglik - INVALID_LOG_LIK_DROP
@@ -592,6 +718,7 @@ def objective_correlated_with_gradient(
     lam,
     valid_loglik,
     observation_mask,
+    observation_loss,
 ):
     """Return the correlated negative objective and its analytic gradient."""
     rsize = rates.size
@@ -638,6 +765,7 @@ def objective_correlated_with_gradient(
         lam,
         valid_loglik,
         observation_mask,
+        observation_loss,
     )
     times = ages_hat[edges[:, 1]] - ages_hat[edges[:, 0]]
     expected = rates_hat * times
@@ -650,15 +778,20 @@ def objective_correlated_with_gradient(
     ):
         return float(objective), np.zeros_like(params, dtype=float)
 
-    rate_gradient = np.zeros(rsize, dtype=float)
-    rate_gradient[mask] = expected[mask] - edata[mask, 0]
-    rate_gradient += lam * _correlated_penalty_gradient(log_rates, parent_edges)
+    data_gradient = np.zeros(rsize, dtype=float)
+    if observation_loss == "fractional_poisson":
+        data_gradient[mask] = expected[mask] - edata[mask, 0]
+    else:
+        data_gradient[mask] = 1.0 - edata[mask, 0] / expected[mask]
+    rate_gradient = data_gradient + lam * _correlated_penalty_gradient(
+        log_rates, parent_edges
+    )
 
     if fixed_ages and not fixed_rates:
         return float(objective), rate_gradient
 
     time_gradient = np.zeros(rsize, dtype=float)
-    time_gradient[mask] = rates_hat[mask] - edata[mask, 0] / times[mask]
+    time_gradient[mask] = data_gradient[mask] / times[mask]
     age_gradient = np.zeros(ages_hat.size, dtype=float)
     np.add.at(age_gradient, edges[:, 1], time_gradient)
     np.add.at(age_gradient, edges[:, 0], -time_gradient)
@@ -684,6 +817,7 @@ def objective_correlated(
     lam,
     valid_loglik,
     observation_mask,
+    observation_loss,
 ):
     """Return negative penalized log-likelihood under correlated model."""
     objective, _ = objective_correlated_with_gradient(
@@ -702,6 +836,7 @@ def objective_correlated(
         lam,
         valid_loglik,
         observation_mask,
+        observation_loss,
     )
     return objective
 

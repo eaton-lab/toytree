@@ -13,6 +13,7 @@ from loguru import logger
 from toytree.core import ToyTree
 from toytree.core.apis import TreeModAPI, add_subpackage_method
 from toytree.mod._src.penalized_pseudolikelihood.correlated import (
+    _validate_correlated_observation_loss,
     edges_make_ultrametric_correlated,
 )
 from toytree.mod._src.penalized_pseudolikelihood.utils import (
@@ -49,6 +50,16 @@ def _validate_parallel_option(value: Any, name: str) -> int:
     return result
 
 
+def _prediction_score(observed: float, predicted: float, loss: str) -> float:
+    """Return the held-branch score matching one observation loss."""
+    expected = max(float(predicted), CV_EPS)
+    value = max(float(observed), CV_EPS)
+    if loss == "fractional_poisson":
+        return float((value - expected) ** 2 / expected)
+    ratio = value / expected
+    return float(2.0 * (ratio - np.log(ratio) - 1.0))
+
+
 def _fit_correlated_cv_fold(payload: dict[str, Any]) -> dict[str, Any]:
     """Fit and score one terminal-edge holdout under the correlated model."""
     tree = payload["tree"]
@@ -56,6 +67,7 @@ def _fit_correlated_cv_fold(payload: dict[str, Any]) -> dict[str, Any]:
     child_index = int(payload["child_index"])
     observed = float(payload["observed"])
     all_dists = np.asarray(payload["all_dists"], dtype=float)
+    observation_loss = payload.get("observation_loss", "fractional_poisson")
     mask = np.ones(tree.nedges, dtype=bool)
     mask[edge_index] = False
 
@@ -64,6 +76,10 @@ def _fit_correlated_cv_fold(payload: dict[str, Any]) -> dict[str, Any]:
     positive = training[training > 0.0]
     replacement = float(np.median(positive)) if positive.size else 1.0
     fit_tree = tree.set_node_data("dist", {child_index: replacement}, inplace=False)
+    fit_options = dict(payload["fit_options"])
+    if payload.get("initial_rates") is not None:
+        fit_options["_initial_rates"] = payload["initial_rates"]
+        fit_options["_initial_ages"] = payload["initial_ages"]
     try:
         fit = edges_make_ultrametric_correlated(
             fit_tree,
@@ -72,7 +88,8 @@ def _fit_correlated_cv_fold(payload: dict[str, Any]) -> dict[str, Any]:
             full=True,
             inplace=False,
             _observation_mask=mask,
-            **payload["fit_options"],
+            _observation_loss=observation_loss,
+            **fit_options,
         )
         predicted = float(fit["expected_branch_lengths"][edge_index])
         predicted_rate = float(fit["rates"][edge_index])
@@ -84,11 +101,11 @@ def _fit_correlated_cv_fold(payload: dict[str, Any]) -> dict[str, Any]:
         )
         converged = bool(fit["converged"]) and np.isfinite(predicted)
         score = (
-            float((observed - predicted) ** 2 / max(predicted, CV_EPS))
+            _prediction_score(observed, predicted, observation_loss)
             if converged
             else float("inf")
         )
-        return {
+        result = {
             "fold": int(payload["fold"]),
             "edge_index": edge_index,
             "child_index": child_index,
@@ -102,7 +119,14 @@ def _fit_correlated_cv_fold(payload: dict[str, Any]) -> dict[str, Any]:
             "penalty": float(fit["penalty"]),
             "converged": converged,
             "optimizer_message": str(fit.get("optimizer_message", "")),
+            "optimizer_retries": int(fit.get("optimizer_retries", 0)),
         }
+        if payload.get("return_warm_start", False):
+            result["_warm_rates"] = list(fit["rates"])
+            result["_warm_ages"] = (
+                fit["tree"].get_node_data("height").to_numpy(dtype=float).tolist()
+            )
+        return result
     except Exception as exc:
         return {
             "fold": int(payload["fold"]),
@@ -118,43 +142,56 @@ def _fit_correlated_cv_fold(payload: dict[str, Any]) -> dict[str, Any]:
             "penalty": None,
             "converged": False,
             "optimizer_message": f"{type(exc).__name__}: {exc}",
+            "optimizer_retries": 0,
         }
+
+
+def _fit_correlated_cv_path(payloads: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Fit one held edge over lambda from strong to weak smoothing."""
+    results = []
+    warm_rates = None
+    warm_ages = None
+    for payload in sorted(payloads, key=lambda item: float(item["lam"]), reverse=True):
+        current = dict(payload)
+        current["return_warm_start"] = True
+        if warm_rates is not None:
+            current["initial_rates"] = warm_rates
+            current["initial_ages"] = warm_ages
+        result = _fit_correlated_cv_fold(current)
+        result["candidate_index"] = payload["candidate_index"]
+        if result["converged"]:
+            warm_rates = result.pop("_warm_rates")
+            warm_ages = result.pop("_warm_ages")
+        else:
+            result.pop("_warm_rates", None)
+            result.pop("_warm_ages", None)
+        results.append(result)
+    return results
 
 
 def _run_fold_payloads(
     payloads: list[dict[str, Any]],
     ncores: int,
 ) -> list[dict[str, Any]]:
-    """Fit fold payloads serially or with deterministic process parallelism."""
-    if ncores == 1:
-        results = []
-        for payload in payloads:
-            result = _fit_correlated_cv_fold(payload)
-            result["candidate_index"] = payload["candidate_index"]
-            results.append(result)
-        return results
+    """Fit lambda paths serially or with deterministic fold parallelism."""
+    grouped: dict[int, list[dict[str, Any]]] = {}
+    for payload in payloads:
+        grouped.setdefault(int(payload["fold"]), []).append(payload)
+    paths = [grouped[key] for key in sorted(grouped)]
 
-    workers = min(ncores, len(payloads))
-    results = []
-    try:
-        with ProcessPoolExecutor(max_workers=workers) as pool:
-            futures = {
-                pool.submit(_fit_correlated_cv_fold, payload): payload[
-                    "candidate_index"
-                ]
-                for payload in payloads
-            }
-            for future in as_completed(futures):
-                result = future.result()
-                result["candidate_index"] = futures[future]
-                results.append(result)
-    except (PermissionError, OSError) as exc:
-        logger.warning(f"ProcessPool unavailable; using serial CV: {exc}")
+    if ncores == 1:
+        results = [item for path in paths for item in _fit_correlated_cv_path(path)]
+    else:
+        workers = min(ncores, len(paths))
         results = []
-        for payload in payloads:
-            result = _fit_correlated_cv_fold(payload)
-            result["candidate_index"] = payload["candidate_index"]
-            results.append(result)
+        try:
+            with ProcessPoolExecutor(max_workers=workers) as pool:
+                futures = [pool.submit(_fit_correlated_cv_path, path) for path in paths]
+                for future in as_completed(futures):
+                    results.extend(future.result())
+        except (PermissionError, OSError) as exc:
+            logger.warning(f"ProcessPool unavailable; using serial CV: {exc}")
+            results = [item for path in paths for item in _fit_correlated_cv_path(path)]
     results.sort(key=lambda value: (value["candidate_index"], value["fold"]))
     return results
 
@@ -170,6 +207,7 @@ def edges_make_ultrametric_correlated_lambda_cv(
     nstarts: int = 1,
     ncores: int = 1,
     seed: int | None = None,
+    _observation_loss: str = "fractional_poisson",
 ) -> dict[str, Any]:
     """Select correlated-rate smoothing by terminal-edge LOOCV.
 
@@ -205,6 +243,7 @@ def edges_make_ultrametric_correlated_lambda_cv(
     """
     ncores = _validate_parallel_option(ncores, "ncores")
     nstarts = _validate_parallel_option(nstarts, "nstarts")
+    observation_loss = _validate_correlated_observation_loss(_observation_loss)
     if seed is not None and (
         isinstance(seed, bool) or not isinstance(seed, (int, np.integer))
     ):
@@ -248,6 +287,7 @@ def edges_make_ultrametric_correlated_lambda_cv(
                     "all_dists": dists,
                     "calibrations": calibrations,
                     "fit_options": {**fit_options, "seed": fold_seed},
+                    "observation_loss": observation_loss,
                 }
             )
     fold_results = _run_fold_payloads(payloads, ncores)
@@ -303,6 +343,7 @@ def edges_make_ultrametric_correlated_lambda_cv(
         calibrations=calibrations,
         full=True,
         inplace=False,
+        _observation_loss=observation_loss,
         **{**fit_options, "seed": seed},
     )
     if not selected_fit["converged"]:
@@ -313,7 +354,10 @@ def edges_make_ultrametric_correlated_lambda_cv(
         "model": "correlated",
         "selection_method": "leave_one_terminal_edge_out",
         "selection_target": "lambda",
-        "score": "pearson",
+        "score": (
+            "pearson" if observation_loss == "fractional_poisson" else "gamma_deviance"
+        ),
+        "observation_loss": observation_loss,
         "selected_lam": selected_lam,
         "selected_fit": selected_fit,
         "mean_score": float(selected["mean_score"]),

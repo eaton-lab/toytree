@@ -1,0 +1,119 @@
+{
+  "study_version": 6,
+  "development_seed": 93260831,
+  "bootstrap_seed": 94260831,
+  "bootstrap_replicates": 2000,
+  "fit": {
+    "max_iter": 5000,
+    "max_fun": 10000,
+    "max_refine": 4,
+    "nstarts": 4,
+    "retry_multiplier": 4
+  },
+  "lambdas": [
+    1e-8,
+    3e-8,
+    1e-7,
+    3e-7,
+    1e-6,
+    3e-6,
+    1e-5,
+    3e-5,
+    0.0001,
+    0.0003,
+    0.001,
+    0.003,
+    0.01,
+    0.03,
+    0.1,
+    0.3,
+    1.0,
+    3.0,
+    10.0,
+    30.0,
+    100.0,
+    300.0,
+    1000.0,
+    3000.0,
+    10000.0
+  ],
+  "observation_losses": [
+    "fractional_poisson",
+    "multiplicative_gamma"
+  ],
+  "noise": {
+    "gamma": {
+      "shape": 100.0
+    },
+    "lognormal": {
+      "coefficient_of_variation": 0.1
+    }
+  },
+  "smoke": [
+    {
+      "name": "pipeline-smoke",
+      "ntips": [6],
+      "calibrations": ["fixed_internal_ages"],
+      "rate_sigmas": [0.2],
+      "noise_models": ["gamma"],
+      "replicates": 1,
+      "lambdas": [0.01, 1.0, 100.0]
+    }
+  ],
+  "pilot": [
+    {
+      "name": "fixed-age-control",
+      "ntips": [24, 48],
+      "calibrations": ["fixed_internal_ages"],
+      "rate_sigmas": [0.2, 0.6],
+      "noise_models": ["gamma", "lognormal"],
+      "replicates": 2
+    },
+    {
+      "name": "sparse-chronogram",
+      "ntips": [24, 48],
+      "calibrations": ["root_and_internal_interval"],
+      "rate_sigmas": [0.2, 0.6],
+      "noise_models": ["gamma", "lognormal"],
+      "replicates": 2
+    },
+    {
+      "name": "dense-chronogram",
+      "ntips": [48],
+      "calibrations": ["root_and_three_internal_intervals"],
+      "rate_sigmas": [0.2, 0.6],
+      "noise_models": ["gamma", "lognormal"],
+      "replicates": 2
+    }
+  ],
+  "optimizer_stress": [
+    {
+      "name": "n96-replay",
+      "ntips": [96],
+      "calibrations": [
+        "root_and_internal_interval",
+        "root_and_three_internal_intervals"
+      ],
+      "rate_sigmas": [0.2, 0.6],
+      "noise_models": ["gamma"],
+      "replicates": 1,
+      "lambdas": [1e-6, 30.0, 100.0, 300.0, 3000.0, 10000.0],
+      "replay_seeds": {
+        "root_and_internal_interval|0.2|0": 90260861,
+        "root_and_internal_interval|0.6|0": 90260863,
+        "root_and_three_internal_intervals|0.2|0": 90260865,
+        "root_and_three_internal_intervals|0.6|0": 90260867
+      }
+    }
+  ],
+  "decision_gates": {
+    "overall_convergence": 0.99,
+    "minimum_cell_convergence": 0.98,
+    "selected_age_oracle_ratio_median": 1.25,
+    "selected_age_oracle_ratio_p90": 2.0,
+    "maximum_noise_family_error_ratio": 1.1,
+    "supported_age_spread_median": 0.05,
+    "supported_age_spread_p90": 0.1,
+    "scale_invariance_tolerance": 1e-5
+  }
+}

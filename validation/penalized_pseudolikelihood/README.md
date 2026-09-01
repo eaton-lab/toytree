@@ -3,6 +3,15 @@
 This directory contains the pinned simulation and predictive-validation study
 for ToyTree's ultrametric branch-length pseudolikelihood models.
 
+## Version 6: correlated-model reliability
+
+The development-only v6 design and run instructions are recorded in
+[README-v6.md](README-v6.md). It compares the existing fractional-Poisson
+correlated model with a private scale-free multiplicative-Gamma working loss,
+while separately testing lambda-path warm starts and iteration-limit retries.
+It introduces no sequence-length input and makes no public statistical claim
+unless a later independently seeded confirmation passes.
+
 ## Version 5: correlated-lambda identifiability
 
 The development-only v5 design and run instructions are recorded in
