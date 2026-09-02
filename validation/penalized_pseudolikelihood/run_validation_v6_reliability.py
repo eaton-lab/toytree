@@ -497,12 +497,18 @@ def _score_model(
     if not errors:
         raise RuntimeError("all full-grid fits failed")
     selected_lam = float(model["selected_lam"])
-    selected_fit = full_fits[str(selected_lam)]
-    cold_fit = model["cold_selected_fit"]
-    selected_error = errors[selected_lam]
-    oracle_error = min(errors.values())
+    warm_fit = full_fits[str(selected_lam)]
+    selected_fit = model["cold_selected_fit"]
+    selected_error = _age_rmse(
+        np.asarray(selected_fit["ages"], dtype=float), truth_ages, ntips
+    )
+    oracle_errors = dict(errors)
+    oracle_errors[selected_lam] = min(errors[selected_lam], selected_error)
+    oracle_error = min(oracle_errors.values())
     oracle_lam = max(
-        lam for lam, error in errors.items() if abs(error - oracle_error) <= EPS
+        lam
+        for lam, error in oracle_errors.items()
+        if abs(error - oracle_error) <= EPS
     )
     folds = [fold for candidate in model["candidates"] for fold in candidate["folds"]]
     matching_score = LOSS_SCORE[observation_loss]
@@ -519,14 +525,14 @@ def _score_model(
         bootstrap_seed,
     )
     fixed_ages = record["calibration"] == "fixed_internal_ages"
-    warm_ages = np.asarray(selected_fit["ages"], dtype=float)[ntips:]
-    cold_ages = np.asarray(cold_fit["ages"], dtype=float)[ntips:]
+    warm_ages = np.asarray(warm_fit["ages"], dtype=float)[ntips:]
+    cold_ages = np.asarray(selected_fit["ages"], dtype=float)[ntips:]
     root_age = max(float(truth_ages[-1]), EPS)
     normalized_age_delta = (warm_ages - cold_ages) / root_age
     objective_delta = float(model["warm_cold_objective_delta"])
     objective_scale = max(
+        abs(float(warm_fit["penalized_pseudologlik"])),
         abs(float(selected_fit["penalized_pseudologlik"])),
-        abs(float(cold_fit["penalized_pseudologlik"])),
         EPS,
     )
     return {

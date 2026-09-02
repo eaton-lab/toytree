@@ -114,7 +114,7 @@ def test_v6_selected_recovery_scores_the_fit_returned_to_users():
     )
 
     assert result["selected_age_rmse"] == 0.0
-    assert result["selected_rate_spearman"] == 1.0
+    assert np.isclose(result["selected_rate_spearman"], 1.0)
     assert result["warm_cold_normalized_age_rmse"] == 0.25
     assert result["warm_cold_max_normalized_age_difference"] == 0.25
 
