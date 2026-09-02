@@ -177,15 +177,22 @@ def _fit_correlated_cv_path(payloads: list[dict[str, Any]]) -> list[dict[str, An
     return results
 
 
+def _group_correlated_cv_paths(
+    payloads: list[dict[str, Any]],
+) -> list[list[dict[str, Any]]]:
+    """Group candidate payloads into deterministically ordered fold paths."""
+    grouped: dict[int, list[dict[str, Any]]] = {}
+    for payload in payloads:
+        grouped.setdefault(int(payload["fold"]), []).append(payload)
+    return [grouped[key] for key in sorted(grouped)]
+
+
 def _run_fold_payloads(
     payloads: list[dict[str, Any]],
     ncores: int,
 ) -> list[dict[str, Any]]:
     """Fit lambda paths serially or with deterministic fold parallelism."""
-    grouped: dict[int, list[dict[str, Any]]] = {}
-    for payload in payloads:
-        grouped.setdefault(int(payload["fold"]), []).append(payload)
-    paths = [grouped[key] for key in sorted(grouped)]
+    paths = _group_correlated_cv_paths(payloads)
 
     if ncores == 1:
         results = [item for path in paths for item in _fit_correlated_cv_path(path)]
@@ -269,6 +276,199 @@ def _fit_correlated_full_path(
     return selected_fit, diagnostics
 
 
+def _prepare_correlated_cv_problem(
+    tree: ToyTree,
+    lambdas: Iterable[float] = DEFAULT_LAMBDAS,
+    calibrations: dict[Any, Any] | None = None,
+    max_iter: int = 100_000,
+    max_fun: int = 100_000,
+    max_refine: int = 20,
+    nstarts: int = 1,
+    seed: int | None = None,
+    observation_loss: str = "fractional_poisson",
+) -> dict[str, Any]:
+    """Validate inputs and build deterministic held-edge lambda paths."""
+    nstarts = _validate_parallel_option(nstarts, "nstarts")
+    observation_loss = _validate_correlated_observation_loss(observation_loss)
+    if seed is not None and (
+        isinstance(seed, bool) or not isinstance(seed, (int, np.integer))
+    ):
+        raise ToytreeError("seed must be an integer or None.")
+    grid = _normalize_lambdas(lambdas)
+    calibrations = {} if calibrations is None else dict(calibrations)
+    dists = _validate_branch_lengths(tree)
+    edges = np.asarray(tree.get_edges("idx"), dtype=int)
+    terminal = [
+        (edge_index, int(child))
+        for edge_index, (child, _) in enumerate(edges)
+        if int(child) < tree.ntips
+    ]
+    if len(terminal) < 2:
+        raise ToytreeError("terminal-edge CV requires a tree with at least two tips.")
+
+    fit_options = {
+        "max_iter": int(max_iter),
+        "max_fun": int(max_fun),
+        "max_refine": int(max_refine),
+        "nstarts": max(2, nstarts),
+        "ncores": 1,
+    }
+    payloads = []
+    for candidate_index, lam in enumerate(grid):
+        for fold, (edge_index, child_index) in enumerate(terminal):
+            fold_seed = (
+                None
+                if seed is None
+                else int(seed) + candidate_index * len(terminal) + fold
+            )
+            payloads.append(
+                {
+                    "tree": tree,
+                    "lam": lam,
+                    "candidate_index": candidate_index,
+                    "fold": fold,
+                    "edge_index": edge_index,
+                    "child_index": child_index,
+                    "observed": float(dists[edge_index]),
+                    "all_dists": dists,
+                    "calibrations": calibrations,
+                    "fit_options": {**fit_options, "seed": fold_seed},
+                    "observation_loss": observation_loss,
+                }
+            )
+    return {
+        "tree": tree,
+        "grid": grid,
+        "calibrations": calibrations,
+        "fit_options": fit_options,
+        "observation_loss": observation_loss,
+        "seed": None if seed is None else int(seed),
+        "terminal": terminal,
+        "payloads": payloads,
+        "paths": _group_correlated_cv_paths(payloads),
+    }
+
+
+def _assemble_correlated_cv_candidates(
+    problem: dict[str, Any],
+    fold_results: list[dict[str, Any]],
+) -> dict[str, Any]:
+    """Validate fold-path results and select the best stable lambda."""
+    grid = tuple(float(value) for value in problem["grid"])
+    terminal = problem["terminal"]
+    ordered = sorted(
+        fold_results,
+        key=lambda value: (value["candidate_index"], value["fold"]),
+    )
+    candidates = []
+    for candidate_index, lam in enumerate(grid):
+        folds = [
+            result
+            for result in ordered
+            if int(result["candidate_index"]) == candidate_index
+        ]
+        values = np.asarray([result["score"] for result in folds], dtype=float)
+        stable = bool(
+            len(folds) == len(terminal)
+            and all(result.get("solution_stable") is True for result in folds)
+        )
+        valid = bool(
+            len(folds) == len(terminal)
+            and all(result["converged"] for result in folds)
+            and np.all(np.isfinite(values))
+            and stable
+        )
+        candidates.append(
+            {
+                "lam": lam,
+                "valid": valid,
+                "stable": stable,
+                "mean_score": float(np.mean(values)) if valid else float("inf"),
+                "standard_error": (
+                    float(np.std(values, ddof=1) / np.sqrt(values.size))
+                    if valid and values.size > 1
+                    else (0.0 if valid else float("inf"))
+                ),
+                "folds": folds,
+            }
+        )
+
+    finite = [candidate for candidate in candidates if candidate["valid"]]
+    if not finite:
+        raise RuntimeError("no lambda candidate had converged, stable CV folds.")
+    minimum = min(candidate["mean_score"] for candidate in finite)
+    tied = [
+        candidate
+        for candidate in finite
+        if abs(candidate["mean_score"] - minimum) <= CV_EPS
+    ]
+    selected = max(tied, key=lambda candidate: candidate["lam"])
+    selected_lam = float(selected["lam"])
+    selected_at_boundary = selected_lam in {grid[0], grid[-1]}
+    if selected_at_boundary:
+        logger.warning(
+            "Selected lambda is at the candidate-grid boundary; expand the "
+            "grid and rerun CV to check that the minimum is bracketed."
+        )
+    return {
+        "selected_lam": selected_lam,
+        "selected_at_boundary": selected_at_boundary,
+        "selected_candidate": selected,
+        "candidates": candidates,
+        "folds": ordered,
+    }
+
+
+def _complete_correlated_cv_problem(
+    problem: dict[str, Any],
+    fold_results: list[dict[str, Any]],
+    ncores: int,
+) -> dict[str, Any]:
+    """Assemble fold results and fit the selected full-data solution."""
+    selection = _assemble_correlated_cv_candidates(problem, fold_results)
+    selected_lam = float(selection["selected_lam"])
+    selected_fit, final_path = _fit_correlated_full_path(
+        problem["tree"],
+        problem["grid"],
+        selected_lam,
+        problem["calibrations"],
+        problem["fit_options"],
+        problem["observation_loss"],
+        problem["seed"],
+    )
+    if not selected_fit["converged"]:
+        raise RuntimeError(
+            "the selected correlated-rate fit failed on the full dataset."
+        )
+    if selected_fit.get("solution_stable") is not True:
+        raise RuntimeError(
+            "the selected correlated-rate fit has an unstable chronogram."
+        )
+    selected = selection["selected_candidate"]
+    return {
+        "model": "correlated",
+        "selection_method": "leave_one_terminal_edge_out",
+        "selection_target": "lambda",
+        "score": (
+            "pearson"
+            if problem["observation_loss"] == "fractional_poisson"
+            else "gamma_deviance"
+        ),
+        "observation_loss": problem["observation_loss"],
+        "selected_lam": selected_lam,
+        "selected_fit": selected_fit,
+        "mean_score": float(selected["mean_score"]),
+        "standard_error": float(selected["standard_error"]),
+        "candidates": selection["candidates"],
+        "folds": selection["folds"],
+        "nfolds": len(problem["terminal"]),
+        "seed": problem["seed"],
+        "ncores": int(ncores),
+        "selected_at_boundary": selection["selected_at_boundary"],
+        "final_fit_path": final_path,
+    }
+
+
 @add_subpackage_method(TreeModAPI)
 def edges_make_ultrametric_correlated_lambda_cv(
     tree: ToyTree,
@@ -318,141 +518,16 @@ def edges_make_ultrametric_correlated_lambda_cv(
         whether selection occurred at a lambda-grid boundary.
     """
     ncores = _validate_parallel_option(ncores, "ncores")
-    nstarts = _validate_parallel_option(nstarts, "nstarts")
-    observation_loss = _validate_correlated_observation_loss(_observation_loss)
-    if seed is not None and (
-        isinstance(seed, bool) or not isinstance(seed, (int, np.integer))
-    ):
-        raise ToytreeError("seed must be an integer or None.")
-    grid = _normalize_lambdas(lambdas)
-    calibrations = {} if calibrations is None else dict(calibrations)
-    dists = _validate_branch_lengths(tree)
-    edges = np.asarray(tree.get_edges("idx"), dtype=int)
-    terminal = [
-        (edge_index, int(child))
-        for edge_index, (child, _) in enumerate(edges)
-        if int(child) < tree.ntips
-    ]
-    if len(terminal) < 2:
-        raise ToytreeError("terminal-edge CV requires a tree with at least two tips.")
-
-    fit_options = {
-        "max_iter": int(max_iter),
-        "max_fun": int(max_fun),
-        "max_refine": int(max_refine),
-        "nstarts": max(2, nstarts),
-        "ncores": 1,
-    }
-    payloads = []
-    for candidate_index, lam in enumerate(grid):
-        for fold, (edge_index, child_index) in enumerate(terminal):
-            fold_seed = (
-                None
-                if seed is None
-                else int(seed) + candidate_index * len(terminal) + fold
-            )
-            payloads.append(
-                {
-                    "tree": tree,
-                    "lam": lam,
-                    "candidate_index": candidate_index,
-                    "fold": fold,
-                    "edge_index": edge_index,
-                    "child_index": child_index,
-                    "observed": float(dists[edge_index]),
-                    "all_dists": dists,
-                    "calibrations": calibrations,
-                    "fit_options": {**fit_options, "seed": fold_seed},
-                    "observation_loss": observation_loss,
-                }
-            )
-    fold_results = _run_fold_payloads(payloads, ncores)
-
-    candidates = []
-    for candidate_index, lam in enumerate(grid):
-        folds = [
-            result
-            for result in fold_results
-            if result["candidate_index"] == candidate_index
-        ]
-        values = np.asarray([result["score"] for result in folds], dtype=float)
-        stable = bool(
-            len(folds) == len(terminal)
-            and all(result.get("solution_stable") is True for result in folds)
-        )
-        valid = bool(
-            len(folds) == len(terminal)
-            and all(result["converged"] for result in folds)
-            and np.all(np.isfinite(values))
-            and stable
-        )
-        candidates.append(
-            {
-                "lam": lam,
-                "valid": valid,
-                "stable": stable,
-                "mean_score": float(np.mean(values)) if valid else float("inf"),
-                "standard_error": (
-                    float(np.std(values, ddof=1) / np.sqrt(values.size))
-                    if valid and values.size > 1
-                    else (0.0 if valid else float("inf"))
-                ),
-                "folds": folds,
-            }
-        )
-
-    finite = [candidate for candidate in candidates if candidate["valid"]]
-    if not finite:
-        raise RuntimeError("no lambda candidate had converged, stable CV folds.")
-    minimum = min(candidate["mean_score"] for candidate in finite)
-    tied = [
-        candidate
-        for candidate in finite
-        if abs(candidate["mean_score"] - minimum) <= CV_EPS
-    ]
-    selected = max(tied, key=lambda candidate: candidate["lam"])
-    selected_lam = float(selected["lam"])
-    selected_at_boundary = selected_lam in {grid[0], grid[-1]}
-    if selected_at_boundary:
-        logger.warning(
-            "Selected lambda is at the candidate-grid boundary; expand the "
-            "grid and rerun CV to check that the minimum is bracketed."
-        )
-
-    selected_fit, final_path = _fit_correlated_full_path(
-        tree,
-        grid,
-        selected_lam,
-        calibrations,
-        fit_options,
-        observation_loss,
-        seed,
+    problem = _prepare_correlated_cv_problem(
+        tree=tree,
+        lambdas=lambdas,
+        calibrations=calibrations,
+        max_iter=max_iter,
+        max_fun=max_fun,
+        max_refine=max_refine,
+        nstarts=nstarts,
+        seed=seed,
+        observation_loss=_observation_loss,
     )
-    if not selected_fit["converged"]:
-        raise RuntimeError(
-            "the selected correlated-rate fit failed on the full dataset."
-        )
-    if selected_fit.get("solution_stable") is not True:
-        raise RuntimeError(
-            "the selected correlated-rate fit has an unstable chronogram."
-        )
-    return {
-        "model": "correlated",
-        "selection_method": "leave_one_terminal_edge_out",
-        "selection_target": "lambda",
-        "score": (
-            "pearson" if observation_loss == "fractional_poisson" else "gamma_deviance"
-        ),
-        "observation_loss": observation_loss,
-        "selected_lam": selected_lam,
-        "selected_fit": selected_fit,
-        "mean_score": float(selected["mean_score"]),
-        "standard_error": float(selected["standard_error"]),
-        "candidates": candidates,
-        "folds": fold_results,
-        "nfolds": len(terminal),
-        "seed": None if seed is None else int(seed),
-        "ncores": ncores,
-        "selected_at_boundary": selected_at_boundary,
-        "final_fit_path": final_path,
-    }
+    fold_results = _run_fold_payloads(problem["payloads"], ncores)
+    return _complete_correlated_cv_problem(problem, fold_results, ncores)

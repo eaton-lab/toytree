@@ -3,6 +3,16 @@
 This directory contains the pinned simulation and predictive-validation study
 for ToyTree's ultrametric branch-length pseudolikelihood models.
 
+## Version 9: correlated-lambda uncertainty replay
+
+The [V9 design](README-v9.md) uses a single global worker pool over held-tip
+lambda paths, so the targeted replay can use all available server cores while
+preserving serial strong-to-weak warm starts within each path. It reruns eight
+historical high-uncertainty cases under the current estimator instead of
+repeating the obsolete full V6 pilot. Per-path atomic caches make interrupted
+fits resumable, and scoring changes do not invalidate fit caches. V9 remains
+diagnostic-only because its cases were selected from prior failures.
+
 ## Version 8: discrete-mixture validation
 
 The v8 design and run instructions are recorded in
