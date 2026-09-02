@@ -106,6 +106,63 @@
       }
     }
   ],
+  "stability_stress": [
+    {
+      "name": "replay-sparse-n48-lognormal-sigma0p6",
+      "ntips": [48],
+      "calibrations": ["root_and_internal_interval"],
+      "rate_sigmas": [0.6],
+      "noise_models": ["lognormal"],
+      "replicates": 1,
+      "replay_seeds": {
+        "root_and_internal_interval|0.6|0": 96360924
+      }
+    },
+    {
+      "name": "replay-dense-n48-lognormal-sigma0p2",
+      "ntips": [48],
+      "calibrations": ["root_and_three_internal_intervals"],
+      "rate_sigmas": [0.2],
+      "noise_models": ["lognormal"],
+      "replicates": 1,
+      "replay_seeds": {
+        "root_and_three_internal_intervals|0.2|0": 96760936
+      }
+    },
+    {
+      "name": "replay-dense-n48-lognormal-sigma0p6",
+      "ntips": [48],
+      "calibrations": ["root_and_three_internal_intervals"],
+      "rate_sigmas": [0.6],
+      "noise_models": ["lognormal"],
+      "replicates": 1,
+      "replay_seeds": {
+        "root_and_three_internal_intervals|0.6|0": 97060945
+      }
+    },
+    {
+      "name": "replay-sparse-n24-lognormal-sigma0p6",
+      "ntips": [24],
+      "calibrations": ["root_and_internal_interval"],
+      "rate_sigmas": [0.6],
+      "noise_models": ["lognormal"],
+      "replicates": 1,
+      "replay_seeds": {
+        "root_and_internal_interval|0.6|0": 95460897
+      }
+    },
+    {
+      "name": "replay-dense-n48-gamma-sigma0p6",
+      "ntips": [48],
+      "calibrations": ["root_and_three_internal_intervals"],
+      "rate_sigmas": [0.6],
+      "noise_models": ["gamma"],
+      "replicates": 1,
+      "replay_seeds": {
+        "root_and_three_internal_intervals|0.6|0": 96860939
+      }
+    }
+  ],
   "decision_gates": {
     "overall_convergence": 0.99,
     "minimum_cell_convergence": 0.98,
@@ -114,6 +171,8 @@
     "maximum_noise_family_error_ratio": 1.1,
     "supported_age_spread_median": 0.05,
     "supported_age_spread_p90": 0.1,
-    "scale_invariance_tolerance": 1e-5
+    "total_age_uncertainty_p90": 0.1,
+    "scale_invariance_tolerance": 1e-5,
+    "maximum_near_equivalent_age_difference": 0.02
   }
 }

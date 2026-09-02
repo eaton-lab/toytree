@@ -36,6 +36,9 @@ __all__ = ["edges_make_ultrametric_correlated"]
 RATE_FLOOR = 1e-12
 DIST_FLOOR = 1e-12
 INVALID_LOG_LIK_DROP = 1e6
+SOLUTION_OBJECTIVE_ATOL = 1e-4
+SOLUTION_OBJECTIVE_RTOL = 1e-6
+SOLUTION_MAX_NORMALIZED_AGE_DIFFERENCE = 0.02
 CORRELATED_OBSERVATION_LOSSES = frozenset(
     {"fractional_poisson", "multiplicative_gamma"}
 )
@@ -72,8 +75,61 @@ def _validate_correlated_warm_start(
     return array.copy()
 
 
+def _assess_correlated_solution_stability(
+    starts: list[dict[str, Any]],
+    best: dict[str, Any],
+    ntips: int,
+    objective_atol: float = SOLUTION_OBJECTIVE_ATOL,
+    objective_rtol: float = SOLUTION_OBJECTIVE_RTOL,
+    age_tolerance: float = SOLUTION_MAX_NORMALIZED_AGE_DIFFERENCE,
+) -> dict[str, Any]:
+    """Compare chronograms from converged, near-optimal multistarts."""
+    converged = [
+        result
+        for result in starts
+        if result.get("converged", False)
+        and np.isfinite(result.get("objective", np.inf))
+        and "ages" in result
+    ]
+    assessed = len(converged) >= 2
+    best_objective = float(best["objective"])
+    objective_tolerance = float(objective_atol) + float(objective_rtol) * max(
+        1.0, abs(best_objective)
+    )
+    near_optimal = [
+        result
+        for result in converged
+        if float(result["objective"]) - best_objective <= objective_tolerance
+    ]
+    best_ages = np.asarray(best["ages"], dtype=float)
+    root_age = max(abs(float(best_ages[-1])), DIST_FLOOR)
+    differences = [
+        float(
+            np.max(
+                np.abs(
+                    np.asarray(result["ages"], dtype=float)[ntips:] - best_ages[ntips:]
+                )
+            )
+            / root_age
+        )
+        for result in near_optimal
+    ]
+    maximum = max(differences, default=0.0)
+    stable = None if not assessed else bool(maximum <= float(age_tolerance))
+    return {
+        "stability_assessed": assessed,
+        "solution_stable": stable,
+        "converged_starts": len(converged),
+        "near_optimal_starts": len(near_optimal),
+        "objective_equivalence_tolerance": objective_tolerance,
+        "maximum_age_difference_tolerance": float(age_tolerance),
+        "max_near_optimal_age_difference": float(maximum),
+    }
+
+
 def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
     start = int(payload["start"])
+    start_kind = str(payload.get("start_kind", f"start_{start}"))
     params = payload["params"]
     bounds = payload["bounds"]
     rates_init = payload["rates_init"]
@@ -284,6 +340,7 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
         message = "invalid objective plateau from infeasible start"
     return {
         "start": start,
+        "start_kind": start_kind,
         "objective": float(current_loglik),
         "converged": converged,
         "message": message,
@@ -342,11 +399,9 @@ def edges_make_ultrametric_correlated(
 
     # get init and fixed node ages that make tree ultrametric
     ages_init, _ = _get_init_ages(tree, calibrations)
-    initial_ages = _validate_correlated_warm_start(
+    continuation_ages = _validate_correlated_warm_start(
         _initial_ages, tree.nnodes, "_initial_ages", positive=False
     )
-    if initial_ages is not None:
-        ages_init = initial_ages
 
     # get bounds on params that need to be inferred; are not fixed
     rates_bounds, ages_bounds = _get_params_bounds(tree, calibrations)
@@ -367,21 +422,30 @@ def edges_make_ultrametric_correlated(
     # get starting rates as old/new edge dists.
     init_times = ages_init[edges[:, 1]] - ages_init[edges[:, 0]]
     rates_init = np.clip(dists_o / init_times, RATE_FLOOR, None)
-    initial_rates = _validate_correlated_warm_start(
+    continuation_rates = _validate_correlated_warm_start(
         _initial_rates, tree.nedges, "_initial_rates", positive=True
     )
     # Strong smoothing is poorly conditioned when optimization starts from
     # raw edgewise rates. Center at the fixed-age common-rate estimate and
     # shrink only the initial log-rate deviations as lambda increases.
-    if initial_rates is None:
-        observed_total = float(np.sum(dists_o[observation_mask]))
-        time_total = float(np.sum(init_times[observation_mask]))
-        common_rate = max(observed_total / time_total, RATE_FLOOR)
-        log_deviations = np.log(rates_init) - np.mean(np.log(rates_init))
-        init_shrinkage = 1.0 / (1.0 + np.sqrt(lam))
-        rates_init = np.exp(np.log(common_rate) + init_shrinkage * log_deviations)
-    else:
-        rates_init = initial_rates
+    observed_total = float(np.sum(dists_o[observation_mask]))
+    time_total = float(np.sum(init_times[observation_mask]))
+    common_rate = max(observed_total / time_total, RATE_FLOOR)
+    log_deviations = np.log(rates_init) - np.mean(np.log(rates_init))
+    init_shrinkage = 1.0 / (1.0 + np.sqrt(lam))
+    rates_init = np.exp(np.log(common_rate) + init_shrinkage * log_deviations)
+    has_continuation = continuation_rates is not None or continuation_ages is not None
+    if continuation_ages is None:
+        continuation_ages = ages_init
+    if continuation_rates is None:
+        continuation_times = (
+            continuation_ages[edges[:, 1]] - continuation_ages[edges[:, 0]]
+        )
+        continuation_rates = np.clip(
+            dists_o / continuation_times,
+            RATE_FLOOR,
+            None,
+        )
 
     # map edges to their parent edge index for correlation penalty.
     child_to_eidx = {int(child): idx for idx, (child, _) in enumerate(edges)}
@@ -425,25 +489,45 @@ def edges_make_ultrametric_correlated(
     params = np.hstack(
         [_pack_log_rates(rates_init, rate_floor=RATE_FLOOR), age_params_init]
     )
-    nstarts = max(1, int(nstarts))
+    requested_nstarts = max(1, int(nstarts))
     ncores = max(1, int(ncores))
     rng = np.random.default_rng(seed)
     payloads = []
+    base_starts = [("independent", params)]
+    if has_continuation:
+        continuation_age_params = _encode_age_params(
+            continuation_ages,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            dist_floor=DIST_FLOOR,
+        )
+        continuation_params = np.hstack(
+            [
+                _pack_log_rates(continuation_rates, rate_floor=RATE_FLOOR),
+                continuation_age_params,
+            ]
+        )
+        base_starts.append(("continuation", continuation_params))
+    nstarts = max(requested_nstarts, len(base_starts))
     rsize = rates_init.size
     asize = ages_idxs.size
     for start in range(nstarts):
-        sparams = params.copy()
-        if start:
+        base_kind, base_params = base_starts[start % len(base_starts)]
+        sparams = base_params.copy()
+        direct_base = start < len(base_starts)
+        if not direct_base:
             sparams[:rsize] += rng.normal(0.0, 0.25, size=rsize)
             if asize:
                 sparams[rsize : rsize + asize] += rng.normal(0.0, 0.25, size=asize)
         payloads.append(
             dict(
+                start_kind=base_kind if direct_base else f"{base_kind}_perturbed",
                 start=start,
                 params=sparams,
                 bounds=bounds,
-                rates_init=rates_init,
-                age_params_init=age_params_init,
+                rates_init=_unpack_log_rates(base_params[:rsize]),
+                age_params_init=base_params[rsize : rsize + asize],
                 ages_init=ages_init,
                 ages_idxs=ages_idxs,
                 ages_bounds=ages_bounds,
@@ -462,7 +546,36 @@ def edges_make_ultrametric_correlated(
             )
         )
     starts = _run_multistart(_fit_correlated_start, payloads, ncores=ncores)
+    for result in starts:
+        if "params" not in result:
+            continue
+        try:
+            result_ages = _decode_age_params(
+                result["params"][rsize : rsize + asize],
+                ages_init,
+                ages_idxs,
+                ages_bounds,
+                children_map,
+                dist_floor=DIST_FLOOR,
+            )
+            result["ages"] = _finalize_ultrametric_ages(
+                tree,
+                result_ages,
+                calibrations=calibrations,
+                dist_floor=DIST_FLOOR,
+            )
+        except ValueError as exc:
+            result["objective"] = float("inf")
+            result["converged"] = False
+            result["message"] = (
+                f"{result.get('message', '')}; invalid finalized ages: {exc}"
+            ).lstrip("; ")
     best = _select_best_multistart(starts)
+    stability = _assess_correlated_solution_stability(
+        starts,
+        best,
+        ntips=tree.ntips,
+    )
     current_params = best["params"]
     if not best["converged"]:
         logger.warning(f"Best multistart fit did not converge: {best['message']}")
@@ -471,20 +584,7 @@ def edges_make_ultrametric_correlated(
         f"{best['objective']}, start={best['start']}, nstarts={nstarts}"
     )
 
-    ages = _decode_age_params(
-        current_params[rsize : rsize + asize],
-        ages_init,
-        ages_idxs,
-        ages_bounds,
-        children_map,
-        dist_floor=DIST_FLOOR,
-    )
-    ages = _finalize_ultrametric_ages(
-        tree,
-        ages,
-        calibrations=calibrations,
-        dist_floor=DIST_FLOOR,
-    )
+    ages = np.asarray(best["ages"], dtype=float)
     tree = tree.set_node_data("height", ages, inplace=inplace)
     rates = _unpack_log_rates(current_params[:rsize])
 
@@ -551,12 +651,16 @@ def edges_make_ultrametric_correlated(
         "optimizer_retries": int(best.get("optimizer_retries", 0)),
         "observation_loss": observation_loss,
         "nstarts": nstarts,
+        "requested_nstarts": requested_nstarts,
         "ncores": max(1, min(ncores, nstarts)),
         "best_start": int(best["start"]),
+        "best_start_kind": str(best["start_kind"]),
+        **stability,
         "starts": [
             {
                 "start": int(i["start"]),
                 "objective": float(i["objective"]),
+                "start_kind": str(i.get("start_kind", f"start_{i['start']}")),
                 "converged": bool(i["converged"]),
                 "message": str(i["message"]),
                 "nfev": int(i.get("nfev", -1)),

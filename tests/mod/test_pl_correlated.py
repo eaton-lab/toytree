@@ -5,6 +5,7 @@ from conftest import PytestCompat
 from scipy.optimize import OptimizeResult
 
 from toytree.mod._src.penalized_pseudolikelihood.correlated import (
+    _assess_correlated_solution_stability,
     _correlated_branch_pseudologlik,
     _correlated_penalty,
     edges_make_ultrametric_correlated,
@@ -32,6 +33,60 @@ class TestPenalizedLikelihoodCorrelated(PytestCompat):
         observed = _correlated_penalty(rates, parent_edges)
         scaled = _correlated_penalty(rates * 1e-6, parent_edges)
         self.assertTrue(np.isclose(observed, scaled))
+
+    def test_near_equivalent_starts_with_different_ages_are_unstable(self):
+        """Equivalent objectives cannot hide materially different chronograms."""
+        starts = [
+            {
+                "start": 0,
+                "objective": 10.0,
+                "converged": True,
+                "ages": np.array([0.0, 0.0, 1.0]),
+            },
+            {
+                "start": 1,
+                "objective": 10.000001,
+                "converged": True,
+                "ages": np.array([0.0, 0.0, 0.5]),
+            },
+        ]
+        result = _assess_correlated_solution_stability(
+            starts,
+            best=starts[0],
+            ntips=2,
+        )
+        self.assertTrue(result["stability_assessed"])
+        self.assertFalse(result["solution_stable"])
+        self.assertEqual(result["near_optimal_starts"], 2)
+        self.assertTrue(np.isclose(result["max_near_optimal_age_difference"], 0.5))
+
+    def test_warm_start_is_compared_with_an_independent_start(self):
+        """A continuation seed augments rather than replaces initialization."""
+        tree = get_tree_with_correlated_rates(ntips=6, mean=1.0, sigma=0.5, seed=123)
+        edges = np.asarray(tree.get_edges("idx"), dtype=int)
+        ages = tree.get_node_data("height").to_numpy(dtype=float)
+        times = ages[edges[:, 1]] - ages[edges[:, 0]]
+        dists = tree.get_node_data("dist").to_numpy(dtype=float)[:-1]
+        result = edges_make_ultrametric_correlated(
+            tree,
+            lam=1.0,
+            calibrations={-1: float(ages[-1])},
+            full=True,
+            max_iter=500,
+            max_fun=1_000,
+            max_refine=2,
+            nstarts=1,
+            seed=17,
+            _initial_rates=dists / times,
+            _initial_ages=ages,
+        )
+        self.assertEqual(result["requested_nstarts"], 1)
+        self.assertEqual(result["nstarts"], 2)
+        self.assertEqual(
+            {item["start_kind"] for item in result["starts"]},
+            {"independent", "continuation"},
+        )
+        self.assertTrue(result["stability_assessed"])
 
     def test_correlated_pl_makes_ultrametric(self):
         """The fit returns an ultrametric tree and consistent metadata."""

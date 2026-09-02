@@ -131,6 +131,7 @@ class TestCorrelatedLambdaCV(PytestCompat):
                     "candidate_index": payload["candidate_index"],
                     "fold": payload["fold"],
                     "converged": True,
+                    "solution_stable": True,
                     "score": 1.0,
                 }
                 for payload in payloads
@@ -141,7 +142,7 @@ class TestCorrelatedLambdaCV(PytestCompat):
             patch.object(
                 lambda_cv,
                 "edges_make_ultrametric_correlated",
-                return_value={"converged": True},
+                return_value={"converged": True, "solution_stable": True},
             ),
         ):
             result = edges_make_ultrametric_correlated_lambda_cv(
@@ -170,6 +171,40 @@ class TestCorrelatedLambdaCV(PytestCompat):
         with patch.object(lambda_cv, "_run_fold_payloads", fake_folds):
             with self.assertRaises(RuntimeError):
                 edges_make_ultrametric_correlated_lambda_cv(tree, lambdas=[0.1, 1.0])
+
+    def test_unstable_candidate_is_excluded_from_lambda_selection(self):
+        """A lower prediction score cannot rescue an unstable chronogram."""
+        tree = toytree.tree("((a:1,b:1):1,(c:1,d:1):1);")
+
+        def fake_folds(payloads, ncores):
+            return [
+                {
+                    "candidate_index": payload["candidate_index"],
+                    "fold": payload["fold"],
+                    "converged": True,
+                    "solution_stable": payload["candidate_index"] == 1,
+                    "score": float(payload["candidate_index"]),
+                }
+                for payload in payloads
+            ]
+
+        with (
+            patch.object(lambda_cv, "_run_fold_payloads", fake_folds),
+            patch.object(
+                lambda_cv,
+                "edges_make_ultrametric_correlated",
+                return_value={"converged": True, "solution_stable": True},
+            ),
+        ):
+            result = edges_make_ultrametric_correlated_lambda_cv(
+                tree, lambdas=[0.1, 1.0], seed=123
+            )
+
+        self.assertEqual(result["selected_lam"], 1.0)
+        self.assertFalse(result["candidates"][0]["stable"])
+        self.assertFalse(result["candidates"][0]["valid"])
+        self.assertTrue(result["candidates"][1]["stable"])
+        self.assertTrue(result["candidates"][1]["valid"])
 
     def test_public_surface_has_only_correlated_lambda_selector(self):
         """Only within-correlated lambda selection is publicly exposed."""
@@ -206,6 +241,7 @@ class TestCorrelatedLambdaCV(PytestCompat):
             calls.append((payload["lam"], "initial_rates" in payload))
             return {
                 "converged": True,
+                "solution_stable": True,
                 "_warm_rates": [float(payload["lam"])],
                 "_warm_ages": [0.0, 1.0],
             }
@@ -227,6 +263,7 @@ class TestCorrelatedLambdaCV(PytestCompat):
                     "candidate_index": payload["candidate_index"],
                     "fold": payload["fold"],
                     "converged": True,
+                    "solution_stable": True,
                     "score": float(payload["candidate_index"] + 1),
                 }
                 for payload in payloads
@@ -237,7 +274,7 @@ class TestCorrelatedLambdaCV(PytestCompat):
             patch.object(
                 lambda_cv,
                 "edges_make_ultrametric_correlated",
-                return_value={"converged": True},
+                return_value={"converged": True, "solution_stable": True},
             ),
         ):
             result = edges_make_ultrametric_correlated_lambda_cv(

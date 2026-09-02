@@ -120,6 +120,11 @@ def _fit_correlated_cv_fold(payload: dict[str, Any]) -> dict[str, Any]:
             "converged": converged,
             "optimizer_message": str(fit.get("optimizer_message", "")),
             "optimizer_retries": int(fit.get("optimizer_retries", 0)),
+            "stability_assessed": bool(fit.get("stability_assessed", False)),
+            "solution_stable": fit.get("solution_stable"),
+            "max_near_optimal_age_difference": fit.get(
+                "max_near_optimal_age_difference"
+            ),
         }
         if payload.get("return_warm_start", False):
             result["_warm_rates"] = list(fit["rates"])
@@ -143,6 +148,9 @@ def _fit_correlated_cv_fold(payload: dict[str, Any]) -> dict[str, Any]:
             "converged": False,
             "optimizer_message": f"{type(exc).__name__}: {exc}",
             "optimizer_retries": 0,
+            "stability_assessed": False,
+            "solution_stable": False,
+            "max_near_optimal_age_difference": None,
         }
 
 
@@ -159,7 +167,7 @@ def _fit_correlated_cv_path(payloads: list[dict[str, Any]]) -> list[dict[str, An
             current["initial_ages"] = warm_ages
         result = _fit_correlated_cv_fold(current)
         result["candidate_index"] = payload["candidate_index"]
-        if result["converged"]:
+        if result["converged"] and result.get("solution_stable") is True:
             warm_rates = result.pop("_warm_rates")
             warm_ages = result.pop("_warm_ages")
         else:
@@ -196,6 +204,71 @@ def _run_fold_payloads(
     return results
 
 
+def _fit_correlated_full_path(
+    tree: ToyTree,
+    grid: tuple[float, ...],
+    selected_lam: float,
+    calibrations: dict[Any, Any],
+    fit_options: dict[str, Any],
+    observation_loss: str,
+    seed: int | None,
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """Fit strong-to-selected lambda values with independent safeguards."""
+    warm_rates = None
+    warm_ages = None
+    selected_fit = None
+    diagnostics = []
+    path = [lam for lam in reversed(grid) if lam >= selected_lam]
+    for index, lam in enumerate(path):
+        options = {
+            **fit_options,
+            "seed": None if seed is None else int(seed) + index * 1_000_003,
+        }
+        if warm_rates is not None:
+            options["_initial_rates"] = warm_rates
+            options["_initial_ages"] = warm_ages
+        fit = edges_make_ultrametric_correlated(
+            tree,
+            lam=lam,
+            calibrations=calibrations,
+            full=True,
+            inplace=False,
+            _observation_loss=observation_loss,
+            **options,
+        )
+        diagnostics.append(
+            {
+                "lam": float(lam),
+                "converged": bool(fit["converged"]),
+                "stability_assessed": bool(fit.get("stability_assessed", False)),
+                "solution_stable": fit.get("solution_stable"),
+                "max_near_optimal_age_difference": fit.get(
+                    "max_near_optimal_age_difference"
+                ),
+                "penalized_pseudologlik": fit.get("penalized_pseudologlik"),
+                "best_start_kind": fit.get("best_start_kind"),
+            }
+        )
+        if (
+            fit["converged"]
+            and fit.get("solution_stable") is True
+            and "rates" in fit
+            and "tree" in fit
+        ):
+            warm_rates = list(fit["rates"])
+            warm_ages = (
+                fit["tree"].get_node_data("height").to_numpy(dtype=float).tolist()
+            )
+        else:
+            warm_rates = None
+            warm_ages = None
+        if lam == selected_lam:
+            selected_fit = fit
+    if selected_fit is None:  # pragma: no cover - selected lambda belongs to grid
+        raise RuntimeError("selected lambda was absent from the full-data path.")
+    return selected_fit, diagnostics
+
+
 @add_subpackage_method(TreeModAPI)
 def edges_make_ultrametric_correlated_lambda_cv(
     tree: ToyTree,
@@ -229,11 +302,14 @@ def edges_make_ultrametric_correlated_lambda_cv(
     max_iter, max_fun, max_refine : int
         Optimizer controls passed unchanged to every fold and the final fit.
     nstarts : int
-        Number of starts for every correlated-rate fit.
+        Requested number of starts for every correlated-rate fit. Cross-validation
+        uses at least two so near-optimal chronograms can be compared.
     ncores : int
         Number of fold worker processes. Individual fold fits remain serial.
     seed : int or None
         Base seed used to derive deterministic fold seeds.
+
+    Lambda candidates with an unstable fold are excluded from selection.
 
     Returns
     -------
@@ -264,7 +340,7 @@ def edges_make_ultrametric_correlated_lambda_cv(
         "max_iter": int(max_iter),
         "max_fun": int(max_fun),
         "max_refine": int(max_refine),
-        "nstarts": nstarts,
+        "nstarts": max(2, nstarts),
         "ncores": 1,
     }
     payloads = []
@@ -300,15 +376,21 @@ def edges_make_ultrametric_correlated_lambda_cv(
             if result["candidate_index"] == candidate_index
         ]
         values = np.asarray([result["score"] for result in folds], dtype=float)
+        stable = bool(
+            len(folds) == len(terminal)
+            and all(result.get("solution_stable") is True for result in folds)
+        )
         valid = bool(
             len(folds) == len(terminal)
             and all(result["converged"] for result in folds)
             and np.all(np.isfinite(values))
+            and stable
         )
         candidates.append(
             {
                 "lam": lam,
                 "valid": valid,
+                "stable": stable,
                 "mean_score": float(np.mean(values)) if valid else float("inf"),
                 "standard_error": (
                     float(np.std(values, ddof=1) / np.sqrt(values.size))
@@ -321,7 +403,7 @@ def edges_make_ultrametric_correlated_lambda_cv(
 
     finite = [candidate for candidate in candidates if candidate["valid"]]
     if not finite:
-        raise RuntimeError("all lambda candidates had a failed CV fold.")
+        raise RuntimeError("no lambda candidate had converged, stable CV folds.")
     minimum = min(candidate["mean_score"] for candidate in finite)
     tied = [
         candidate
@@ -337,18 +419,22 @@ def edges_make_ultrametric_correlated_lambda_cv(
             "grid and rerun CV to check that the minimum is bracketed."
         )
 
-    selected_fit = edges_make_ultrametric_correlated(
+    selected_fit, final_path = _fit_correlated_full_path(
         tree,
-        lam=selected_lam,
-        calibrations=calibrations,
-        full=True,
-        inplace=False,
-        _observation_loss=observation_loss,
-        **{**fit_options, "seed": seed},
+        grid,
+        selected_lam,
+        calibrations,
+        fit_options,
+        observation_loss,
+        seed,
     )
     if not selected_fit["converged"]:
         raise RuntimeError(
             "the selected correlated-rate fit failed on the full dataset."
+        )
+    if selected_fit.get("solution_stable") is not True:
+        raise RuntimeError(
+            "the selected correlated-rate fit has an unstable chronogram."
         )
     return {
         "model": "correlated",
@@ -368,4 +454,5 @@ def edges_make_ultrametric_correlated_lambda_cv(
         "seed": None if seed is None else int(seed),
         "ncores": ncores,
         "selected_at_boundary": selected_at_boundary,
+        "final_fit_path": final_path,
     }

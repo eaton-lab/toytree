@@ -39,6 +39,9 @@ from scipy.stats import spearmanr
 
 import toytree
 from toytree.mod._src.penalized_pseudolikelihood.correlated import (
+    SOLUTION_MAX_NORMALIZED_AGE_DIFFERENCE,
+    SOLUTION_OBJECTIVE_ATOL,
+    SOLUTION_OBJECTIVE_RTOL,
     edges_make_ultrametric_correlated,
 )
 from toytree.mod._src.penalized_pseudolikelihood.lambda_cv import (
@@ -55,7 +58,7 @@ from validation.penalized_pseudolikelihood.run_validation_v5_identifiability imp
 toytree.set_log_level("WARNING")
 
 CONFIG_PATH = HERE / "config-v6.json"
-CACHE_SCHEMA_VERSION = 1
+CACHE_SCHEMA_VERSION = 2
 EPS = 1e-12
 LOSS_SCORE = {
     "fractional_poisson": "pearson",
@@ -161,6 +164,12 @@ def _slim_fit(fit: dict[str, Any]) -> dict[str, Any]:
         "nfev": int(fit.get("nfev", -1)),
         "nit": int(fit.get("nit", -1)),
         "gradient_max_abs": fit.get("gradient_max_abs"),
+        "stability_assessed": bool(fit.get("stability_assessed", False)),
+        "solution_stable": fit.get("solution_stable"),
+        "converged_starts": int(fit.get("converged_starts", 0)),
+        "near_optimal_starts": int(fit.get("near_optimal_starts", 0)),
+        "max_near_optimal_age_difference": fit.get("max_near_optimal_age_difference"),
+        "best_start_kind": fit.get("best_start_kind"),
     }
 
 
@@ -193,7 +202,7 @@ def _fit_full_path(
             **kwargs,
         )
         results[str(lam)] = _slim_fit(fit)
-        if fit["converged"]:
+        if fit["converged"] and fit.get("solution_stable") is True:
             warm_rates = list(fit["rates"])
             warm_ages = (
                 fit["tree"].get_node_data("height").to_numpy(dtype=float).tolist()
@@ -310,6 +319,7 @@ def _fit_worker(payload: dict[str, Any]) -> str:
                     {
                         "lam": float(candidate["lam"]),
                         "valid": bool(candidate["valid"]),
+                        "stable": bool(candidate.get("stable", False)),
                         "mean_score": float(candidate["mean_score"]),
                         "standard_error": float(candidate["standard_error"]),
                         "folds": [
@@ -326,6 +336,13 @@ def _fit_worker(payload: dict[str, Any]) -> str:
                                 "optimizer_retries": int(
                                     fold.get("optimizer_retries", 0)
                                 ),
+                                "stability_assessed": bool(
+                                    fold.get("stability_assessed", False)
+                                ),
+                                "solution_stable": fold.get("solution_stable"),
+                                "max_near_optimal_age_difference": fold.get(
+                                    "max_near_optimal_age_difference"
+                                ),
                             }
                             for fold in candidate["folds"]
                         ],
@@ -334,7 +351,7 @@ def _fit_worker(payload: dict[str, Any]) -> str:
             selected_label = str(float(cv["selected_lam"]))
             models[observation_loss] = {
                 "selected_lam": float(cv["selected_lam"]),
-                "cold_selected_fit": _slim_fit(cv["selected_fit"]),
+                "selected_fit": _slim_fit(cv["selected_fit"]),
                 "full_fits": full_fits,
                 "candidates": candidates,
                 "warm_cold_objective_delta": float(
@@ -463,6 +480,16 @@ def _bootstrap_support(
     else:
         median_spread = None
         maximum_spread = None
+    within_lambda_spread = max(
+        (
+            float(
+                full_fits[str(float(lam))].get("max_near_optimal_age_difference") or 0.0
+            )
+            for lam in supported
+            if full_fits[str(float(lam))]["converged"]
+        ),
+        default=0.0,
+    )
     log_values = np.log10(selected)
     return {
         "selection_frequencies": {
@@ -474,6 +501,10 @@ def _bootstrap_support(
         ),
         "median_normalized_age_spread": median_spread,
         "maximum_normalized_age_spread": maximum_spread,
+        "maximum_within_lambda_age_difference": within_lambda_spread,
+        "maximum_total_normalized_age_uncertainty": max(
+            maximum_spread or 0.0, within_lambda_spread
+        ),
     }
 
 
@@ -498,7 +529,9 @@ def _score_model(
         raise RuntimeError("all full-grid fits failed")
     selected_lam = float(model["selected_lam"])
     warm_fit = full_fits[str(selected_lam)]
-    selected_fit = model["cold_selected_fit"]
+    selected_fit = model.get("selected_fit")
+    if selected_fit is None:
+        selected_fit = model["cold_selected_fit"]
     selected_error = _age_rmse(
         np.asarray(selected_fit["ages"], dtype=float), truth_ages, ntips
     )
@@ -506,9 +539,7 @@ def _score_model(
     oracle_errors[selected_lam] = min(errors[selected_lam], selected_error)
     oracle_error = min(oracle_errors.values())
     oracle_lam = max(
-        lam
-        for lam, error in oracle_errors.items()
-        if abs(error - oracle_error) <= EPS
+        lam for lam, error in oracle_errors.items() if abs(error - oracle_error) <= EPS
     )
     folds = [fold for candidate in model["candidates"] for fold in candidate["folds"]]
     matching_score = LOSS_SCORE[observation_loss]
@@ -535,6 +566,13 @@ def _score_model(
         abs(float(selected_fit["penalized_pseudologlik"])),
         EPS,
     )
+    absolute_objective_delta = abs(objective_delta)
+    objective_tolerance = SOLUTION_OBJECTIVE_ATOL + SOLUTION_OBJECTIVE_RTOL * max(
+        1.0, objective_scale
+    )
+    objectives_equivalent = absolute_objective_delta <= objective_tolerance
+    selected_fit_objective_competitive = objective_delta >= -objective_tolerance
+    maximum_age_difference = float(np.max(np.abs(normalized_age_delta)))
     return {
         "observation_loss": observation_loss,
         "matching_score": matching_score,
@@ -550,25 +588,47 @@ def _score_model(
             truth_rates, np.asarray(selected_fit["rates"], dtype=float)
         ),
         "all_candidates_converged": bool(
-            all(item["valid"] for item in model["candidates"])
+            all(
+                fold["converged"]
+                for item in model["candidates"]
+                for fold in item["folds"]
+            )
             and all(item["converged"] for item in full_fits.values())
         ),
+        "all_candidates_stable": bool(
+            all(item.get("stable", False) for item in model["candidates"])
+            and all(item.get("solution_stable") is True for item in full_fits.values())
+        ),
+        "valid_candidates": int(
+            sum(bool(item["valid"]) for item in model["candidates"])
+        ),
         "folds_converged": int(sum(bool(fold["converged"]) for fold in folds)),
+        "folds_stable": int(sum(fold.get("solution_stable") is True for fold in folds)),
         "folds_total": len(folds),
         "optimizer_retries": int(
             sum(int(fold.get("optimizer_retries", 0)) for fold in folds)
             + sum(int(fit.get("optimizer_retries", 0)) for fit in full_fits.values())
         ),
         "warm_cold_objective_delta": objective_delta,
-        "warm_cold_relative_objective_delta": float(
-            objective_delta / objective_scale
+        "warm_cold_absolute_objective_delta": float(absolute_objective_delta),
+        "warm_cold_relative_objective_delta": float(objective_delta / objective_scale),
+        "warm_cold_absolute_relative_objective_difference": float(
+            absolute_objective_delta / objective_scale
         ),
+        "warm_cold_objectives_equivalent": bool(objectives_equivalent),
+        "selected_fit_objective_competitive": bool(selected_fit_objective_competitive),
         "warm_cold_normalized_age_rmse": float(
             np.sqrt(np.mean(normalized_age_delta**2))
         ),
-        "warm_cold_max_normalized_age_difference": float(
-            np.max(np.abs(normalized_age_delta))
+        "warm_cold_max_normalized_age_difference": maximum_age_difference,
+        "warm_cold_solution_stable": bool(
+            selected_fit_objective_competitive
+            and (
+                not objectives_equivalent
+                or maximum_age_difference <= SOLUTION_MAX_NORMALIZED_AGE_DIFFERENCE
+            )
         ),
+        "selected_fit_stable": selected_fit.get("solution_stable") is True,
         "bootstrap": bootstrap,
     }
 
@@ -662,12 +722,26 @@ def _summarize(
         model_rows = [row["models"][loss] for row in successful]
         fold_total = sum(item["folds_total"] for item in model_rows)
         fold_ok = sum(item["folds_converged"] for item in model_rows)
+        fold_stable = sum(item["folds_stable"] for item in model_rows)
         ratios = _finite([item["selected_age_oracle_ratio"] for item in model_rows])
         spreads = _finite(
             [
                 item["bootstrap"]["median_normalized_age_spread"]
                 for item in model_rows
                 if item["selected_age_oracle_ratio"] is not None
+            ]
+        )
+        total_uncertainties = _finite(
+            [
+                item["bootstrap"]["maximum_total_normalized_age_uncertainty"]
+                for item in model_rows
+            ]
+        )
+        equivalent_age_differences = _finite(
+            [
+                item["warm_cold_max_normalized_age_difference"]
+                for item in model_rows
+                if item["warm_cold_objectives_equivalent"]
             ]
         )
         loss_summaries[loss] = {
@@ -678,6 +752,27 @@ def _summarize(
             if model_rows
             else 0.0,
             "fold_convergence": float(fold_ok / fold_total) if fold_total else 0.0,
+            "fold_stability": (float(fold_stable / fold_total) if fold_total else 0.0),
+            "selected_fit_stability": (
+                float(np.mean([item["selected_fit_stable"] for item in model_rows]))
+                if model_rows
+                else 0.0
+            ),
+            "selected_fit_objective_competitiveness": (
+                float(
+                    np.mean(
+                        [
+                            item["selected_fit_objective_competitive"]
+                            for item in model_rows
+                        ]
+                    )
+                )
+                if model_rows
+                else 0.0
+            ),
+            "minimum_valid_candidates": int(
+                min((item["valid_candidates"] for item in model_rows), default=0)
+            ),
             "selected_age_oracle_ratio_median": (
                 float(np.median(ratios)) if ratios.size else None
             ),
@@ -689,6 +784,16 @@ def _summarize(
             ),
             "supported_age_spread_p90": (
                 float(np.quantile(spreads, 0.9)) if spreads.size else None
+            ),
+            "total_age_uncertainty_median": (
+                float(np.median(total_uncertainties))
+                if total_uncertainties.size
+                else None
+            ),
+            "total_age_uncertainty_p90": (
+                float(np.quantile(total_uncertainties, 0.9))
+                if total_uncertainties.size
+                else None
             ),
             "optimizer_retries": int(
                 sum(item["optimizer_retries"] for item in model_rows)
@@ -703,12 +808,30 @@ def _summarize(
             ),
             "maximum_warm_cold_relative_objective_delta": float(
                 max(
+                    (item["warm_cold_relative_objective_delta"] for item in model_rows),
+                    default=0.0,
+                )
+            ),
+            "maximum_warm_cold_absolute_relative_objective_difference": float(
+                max(
                     (
-                        item["warm_cold_relative_objective_delta"]
+                        item["warm_cold_absolute_relative_objective_difference"]
                         for item in model_rows
                     ),
                     default=0.0,
                 )
+            ),
+            "maximum_near_equivalent_warm_cold_age_difference": (
+                float(np.max(equivalent_age_differences))
+                if equivalent_age_differences.size
+                else 0.0
+            ),
+            "warm_cold_solution_stability": (
+                float(
+                    np.mean([item["warm_cold_solution_stable"] for item in model_rows])
+                )
+                if model_rows
+                else 0.0
             ),
             "maximum_warm_cold_normalized_age_difference": float(
                 max(
@@ -722,10 +845,7 @@ def _summarize(
             "p90_warm_cold_normalized_age_rmse": (
                 float(
                     np.quantile(
-                        [
-                            item["warm_cold_normalized_age_rmse"]
-                            for item in model_rows
-                        ],
+                        [item["warm_cold_normalized_age_rmse"] for item in model_rows],
                         0.9,
                     )
                 )
@@ -848,18 +968,36 @@ def _summarize(
             and gamma_summary["supported_age_spread_p90"]
             <= gates["supported_age_spread_p90"]
         ),
+        "total_age_uncertainty_p90": bool(
+            all(
+                item["total_age_uncertainty_p90"] is not None
+                and item["total_age_uncertainty_p90"]
+                <= gates["total_age_uncertainty_p90"]
+                for item in loss_summaries.values()
+            )
+        ),
         "scale_invariance": bool(
             scale_summary["all_converged"]
             and scale_summary["max_age_difference"] is not None
             and scale_summary["max_age_difference"]
             <= gates["scale_invariance_tolerance"]
         ),
-        "warm_start_objective_parity": bool(
-            gamma_summary["maximum_warm_cold_objective_delta"] <= 1e-8
-            and loss_summaries["fractional_poisson"][
-                "maximum_warm_cold_objective_delta"
-            ]
-            <= 1e-8
+        "selected_fit_stability": bool(
+            all(
+                item["selected_fit_stability"] == 1.0
+                and item["selected_fit_objective_competitiveness"] == 1.0
+                and item["fold_stability"] == 1.0
+                and item["minimum_valid_candidates"] >= 1
+                for item in loss_summaries.values()
+            )
+        ),
+        "warm_start_chronogram_stability": bool(
+            all(
+                item["warm_cold_solution_stability"] == 1.0
+                and item["maximum_near_equivalent_warm_cold_age_difference"]
+                <= gates["maximum_near_equivalent_age_difference"]
+                for item in loss_summaries.values()
+            )
         ),
     }
     return {
@@ -879,7 +1017,7 @@ def _payloads(
     resume: bool,
 ) -> list[dict[str, Any]]:
     """Expand one configured study mode into deterministic paired datasets."""
-    config_key = "optimizer_stress" if mode == "optimizer-stress" else mode
+    config_key = mode.replace("-", "_")
     source_hash = _source_hash()
     payloads = []
     index = 0
@@ -1014,7 +1152,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--mode",
-        choices=("smoke", "pilot", "optimizer-stress"),
+        choices=("smoke", "pilot", "optimizer-stress", "stability-stress"),
         default="smoke",
     )
     parser.add_argument("--stage", choices=("all", "fit", "score"), default="all")

@@ -43,6 +43,16 @@ def test_v6_pilot_factorial_is_paired_and_deterministic(tmp_path: Path):
         90260867,
     }
 
+    stability = study._payloads(config, "stability-stress", tmp_path, True)
+    assert len(stability) == 5
+    assert {item["seed"] for item in stability} == {
+        95460897,
+        96360924,
+        96760936,
+        96860939,
+        97060945,
+    }
+
 
 def test_v6_prediction_scores_match_their_definitions():
     """Cache-only cross-scoring uses Pearson and Gamma unit deviance."""
@@ -60,13 +70,15 @@ def test_v6_prediction_scores_match_their_definitions():
 
 
 def test_v6_selected_recovery_scores_the_fit_returned_to_users():
-    """Selected recovery uses the independent fit returned by lambda CV."""
+    """Selected recovery and stability use the fit returned by lambda CV."""
     warm_fit = {
         "converged": True,
         "ages": [0.0, 0.0, 10.0],
         "rates": [2.0, 1.0],
         "penalized_pseudologlik": -10.0,
         "optimizer_retries": 0,
+        "solution_stable": True,
+        "max_near_optimal_age_difference": 0.012,
     }
     cold_fit = {
         "converged": True,
@@ -74,12 +86,14 @@ def test_v6_selected_recovery_scores_the_fit_returned_to_users():
         "rates": [1.0, 2.0],
         "penalized_pseudologlik": -10.0,
         "optimizer_retries": 0,
+        "solution_stable": True,
     }
     folds = [
         {
             "observed": value,
             "predicted": value,
             "converged": True,
+            "solution_stable": True,
             "optimizer_retries": 0,
         }
         for value in (1.0, 2.0)
@@ -92,12 +106,13 @@ def test_v6_selected_recovery_scores_the_fit_returned_to_users():
         "models": {
             "fractional_poisson": {
                 "selected_lam": 1.0,
-                "cold_selected_fit": cold_fit,
+                "selected_fit": cold_fit,
                 "full_fits": {"1.0": warm_fit},
                 "candidates": [
                     {
                         "lam": 1.0,
                         "valid": True,
+                        "stable": True,
                         "folds": folds,
                     }
                 ],
@@ -117,6 +132,32 @@ def test_v6_selected_recovery_scores_the_fit_returned_to_users():
     assert np.isclose(result["selected_rate_spearman"], 1.0)
     assert result["warm_cold_normalized_age_rmse"] == 0.25
     assert result["warm_cold_max_normalized_age_difference"] == 0.25
+    assert result["selected_fit_stable"]
+    assert result["selected_fit_objective_competitive"]
+    assert not result["warm_cold_solution_stable"]
+    assert result["bootstrap"]["maximum_within_lambda_age_difference"] == 0.012
+    assert result["bootstrap"]["maximum_total_normalized_age_uncertainty"] == 0.012
+
+    model = record["models"]["fractional_poisson"]
+    model["warm_cold_objective_delta"] = -1.0
+    worse = study._score_model(
+        record,
+        "fractional_poisson",
+        bootstrap_replicates=20,
+        bootstrap_seed=123,
+    )
+    assert not worse["selected_fit_objective_competitive"]
+    assert not worse["warm_cold_solution_stable"]
+
+    model["warm_cold_objective_delta"] = 1.0
+    better = study._score_model(
+        record,
+        "fractional_poisson",
+        bootstrap_replicates=20,
+        bootstrap_seed=123,
+    )
+    assert better["selected_fit_objective_competitive"]
+    assert better["warm_cold_solution_stable"]
 
 
 def test_v6_cache_and_rescore_smoke(tmp_path: Path):
@@ -157,13 +198,26 @@ def test_v6_cache_and_rescore_smoke(tmp_path: Path):
         assert np.isfinite(model["warm_cold_relative_objective_delta"])
         assert np.isfinite(model["warm_cold_normalized_age_rmse"])
         assert np.isfinite(model["warm_cold_max_normalized_age_difference"])
+        assert isinstance(model["selected_fit_stable"], bool)
+        assert isinstance(model["selected_fit_objective_competitive"], bool)
+        assert np.isfinite(
+            model["bootstrap"]["maximum_total_normalized_age_uncertainty"]
+        )
     for loss in study.LOSS_SCORE:
         summary = result["summary"]["losses"][loss]
         assert np.isfinite(summary["maximum_warm_cold_relative_objective_delta"])
         assert np.isfinite(
-            summary["maximum_warm_cold_normalized_age_difference"]
+            summary["maximum_warm_cold_absolute_relative_objective_difference"]
         )
+        assert np.isfinite(summary["maximum_warm_cold_normalized_age_difference"])
+        assert np.isfinite(summary["maximum_near_equivalent_warm_cold_age_difference"])
         assert np.isfinite(summary["p90_warm_cold_normalized_age_rmse"])
+        assert np.isfinite(summary["total_age_uncertainty_p90"])
+        assert summary["selected_fit_objective_competitiveness"] in {0.0, 1.0}
+    assert "selected_fit_stability" in result["summary"]["checks"]
+    assert "total_age_uncertainty_p90" in result["summary"]["checks"]
+    assert "warm_start_chronogram_stability" in result["summary"]["checks"]
+    assert "warm_start_objective_parity" not in result["summary"]["checks"]
 
     score = subprocess.run(
         [*command[:5], "score", *command[6:]],
