@@ -19,10 +19,7 @@ from toytree.mod._src.penalized_pseudolikelihood.uncorrelated_lognormal import (
 )
 
 FIXTURE = (
-    Path(__file__).parents[1]
-    / "data"
-    / "penalized_pseudolikelihood"
-    / "ape-5.8.1.json"
+    Path(__file__).parents[1] / "data" / "penalized_pseudolikelihood" / "ape-5.8.1.json"
 )
 
 
@@ -86,6 +83,21 @@ def test_discrete_fixed_objective_matches_ape_5_8_1():
     assert np.isclose(observed, model["loglik"], atol=1e-12)
 
 
+def test_discrete_k3_fixed_objective_matches_ape_5_8_1():
+    reference = _load_reference()
+    model = reference["models"]["discrete3"]
+    ages, edges, edata = _fixed_fit_inputs(reference, model)
+    observed = _discrete_branch_pseudologlik(
+        np.asarray(model["rates"]),
+        ages,
+        edges,
+        edata,
+        np.asarray(model["weights"]),
+        valid_loglik=None,
+    )
+    assert np.isclose(observed, model["loglik"], atol=1e-12)
+
+
 def test_relaxed_fixed_objective_matches_ape_5_8_1():
     reference = _load_reference()
     model = reference["models"]["relaxed"]
@@ -137,6 +149,24 @@ def test_discrete_full_fit_matches_ape_5_8_1():
     )
     for clade, value in _edge_time_by_clade(fit["tree"]).items():
         assert np.isclose(value, expected[clade], atol=2e-4)
+
+
+def test_discrete_k3_full_fit_reaches_ape_5_8_1_basin():
+    reference = _load_reference()
+    model = reference["models"]["discrete3"]
+    tree = toytree.tree(reference["newick"])
+    fit = tree.mod.edges_make_ultrametric_discrete(
+        ncategories=3,
+        calibrations={-1: 1.0},
+        full=True,
+        max_refine=20,
+        seed=123,
+    )
+    expected = dict(zip(reference["edge_clades"], model["time_edge_lengths"]))
+    assert fit["converged"]
+    assert fit["pseudologlik"] >= model["loglik"] - 1e-7
+    for clade, value in _edge_time_by_clade(fit["tree"]).items():
+        assert np.isclose(value, expected[clade], atol=3e-3)
 
 
 def test_relaxed_full_fit_matches_ape_5_8_1():

@@ -3,6 +3,26 @@
 This directory contains the pinned simulation and predictive-validation study
 for ToyTree's ultrametric branch-length pseudolikelihood models.
 
+## Version 8: discrete-mixture validation
+
+The v8 design and run instructions are recorded in
+[README-v8.md](README-v8.md). It validates the hardened
+chronos-compatible fractional-Poisson mixture and the new scale-equivariant
+multiplicative-Gamma mixture. The development pilot passes the Gamma
+scale-equivariance and recovery thresholds, but it does not pass the
+prespecified optimizer-stability gates; confirmation must wait until those
+failures are resolved.
+
+## Version 7: strict-clock validation
+
+The v7 design and run instructions are recorded in
+[README-v7.md](README-v7.md). The strict clock now profiles its shared rate
+analytically and optimizes only free node ages. After a passing development
+pilot, an independently seeded 360-dataset confirmation passed every numerical,
+recovery, calibration, and time-unit gate. Strict-clock development is complete
+within the documented branch-length pseudolikelihood scope. The study uses no
+sequence-length input and does not alter the correlated-model v6 study or caches.
+
 ## Version 6: correlated-model reliability
 
 The development-only v6 design and run instructions are recorded in

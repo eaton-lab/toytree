@@ -17,9 +17,9 @@ calibration <- ape::makeChronosCalib(
     tree, node = "root", age.min = 1, age.max = 1
 )
 
-fit_one <- function(model) {
+fit_one <- function(model, ncategories = NULL) {
     control <- ape::chronos.control()
-    if (model == "discrete") control$nb.rate.cat <- 2
+    if (model == "discrete") control$nb.rate.cat <- ncategories
     fit <- ape::chronos(
         tree,
         lambda = 0.5,
@@ -62,7 +62,8 @@ fixture <- list(
     edge_clades = unname(edge_clades),
     models = list(
         clock = fit_one("clock"),
-        discrete = fit_one("discrete"),
+        discrete = fit_one("discrete", 2),
+        discrete3 = fit_one("discrete", 3),
         relaxed = fit_one("relaxed")
     )
 )

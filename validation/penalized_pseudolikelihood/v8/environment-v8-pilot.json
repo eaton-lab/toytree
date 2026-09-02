@@ -1,0 +1,105 @@
+{
+  "config": {
+    "confirmation_seed": 20902026,
+    "decision_gates": {
+      "calibration_validity": 1,
+      "convergence_wilson_lower": 0.98,
+      "gamma_age_mae_median_by_true_cv": {
+        "0.05": 0.05,
+        "0.1": 0.07,
+        "0.2": 0.1
+      },
+      "gamma_fixed_age_mixture_wasserstein_median_by_true_cv": {
+        "0.05": 0.1,
+        "0.1": 0.15,
+        "0.2": 0.25
+      },
+      "gamma_scale_normalized_age_maximum": 0.0002,
+      "gamma_scale_relative_rate_maximum": 0.002,
+      "gamma_scale_weight_maximum": 0.002,
+      "maximum_absolute_age_bias": 0.025,
+      "poisson_age_mae_median": 0.06,
+      "poisson_fixed_age_mixture_wasserstein_median": 0.15,
+      "stress_age_rmse_maximum": 0.05,
+      "stress_age_rmse_p90": 0.01,
+      "stress_relative_objective_improvement_maximum": 0.001
+    },
+    "development_seed": 10902026,
+    "fit": {
+      "max_fun": 10000,
+      "max_iter": 5000,
+      "max_refine": 20,
+      "nstarts": 4,
+      "stress_nstarts": 8
+    },
+    "modes": {
+      "confirmation": {
+        "calibrations": [
+          "root",
+          "root_and_internal_interval"
+        ],
+        "gamma_replicates": 10,
+        "gamma_true_cv": [
+          0.05,
+          0.1,
+          0.2
+        ],
+        "ncategories": [
+          2,
+          3
+        ],
+        "ntips": [
+          24,
+          96
+        ],
+        "poisson_replicates": 25
+      },
+      "pilot": {
+        "calibrations": [
+          "root",
+          "root_and_internal_interval"
+        ],
+        "gamma_replicates": 2,
+        "gamma_true_cv": [
+          0.05,
+          0.1,
+          0.2
+        ],
+        "ncategories": [
+          2,
+          3
+        ],
+        "ntips": [
+          24,
+          48
+        ],
+        "poisson_replicates": 2
+      },
+      "smoke": {
+        "calibrations": [
+          "root"
+        ],
+        "gamma_replicates": 1,
+        "gamma_true_cv": [
+          0.1
+        ],
+        "ncategories": [
+          2
+        ],
+        "ntips": [
+          8
+        ],
+        "poisson_replicates": 1
+      }
+    },
+    "study_version": 8
+  },
+  "environment": {
+    "numpy": "2.4.6",
+    "platform": "Linux-7.0.0-28-generic-x86_64-with-glibc2.39",
+    "python": "3.11.9 (main, Apr 19 2024, 16:48:06) [GCC 11.2.0]",
+    "scipy": "1.15.1",
+    "toytree": "3.1.0.dev1"
+  },
+  "fingerprint": "9ad246af031f896547749df99312ab8ee75bc9a6a825a9a3c13322f6f1d982c4"
+}

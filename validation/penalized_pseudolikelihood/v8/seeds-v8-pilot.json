@@ -1,0 +1,642 @@
+[
+  {
+    "calibration": "root",
+    "fit_seed": 1404529610,
+    "model": "fractional_poisson",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 1403829609,
+    "true_cv": null
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 764478479,
+    "model": "fractional_poisson",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 763778478,
+    "true_cv": null
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 623237879,
+    "model": "fractional_poisson",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 622537878,
+    "true_cv": null
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 1150184690,
+    "model": "fractional_poisson",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 1149484689,
+    "true_cv": null
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 319223760,
+    "model": "fractional_poisson",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 318523759,
+    "true_cv": null
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 495664445,
+    "model": "fractional_poisson",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 494964444,
+    "true_cv": null
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 1994640845,
+    "model": "fractional_poisson",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 1993940844,
+    "true_cv": null
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 342687790,
+    "model": "fractional_poisson",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 341987789,
+    "true_cv": null
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 1440681774,
+    "model": "fractional_poisson",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 1439981773,
+    "true_cv": null
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 1621342494,
+    "model": "fractional_poisson",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 1620642493,
+    "true_cv": null
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 1152757084,
+    "model": "fractional_poisson",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 1152057083,
+    "true_cv": null
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 803139424,
+    "model": "fractional_poisson",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 802439423,
+    "true_cv": null
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 1725642162,
+    "model": "fractional_poisson",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 1724942161,
+    "true_cv": null
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 169281009,
+    "model": "fractional_poisson",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 168581008,
+    "true_cv": null
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 650724188,
+    "model": "fractional_poisson",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 650024187,
+    "true_cv": null
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 538358993,
+    "model": "fractional_poisson",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 537658992,
+    "true_cv": null
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 1608536149,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 1607836148,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 967446588,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 966746587,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 1888346608,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 1887646607,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 2070618544,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 2069918543,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 424015338,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 423315337,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 1058522306,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 1057822305,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 1018053938,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 1017353937,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 451497956,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 450797955,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 116762825,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 116062824,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 179596730,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 178896729,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 973013020,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 972313019,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 205574197,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 204874196,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 940602510,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 939902509,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 956271549,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 955571548,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 376452271,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 375752270,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 2002319627,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 2001619626,
+    "true_cv": 0.05
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 391987786,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 391287785,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 2043908123,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 2043208122,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 585780207,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 585080206,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 1476406226,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 1475706225,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 2125804365,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 2125104364,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 1783269452,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 1782569451,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 1238446254,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 1237746253,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 1108293900,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 1107593899,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 596545750,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 595845749,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 819771161,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 819071160,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 1853155650,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 1852455649,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 281403280,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 280703279,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 113969699,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 113269698,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 137434175,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 136734174,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 1966653900,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 1965953899,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 64058620,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 63358619,
+    "true_cv": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 908254293,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 907554292,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 1359883312,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 1359183311,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 1433366212,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 1432666211,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 313363654,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 312663653,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 554675353,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 553975352,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 635891856,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 635191855,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 573846020,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 573146019,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 199554008,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 198854007,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 1298408933,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 1297708932,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 908145017,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 907445016,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 41865594,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 41165593,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 1989416568,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 1,
+    "seed": 1988716567,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 1754071584,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 1753371583,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 2075401336,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 2074701335,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 347393872,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 346693871,
+    "true_cv": 0.2
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 194951163,
+    "model": "multiplicative_gamma",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 194251162,
+    "true_cv": 0.2
+  }
+]

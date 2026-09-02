@@ -16,6 +16,7 @@ from toytree.mod._src.penalized_pseudolikelihood.correlated import (
 )
 from toytree.mod._src.penalized_pseudolikelihood.discrete import (
     edges_make_ultrametric_discrete,
+    edges_make_ultrametric_discrete_gamma,
 )
 from toytree.mod._src.penalized_pseudolikelihood.relaxed import (
     edges_make_ultrametric_relaxed,
@@ -38,6 +39,7 @@ def _validate_method(method: str) -> str:
     valid = {
         "clock",
         "discrete",
+        "discrete_gamma",
         "relaxed",
         "uncorrelated_lognormal",
         "correlated",
@@ -52,6 +54,7 @@ def _run_one(
     method: str,
     calibrations: dict[int, Any],
     ncategories: int | None,
+    branch_cv: float | None,
     lam: float | None,
     full: bool,
     inplace: bool,
@@ -80,6 +83,21 @@ def _run_one(
         return edges_make_ultrametric_discrete(
             tree,
             ncategories=ncategories,
+            calibrations=calibrations,
+            full=full,
+            inplace=inplace,
+            max_iter=max_iter,
+            max_fun=max_fun,
+            max_refine=max_refine,
+            nstarts=nstarts,
+            ncores=ncores,
+            seed=seed,
+        )
+    if method == "discrete_gamma":
+        return edges_make_ultrametric_discrete_gamma(
+            tree,
+            ncategories=ncategories,
+            branch_cv=0.1 if branch_cv is None else branch_cv,
             calibrations=calibrations,
             full=full,
             inplace=inplace,
@@ -139,12 +157,14 @@ def edges_make_ultrametric(
     method: Literal[
         "clock",
         "discrete",
+        "discrete_gamma",
         "relaxed",
         "uncorrelated_lognormal",
         "correlated",
     ],
     calibrations: dict[int, Any] | None = None,
     ncategories: int | None = None,
+    branch_cv: float | None = None,
     lam: float | None = None,
     full: bool = False,
     inplace: bool = False,
@@ -157,26 +177,48 @@ def edges_make_ultrametric(
 ):
     """Make a tree ultrametric using one explicitly configured workflow.
 
-    These fits use a fractional-Poisson branch-length pseudolikelihood. This
-    function fits one explicitly configured model. Use
+    Most fits use a fractional-Poisson branch-length pseudolikelihood;
+    `discrete_gamma` instead uses a multiplicative-Gamma observation model.
+    This function fits one explicitly configured model. Use
     :meth:`edges_make_ultrametric_correlated_lambda_cv` to select lambda by
     terminal-edge cross-validation within the correlated-rate model.
+
+
+    Input edge lengths may use any consistent, finite, non-negative additive
+    unit for which branch length equals elapsed time multiplied by rate;
+    expected substitutions per site are common but not required. Calibration
+    ages define the returned tree's time unit, while fitted rates use
+    input-edge units per calibration unit. Without calibrations, the root age
+    is fixed to 1, so returned edge lengths are relative time and fitted rates
+    use input-edge units per relative root-age unit. The ``relaxed`` method is
+    provided for ape::chronos parity; ``uncorrelated_lognormal`` is recommended
+    for continuous uncorrelated rates and ``discrete_gamma`` for finite rate
+    categories in new analyses.
 
     Parameters
     ----------
     tree : ToyTree
-        Input tree with finite, non-negative edge lengths.
-    method : {"clock", "discrete", "relaxed", "uncorrelated_lognormal", "correlated"}
+        Input tree with finite, non-negative edge lengths in a consistent
+        additive unit. Values must not be support values or unrelated edge
+        weights.
+    method
+        One of `clock`, `discrete`, `discrete_gamma`, `relaxed`,
+        `uncorrelated_lognormal`, or `correlated`.
         Ultrametricization workflow.
     calibrations : dict or None
-        Internal-node age constraints. With none, penalized-likelihood methods
-        fix the root age to 1 and therefore estimate relative time.
+        Internal-node age constraints whose unit becomes the returned tree's
+        time unit. With none, the root age is fixed to 1 and all methods
+        estimate relative time.
     ncategories : int or None
-        Required scalar category count for method="discrete" and invalid for
-        all other methods.
+        Required scalar category count for method="discrete" and
+        method="discrete_gamma"; invalid for all other methods.
+    branch_cv : float or None
+        Within-category branch-length coefficient of variation for
+        method="discrete_gamma". Defaults to 0.1 and is invalid for other
+        methods.
     lam : float or None
-        Required finite, positive penalty multiplier for correlated and
-        relaxed, uncorrelated-lognormal, and correlated fits and invalid for
+        Required finite, positive penalty multiplier for relaxed,
+        uncorrelated-lognormal, and correlated fits and invalid for
         all other methods.
     full, inplace : bool
         Return fit metadata instead of only a tree, and optionally modify the
@@ -192,10 +234,12 @@ def edges_make_ultrametric(
     -------
     ToyTree or dict[str, Any]
         The ultrametric tree, or a model-specific fit dictionary when full.
+        Returned rates use input-edge units per calibration unit, or per
+        relative root-age unit when no calibration is supplied.
     """
     method = _validate_method(method)
     if nstarts is None:
-        nstarts = 4 if method == "discrete" else 1
+        nstarts = 4 if method in {"discrete", "discrete_gamma"} else 1
     calibrations = {} if calibrations is None else calibrations
     penalized = {"relaxed", "uncorrelated_lognormal", "correlated"}
 
@@ -206,18 +250,24 @@ def edges_make_ultrametric(
     elif lam is not None:
         raise ToytreeError(f"lam is only valid for methods {sorted(penalized)}.")
 
-    if method == "discrete":
+    discrete_methods = {"discrete", "discrete_gamma"}
+    if method in discrete_methods:
         if ncategories is None:
-            raise ToytreeError("ncategories is required for method='discrete'.")
+            raise ToytreeError(f"ncategories is required for method={method!r}.")
         ncategories = _validate_ncategories(ncategories, tree.nedges)
     elif ncategories is not None:
-        raise ToytreeError("ncategories is only valid for method='discrete'.")
+        raise ToytreeError(
+            f"ncategories is only valid for methods {sorted(discrete_methods)}."
+        )
+    if method != "discrete_gamma" and branch_cv is not None:
+        raise ToytreeError("branch_cv is only valid for method='discrete_gamma'.")
 
     return _run_one(
         tree=tree,
         method=method,
         calibrations=calibrations,
         ncategories=ncategories,
+        branch_cv=branch_cv,
         lam=lam,
         full=full,
         inplace=inplace,

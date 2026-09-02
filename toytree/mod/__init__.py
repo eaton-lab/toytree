@@ -63,7 +63,8 @@ _MODULE_EXPORTS = {
         "edges_make_ultrametric_clock"
     ],
     "toytree.mod._src.penalized_pseudolikelihood.discrete": [
-        "edges_make_ultrametric_discrete"
+        "edges_make_ultrametric_discrete",
+        "edges_make_ultrametric_discrete_gamma",
     ],
     "toytree.mod._src.penalized_pseudolikelihood.relaxed": [
         "edges_make_ultrametric_relaxed"
