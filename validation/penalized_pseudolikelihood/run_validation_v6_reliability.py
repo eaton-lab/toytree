@@ -498,6 +498,7 @@ def _score_model(
         raise RuntimeError("all full-grid fits failed")
     selected_lam = float(model["selected_lam"])
     selected_fit = full_fits[str(selected_lam)]
+    cold_fit = model["cold_selected_fit"]
     selected_error = errors[selected_lam]
     oracle_error = min(errors.values())
     oracle_lam = max(
@@ -518,6 +519,16 @@ def _score_model(
         bootstrap_seed,
     )
     fixed_ages = record["calibration"] == "fixed_internal_ages"
+    warm_ages = np.asarray(selected_fit["ages"], dtype=float)[ntips:]
+    cold_ages = np.asarray(cold_fit["ages"], dtype=float)[ntips:]
+    root_age = max(float(truth_ages[-1]), EPS)
+    normalized_age_delta = (warm_ages - cold_ages) / root_age
+    objective_delta = float(model["warm_cold_objective_delta"])
+    objective_scale = max(
+        abs(float(selected_fit["penalized_pseudologlik"])),
+        abs(float(cold_fit["penalized_pseudologlik"])),
+        EPS,
+    )
     return {
         "observation_loss": observation_loss,
         "matching_score": matching_score,
@@ -542,7 +553,16 @@ def _score_model(
             sum(int(fold.get("optimizer_retries", 0)) for fold in folds)
             + sum(int(fit.get("optimizer_retries", 0)) for fit in full_fits.values())
         ),
-        "warm_cold_objective_delta": float(model["warm_cold_objective_delta"]),
+        "warm_cold_objective_delta": objective_delta,
+        "warm_cold_relative_objective_delta": float(
+            objective_delta / objective_scale
+        ),
+        "warm_cold_normalized_age_rmse": float(
+            np.sqrt(np.mean(normalized_age_delta**2))
+        ),
+        "warm_cold_max_normalized_age_difference": float(
+            np.max(np.abs(normalized_age_delta))
+        ),
         "bootstrap": bootstrap,
     }
 
@@ -674,6 +694,37 @@ def _summarize(
                         default=0.0,
                     )
                 )
+            ),
+            "maximum_warm_cold_relative_objective_delta": float(
+                max(
+                    (
+                        item["warm_cold_relative_objective_delta"]
+                        for item in model_rows
+                    ),
+                    default=0.0,
+                )
+            ),
+            "maximum_warm_cold_normalized_age_difference": float(
+                max(
+                    (
+                        item["warm_cold_max_normalized_age_difference"]
+                        for item in model_rows
+                    ),
+                    default=0.0,
+                )
+            ),
+            "p90_warm_cold_normalized_age_rmse": (
+                float(
+                    np.quantile(
+                        [
+                            item["warm_cold_normalized_age_rmse"]
+                            for item in model_rows
+                        ],
+                        0.9,
+                    )
+                )
+                if model_rows
+                else 0.0
             ),
         }
 

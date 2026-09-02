@@ -56,6 +56,11 @@ recorded v5 replicates that produced iteration-limit failures:
 Every paired dataset is written atomically beneath `v6/cache-v6/`. The score
 stage reads only fingerprint-matched caches and never calls a fitting function.
 Commit the compact result, environment, and seed artifacts, but not the caches.
+The compact score output reports both relative objective differences and
+root-normalized internal-age differences between the continuation and
+independently initialized selected-lambda fits. These diagnostics distinguish
+numerically different optima from differences that materially alter the
+chronogram.
 
 ## Prespecified interpretation
 

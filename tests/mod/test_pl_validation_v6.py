@@ -93,6 +93,17 @@ def test_v6_cache_and_rescore_smoke(tmp_path: Path):
     assert not result["changes_public_api"]
     assert not result["sequence_length_input"]
     assert not result["all_release_gates_passed"]
+    for model in result["datasets"][0]["models"].values():
+        assert np.isfinite(model["warm_cold_relative_objective_delta"])
+        assert np.isfinite(model["warm_cold_normalized_age_rmse"])
+        assert np.isfinite(model["warm_cold_max_normalized_age_difference"])
+    for loss in study.LOSS_SCORE:
+        summary = result["summary"]["losses"][loss]
+        assert np.isfinite(summary["maximum_warm_cold_relative_objective_delta"])
+        assert np.isfinite(
+            summary["maximum_warm_cold_normalized_age_difference"]
+        )
+        assert np.isfinite(summary["p90_warm_cold_normalized_age_rmse"])
 
     score = subprocess.run(
         [*command[:5], "score", *command[6:]],
