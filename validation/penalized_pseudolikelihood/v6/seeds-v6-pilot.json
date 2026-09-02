@@ -1,0 +1,362 @@
+[
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "gamma",
+    "ntips": 24,
+    "rate_sigma": 0.2,
+    "replicate": 0,
+    "scenario": "fixed-age-control",
+    "seed": 93260831
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "gamma",
+    "ntips": 24,
+    "rate_sigma": 0.2,
+    "replicate": 1,
+    "scenario": "fixed-age-control",
+    "seed": 93360834
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "lognormal",
+    "ntips": 24,
+    "rate_sigma": 0.2,
+    "replicate": 0,
+    "scenario": "fixed-age-control",
+    "seed": 93460837
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "lognormal",
+    "ntips": 24,
+    "rate_sigma": 0.2,
+    "replicate": 1,
+    "scenario": "fixed-age-control",
+    "seed": 93560840
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "gamma",
+    "ntips": 24,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "fixed-age-control",
+    "seed": 93660843
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "gamma",
+    "ntips": 24,
+    "rate_sigma": 0.6,
+    "replicate": 1,
+    "scenario": "fixed-age-control",
+    "seed": 93760846
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "lognormal",
+    "ntips": 24,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "fixed-age-control",
+    "seed": 93860849
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "lognormal",
+    "ntips": 24,
+    "rate_sigma": 0.6,
+    "replicate": 1,
+    "scenario": "fixed-age-control",
+    "seed": 93960852
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "replicate": 0,
+    "scenario": "fixed-age-control",
+    "seed": 94060855
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "replicate": 1,
+    "scenario": "fixed-age-control",
+    "seed": 94160858
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "replicate": 0,
+    "scenario": "fixed-age-control",
+    "seed": 94260861
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "replicate": 1,
+    "scenario": "fixed-age-control",
+    "seed": 94360864
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "fixed-age-control",
+    "seed": 94460867
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 1,
+    "scenario": "fixed-age-control",
+    "seed": 94560870
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "fixed-age-control",
+    "seed": 94660873
+  },
+  {
+    "calibration": "fixed_internal_ages",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 1,
+    "scenario": "fixed-age-control",
+    "seed": 94760876
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "gamma",
+    "ntips": 24,
+    "rate_sigma": 0.2,
+    "replicate": 0,
+    "scenario": "sparse-chronogram",
+    "seed": 94860879
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "gamma",
+    "ntips": 24,
+    "rate_sigma": 0.2,
+    "replicate": 1,
+    "scenario": "sparse-chronogram",
+    "seed": 94960882
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "lognormal",
+    "ntips": 24,
+    "rate_sigma": 0.2,
+    "replicate": 0,
+    "scenario": "sparse-chronogram",
+    "seed": 95060885
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "lognormal",
+    "ntips": 24,
+    "rate_sigma": 0.2,
+    "replicate": 1,
+    "scenario": "sparse-chronogram",
+    "seed": 95160888
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "gamma",
+    "ntips": 24,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "sparse-chronogram",
+    "seed": 95260891
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "gamma",
+    "ntips": 24,
+    "rate_sigma": 0.6,
+    "replicate": 1,
+    "scenario": "sparse-chronogram",
+    "seed": 95360894
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "lognormal",
+    "ntips": 24,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "sparse-chronogram",
+    "seed": 95460897
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "lognormal",
+    "ntips": 24,
+    "rate_sigma": 0.6,
+    "replicate": 1,
+    "scenario": "sparse-chronogram",
+    "seed": 95560900
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "replicate": 0,
+    "scenario": "sparse-chronogram",
+    "seed": 95660903
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "replicate": 1,
+    "scenario": "sparse-chronogram",
+    "seed": 95760906
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "replicate": 0,
+    "scenario": "sparse-chronogram",
+    "seed": 95860909
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "replicate": 1,
+    "scenario": "sparse-chronogram",
+    "seed": 95960912
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "sparse-chronogram",
+    "seed": 96060915
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 1,
+    "scenario": "sparse-chronogram",
+    "seed": 96160918
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "sparse-chronogram",
+    "seed": 96260921
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 1,
+    "scenario": "sparse-chronogram",
+    "seed": 96360924
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "replicate": 0,
+    "scenario": "dense-chronogram",
+    "seed": 96460927
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "replicate": 1,
+    "scenario": "dense-chronogram",
+    "seed": 96560930
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "replicate": 0,
+    "scenario": "dense-chronogram",
+    "seed": 96660933
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "replicate": 1,
+    "scenario": "dense-chronogram",
+    "seed": 96760936
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "dense-chronogram",
+    "seed": 96860939
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 1,
+    "scenario": "dense-chronogram",
+    "seed": 96960942
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "dense-chronogram",
+    "seed": 97060945
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 1,
+    "scenario": "dense-chronogram",
+    "seed": 97160948
+  }
+]

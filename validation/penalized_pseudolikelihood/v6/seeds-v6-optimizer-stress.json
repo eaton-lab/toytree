@@ -1,0 +1,38 @@
+[
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "gamma",
+    "ntips": 96,
+    "rate_sigma": 0.2,
+    "replicate": 0,
+    "scenario": "n96-replay",
+    "seed": 90260861
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "gamma",
+    "ntips": 96,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "n96-replay",
+    "seed": 90260863
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "noise_model": "gamma",
+    "ntips": 96,
+    "rate_sigma": 0.2,
+    "replicate": 0,
+    "scenario": "n96-replay",
+    "seed": 90260865
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "noise_model": "gamma",
+    "ntips": 96,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "n96-replay",
+    "seed": 90260867
+  }
+]

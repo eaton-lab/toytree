@@ -1,0 +1,7 @@
+{
+  "numpy": "2.5.2",
+  "platform": "Linux-5.15.0-157-generic-x86_64-with-glibc2.35",
+  "python": "3.14.7 | packaged by conda-forge | (main, Aug 26 2026, 21:34:29) [GCC 15.3.0]",
+  "scipy": "1.18.1",
+  "toytree": "3.1.0.dev1"
+}
