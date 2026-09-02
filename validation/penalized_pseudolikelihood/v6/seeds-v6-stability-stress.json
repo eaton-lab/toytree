@@ -1,0 +1,47 @@
+[
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "replay-sparse-n48-lognormal-sigma0p6",
+    "seed": 96360924
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "replicate": 0,
+    "scenario": "replay-dense-n48-lognormal-sigma0p2",
+    "seed": 96760936
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "replay-dense-n48-lognormal-sigma0p6",
+    "seed": 97060945
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "noise_model": "lognormal",
+    "ntips": 24,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "replay-sparse-n24-lognormal-sigma0p6",
+    "seed": 95460897
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "replicate": 0,
+    "scenario": "replay-dense-n48-gamma-sigma0p6",
+    "seed": 96860939
+  }
+]
