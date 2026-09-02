@@ -59,6 +59,66 @@ def test_v6_prediction_scores_match_their_definitions():
     )
 
 
+def test_v6_selected_recovery_scores_the_fit_returned_to_users():
+    """Selected recovery uses the independent fit returned by lambda CV."""
+    warm_fit = {
+        "converged": True,
+        "ages": [0.0, 0.0, 10.0],
+        "rates": [2.0, 1.0],
+        "penalized_pseudologlik": -10.0,
+        "optimizer_retries": 0,
+    }
+    cold_fit = {
+        "converged": True,
+        "ages": [0.0, 0.0, 8.0],
+        "rates": [1.0, 2.0],
+        "penalized_pseudologlik": -10.0,
+        "optimizer_retries": 0,
+    }
+    folds = [
+        {
+            "observed": value,
+            "predicted": value,
+            "converged": True,
+            "optimizer_retries": 0,
+        }
+        for value in (1.0, 2.0)
+    ]
+    record = {
+        "ntips": 2,
+        "calibration": "root_and_internal_interval",
+        "true_ages": [0.0, 0.0, 8.0],
+        "true_rates": [1.0, 2.0],
+        "models": {
+            "fractional_poisson": {
+                "selected_lam": 1.0,
+                "cold_selected_fit": cold_fit,
+                "full_fits": {"1.0": warm_fit},
+                "candidates": [
+                    {
+                        "lam": 1.0,
+                        "valid": True,
+                        "folds": folds,
+                    }
+                ],
+                "warm_cold_objective_delta": 0.0,
+            }
+        },
+    }
+
+    result = study._score_model(
+        record,
+        "fractional_poisson",
+        bootstrap_replicates=20,
+        bootstrap_seed=123,
+    )
+
+    assert result["selected_age_rmse"] == 0.0
+    assert result["selected_rate_spearman"] == 1.0
+    assert result["warm_cold_normalized_age_rmse"] == 0.25
+    assert result["warm_cold_max_normalized_age_difference"] == 0.25
+
+
 def test_v6_cache_and_rescore_smoke(tmp_path: Path):
     """Smoke mode fits once and score-only mode reuses the paired cache."""
     script = (
