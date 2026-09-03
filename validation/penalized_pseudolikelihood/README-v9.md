@@ -119,3 +119,34 @@ Only compact provenance and result artifacts belong in Git:
     git push origin HEAD:fix/penalized-likelihood-validation
 
 Do not add v9/cache-v9/; it is large, machine-local, and ignored by Git.
+
+## Cache-only selector diagnostic
+
+The targeted replay passed every Gamma criterion except maximum chronogram
+uncertainty. The selected and full-data fits were stable; the remaining spread
+was primarily among bootstrap-supported lambda values. Compare prespecified
+selection rules without repeating any likelihood optimization:
+
+    python validation/penalized_pseudolikelihood/diagnose_lambda_selection_v9.py \
+      --mode uncertainty-replay \
+      --bootstrap-replicates 2000
+
+The diagnostic reads the existing task caches and compares:
+
+- the current minimum mean held-tip loss;
+- the paired one-standard-error rule favoring stronger smoothing;
+- minimum 10%-trimmed mean held-tip loss;
+- minimum median held-tip loss.
+
+For every rule it reports point-estimate recovery, bootstrap lambda support,
+and maximum chronogram spread across supported lambdas. These are exploratory
+comparisons on cases selected from earlier failures. Even a passing rule must
+later be frozen and tested with independent simulation seeds.
+
+Commit only the compact diagnostic:
+
+    git add \
+      validation/penalized_pseudolikelihood/v9/diagnostics-v9-selectors-uncertainty-replay.json
+
+    git commit -m "Record V9 correlated selector diagnostic"
+    git push origin HEAD:fix/penalized-likelihood-validation

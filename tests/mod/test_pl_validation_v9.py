@@ -192,6 +192,41 @@ def test_v9_smoke_resumes_task_caches_and_rescores(tmp_path: Path):
     score = subprocess.run(score_command, cwd=REPO, capture_output=True, text=True)
     assert score.returncode == 0, score.stderr
     assert mtimes == {path: path.stat().st_mtime_ns for path in caches}
+
+    diagnostic_script = (
+        REPO
+        / "validation"
+        / "penalized_pseudolikelihood"
+        / "diagnose_lambda_selection_v9.py"
+    )
+    diagnostic = subprocess.run(
+        [
+            sys.executable,
+            str(diagnostic_script),
+            "--mode",
+            "smoke",
+            "--bootstrap-replicates",
+            "20",
+            "--output-dir",
+            str(tmp_path),
+        ],
+        cwd=REPO,
+        capture_output=True,
+        text=True,
+    )
+    assert diagnostic.returncode == 0, diagnostic.stderr
+    assert mtimes == {path: path.stat().st_mtime_ns for path in caches}
+    diagnostic_result = json.loads(
+        (tmp_path / "diagnostics-v9-selectors-smoke.json").read_text()
+    )
+    assert not diagnostic_result["refits_likelihood"]
+    assert set(diagnostic_result["rules"]) == {
+        "mean_minimum",
+        "paired_one_se_stronger",
+        "trimmed_mean_10_percent_minimum",
+        "median_minimum",
+    }
+
     result = json.loads((tmp_path / "results-v9-smoke.json").read_text())
     assert result["study_version"] == 9
     assert result["diagnostic_only"]
