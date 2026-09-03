@@ -1,4 +1,5 @@
 {
+  "bootstrap_design": "common paired-fold resamples across rules using the V9 seeds",
   "bootstrap_replicates": 2000,
   "datasets": [
     {
@@ -9,6 +10,7 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 3.4771212547196626,
                 "maximum_between_lambda_age_spread": 0.08274757395899324,
                 "maximum_total_normalized_age_uncertainty": 0.08274757395899324,
@@ -28,6 +30,7 @@
                   "10.0": 0.001,
                   "3.0": 0.008
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0001,
                   0.0003,
@@ -44,32 +47,38 @@
               "selected_age_rmse": 0.019045772001252383,
               "selected_aggregate_fold_loss": 0.006235752259762015,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.0001,
-              "selected_mean_fold_loss": 0.006235752259762015
+              "selected_mean_fold_loss": 0.006235752259762015,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
-                "log10_lam_80_percent_width": 4.0,
+                "invalid_supported_lambdas": [],
+                "log10_lam_80_percent_width": 3.4771212547196626,
                 "maximum_between_lambda_age_spread": 0.03341080305570465,
                 "maximum_total_normalized_age_uncertainty": 0.03341080305570465,
                 "maximum_within_lambda_age_difference": 0.018305069829905762,
-                "modal_frequency": 0.197,
+                "modal_frequency": 0.2105,
                 "modal_lam": 0.0001,
                 "selection_frequencies": {
-                  "0.0001": 0.197,
-                  "0.0003": 0.025,
-                  "0.001": 0.0335,
-                  "0.003": 0.0825,
-                  "0.01": 0.154,
-                  "0.03": 0.193,
-                  "0.1": 0.148,
-                  "0.3": 0.065,
-                  "1.0": 0.038,
-                  "10.0": 0.014,
+                  "0.0001": 0.2105,
+                  "0.0003": 0.0325,
+                  "0.001": 0.025,
+                  "0.003": 0.0855,
+                  "0.01": 0.156,
+                  "0.03": 0.1815,
+                  "0.1": 0.15,
+                  "0.3": 0.061,
+                  "1.0": 0.0325,
+                  "10.0": 0.011,
                   "1000.0": 0.0005,
-                  "3.0": 0.048,
-                  "30.0": 0.0015
+                  "10000.0": 0.0005,
+                  "3.0": 0.049,
+                  "30.0": 0.0025,
+                  "300.0": 0.002
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0001,
                   0.003,
@@ -85,38 +94,40 @@
               "selected_age_rmse": 0.01886243363782076,
               "selected_aggregate_fold_loss": 0.0011760067367331567,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.01,
-              "selected_mean_fold_loss": 0.006259249834005107
+              "selected_mean_fold_loss": 0.006259249834005107,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.477121254719663,
                 "maximum_between_lambda_age_spread": 0.08822613818187053,
                 "maximum_total_normalized_age_uncertainty": 0.08822613818187053,
                 "maximum_within_lambda_age_difference": 0.018305069829905762,
-                "modal_frequency": 0.2685,
+                "modal_frequency": 0.2695,
                 "modal_lam": 1.0,
                 "selection_frequencies": {
-                  "0.0001": 0.1055,
-                  "0.0003": 0.0295,
-                  "0.001": 0.0365,
-                  "0.003": 0.0405,
-                  "0.01": 0.0375,
-                  "0.03": 0.0515,
-                  "0.1": 0.075,
-                  "0.3": 0.1285,
-                  "1.0": 0.2685,
-                  "10.0": 0.0355,
+                  "0.0001": 0.117,
+                  "0.0003": 0.023,
+                  "0.001": 0.037,
+                  "0.003": 0.039,
+                  "0.01": 0.0355,
+                  "0.03": 0.0455,
+                  "0.1": 0.073,
+                  "0.3": 0.133,
+                  "1.0": 0.2695,
+                  "10.0": 0.0365,
                   "100.0": 0.0015,
-                  "1000.0": 0.0005,
                   "10000.0": 0.0395,
-                  "3.0": 0.1365,
-                  "30.0": 0.013,
+                  "3.0": 0.1395,
+                  "30.0": 0.01,
                   "300.0": 0.0005
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0001,
-                  0.03,
                   0.1,
                   0.3,
                   1.0,
@@ -129,30 +140,36 @@
               "selected_age_rmse": 0.019296190913614696,
               "selected_aggregate_fold_loss": 0.007067133723488136,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 1.0,
-              "selected_mean_fold_loss": 0.007067133723488136
+              "selected_mean_fold_loss": 0.007067133723488136,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.0,
                 "maximum_between_lambda_age_spread": 0.082747263900523,
                 "maximum_total_normalized_age_uncertainty": 0.082747263900523,
                 "maximum_within_lambda_age_difference": 0.018305069829905762,
-                "modal_frequency": 0.2405,
+                "modal_frequency": 0.2305,
                 "modal_lam": 0.3,
                 "selection_frequencies": {
-                  "0.0001": 0.1265,
-                  "0.0003": 0.0215,
-                  "0.001": 0.065,
-                  "0.003": 0.0375,
-                  "0.01": 0.067,
-                  "0.03": 0.114,
-                  "0.1": 0.1805,
-                  "0.3": 0.2405,
-                  "1.0": 0.1195,
-                  "10.0": 0.003,
-                  "3.0": 0.025
+                  "0.0001": 0.135,
+                  "0.0003": 0.0185,
+                  "0.001": 0.0685,
+                  "0.003": 0.042,
+                  "0.01": 0.062,
+                  "0.03": 0.112,
+                  "0.1": 0.1895,
+                  "0.3": 0.2305,
+                  "1.0": 0.1145,
+                  "10.0": 0.0015,
+                  "10000.0": 0.0005,
+                  "3.0": 0.025,
+                  "30.0": 0.0005
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0001,
                   0.001,
@@ -169,8 +186,10 @@
               "selected_age_rmse": 0.018476496480636546,
               "selected_aggregate_fold_loss": 0.0038106727593220633,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.03,
-              "selected_mean_fold_loss": 0.006316730269272464
+              "selected_mean_fold_loss": 0.006316730269272464,
+              "status": "ok"
             }
           },
           "valid_candidates": 17
@@ -180,28 +199,30 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.522878745280337,
                 "maximum_between_lambda_age_spread": 0.10691925786716716,
                 "maximum_total_normalized_age_uncertainty": 0.10691925786716716,
                 "maximum_within_lambda_age_difference": 0.01879457545416441,
-                "modal_frequency": 0.276,
+                "modal_frequency": 0.267,
                 "modal_lam": 0.0003,
                 "selection_frequencies": {
-                  "0.0003": 0.276,
-                  "0.001": 0.058,
-                  "0.003": 0.11,
-                  "0.01": 0.069,
-                  "0.03": 0.0115,
-                  "0.1": 0.044,
-                  "0.3": 0.0915,
-                  "1.0": 0.0705,
-                  "10.0": 0.1065,
-                  "100.0": 0.006,
-                  "10000.0": 0.0085,
-                  "3.0": 0.1085,
-                  "30.0": 0.039,
-                  "300.0": 0.001
+                  "0.0003": 0.267,
+                  "0.001": 0.0555,
+                  "0.003": 0.096,
+                  "0.01": 0.058,
+                  "0.03": 0.011,
+                  "0.1": 0.0405,
+                  "0.3": 0.0755,
+                  "1.0": 0.0795,
+                  "10.0": 0.1355,
+                  "100.0": 0.011,
+                  "10000.0": 0.013,
+                  "3.0": 0.116,
+                  "30.0": 0.041,
+                  "300.0": 0.0005
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0003,
                   0.001,
@@ -219,34 +240,37 @@
               "selected_age_rmse": 0.01878307373965541,
               "selected_aggregate_fold_loss": 0.08904973266882987,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.01,
-              "selected_mean_fold_loss": 0.08904973266882987
+              "selected_mean_fold_loss": 0.08904973266882987,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.0,
                 "maximum_between_lambda_age_spread": 0.09821706225604099,
                 "maximum_total_normalized_age_uncertainty": 0.09821706225604099,
                 "maximum_within_lambda_age_difference": 0.00015594296262844143,
-                "modal_frequency": 0.221,
+                "modal_frequency": 0.209,
                 "modal_lam": 3.0,
                 "selection_frequencies": {
-                  "0.0003": 0.0005,
-                  "0.001": 0.0105,
-                  "0.003": 0.004,
-                  "0.03": 0.003,
+                  "0.0003": 0.001,
+                  "0.001": 0.014,
+                  "0.003": 0.0025,
+                  "0.03": 0.009,
                   "0.1": 0.0025,
-                  "0.3": 0.036,
-                  "1.0": 0.141,
-                  "10.0": 0.1885,
-                  "100.0": 0.037,
-                  "1000.0": 0.0005,
-                  "10000.0": 0.1865,
-                  "3.0": 0.221,
-                  "30.0": 0.1515,
-                  "300.0": 0.0165,
-                  "3000.0": 0.001
+                  "0.3": 0.047,
+                  "1.0": 0.157,
+                  "10.0": 0.19,
+                  "100.0": 0.0315,
+                  "10000.0": 0.178,
+                  "3.0": 0.209,
+                  "30.0": 0.1475,
+                  "300.0": 0.0105,
+                  "3000.0": 0.0005
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   1.0,
                   3.0,
@@ -261,34 +285,38 @@
               "selected_age_rmse": 0.030354843037647603,
               "selected_aggregate_fold_loss": 0.02589546232312845,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 30.0,
-              "selected_mean_fold_loss": 0.09852344579269844
+              "selected_mean_fold_loss": 0.09852344579269844,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 6.0,
                 "maximum_between_lambda_age_spread": 0.09821706225604099,
                 "maximum_total_normalized_age_uncertainty": 0.09821706225604099,
                 "maximum_within_lambda_age_difference": 0.00015594296262844143,
-                "modal_frequency": 0.3615,
+                "modal_frequency": 0.35,
                 "modal_lam": 10000.0,
                 "selection_frequencies": {
-                  "0.0003": 0.019,
-                  "0.001": 0.033,
-                  "0.003": 0.028,
+                  "0.0003": 0.0265,
+                  "0.001": 0.0285,
+                  "0.003": 0.0285,
                   "0.01": 0.03,
-                  "0.03": 0.012,
-                  "0.1": 0.0195,
-                  "0.3": 0.041,
-                  "1.0": 0.06,
-                  "10.0": 0.158,
-                  "100.0": 0.0325,
+                  "0.03": 0.014,
+                  "0.1": 0.0165,
+                  "0.3": 0.0405,
+                  "1.0": 0.0575,
+                  "10.0": 0.16,
+                  "100.0": 0.027,
                   "1000.0": 0.002,
-                  "10000.0": 0.3615,
-                  "3.0": 0.1205,
-                  "30.0": 0.0765,
-                  "300.0": 0.0065
+                  "10000.0": 0.35,
+                  "3.0": 0.1245,
+                  "30.0": 0.0855,
+                  "300.0": 0.009
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   1.0,
                   3.0,
@@ -303,33 +331,37 @@
               "selected_age_rmse": 0.03426607452459511,
               "selected_aggregate_fold_loss": 0.10176027236978642,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 300.0,
-              "selected_mean_fold_loss": 0.10176027236978642
+              "selected_mean_fold_loss": 0.10176027236978642,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
-                "log10_lam_80_percent_width": 4.477121254719663,
-                "maximum_between_lambda_age_spread": 0.12625807778137532,
-                "maximum_total_normalized_age_uncertainty": 0.12625807778137532,
+                "invalid_supported_lambdas": [],
+                "log10_lam_80_percent_width": 4.529409129247767,
+                "maximum_between_lambda_age_spread": 0.1402671115102826,
+                "maximum_total_normalized_age_uncertainty": 0.1402671115102826,
                 "maximum_within_lambda_age_difference": 0.01879457545416441,
-                "modal_frequency": 0.2375,
+                "modal_frequency": 0.228,
                 "modal_lam": 10.0,
                 "selection_frequencies": {
-                  "0.0003": 0.084,
-                  "0.001": 0.055,
-                  "0.003": 0.0065,
-                  "0.01": 0.0265,
-                  "0.03": 0.0085,
-                  "0.1": 0.0435,
-                  "0.3": 0.098,
-                  "1.0": 0.0715,
-                  "10.0": 0.2375,
-                  "100.0": 0.0425,
-                  "10000.0": 0.0485,
-                  "3.0": 0.169,
-                  "30.0": 0.1045,
-                  "300.0": 0.0045
+                  "0.0003": 0.0815,
+                  "0.001": 0.0515,
+                  "0.003": 0.0105,
+                  "0.01": 0.021,
+                  "0.03": 0.011,
+                  "0.1": 0.0485,
+                  "0.3": 0.088,
+                  "1.0": 0.091,
+                  "10.0": 0.228,
+                  "100.0": 0.0365,
+                  "10000.0": 0.0565,
+                  "3.0": 0.161,
+                  "30.0": 0.108,
+                  "300.0": 0.007
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0003,
                   0.001,
@@ -337,7 +369,8 @@
                   1.0,
                   3.0,
                   10.0,
-                  30.0
+                  30.0,
+                  10000.0
                 ]
               },
               "oracle_age_rmse": 0.01192083547943085,
@@ -346,8 +379,10 @@
               "selected_age_rmse": 0.025153533380170224,
               "selected_aggregate_fold_loss": 0.06020647992912161,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 10.0,
-              "selected_mean_fold_loss": 0.09484631023832614
+              "selected_mean_fold_loss": 0.09484631023832614,
+              "status": "ok"
             }
           },
           "valid_candidates": 16
@@ -368,6 +403,7 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 1.0,
                 "maximum_between_lambda_age_spread": 0.2067302073213859,
                 "maximum_total_normalized_age_uncertainty": 0.2067302073213859,
@@ -386,6 +422,7 @@
                   "10.0": 0.0095,
                   "3.0": 0.1695
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.3,
                   1.0,
@@ -398,39 +435,44 @@
               "selected_age_rmse": 0.11108606755834934,
               "selected_aggregate_fold_loss": 0.22163433118501044,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 1.0,
-              "selected_mean_fold_loss": 0.22163433118501044
+              "selected_mean_fold_loss": 0.22163433118501044,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 5.0,
                 "maximum_between_lambda_age_spread": 0.3758761113694534,
                 "maximum_total_normalized_age_uncertainty": 0.3758761113694534,
                 "maximum_within_lambda_age_difference": 0.0042476603572136895,
-                "modal_frequency": 0.221,
-                "modal_lam": 10.0,
+                "modal_frequency": 0.208,
+                "modal_lam": 0.0001,
                 "selection_frequencies": {
-                  "0.0001": 0.2115,
-                  "0.0003": 0.0965,
-                  "0.001": 0.0205,
-                  "0.003": 0.049,
-                  "0.01": 0.05,
-                  "0.03": 0.0725,
-                  "0.1": 0.02,
-                  "0.3": 0.01,
-                  "1.0": 0.0085,
-                  "10.0": 0.221,
-                  "100.0": 0.009,
+                  "0.0001": 0.208,
+                  "0.0003": 0.1005,
+                  "0.001": 0.017,
+                  "0.003": 0.0515,
+                  "0.01": 0.0515,
+                  "0.03": 0.0845,
+                  "0.1": 0.0235,
+                  "0.3": 0.012,
+                  "1.0": 0.011,
+                  "10.0": 0.2025,
+                  "100.0": 0.01,
                   "1000.0": 0.0075,
-                  "10000.0": 0.009,
-                  "3.0": 0.205,
-                  "30.0": 0.0015,
+                  "10000.0": 0.0115,
+                  "3.0": 0.197,
+                  "30.0": 0.0005,
                   "300.0": 0.0005,
-                  "3000.0": 0.008
+                  "3000.0": 0.011
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0001,
                   0.0003,
+                  0.003,
                   0.01,
                   0.03,
                   3.0,
@@ -443,29 +485,33 @@
               "selected_age_rmse": 0.059815685205914404,
               "selected_aggregate_fold_loss": 0.022342570783261923,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.03,
-              "selected_mean_fold_loss": 0.2532698204116544
+              "selected_mean_fold_loss": 0.2532698204116544,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 1.0,
                 "maximum_between_lambda_age_spread": 0.24387090875251421,
                 "maximum_total_normalized_age_uncertainty": 0.24387090875251421,
                 "maximum_within_lambda_age_difference": 1.5896053855546377e-05,
-                "modal_frequency": 0.455,
+                "modal_frequency": 0.4365,
                 "modal_lam": 3.0,
                 "selection_frequencies": {
-                  "0.0003": 0.0005,
-                  "0.1": 0.0015,
-                  "0.3": 0.0625,
-                  "1.0": 0.348,
-                  "10.0": 0.125,
+                  "0.03": 0.0015,
+                  "0.1": 0.002,
+                  "0.3": 0.056,
+                  "1.0": 0.3795,
+                  "10.0": 0.1175,
                   "100.0": 0.0005,
-                  "10000.0": 0.0015,
-                  "3.0": 0.455,
-                  "30.0": 0.005,
-                  "300.0": 0.0005
+                  "1000.0": 0.0005,
+                  "10000.0": 0.001,
+                  "3.0": 0.4365,
+                  "30.0": 0.005
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.3,
                   1.0,
@@ -479,32 +525,36 @@
               "selected_age_rmse": 0.12692651947007866,
               "selected_aggregate_fold_loss": 0.24094453851208464,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 3.0,
-              "selected_mean_fold_loss": 0.24094453851208464
+              "selected_mean_fold_loss": 0.24094453851208464,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 2.0,
                 "maximum_between_lambda_age_spread": 0.24387090875251421,
                 "maximum_total_normalized_age_uncertainty": 0.24387090875251421,
                 "maximum_within_lambda_age_difference": 1.5896053855546377e-05,
-                "modal_frequency": 0.412,
+                "modal_frequency": 0.44,
                 "modal_lam": 3.0,
                 "selection_frequencies": {
                   "0.0001": 0.0285,
-                  "0.0003": 0.0185,
-                  "0.001": 0.002,
-                  "0.003": 0.0045,
-                  "0.01": 0.013,
-                  "0.03": 0.0235,
+                  "0.0003": 0.017,
+                  "0.001": 0.0005,
+                  "0.003": 0.0025,
+                  "0.01": 0.021,
+                  "0.03": 0.027,
                   "0.1": 0.026,
-                  "0.3": 0.059,
-                  "1.0": 0.243,
-                  "10.0": 0.1675,
-                  "10000.0": 0.002,
-                  "3.0": 0.412,
-                  "30.0": 0.0005
+                  "0.3": 0.0615,
+                  "1.0": 0.218,
+                  "10.0": 0.1545,
+                  "10000.0": 0.0015,
+                  "3.0": 0.44,
+                  "30.0": 0.002
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.3,
                   1.0,
@@ -518,8 +568,10 @@
               "selected_age_rmse": 0.12692651947007866,
               "selected_aggregate_fold_loss": 0.0825596639120676,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 3.0,
-              "selected_mean_fold_loss": 0.24094453851208464
+              "selected_mean_fold_loss": 0.24094453851208464,
+              "status": "ok"
             }
           },
           "valid_candidates": 17
@@ -529,22 +581,23 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 3.0,
                 "maximum_between_lambda_age_spread": 0.20804667728289747,
                 "maximum_total_normalized_age_uncertainty": 0.20804667728289747,
                 "maximum_within_lambda_age_difference": 0.0004766651817900147,
-                "modal_frequency": 0.643,
+                "modal_frequency": 0.623,
                 "modal_lam": 0.001,
                 "selection_frequencies": {
-                  "0.0003": 0.036,
-                  "0.001": 0.643,
-                  "0.003": 0.0005,
-                  "0.03": 0.022,
-                  "0.1": 0.0805,
-                  "0.3": 0.078,
-                  "1.0": 0.1115,
-                  "3.0": 0.0285
+                  "0.0003": 0.0475,
+                  "0.001": 0.623,
+                  "0.03": 0.0185,
+                  "0.1": 0.0865,
+                  "0.3": 0.0845,
+                  "1.0": 0.117,
+                  "3.0": 0.023
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.001,
                   0.1,
@@ -558,32 +611,35 @@
               "selected_age_rmse": 0.05765827755028639,
               "selected_aggregate_fold_loss": 0.6018714501236543,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.001,
-              "selected_mean_fold_loss": 0.6018714501236543
+              "selected_mean_fold_loss": 0.6018714501236543,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
-                "log10_lam_80_percent_width": 2.0,
+                "invalid_supported_lambdas": [],
+                "log10_lam_80_percent_width": 3.0,
                 "maximum_between_lambda_age_spread": 0.3306554734367232,
                 "maximum_total_normalized_age_uncertainty": 0.3306554734367232,
                 "maximum_within_lambda_age_difference": 0.0004766651817900147,
-                "modal_frequency": 0.667,
+                "modal_frequency": 0.661,
                 "modal_lam": 3.0,
                 "selection_frequencies": {
-                  "0.0003": 0.0315,
-                  "0.001": 0.051,
-                  "0.003": 0.0145,
-                  "0.01": 0.001,
+                  "0.0003": 0.037,
+                  "0.001": 0.0525,
+                  "0.003": 0.0135,
+                  "0.01": 0.0025,
                   "0.03": 0.0035,
-                  "0.1": 0.0145,
-                  "0.3": 0.071,
-                  "1.0": 0.1075,
-                  "10.0": 0.0355,
-                  "10000.0": 0.002,
-                  "3.0": 0.667,
-                  "30.0": 0.0005,
-                  "300.0": 0.0005
+                  "0.1": 0.0275,
+                  "0.3": 0.066,
+                  "1.0": 0.099,
+                  "10.0": 0.0325,
+                  "10000.0": 0.0035,
+                  "3.0": 0.661,
+                  "30.0": 0.0015
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.001,
                   0.3,
@@ -597,29 +653,33 @@
               "selected_age_rmse": 0.13169738007177914,
               "selected_aggregate_fold_loss": 0.1654497940646944,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 3.0,
-              "selected_mean_fold_loss": 0.6855040814755698
+              "selected_mean_fold_loss": 0.6855040814755698,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 3.4771212547196626,
                 "maximum_between_lambda_age_spread": 0.3306554734367232,
                 "maximum_total_normalized_age_uncertainty": 0.3306554734367232,
                 "maximum_within_lambda_age_difference": 0.0004766651817900147,
-                "modal_frequency": 0.288,
-                "modal_lam": 1.0,
+                "modal_frequency": 0.2795,
+                "modal_lam": 0.001,
                 "selection_frequencies": {
-                  "0.0003": 0.001,
-                  "0.001": 0.2685,
-                  "0.03": 0.013,
-                  "0.1": 0.0625,
-                  "0.3": 0.1235,
-                  "1.0": 0.288,
-                  "10.0": 0.0155,
-                  "10000.0": 0.0015,
-                  "3.0": 0.2235,
-                  "30.0": 0.003
+                  "0.0003": 0.0025,
+                  "0.001": 0.2795,
+                  "0.03": 0.015,
+                  "0.1": 0.063,
+                  "0.3": 0.1375,
+                  "1.0": 0.279,
+                  "10.0": 0.01,
+                  "10000.0": 0.001,
+                  "3.0": 0.21,
+                  "30.0": 0.0025
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.001,
                   0.1,
@@ -634,35 +694,38 @@
               "selected_age_rmse": 0.10129760516171044,
               "selected_aggregate_fold_loss": 0.6329184367154513,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 1.0,
-              "selected_mean_fold_loss": 0.6329184367154513
+              "selected_mean_fold_loss": 0.6329184367154513,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 3.0,
-                "maximum_between_lambda_age_spread": 0.33066075766277425,
-                "maximum_total_normalized_age_uncertainty": 0.33066075766277425,
+                "maximum_between_lambda_age_spread": 0.20805196150894859,
+                "maximum_total_normalized_age_uncertainty": 0.20805196150894859,
                 "maximum_within_lambda_age_difference": 0.0009098422189927624,
-                "modal_frequency": 0.2865,
+                "modal_frequency": 0.2785,
                 "modal_lam": 0.001,
                 "selection_frequencies": {
-                  "0.0003": 0.0745,
-                  "0.001": 0.2865,
-                  "0.003": 0.0005,
-                  "0.01": 0.001,
-                  "0.03": 0.044,
-                  "0.1": 0.1515,
-                  "0.3": 0.193,
-                  "1.0": 0.1865,
-                  "3.0": 0.0625
+                  "0.0003": 0.0695,
+                  "0.001": 0.2785,
+                  "0.01": 0.0005,
+                  "0.03": 0.05,
+                  "0.1": 0.168,
+                  "0.3": 0.1955,
+                  "1.0": 0.195,
+                  "3.0": 0.043
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0003,
                   0.001,
+                  0.03,
                   0.1,
                   0.3,
-                  1.0,
-                  3.0
+                  1.0
                 ]
               },
               "oracle_age_rmse": 0.057658120309814175,
@@ -671,8 +734,10 @@
               "selected_age_rmse": 0.06053460020109313,
               "selected_aggregate_fold_loss": 0.4072779627942559,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.1,
-              "selected_mean_fold_loss": 0.6049207872452392
+              "selected_mean_fold_loss": 0.6049207872452392,
+              "status": "ok"
             }
           },
           "valid_candidates": 16
@@ -693,6 +758,7 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 2.0,
                 "maximum_between_lambda_age_spread": 0.0,
                 "maximum_total_normalized_age_uncertainty": 0.0005865458177012894,
@@ -712,6 +778,7 @@
                   "3.0": 0.047,
                   "30.0": 0.0035
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.001
                 ]
@@ -722,41 +789,44 @@
               "selected_age_rmse": 0.022682986460237486,
               "selected_aggregate_fold_loss": 0.013004598278217677,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.001,
-              "selected_mean_fold_loss": 0.013004598278217677
+              "selected_mean_fold_loss": 0.013004598278217677,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
-                "log10_lam_80_percent_width": 6.0,
+                "invalid_supported_lambdas": [],
+                "log10_lam_80_percent_width": 6.477121254719663,
                 "maximum_between_lambda_age_spread": 0.23042479130136714,
                 "maximum_total_normalized_age_uncertainty": 0.23042479130136714,
                 "maximum_within_lambda_age_difference": 0.000795992743617413,
-                "modal_frequency": 0.284,
+                "modal_frequency": 0.276,
                 "modal_lam": 0.001,
                 "selection_frequencies": {
-                  "0.001": 0.284,
-                  "0.003": 0.067,
-                  "0.01": 0.082,
-                  "0.03": 0.0655,
-                  "0.1": 0.0635,
-                  "0.3": 0.0525,
-                  "1.0": 0.093,
-                  "10.0": 0.011,
-                  "100.0": 0.0285,
-                  "1000.0": 0.0075,
-                  "10000.0": 0.0525,
-                  "3.0": 0.1015,
-                  "30.0": 0.033,
-                  "300.0": 0.012,
-                  "3000.0": 0.0465
+                  "0.001": 0.276,
+                  "0.003": 0.0675,
+                  "0.01": 0.073,
+                  "0.03": 0.0735,
+                  "0.1": 0.0655,
+                  "0.3": 0.0485,
+                  "1.0": 0.108,
+                  "10.0": 0.0105,
+                  "100.0": 0.0235,
+                  "1000.0": 0.0085,
+                  "10000.0": 0.0545,
+                  "3.0": 0.1005,
+                  "30.0": 0.0325,
+                  "300.0": 0.009,
+                  "3000.0": 0.049
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.001,
                   0.003,
                   0.01,
                   0.03,
                   0.1,
-                  0.3,
                   1.0,
                   3.0,
                   10000.0
@@ -768,34 +838,37 @@
               "selected_age_rmse": 0.02260544418864941,
               "selected_aggregate_fold_loss": 0.003623890641757158,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.003,
-              "selected_mean_fold_loss": 0.013033370119186677
+              "selected_mean_fold_loss": 0.013033370119186677,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
-                "log10_lam_80_percent_width": 4.477121254719663,
+                "invalid_supported_lambdas": [],
+                "log10_lam_80_percent_width": 5.0,
                 "maximum_between_lambda_age_spread": 0.23042479130136714,
                 "maximum_total_normalized_age_uncertainty": 0.23042479130136714,
                 "maximum_within_lambda_age_difference": 0.0006555250534346357,
-                "modal_frequency": 0.496,
+                "modal_frequency": 0.5015,
                 "modal_lam": 0.001,
                 "selection_frequencies": {
-                  "0.001": 0.496,
-                  "0.003": 0.07,
-                  "0.01": 0.02,
-                  "0.03": 0.0215,
-                  "0.1": 0.019,
-                  "0.3": 0.009,
-                  "1.0": 0.0355,
-                  "10.0": 0.077,
-                  "100.0": 0.007,
-                  "1000.0": 0.0005,
-                  "10000.0": 0.089,
-                  "3.0": 0.131,
-                  "30.0": 0.0215,
-                  "300.0": 0.002,
-                  "3000.0": 0.001
+                  "0.001": 0.5015,
+                  "0.003": 0.0645,
+                  "0.01": 0.019,
+                  "0.03": 0.0205,
+                  "0.1": 0.0205,
+                  "0.3": 0.013,
+                  "1.0": 0.0365,
+                  "10.0": 0.0705,
+                  "100.0": 0.0055,
+                  "10000.0": 0.094,
+                  "3.0": 0.123,
+                  "30.0": 0.0275,
+                  "300.0": 0.0035,
+                  "3000.0": 0.0005
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.001,
                   0.003,
@@ -810,38 +883,40 @@
               "selected_age_rmse": 0.022682986460237486,
               "selected_aggregate_fold_loss": 0.013004598278217677,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.001,
-              "selected_mean_fold_loss": 0.013004598278217677
+              "selected_mean_fold_loss": 0.013004598278217677,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
-                "log10_lam_80_percent_width": 2.0,
-                "maximum_between_lambda_age_spread": 0.017845511364160797,
-                "maximum_total_normalized_age_uncertainty": 0.017845511364160797,
+                "invalid_supported_lambdas": [],
+                "log10_lam_80_percent_width": 1.4771212547196624,
+                "maximum_between_lambda_age_spread": 0.0004570650613994199,
+                "maximum_total_normalized_age_uncertainty": 0.0006555250534346357,
                 "maximum_within_lambda_age_difference": 0.0006555250534346357,
-                "modal_frequency": 0.7485,
+                "modal_frequency": 0.765,
                 "modal_lam": 0.001,
                 "selection_frequencies": {
-                  "0.001": 0.7485,
-                  "0.003": 0.085,
-                  "0.01": 0.0215,
-                  "0.03": 0.0415,
-                  "0.1": 0.0535,
-                  "0.3": 0.0075,
-                  "1.0": 0.0015,
-                  "10.0": 0.005,
-                  "100.0": 0.004,
-                  "1000.0": 0.0005,
-                  "10000.0": 0.002,
-                  "3.0": 0.005,
-                  "30.0": 0.0085,
-                  "300.0": 0.001,
-                  "3000.0": 0.015
+                  "0.001": 0.765,
+                  "0.003": 0.074,
+                  "0.01": 0.021,
+                  "0.03": 0.041,
+                  "0.1": 0.0445,
+                  "0.3": 0.0125,
+                  "1.0": 0.001,
+                  "10.0": 0.0055,
+                  "100.0": 0.0025,
+                  "10000.0": 0.0025,
+                  "3.0": 0.0035,
+                  "30.0": 0.009,
+                  "300.0": 0.0015,
+                  "3000.0": 0.0165
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.001,
-                  0.003,
-                  0.1
+                  0.003
                 ]
               },
               "oracle_age_rmse": 0.017172397734225738,
@@ -850,8 +925,10 @@
               "selected_age_rmse": 0.022682986460237486,
               "selected_aggregate_fold_loss": 0.007692857783297087,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.001,
-              "selected_mean_fold_loss": 0.013004598278217677
+              "selected_mean_fold_loss": 0.013004598278217677,
+              "status": "ok"
             }
           },
           "valid_candidates": 15
@@ -861,22 +938,23 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 2.4771212547196626,
                 "maximum_between_lambda_age_spread": 0.0752492980118888,
                 "maximum_total_normalized_age_uncertainty": 0.0752492980118888,
                 "maximum_within_lambda_age_difference": 0.00012205752374405687,
-                "modal_frequency": 0.671,
+                "modal_frequency": 0.6965,
                 "modal_lam": 0.01,
                 "selection_frequencies": {
-                  "0.01": 0.671,
-                  "0.03": 0.001,
+                  "0.01": 0.6965,
                   "0.1": 0.005,
-                  "0.3": 0.034,
-                  "1.0": 0.0675,
-                  "10.0": 0.028,
-                  "3.0": 0.192,
-                  "30.0": 0.0015
+                  "0.3": 0.029,
+                  "1.0": 0.0645,
+                  "10.0": 0.0245,
+                  "3.0": 0.1785,
+                  "30.0": 0.002
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.01,
                   1.0,
@@ -889,29 +967,33 @@
               "selected_age_rmse": 0.022612233286802782,
               "selected_aggregate_fold_loss": 0.12330226364857345,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.01,
-              "selected_mean_fold_loss": 0.12330226364857345
+              "selected_mean_fold_loss": 0.12330226364857345,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 2.0,
                 "maximum_between_lambda_age_spread": 0.0752492980118888,
                 "maximum_total_normalized_age_uncertainty": 0.0752492980118888,
                 "maximum_within_lambda_age_difference": 0.00012205752374405687,
-                "modal_frequency": 0.7265,
+                "modal_frequency": 0.7405,
                 "modal_lam": 0.01,
                 "selection_frequencies": {
-                  "0.01": 0.7265,
-                  "0.03": 0.04,
-                  "0.1": 0.032,
-                  "0.3": 0.0415,
-                  "1.0": 0.063,
-                  "10.0": 0.0105,
-                  "100.0": 0.002,
-                  "10000.0": 0.0075,
-                  "3.0": 0.053,
-                  "30.0": 0.024
+                  "0.01": 0.7405,
+                  "0.03": 0.0325,
+                  "0.1": 0.0275,
+                  "0.3": 0.041,
+                  "1.0": 0.067,
+                  "10.0": 0.0095,
+                  "100.0": 0.0015,
+                  "10000.0": 0.0095,
+                  "3.0": 0.0525,
+                  "30.0": 0.0185
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.01,
                   1.0,
@@ -924,30 +1006,34 @@
               "selected_age_rmse": 0.022612233286802782,
               "selected_aggregate_fold_loss": 0.04802117434793418,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.01,
-              "selected_mean_fold_loss": 0.12330226364857345
+              "selected_mean_fold_loss": 0.12330226364857345,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 3.0,
                 "maximum_between_lambda_age_spread": 0.23325357949740103,
                 "maximum_total_normalized_age_uncertainty": 0.23325357949740103,
                 "maximum_within_lambda_age_difference": 0.00012205752374405687,
-                "modal_frequency": 0.3245,
+                "modal_frequency": 0.3465,
                 "modal_lam": 0.01,
                 "selection_frequencies": {
-                  "0.01": 0.3245,
-                  "0.1": 0.003,
-                  "0.3": 0.035,
-                  "1.0": 0.051,
-                  "10.0": 0.246,
-                  "100.0": 0.014,
-                  "1000.0": 0.001,
-                  "10000.0": 0.008,
-                  "3.0": 0.255,
-                  "30.0": 0.059,
+                  "0.01": 0.3465,
+                  "0.1": 0.0065,
+                  "0.3": 0.0315,
+                  "1.0": 0.056,
+                  "10.0": 0.216,
+                  "100.0": 0.0105,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.018,
+                  "3.0": 0.258,
+                  "30.0": 0.053,
                   "300.0": 0.0035
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.01,
                   1.0,
@@ -962,30 +1048,33 @@
               "selected_age_rmse": 0.026484832834731686,
               "selected_aggregate_fold_loss": 0.12868190692012613,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 3.0,
-              "selected_mean_fold_loss": 0.12868190692012613
+              "selected_mean_fold_loss": 0.12868190692012613,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
-                "log10_lam_80_percent_width": 2.047712125472031,
-                "maximum_between_lambda_age_spread": 0.0752492980118888,
-                "maximum_total_normalized_age_uncertainty": 0.0752492980118888,
+                "invalid_supported_lambdas": [],
+                "log10_lam_80_percent_width": 2.0,
+                "maximum_between_lambda_age_spread": 0.0,
+                "maximum_total_normalized_age_uncertainty": 0.00012205752374405687,
                 "maximum_within_lambda_age_difference": 0.00012205752374405687,
-                "modal_frequency": 0.8485,
+                "modal_frequency": 0.8515,
                 "modal_lam": 0.01,
                 "selection_frequencies": {
-                  "0.01": 0.8485,
-                  "0.1": 0.0035,
-                  "0.3": 0.019,
-                  "1.0": 0.029,
+                  "0.01": 0.8515,
+                  "0.1": 0.008,
+                  "0.3": 0.027,
+                  "1.0": 0.0325,
                   "10.0": 0.0315,
-                  "100.0": 0.0015,
-                  "3.0": 0.056,
-                  "30.0": 0.011
+                  "100.0": 0.0005,
+                  "3.0": 0.0385,
+                  "30.0": 0.0105
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
-                  0.01,
-                  3.0
+                  0.01
                 ]
               },
               "oracle_age_rmse": 0.01920436573587771,
@@ -994,8 +1083,10 @@
               "selected_age_rmse": 0.022612233286802782,
               "selected_aggregate_fold_loss": 0.09174184280862588,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.01,
-              "selected_mean_fold_loss": 0.12330226364857345
+              "selected_mean_fold_loss": 0.12330226364857345,
+              "status": "ok"
             }
           },
           "valid_candidates": 13
@@ -1016,6 +1107,7 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 7.0,
                 "maximum_between_lambda_age_spread": 0.6743685769887355,
                 "maximum_total_normalized_age_uncertainty": 0.6743685769887355,
@@ -1040,6 +1132,7 @@
                   "300.0": 0.0265,
                   "3000.0": 0.0035
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0001,
                   0.01,
@@ -1056,40 +1149,43 @@
               "selected_age_rmse": 0.07997195385063133,
               "selected_aggregate_fold_loss": 0.5560847318151528,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.03,
-              "selected_mean_fold_loss": 0.5560847318151528
+              "selected_mean_fold_loss": 0.5560847318151528,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
-                "log10_lam_80_percent_width": 3.047712125472031,
-                "maximum_between_lambda_age_spread": 0.12187283343723726,
-                "maximum_total_normalized_age_uncertainty": 0.12187283343723726,
-                "maximum_within_lambda_age_difference": 0.003842564394701431,
-                "modal_frequency": 0.5435,
+                "invalid_supported_lambdas": [],
+                "log10_lam_80_percent_width": 3.0,
+                "maximum_between_lambda_age_spread": 0.12182519835431682,
+                "maximum_total_normalized_age_uncertainty": 0.12182519835431682,
+                "maximum_within_lambda_age_difference": 0.0024448585883709573,
+                "modal_frequency": 0.56,
                 "modal_lam": 0.0001,
                 "selection_frequencies": {
-                  "0.0001": 0.5435,
-                  "0.0003": 0.0665,
-                  "0.001": 0.05,
+                  "0.0001": 0.56,
+                  "0.0003": 0.0655,
+                  "0.001": 0.0435,
                   "0.003": 0.0205,
-                  "0.01": 0.1135,
-                  "0.03": 0.0525,
-                  "0.1": 0.0535,
-                  "0.3": 0.019,
+                  "0.01": 0.1275,
+                  "0.03": 0.0395,
+                  "0.1": 0.053,
+                  "0.3": 0.0215,
+                  "1.0": 0.0005,
+                  "10.0": 0.002,
                   "100.0": 0.0005,
-                  "1000.0": 0.0005,
-                  "10000.0": 0.0205,
+                  "10000.0": 0.0145,
                   "3.0": 0.0005,
-                  "30.0": 0.0425,
+                  "30.0": 0.0415,
                   "300.0": 0.001,
-                  "3000.0": 0.0155
+                  "3000.0": 0.0085
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0001,
                   0.0003,
-                  0.001,
                   0.01,
-                  0.03,
                   0.1
                 ]
               },
@@ -1099,36 +1195,39 @@
               "selected_age_rmse": 0.07582524569450252,
               "selected_aggregate_fold_loss": 0.025626938622029923,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.0001,
-              "selected_mean_fold_loss": 0.5603743601330646
+              "selected_mean_fold_loss": 0.5603743601330646,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 5.522878745280337,
                 "maximum_between_lambda_age_spread": 0.6743685769887355,
                 "maximum_total_normalized_age_uncertainty": 0.6743685769887355,
                 "maximum_within_lambda_age_difference": 0.003842564394701431,
-                "modal_frequency": 0.5985,
+                "modal_frequency": 0.6275,
                 "modal_lam": 10000.0,
                 "selection_frequencies": {
-                  "0.0001": 0.013,
-                  "0.0003": 0.003,
-                  "0.001": 0.007,
-                  "0.003": 0.001,
-                  "0.01": 0.0115,
-                  "0.03": 0.086,
-                  "0.1": 0.148,
-                  "0.3": 0.041,
-                  "1.0": 0.0105,
-                  "10.0": 0.003,
-                  "100.0": 0.015,
+                  "0.0001": 0.0165,
+                  "0.0003": 0.002,
+                  "0.001": 0.002,
+                  "0.01": 0.0135,
+                  "0.03": 0.0705,
+                  "0.1": 0.1355,
+                  "0.3": 0.0385,
+                  "1.0": 0.0115,
+                  "10.0": 0.002,
+                  "100.0": 0.0185,
                   "1000.0": 0.004,
-                  "10000.0": 0.5985,
+                  "10000.0": 0.6275,
                   "3.0": 0.002,
-                  "30.0": 0.0435,
-                  "300.0": 0.0125,
-                  "3000.0": 0.0005
+                  "30.0": 0.0425,
+                  "300.0": 0.012,
+                  "3000.0": 0.0015
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.03,
                   0.1,
@@ -1141,35 +1240,39 @@
               "selected_age_rmse": 0.2324822725714642,
               "selected_aggregate_fold_loss": 2.098097103315219,
               "selected_at_boundary": true,
+              "selected_fit_valid": true,
               "selected_lam": 10000.0,
-              "selected_mean_fold_loss": 2.098097103315219
+              "selected_mean_fold_loss": 2.098097103315219,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 7.522878745280337,
                 "maximum_between_lambda_age_spread": 0.6743685769887355,
                 "maximum_total_normalized_age_uncertainty": 0.6743685769887355,
                 "maximum_within_lambda_age_difference": 0.0010255952064214258,
-                "modal_frequency": 0.275,
+                "modal_frequency": 0.2605,
                 "modal_lam": 30.0,
                 "selection_frequencies": {
-                  "0.0001": 0.033,
-                  "0.0003": 0.0745,
-                  "0.003": 0.0015,
-                  "0.01": 0.0155,
+                  "0.0001": 0.026,
+                  "0.0003": 0.0765,
+                  "0.001": 0.0005,
+                  "0.003": 0.0025,
+                  "0.01": 0.02,
                   "0.03": 0.0455,
-                  "0.1": 0.154,
-                  "0.3": 0.0945,
-                  "1.0": 0.013,
-                  "10.0": 0.007,
-                  "100.0": 0.126,
+                  "0.1": 0.1475,
+                  "0.3": 0.098,
+                  "1.0": 0.022,
+                  "10.0": 0.006,
+                  "100.0": 0.1305,
                   "1000.0": 0.0025,
-                  "10000.0": 0.1425,
-                  "3.0": 0.0005,
-                  "30.0": 0.275,
-                  "300.0": 0.0125,
-                  "3000.0": 0.0025
+                  "10000.0": 0.1465,
+                  "30.0": 0.2605,
+                  "300.0": 0.014,
+                  "3000.0": 0.0015
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0003,
                   0.1,
@@ -1185,8 +1288,10 @@
               "selected_age_rmse": 0.08905662369378835,
               "selected_aggregate_fold_loss": 0.09443838343383017,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.3,
-              "selected_mean_fold_loss": 0.5757640706248008
+              "selected_mean_fold_loss": 0.5757640706248008,
+              "status": "ok"
             }
           },
           "valid_candidates": 17
@@ -1196,31 +1301,32 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 2.4771212547196626,
-                "maximum_between_lambda_age_spread": 0.3271559662190703,
-                "maximum_total_normalized_age_uncertainty": 0.3271559662190703,
+                "maximum_between_lambda_age_spread": 0.051762113286817346,
+                "maximum_total_normalized_age_uncertainty": 0.051762113286817346,
                 "maximum_within_lambda_age_difference": 0.00030016088467688107,
-                "modal_frequency": 0.4505,
+                "modal_frequency": 0.458,
                 "modal_lam": 0.001,
                 "selection_frequencies": {
-                  "0.001": 0.4505,
-                  "0.003": 0.3065,
-                  "0.01": 0.002,
-                  "0.03": 0.0295,
-                  "0.1": 0.083,
-                  "0.3": 0.061,
-                  "1.0": 0.007,
+                  "0.001": 0.458,
+                  "0.003": 0.311,
+                  "0.01": 0.003,
+                  "0.03": 0.0325,
+                  "0.1": 0.071,
+                  "0.3": 0.058,
+                  "1.0": 0.0085,
                   "10.0": 0.006,
-                  "10000.0": 0.001,
-                  "3.0": 0.052,
-                  "30.0": 0.0015
+                  "10000.0": 0.0005,
+                  "3.0": 0.0485,
+                  "30.0": 0.003
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.001,
                   0.003,
                   0.1,
-                  0.3,
-                  3.0
+                  0.3
                 ]
               },
               "oracle_age_rmse": 0.07543161474924337,
@@ -1229,32 +1335,34 @@
               "selected_age_rmse": 0.07586012895656635,
               "selected_aggregate_fold_loss": 0.6880067220963427,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.003,
-              "selected_mean_fold_loss": 0.6880067220963427
+              "selected_mean_fold_loss": 0.6880067220963427,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
-                "log10_lam_80_percent_width": 6.0,
+                "invalid_supported_lambdas": [],
+                "log10_lam_80_percent_width": 6.522878745280337,
                 "maximum_between_lambda_age_spread": 0.7965443398502836,
                 "maximum_total_normalized_age_uncertainty": 0.7965443398502836,
                 "maximum_within_lambda_age_difference": 0.00037554185160471043,
-                "modal_frequency": 0.272,
+                "modal_frequency": 0.27,
                 "modal_lam": 1.0,
                 "selection_frequencies": {
-                  "0.001": 0.0545,
-                  "0.003": 0.0425,
-                  "0.01": 0.01,
-                  "0.03": 0.012,
-                  "0.1": 0.012,
-                  "0.3": 0.195,
-                  "1.0": 0.272,
-                  "10.0": 0.0615,
-                  "100.0": 0.0005,
-                  "1000.0": 0.001,
-                  "10000.0": 0.111,
-                  "3.0": 0.1295,
-                  "30.0": 0.0985
+                  "0.001": 0.076,
+                  "0.003": 0.0335,
+                  "0.01": 0.0075,
+                  "0.03": 0.0115,
+                  "0.1": 0.0105,
+                  "0.3": 0.1915,
+                  "1.0": 0.27,
+                  "10.0": 0.057,
+                  "10000.0": 0.117,
+                  "3.0": 0.142,
+                  "30.0": 0.0835
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.001,
                   0.3,
@@ -1271,31 +1379,35 @@
               "selected_age_rmse": 0.08437403949674495,
               "selected_aggregate_fold_loss": 0.3237710529340736,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 1.0,
-              "selected_mean_fold_loss": 0.7799782214873612
+              "selected_mean_fold_loss": 0.7799782214873612,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
-                "log10_lam_80_percent_width": 4.0,
+                "invalid_supported_lambdas": [],
+                "log10_lam_80_percent_width": 3.4771212547196626,
                 "maximum_between_lambda_age_spread": 0.7965443398502836,
                 "maximum_total_normalized_age_uncertainty": 0.7965443398502836,
                 "maximum_within_lambda_age_difference": 0.00030016088467688107,
-                "modal_frequency": 0.2355,
+                "modal_frequency": 0.2375,
                 "modal_lam": 0.003,
                 "selection_frequencies": {
-                  "0.001": 0.112,
-                  "0.003": 0.2355,
-                  "0.01": 0.0075,
-                  "0.03": 0.0365,
-                  "0.1": 0.097,
-                  "0.3": 0.156,
-                  "1.0": 0.021,
-                  "10.0": 0.027,
-                  "100.0": 0.0005,
-                  "10000.0": 0.068,
-                  "3.0": 0.2275,
-                  "30.0": 0.0115
+                  "0.001": 0.113,
+                  "0.003": 0.2375,
+                  "0.01": 0.0095,
+                  "0.03": 0.03,
+                  "0.1": 0.109,
+                  "0.3": 0.1605,
+                  "1.0": 0.0205,
+                  "10.0": 0.03,
+                  "100.0": 0.0015,
+                  "10000.0": 0.056,
+                  "3.0": 0.2225,
+                  "30.0": 0.01
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.001,
                   0.003,
@@ -1311,31 +1423,34 @@
               "selected_age_rmse": 0.07543161474924337,
               "selected_aggregate_fold_loss": 0.6943578350173977,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.1,
-              "selected_mean_fold_loss": 0.6943578350173977
+              "selected_mean_fold_loss": 0.6943578350173977,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 3.0,
                 "maximum_between_lambda_age_spread": 0.600681976081674,
                 "maximum_total_normalized_age_uncertainty": 0.600681976081674,
                 "maximum_within_lambda_age_difference": 0.00030016088467688107,
-                "modal_frequency": 0.3735,
+                "modal_frequency": 0.3695,
                 "modal_lam": 3.0,
                 "selection_frequencies": {
-                  "0.001": 0.075,
-                  "0.003": 0.1195,
-                  "0.01": 0.0075,
-                  "0.03": 0.037,
-                  "0.1": 0.1385,
-                  "0.3": 0.155,
-                  "1.0": 0.017,
-                  "10.0": 0.059,
-                  "100.0": 0.0005,
-                  "10000.0": 0.0105,
-                  "3.0": 0.3735,
-                  "30.0": 0.007
+                  "0.001": 0.0745,
+                  "0.003": 0.119,
+                  "0.01": 0.008,
+                  "0.03": 0.0385,
+                  "0.1": 0.14,
+                  "0.3": 0.163,
+                  "1.0": 0.0145,
+                  "10.0": 0.0545,
+                  "10000.0": 0.01,
+                  "3.0": 0.3695,
+                  "30.0": 0.0085
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.001,
                   0.003,
@@ -1351,8 +1466,10 @@
               "selected_age_rmse": 0.07688519624769001,
               "selected_aggregate_fold_loss": 0.48252847147407874,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.3,
-              "selected_mean_fold_loss": 0.7102785376892582
+              "selected_mean_fold_loss": 0.7102785376892582,
+              "status": "ok"
             }
           },
           "valid_candidates": 15
@@ -1373,6 +1490,7 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 1.0,
                 "maximum_between_lambda_age_spread": 0.08055482833842433,
                 "maximum_total_normalized_age_uncertainty": 0.08055482833842433,
@@ -1394,6 +1512,7 @@
                   "3000.0": 0.012,
                   "3e-05": 0.021
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.3,
                   1.0
@@ -1405,42 +1524,46 @@
               "selected_age_rmse": 0.09440932641401484,
               "selected_aggregate_fold_loss": 0.6205464477915902,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.3,
-              "selected_mean_fold_loss": 0.6205464477915902
+              "selected_mean_fold_loss": 0.6205464477915902,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.0,
-                "maximum_between_lambda_age_spread": 0.1354718450560987,
-                "maximum_total_normalized_age_uncertainty": 0.1354718450560987,
+                "maximum_between_lambda_age_spread": 0.20223548531777683,
+                "maximum_total_normalized_age_uncertainty": 0.20223548531777683,
                 "maximum_within_lambda_age_difference": 0.004587877531181173,
-                "modal_frequency": 0.263,
+                "modal_frequency": 0.2885,
                 "modal_lam": 0.3,
                 "selection_frequencies": {
-                  "0.0001": 0.0355,
-                  "0.0003": 0.041,
-                  "0.001": 0.137,
-                  "0.003": 0.0105,
-                  "0.01": 0.0165,
-                  "0.03": 0.0515,
-                  "0.1": 0.253,
-                  "0.3": 0.263,
-                  "1.0": 0.049,
-                  "10.0": 0.008,
-                  "1000.0": 0.005,
-                  "10000.0": 0.004,
-                  "3.0": 0.009,
-                  "30.0": 0.001,
-                  "300.0": 0.0005,
-                  "3000.0": 0.011,
-                  "3e-05": 0.1045
+                  "0.0001": 0.0325,
+                  "0.0003": 0.0585,
+                  "0.001": 0.121,
+                  "0.003": 0.0125,
+                  "0.01": 0.0125,
+                  "0.03": 0.047,
+                  "0.1": 0.223,
+                  "0.3": 0.2885,
+                  "1.0": 0.0555,
+                  "10.0": 0.01,
+                  "1000.0": 0.0075,
+                  "10000.0": 0.0005,
+                  "3.0": 0.012,
+                  "30.0": 0.0015,
+                  "3000.0": 0.009,
+                  "3e-05": 0.1085
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   3e-05,
+                  0.0003,
                   0.001,
-                  0.03,
                   0.1,
-                  0.3
+                  0.3,
+                  1.0
                 ]
               },
               "oracle_age_rmse": 0.06143281719245957,
@@ -1449,34 +1572,36 @@
               "selected_age_rmse": 0.09440932641401484,
               "selected_aggregate_fold_loss": 0.033674823447840965,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.3,
-              "selected_mean_fold_loss": 0.6205464477915902
+              "selected_mean_fold_loss": 0.6205464477915902,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.522878745280337,
                 "maximum_between_lambda_age_spread": 0.3452920728176063,
                 "maximum_total_normalized_age_uncertainty": 0.3452920728176063,
                 "maximum_within_lambda_age_difference": 0.0009997639118811685,
-                "modal_frequency": 0.4965,
+                "modal_frequency": 0.4905,
                 "modal_lam": 1.0,
                 "selection_frequencies": {
                   "0.0001": 0.0005,
-                  "0.0003": 0.005,
-                  "0.001": 0.008,
-                  "0.003": 0.0035,
-                  "0.01": 0.0025,
-                  "0.03": 0.0015,
-                  "0.1": 0.0005,
-                  "0.3": 0.2635,
-                  "1.0": 0.4965,
-                  "10.0": 0.0055,
-                  "10000.0": 0.1825,
-                  "3.0": 0.026,
-                  "30.0": 0.002,
-                  "3000.0": 0.0005,
-                  "3e-05": 0.002
+                  "0.0003": 0.006,
+                  "0.001": 0.01,
+                  "0.003": 0.004,
+                  "0.03": 0.001,
+                  "0.1": 0.0025,
+                  "0.3": 0.2545,
+                  "1.0": 0.4905,
+                  "10.0": 0.0025,
+                  "10000.0": 0.197,
+                  "3.0": 0.0255,
+                  "3000.0": 0.001,
+                  "3e-05": 0.005
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.3,
                   1.0,
@@ -1489,35 +1614,38 @@
               "selected_age_rmse": 0.11283890845811427,
               "selected_aggregate_fold_loss": 0.6255670619182717,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 1.0,
-              "selected_mean_fold_loss": 0.6255670619182717
+              "selected_mean_fold_loss": 0.6255670619182717,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
-                "log10_lam_80_percent_width": 7.522878745280337,
+                "invalid_supported_lambdas": [],
+                "log10_lam_80_percent_width": 8.0,
                 "maximum_between_lambda_age_spread": 0.36553653034548367,
                 "maximum_total_normalized_age_uncertainty": 0.36553653034548367,
                 "maximum_within_lambda_age_difference": 0.004587877531181173,
-                "modal_frequency": 0.22,
+                "modal_frequency": 0.2385,
                 "modal_lam": 0.3,
                 "selection_frequencies": {
-                  "0.0001": 0.019,
-                  "0.0003": 0.0865,
-                  "0.001": 0.1025,
-                  "0.003": 0.0225,
-                  "0.01": 0.015,
-                  "0.03": 0.0255,
-                  "0.1": 0.061,
-                  "0.3": 0.22,
-                  "1.0": 0.1345,
-                  "10.0": 0.002,
+                  "0.0001": 0.0205,
+                  "0.0003": 0.0775,
+                  "0.001": 0.101,
+                  "0.003": 0.0235,
+                  "0.01": 0.0155,
+                  "0.03": 0.03,
+                  "0.1": 0.066,
+                  "0.3": 0.2385,
+                  "1.0": 0.1195,
+                  "10.0": 0.0005,
                   "1000.0": 0.0005,
-                  "10000.0": 0.1505,
-                  "3.0": 0.02,
-                  "30.0": 0.0005,
+                  "10000.0": 0.144,
+                  "3.0": 0.0205,
                   "3000.0": 0.0595,
-                  "3e-05": 0.0805
+                  "3e-05": 0.083
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   3e-05,
                   0.0003,
@@ -1535,8 +1663,10 @@
               "selected_age_rmse": 0.06200989524104623,
               "selected_aggregate_fold_loss": 0.17693352005476037,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.003,
-              "selected_mean_fold_loss": 0.6559605532551944
+              "selected_mean_fold_loss": 0.6559605532551944,
+              "status": "ok"
             }
           },
           "valid_candidates": 18
@@ -1546,26 +1676,30 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.0,
                 "maximum_between_lambda_age_spread": 0.21367078134865294,
                 "maximum_total_normalized_age_uncertainty": 0.21367078134865294,
                 "maximum_within_lambda_age_difference": 0.00044555634543264055,
-                "modal_frequency": 0.398,
+                "modal_frequency": 0.4065,
                 "modal_lam": 0.001,
                 "selection_frequencies": {
-                  "0.0003": 0.104,
-                  "0.001": 0.398,
-                  "0.003": 0.006,
-                  "0.01": 0.003,
-                  "0.03": 0.0035,
-                  "0.1": 0.01,
-                  "0.3": 0.0295,
-                  "1.0": 0.256,
-                  "10.0": 0.0055,
-                  "10000.0": 0.005,
-                  "3.0": 0.179,
-                  "300.0": 0.0005
+                  "0.0003": 0.1065,
+                  "0.001": 0.4065,
+                  "0.003": 0.0055,
+                  "0.01": 0.002,
+                  "0.03": 0.002,
+                  "0.1": 0.0055,
+                  "0.3": 0.037,
+                  "1.0": 0.247,
+                  "10.0": 0.008,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.0015,
+                  "3.0": 0.177,
+                  "30.0": 0.0005,
+                  "3000.0": 0.0005
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0003,
                   0.001,
@@ -1579,33 +1713,36 @@
               "selected_age_rmse": 0.061407123687905414,
               "selected_aggregate_fold_loss": 1.0237646570532515,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.001,
-              "selected_mean_fold_loss": 1.0237646570532515
+              "selected_mean_fold_loss": 1.0237646570532515,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.0,
                 "maximum_between_lambda_age_spread": 0.4267299934395684,
                 "maximum_total_normalized_age_uncertainty": 0.4267299934395684,
                 "maximum_within_lambda_age_difference": 0.00044555634543264055,
-                "modal_frequency": 0.2295,
+                "modal_frequency": 0.2315,
                 "modal_lam": 1.0,
                 "selection_frequencies": {
-                  "0.0003": 0.081,
-                  "0.001": 0.08,
-                  "0.003": 0.015,
-                  "0.01": 0.0005,
-                  "0.03": 0.059,
+                  "0.0003": 0.0785,
+                  "0.001": 0.0715,
+                  "0.003": 0.0145,
+                  "0.03": 0.06,
                   "0.1": 0.054,
-                  "0.3": 0.1415,
-                  "1.0": 0.2295,
-                  "10.0": 0.118,
-                  "100.0": 0.0115,
-                  "10000.0": 0.025,
-                  "3.0": 0.1645,
-                  "30.0": 0.018,
-                  "3000.0": 0.0025
+                  "0.3": 0.148,
+                  "1.0": 0.2315,
+                  "10.0": 0.1235,
+                  "100.0": 0.016,
+                  "10000.0": 0.022,
+                  "3.0": 0.1525,
+                  "30.0": 0.025,
+                  "3000.0": 0.003
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0003,
                   0.001,
@@ -1623,34 +1760,38 @@
               "selected_age_rmse": 0.0786798045820868,
               "selected_aggregate_fold_loss": 0.24472510961425886,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.3,
-              "selected_mean_fold_loss": 1.0280370572705602
+              "selected_mean_fold_loss": 1.0280370572705602,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.0,
                 "maximum_between_lambda_age_spread": 0.530877285550623,
                 "maximum_total_normalized_age_uncertainty": 0.530877285550623,
                 "maximum_within_lambda_age_difference": 0.00018628365610151576,
-                "modal_frequency": 0.49,
+                "modal_frequency": 0.471,
                 "modal_lam": 3.0,
                 "selection_frequencies": {
-                  "0.0003": 0.024,
-                  "0.001": 0.1365,
-                  "0.003": 0.0105,
-                  "0.01": 0.0055,
-                  "0.03": 0.0045,
-                  "0.1": 0.008,
-                  "0.3": 0.032,
-                  "1.0": 0.1545,
-                  "10.0": 0.062,
-                  "100.0": 0.001,
+                  "0.0003": 0.03,
+                  "0.001": 0.1335,
+                  "0.003": 0.008,
+                  "0.01": 0.002,
+                  "0.03": 0.0025,
+                  "0.1": 0.0075,
+                  "0.3": 0.0335,
+                  "1.0": 0.155,
+                  "10.0": 0.0685,
+                  "100.0": 0.0025,
                   "1000.0": 0.0005,
-                  "10000.0": 0.0655,
-                  "3.0": 0.49,
-                  "30.0": 0.004,
-                  "300.0": 0.0015
+                  "10000.0": 0.077,
+                  "3.0": 0.471,
+                  "30.0": 0.0075,
+                  "300.0": 0.001
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.001,
                   1.0,
@@ -1665,32 +1806,36 @@
               "selected_age_rmse": 0.13818659568270855,
               "selected_aggregate_fold_loss": 1.0618417469286154,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 3.0,
-              "selected_mean_fold_loss": 1.0618417469286154
+              "selected_mean_fold_loss": 1.0618417469286154,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 3.4771212547196626,
                 "maximum_between_lambda_age_spread": 0.21367078134865294,
                 "maximum_total_normalized_age_uncertainty": 0.21367078134865294,
                 "maximum_within_lambda_age_difference": 0.00044555634543264055,
-                "modal_frequency": 0.2725,
+                "modal_frequency": 0.271,
                 "modal_lam": 1.0,
                 "selection_frequencies": {
-                  "0.0003": 0.077,
-                  "0.001": 0.2715,
-                  "0.003": 0.0105,
-                  "0.01": 0.0065,
-                  "0.03": 0.005,
+                  "0.0003": 0.0765,
+                  "0.001": 0.2615,
+                  "0.003": 0.0125,
+                  "0.01": 0.0055,
+                  "0.03": 0.004,
                   "0.1": 0.0135,
-                  "0.3": 0.03,
-                  "1.0": 0.2725,
-                  "10.0": 0.0205,
-                  "10000.0": 0.0205,
-                  "3.0": 0.271,
-                  "30.0": 0.001,
+                  "0.3": 0.037,
+                  "1.0": 0.271,
+                  "10.0": 0.0295,
+                  "10000.0": 0.018,
+                  "3.0": 0.2685,
+                  "30.0": 0.002,
                   "300.0": 0.0005
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0003,
                   0.001,
@@ -1704,8 +1849,10 @@
               "selected_age_rmse": 0.11004420202176084,
               "selected_aggregate_fold_loss": 0.49693146971536634,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 1.0,
-              "selected_mean_fold_loss": 1.027091646304924
+              "selected_mean_fold_loss": 1.027091646304924,
+              "status": "ok"
             }
           },
           "valid_candidates": 16
@@ -1726,6 +1873,7 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.0,
                 "maximum_between_lambda_age_spread": 0.15675304735801804,
                 "maximum_total_normalized_age_uncertainty": 0.15675304735801804,
@@ -1751,6 +1899,7 @@
                   "3000.0": 0.114,
                   "3e-05": 0.005
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.3,
                   1.0,
@@ -1765,33 +1914,40 @@
               "selected_age_rmse": 0.054685305006704904,
               "selected_aggregate_fold_loss": 0.5200053995320812,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 1.0,
-              "selected_mean_fold_loss": 0.5200053995320812
+              "selected_mean_fold_loss": 0.5200053995320812,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 8.522878745280337,
                 "maximum_between_lambda_age_spread": 0.20037401051381773,
                 "maximum_total_normalized_age_uncertainty": 0.20037401051381773,
                 "maximum_within_lambda_age_difference": 0.007984103360608286,
-                "modal_frequency": 0.3275,
+                "modal_frequency": 0.312,
                 "modal_lam": 3e-05,
                 "selection_frequencies": {
-                  "0.0001": 0.002,
-                  "0.001": 0.0215,
-                  "0.003": 0.018,
-                  "0.01": 0.0795,
-                  "0.03": 0.0305,
-                  "0.1": 0.0055,
-                  "0.3": 0.0275,
-                  "1.0": 0.081,
-                  "10.0": 0.0845,
-                  "10000.0": 0.226,
-                  "30.0": 0.074,
-                  "300.0": 0.016,
-                  "3000.0": 0.0065,
-                  "3e-05": 0.3275
+                  "0.0001": 0.003,
+                  "0.0003": 0.0005,
+                  "0.001": 0.024,
+                  "0.003": 0.025,
+                  "0.01": 0.074,
+                  "0.03": 0.0405,
+                  "0.1": 0.0025,
+                  "0.3": 0.0335,
+                  "1.0": 0.0845,
+                  "10.0": 0.081,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.225,
+                  "3.0": 0.0005,
+                  "30.0": 0.07,
+                  "300.0": 0.018,
+                  "3000.0": 0.0055,
+                  "3e-05": 0.312
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   3e-05,
                   0.01,
@@ -1807,33 +1963,37 @@
               "selected_age_rmse": 0.0863349387604693,
               "selected_aggregate_fold_loss": 0.013989437682243814,
               "selected_at_boundary": true,
+              "selected_fit_valid": true,
               "selected_lam": 10000.0,
-              "selected_mean_fold_loss": 0.5442213277798772
+              "selected_mean_fold_loss": 0.5442213277798772,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.522878745280337,
                 "maximum_between_lambda_age_spread": 0.15675304735801804,
                 "maximum_total_normalized_age_uncertainty": 0.15675304735801804,
                 "maximum_within_lambda_age_difference": 0.00016195834176591095,
-                "modal_frequency": 0.702,
+                "modal_frequency": 0.7,
                 "modal_lam": 10000.0,
                 "selection_frequencies": {
-                  "0.0003": 0.0005,
                   "0.001": 0.001,
                   "0.003": 0.001,
-                  "0.3": 0.111,
-                  "1.0": 0.0365,
-                  "10.0": 0.018,
-                  "100.0": 0.0005,
-                  "1000.0": 0.019,
-                  "10000.0": 0.702,
-                  "3.0": 0.037,
-                  "30.0": 0.009,
-                  "300.0": 0.0005,
-                  "3000.0": 0.0635,
-                  "3e-05": 0.0005
+                  "0.03": 0.0005,
+                  "0.3": 0.123,
+                  "1.0": 0.031,
+                  "10.0": 0.0145,
+                  "100.0": 0.0025,
+                  "1000.0": 0.0205,
+                  "10000.0": 0.7,
+                  "3.0": 0.036,
+                  "30.0": 0.01,
+                  "300.0": 0.001,
+                  "3000.0": 0.058,
+                  "3e-05": 0.001
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.3,
                   3000.0,
@@ -1846,40 +2006,42 @@
               "selected_age_rmse": 0.0863349387604693,
               "selected_aggregate_fold_loss": 0.5442213277798772,
               "selected_at_boundary": true,
+              "selected_fit_valid": true,
               "selected_lam": 10000.0,
-              "selected_mean_fold_loss": 0.5442213277798772
+              "selected_mean_fold_loss": 0.5442213277798772,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.522878745280337,
                 "maximum_between_lambda_age_spread": 0.15675304735801804,
                 "maximum_total_normalized_age_uncertainty": 0.15675304735801804,
                 "maximum_within_lambda_age_difference": 0.00016195834176591095,
-                "modal_frequency": 0.483,
+                "modal_frequency": 0.4675,
                 "modal_lam": 10000.0,
                 "selection_frequencies": {
-                  "0.0001": 0.0055,
-                  "0.0003": 0.0105,
-                  "0.001": 0.008,
-                  "0.003": 0.01,
+                  "0.0001": 0.0075,
+                  "0.0003": 0.013,
+                  "0.001": 0.0115,
+                  "0.003": 0.0095,
                   "0.01": 0.002,
-                  "0.03": 0.001,
-                  "0.1": 0.012,
-                  "0.3": 0.0775,
-                  "1.0": 0.052,
-                  "10.0": 0.004,
-                  "100.0": 0.0015,
-                  "1000.0": 0.154,
-                  "10000.0": 0.483,
-                  "3.0": 0.0145,
-                  "30.0": 0.0025,
-                  "300.0": 0.007,
-                  "3000.0": 0.14,
-                  "3e-05": 0.015
+                  "0.03": 0.002,
+                  "0.1": 0.007,
+                  "0.3": 0.082,
+                  "1.0": 0.0475,
+                  "10.0": 0.008,
+                  "1000.0": 0.1495,
+                  "10000.0": 0.4675,
+                  "3.0": 0.0155,
+                  "30.0": 0.004,
+                  "300.0": 0.0075,
+                  "3000.0": 0.146,
+                  "3e-05": 0.02
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.3,
-                  1.0,
                   1000.0,
                   3000.0,
                   10000.0
@@ -1891,8 +2053,10 @@
               "selected_age_rmse": 0.0863349387604693,
               "selected_aggregate_fold_loss": 0.033988058774263516,
               "selected_at_boundary": true,
+              "selected_fit_valid": true,
               "selected_lam": 10000.0,
-              "selected_mean_fold_loss": 0.5442213277798772
+              "selected_mean_fold_loss": 0.5442213277798772,
+              "status": "ok"
             }
           },
           "valid_candidates": 18
@@ -1902,28 +2066,33 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.0,
                 "maximum_between_lambda_age_spread": 0.14057069635516117,
                 "maximum_total_normalized_age_uncertainty": 0.14057069635516117,
                 "maximum_within_lambda_age_difference": 6.291071015371297e-05,
-                "modal_frequency": 0.284,
+                "modal_frequency": 0.273,
                 "modal_lam": 3.0,
                 "selection_frequencies": {
                   "0.0001": 0.0085,
-                  "0.001": 0.01,
-                  "0.003": 0.023,
-                  "0.01": 0.0005,
-                  "0.1": 0.0035,
-                  "0.3": 0.01,
-                  "1.0": 0.1165,
-                  "10.0": 0.228,
-                  "1000.0": 0.003,
-                  "10000.0": 0.145,
-                  "3.0": 0.284,
-                  "30.0": 0.003,
-                  "300.0": 0.002,
-                  "3000.0": 0.163
+                  "0.0003": 0.0005,
+                  "0.001": 0.0145,
+                  "0.003": 0.0265,
+                  "0.01": 0.0015,
+                  "0.03": 0.001,
+                  "0.1": 0.001,
+                  "0.3": 0.0105,
+                  "1.0": 0.125,
+                  "10.0": 0.235,
+                  "100.0": 0.0005,
+                  "1000.0": 0.0025,
+                  "10000.0": 0.149,
+                  "3.0": 0.273,
+                  "30.0": 0.0025,
+                  "300.0": 0.0015,
+                  "3000.0": 0.147
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   1.0,
                   3.0,
@@ -1938,34 +2107,37 @@
               "selected_age_rmse": 0.06500729368026119,
               "selected_aggregate_fold_loss": 1.3062017570690034,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 10.0,
-              "selected_mean_fold_loss": 1.3062017570690034
+              "selected_mean_fold_loss": 1.3062017570690034,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
-                "log10_lam_80_percent_width": 5.622878745280332,
+                "invalid_supported_lambdas": [],
+                "log10_lam_80_percent_width": 5.522878745280337,
                 "maximum_between_lambda_age_spread": 0.1517097854756818,
                 "maximum_total_normalized_age_uncertainty": 0.1517097854756818,
                 "maximum_within_lambda_age_difference": 0.00026561783515383075,
-                "modal_frequency": 0.2695,
-                "modal_lam": 3.0,
+                "modal_frequency": 0.2675,
+                "modal_lam": 10000.0,
                 "selection_frequencies": {
-                  "0.0001": 0.0255,
-                  "0.0003": 0.0085,
-                  "0.001": 0.064,
-                  "0.003": 0.002,
-                  "0.03": 0.0255,
-                  "0.1": 0.022,
-                  "0.3": 0.068,
-                  "1.0": 0.071,
-                  "10.0": 0.124,
-                  "100.0": 0.0005,
-                  "1000.0": 0.0085,
-                  "10000.0": 0.2665,
-                  "3.0": 0.2695,
-                  "30.0": 0.003,
-                  "3000.0": 0.0415
+                  "0.0001": 0.0295,
+                  "0.0003": 0.009,
+                  "0.001": 0.056,
+                  "0.003": 0.0035,
+                  "0.03": 0.026,
+                  "0.1": 0.0285,
+                  "0.3": 0.0695,
+                  "1.0": 0.077,
+                  "10.0": 0.116,
+                  "1000.0": 0.0105,
+                  "10000.0": 0.2675,
+                  "3.0": 0.2565,
+                  "30.0": 0.0055,
+                  "3000.0": 0.045
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.001,
                   0.3,
@@ -1981,32 +2153,33 @@
               "selected_age_rmse": 0.05248285119593573,
               "selected_aggregate_fold_loss": 0.5685416211313707,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 3.0,
-              "selected_mean_fold_loss": 1.308036974147112
+              "selected_mean_fold_loss": 1.308036974147112,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 3.5228787452803374,
                 "maximum_between_lambda_age_spread": 0.12571862223879793,
                 "maximum_total_normalized_age_uncertainty": 0.12571862223879793,
                 "maximum_within_lambda_age_difference": 6.291071015371297e-05,
-                "modal_frequency": 0.64,
+                "modal_frequency": 0.6775,
                 "modal_lam": 10000.0,
                 "selection_frequencies": {
                   "0.0003": 0.0005,
-                  "0.001": 0.0005,
                   "0.003": 0.0035,
-                  "0.01": 0.0005,
                   "0.3": 0.0005,
-                  "1.0": 0.0245,
-                  "10.0": 0.1645,
-                  "100.0": 0.001,
-                  "1000.0": 0.001,
-                  "10000.0": 0.64,
-                  "3.0": 0.128,
-                  "30.0": 0.0095,
-                  "3000.0": 0.026
+                  "1.0": 0.026,
+                  "10.0": 0.1615,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.6775,
+                  "3.0": 0.1035,
+                  "30.0": 0.0045,
+                  "3000.0": 0.022
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   3.0,
                   10.0,
@@ -2019,42 +2192,46 @@
               "selected_age_rmse": 0.08715594037361668,
               "selected_aggregate_fold_loss": 1.312969078149728,
               "selected_at_boundary": true,
+              "selected_fit_valid": true,
               "selected_lam": 10000.0,
-              "selected_mean_fold_loss": 1.312969078149728
+              "selected_mean_fold_loss": 1.312969078149728,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 6.0,
-                "maximum_between_lambda_age_spread": 0.15160344061150033,
-                "maximum_total_normalized_age_uncertainty": 0.15160344061150033,
+                "maximum_between_lambda_age_spread": 0.15150728980358863,
+                "maximum_total_normalized_age_uncertainty": 0.15150728980358863,
                 "maximum_within_lambda_age_difference": 0.00010804382719031835,
-                "modal_frequency": 0.314,
+                "modal_frequency": 0.318,
                 "modal_lam": 3.0,
                 "selection_frequencies": {
-                  "0.0001": 0.0215,
-                  "0.0003": 0.0015,
-                  "0.001": 0.0235,
-                  "0.003": 0.064,
-                  "0.01": 0.0015,
-                  "0.03": 0.004,
-                  "0.1": 0.005,
-                  "0.3": 0.038,
-                  "1.0": 0.292,
-                  "10.0": 0.129,
-                  "1000.0": 0.0005,
-                  "10000.0": 0.0515,
-                  "3.0": 0.314,
-                  "30.0": 0.001,
+                  "0.0001": 0.0225,
+                  "0.0003": 0.0025,
+                  "0.001": 0.026,
+                  "0.003": 0.0635,
+                  "0.01": 0.001,
+                  "0.03": 0.0005,
+                  "0.1": 0.009,
+                  "0.3": 0.052,
+                  "1.0": 0.282,
+                  "10.0": 0.1145,
+                  "100.0": 0.0005,
+                  "1000.0": 0.002,
+                  "10000.0": 0.045,
+                  "3.0": 0.318,
                   "300.0": 0.0005,
-                  "3000.0": 0.0525
+                  "3000.0": 0.0605
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.003,
+                  0.3,
                   1.0,
                   3.0,
                   10.0,
-                  3000.0,
-                  10000.0
+                  3000.0
                 ]
               },
               "oracle_age_rmse": 0.0460561503404957,
@@ -2063,8 +2240,10 @@
               "selected_age_rmse": 0.0466443497018112,
               "selected_aggregate_fold_loss": 0.9417341952307036,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 1.0,
-              "selected_mean_fold_loss": 1.3289787079859428
+              "selected_mean_fold_loss": 1.3289787079859428,
+              "status": "ok"
             }
           },
           "valid_candidates": 17
@@ -2085,6 +2264,7 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 1.0,
                 "maximum_between_lambda_age_spread": 0.20991623226166584,
                 "maximum_total_normalized_age_uncertainty": 0.20991623226166584,
@@ -2105,6 +2285,7 @@
                   "3.0": 0.0085,
                   "3e-05": 0.0005
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.1,
                   0.3,
@@ -2117,34 +2298,40 @@
               "selected_age_rmse": 0.06739734630803285,
               "selected_aggregate_fold_loss": 0.47905891017087815,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.3,
-              "selected_mean_fold_loss": 0.47905891017087815
+              "selected_mean_fold_loss": 0.47905891017087815,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
-                "log10_lam_80_percent_width": 4.0,
+                "invalid_supported_lambdas": [],
+                "log10_lam_80_percent_width": 3.5705908707523686,
                 "maximum_between_lambda_age_spread": 0.11491105152664793,
                 "maximum_total_normalized_age_uncertainty": 0.11491105152664793,
                 "maximum_within_lambda_age_difference": 0.003612086397534131,
-                "modal_frequency": 0.276,
-                "modal_lam": 3e-05,
+                "modal_frequency": 0.277,
+                "modal_lam": 0.03,
                 "selection_frequencies": {
-                  "0.0003": 0.185,
-                  "0.001": 0.026,
-                  "0.003": 0.044,
-                  "0.01": 0.005,
-                  "0.03": 0.263,
-                  "0.1": 0.086,
-                  "0.3": 0.0675,
-                  "1.0": 0.0015,
-                  "10.0": 0.0365,
-                  "3.0": 0.0075,
-                  "30.0": 0.002,
-                  "3e-05": 0.276
+                  "0.0003": 0.188,
+                  "0.001": 0.03,
+                  "0.003": 0.0505,
+                  "0.01": 0.008,
+                  "0.03": 0.277,
+                  "0.1": 0.0875,
+                  "0.3": 0.0555,
+                  "1.0": 0.002,
+                  "10.0": 0.0295,
+                  "100.0": 0.001,
+                  "3.0": 0.007,
+                  "30.0": 0.005,
+                  "3e-05": 0.259
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   3e-05,
                   0.0003,
+                  0.003,
                   0.03,
                   0.1,
                   0.3
@@ -2156,33 +2343,36 @@
               "selected_age_rmse": 0.057838537325997384,
               "selected_aggregate_fold_loss": 0.013660490251591727,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.03,
-              "selected_mean_fold_loss": 0.4952887326989937
+              "selected_mean_fold_loss": 0.4952887326989937,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 0.5228787452803376,
                 "maximum_between_lambda_age_spread": 0.13860789366116316,
                 "maximum_total_normalized_age_uncertainty": 0.13860789366116316,
                 "maximum_within_lambda_age_difference": 2.074345222791152e-05,
-                "modal_frequency": 0.5495,
+                "modal_frequency": 0.561,
                 "modal_lam": 1.0,
                 "selection_frequencies": {
-                  "0.0003": 0.003,
-                  "0.001": 0.007,
+                  "0.0003": 0.0045,
+                  "0.001": 0.0025,
                   "0.003": 0.0015,
-                  "0.01": 0.002,
-                  "0.03": 0.003,
-                  "0.1": 0.0185,
-                  "0.3": 0.327,
-                  "1.0": 0.5495,
-                  "10.0": 0.039,
-                  "100.0": 0.001,
+                  "0.01": 0.0025,
+                  "0.03": 0.0015,
+                  "0.1": 0.022,
+                  "0.3": 0.309,
+                  "1.0": 0.561,
+                  "10.0": 0.041,
+                  "100.0": 0.0005,
                   "10000.0": 0.0005,
-                  "3.0": 0.0385,
-                  "30.0": 0.009,
-                  "300.0": 0.0005
+                  "3.0": 0.0455,
+                  "30.0": 0.008
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.3,
                   1.0
@@ -2194,31 +2384,36 @@
               "selected_age_rmse": 0.09142106689135147,
               "selected_aggregate_fold_loss": 0.4878649108401467,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 1.0,
-              "selected_mean_fold_loss": 0.4878649108401467
+              "selected_mean_fold_loss": 0.4878649108401467,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 3.5228787452803374,
                 "maximum_between_lambda_age_spread": 0.25347151056440503,
                 "maximum_total_normalized_age_uncertainty": 0.25347151056440503,
                 "maximum_within_lambda_age_difference": 0.0005065040733995274,
-                "modal_frequency": 0.29,
+                "modal_frequency": 0.275,
                 "modal_lam": 0.3,
                 "selection_frequencies": {
-                  "0.0001": 0.0025,
-                  "0.0003": 0.1435,
-                  "0.001": 0.1035,
-                  "0.003": 0.017,
-                  "0.01": 0.0115,
-                  "0.03": 0.025,
-                  "0.1": 0.1245,
-                  "0.3": 0.29,
-                  "1.0": 0.2035,
-                  "10.0": 0.028,
-                  "3.0": 0.0395,
-                  "3e-05": 0.0115
+                  "0.0001": 0.0045,
+                  "0.0003": 0.146,
+                  "0.001": 0.099,
+                  "0.003": 0.0165,
+                  "0.01": 0.0135,
+                  "0.03": 0.0205,
+                  "0.1": 0.1155,
+                  "0.3": 0.275,
+                  "1.0": 0.222,
+                  "10.0": 0.032,
+                  "3.0": 0.0415,
+                  "30.0": 0.0005,
+                  "3e-05": 0.0135
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0003,
                   0.001,
@@ -2233,8 +2428,10 @@
               "selected_age_rmse": 0.06739734630803285,
               "selected_aggregate_fold_loss": 0.16195686572016893,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.3,
-              "selected_mean_fold_loss": 0.47905891017087815
+              "selected_mean_fold_loss": 0.47905891017087815,
+              "status": "ok"
             }
           },
           "valid_candidates": 18
@@ -2244,25 +2441,27 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 1.0,
                 "maximum_between_lambda_age_spread": 0.00014022809373614997,
                 "maximum_total_normalized_age_uncertainty": 0.0023255447946605168,
                 "maximum_within_lambda_age_difference": 0.0023255447946605168,
-                "modal_frequency": 0.554,
+                "modal_frequency": 0.5435,
                 "modal_lam": 0.0003,
                 "selection_frequencies": {
-                  "0.0001": 0.2315,
-                  "0.0003": 0.554,
-                  "0.001": 0.1575,
-                  "0.003": 0.0125,
-                  "0.01": 0.0025,
-                  "0.03": 0.0015,
-                  "0.1": 0.008,
-                  "0.3": 0.013,
-                  "1.0": 0.0175,
-                  "3.0": 0.0005,
-                  "3e-05": 0.0015
+                  "0.0001": 0.225,
+                  "0.0003": 0.5435,
+                  "0.001": 0.1435,
+                  "0.003": 0.015,
+                  "0.01": 0.0015,
+                  "0.03": 0.003,
+                  "0.1": 0.0125,
+                  "0.3": 0.019,
+                  "1.0": 0.0325,
+                  "3.0": 0.001,
+                  "3e-05": 0.0035
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0001,
                   0.0003,
@@ -2275,33 +2474,37 @@
               "selected_age_rmse": 0.058906559606835246,
               "selected_aggregate_fold_loss": 0.426400321400763,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.0003,
-              "selected_mean_fold_loss": 0.426400321400763
+              "selected_mean_fold_loss": 0.426400321400763,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.0,
                 "maximum_between_lambda_age_spread": 0.5841428296743749,
                 "maximum_total_normalized_age_uncertainty": 0.5841428296743749,
                 "maximum_within_lambda_age_difference": 0.0008904767396665791,
-                "modal_frequency": 0.235,
+                "modal_frequency": 0.2165,
                 "modal_lam": 1.0,
                 "selection_frequencies": {
-                  "0.0001": 0.0315,
-                  "0.0003": 0.0745,
-                  "0.001": 0.15,
-                  "0.003": 0.0075,
-                  "0.01": 0.008,
-                  "0.03": 0.0675,
-                  "0.1": 0.1875,
-                  "0.3": 0.0555,
-                  "1.0": 0.235,
-                  "10.0": 0.0575,
-                  "1000.0": 0.0005,
-                  "10000.0": 0.022,
-                  "3.0": 0.099,
-                  "3e-05": 0.004
+                  "0.0001": 0.0335,
+                  "0.0003": 0.07,
+                  "0.001": 0.159,
+                  "0.003": 0.0055,
+                  "0.01": 0.007,
+                  "0.03": 0.0595,
+                  "0.1": 0.1985,
+                  "0.3": 0.053,
+                  "1.0": 0.2165,
+                  "10.0": 0.057,
+                  "10000.0": 0.029,
+                  "3.0": 0.1065,
+                  "30.0": 0.0005,
+                  "3e-05": 0.0045
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0003,
                   0.001,
@@ -2319,35 +2522,40 @@
               "selected_age_rmse": 0.06017767264676691,
               "selected_aggregate_fold_loss": 0.10857854537261846,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.1,
-              "selected_mean_fold_loss": 0.4357251391231168
+              "selected_mean_fold_loss": 0.4357251391231168,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 3.5228787452803374,
                 "maximum_between_lambda_age_spread": 0.0770525275653618,
                 "maximum_total_normalized_age_uncertainty": 0.0770525275653618,
                 "maximum_within_lambda_age_difference": 0.0023255447946605168,
-                "modal_frequency": 0.296,
+                "modal_frequency": 0.3065,
                 "modal_lam": 0.0003,
                 "selection_frequencies": {
-                  "0.0001": 0.065,
-                  "0.0003": 0.296,
-                  "0.001": 0.274,
-                  "0.003": 0.076,
-                  "0.01": 0.0135,
-                  "0.03": 0.0095,
-                  "0.1": 0.0185,
-                  "0.3": 0.0475,
-                  "1.0": 0.1665,
-                  "10.0": 0.003,
-                  "3.0": 0.0305
+                  "0.0001": 0.067,
+                  "0.0003": 0.3065,
+                  "0.001": 0.269,
+                  "0.003": 0.073,
+                  "0.01": 0.0105,
+                  "0.03": 0.0065,
+                  "0.1": 0.0155,
+                  "0.3": 0.05,
+                  "1.0": 0.173,
+                  "10.0": 0.001,
+                  "3.0": 0.028
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0001,
                   0.0003,
                   0.001,
                   0.003,
+                  0.3,
                   1.0
                 ]
               },
@@ -2357,31 +2565,34 @@
               "selected_age_rmse": 0.0589228833652793,
               "selected_aggregate_fold_loss": 0.4265152493174482,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.001,
-              "selected_mean_fold_loss": 0.4265152493174482
+              "selected_mean_fold_loss": 0.4265152493174482,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 3.4771212547196626,
                 "maximum_between_lambda_age_spread": 0.00014022809373614997,
                 "maximum_total_normalized_age_uncertainty": 0.0023255447946605168,
                 "maximum_within_lambda_age_difference": 0.0023255447946605168,
-                "modal_frequency": 0.403,
+                "modal_frequency": 0.407,
                 "modal_lam": 0.0003,
                 "selection_frequencies": {
-                  "0.0001": 0.1105,
-                  "0.0003": 0.403,
-                  "0.001": 0.2805,
-                  "0.003": 0.0475,
-                  "0.01": 0.005,
-                  "0.03": 0.008,
-                  "0.1": 0.019,
+                  "0.0001": 0.1045,
+                  "0.0003": 0.407,
+                  "0.001": 0.268,
+                  "0.003": 0.048,
+                  "0.01": 0.0055,
+                  "0.03": 0.012,
+                  "0.1": 0.023,
                   "0.3": 0.04,
-                  "1.0": 0.0375,
-                  "10.0": 0.0005,
-                  "3.0": 0.0325,
-                  "3e-05": 0.016
+                  "1.0": 0.043,
+                  "3.0": 0.029,
+                  "3e-05": 0.02
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.0001,
                   0.0003,
@@ -2394,8 +2605,10 @@
               "selected_age_rmse": 0.0589228833652793,
               "selected_aggregate_fold_loss": 0.19228528265049386,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.001,
-              "selected_mean_fold_loss": 0.4265152493174482
+              "selected_mean_fold_loss": 0.4265152493174482,
+              "status": "ok"
             }
           },
           "valid_candidates": 18
@@ -2416,6 +2629,7 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 1.4771212547196624,
                 "maximum_between_lambda_age_spread": 0.14931906200453526,
                 "maximum_total_normalized_age_uncertainty": 0.14931906200453526,
@@ -2440,6 +2654,7 @@
                   "300.0": 0.0005,
                   "3000.0": 0.0075
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.1,
                   0.3,
@@ -2454,36 +2669,39 @@
               "selected_age_rmse": 0.03473955446969988,
               "selected_aggregate_fold_loss": 0.023314679624012995,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 0.3,
-              "selected_mean_fold_loss": 0.023314679624012995
+              "selected_mean_fold_loss": 0.023314679624012995,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.522878745280337,
                 "maximum_between_lambda_age_spread": 0.1254011286031783,
                 "maximum_total_normalized_age_uncertainty": 0.1254011286031783,
                 "maximum_within_lambda_age_difference": 0.0006363820545753907,
-                "modal_frequency": 0.301,
+                "modal_frequency": 0.2965,
                 "modal_lam": 10000.0,
                 "selection_frequencies": {
-                  "0.0003": 0.0135,
-                  "0.001": 0.0155,
-                  "0.003": 0.0005,
+                  "0.0003": 0.0125,
+                  "0.001": 0.0105,
                   "0.01": 0.0015,
-                  "0.03": 0.024,
-                  "0.1": 0.016,
-                  "0.3": 0.023,
-                  "1.0": 0.141,
-                  "10.0": 0.064,
-                  "100.0": 0.0615,
-                  "1000.0": 0.0435,
-                  "10000.0": 0.301,
-                  "3.0": 0.022,
-                  "30.0": 0.076,
-                  "300.0": 0.0445,
-                  "3000.0": 0.1375,
-                  "3e-05": 0.015
+                  "0.03": 0.0245,
+                  "0.1": 0.0225,
+                  "0.3": 0.028,
+                  "1.0": 0.148,
+                  "10.0": 0.054,
+                  "100.0": 0.065,
+                  "1000.0": 0.044,
+                  "10000.0": 0.2965,
+                  "3.0": 0.0265,
+                  "30.0": 0.0745,
+                  "300.0": 0.04,
+                  "3000.0": 0.1285,
+                  "3e-05": 0.0235
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   1.0,
                   10.0,
@@ -2499,34 +2717,38 @@
               "selected_age_rmse": 0.0988943095214333,
               "selected_aggregate_fold_loss": 0.002981889454013241,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 100.0,
-              "selected_mean_fold_loss": 0.029879832432819664
+              "selected_mean_fold_loss": 0.029879832432819664,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.522878745280337,
                 "maximum_between_lambda_age_spread": 0.16389605858359912,
                 "maximum_total_normalized_age_uncertainty": 0.16389605858359912,
                 "maximum_within_lambda_age_difference": 0.0006363820545753907,
-                "modal_frequency": 0.372,
+                "modal_frequency": 0.3435,
                 "modal_lam": 10000.0,
                 "selection_frequencies": {
-                  "0.0003": 0.002,
-                  "0.001": 0.003,
+                  "0.0003": 0.0005,
+                  "0.001": 0.0005,
                   "0.003": 0.0005,
-                  "0.01": 0.0025,
                   "0.03": 0.0035,
-                  "0.1": 0.023,
-                  "0.3": 0.132,
-                  "1.0": 0.1505,
-                  "10.0": 0.0945,
-                  "100.0": 0.0145,
-                  "10000.0": 0.372,
-                  "3.0": 0.1455,
-                  "30.0": 0.048,
-                  "300.0": 0.004,
-                  "3000.0": 0.0045
+                  "0.1": 0.0255,
+                  "0.3": 0.1365,
+                  "1.0": 0.167,
+                  "10.0": 0.0995,
+                  "100.0": 0.0095,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.3435,
+                  "3.0": 0.1635,
+                  "30.0": 0.0415,
+                  "300.0": 0.0055,
+                  "3000.0": 0.0025
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.3,
                   1.0,
@@ -2541,36 +2763,39 @@
               "selected_age_rmse": 0.0988943095214333,
               "selected_aggregate_fold_loss": 0.029879832432819664,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 100.0,
-              "selected_mean_fold_loss": 0.029879832432819664
+              "selected_mean_fold_loss": 0.029879832432819664,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 5.0,
                 "maximum_between_lambda_age_spread": 0.18935624610035595,
                 "maximum_total_normalized_age_uncertainty": 0.18935624610035595,
                 "maximum_within_lambda_age_difference": 0.00023649801926795,
-                "modal_frequency": 0.1565,
+                "modal_frequency": 0.1665,
                 "modal_lam": 0.3,
                 "selection_frequencies": {
-                  "0.0003": 0.0015,
-                  "0.001": 0.023,
-                  "0.003": 0.0085,
-                  "0.01": 0.017,
-                  "0.03": 0.052,
-                  "0.1": 0.1065,
-                  "0.3": 0.1565,
-                  "1.0": 0.1025,
-                  "10.0": 0.0995,
-                  "100.0": 0.031,
-                  "1000.0": 0.0305,
-                  "10000.0": 0.044,
-                  "3.0": 0.0945,
-                  "30.0": 0.0615,
-                  "300.0": 0.0095,
-                  "3000.0": 0.148,
-                  "3e-05": 0.014
+                  "0.001": 0.021,
+                  "0.003": 0.0045,
+                  "0.01": 0.022,
+                  "0.03": 0.059,
+                  "0.1": 0.1145,
+                  "0.3": 0.1665,
+                  "1.0": 0.1115,
+                  "10.0": 0.0965,
+                  "100.0": 0.0225,
+                  "1000.0": 0.032,
+                  "10000.0": 0.0465,
+                  "3.0": 0.098,
+                  "30.0": 0.0525,
+                  "300.0": 0.008,
+                  "3000.0": 0.132,
+                  "3e-05": 0.013
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.03,
                   0.1,
@@ -2588,8 +2813,10 @@
               "selected_age_rmse": 0.08536185652117277,
               "selected_aggregate_fold_loss": 0.00841377001394195,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 10.0,
-              "selected_mean_fold_loss": 0.027315483358614143
+              "selected_mean_fold_loss": 0.027315483358614143,
+              "status": "ok"
             }
           },
           "valid_candidates": 18
@@ -2599,29 +2826,31 @@
           "rules": {
             "mean_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.522878745280337,
                 "maximum_between_lambda_age_spread": 0.2324870638139271,
                 "maximum_total_normalized_age_uncertainty": 0.2324870638139271,
                 "maximum_within_lambda_age_difference": 1.4392806727159257e-05,
-                "modal_frequency": 0.28,
+                "modal_frequency": 0.2755,
                 "modal_lam": 3.0,
                 "selection_frequencies": {
-                  "0.0003": 0.005,
-                  "0.001": 0.001,
-                  "0.003": 0.0045,
-                  "0.01": 0.0025,
-                  "0.03": 0.0015,
-                  "0.1": 0.016,
-                  "0.3": 0.0715,
-                  "1.0": 0.257,
-                  "10.0": 0.127,
-                  "100.0": 0.002,
-                  "10000.0": 0.2115,
-                  "3.0": 0.28,
-                  "30.0": 0.0195,
-                  "300.0": 0.0005,
+                  "0.0001": 0.0005,
+                  "0.0003": 0.0065,
+                  "0.001": 0.005,
+                  "0.003": 0.0115,
+                  "0.01": 0.0005,
+                  "0.03": 0.001,
+                  "0.1": 0.011,
+                  "0.3": 0.079,
+                  "1.0": 0.243,
+                  "10.0": 0.1335,
+                  "100.0": 0.003,
+                  "10000.0": 0.207,
+                  "3.0": 0.2755,
+                  "30.0": 0.0225,
                   "3e-05": 0.0005
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   0.3,
                   1.0,
@@ -2636,36 +2865,42 @@
               "selected_age_rmse": 0.05082976354714327,
               "selected_aggregate_fold_loss": 0.10028724468765814,
               "selected_at_boundary": false,
+              "selected_fit_valid": true,
               "selected_lam": 3.0,
-              "selected_mean_fold_loss": 0.10028724468765814
+              "selected_mean_fold_loss": 0.10028724468765814,
+              "status": "ok"
             },
             "median_minimum": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 4.522878745280337,
-                "maximum_between_lambda_age_spread": 0.2080568938604243,
-                "maximum_total_normalized_age_uncertainty": 0.2080568938604243,
+                "maximum_between_lambda_age_spread": 0.2324870638139271,
+                "maximum_total_normalized_age_uncertainty": 0.2324870638139271,
                 "maximum_within_lambda_age_difference": 1.4392806727159257e-05,
-                "modal_frequency": 0.41,
+                "modal_frequency": 0.413,
                 "modal_lam": 10000.0,
                 "selection_frequencies": {
-                  "0.0001": 0.0135,
-                  "0.001": 0.016,
-                  "0.003": 0.003,
-                  "0.01": 0.0095,
-                  "0.03": 0.007,
-                  "0.1": 0.0295,
-                  "0.3": 0.0495,
-                  "1.0": 0.0355,
-                  "10.0": 0.072,
-                  "100.0": 0.104,
+                  "0.0001": 0.0115,
+                  "0.0003": 0.0015,
+                  "0.001": 0.013,
+                  "0.003": 0.0035,
+                  "0.01": 0.0075,
+                  "0.03": 0.009,
+                  "0.1": 0.0355,
+                  "0.3": 0.0505,
+                  "1.0": 0.044,
+                  "10.0": 0.0805,
+                  "100.0": 0.097,
                   "1000.0": 0.003,
-                  "10000.0": 0.41,
-                  "3.0": 0.0685,
-                  "30.0": 0.1525,
-                  "300.0": 0.0215,
-                  "3e-05": 0.005
+                  "10000.0": 0.413,
+                  "3.0": 0.0595,
+                  "30.0": 0.146,
+                  "300.0": 0.0195,
+                  "3e-05": 0.0055
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
+                  0.3,
                   3.0,
                   10.0,
                   30.0,
@@ -2679,30 +2914,37 @@
               "selected_age_rmse": 0.10815283512883327,
               "selected_aggregate_fold_loss": 0.040447128574044644,
               "selected_at_boundary": true,
+              "selected_fit_valid": true,
               "selected_lam": 10000.0,
-              "selected_mean_fold_loss": 0.10250434173024403
+              "selected_mean_fold_loss": 0.10250434173024403,
+              "status": "ok"
             },
             "paired_one_se_stronger": {
               "bootstrap": {
+                "invalid_supported_lambdas": [],
                 "log10_lam_80_percent_width": 3.5228787452803374,
                 "maximum_between_lambda_age_spread": 0.2080568938604243,
                 "maximum_total_normalized_age_uncertainty": 0.2080568938604243,
                 "maximum_within_lambda_age_difference": 1.4392806727159257e-05,
-                "modal_frequency": 0.7235,
+                "modal_frequency": 0.741,
                 "modal_lam": 10000.0,
                 "selection_frequencies": {
+                  "0.0003": 0.0005,
                   "0.001": 0.0005,
+                  "0.003": 0.0015,
+                  "0.01": 0.001,
                   "0.1": 0.002,
-                  "0.3": 0.006,
-                  "1.0": 0.0445,
-                  "10.0": 0.0745,
-                  "100.0": 0.0045,
+                  "0.3": 0.007,
+                  "1.0": 0.0335,
+                  "10.0": 0.0725,
+                  "100.0": 0.008,
                   "1000.0": 0.0005,
-                  "10000.0": 0.7235,
-                  "3.0": 0.1125,
-                  "30.0": 0.0275,
-                  "300.0": 0.004
+                  "10000.0": 0.741,
+                  "3.0": 0.104,
+                  "30.0": 0.026,
+                  "300.0": 0.002
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   3.0,
                   10.0,
@@ -2715,33 +2957,38 @@
               "selected_age_rmse": 0.10815283512883327,
               "selected_aggregate_fold_loss": 0.10250434173024403,
               "selected_at_boundary": true,
+              "selected_fit_valid": true,
               "selected_lam": 10000.0,
-              "selected_mean_fold_loss": 0.10250434173024403
+              "selected_mean_fold_loss": 0.10250434173024403,
+              "status": "ok"
             },
             "trimmed_mean_10_percent_minimum": {
               "bootstrap": {
-                "log10_lam_80_percent_width": 3.5228787452803374,
+                "invalid_supported_lambdas": [],
+                "log10_lam_80_percent_width": 4.0,
                 "maximum_between_lambda_age_spread": 0.0,
                 "maximum_total_normalized_age_uncertainty": 1.4392806727159257e-05,
                 "maximum_within_lambda_age_difference": 1.4392806727159257e-05,
-                "modal_frequency": 0.794,
+                "modal_frequency": 0.7945,
                 "modal_lam": 10000.0,
                 "selection_frequencies": {
-                  "0.0001": 0.0005,
-                  "0.0003": 0.0095,
-                  "0.001": 0.0075,
-                  "0.003": 0.004,
+                  "0.0001": 0.0015,
+                  "0.0003": 0.008,
+                  "0.001": 0.01,
+                  "0.003": 0.007,
                   "0.01": 0.0035,
-                  "0.1": 0.01,
-                  "0.3": 0.0305,
-                  "1.0": 0.031,
-                  "10.0": 0.0455,
-                  "100.0": 0.0055,
-                  "10000.0": 0.794,
-                  "3.0": 0.0365,
-                  "30.0": 0.0215,
-                  "300.0": 0.0005
+                  "0.03": 0.001,
+                  "0.1": 0.0075,
+                  "0.3": 0.029,
+                  "1.0": 0.0375,
+                  "10.0": 0.036,
+                  "100.0": 0.003,
+                  "10000.0": 0.7945,
+                  "3.0": 0.0425,
+                  "30.0": 0.0185,
+                  "3000.0": 0.0005
                 },
+                "supported_full_fits_valid": true,
                 "supported_lambdas": [
                   10000.0
                 ]
@@ -2752,8 +2999,10 @@
               "selected_age_rmse": 0.10815283512883327,
               "selected_aggregate_fold_loss": 0.07655006412162982,
               "selected_at_boundary": true,
+              "selected_fit_valid": true,
               "selected_lam": 10000.0,
-              "selected_mean_fold_loss": 0.10250434173024403
+              "selected_mean_fold_loss": 0.10250434173024403,
+              "status": "ok"
             }
           },
           "valid_candidates": 18
@@ -2803,25 +3052,30 @@
     "comparisons": {
       "mean_minimum": {
         "gamma_age_rmse_improved_fraction_vs_current": 0.0,
-        "gamma_age_rmse_ratio_to_current_median": 1.0
+        "gamma_age_rmse_ratio_to_current_median": 1.0,
+        "paired_datasets": 8
       },
       "median_minimum": {
         "gamma_age_rmse_improved_fraction_vs_current": 0.125,
-        "gamma_age_rmse_ratio_to_current_median": 1.1967565386887675
+        "gamma_age_rmse_ratio_to_current_median": 1.1967565386887675,
+        "paired_datasets": 8
       },
       "paired_one_se_stronger": {
         "gamma_age_rmse_improved_fraction_vs_current": 0.125,
-        "gamma_age_rmse_ratio_to_current_median": 1.5487858152317213
+        "gamma_age_rmse_ratio_to_current_median": 1.5487858152317213,
+        "paired_datasets": 8
       },
       "trimmed_mean_10_percent_minimum": {
         "gamma_age_rmse_improved_fraction_vs_current": 0.125,
-        "gamma_age_rmse_ratio_to_current_median": 1.031699140426039
+        "gamma_age_rmse_ratio_to_current_median": 1.031699140426039,
+        "paired_datasets": 8
       }
     },
     "datasets": 8,
     "rules": {
       "fractional_poisson": {
         "mean_minimum": {
+          "all_supported_full_fits_valid": true,
           "boundary_selection_fraction": 0.0,
           "datasets": 8,
           "log10_lambda_width_median": 1.7385606273598313,
@@ -2829,10 +3083,12 @@
           "selected_age_oracle_ratio_median": 1.4020622428406901,
           "selected_age_oracle_ratio_p90": 1.6986285273139798,
           "selected_age_rmse_median": 0.061041325657368875,
+          "successful_selected_fits": 8,
           "total_age_uncertainty_median": 0.15303605468127665,
           "total_age_uncertainty_p90": 0.34925193567978663
         },
         "median_minimum": {
+          "all_supported_full_fits_valid": true,
           "boundary_selection_fraction": 0.125,
           "datasets": 8,
           "log10_lambda_width_median": 4.261439372640169,
@@ -2840,21 +3096,25 @@
           "selected_age_oracle_ratio_median": 1.426586156037121,
           "selected_age_oracle_ratio_p90": 2.7293891140224424,
           "selected_age_rmse_median": 0.06782046545020846,
-          "total_age_uncertainty_median": 0.1304364868296385,
+          "successful_selected_fits": 8,
+          "total_age_uncertainty_median": 0.16288756955849804,
           "total_age_uncertainty_p90": 0.274060187321793
         },
         "paired_one_se_stronger": {
+          "all_supported_full_fits_valid": true,
           "boundary_selection_fraction": 0.25,
           "datasets": 8,
-          "log10_lambda_width_median": 4.5,
+          "log10_lambda_width_median": 4.522878745280337,
           "maximum_total_age_uncertainty": 0.6743685769887355,
           "selected_age_oracle_ratio_median": 1.97025303150007,
           "selected_age_oracle_ratio_p90": 3.403801316568945,
           "selected_age_rmse_median": 0.0951576882063924,
+          "successful_selected_fits": 8,
           "total_age_uncertainty_median": 0.19716042494248315,
           "total_age_uncertainty_p90": 0.444015024068945
         },
         "trimmed_mean_10_percent_minimum": {
+          "all_supported_full_fits_valid": true,
           "boundary_selection_fraction": 0.125,
           "datasets": 8,
           "log10_lambda_width_median": 4.261439372640169,
@@ -2862,23 +3122,27 @@
           "selected_age_oracle_ratio_median": 1.4366190202792306,
           "selected_age_oracle_ratio_p90": 2.627151438920743,
           "selected_age_rmse_median": 0.07637960141460282,
+          "successful_selected_fits": 8,
           "total_age_uncertainty_median": 0.21661357742643508,
           "total_age_uncertainty_p90": 0.45818614433845917
         }
       },
       "multiplicative_gamma": {
         "mean_minimum": {
+          "all_supported_full_fits_valid": true,
           "boundary_selection_fraction": 0.0,
           "datasets": 8,
           "log10_lambda_width_median": 3.5,
-          "maximum_total_age_uncertainty": 0.3271559662190703,
+          "maximum_total_age_uncertainty": 0.2324870638139271,
           "selected_age_oracle_ratio_median": 1.0915667911986853,
           "selected_age_oracle_ratio_p90": 1.748270453278101,
           "selected_age_rmse_median": 0.05828241857856081,
-          "total_age_uncertainty_median": 0.17430868681902933,
-          "total_age_uncertainty_p90": 0.26088773453547004
+          "successful_selected_fits": 8,
+          "total_age_uncertainty_median": 0.12374497711116417,
+          "total_age_uncertainty_p90": 0.2193156660882352
         },
         "median_minimum": {
+          "all_supported_full_fits_valid": true,
           "boundary_selection_fraction": 0.125,
           "datasets": 8,
           "log10_lambda_width_median": 4.0,
@@ -2886,10 +3150,12 @@
           "selected_age_oracle_ratio_median": 1.2293674284414642,
           "selected_age_oracle_ratio_p90": 3.1555244562600238,
           "selected_age_rmse_median": 0.06942873861442686,
-          "total_age_uncertainty_median": 0.2693561836485737,
+          "successful_selected_fits": 8,
+          "total_age_uncertainty_median": 0.2815712686253251,
           "total_age_uncertainty_p90": 0.6478632827271475
         },
         "paired_one_se_stronger": {
+          "all_supported_full_fits_valid": true,
           "boundary_selection_fraction": 0.25,
           "datasets": 8,
           "log10_lambda_width_median": 3.5228787452803374,
@@ -2897,10 +3163,12 @@
           "selected_age_oracle_ratio_median": 1.8246253205111587,
           "selected_age_oracle_ratio_p90": 3.385194771363976,
           "selected_age_rmse_median": 0.08129377756143003,
+          "successful_selected_fits": 8,
           "total_age_uncertainty_median": 0.22065523667891268,
           "total_age_uncertainty_p90": 0.6105774018405211
         },
         "trimmed_mean_10_percent_minimum": {
+          "all_supported_full_fits_valid": true,
           "boundary_selection_fraction": 0.125,
           "datasets": 8,
           "log10_lambda_width_median": 3.4771212547196626,
@@ -2908,32 +3176,37 @@
           "selected_age_oracle_ratio_median": 1.1136706499189342,
           "selected_age_oracle_ratio_p90": 2.8500998267098137,
           "selected_age_rmse_median": 0.05972874178318621,
-          "total_age_uncertainty_median": 0.13893075919643783,
-          "total_age_uncertainty_p90": 0.4116671231884441
+          "successful_selected_fits": 8,
+          "total_age_uncertainty_median": 0.1458872006569356,
+          "total_age_uncertainty_p90": 0.3297741397685592
         }
       }
     },
     "successful_datasets": 8,
     "targeted_gamma_checks": {
       "mean_minimum": {
+        "all_selected_and_supported_fits_valid": true,
         "maximum_total_age_uncertainty": false,
         "selected_age_oracle_ratio_median": true,
         "selected_age_oracle_ratio_p90": true,
         "targeted_criteria_passed": false
       },
       "median_minimum": {
+        "all_selected_and_supported_fits_valid": true,
         "maximum_total_age_uncertainty": false,
         "selected_age_oracle_ratio_median": true,
         "selected_age_oracle_ratio_p90": false,
         "targeted_criteria_passed": false
       },
       "paired_one_se_stronger": {
+        "all_selected_and_supported_fits_valid": true,
         "maximum_total_age_uncertainty": false,
         "selected_age_oracle_ratio_median": false,
         "selected_age_oracle_ratio_p90": false,
         "targeted_criteria_passed": false
       },
       "trimmed_mean_10_percent_minimum": {
+        "all_selected_and_supported_fits_valid": true,
         "maximum_total_age_uncertainty": false,
         "selected_age_oracle_ratio_median": true,
         "selected_age_oracle_ratio_p90": false,
