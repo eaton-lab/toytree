@@ -1,0 +1,66 @@
+[
+  {
+    "calibration": "root_and_internal_interval",
+    "name": "replay-sparse-n24-gamma-sigma0p6-a",
+    "noise_model": "gamma",
+    "ntips": 24,
+    "rate_sigma": 0.6,
+    "seed": 95260891
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "name": "replay-sparse-n24-gamma-sigma0p6-b",
+    "noise_model": "gamma",
+    "ntips": 24,
+    "rate_sigma": 0.6,
+    "seed": 95360894
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "name": "replay-sparse-n24-lognormal-sigma0p6",
+    "noise_model": "lognormal",
+    "ntips": 24,
+    "rate_sigma": 0.6,
+    "seed": 95560900
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "name": "replay-sparse-n48-gamma-sigma0p2",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "seed": 95660903
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "name": "replay-dense-n48-gamma-sigma0p2",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "seed": 96460927
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "name": "replay-dense-n48-lognormal-sigma0p2",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.2,
+    "seed": 96660933
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "name": "replay-dense-n48-gamma-sigma0p6",
+    "noise_model": "gamma",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "seed": 96960942
+  },
+  {
+    "calibration": "root_and_three_internal_intervals",
+    "name": "replay-dense-n48-lognormal-sigma0p6",
+    "noise_model": "lognormal",
+    "ntips": 48,
+    "rate_sigma": 0.6,
+    "seed": 97160948
+  }
+]
