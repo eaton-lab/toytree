@@ -138,7 +138,9 @@ The diagnostic reads the existing task caches and compares:
 - minimum 10%-trimmed mean held-tip loss;
 - minimum median held-tip loss.
 
-For every rule it reports point-estimate recovery, bootstrap lambda support,
+All rules use the same paired-fold bootstrap resamples, and the current rule
+uses the original V9 seed so that its results are reproduced exactly. For every
+rule the diagnostic reports point-estimate recovery, bootstrap lambda support,
 and maximum chronogram spread across supported lambdas. These are exploratory
 comparisons on cases selected from earlier failures. Even a passing rule must
 later be frozen and tested with independent simulation seeds.

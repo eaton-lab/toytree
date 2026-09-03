@@ -119,12 +119,6 @@ def _candidate_arrays(
         [
             bool(item["valid"])
             and all(bool(fold["converged"]) for fold in item["folds"])
-            and model["full_fits"].get(str(float(item["lam"])), {}).get("converged")
-            is True
-            and model["full_fits"]
-            .get(str(float(item["lam"])), {})
-            .get("solution_stable")
-            is True
             for item in candidates
         ],
         dtype=bool,
@@ -166,15 +160,28 @@ def _bootstrap_rule(
     )
     if not supported:
         supported = [max(counts, key=lambda value: (counts[value], value))]
+    supported_fits = {lam: full_fits[str(float(lam))] for lam in supported}
+    supported_valid = all(
+        fit.get("converged") and fit.get("solution_stable") is True
+        for fit in supported_fits.values()
+    )
     age_rows = [
-        np.asarray(full_fits[str(float(lam))]["ages"], dtype=float)[ntips:]
-        for lam in supported
+        np.asarray(fit["ages"], dtype=float)[ntips:]
+        for fit in supported_fits.values()
+        if fit.get("converged")
     ]
-    spread = np.ptp(np.vstack(age_rows), axis=0) / max(root_age, EPS)
-    between = float(np.max(spread))
+    if age_rows:
+        spread = np.ptp(np.vstack(age_rows), axis=0) / max(root_age, EPS)
+        between = float(np.max(spread))
+    else:
+        between = None
     within = max(
-        float(full_fits[str(float(lam))].get("max_near_optimal_age_difference") or 0.0)
-        for lam in supported
+        (
+            float(fit.get("max_near_optimal_age_difference") or 0.0)
+            for fit in supported_fits.values()
+            if fit.get("converged")
+        ),
+        default=0.0,
     )
     log_values = np.log10(selected)
     return {
@@ -182,6 +189,12 @@ def _bootstrap_rule(
             str(lam): float(count / replicates) for lam, count in sorted(counts.items())
         },
         "supported_lambdas": supported,
+        "supported_full_fits_valid": bool(supported_valid),
+        "invalid_supported_lambdas": [
+            float(lam)
+            for lam, fit in supported_fits.items()
+            if not (fit.get("converged") and fit.get("solution_stable") is True)
+        ],
         "modal_lam": float(max(counts, key=lambda value: (counts[value], value))),
         "modal_frequency": float(max(counts.values()) / replicates),
         "log10_lam_80_percent_width": float(
@@ -189,7 +202,7 @@ def _bootstrap_rule(
         ),
         "maximum_between_lambda_age_spread": between,
         "maximum_within_lambda_age_difference": within,
-        "maximum_total_normalized_age_uncertainty": max(between, within),
+        "maximum_total_normalized_age_uncertainty": max(between or 0.0, within),
     }
 
 
@@ -216,10 +229,15 @@ def _score_model(
     )
     root_age = float(record["true_ages"][-1])
     rules = {}
-    for rule_index, (name, rule) in enumerate(RULES.items()):
+    for name, rule in RULES.items():
         selected_idx, summaries = _select_index(matrix, valid, lambdas, rule)
         selected_lam = float(lambdas[selected_idx])
-        selected_error = errors[selected_lam]
+        selected_fit = fits.get(str(selected_lam), {})
+        selected_fit_valid = bool(
+            selected_fit.get("converged")
+            and selected_fit.get("solution_stable") is True
+        )
+        selected_error = errors.get(selected_lam)
         bootstrap = _bootstrap_rule(
             matrix,
             valid,
@@ -229,9 +247,11 @@ def _score_model(
             int(record["ntips"]),
             root_age,
             replicates,
-            seed + rule_index * 1_000_003,
+            seed,
         )
         rules[name] = {
+            "status": "ok" if selected_fit_valid else "error",
+            "selected_fit_valid": selected_fit_valid,
             "selected_lam": selected_lam,
             "selected_at_boundary": selected_lam in {lambdas[0], lambdas[-1]},
             "selected_mean_fold_loss": float(np.mean(matrix[selected_idx])),
@@ -239,7 +259,11 @@ def _score_model(
             "selected_age_rmse": selected_error,
             "oracle_lam": float(oracle_lam),
             "oracle_age_rmse": oracle_error,
-            "selected_age_oracle_ratio": float(selected_error / max(oracle_error, EPS)),
+            "selected_age_oracle_ratio": (
+                None
+                if selected_error is None
+                else float(selected_error / max(oracle_error, EPS))
+            ),
             "bootstrap": bootstrap,
         }
     current = rules["mean_minimum"]["selected_lam"]
@@ -279,7 +303,7 @@ def _score_record(
                 record,
                 loss,
                 replicates,
-                bootstrap_seed + int(record["seed"]) + index * 10_000_019,
+                bootstrap_seed + int(record["seed"]) + index * 1_000_003,
             )
             for index, loss in enumerate(study.LOSS_SCORE)
         }
@@ -314,6 +338,16 @@ def _summarize_rule(rows: list[dict[str, Any]], loss: str, rule: str) -> dict[st
     )
     return {
         "datasets": len(values),
+        "successful_selected_fits": int(
+            sum(value.get("status", "ok") == "ok" for value in values)
+        ),
+        "all_supported_full_fits_valid": bool(
+            values
+            and all(
+                value["bootstrap"].get("supported_full_fits_valid", True)
+                for value in values
+            )
+        ),
         "selected_age_rmse_median": float(np.median(errors)) if errors.size else None,
         "selected_age_oracle_ratio_median": (
             float(np.median(ratios)) if ratios.size else None
@@ -348,29 +382,33 @@ def _summarize(rows: list[dict[str, Any]], gates: dict[str, Any]) -> dict[str, A
         loss: {rule: _summarize_rule(successful, loss, rule) for rule in RULES}
         for loss in study.LOSS_SCORE
     }
-    current_errors = np.asarray(
-        [
-            row["models"]["multiplicative_gamma"]["rules"]["mean_minimum"][
-                "selected_age_rmse"
-            ]
-            for row in successful
-        ],
-        dtype=float,
-    )
     comparisons = {}
     checks = {}
     for rule in RULES:
         gamma = summaries["multiplicative_gamma"][rule]
-        rule_errors = np.asarray(
-            [
+        paired_errors = [
+            (
+                row["models"]["multiplicative_gamma"]["rules"]["mean_minimum"][
+                    "selected_age_rmse"
+                ],
                 row["models"]["multiplicative_gamma"]["rules"][rule][
                     "selected_age_rmse"
-                ]
-                for row in successful
-            ],
-            dtype=float,
-        )
+                ],
+            )
+            for row in successful
+            if row["models"]["multiplicative_gamma"]["rules"]["mean_minimum"][
+                "selected_age_rmse"
+            ]
+            is not None
+            and row["models"]["multiplicative_gamma"]["rules"][rule][
+                "selected_age_rmse"
+            ]
+            is not None
+        ]
+        current_errors = np.asarray([pair[0] for pair in paired_errors], dtype=float)
+        rule_errors = np.asarray([pair[1] for pair in paired_errors], dtype=float)
         comparisons[rule] = {
+            "paired_datasets": len(paired_errors),
             "gamma_age_rmse_improved_fraction_vs_current": (
                 float(np.mean(rule_errors < current_errors - EPS))
                 if rule_errors.size
@@ -383,6 +421,10 @@ def _summarize(rows: list[dict[str, Any]], gates: dict[str, Any]) -> dict[str, A
             ),
         }
         checks[rule] = {
+            "all_selected_and_supported_fits_valid": bool(
+                gamma["successful_selected_fits"] == len(rows)
+                and gamma["all_supported_full_fits_valid"]
+            ),
             "maximum_total_age_uncertainty": bool(
                 gamma["maximum_total_age_uncertainty"] is not None
                 and gamma["maximum_total_age_uncertainty"]
@@ -460,6 +502,9 @@ def main() -> None:
         "refits_likelihood": False,
         "selected_historical_cases": True,
         "bootstrap_replicates": replicates,
+        "bootstrap_design": (
+            "common paired-fold resamples across rules using the V9 seeds"
+        ),
         "rules": RULES,
         "datasets": rows,
         "summary": summary,

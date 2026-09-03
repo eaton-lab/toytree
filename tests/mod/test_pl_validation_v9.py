@@ -234,3 +234,11 @@ def test_v9_smoke_resumes_task_caches_and_rescores(tmp_path: Path):
     assert not result["sequence_length_input"]
     assert result["parallelism"]["fold_path_tasks"] == 12
     assert result["datasets"][0]["status"] == "ok"
+    for loss in ("fractional_poisson", "multiplicative_gamma"):
+        expected = result["datasets"][0]["models"][loss]["bootstrap"][
+            "selection_frequencies"
+        ]
+        observed = diagnostic_result["datasets"][0]["models"][loss]["rules"][
+            "mean_minimum"
+        ]["bootstrap"]["selection_frequencies"]
+        assert observed == expected
