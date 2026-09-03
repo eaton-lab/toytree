@@ -1,0 +1,2944 @@
+{
+  "bootstrap_replicates": 2000,
+  "datasets": [
+    {
+      "calibration": "root_and_three_internal_intervals",
+      "models": {
+        "fractional_poisson": {
+          "observation_loss": "fractional_poisson",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 3.4771212547196626,
+                "maximum_between_lambda_age_spread": 0.08274757395899324,
+                "maximum_total_normalized_age_uncertainty": 0.08274757395899324,
+                "maximum_within_lambda_age_difference": 0.018305069829905762,
+                "modal_frequency": 0.411,
+                "modal_lam": 0.0001,
+                "selection_frequencies": {
+                  "0.0001": 0.411,
+                  "0.0003": 0.071,
+                  "0.001": 0.0855,
+                  "0.003": 0.047,
+                  "0.01": 0.041,
+                  "0.03": 0.0635,
+                  "0.1": 0.082,
+                  "0.3": 0.103,
+                  "1.0": 0.087,
+                  "10.0": 0.001,
+                  "3.0": 0.008
+                },
+                "supported_lambdas": [
+                  0.0001,
+                  0.0003,
+                  0.001,
+                  0.03,
+                  0.1,
+                  0.3,
+                  1.0
+                ]
+              },
+              "oracle_age_rmse": 0.011902351572481531,
+              "oracle_lam": 0.3,
+              "selected_age_oracle_ratio": 1.6001688309465314,
+              "selected_age_rmse": 0.019045772001252383,
+              "selected_aggregate_fold_loss": 0.006235752259762015,
+              "selected_at_boundary": false,
+              "selected_lam": 0.0001,
+              "selected_mean_fold_loss": 0.006235752259762015
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.0,
+                "maximum_between_lambda_age_spread": 0.03341080305570465,
+                "maximum_total_normalized_age_uncertainty": 0.03341080305570465,
+                "maximum_within_lambda_age_difference": 0.018305069829905762,
+                "modal_frequency": 0.197,
+                "modal_lam": 0.0001,
+                "selection_frequencies": {
+                  "0.0001": 0.197,
+                  "0.0003": 0.025,
+                  "0.001": 0.0335,
+                  "0.003": 0.0825,
+                  "0.01": 0.154,
+                  "0.03": 0.193,
+                  "0.1": 0.148,
+                  "0.3": 0.065,
+                  "1.0": 0.038,
+                  "10.0": 0.014,
+                  "1000.0": 0.0005,
+                  "3.0": 0.048,
+                  "30.0": 0.0015
+                },
+                "supported_lambdas": [
+                  0.0001,
+                  0.003,
+                  0.01,
+                  0.03,
+                  0.1,
+                  0.3
+                ]
+              },
+              "oracle_age_rmse": 0.011902351572481531,
+              "oracle_lam": 0.3,
+              "selected_age_oracle_ratio": 1.5847652896954476,
+              "selected_age_rmse": 0.01886243363782076,
+              "selected_aggregate_fold_loss": 0.0011760067367331567,
+              "selected_at_boundary": false,
+              "selected_lam": 0.01,
+              "selected_mean_fold_loss": 0.006259249834005107
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.477121254719663,
+                "maximum_between_lambda_age_spread": 0.08822613818187053,
+                "maximum_total_normalized_age_uncertainty": 0.08822613818187053,
+                "maximum_within_lambda_age_difference": 0.018305069829905762,
+                "modal_frequency": 0.2685,
+                "modal_lam": 1.0,
+                "selection_frequencies": {
+                  "0.0001": 0.1055,
+                  "0.0003": 0.0295,
+                  "0.001": 0.0365,
+                  "0.003": 0.0405,
+                  "0.01": 0.0375,
+                  "0.03": 0.0515,
+                  "0.1": 0.075,
+                  "0.3": 0.1285,
+                  "1.0": 0.2685,
+                  "10.0": 0.0355,
+                  "100.0": 0.0015,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.0395,
+                  "3.0": 0.1365,
+                  "30.0": 0.013,
+                  "300.0": 0.0005
+                },
+                "supported_lambdas": [
+                  0.0001,
+                  0.03,
+                  0.1,
+                  0.3,
+                  1.0,
+                  3.0
+                ]
+              },
+              "oracle_age_rmse": 0.011902351572481531,
+              "oracle_lam": 0.3,
+              "selected_age_oracle_ratio": 1.621208279398154,
+              "selected_age_rmse": 0.019296190913614696,
+              "selected_aggregate_fold_loss": 0.007067133723488136,
+              "selected_at_boundary": false,
+              "selected_lam": 1.0,
+              "selected_mean_fold_loss": 0.007067133723488136
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.0,
+                "maximum_between_lambda_age_spread": 0.082747263900523,
+                "maximum_total_normalized_age_uncertainty": 0.082747263900523,
+                "maximum_within_lambda_age_difference": 0.018305069829905762,
+                "modal_frequency": 0.2405,
+                "modal_lam": 0.3,
+                "selection_frequencies": {
+                  "0.0001": 0.1265,
+                  "0.0003": 0.0215,
+                  "0.001": 0.065,
+                  "0.003": 0.0375,
+                  "0.01": 0.067,
+                  "0.03": 0.114,
+                  "0.1": 0.1805,
+                  "0.3": 0.2405,
+                  "1.0": 0.1195,
+                  "10.0": 0.003,
+                  "3.0": 0.025
+                },
+                "supported_lambdas": [
+                  0.0001,
+                  0.001,
+                  0.01,
+                  0.03,
+                  0.1,
+                  0.3,
+                  1.0
+                ]
+              },
+              "oracle_age_rmse": 0.011902351572481531,
+              "oracle_lam": 0.3,
+              "selected_age_oracle_ratio": 1.5523400034119783,
+              "selected_age_rmse": 0.018476496480636546,
+              "selected_aggregate_fold_loss": 0.0038106727593220633,
+              "selected_at_boundary": false,
+              "selected_lam": 0.03,
+              "selected_mean_fold_loss": 0.006316730269272464
+            }
+          },
+          "valid_candidates": 17
+        },
+        "multiplicative_gamma": {
+          "observation_loss": "multiplicative_gamma",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.522878745280337,
+                "maximum_between_lambda_age_spread": 0.10691925786716716,
+                "maximum_total_normalized_age_uncertainty": 0.10691925786716716,
+                "maximum_within_lambda_age_difference": 0.01879457545416441,
+                "modal_frequency": 0.276,
+                "modal_lam": 0.0003,
+                "selection_frequencies": {
+                  "0.0003": 0.276,
+                  "0.001": 0.058,
+                  "0.003": 0.11,
+                  "0.01": 0.069,
+                  "0.03": 0.0115,
+                  "0.1": 0.044,
+                  "0.3": 0.0915,
+                  "1.0": 0.0705,
+                  "10.0": 0.1065,
+                  "100.0": 0.006,
+                  "10000.0": 0.0085,
+                  "3.0": 0.1085,
+                  "30.0": 0.039,
+                  "300.0": 0.001
+                },
+                "supported_lambdas": [
+                  0.0003,
+                  0.001,
+                  0.003,
+                  0.01,
+                  0.3,
+                  1.0,
+                  3.0,
+                  10.0
+                ]
+              },
+              "oracle_age_rmse": 0.01192083547943085,
+              "oracle_lam": 1.0,
+              "selected_age_oracle_ratio": 1.5756507815299696,
+              "selected_age_rmse": 0.01878307373965541,
+              "selected_aggregate_fold_loss": 0.08904973266882987,
+              "selected_at_boundary": false,
+              "selected_lam": 0.01,
+              "selected_mean_fold_loss": 0.08904973266882987
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.0,
+                "maximum_between_lambda_age_spread": 0.09821706225604099,
+                "maximum_total_normalized_age_uncertainty": 0.09821706225604099,
+                "maximum_within_lambda_age_difference": 0.00015594296262844143,
+                "modal_frequency": 0.221,
+                "modal_lam": 3.0,
+                "selection_frequencies": {
+                  "0.0003": 0.0005,
+                  "0.001": 0.0105,
+                  "0.003": 0.004,
+                  "0.03": 0.003,
+                  "0.1": 0.0025,
+                  "0.3": 0.036,
+                  "1.0": 0.141,
+                  "10.0": 0.1885,
+                  "100.0": 0.037,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.1865,
+                  "3.0": 0.221,
+                  "30.0": 0.1515,
+                  "300.0": 0.0165,
+                  "3000.0": 0.001
+                },
+                "supported_lambdas": [
+                  1.0,
+                  3.0,
+                  10.0,
+                  30.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.01192083547943085,
+              "oracle_lam": 1.0,
+              "selected_age_oracle_ratio": 2.5463687582992183,
+              "selected_age_rmse": 0.030354843037647603,
+              "selected_aggregate_fold_loss": 0.02589546232312845,
+              "selected_at_boundary": false,
+              "selected_lam": 30.0,
+              "selected_mean_fold_loss": 0.09852344579269844
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 6.0,
+                "maximum_between_lambda_age_spread": 0.09821706225604099,
+                "maximum_total_normalized_age_uncertainty": 0.09821706225604099,
+                "maximum_within_lambda_age_difference": 0.00015594296262844143,
+                "modal_frequency": 0.3615,
+                "modal_lam": 10000.0,
+                "selection_frequencies": {
+                  "0.0003": 0.019,
+                  "0.001": 0.033,
+                  "0.003": 0.028,
+                  "0.01": 0.03,
+                  "0.03": 0.012,
+                  "0.1": 0.0195,
+                  "0.3": 0.041,
+                  "1.0": 0.06,
+                  "10.0": 0.158,
+                  "100.0": 0.0325,
+                  "1000.0": 0.002,
+                  "10000.0": 0.3615,
+                  "3.0": 0.1205,
+                  "30.0": 0.0765,
+                  "300.0": 0.0065
+                },
+                "supported_lambdas": [
+                  1.0,
+                  3.0,
+                  10.0,
+                  30.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.01192083547943085,
+              "oracle_lam": 1.0,
+              "selected_age_oracle_ratio": 2.8744692084477217,
+              "selected_age_rmse": 0.03426607452459511,
+              "selected_aggregate_fold_loss": 0.10176027236978642,
+              "selected_at_boundary": false,
+              "selected_lam": 300.0,
+              "selected_mean_fold_loss": 0.10176027236978642
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.477121254719663,
+                "maximum_between_lambda_age_spread": 0.12625807778137532,
+                "maximum_total_normalized_age_uncertainty": 0.12625807778137532,
+                "maximum_within_lambda_age_difference": 0.01879457545416441,
+                "modal_frequency": 0.2375,
+                "modal_lam": 10.0,
+                "selection_frequencies": {
+                  "0.0003": 0.084,
+                  "0.001": 0.055,
+                  "0.003": 0.0065,
+                  "0.01": 0.0265,
+                  "0.03": 0.0085,
+                  "0.1": 0.0435,
+                  "0.3": 0.098,
+                  "1.0": 0.0715,
+                  "10.0": 0.2375,
+                  "100.0": 0.0425,
+                  "10000.0": 0.0485,
+                  "3.0": 0.169,
+                  "30.0": 0.1045,
+                  "300.0": 0.0045
+                },
+                "supported_lambdas": [
+                  0.0003,
+                  0.001,
+                  0.3,
+                  1.0,
+                  3.0,
+                  10.0,
+                  30.0
+                ]
+              },
+              "oracle_age_rmse": 0.01192083547943085,
+              "oracle_lam": 1.0,
+              "selected_age_oracle_ratio": 2.1100478589417757,
+              "selected_age_rmse": 0.025153533380170224,
+              "selected_aggregate_fold_loss": 0.06020647992912161,
+              "selected_at_boundary": false,
+              "selected_lam": 10.0,
+              "selected_mean_fold_loss": 0.09484631023832614
+            }
+          },
+          "valid_candidates": 16
+        }
+      },
+      "noise_model": "gamma",
+      "ntips": 48,
+      "rate_sigma": 0.2,
+      "scenario": "replay-dense-n48-gamma-sigma0p2",
+      "seed": 96460927,
+      "status": "ok"
+    },
+    {
+      "calibration": "root_and_three_internal_intervals",
+      "models": {
+        "fractional_poisson": {
+          "observation_loss": "fractional_poisson",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 1.0,
+                "maximum_between_lambda_age_spread": 0.2067302073213859,
+                "maximum_total_normalized_age_uncertainty": 0.2067302073213859,
+                "maximum_within_lambda_age_difference": 1.5896053855546377e-05,
+                "modal_frequency": 0.567,
+                "modal_lam": 1.0,
+                "selection_frequencies": {
+                  "0.0001": 0.0015,
+                  "0.0003": 0.001,
+                  "0.003": 0.0005,
+                  "0.01": 0.0005,
+                  "0.03": 0.003,
+                  "0.1": 0.0215,
+                  "0.3": 0.226,
+                  "1.0": 0.567,
+                  "10.0": 0.0095,
+                  "3.0": 0.1695
+                },
+                "supported_lambdas": [
+                  0.3,
+                  1.0,
+                  3.0
+                ]
+              },
+              "oracle_age_rmse": 0.05760626498386926,
+              "oracle_lam": 0.001,
+              "selected_age_oracle_ratio": 1.9283678188380262,
+              "selected_age_rmse": 0.11108606755834934,
+              "selected_aggregate_fold_loss": 0.22163433118501044,
+              "selected_at_boundary": false,
+              "selected_lam": 1.0,
+              "selected_mean_fold_loss": 0.22163433118501044
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 5.0,
+                "maximum_between_lambda_age_spread": 0.3758761113694534,
+                "maximum_total_normalized_age_uncertainty": 0.3758761113694534,
+                "maximum_within_lambda_age_difference": 0.0042476603572136895,
+                "modal_frequency": 0.221,
+                "modal_lam": 10.0,
+                "selection_frequencies": {
+                  "0.0001": 0.2115,
+                  "0.0003": 0.0965,
+                  "0.001": 0.0205,
+                  "0.003": 0.049,
+                  "0.01": 0.05,
+                  "0.03": 0.0725,
+                  "0.1": 0.02,
+                  "0.3": 0.01,
+                  "1.0": 0.0085,
+                  "10.0": 0.221,
+                  "100.0": 0.009,
+                  "1000.0": 0.0075,
+                  "10000.0": 0.009,
+                  "3.0": 0.205,
+                  "30.0": 0.0015,
+                  "300.0": 0.0005,
+                  "3000.0": 0.008
+                },
+                "supported_lambdas": [
+                  0.0001,
+                  0.0003,
+                  0.01,
+                  0.03,
+                  3.0,
+                  10.0
+                ]
+              },
+              "oracle_age_rmse": 0.05760626498386926,
+              "oracle_lam": 0.001,
+              "selected_age_oracle_ratio": 1.0383538183331937,
+              "selected_age_rmse": 0.059815685205914404,
+              "selected_aggregate_fold_loss": 0.022342570783261923,
+              "selected_at_boundary": false,
+              "selected_lam": 0.03,
+              "selected_mean_fold_loss": 0.2532698204116544
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 1.0,
+                "maximum_between_lambda_age_spread": 0.24387090875251421,
+                "maximum_total_normalized_age_uncertainty": 0.24387090875251421,
+                "maximum_within_lambda_age_difference": 1.5896053855546377e-05,
+                "modal_frequency": 0.455,
+                "modal_lam": 3.0,
+                "selection_frequencies": {
+                  "0.0003": 0.0005,
+                  "0.1": 0.0015,
+                  "0.3": 0.0625,
+                  "1.0": 0.348,
+                  "10.0": 0.125,
+                  "100.0": 0.0005,
+                  "10000.0": 0.0015,
+                  "3.0": 0.455,
+                  "30.0": 0.005,
+                  "300.0": 0.0005
+                },
+                "supported_lambdas": [
+                  0.3,
+                  1.0,
+                  3.0,
+                  10.0
+                ]
+              },
+              "oracle_age_rmse": 0.05760626498386926,
+              "oracle_lam": 0.001,
+              "selected_age_oracle_ratio": 2.2033457559801914,
+              "selected_age_rmse": 0.12692651947007866,
+              "selected_aggregate_fold_loss": 0.24094453851208464,
+              "selected_at_boundary": false,
+              "selected_lam": 3.0,
+              "selected_mean_fold_loss": 0.24094453851208464
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 2.0,
+                "maximum_between_lambda_age_spread": 0.24387090875251421,
+                "maximum_total_normalized_age_uncertainty": 0.24387090875251421,
+                "maximum_within_lambda_age_difference": 1.5896053855546377e-05,
+                "modal_frequency": 0.412,
+                "modal_lam": 3.0,
+                "selection_frequencies": {
+                  "0.0001": 0.0285,
+                  "0.0003": 0.0185,
+                  "0.001": 0.002,
+                  "0.003": 0.0045,
+                  "0.01": 0.013,
+                  "0.03": 0.0235,
+                  "0.1": 0.026,
+                  "0.3": 0.059,
+                  "1.0": 0.243,
+                  "10.0": 0.1675,
+                  "10000.0": 0.002,
+                  "3.0": 0.412,
+                  "30.0": 0.0005
+                },
+                "supported_lambdas": [
+                  0.3,
+                  1.0,
+                  3.0,
+                  10.0
+                ]
+              },
+              "oracle_age_rmse": 0.05760626498386926,
+              "oracle_lam": 0.001,
+              "selected_age_oracle_ratio": 2.2033457559801914,
+              "selected_age_rmse": 0.12692651947007866,
+              "selected_aggregate_fold_loss": 0.0825596639120676,
+              "selected_at_boundary": false,
+              "selected_lam": 3.0,
+              "selected_mean_fold_loss": 0.24094453851208464
+            }
+          },
+          "valid_candidates": 17
+        },
+        "multiplicative_gamma": {
+          "observation_loss": "multiplicative_gamma",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 3.0,
+                "maximum_between_lambda_age_spread": 0.20804667728289747,
+                "maximum_total_normalized_age_uncertainty": 0.20804667728289747,
+                "maximum_within_lambda_age_difference": 0.0004766651817900147,
+                "modal_frequency": 0.643,
+                "modal_lam": 0.001,
+                "selection_frequencies": {
+                  "0.0003": 0.036,
+                  "0.001": 0.643,
+                  "0.003": 0.0005,
+                  "0.03": 0.022,
+                  "0.1": 0.0805,
+                  "0.3": 0.078,
+                  "1.0": 0.1115,
+                  "3.0": 0.0285
+                },
+                "supported_lambdas": [
+                  0.001,
+                  0.1,
+                  0.3,
+                  1.0
+                ]
+              },
+              "oracle_age_rmse": 0.057658120309814175,
+              "oracle_lam": 0.0001,
+              "selected_age_oracle_ratio": 1.000002727117557,
+              "selected_age_rmse": 0.05765827755028639,
+              "selected_aggregate_fold_loss": 0.6018714501236543,
+              "selected_at_boundary": false,
+              "selected_lam": 0.001,
+              "selected_mean_fold_loss": 0.6018714501236543
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 2.0,
+                "maximum_between_lambda_age_spread": 0.3306554734367232,
+                "maximum_total_normalized_age_uncertainty": 0.3306554734367232,
+                "maximum_within_lambda_age_difference": 0.0004766651817900147,
+                "modal_frequency": 0.667,
+                "modal_lam": 3.0,
+                "selection_frequencies": {
+                  "0.0003": 0.0315,
+                  "0.001": 0.051,
+                  "0.003": 0.0145,
+                  "0.01": 0.001,
+                  "0.03": 0.0035,
+                  "0.1": 0.0145,
+                  "0.3": 0.071,
+                  "1.0": 0.1075,
+                  "10.0": 0.0355,
+                  "10000.0": 0.002,
+                  "3.0": 0.667,
+                  "30.0": 0.0005,
+                  "300.0": 0.0005
+                },
+                "supported_lambdas": [
+                  0.001,
+                  0.3,
+                  1.0,
+                  3.0
+                ]
+              },
+              "oracle_age_rmse": 0.057658120309814175,
+              "oracle_lam": 0.0001,
+              "selected_age_oracle_ratio": 2.2841081076547427,
+              "selected_age_rmse": 0.13169738007177914,
+              "selected_aggregate_fold_loss": 0.1654497940646944,
+              "selected_at_boundary": false,
+              "selected_lam": 3.0,
+              "selected_mean_fold_loss": 0.6855040814755698
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 3.4771212547196626,
+                "maximum_between_lambda_age_spread": 0.3306554734367232,
+                "maximum_total_normalized_age_uncertainty": 0.3306554734367232,
+                "maximum_within_lambda_age_difference": 0.0004766651817900147,
+                "modal_frequency": 0.288,
+                "modal_lam": 1.0,
+                "selection_frequencies": {
+                  "0.0003": 0.001,
+                  "0.001": 0.2685,
+                  "0.03": 0.013,
+                  "0.1": 0.0625,
+                  "0.3": 0.1235,
+                  "1.0": 0.288,
+                  "10.0": 0.0155,
+                  "10000.0": 0.0015,
+                  "3.0": 0.2235,
+                  "30.0": 0.003
+                },
+                "supported_lambdas": [
+                  0.001,
+                  0.1,
+                  0.3,
+                  1.0,
+                  3.0
+                ]
+              },
+              "oracle_age_rmse": 0.057658120309814175,
+              "oracle_lam": 0.0001,
+              "selected_age_oracle_ratio": 1.7568662422119967,
+              "selected_age_rmse": 0.10129760516171044,
+              "selected_aggregate_fold_loss": 0.6329184367154513,
+              "selected_at_boundary": false,
+              "selected_lam": 1.0,
+              "selected_mean_fold_loss": 0.6329184367154513
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 3.0,
+                "maximum_between_lambda_age_spread": 0.33066075766277425,
+                "maximum_total_normalized_age_uncertainty": 0.33066075766277425,
+                "maximum_within_lambda_age_difference": 0.0009098422189927624,
+                "modal_frequency": 0.2865,
+                "modal_lam": 0.001,
+                "selection_frequencies": {
+                  "0.0003": 0.0745,
+                  "0.001": 0.2865,
+                  "0.003": 0.0005,
+                  "0.01": 0.001,
+                  "0.03": 0.044,
+                  "0.1": 0.1515,
+                  "0.3": 0.193,
+                  "1.0": 0.1865,
+                  "3.0": 0.0625
+                },
+                "supported_lambdas": [
+                  0.0003,
+                  0.001,
+                  0.1,
+                  0.3,
+                  1.0,
+                  3.0
+                ]
+              },
+              "oracle_age_rmse": 0.057658120309814175,
+              "oracle_lam": 0.0001,
+              "selected_age_oracle_ratio": 1.0498885478025086,
+              "selected_age_rmse": 0.06053460020109313,
+              "selected_aggregate_fold_loss": 0.4072779627942559,
+              "selected_at_boundary": false,
+              "selected_lam": 0.1,
+              "selected_mean_fold_loss": 0.6049207872452392
+            }
+          },
+          "valid_candidates": 16
+        }
+      },
+      "noise_model": "gamma",
+      "ntips": 48,
+      "rate_sigma": 0.6,
+      "scenario": "replay-dense-n48-gamma-sigma0p6",
+      "seed": 96960942,
+      "status": "ok"
+    },
+    {
+      "calibration": "root_and_three_internal_intervals",
+      "models": {
+        "fractional_poisson": {
+          "observation_loss": "fractional_poisson",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 2.0,
+                "maximum_between_lambda_age_spread": 0.0,
+                "maximum_total_normalized_age_uncertainty": 0.0005865458177012894,
+                "maximum_within_lambda_age_difference": 0.0005865458177012894,
+                "modal_frequency": 0.86,
+                "modal_lam": 0.001,
+                "selection_frequencies": {
+                  "0.001": 0.86,
+                  "0.003": 0.03,
+                  "0.01": 0.0055,
+                  "0.03": 0.004,
+                  "0.1": 0.006,
+                  "0.3": 0.0015,
+                  "1.0": 0.0285,
+                  "10.0": 0.0135,
+                  "100.0": 0.0005,
+                  "3.0": 0.047,
+                  "30.0": 0.0035
+                },
+                "supported_lambdas": [
+                  0.001
+                ]
+              },
+              "oracle_age_rmse": 0.017172397734225738,
+              "oracle_lam": 0.3,
+              "selected_age_oracle_ratio": 1.3208980371464827,
+              "selected_age_rmse": 0.022682986460237486,
+              "selected_aggregate_fold_loss": 0.013004598278217677,
+              "selected_at_boundary": false,
+              "selected_lam": 0.001,
+              "selected_mean_fold_loss": 0.013004598278217677
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 6.0,
+                "maximum_between_lambda_age_spread": 0.23042479130136714,
+                "maximum_total_normalized_age_uncertainty": 0.23042479130136714,
+                "maximum_within_lambda_age_difference": 0.000795992743617413,
+                "modal_frequency": 0.284,
+                "modal_lam": 0.001,
+                "selection_frequencies": {
+                  "0.001": 0.284,
+                  "0.003": 0.067,
+                  "0.01": 0.082,
+                  "0.03": 0.0655,
+                  "0.1": 0.0635,
+                  "0.3": 0.0525,
+                  "1.0": 0.093,
+                  "10.0": 0.011,
+                  "100.0": 0.0285,
+                  "1000.0": 0.0075,
+                  "10000.0": 0.0525,
+                  "3.0": 0.1015,
+                  "30.0": 0.033,
+                  "300.0": 0.012,
+                  "3000.0": 0.0465
+                },
+                "supported_lambdas": [
+                  0.001,
+                  0.003,
+                  0.01,
+                  0.03,
+                  0.1,
+                  0.3,
+                  1.0,
+                  3.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.017172397734225738,
+              "oracle_lam": 0.3,
+              "selected_age_oracle_ratio": 1.3163825191164333,
+              "selected_age_rmse": 0.02260544418864941,
+              "selected_aggregate_fold_loss": 0.003623890641757158,
+              "selected_at_boundary": false,
+              "selected_lam": 0.003,
+              "selected_mean_fold_loss": 0.013033370119186677
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.477121254719663,
+                "maximum_between_lambda_age_spread": 0.23042479130136714,
+                "maximum_total_normalized_age_uncertainty": 0.23042479130136714,
+                "maximum_within_lambda_age_difference": 0.0006555250534346357,
+                "modal_frequency": 0.496,
+                "modal_lam": 0.001,
+                "selection_frequencies": {
+                  "0.001": 0.496,
+                  "0.003": 0.07,
+                  "0.01": 0.02,
+                  "0.03": 0.0215,
+                  "0.1": 0.019,
+                  "0.3": 0.009,
+                  "1.0": 0.0355,
+                  "10.0": 0.077,
+                  "100.0": 0.007,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.089,
+                  "3.0": 0.131,
+                  "30.0": 0.0215,
+                  "300.0": 0.002,
+                  "3000.0": 0.001
+                },
+                "supported_lambdas": [
+                  0.001,
+                  0.003,
+                  3.0,
+                  10.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.017172397734225738,
+              "oracle_lam": 0.3,
+              "selected_age_oracle_ratio": 1.3208980371464827,
+              "selected_age_rmse": 0.022682986460237486,
+              "selected_aggregate_fold_loss": 0.013004598278217677,
+              "selected_at_boundary": false,
+              "selected_lam": 0.001,
+              "selected_mean_fold_loss": 0.013004598278217677
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 2.0,
+                "maximum_between_lambda_age_spread": 0.017845511364160797,
+                "maximum_total_normalized_age_uncertainty": 0.017845511364160797,
+                "maximum_within_lambda_age_difference": 0.0006555250534346357,
+                "modal_frequency": 0.7485,
+                "modal_lam": 0.001,
+                "selection_frequencies": {
+                  "0.001": 0.7485,
+                  "0.003": 0.085,
+                  "0.01": 0.0215,
+                  "0.03": 0.0415,
+                  "0.1": 0.0535,
+                  "0.3": 0.0075,
+                  "1.0": 0.0015,
+                  "10.0": 0.005,
+                  "100.0": 0.004,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.002,
+                  "3.0": 0.005,
+                  "30.0": 0.0085,
+                  "300.0": 0.001,
+                  "3000.0": 0.015
+                },
+                "supported_lambdas": [
+                  0.001,
+                  0.003,
+                  0.1
+                ]
+              },
+              "oracle_age_rmse": 0.017172397734225738,
+              "oracle_lam": 0.3,
+              "selected_age_oracle_ratio": 1.3208980371464827,
+              "selected_age_rmse": 0.022682986460237486,
+              "selected_aggregate_fold_loss": 0.007692857783297087,
+              "selected_at_boundary": false,
+              "selected_lam": 0.001,
+              "selected_mean_fold_loss": 0.013004598278217677
+            }
+          },
+          "valid_candidates": 15
+        },
+        "multiplicative_gamma": {
+          "observation_loss": "multiplicative_gamma",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 2.4771212547196626,
+                "maximum_between_lambda_age_spread": 0.0752492980118888,
+                "maximum_total_normalized_age_uncertainty": 0.0752492980118888,
+                "maximum_within_lambda_age_difference": 0.00012205752374405687,
+                "modal_frequency": 0.671,
+                "modal_lam": 0.01,
+                "selection_frequencies": {
+                  "0.01": 0.671,
+                  "0.03": 0.001,
+                  "0.1": 0.005,
+                  "0.3": 0.034,
+                  "1.0": 0.0675,
+                  "10.0": 0.028,
+                  "3.0": 0.192,
+                  "30.0": 0.0015
+                },
+                "supported_lambdas": [
+                  0.01,
+                  1.0,
+                  3.0
+                ]
+              },
+              "oracle_age_rmse": 0.01920436573587771,
+              "oracle_lam": 1.0,
+              "selected_age_oracle_ratio": 1.17745275203536,
+              "selected_age_rmse": 0.022612233286802782,
+              "selected_aggregate_fold_loss": 0.12330226364857345,
+              "selected_at_boundary": false,
+              "selected_lam": 0.01,
+              "selected_mean_fold_loss": 0.12330226364857345
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 2.0,
+                "maximum_between_lambda_age_spread": 0.0752492980118888,
+                "maximum_total_normalized_age_uncertainty": 0.0752492980118888,
+                "maximum_within_lambda_age_difference": 0.00012205752374405687,
+                "modal_frequency": 0.7265,
+                "modal_lam": 0.01,
+                "selection_frequencies": {
+                  "0.01": 0.7265,
+                  "0.03": 0.04,
+                  "0.1": 0.032,
+                  "0.3": 0.0415,
+                  "1.0": 0.063,
+                  "10.0": 0.0105,
+                  "100.0": 0.002,
+                  "10000.0": 0.0075,
+                  "3.0": 0.053,
+                  "30.0": 0.024
+                },
+                "supported_lambdas": [
+                  0.01,
+                  1.0,
+                  3.0
+                ]
+              },
+              "oracle_age_rmse": 0.01920436573587771,
+              "oracle_lam": 1.0,
+              "selected_age_oracle_ratio": 1.17745275203536,
+              "selected_age_rmse": 0.022612233286802782,
+              "selected_aggregate_fold_loss": 0.04802117434793418,
+              "selected_at_boundary": false,
+              "selected_lam": 0.01,
+              "selected_mean_fold_loss": 0.12330226364857345
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 3.0,
+                "maximum_between_lambda_age_spread": 0.23325357949740103,
+                "maximum_total_normalized_age_uncertainty": 0.23325357949740103,
+                "maximum_within_lambda_age_difference": 0.00012205752374405687,
+                "modal_frequency": 0.3245,
+                "modal_lam": 0.01,
+                "selection_frequencies": {
+                  "0.01": 0.3245,
+                  "0.1": 0.003,
+                  "0.3": 0.035,
+                  "1.0": 0.051,
+                  "10.0": 0.246,
+                  "100.0": 0.014,
+                  "1000.0": 0.001,
+                  "10000.0": 0.008,
+                  "3.0": 0.255,
+                  "30.0": 0.059,
+                  "300.0": 0.0035
+                },
+                "supported_lambdas": [
+                  0.01,
+                  1.0,
+                  3.0,
+                  10.0,
+                  30.0
+                ]
+              },
+              "oracle_age_rmse": 0.01920436573587771,
+              "oracle_lam": 1.0,
+              "selected_age_oracle_ratio": 1.3791047930967366,
+              "selected_age_rmse": 0.026484832834731686,
+              "selected_aggregate_fold_loss": 0.12868190692012613,
+              "selected_at_boundary": false,
+              "selected_lam": 3.0,
+              "selected_mean_fold_loss": 0.12868190692012613
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 2.047712125472031,
+                "maximum_between_lambda_age_spread": 0.0752492980118888,
+                "maximum_total_normalized_age_uncertainty": 0.0752492980118888,
+                "maximum_within_lambda_age_difference": 0.00012205752374405687,
+                "modal_frequency": 0.8485,
+                "modal_lam": 0.01,
+                "selection_frequencies": {
+                  "0.01": 0.8485,
+                  "0.1": 0.0035,
+                  "0.3": 0.019,
+                  "1.0": 0.029,
+                  "10.0": 0.0315,
+                  "100.0": 0.0015,
+                  "3.0": 0.056,
+                  "30.0": 0.011
+                },
+                "supported_lambdas": [
+                  0.01,
+                  3.0
+                ]
+              },
+              "oracle_age_rmse": 0.01920436573587771,
+              "oracle_lam": 1.0,
+              "selected_age_oracle_ratio": 1.17745275203536,
+              "selected_age_rmse": 0.022612233286802782,
+              "selected_aggregate_fold_loss": 0.09174184280862588,
+              "selected_at_boundary": false,
+              "selected_lam": 0.01,
+              "selected_mean_fold_loss": 0.12330226364857345
+            }
+          },
+          "valid_candidates": 13
+        }
+      },
+      "noise_model": "lognormal",
+      "ntips": 48,
+      "rate_sigma": 0.2,
+      "scenario": "replay-dense-n48-lognormal-sigma0p2",
+      "seed": 96660933,
+      "status": "ok"
+    },
+    {
+      "calibration": "root_and_three_internal_intervals",
+      "models": {
+        "fractional_poisson": {
+          "observation_loss": "fractional_poisson",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 7.0,
+                "maximum_between_lambda_age_spread": 0.6743685769887355,
+                "maximum_total_normalized_age_uncertainty": 0.6743685769887355,
+                "maximum_within_lambda_age_difference": 0.003842564394701431,
+                "modal_frequency": 0.276,
+                "modal_lam": 0.03,
+                "selection_frequencies": {
+                  "0.0001": 0.0965,
+                  "0.0003": 0.003,
+                  "0.001": 0.015,
+                  "0.003": 0.0125,
+                  "0.01": 0.122,
+                  "0.03": 0.276,
+                  "0.1": 0.131,
+                  "0.3": 0.013,
+                  "1.0": 0.002,
+                  "10.0": 0.0055,
+                  "100.0": 0.0845,
+                  "1000.0": 0.009,
+                  "10000.0": 0.1305,
+                  "30.0": 0.0695,
+                  "300.0": 0.0265,
+                  "3000.0": 0.0035
+                },
+                "supported_lambdas": [
+                  0.0001,
+                  0.01,
+                  0.03,
+                  0.1,
+                  30.0,
+                  100.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.07579708120805234,
+              "oracle_lam": 3e-05,
+              "selected_age_oracle_ratio": 1.0550795964176978,
+              "selected_age_rmse": 0.07997195385063133,
+              "selected_aggregate_fold_loss": 0.5560847318151528,
+              "selected_at_boundary": false,
+              "selected_lam": 0.03,
+              "selected_mean_fold_loss": 0.5560847318151528
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 3.047712125472031,
+                "maximum_between_lambda_age_spread": 0.12187283343723726,
+                "maximum_total_normalized_age_uncertainty": 0.12187283343723726,
+                "maximum_within_lambda_age_difference": 0.003842564394701431,
+                "modal_frequency": 0.5435,
+                "modal_lam": 0.0001,
+                "selection_frequencies": {
+                  "0.0001": 0.5435,
+                  "0.0003": 0.0665,
+                  "0.001": 0.05,
+                  "0.003": 0.0205,
+                  "0.01": 0.1135,
+                  "0.03": 0.0525,
+                  "0.1": 0.0535,
+                  "0.3": 0.019,
+                  "100.0": 0.0005,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.0205,
+                  "3.0": 0.0005,
+                  "30.0": 0.0425,
+                  "300.0": 0.001,
+                  "3000.0": 0.0155
+                },
+                "supported_lambdas": [
+                  0.0001,
+                  0.0003,
+                  0.001,
+                  0.01,
+                  0.03,
+                  0.1
+                ]
+              },
+              "oracle_age_rmse": 0.07579708120805234,
+              "oracle_lam": 3e-05,
+              "selected_age_oracle_ratio": 1.0003715774539244,
+              "selected_age_rmse": 0.07582524569450252,
+              "selected_aggregate_fold_loss": 0.025626938622029923,
+              "selected_at_boundary": false,
+              "selected_lam": 0.0001,
+              "selected_mean_fold_loss": 0.5603743601330646
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 5.522878745280337,
+                "maximum_between_lambda_age_spread": 0.6743685769887355,
+                "maximum_total_normalized_age_uncertainty": 0.6743685769887355,
+                "maximum_within_lambda_age_difference": 0.003842564394701431,
+                "modal_frequency": 0.5985,
+                "modal_lam": 10000.0,
+                "selection_frequencies": {
+                  "0.0001": 0.013,
+                  "0.0003": 0.003,
+                  "0.001": 0.007,
+                  "0.003": 0.001,
+                  "0.01": 0.0115,
+                  "0.03": 0.086,
+                  "0.1": 0.148,
+                  "0.3": 0.041,
+                  "1.0": 0.0105,
+                  "10.0": 0.003,
+                  "100.0": 0.015,
+                  "1000.0": 0.004,
+                  "10000.0": 0.5985,
+                  "3.0": 0.002,
+                  "30.0": 0.0435,
+                  "300.0": 0.0125,
+                  "3000.0": 0.0005
+                },
+                "supported_lambdas": [
+                  0.03,
+                  0.1,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.07579708120805234,
+              "oracle_lam": 3e-05,
+              "selected_age_oracle_ratio": 3.0671665566294437,
+              "selected_age_rmse": 0.2324822725714642,
+              "selected_aggregate_fold_loss": 2.098097103315219,
+              "selected_at_boundary": true,
+              "selected_lam": 10000.0,
+              "selected_mean_fold_loss": 2.098097103315219
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 7.522878745280337,
+                "maximum_between_lambda_age_spread": 0.6743685769887355,
+                "maximum_total_normalized_age_uncertainty": 0.6743685769887355,
+                "maximum_within_lambda_age_difference": 0.0010255952064214258,
+                "modal_frequency": 0.275,
+                "modal_lam": 30.0,
+                "selection_frequencies": {
+                  "0.0001": 0.033,
+                  "0.0003": 0.0745,
+                  "0.003": 0.0015,
+                  "0.01": 0.0155,
+                  "0.03": 0.0455,
+                  "0.1": 0.154,
+                  "0.3": 0.0945,
+                  "1.0": 0.013,
+                  "10.0": 0.007,
+                  "100.0": 0.126,
+                  "1000.0": 0.0025,
+                  "10000.0": 0.1425,
+                  "3.0": 0.0005,
+                  "30.0": 0.275,
+                  "300.0": 0.0125,
+                  "3000.0": 0.0025
+                },
+                "supported_lambdas": [
+                  0.0003,
+                  0.1,
+                  0.3,
+                  30.0,
+                  100.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.07579708120805234,
+              "oracle_lam": 3e-05,
+              "selected_age_oracle_ratio": 1.1749347372538057,
+              "selected_age_rmse": 0.08905662369378835,
+              "selected_aggregate_fold_loss": 0.09443838343383017,
+              "selected_at_boundary": false,
+              "selected_lam": 0.3,
+              "selected_mean_fold_loss": 0.5757640706248008
+            }
+          },
+          "valid_candidates": 17
+        },
+        "multiplicative_gamma": {
+          "observation_loss": "multiplicative_gamma",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 2.4771212547196626,
+                "maximum_between_lambda_age_spread": 0.3271559662190703,
+                "maximum_total_normalized_age_uncertainty": 0.3271559662190703,
+                "maximum_within_lambda_age_difference": 0.00030016088467688107,
+                "modal_frequency": 0.4505,
+                "modal_lam": 0.001,
+                "selection_frequencies": {
+                  "0.001": 0.4505,
+                  "0.003": 0.3065,
+                  "0.01": 0.002,
+                  "0.03": 0.0295,
+                  "0.1": 0.083,
+                  "0.3": 0.061,
+                  "1.0": 0.007,
+                  "10.0": 0.006,
+                  "10000.0": 0.001,
+                  "3.0": 0.052,
+                  "30.0": 0.0015
+                },
+                "supported_lambdas": [
+                  0.001,
+                  0.003,
+                  0.1,
+                  0.3,
+                  3.0
+                ]
+              },
+              "oracle_age_rmse": 0.07543161474924337,
+              "oracle_lam": 0.1,
+              "selected_age_oracle_ratio": 1.0056808303620106,
+              "selected_age_rmse": 0.07586012895656635,
+              "selected_aggregate_fold_loss": 0.6880067220963427,
+              "selected_at_boundary": false,
+              "selected_lam": 0.003,
+              "selected_mean_fold_loss": 0.6880067220963427
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 6.0,
+                "maximum_between_lambda_age_spread": 0.7965443398502836,
+                "maximum_total_normalized_age_uncertainty": 0.7965443398502836,
+                "maximum_within_lambda_age_difference": 0.00037554185160471043,
+                "modal_frequency": 0.272,
+                "modal_lam": 1.0,
+                "selection_frequencies": {
+                  "0.001": 0.0545,
+                  "0.003": 0.0425,
+                  "0.01": 0.01,
+                  "0.03": 0.012,
+                  "0.1": 0.012,
+                  "0.3": 0.195,
+                  "1.0": 0.272,
+                  "10.0": 0.0615,
+                  "100.0": 0.0005,
+                  "1000.0": 0.001,
+                  "10000.0": 0.111,
+                  "3.0": 0.1295,
+                  "30.0": 0.0985
+                },
+                "supported_lambdas": [
+                  0.001,
+                  0.3,
+                  1.0,
+                  3.0,
+                  10.0,
+                  30.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.07543161474924337,
+              "oracle_lam": 0.1,
+              "selected_age_oracle_ratio": 1.1185500903994803,
+              "selected_age_rmse": 0.08437403949674495,
+              "selected_aggregate_fold_loss": 0.3237710529340736,
+              "selected_at_boundary": false,
+              "selected_lam": 1.0,
+              "selected_mean_fold_loss": 0.7799782214873612
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.0,
+                "maximum_between_lambda_age_spread": 0.7965443398502836,
+                "maximum_total_normalized_age_uncertainty": 0.7965443398502836,
+                "maximum_within_lambda_age_difference": 0.00030016088467688107,
+                "modal_frequency": 0.2355,
+                "modal_lam": 0.003,
+                "selection_frequencies": {
+                  "0.001": 0.112,
+                  "0.003": 0.2355,
+                  "0.01": 0.0075,
+                  "0.03": 0.0365,
+                  "0.1": 0.097,
+                  "0.3": 0.156,
+                  "1.0": 0.021,
+                  "10.0": 0.027,
+                  "100.0": 0.0005,
+                  "10000.0": 0.068,
+                  "3.0": 0.2275,
+                  "30.0": 0.0115
+                },
+                "supported_lambdas": [
+                  0.001,
+                  0.003,
+                  0.1,
+                  0.3,
+                  3.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.07543161474924337,
+              "oracle_lam": 0.1,
+              "selected_age_oracle_ratio": 1.0,
+              "selected_age_rmse": 0.07543161474924337,
+              "selected_aggregate_fold_loss": 0.6943578350173977,
+              "selected_at_boundary": false,
+              "selected_lam": 0.1,
+              "selected_mean_fold_loss": 0.6943578350173977
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 3.0,
+                "maximum_between_lambda_age_spread": 0.600681976081674,
+                "maximum_total_normalized_age_uncertainty": 0.600681976081674,
+                "maximum_within_lambda_age_difference": 0.00030016088467688107,
+                "modal_frequency": 0.3735,
+                "modal_lam": 3.0,
+                "selection_frequencies": {
+                  "0.001": 0.075,
+                  "0.003": 0.1195,
+                  "0.01": 0.0075,
+                  "0.03": 0.037,
+                  "0.1": 0.1385,
+                  "0.3": 0.155,
+                  "1.0": 0.017,
+                  "10.0": 0.059,
+                  "100.0": 0.0005,
+                  "10000.0": 0.0105,
+                  "3.0": 0.3735,
+                  "30.0": 0.007
+                },
+                "supported_lambdas": [
+                  0.001,
+                  0.003,
+                  0.1,
+                  0.3,
+                  3.0,
+                  10.0
+                ]
+              },
+              "oracle_age_rmse": 0.07543161474924337,
+              "oracle_lam": 0.1,
+              "selected_age_oracle_ratio": 1.01927018934009,
+              "selected_age_rmse": 0.07688519624769001,
+              "selected_aggregate_fold_loss": 0.48252847147407874,
+              "selected_at_boundary": false,
+              "selected_lam": 0.3,
+              "selected_mean_fold_loss": 0.7102785376892582
+            }
+          },
+          "valid_candidates": 15
+        }
+      },
+      "noise_model": "lognormal",
+      "ntips": 48,
+      "rate_sigma": 0.6,
+      "scenario": "replay-dense-n48-lognormal-sigma0p6",
+      "seed": 97160948,
+      "status": "ok"
+    },
+    {
+      "calibration": "root_and_internal_interval",
+      "models": {
+        "fractional_poisson": {
+          "observation_loss": "fractional_poisson",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 1.0,
+                "maximum_between_lambda_age_spread": 0.08055482833842433,
+                "maximum_total_normalized_age_uncertainty": 0.08055482833842433,
+                "maximum_within_lambda_age_difference": 8.630960326438952e-06,
+                "modal_frequency": 0.552,
+                "modal_lam": 0.3,
+                "selection_frequencies": {
+                  "0.0001": 0.005,
+                  "0.0003": 0.031,
+                  "0.001": 0.015,
+                  "0.003": 0.004,
+                  "0.01": 0.007,
+                  "0.03": 0.011,
+                  "0.1": 0.0465,
+                  "0.3": 0.552,
+                  "1.0": 0.2665,
+                  "10000.0": 0.024,
+                  "3.0": 0.005,
+                  "3000.0": 0.012,
+                  "3e-05": 0.021
+                },
+                "supported_lambdas": [
+                  0.3,
+                  1.0
+                ]
+              },
+              "oracle_age_rmse": 0.06143281719245957,
+              "oracle_lam": 0.0001,
+              "selected_age_oracle_ratio": 1.5367897929578085,
+              "selected_age_rmse": 0.09440932641401484,
+              "selected_aggregate_fold_loss": 0.6205464477915902,
+              "selected_at_boundary": false,
+              "selected_lam": 0.3,
+              "selected_mean_fold_loss": 0.6205464477915902
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.0,
+                "maximum_between_lambda_age_spread": 0.1354718450560987,
+                "maximum_total_normalized_age_uncertainty": 0.1354718450560987,
+                "maximum_within_lambda_age_difference": 0.004587877531181173,
+                "modal_frequency": 0.263,
+                "modal_lam": 0.3,
+                "selection_frequencies": {
+                  "0.0001": 0.0355,
+                  "0.0003": 0.041,
+                  "0.001": 0.137,
+                  "0.003": 0.0105,
+                  "0.01": 0.0165,
+                  "0.03": 0.0515,
+                  "0.1": 0.253,
+                  "0.3": 0.263,
+                  "1.0": 0.049,
+                  "10.0": 0.008,
+                  "1000.0": 0.005,
+                  "10000.0": 0.004,
+                  "3.0": 0.009,
+                  "30.0": 0.001,
+                  "300.0": 0.0005,
+                  "3000.0": 0.011,
+                  "3e-05": 0.1045
+                },
+                "supported_lambdas": [
+                  3e-05,
+                  0.001,
+                  0.03,
+                  0.1,
+                  0.3
+                ]
+              },
+              "oracle_age_rmse": 0.06143281719245957,
+              "oracle_lam": 0.0001,
+              "selected_age_oracle_ratio": 1.5367897929578085,
+              "selected_age_rmse": 0.09440932641401484,
+              "selected_aggregate_fold_loss": 0.033674823447840965,
+              "selected_at_boundary": false,
+              "selected_lam": 0.3,
+              "selected_mean_fold_loss": 0.6205464477915902
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.522878745280337,
+                "maximum_between_lambda_age_spread": 0.3452920728176063,
+                "maximum_total_normalized_age_uncertainty": 0.3452920728176063,
+                "maximum_within_lambda_age_difference": 0.0009997639118811685,
+                "modal_frequency": 0.4965,
+                "modal_lam": 1.0,
+                "selection_frequencies": {
+                  "0.0001": 0.0005,
+                  "0.0003": 0.005,
+                  "0.001": 0.008,
+                  "0.003": 0.0035,
+                  "0.01": 0.0025,
+                  "0.03": 0.0015,
+                  "0.1": 0.0005,
+                  "0.3": 0.2635,
+                  "1.0": 0.4965,
+                  "10.0": 0.0055,
+                  "10000.0": 0.1825,
+                  "3.0": 0.026,
+                  "30.0": 0.002,
+                  "3000.0": 0.0005,
+                  "3e-05": 0.002
+                },
+                "supported_lambdas": [
+                  0.3,
+                  1.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.06143281719245957,
+              "oracle_lam": 0.0001,
+              "selected_age_oracle_ratio": 1.8367855100085566,
+              "selected_age_rmse": 0.11283890845811427,
+              "selected_aggregate_fold_loss": 0.6255670619182717,
+              "selected_at_boundary": false,
+              "selected_lam": 1.0,
+              "selected_mean_fold_loss": 0.6255670619182717
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 7.522878745280337,
+                "maximum_between_lambda_age_spread": 0.36553653034548367,
+                "maximum_total_normalized_age_uncertainty": 0.36553653034548367,
+                "maximum_within_lambda_age_difference": 0.004587877531181173,
+                "modal_frequency": 0.22,
+                "modal_lam": 0.3,
+                "selection_frequencies": {
+                  "0.0001": 0.019,
+                  "0.0003": 0.0865,
+                  "0.001": 0.1025,
+                  "0.003": 0.0225,
+                  "0.01": 0.015,
+                  "0.03": 0.0255,
+                  "0.1": 0.061,
+                  "0.3": 0.22,
+                  "1.0": 0.1345,
+                  "10.0": 0.002,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.1505,
+                  "3.0": 0.02,
+                  "30.0": 0.0005,
+                  "3000.0": 0.0595,
+                  "3e-05": 0.0805
+                },
+                "supported_lambdas": [
+                  3e-05,
+                  0.0003,
+                  0.001,
+                  0.1,
+                  0.3,
+                  1.0,
+                  3000.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.06143281719245957,
+              "oracle_lam": 0.0001,
+              "selected_age_oracle_ratio": 1.0093936445528577,
+              "selected_age_rmse": 0.06200989524104623,
+              "selected_aggregate_fold_loss": 0.17693352005476037,
+              "selected_at_boundary": false,
+              "selected_lam": 0.003,
+              "selected_mean_fold_loss": 0.6559605532551944
+            }
+          },
+          "valid_candidates": 18
+        },
+        "multiplicative_gamma": {
+          "observation_loss": "multiplicative_gamma",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.0,
+                "maximum_between_lambda_age_spread": 0.21367078134865294,
+                "maximum_total_normalized_age_uncertainty": 0.21367078134865294,
+                "maximum_within_lambda_age_difference": 0.00044555634543264055,
+                "modal_frequency": 0.398,
+                "modal_lam": 0.001,
+                "selection_frequencies": {
+                  "0.0003": 0.104,
+                  "0.001": 0.398,
+                  "0.003": 0.006,
+                  "0.01": 0.003,
+                  "0.03": 0.0035,
+                  "0.1": 0.01,
+                  "0.3": 0.0295,
+                  "1.0": 0.256,
+                  "10.0": 0.0055,
+                  "10000.0": 0.005,
+                  "3.0": 0.179,
+                  "300.0": 0.0005
+                },
+                "supported_lambdas": [
+                  0.0003,
+                  0.001,
+                  1.0,
+                  3.0
+                ]
+              },
+              "oracle_age_rmse": 0.06140708926192892,
+              "oracle_lam": 0.0001,
+              "selected_age_oracle_ratio": 1.000000560618927,
+              "selected_age_rmse": 0.061407123687905414,
+              "selected_aggregate_fold_loss": 1.0237646570532515,
+              "selected_at_boundary": false,
+              "selected_lam": 0.001,
+              "selected_mean_fold_loss": 1.0237646570532515
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.0,
+                "maximum_between_lambda_age_spread": 0.4267299934395684,
+                "maximum_total_normalized_age_uncertainty": 0.4267299934395684,
+                "maximum_within_lambda_age_difference": 0.00044555634543264055,
+                "modal_frequency": 0.2295,
+                "modal_lam": 1.0,
+                "selection_frequencies": {
+                  "0.0003": 0.081,
+                  "0.001": 0.08,
+                  "0.003": 0.015,
+                  "0.01": 0.0005,
+                  "0.03": 0.059,
+                  "0.1": 0.054,
+                  "0.3": 0.1415,
+                  "1.0": 0.2295,
+                  "10.0": 0.118,
+                  "100.0": 0.0115,
+                  "10000.0": 0.025,
+                  "3.0": 0.1645,
+                  "30.0": 0.018,
+                  "3000.0": 0.0025
+                },
+                "supported_lambdas": [
+                  0.0003,
+                  0.001,
+                  0.03,
+                  0.1,
+                  0.3,
+                  1.0,
+                  3.0,
+                  10.0
+                ]
+              },
+              "oracle_age_rmse": 0.06140708926192892,
+              "oracle_lam": 0.0001,
+              "selected_age_oracle_ratio": 1.2812821048475684,
+              "selected_age_rmse": 0.0786798045820868,
+              "selected_aggregate_fold_loss": 0.24472510961425886,
+              "selected_at_boundary": false,
+              "selected_lam": 0.3,
+              "selected_mean_fold_loss": 1.0280370572705602
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.0,
+                "maximum_between_lambda_age_spread": 0.530877285550623,
+                "maximum_total_normalized_age_uncertainty": 0.530877285550623,
+                "maximum_within_lambda_age_difference": 0.00018628365610151576,
+                "modal_frequency": 0.49,
+                "modal_lam": 3.0,
+                "selection_frequencies": {
+                  "0.0003": 0.024,
+                  "0.001": 0.1365,
+                  "0.003": 0.0105,
+                  "0.01": 0.0055,
+                  "0.03": 0.0045,
+                  "0.1": 0.008,
+                  "0.3": 0.032,
+                  "1.0": 0.1545,
+                  "10.0": 0.062,
+                  "100.0": 0.001,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.0655,
+                  "3.0": 0.49,
+                  "30.0": 0.004,
+                  "300.0": 0.0015
+                },
+                "supported_lambdas": [
+                  0.001,
+                  1.0,
+                  3.0,
+                  10.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.06140708926192892,
+              "oracle_lam": 0.0001,
+              "selected_age_oracle_ratio": 2.250336196416678,
+              "selected_age_rmse": 0.13818659568270855,
+              "selected_aggregate_fold_loss": 1.0618417469286154,
+              "selected_at_boundary": false,
+              "selected_lam": 3.0,
+              "selected_mean_fold_loss": 1.0618417469286154
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 3.4771212547196626,
+                "maximum_between_lambda_age_spread": 0.21367078134865294,
+                "maximum_total_normalized_age_uncertainty": 0.21367078134865294,
+                "maximum_within_lambda_age_difference": 0.00044555634543264055,
+                "modal_frequency": 0.2725,
+                "modal_lam": 1.0,
+                "selection_frequencies": {
+                  "0.0003": 0.077,
+                  "0.001": 0.2715,
+                  "0.003": 0.0105,
+                  "0.01": 0.0065,
+                  "0.03": 0.005,
+                  "0.1": 0.0135,
+                  "0.3": 0.03,
+                  "1.0": 0.2725,
+                  "10.0": 0.0205,
+                  "10000.0": 0.0205,
+                  "3.0": 0.271,
+                  "30.0": 0.001,
+                  "300.0": 0.0005
+                },
+                "supported_lambdas": [
+                  0.0003,
+                  0.001,
+                  1.0,
+                  3.0
+                ]
+              },
+              "oracle_age_rmse": 0.06140708926192892,
+              "oracle_lam": 0.0001,
+              "selected_age_oracle_ratio": 1.7920439373436625,
+              "selected_age_rmse": 0.11004420202176084,
+              "selected_aggregate_fold_loss": 0.49693146971536634,
+              "selected_at_boundary": false,
+              "selected_lam": 1.0,
+              "selected_mean_fold_loss": 1.027091646304924
+            }
+          },
+          "valid_candidates": 16
+        }
+      },
+      "noise_model": "gamma",
+      "ntips": 24,
+      "rate_sigma": 0.6,
+      "scenario": "replay-sparse-n24-gamma-sigma0p6-a",
+      "seed": 95260891,
+      "status": "ok"
+    },
+    {
+      "calibration": "root_and_internal_interval",
+      "models": {
+        "fractional_poisson": {
+          "observation_loss": "fractional_poisson",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.0,
+                "maximum_between_lambda_age_spread": 0.15675304735801804,
+                "maximum_total_normalized_age_uncertainty": 0.15675304735801804,
+                "maximum_within_lambda_age_difference": 0.00016195834176591095,
+                "modal_frequency": 0.378,
+                "modal_lam": 0.3,
+                "selection_frequencies": {
+                  "0.0001": 0.006,
+                  "0.0003": 0.003,
+                  "0.001": 0.004,
+                  "0.003": 0.0015,
+                  "0.03": 0.0005,
+                  "0.1": 0.0005,
+                  "0.3": 0.378,
+                  "1.0": 0.2395,
+                  "10.0": 0.0105,
+                  "100.0": 0.0005,
+                  "1000.0": 0.0975,
+                  "10000.0": 0.0895,
+                  "3.0": 0.0375,
+                  "30.0": 0.003,
+                  "300.0": 0.0095,
+                  "3000.0": 0.114,
+                  "3e-05": 0.005
+                },
+                "supported_lambdas": [
+                  0.3,
+                  1.0,
+                  1000.0,
+                  3000.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.04103916684071809,
+              "oracle_lam": 0.1,
+              "selected_age_oracle_ratio": 1.3325149903493518,
+              "selected_age_rmse": 0.054685305006704904,
+              "selected_aggregate_fold_loss": 0.5200053995320812,
+              "selected_at_boundary": false,
+              "selected_lam": 1.0,
+              "selected_mean_fold_loss": 0.5200053995320812
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 8.522878745280337,
+                "maximum_between_lambda_age_spread": 0.20037401051381773,
+                "maximum_total_normalized_age_uncertainty": 0.20037401051381773,
+                "maximum_within_lambda_age_difference": 0.007984103360608286,
+                "modal_frequency": 0.3275,
+                "modal_lam": 3e-05,
+                "selection_frequencies": {
+                  "0.0001": 0.002,
+                  "0.001": 0.0215,
+                  "0.003": 0.018,
+                  "0.01": 0.0795,
+                  "0.03": 0.0305,
+                  "0.1": 0.0055,
+                  "0.3": 0.0275,
+                  "1.0": 0.081,
+                  "10.0": 0.0845,
+                  "10000.0": 0.226,
+                  "30.0": 0.074,
+                  "300.0": 0.016,
+                  "3000.0": 0.0065,
+                  "3e-05": 0.3275
+                },
+                "supported_lambdas": [
+                  3e-05,
+                  0.01,
+                  1.0,
+                  10.0,
+                  30.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.04103916684071809,
+              "oracle_lam": 0.1,
+              "selected_age_oracle_ratio": 2.1037205529915832,
+              "selected_age_rmse": 0.0863349387604693,
+              "selected_aggregate_fold_loss": 0.013989437682243814,
+              "selected_at_boundary": true,
+              "selected_lam": 10000.0,
+              "selected_mean_fold_loss": 0.5442213277798772
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.522878745280337,
+                "maximum_between_lambda_age_spread": 0.15675304735801804,
+                "maximum_total_normalized_age_uncertainty": 0.15675304735801804,
+                "maximum_within_lambda_age_difference": 0.00016195834176591095,
+                "modal_frequency": 0.702,
+                "modal_lam": 10000.0,
+                "selection_frequencies": {
+                  "0.0003": 0.0005,
+                  "0.001": 0.001,
+                  "0.003": 0.001,
+                  "0.3": 0.111,
+                  "1.0": 0.0365,
+                  "10.0": 0.018,
+                  "100.0": 0.0005,
+                  "1000.0": 0.019,
+                  "10000.0": 0.702,
+                  "3.0": 0.037,
+                  "30.0": 0.009,
+                  "300.0": 0.0005,
+                  "3000.0": 0.0635,
+                  "3e-05": 0.0005
+                },
+                "supported_lambdas": [
+                  0.3,
+                  3000.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.04103916684071809,
+              "oracle_lam": 0.1,
+              "selected_age_oracle_ratio": 2.1037205529915832,
+              "selected_age_rmse": 0.0863349387604693,
+              "selected_aggregate_fold_loss": 0.5442213277798772,
+              "selected_at_boundary": true,
+              "selected_lam": 10000.0,
+              "selected_mean_fold_loss": 0.5442213277798772
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.522878745280337,
+                "maximum_between_lambda_age_spread": 0.15675304735801804,
+                "maximum_total_normalized_age_uncertainty": 0.15675304735801804,
+                "maximum_within_lambda_age_difference": 0.00016195834176591095,
+                "modal_frequency": 0.483,
+                "modal_lam": 10000.0,
+                "selection_frequencies": {
+                  "0.0001": 0.0055,
+                  "0.0003": 0.0105,
+                  "0.001": 0.008,
+                  "0.003": 0.01,
+                  "0.01": 0.002,
+                  "0.03": 0.001,
+                  "0.1": 0.012,
+                  "0.3": 0.0775,
+                  "1.0": 0.052,
+                  "10.0": 0.004,
+                  "100.0": 0.0015,
+                  "1000.0": 0.154,
+                  "10000.0": 0.483,
+                  "3.0": 0.0145,
+                  "30.0": 0.0025,
+                  "300.0": 0.007,
+                  "3000.0": 0.14,
+                  "3e-05": 0.015
+                },
+                "supported_lambdas": [
+                  0.3,
+                  1.0,
+                  1000.0,
+                  3000.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.04103916684071809,
+              "oracle_lam": 0.1,
+              "selected_age_oracle_ratio": 2.1037205529915832,
+              "selected_age_rmse": 0.0863349387604693,
+              "selected_aggregate_fold_loss": 0.033988058774263516,
+              "selected_at_boundary": true,
+              "selected_lam": 10000.0,
+              "selected_mean_fold_loss": 0.5442213277798772
+            }
+          },
+          "valid_candidates": 18
+        },
+        "multiplicative_gamma": {
+          "observation_loss": "multiplicative_gamma",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.0,
+                "maximum_between_lambda_age_spread": 0.14057069635516117,
+                "maximum_total_normalized_age_uncertainty": 0.14057069635516117,
+                "maximum_within_lambda_age_difference": 6.291071015371297e-05,
+                "modal_frequency": 0.284,
+                "modal_lam": 3.0,
+                "selection_frequencies": {
+                  "0.0001": 0.0085,
+                  "0.001": 0.01,
+                  "0.003": 0.023,
+                  "0.01": 0.0005,
+                  "0.1": 0.0035,
+                  "0.3": 0.01,
+                  "1.0": 0.1165,
+                  "10.0": 0.228,
+                  "1000.0": 0.003,
+                  "10000.0": 0.145,
+                  "3.0": 0.284,
+                  "30.0": 0.003,
+                  "300.0": 0.002,
+                  "3000.0": 0.163
+                },
+                "supported_lambdas": [
+                  1.0,
+                  3.0,
+                  10.0,
+                  3000.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.0460561503404957,
+              "oracle_lam": 0.001,
+              "selected_age_oracle_ratio": 1.4114791010464103,
+              "selected_age_rmse": 0.06500729368026119,
+              "selected_aggregate_fold_loss": 1.3062017570690034,
+              "selected_at_boundary": false,
+              "selected_lam": 10.0,
+              "selected_mean_fold_loss": 1.3062017570690034
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 5.622878745280332,
+                "maximum_between_lambda_age_spread": 0.1517097854756818,
+                "maximum_total_normalized_age_uncertainty": 0.1517097854756818,
+                "maximum_within_lambda_age_difference": 0.00026561783515383075,
+                "modal_frequency": 0.2695,
+                "modal_lam": 3.0,
+                "selection_frequencies": {
+                  "0.0001": 0.0255,
+                  "0.0003": 0.0085,
+                  "0.001": 0.064,
+                  "0.003": 0.002,
+                  "0.03": 0.0255,
+                  "0.1": 0.022,
+                  "0.3": 0.068,
+                  "1.0": 0.071,
+                  "10.0": 0.124,
+                  "100.0": 0.0005,
+                  "1000.0": 0.0085,
+                  "10000.0": 0.2665,
+                  "3.0": 0.2695,
+                  "30.0": 0.003,
+                  "3000.0": 0.0415
+                },
+                "supported_lambdas": [
+                  0.001,
+                  0.3,
+                  1.0,
+                  3.0,
+                  10.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.0460561503404957,
+              "oracle_lam": 0.001,
+              "selected_age_oracle_ratio": 1.1395405566450316,
+              "selected_age_rmse": 0.05248285119593573,
+              "selected_aggregate_fold_loss": 0.5685416211313707,
+              "selected_at_boundary": false,
+              "selected_lam": 3.0,
+              "selected_mean_fold_loss": 1.308036974147112
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 3.5228787452803374,
+                "maximum_between_lambda_age_spread": 0.12571862223879793,
+                "maximum_total_normalized_age_uncertainty": 0.12571862223879793,
+                "maximum_within_lambda_age_difference": 6.291071015371297e-05,
+                "modal_frequency": 0.64,
+                "modal_lam": 10000.0,
+                "selection_frequencies": {
+                  "0.0003": 0.0005,
+                  "0.001": 0.0005,
+                  "0.003": 0.0035,
+                  "0.01": 0.0005,
+                  "0.3": 0.0005,
+                  "1.0": 0.0245,
+                  "10.0": 0.1645,
+                  "100.0": 0.001,
+                  "1000.0": 0.001,
+                  "10000.0": 0.64,
+                  "3.0": 0.128,
+                  "30.0": 0.0095,
+                  "3000.0": 0.026
+                },
+                "supported_lambdas": [
+                  3.0,
+                  10.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.0460561503404957,
+              "oracle_lam": 0.001,
+              "selected_age_oracle_ratio": 1.8923843988103204,
+              "selected_age_rmse": 0.08715594037361668,
+              "selected_aggregate_fold_loss": 1.312969078149728,
+              "selected_at_boundary": true,
+              "selected_lam": 10000.0,
+              "selected_mean_fold_loss": 1.312969078149728
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 6.0,
+                "maximum_between_lambda_age_spread": 0.15160344061150033,
+                "maximum_total_normalized_age_uncertainty": 0.15160344061150033,
+                "maximum_within_lambda_age_difference": 0.00010804382719031835,
+                "modal_frequency": 0.314,
+                "modal_lam": 3.0,
+                "selection_frequencies": {
+                  "0.0001": 0.0215,
+                  "0.0003": 0.0015,
+                  "0.001": 0.0235,
+                  "0.003": 0.064,
+                  "0.01": 0.0015,
+                  "0.03": 0.004,
+                  "0.1": 0.005,
+                  "0.3": 0.038,
+                  "1.0": 0.292,
+                  "10.0": 0.129,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.0515,
+                  "3.0": 0.314,
+                  "30.0": 0.001,
+                  "300.0": 0.0005,
+                  "3000.0": 0.0525
+                },
+                "supported_lambdas": [
+                  0.003,
+                  1.0,
+                  3.0,
+                  10.0,
+                  3000.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.0460561503404957,
+              "oracle_lam": 0.001,
+              "selected_age_oracle_ratio": 1.0127713531627571,
+              "selected_age_rmse": 0.0466443497018112,
+              "selected_aggregate_fold_loss": 0.9417341952307036,
+              "selected_at_boundary": false,
+              "selected_lam": 1.0,
+              "selected_mean_fold_loss": 1.3289787079859428
+            }
+          },
+          "valid_candidates": 17
+        }
+      },
+      "noise_model": "gamma",
+      "ntips": 24,
+      "rate_sigma": 0.6,
+      "scenario": "replay-sparse-n24-gamma-sigma0p6-b",
+      "seed": 95360894,
+      "status": "ok"
+    },
+    {
+      "calibration": "root_and_internal_interval",
+      "models": {
+        "fractional_poisson": {
+          "observation_loss": "fractional_poisson",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 1.0,
+                "maximum_between_lambda_age_spread": 0.20991623226166584,
+                "maximum_total_normalized_age_uncertainty": 0.20991623226166584,
+                "maximum_within_lambda_age_difference": 2.074345222791152e-05,
+                "modal_frequency": 0.561,
+                "modal_lam": 0.3,
+                "selection_frequencies": {
+                  "0.0001": 0.001,
+                  "0.0003": 0.038,
+                  "0.001": 0.009,
+                  "0.003": 0.009,
+                  "0.01": 0.0105,
+                  "0.03": 0.0105,
+                  "0.1": 0.078,
+                  "0.3": 0.561,
+                  "1.0": 0.27,
+                  "10.0": 0.004,
+                  "3.0": 0.0085,
+                  "3e-05": 0.0005
+                },
+                "supported_lambdas": [
+                  0.1,
+                  0.3,
+                  1.0
+                ]
+              },
+              "oracle_age_rmse": 0.057838537325997384,
+              "oracle_lam": 0.03,
+              "selected_age_oracle_ratio": 1.1652671285264151,
+              "selected_age_rmse": 0.06739734630803285,
+              "selected_aggregate_fold_loss": 0.47905891017087815,
+              "selected_at_boundary": false,
+              "selected_lam": 0.3,
+              "selected_mean_fold_loss": 0.47905891017087815
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.0,
+                "maximum_between_lambda_age_spread": 0.11491105152664793,
+                "maximum_total_normalized_age_uncertainty": 0.11491105152664793,
+                "maximum_within_lambda_age_difference": 0.003612086397534131,
+                "modal_frequency": 0.276,
+                "modal_lam": 3e-05,
+                "selection_frequencies": {
+                  "0.0003": 0.185,
+                  "0.001": 0.026,
+                  "0.003": 0.044,
+                  "0.01": 0.005,
+                  "0.03": 0.263,
+                  "0.1": 0.086,
+                  "0.3": 0.0675,
+                  "1.0": 0.0015,
+                  "10.0": 0.0365,
+                  "3.0": 0.0075,
+                  "30.0": 0.002,
+                  "3e-05": 0.276
+                },
+                "supported_lambdas": [
+                  3e-05,
+                  0.0003,
+                  0.03,
+                  0.1,
+                  0.3
+                ]
+              },
+              "oracle_age_rmse": 0.057838537325997384,
+              "oracle_lam": 0.03,
+              "selected_age_oracle_ratio": 1.0,
+              "selected_age_rmse": 0.057838537325997384,
+              "selected_aggregate_fold_loss": 0.013660490251591727,
+              "selected_at_boundary": false,
+              "selected_lam": 0.03,
+              "selected_mean_fold_loss": 0.4952887326989937
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 0.5228787452803376,
+                "maximum_between_lambda_age_spread": 0.13860789366116316,
+                "maximum_total_normalized_age_uncertainty": 0.13860789366116316,
+                "maximum_within_lambda_age_difference": 2.074345222791152e-05,
+                "modal_frequency": 0.5495,
+                "modal_lam": 1.0,
+                "selection_frequencies": {
+                  "0.0003": 0.003,
+                  "0.001": 0.007,
+                  "0.003": 0.0015,
+                  "0.01": 0.002,
+                  "0.03": 0.003,
+                  "0.1": 0.0185,
+                  "0.3": 0.327,
+                  "1.0": 0.5495,
+                  "10.0": 0.039,
+                  "100.0": 0.001,
+                  "10000.0": 0.0005,
+                  "3.0": 0.0385,
+                  "30.0": 0.009,
+                  "300.0": 0.0005
+                },
+                "supported_lambdas": [
+                  0.3,
+                  1.0
+                ]
+              },
+              "oracle_age_rmse": 0.057838537325997384,
+              "oracle_lam": 0.03,
+              "selected_age_oracle_ratio": 1.5806254984643144,
+              "selected_age_rmse": 0.09142106689135147,
+              "selected_aggregate_fold_loss": 0.4878649108401467,
+              "selected_at_boundary": false,
+              "selected_lam": 1.0,
+              "selected_mean_fold_loss": 0.4878649108401467
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 3.5228787452803374,
+                "maximum_between_lambda_age_spread": 0.25347151056440503,
+                "maximum_total_normalized_age_uncertainty": 0.25347151056440503,
+                "maximum_within_lambda_age_difference": 0.0005065040733995274,
+                "modal_frequency": 0.29,
+                "modal_lam": 0.3,
+                "selection_frequencies": {
+                  "0.0001": 0.0025,
+                  "0.0003": 0.1435,
+                  "0.001": 0.1035,
+                  "0.003": 0.017,
+                  "0.01": 0.0115,
+                  "0.03": 0.025,
+                  "0.1": 0.1245,
+                  "0.3": 0.29,
+                  "1.0": 0.2035,
+                  "10.0": 0.028,
+                  "3.0": 0.0395,
+                  "3e-05": 0.0115
+                },
+                "supported_lambdas": [
+                  0.0003,
+                  0.001,
+                  0.1,
+                  0.3,
+                  1.0
+                ]
+              },
+              "oracle_age_rmse": 0.057838537325997384,
+              "oracle_lam": 0.03,
+              "selected_age_oracle_ratio": 1.1652671285264151,
+              "selected_age_rmse": 0.06739734630803285,
+              "selected_aggregate_fold_loss": 0.16195686572016893,
+              "selected_at_boundary": false,
+              "selected_lam": 0.3,
+              "selected_mean_fold_loss": 0.47905891017087815
+            }
+          },
+          "valid_candidates": 18
+        },
+        "multiplicative_gamma": {
+          "observation_loss": "multiplicative_gamma",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 1.0,
+                "maximum_between_lambda_age_spread": 0.00014022809373614997,
+                "maximum_total_normalized_age_uncertainty": 0.0023255447946605168,
+                "maximum_within_lambda_age_difference": 0.0023255447946605168,
+                "modal_frequency": 0.554,
+                "modal_lam": 0.0003,
+                "selection_frequencies": {
+                  "0.0001": 0.2315,
+                  "0.0003": 0.554,
+                  "0.001": 0.1575,
+                  "0.003": 0.0125,
+                  "0.01": 0.0025,
+                  "0.03": 0.0015,
+                  "0.1": 0.008,
+                  "0.3": 0.013,
+                  "1.0": 0.0175,
+                  "3.0": 0.0005,
+                  "3e-05": 0.0015
+                },
+                "supported_lambdas": [
+                  0.0001,
+                  0.0003,
+                  0.001
+                ]
+              },
+              "oracle_age_rmse": 0.05890655864692216,
+              "oracle_lam": 1e-05,
+              "selected_age_oracle_ratio": 1.0000000162955214,
+              "selected_age_rmse": 0.058906559606835246,
+              "selected_aggregate_fold_loss": 0.426400321400763,
+              "selected_at_boundary": false,
+              "selected_lam": 0.0003,
+              "selected_mean_fold_loss": 0.426400321400763
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.0,
+                "maximum_between_lambda_age_spread": 0.5841428296743749,
+                "maximum_total_normalized_age_uncertainty": 0.5841428296743749,
+                "maximum_within_lambda_age_difference": 0.0008904767396665791,
+                "modal_frequency": 0.235,
+                "modal_lam": 1.0,
+                "selection_frequencies": {
+                  "0.0001": 0.0315,
+                  "0.0003": 0.0745,
+                  "0.001": 0.15,
+                  "0.003": 0.0075,
+                  "0.01": 0.008,
+                  "0.03": 0.0675,
+                  "0.1": 0.1875,
+                  "0.3": 0.0555,
+                  "1.0": 0.235,
+                  "10.0": 0.0575,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.022,
+                  "3.0": 0.099,
+                  "3e-05": 0.004
+                },
+                "supported_lambdas": [
+                  0.0003,
+                  0.001,
+                  0.03,
+                  0.1,
+                  0.3,
+                  1.0,
+                  3.0,
+                  10.0
+                ]
+              },
+              "oracle_age_rmse": 0.05890655864692216,
+              "oracle_lam": 1e-05,
+              "selected_age_oracle_ratio": 1.0215784800375733,
+              "selected_age_rmse": 0.06017767264676691,
+              "selected_aggregate_fold_loss": 0.10857854537261846,
+              "selected_at_boundary": false,
+              "selected_lam": 0.1,
+              "selected_mean_fold_loss": 0.4357251391231168
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 3.5228787452803374,
+                "maximum_between_lambda_age_spread": 0.0770525275653618,
+                "maximum_total_normalized_age_uncertainty": 0.0770525275653618,
+                "maximum_within_lambda_age_difference": 0.0023255447946605168,
+                "modal_frequency": 0.296,
+                "modal_lam": 0.0003,
+                "selection_frequencies": {
+                  "0.0001": 0.065,
+                  "0.0003": 0.296,
+                  "0.001": 0.274,
+                  "0.003": 0.076,
+                  "0.01": 0.0135,
+                  "0.03": 0.0095,
+                  "0.1": 0.0185,
+                  "0.3": 0.0475,
+                  "1.0": 0.1665,
+                  "10.0": 0.003,
+                  "3.0": 0.0305
+                },
+                "supported_lambdas": [
+                  0.0001,
+                  0.0003,
+                  0.001,
+                  0.003,
+                  1.0
+                ]
+              },
+              "oracle_age_rmse": 0.05890655864692216,
+              "oracle_lam": 1e-05,
+              "selected_age_oracle_ratio": 1.0002771290452561,
+              "selected_age_rmse": 0.0589228833652793,
+              "selected_aggregate_fold_loss": 0.4265152493174482,
+              "selected_at_boundary": false,
+              "selected_lam": 0.001,
+              "selected_mean_fold_loss": 0.4265152493174482
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 3.4771212547196626,
+                "maximum_between_lambda_age_spread": 0.00014022809373614997,
+                "maximum_total_normalized_age_uncertainty": 0.0023255447946605168,
+                "maximum_within_lambda_age_difference": 0.0023255447946605168,
+                "modal_frequency": 0.403,
+                "modal_lam": 0.0003,
+                "selection_frequencies": {
+                  "0.0001": 0.1105,
+                  "0.0003": 0.403,
+                  "0.001": 0.2805,
+                  "0.003": 0.0475,
+                  "0.01": 0.005,
+                  "0.03": 0.008,
+                  "0.1": 0.019,
+                  "0.3": 0.04,
+                  "1.0": 0.0375,
+                  "10.0": 0.0005,
+                  "3.0": 0.0325,
+                  "3e-05": 0.016
+                },
+                "supported_lambdas": [
+                  0.0001,
+                  0.0003,
+                  0.001
+                ]
+              },
+              "oracle_age_rmse": 0.05890655864692216,
+              "oracle_lam": 1e-05,
+              "selected_age_oracle_ratio": 1.0002771290452561,
+              "selected_age_rmse": 0.0589228833652793,
+              "selected_aggregate_fold_loss": 0.19228528265049386,
+              "selected_at_boundary": false,
+              "selected_lam": 0.001,
+              "selected_mean_fold_loss": 0.4265152493174482
+            }
+          },
+          "valid_candidates": 18
+        }
+      },
+      "noise_model": "lognormal",
+      "ntips": 24,
+      "rate_sigma": 0.6,
+      "scenario": "replay-sparse-n24-lognormal-sigma0p6",
+      "seed": 95560900,
+      "status": "ok"
+    },
+    {
+      "calibration": "root_and_internal_interval",
+      "models": {
+        "fractional_poisson": {
+          "observation_loss": "fractional_poisson",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 1.4771212547196624,
+                "maximum_between_lambda_age_spread": 0.14931906200453526,
+                "maximum_total_normalized_age_uncertainty": 0.14931906200453526,
+                "maximum_within_lambda_age_difference": 1.0869987404404924e-05,
+                "modal_frequency": 0.313,
+                "modal_lam": 0.3,
+                "selection_frequencies": {
+                  "0.0003": 0.009,
+                  "0.001": 0.0205,
+                  "0.003": 0.003,
+                  "0.01": 0.0095,
+                  "0.03": 0.0485,
+                  "0.1": 0.1645,
+                  "0.3": 0.313,
+                  "1.0": 0.22,
+                  "10.0": 0.054,
+                  "100.0": 0.0045,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.01,
+                  "3.0": 0.118,
+                  "30.0": 0.017,
+                  "300.0": 0.0005,
+                  "3000.0": 0.0075
+                },
+                "supported_lambdas": [
+                  0.1,
+                  0.3,
+                  1.0,
+                  3.0,
+                  10.0
+                ]
+              },
+              "oracle_age_rmse": 0.02360650334201727,
+              "oracle_lam": 0.0003,
+              "selected_age_oracle_ratio": 1.4716094953320287,
+              "selected_age_rmse": 0.03473955446969988,
+              "selected_aggregate_fold_loss": 0.023314679624012995,
+              "selected_at_boundary": false,
+              "selected_lam": 0.3,
+              "selected_mean_fold_loss": 0.023314679624012995
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.522878745280337,
+                "maximum_between_lambda_age_spread": 0.1254011286031783,
+                "maximum_total_normalized_age_uncertainty": 0.1254011286031783,
+                "maximum_within_lambda_age_difference": 0.0006363820545753907,
+                "modal_frequency": 0.301,
+                "modal_lam": 10000.0,
+                "selection_frequencies": {
+                  "0.0003": 0.0135,
+                  "0.001": 0.0155,
+                  "0.003": 0.0005,
+                  "0.01": 0.0015,
+                  "0.03": 0.024,
+                  "0.1": 0.016,
+                  "0.3": 0.023,
+                  "1.0": 0.141,
+                  "10.0": 0.064,
+                  "100.0": 0.0615,
+                  "1000.0": 0.0435,
+                  "10000.0": 0.301,
+                  "3.0": 0.022,
+                  "30.0": 0.076,
+                  "300.0": 0.0445,
+                  "3000.0": 0.1375,
+                  "3e-05": 0.015
+                },
+                "supported_lambdas": [
+                  1.0,
+                  10.0,
+                  30.0,
+                  100.0,
+                  3000.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.02360650334201727,
+              "oracle_lam": 0.0003,
+              "selected_age_oracle_ratio": 4.189282423094448,
+              "selected_age_rmse": 0.0988943095214333,
+              "selected_aggregate_fold_loss": 0.002981889454013241,
+              "selected_at_boundary": false,
+              "selected_lam": 100.0,
+              "selected_mean_fold_loss": 0.029879832432819664
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.522878745280337,
+                "maximum_between_lambda_age_spread": 0.16389605858359912,
+                "maximum_total_normalized_age_uncertainty": 0.16389605858359912,
+                "maximum_within_lambda_age_difference": 0.0006363820545753907,
+                "modal_frequency": 0.372,
+                "modal_lam": 10000.0,
+                "selection_frequencies": {
+                  "0.0003": 0.002,
+                  "0.001": 0.003,
+                  "0.003": 0.0005,
+                  "0.01": 0.0025,
+                  "0.03": 0.0035,
+                  "0.1": 0.023,
+                  "0.3": 0.132,
+                  "1.0": 0.1505,
+                  "10.0": 0.0945,
+                  "100.0": 0.0145,
+                  "10000.0": 0.372,
+                  "3.0": 0.1455,
+                  "30.0": 0.048,
+                  "300.0": 0.004,
+                  "3000.0": 0.0045
+                },
+                "supported_lambdas": [
+                  0.3,
+                  1.0,
+                  3.0,
+                  10.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.02360650334201727,
+              "oracle_lam": 0.0003,
+              "selected_age_oracle_ratio": 4.189282423094448,
+              "selected_age_rmse": 0.0988943095214333,
+              "selected_aggregate_fold_loss": 0.029879832432819664,
+              "selected_at_boundary": false,
+              "selected_lam": 100.0,
+              "selected_mean_fold_loss": 0.029879832432819664
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 5.0,
+                "maximum_between_lambda_age_spread": 0.18935624610035595,
+                "maximum_total_normalized_age_uncertainty": 0.18935624610035595,
+                "maximum_within_lambda_age_difference": 0.00023649801926795,
+                "modal_frequency": 0.1565,
+                "modal_lam": 0.3,
+                "selection_frequencies": {
+                  "0.0003": 0.0015,
+                  "0.001": 0.023,
+                  "0.003": 0.0085,
+                  "0.01": 0.017,
+                  "0.03": 0.052,
+                  "0.1": 0.1065,
+                  "0.3": 0.1565,
+                  "1.0": 0.1025,
+                  "10.0": 0.0995,
+                  "100.0": 0.031,
+                  "1000.0": 0.0305,
+                  "10000.0": 0.044,
+                  "3.0": 0.0945,
+                  "30.0": 0.0615,
+                  "300.0": 0.0095,
+                  "3000.0": 0.148,
+                  "3e-05": 0.014
+                },
+                "supported_lambdas": [
+                  0.03,
+                  0.1,
+                  0.3,
+                  1.0,
+                  3.0,
+                  10.0,
+                  30.0,
+                  3000.0
+                ]
+              },
+              "oracle_age_rmse": 0.02360650334201727,
+              "oracle_lam": 0.0003,
+              "selected_age_oracle_ratio": 3.6160313657820304,
+              "selected_age_rmse": 0.08536185652117277,
+              "selected_aggregate_fold_loss": 0.00841377001394195,
+              "selected_at_boundary": false,
+              "selected_lam": 10.0,
+              "selected_mean_fold_loss": 0.027315483358614143
+            }
+          },
+          "valid_candidates": 18
+        },
+        "multiplicative_gamma": {
+          "observation_loss": "multiplicative_gamma",
+          "rules": {
+            "mean_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.522878745280337,
+                "maximum_between_lambda_age_spread": 0.2324870638139271,
+                "maximum_total_normalized_age_uncertainty": 0.2324870638139271,
+                "maximum_within_lambda_age_difference": 1.4392806727159257e-05,
+                "modal_frequency": 0.28,
+                "modal_lam": 3.0,
+                "selection_frequencies": {
+                  "0.0003": 0.005,
+                  "0.001": 0.001,
+                  "0.003": 0.0045,
+                  "0.01": 0.0025,
+                  "0.03": 0.0015,
+                  "0.1": 0.016,
+                  "0.3": 0.0715,
+                  "1.0": 0.257,
+                  "10.0": 0.127,
+                  "100.0": 0.002,
+                  "10000.0": 0.2115,
+                  "3.0": 0.28,
+                  "30.0": 0.0195,
+                  "300.0": 0.0005,
+                  "3e-05": 0.0005
+                },
+                "supported_lambdas": [
+                  0.3,
+                  1.0,
+                  3.0,
+                  10.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.023630213586370553,
+              "oracle_lam": 1e-05,
+              "selected_age_oracle_ratio": 2.1510496873570744,
+              "selected_age_rmse": 0.05082976354714327,
+              "selected_aggregate_fold_loss": 0.10028724468765814,
+              "selected_at_boundary": false,
+              "selected_lam": 3.0,
+              "selected_mean_fold_loss": 0.10028724468765814
+            },
+            "median_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 4.522878745280337,
+                "maximum_between_lambda_age_spread": 0.2080568938604243,
+                "maximum_total_normalized_age_uncertainty": 0.2080568938604243,
+                "maximum_within_lambda_age_difference": 1.4392806727159257e-05,
+                "modal_frequency": 0.41,
+                "modal_lam": 10000.0,
+                "selection_frequencies": {
+                  "0.0001": 0.0135,
+                  "0.001": 0.016,
+                  "0.003": 0.003,
+                  "0.01": 0.0095,
+                  "0.03": 0.007,
+                  "0.1": 0.0295,
+                  "0.3": 0.0495,
+                  "1.0": 0.0355,
+                  "10.0": 0.072,
+                  "100.0": 0.104,
+                  "1000.0": 0.003,
+                  "10000.0": 0.41,
+                  "3.0": 0.0685,
+                  "30.0": 0.1525,
+                  "300.0": 0.0215,
+                  "3e-05": 0.005
+                },
+                "supported_lambdas": [
+                  3.0,
+                  10.0,
+                  30.0,
+                  100.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.023630213586370553,
+              "oracle_lam": 1e-05,
+              "selected_age_oracle_ratio": 4.576887751501904,
+              "selected_age_rmse": 0.10815283512883327,
+              "selected_aggregate_fold_loss": 0.040447128574044644,
+              "selected_at_boundary": true,
+              "selected_lam": 10000.0,
+              "selected_mean_fold_loss": 0.10250434173024403
+            },
+            "paired_one_se_stronger": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 3.5228787452803374,
+                "maximum_between_lambda_age_spread": 0.2080568938604243,
+                "maximum_total_normalized_age_uncertainty": 0.2080568938604243,
+                "maximum_within_lambda_age_difference": 1.4392806727159257e-05,
+                "modal_frequency": 0.7235,
+                "modal_lam": 10000.0,
+                "selection_frequencies": {
+                  "0.001": 0.0005,
+                  "0.1": 0.002,
+                  "0.3": 0.006,
+                  "1.0": 0.0445,
+                  "10.0": 0.0745,
+                  "100.0": 0.0045,
+                  "1000.0": 0.0005,
+                  "10000.0": 0.7235,
+                  "3.0": 0.1125,
+                  "30.0": 0.0275,
+                  "300.0": 0.004
+                },
+                "supported_lambdas": [
+                  3.0,
+                  10.0,
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.023630213586370553,
+              "oracle_lam": 1e-05,
+              "selected_age_oracle_ratio": 4.576887751501904,
+              "selected_age_rmse": 0.10815283512883327,
+              "selected_aggregate_fold_loss": 0.10250434173024403,
+              "selected_at_boundary": true,
+              "selected_lam": 10000.0,
+              "selected_mean_fold_loss": 0.10250434173024403
+            },
+            "trimmed_mean_10_percent_minimum": {
+              "bootstrap": {
+                "log10_lam_80_percent_width": 3.5228787452803374,
+                "maximum_between_lambda_age_spread": 0.0,
+                "maximum_total_normalized_age_uncertainty": 1.4392806727159257e-05,
+                "maximum_within_lambda_age_difference": 1.4392806727159257e-05,
+                "modal_frequency": 0.794,
+                "modal_lam": 10000.0,
+                "selection_frequencies": {
+                  "0.0001": 0.0005,
+                  "0.0003": 0.0095,
+                  "0.001": 0.0075,
+                  "0.003": 0.004,
+                  "0.01": 0.0035,
+                  "0.1": 0.01,
+                  "0.3": 0.0305,
+                  "1.0": 0.031,
+                  "10.0": 0.0455,
+                  "100.0": 0.0055,
+                  "10000.0": 0.794,
+                  "3.0": 0.0365,
+                  "30.0": 0.0215,
+                  "300.0": 0.0005
+                },
+                "supported_lambdas": [
+                  10000.0
+                ]
+              },
+              "oracle_age_rmse": 0.023630213586370553,
+              "oracle_lam": 1e-05,
+              "selected_age_oracle_ratio": 4.576887751501904,
+              "selected_age_rmse": 0.10815283512883327,
+              "selected_aggregate_fold_loss": 0.07655006412162982,
+              "selected_at_boundary": true,
+              "selected_lam": 10000.0,
+              "selected_mean_fold_loss": 0.10250434173024403
+            }
+          },
+          "valid_candidates": 18
+        }
+      },
+      "noise_model": "gamma",
+      "ntips": 48,
+      "rate_sigma": 0.2,
+      "scenario": "replay-sparse-n48-gamma-sigma0p2",
+      "seed": 95660903,
+      "status": "ok"
+    }
+  ],
+  "diagnostic_only": true,
+  "environment": {
+    "numpy": "2.5.2",
+    "platform": "Linux-5.15.0-157-generic-x86_64-with-glibc2.35",
+    "python": "3.14.7 | packaged by conda-forge | (main, Aug 26 2026, 21:34:29) [GCC 15.3.0]",
+    "scipy": "1.18.1",
+    "toytree": "3.1.0.dev1"
+  },
+  "mode": "uncertainty-replay",
+  "refits_likelihood": false,
+  "release_eligible": false,
+  "rules": {
+    "mean_minimum": {
+      "aggregation": "mean",
+      "selection": "minimum"
+    },
+    "median_minimum": {
+      "aggregation": "median",
+      "selection": "minimum"
+    },
+    "paired_one_se_stronger": {
+      "aggregation": "mean",
+      "selection": "paired_one_se_stronger"
+    },
+    "trimmed_mean_10_percent_minimum": {
+      "aggregation": "trimmed_mean_10_percent",
+      "selection": "minimum"
+    }
+  },
+  "scope": "cache_only_correlated_lambda_selector_diagnostic",
+  "selected_historical_cases": true,
+  "study_version": 9,
+  "summary": {
+    "comparisons": {
+      "mean_minimum": {
+        "gamma_age_rmse_improved_fraction_vs_current": 0.0,
+        "gamma_age_rmse_ratio_to_current_median": 1.0
+      },
+      "median_minimum": {
+        "gamma_age_rmse_improved_fraction_vs_current": 0.125,
+        "gamma_age_rmse_ratio_to_current_median": 1.1967565386887675
+      },
+      "paired_one_se_stronger": {
+        "gamma_age_rmse_improved_fraction_vs_current": 0.125,
+        "gamma_age_rmse_ratio_to_current_median": 1.5487858152317213
+      },
+      "trimmed_mean_10_percent_minimum": {
+        "gamma_age_rmse_improved_fraction_vs_current": 0.125,
+        "gamma_age_rmse_ratio_to_current_median": 1.031699140426039
+      }
+    },
+    "datasets": 8,
+    "rules": {
+      "fractional_poisson": {
+        "mean_minimum": {
+          "boundary_selection_fraction": 0.0,
+          "datasets": 8,
+          "log10_lambda_width_median": 1.7385606273598313,
+          "maximum_total_age_uncertainty": 0.6743685769887355,
+          "selected_age_oracle_ratio_median": 1.4020622428406901,
+          "selected_age_oracle_ratio_p90": 1.6986285273139798,
+          "selected_age_rmse_median": 0.061041325657368875,
+          "total_age_uncertainty_median": 0.15303605468127665,
+          "total_age_uncertainty_p90": 0.34925193567978663
+        },
+        "median_minimum": {
+          "boundary_selection_fraction": 0.125,
+          "datasets": 8,
+          "log10_lambda_width_median": 4.261439372640169,
+          "maximum_total_age_uncertainty": 0.3758761113694534,
+          "selected_age_oracle_ratio_median": 1.426586156037121,
+          "selected_age_oracle_ratio_p90": 2.7293891140224424,
+          "selected_age_rmse_median": 0.06782046545020846,
+          "total_age_uncertainty_median": 0.1304364868296385,
+          "total_age_uncertainty_p90": 0.274060187321793
+        },
+        "paired_one_se_stronger": {
+          "boundary_selection_fraction": 0.25,
+          "datasets": 8,
+          "log10_lambda_width_median": 4.5,
+          "maximum_total_age_uncertainty": 0.6743685769887355,
+          "selected_age_oracle_ratio_median": 1.97025303150007,
+          "selected_age_oracle_ratio_p90": 3.403801316568945,
+          "selected_age_rmse_median": 0.0951576882063924,
+          "total_age_uncertainty_median": 0.19716042494248315,
+          "total_age_uncertainty_p90": 0.444015024068945
+        },
+        "trimmed_mean_10_percent_minimum": {
+          "boundary_selection_fraction": 0.125,
+          "datasets": 8,
+          "log10_lambda_width_median": 4.261439372640169,
+          "maximum_total_age_uncertainty": 0.6743685769887355,
+          "selected_age_oracle_ratio_median": 1.4366190202792306,
+          "selected_age_oracle_ratio_p90": 2.627151438920743,
+          "selected_age_rmse_median": 0.07637960141460282,
+          "total_age_uncertainty_median": 0.21661357742643508,
+          "total_age_uncertainty_p90": 0.45818614433845917
+        }
+      },
+      "multiplicative_gamma": {
+        "mean_minimum": {
+          "boundary_selection_fraction": 0.0,
+          "datasets": 8,
+          "log10_lambda_width_median": 3.5,
+          "maximum_total_age_uncertainty": 0.3271559662190703,
+          "selected_age_oracle_ratio_median": 1.0915667911986853,
+          "selected_age_oracle_ratio_p90": 1.748270453278101,
+          "selected_age_rmse_median": 0.05828241857856081,
+          "total_age_uncertainty_median": 0.17430868681902933,
+          "total_age_uncertainty_p90": 0.26088773453547004
+        },
+        "median_minimum": {
+          "boundary_selection_fraction": 0.125,
+          "datasets": 8,
+          "log10_lambda_width_median": 4.0,
+          "maximum_total_age_uncertainty": 0.7965443398502836,
+          "selected_age_oracle_ratio_median": 1.2293674284414642,
+          "selected_age_oracle_ratio_p90": 3.1555244562600238,
+          "selected_age_rmse_median": 0.06942873861442686,
+          "total_age_uncertainty_median": 0.2693561836485737,
+          "total_age_uncertainty_p90": 0.6478632827271475
+        },
+        "paired_one_se_stronger": {
+          "boundary_selection_fraction": 0.25,
+          "datasets": 8,
+          "log10_lambda_width_median": 3.5228787452803374,
+          "maximum_total_age_uncertainty": 0.7965443398502836,
+          "selected_age_oracle_ratio_median": 1.8246253205111587,
+          "selected_age_oracle_ratio_p90": 3.385194771363976,
+          "selected_age_rmse_median": 0.08129377756143003,
+          "total_age_uncertainty_median": 0.22065523667891268,
+          "total_age_uncertainty_p90": 0.6105774018405211
+        },
+        "trimmed_mean_10_percent_minimum": {
+          "boundary_selection_fraction": 0.125,
+          "datasets": 8,
+          "log10_lambda_width_median": 3.4771212547196626,
+          "maximum_total_age_uncertainty": 0.600681976081674,
+          "selected_age_oracle_ratio_median": 1.1136706499189342,
+          "selected_age_oracle_ratio_p90": 2.8500998267098137,
+          "selected_age_rmse_median": 0.05972874178318621,
+          "total_age_uncertainty_median": 0.13893075919643783,
+          "total_age_uncertainty_p90": 0.4116671231884441
+        }
+      }
+    },
+    "successful_datasets": 8,
+    "targeted_gamma_checks": {
+      "mean_minimum": {
+        "maximum_total_age_uncertainty": false,
+        "selected_age_oracle_ratio_median": true,
+        "selected_age_oracle_ratio_p90": true,
+        "targeted_criteria_passed": false
+      },
+      "median_minimum": {
+        "maximum_total_age_uncertainty": false,
+        "selected_age_oracle_ratio_median": true,
+        "selected_age_oracle_ratio_p90": false,
+        "targeted_criteria_passed": false
+      },
+      "paired_one_se_stronger": {
+        "maximum_total_age_uncertainty": false,
+        "selected_age_oracle_ratio_median": false,
+        "selected_age_oracle_ratio_p90": false,
+        "targeted_criteria_passed": false
+      },
+      "trimmed_mean_10_percent_minimum": {
+        "maximum_total_age_uncertainty": false,
+        "selected_age_oracle_ratio_median": true,
+        "selected_age_oracle_ratio_p90": false,
+        "targeted_criteria_passed": false
+      }
+    }
+  }
+}
