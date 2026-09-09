@@ -1,0 +1,63 @@
+{
+  "study_version": 14,
+  "source_study": 13,
+  "fit": {
+    "max_iter": 5000,
+    "max_fun": 10000,
+    "max_refine": 10,
+    "default_nstarts": 4,
+    "stress_nstarts": 8,
+    "oracle_nstarts": 2,
+    "retry_multiplier": 4
+  },
+  "simulation": {
+    "baseline_rate": 20.0
+  },
+  "noise": {
+    "gamma_shape": 100.0
+  },
+  "modes": {
+    "smoke": {
+      "target_count": 2,
+      "control_count": 2
+    },
+    "replay": {
+      "target_count": 14,
+      "control_count": 6
+    }
+  },
+  "targets": [
+    "correlated-n24-root_and_internal_interval-fractional_poisson-sigma0p1-r0001",
+    "correlated-n24-root_and_internal_interval-fractional_poisson-sigma0p3-r0001",
+    "correlated-n24-root_and_internal_interval-fractional_poisson-sigma0p6-r0001",
+    "correlated-n48-root-expected_branch-sigma0p6-r0000",
+    "correlated-n48-root-fractional_poisson-sigma0p1-r0000",
+    "correlated-n48-root-fractional_poisson-sigma0p1-r0001",
+    "correlated-n48-root-fractional_poisson-sigma0p3-r0000",
+    "correlated-n48-root-fractional_poisson-sigma0p6-r0000",
+    "correlated-n48-root-fractional_poisson-sigma0p6-r0001",
+    "correlated-n48-root-continuous_gamma-sigma0p6-r0000",
+    "correlated-n48-root_and_internal_interval-expected_branch-sigma0p6-r0000",
+    "correlated-n48-root_and_internal_interval-fractional_poisson-sigma0p3-r0000",
+    "correlated-n48-root_and_internal_interval-fractional_poisson-sigma0p6-r0000",
+    "correlated-n48-root_and_internal_interval-fractional_poisson-sigma0p6-r0001"
+  ],
+  "controls": [
+    "correlated-n24-root-expected_branch-sigma0p3-r0000",
+    "correlated-n24-root-fractional_poisson-sigma0p3-r0000",
+    "correlated-n24-root-continuous_gamma-sigma0p3-r0000",
+    "correlated-n24-root_and_internal_interval-expected_branch-sigma0p3-r0000",
+    "correlated-n24-root_and_internal_interval-fractional_poisson-sigma0p3-r0000",
+    "correlated-n24-root_and_internal_interval-continuous_gamma-sigma0p3-r0000"
+  ],
+  "decision_gates": {
+    "maximum_relative_objective_gap": 1e-5,
+    "maximum_default_reference_age_difference": 0.02,
+    "maximum_time_unit_age_difference": 1e-5,
+    "maximum_time_unit_rate_relative_error": 1e-5,
+    "maximum_time_unit_penalty_relative_error": 1e-5,
+    "maximum_control_age_mae_increase": 0.01,
+    "maximum_control_rate_spearman_decrease": 0.03,
+    "maximum_projected_rate_gradient": 1e-6
+  }
+}

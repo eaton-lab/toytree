@@ -4,9 +4,11 @@
 
 from __future__ import annotations
 
+import warnings
 from typing import Any
 
 import numpy as np
+from scipy.optimize import LinearConstraint, minimize
 from scipy.special import expit
 
 from toytree.utils import ToytreeError
@@ -14,6 +16,87 @@ from toytree.utils import ToytreeError
 SOLUTION_OBJECTIVE_ATOL = 1e-4
 SOLUTION_OBJECTIVE_RTOL = 1e-6
 SOLUTION_MAX_NORMALIZED_AGE_DIFFERENCE = 0.02
+
+
+def projected_gradient_max_abs(
+    params: np.ndarray,
+    gradient: np.ndarray,
+    bounds: list[tuple[float | None, float | None]],
+    tolerance: float = 1e-10,
+) -> float:
+    """Return the largest feasible first-order gradient component."""
+    values = np.asarray(params, dtype=float)
+    projected = np.asarray(gradient, dtype=float).copy()
+    for idx, (lower, upper) in enumerate(bounds):
+        if lower is not None and values[idx] <= float(lower) + tolerance:
+            if projected[idx] > 0.0:
+                projected[idx] = 0.0
+        if upper is not None and values[idx] >= float(upper) - tolerance:
+            if projected[idx] < 0.0:
+                projected[idx] = 0.0
+    return float(np.max(np.abs(projected))) if projected.size else 0.0
+
+
+def direct_age_linear_constraint(
+    ages_base: np.ndarray,
+    ages_idxs: np.ndarray,
+    edges: np.ndarray,
+    dist_floor: float = 1e-12,
+) -> LinearConstraint | tuple[()]:
+    """Return linear parent-older-than-child constraints for free ages."""
+    positions = {int(nidx): pos for pos, nidx in enumerate(ages_idxs)}
+    rows = []
+    lower = []
+    for child, parent in np.asarray(edges, dtype=int):
+        row = np.zeros(ages_idxs.size, dtype=float)
+        constant = 0.0
+        if int(parent) in positions:
+            row[positions[int(parent)]] += 1.0
+        else:
+            constant += float(ages_base[int(parent)])
+        if int(child) in positions:
+            row[positions[int(child)]] -= 1.0
+        else:
+            constant -= float(ages_base[int(child)])
+        if np.any(row):
+            rows.append(row)
+            lower.append(float(dist_floor) - constant)
+        elif constant < float(dist_floor):
+            raise ToytreeError("fixed node ages violate positive branch lengths.")
+    if not rows:
+        return ()
+    return LinearConstraint(
+        np.vstack(rows),
+        np.asarray(lower, dtype=float),
+        np.full(len(rows), np.inf),
+    )
+
+
+def minimize_profiled_ages(
+    objective: Any,
+    initial: np.ndarray,
+    bounds: list[tuple[float, float]],
+    constraints: tuple,
+    max_iter: int,
+    ftol: float,
+):
+    """Run direct-age SLSQP while suppressing benign clipping warnings."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Values in x were outside bounds during a minimize step",
+            category=RuntimeWarning,
+            module=r"scipy\.optimize\._slsqp_py",
+        )
+        return minimize(
+            fun=objective,
+            x0=np.asarray(initial, dtype=float),
+            method="SLSQP",
+            jac=True,
+            bounds=bounds,
+            constraints=constraints,
+            options=dict(maxiter=int(max_iter), ftol=float(ftol), disp=False),
+        )
 
 
 def decode_age_params_with_jacobian(

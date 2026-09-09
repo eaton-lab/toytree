@@ -201,7 +201,8 @@ def edges_make_ultrametric(
         Optimizer and complete refinement-cycle limits.
     nstarts, ncores : int
         Multistart count and worker-process count. When ``nstarts`` is omitted,
-        discrete uses eight starts, UCLN uses four, and other methods use one.
+        discrete uses eight starts, UCLN and correlated use four, and other
+        methods use one.
     seed : int or None
         Random seed for multistart initialization.
 
@@ -214,7 +215,11 @@ def edges_make_ultrametric(
     """
     method = _validate_method(method)
     if nstarts is None:
-        nstarts = {"discrete": 8, "uncorrelated_lognormal": 4}.get(method, 1)
+        nstarts = {
+            "discrete": 8,
+            "uncorrelated_lognormal": 4,
+            "correlated": 4,
+        }.get(method, 1)
     calibrations = {} if calibrations is None else calibrations
     penalized = {"relaxed", "uncorrelated_lognormal", "correlated"}
 

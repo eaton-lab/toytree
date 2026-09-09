@@ -158,7 +158,11 @@ def _fit_candidate(
     method = config["method"]
     options = dict(fit_options)
     if options.get("nstarts") is None:
-        options["nstarts"] = 8 if method == "discrete" else 1
+        options["nstarts"] = {
+            "discrete": 8,
+            "uncorrelated_lognormal": 4,
+            "correlated": 4,
+        }.get(method, 1)
     common = dict(
         calibrations=calibrations,
         full=True,

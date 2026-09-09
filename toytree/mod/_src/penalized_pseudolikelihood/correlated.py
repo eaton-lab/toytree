@@ -6,11 +6,20 @@ from typing import Any, Union
 
 import numpy as np
 from loguru import logger
-from scipy.optimize import minimize
+from scipy.optimize import OptimizeResult, minimize
 from scipy.special import expit, gammaln
 
 from toytree.core import ToyTree
 from toytree.core.apis import TreeModAPI, add_subpackage_method
+from toytree.mod._src.penalized_pseudolikelihood.clock import (
+    edges_make_ultrametric_clock,
+)
+from toytree.mod._src.penalized_pseudolikelihood.optimization import (
+    direct_age_linear_constraint,
+    minimize_profiled_ages,
+    optimizer_stopped_at_limit,
+    projected_gradient_max_abs,
+)
 from toytree.mod._src.penalized_pseudolikelihood.utils import (
     Calibrations,
     _decode_age_params,
@@ -20,7 +29,6 @@ from toytree.mod._src.penalized_pseudolikelihood.utils import (
     _get_init_ages,
     _get_params_bounds,
     _normalize_calibrations,
-    _pack_log_rates,
     _result_observation_metadata,
     _run_multistart,
     _select_best_multistart,
@@ -30,6 +38,7 @@ from toytree.mod._src.penalized_pseudolikelihood.utils import (
     _validate_observation_mask,
     get_tree_with_correlated_rates,
 )
+from toytree.utils import ToytreeError
 
 __all__ = ["edges_make_ultrametric_correlated"]
 
@@ -127,35 +136,404 @@ def _assess_correlated_solution_stability(
     }
 
 
+def _correlated_penalty_hessian(parent_edges: np.ndarray) -> np.ndarray:
+    """Return the Hessian of complete-tree log-rate roughness."""
+    parent_edges = np.asarray(parent_edges, dtype=int)
+    matrix = np.zeros((parent_edges.size, parent_edges.size), dtype=float)
+    for child in np.flatnonzero(parent_edges >= 0):
+        parent = int(parent_edges[child])
+        matrix[child, child] += 2.0
+        matrix[parent, parent] += 2.0
+        matrix[child, parent] -= 2.0
+        matrix[parent, child] -= 2.0
+    basal = np.flatnonzero(parent_edges < 0)
+    if basal.size:
+        centered = np.eye(basal.size) - np.full(
+            (basal.size, basal.size), 1.0 / basal.size
+        )
+        matrix[np.ix_(basal, basal)] += 2.0 * centered
+    return matrix
+
+
+def _correlated_rate_objective_with_gradient(
+    log_rates: np.ndarray,
+    ages_hat: np.ndarray,
+    edges: np.ndarray,
+    edata: np.ndarray,
+    parent_edges: np.ndarray,
+    lam: float,
+    valid_loglik: float,
+    observation_mask: np.ndarray,
+    observation_loss: str,
+) -> tuple[float, np.ndarray]:
+    """Return the fixed-chronogram objective and log-rate gradient."""
+    log_rates = np.asarray(log_rates, dtype=float)
+    rates_hat = _unpack_log_rates(log_rates)
+    objective = -_correlated_branch_pseudologlik(
+        rates_hat,
+        ages_hat,
+        edges,
+        edata,
+        parent_edges,
+        lam,
+        valid_loglik,
+        observation_mask,
+        observation_loss,
+    )
+    times = ages_hat[edges[:, 1]] - ages_hat[edges[:, 0]]
+    expected = rates_hat * times
+    mask = _validate_observation_mask(observation_mask, edges.shape[0])
+    if (
+        not np.isfinite(objective)
+        or np.any(times <= DIST_FLOOR)
+        or np.any(expected <= 0.0)
+        or np.any(~np.isfinite(expected))
+    ):
+        return float(objective), np.zeros_like(log_rates)
+    data_gradient = np.zeros(log_rates.size, dtype=float)
+    if observation_loss == "fractional_poisson":
+        data_gradient[mask] = expected[mask] - edata[mask, 0]
+    else:
+        data_gradient[mask] = 1.0 - edata[mask, 0] / expected[mask]
+    gradient = data_gradient + lam * _correlated_penalty_gradient(
+        log_rates, parent_edges
+    )
+    return float(objective), gradient
+
+
+def _fit_profiled_correlated_rates(
+    log_rates_init: np.ndarray,
+    ages_hat: np.ndarray,
+    rate_bounds: list[tuple[float | None, float | None]],
+    edges: np.ndarray,
+    edata: np.ndarray,
+    parent_edges: np.ndarray,
+    lam: float,
+    valid_loglik: float,
+    observation_mask: np.ndarray,
+    observation_loss: str,
+    max_iter: int,
+    max_fun: int,
+) -> dict[str, Any]:
+    """Solve the convex conditional correlated log-rate problem."""
+    lower = np.asarray(
+        [-np.inf if bound[0] is None else float(bound[0]) for bound in rate_bounds]
+    )
+    upper = np.asarray(
+        [np.inf if bound[1] is None else float(bound[1]) for bound in rate_bounds]
+    )
+    params = np.clip(np.asarray(log_rates_init, dtype=float), lower, upper)
+    objective, gradient = _correlated_rate_objective_with_gradient(
+        params,
+        ages_hat,
+        edges,
+        edata,
+        parent_edges,
+        lam,
+        valid_loglik,
+        observation_mask,
+        observation_loss,
+    )
+    penalty_hessian = lam * _correlated_penalty_hessian(parent_edges)
+    times = ages_hat[edges[:, 1]] - ages_hat[edges[:, 0]]
+    mask = _validate_observation_mask(observation_mask, edges.shape[0])
+    nfev = 1
+    nit = 0
+    message = "conditional rate Newton iteration limit reached"
+    converged = False
+    max_newton_iter = max(1, min(int(max_iter), int(max_fun), 500))
+    for iteration in range(max_newton_iter):
+        nit = iteration + 1
+        projected = projected_gradient_max_abs(params, gradient, rate_bounds)
+        if projected <= 1e-8:
+            converged = True
+            message = "conditional rate projected gradient converged"
+            break
+
+        at_lower = (params <= lower + 1e-10) & (gradient > 0.0)
+        at_upper = (params >= upper - 1e-10) & (gradient < 0.0)
+        free = ~(at_lower | at_upper)
+        direction = np.zeros_like(params)
+        if np.any(free):
+            expected = np.exp(params) * times
+            curvature = np.zeros(params.size, dtype=float)
+            if observation_loss == "fractional_poisson":
+                curvature[mask] = expected[mask]
+            else:
+                curvature[mask] = edata[mask, 0] / expected[mask]
+            free_idxs = np.flatnonzero(free)
+            hessian = penalty_hessian[np.ix_(free_idxs, free_idxs)].copy()
+            hessian.flat[:: hessian.shape[0] + 1] += curvature[free]
+            try:
+                direction[free] = -np.linalg.solve(hessian, gradient[free])
+            except np.linalg.LinAlgError:
+                ridge = 1e-10 * max(1.0, float(np.max(np.diag(hessian))))
+                hessian.flat[:: hessian.shape[0] + 1] += ridge
+                direction[free] = -np.linalg.lstsq(hessian, gradient[free], rcond=None)[
+                    0
+                ]
+
+        slope = float(np.dot(gradient, direction))
+        if not np.isfinite(slope) or slope >= 0.0:
+            scale = np.maximum(1.0, np.diag(penalty_hessian))
+            direction = -gradient / scale
+            direction[at_lower | at_upper] = 0.0
+
+        accepted = False
+        step_scale = 1.0
+        for _ in range(60):
+            candidate = np.clip(params + step_scale * direction, lower, upper)
+            step = candidate - params
+            if float(np.max(np.abs(step))) <= 1e-14:
+                break
+            candidate_objective, candidate_gradient = (
+                _correlated_rate_objective_with_gradient(
+                    candidate,
+                    ages_hat,
+                    edges,
+                    edata,
+                    parent_edges,
+                    lam,
+                    valid_loglik,
+                    observation_mask,
+                    observation_loss,
+                )
+            )
+            nfev += 1
+            armijo = objective + 1e-4 * float(np.dot(gradient, step))
+            if np.isfinite(candidate_objective) and candidate_objective <= armijo:
+                params = candidate
+                objective = float(candidate_objective)
+                gradient = np.asarray(candidate_gradient, dtype=float)
+                accepted = True
+                break
+            step_scale *= 0.5
+        if not accepted:
+            message = "conditional rate Newton line search stalled"
+            break
+
+    projected = projected_gradient_max_abs(params, gradient, rate_bounds)
+    if projected <= 1e-6:
+        converged = True
+        if "converged" not in message:
+            message = "conditional rate projected gradient converged"
+    return {
+        "params": params,
+        "objective": float(objective),
+        "converged": bool(converged),
+        "message": message,
+        "projected_gradient_max_abs": float(projected),
+        "nfev": int(nfev),
+        "nit": int(nit),
+    }
+
+
+class _ProfiledCorrelatedObjective:
+    """Profile correlated rates while optimizing direct node ages."""
+
+    def __init__(
+        self,
+        log_rates_init: np.ndarray,
+        rate_bounds: list[tuple[float | None, float | None]],
+        ages_base: np.ndarray,
+        ages_idxs: np.ndarray,
+        edges: np.ndarray,
+        edata: np.ndarray,
+        parent_edges: np.ndarray,
+        lam: float,
+        valid_loglik: float,
+        observation_mask: np.ndarray,
+        observation_loss: str,
+        max_iter: int,
+        max_fun: int,
+    ) -> None:
+        self.log_rates = np.asarray(log_rates_init, dtype=float).copy()
+        self.rate_bounds = rate_bounds
+        self.ages_base = np.asarray(ages_base, dtype=float)
+        self.ages_idxs = np.asarray(ages_idxs, dtype=int)
+        self.edges = np.asarray(edges, dtype=int)
+        self.edata = np.asarray(edata, dtype=float)
+        self.parent_edges = np.asarray(parent_edges, dtype=int)
+        self.lam = float(lam)
+        self.valid_loglik = float(valid_loglik)
+        self.observation_mask = np.asarray(observation_mask, dtype=bool)
+        self.observation_loss = str(observation_loss)
+        self.max_iter = int(max_iter)
+        self.max_fun = int(max_fun)
+        self.total_rate_nfev = 0
+        self.total_rate_nit = 0
+        self.evaluations = 0
+        self.all_rate_solves_converged = True
+        self.rate_gradient_max_abs = float("inf")
+        self._cached_age_values: np.ndarray | None = None
+        self._cached_result: tuple[float, np.ndarray] | None = None
+
+    def __call__(self, age_values: np.ndarray) -> tuple[float, np.ndarray]:
+        """Return the rate-profiled objective and direct-age gradient."""
+        age_values = np.asarray(age_values, dtype=float)
+        if self._cached_age_values is not None and np.array_equal(
+            age_values, self._cached_age_values
+        ):
+            assert self._cached_result is not None
+            return self._cached_result
+        ages_hat = self.ages_base.copy()
+        ages_hat[self.ages_idxs] = age_values
+        rate_fit = _fit_profiled_correlated_rates(
+            self.log_rates,
+            ages_hat,
+            self.rate_bounds,
+            self.edges,
+            self.edata,
+            self.parent_edges,
+            self.lam,
+            self.valid_loglik,
+            self.observation_mask,
+            self.observation_loss,
+            self.max_iter,
+            self.max_fun,
+        )
+        self.evaluations += 1
+        self.total_rate_nfev += int(rate_fit["nfev"])
+        self.total_rate_nit += int(rate_fit["nit"])
+        self.all_rate_solves_converged &= bool(rate_fit["converged"])
+        self.rate_gradient_max_abs = float(rate_fit["projected_gradient_max_abs"])
+        self.log_rates = np.asarray(rate_fit["params"], dtype=float)
+        rates_hat = _unpack_log_rates(self.log_rates)
+        objective = float(rate_fit["objective"])
+        times = ages_hat[self.edges[:, 1]] - ages_hat[self.edges[:, 0]]
+        expected = rates_hat * times
+        if (
+            not np.isfinite(objective)
+            or np.any(times <= DIST_FLOOR)
+            or np.any(expected <= 0.0)
+        ):
+            gradient = np.zeros(age_values.size, dtype=float)
+        else:
+            data_gradient = np.zeros(self.edges.shape[0], dtype=float)
+            if self.observation_loss == "fractional_poisson":
+                data_gradient[self.observation_mask] = (
+                    expected[self.observation_mask]
+                    - self.edata[self.observation_mask, 0]
+                )
+            else:
+                data_gradient[self.observation_mask] = (
+                    1.0
+                    - self.edata[self.observation_mask, 0]
+                    / expected[self.observation_mask]
+                )
+            time_gradient = np.zeros(self.edges.shape[0], dtype=float)
+            time_gradient[self.observation_mask] = (
+                data_gradient[self.observation_mask] / times[self.observation_mask]
+            )
+            age_gradient = np.zeros(ages_hat.size, dtype=float)
+            np.add.at(age_gradient, self.edges[:, 1], time_gradient)
+            np.add.at(age_gradient, self.edges[:, 0], -time_gradient)
+            gradient = age_gradient[self.ages_idxs]
+        self._cached_age_values = age_values.copy()
+        self._cached_result = (objective, np.asarray(gradient, dtype=float))
+        return self._cached_result
+
+
 def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
+    """Fit one correlated start by profiling rates before a joint polish."""
     start = int(payload["start"])
     start_kind = str(payload.get("start_kind", f"start_{start}"))
-    params = payload["params"]
+    params = np.asarray(payload["params"], dtype=float)
     bounds = payload["bounds"]
-    rates_init = payload["rates_init"]
-    age_params_init = payload["age_params_init"]
-    ages_init = payload["ages_init"]
-    ages_idxs = payload["ages_idxs"]
+    rates_init = np.asarray(payload["rates_init"], dtype=float)
+    ages_init = np.asarray(payload["ages_init"], dtype=float)
+    ages_idxs = np.asarray(payload["ages_idxs"], dtype=int)
     ages_bounds = payload["ages_bounds"]
     children_map = payload["children_map"]
-    edges = payload["edges"]
-    edata = payload["edata"]
-    parent_edges = payload["parent_edges"]
-    lam = payload["lam"]
-    valid_loglik = payload["valid_loglik"]
-    observation_mask = payload["observation_mask"]
-    max_iter = payload["max_iter"]
-    max_fun = payload["max_fun"]
-    max_refine = payload["max_refine"]
-    retry_multiplier = payload["retry_multiplier"]
-    observation_loss = payload["observation_loss"]
+    edges = np.asarray(payload["edges"], dtype=int)
+    edata = np.asarray(payload["edata"], dtype=float)
+    parent_edges = np.asarray(payload["parent_edges"], dtype=int)
+    lam = float(payload["lam"])
+    valid_loglik = float(payload["valid_loglik"])
+    observation_mask = np.asarray(payload["observation_mask"], dtype=bool)
+    observation_loss = str(payload["observation_loss"])
+    max_iter = int(payload["max_iter"])
+    max_fun = int(payload["max_fun"])
+    retry_multiplier = int(payload["retry_multiplier"])
+    rsize = rates_init.size
+    asize = ages_idxs.size
+    rate_bounds = bounds[:rsize]
+    age_start_full = np.asarray(payload["age_start_ages"], dtype=float)
+    age_start = age_start_full[ages_idxs]
+    profile = _ProfiledCorrelatedObjective(
+        params[:rsize],
+        rate_bounds,
+        ages_init,
+        ages_idxs,
+        edges,
+        edata,
+        parent_edges,
+        lam,
+        valid_loglik,
+        observation_mask,
+        observation_loss,
+        max_iter,
+        max_fun,
+    )
+    linear_constraint = direct_age_linear_constraint(
+        ages_init, ages_idxs, edges, dist_floor=DIST_FLOOR
+    )
+    constraints = () if linear_constraint == () else (linear_constraint,)
 
-    invalid_objective = _invalid_objective(valid_loglik)
+    optimizer_retries = 0
+    outer_nfev = 0
+    outer_nit = 0
+    if asize:
+        outer = minimize_profiled_ages(
+            profile,
+            age_start,
+            ages_bounds,
+            constraints,
+            max_iter,
+            1e-10,
+        )
+        outer_nfev += int(getattr(outer, "nfev", 0))
+        outer_nit += int(getattr(outer, "nit", 0))
+        if not outer.success and retry_multiplier > 1:
+            optimizer_retries += 1
+            retry = minimize_profiled_ages(
+                profile,
+                np.asarray(outer.x, dtype=float),
+                ages_bounds,
+                constraints,
+                max_iter * retry_multiplier,
+                1e-12,
+            )
+            outer_nfev += int(getattr(retry, "nfev", 0))
+            outer_nit += int(getattr(retry, "nit", 0))
+            if np.isfinite(retry.fun) and float(retry.fun) <= float(outer.fun):
+                outer = retry
+        age_values = np.asarray(outer.x, dtype=float)
+        profiled_objective, _ = profile(age_values)
+        outer_success = bool(outer.success)
+        outer_message = str(outer.message)
+    else:
+        age_values = age_start
+        profiled_objective, _ = profile(age_values)
+        outer_success = bool(profile.rate_gradient_max_abs <= 1e-6)
+        outer_message = "all ages fixed; optimized conditional rates"
+
+    profiled_ages = ages_init.copy()
+    profiled_ages[ages_idxs] = age_values
+    age_params_hat = _encode_age_params(
+        profiled_ages,
+        ages_idxs,
+        ages_bounds,
+        children_map,
+        dist_floor=DIST_FLOOR,
+    )
+    current_params = np.hstack([profile.log_rates, age_params_hat])
+    current_objective = float(profiled_objective)
     joint_args = (
         False,
         False,
         rates_init,
-        age_params_init,
+        age_params_hat,
         ages_init,
         ages_idxs,
         ages_bounds,
@@ -168,130 +546,58 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
         observation_mask,
         observation_loss,
     )
-    fit = minimize(
-        fun=objective_correlated_with_gradient,
-        x0=params,
-        args=joint_args,
-        method="L-BFGS-B",
-        jac=True,
-        bounds=bounds,
-        options=dict(maxiter=int(max_iter), maxfun=int(max_fun)),
-    )
-    total_nfev = int(getattr(fit, "nfev", 0))
-    total_nit = int(getattr(fit, "nit", 0))
-    if not fit.success:
-        rng = np.random.default_rng(123 + start)
-        rates_seed = np.clip(
-            rates_init * np.exp(rng.normal(0.0, 0.25, size=rates_init.size)),
-            RATE_FLOOR,
-            None,
-        )
-        age_seed = age_params_init + rng.normal(0.0, 0.25, size=age_params_init.size)
-        params_seed = np.hstack(
-            [_pack_log_rates(rates_seed, rate_floor=RATE_FLOOR), age_seed]
-        )
-        refit = minimize(
+    joint_polish_error = None
+    try:
+        polish = minimize(
             fun=objective_correlated_with_gradient,
-            x0=params_seed,
+            x0=current_params,
             args=joint_args,
             method="L-BFGS-B",
             jac=True,
             bounds=bounds,
-            options=dict(maxiter=int(max_iter), maxfun=int(max_fun)),
+            options=dict(
+                maxiter=max_iter,
+                maxfun=max_fun,
+                ftol=np.finfo(float).eps,
+                gtol=1e-7,
+                maxls=100,
+            ),
         )
-        total_nfev += int(getattr(refit, "nfev", 0))
-        total_nit += int(getattr(refit, "nit", 0))
-        if refit.fun < fit.fun:
-            fit = refit
-
-    current_loglik = float(fit.fun)
-    current_params = fit.x.copy()
-    rsize = rates_init.size
-    asize = ages_idxs.size
-    blocks = {
-        "rates": [(False, True), slice(None, rsize)],
-    }
-    if asize:
-        blocks["ages"] = [(True, False), slice(rsize, rsize + asize)]
-    refinement_cycles = 0
-    for _ in range(max(0, int(max_refine))):
-        refinement_cycles += 1
-        cycle_start = current_loglik
-        for fbools, fslice in blocks.values():
-            rates_hat = _unpack_log_rates(current_params[:rsize])
-            age_params_hat = current_params[rsize : rsize + asize]
-            args = fbools + (
-                rates_hat,
-                age_params_hat,
-                ages_init,
-                ages_idxs,
-                ages_bounds,
-                children_map,
-                edges,
-                edata,
-                parent_edges,
-                lam,
-                valid_loglik,
-                observation_mask,
-                observation_loss,
-            )
-            ifit = minimize(
-                fun=objective_correlated_with_gradient,
-                x0=current_params[fslice],
-                args=args,
-                method="L-BFGS-B",
-                jac=True,
-                bounds=bounds[fslice],
-                options=dict(maxiter=int(max_iter), maxfun=int(max_fun)),
-            )
-            total_nfev += int(getattr(ifit, "nfev", 0))
-            total_nit += int(getattr(ifit, "nit", 0))
-            if float(ifit.fun) <= current_loglik:
-                current_loglik = float(ifit.fun)
-                current_params[fslice] = ifit.x
-        if abs(cycle_start - current_loglik) < 1e-9:
-            break
-
-    # Block refinement does not establish convergence of the joint objective.
-    # Always finish with a joint polish and make its status authoritative.
-    pre_polish_objective = current_loglik
-    polish = minimize(
-        fun=objective_correlated_with_gradient,
-        x0=current_params,
-        args=joint_args,
-        method="L-BFGS-B",
-        jac=True,
-        bounds=bounds,
-        options=dict(
-            maxiter=int(max_iter),
-            maxfun=int(max_fun),
-            ftol=1e-12,
-            gtol=1e-6,
-        ),
-    )
-    total_nfev += int(getattr(polish, "nfev", 0))
-    total_nit += int(getattr(polish, "nit", 0))
+    except (ToytreeError, ValueError) as exc:
+        joint_polish_error = str(exc)
+        polish = OptimizeResult(
+            x=current_params.copy(),
+            fun=current_objective,
+            success=False,
+            message=f"joint-polish age transform was unavailable: {exc}",
+            nfev=0,
+            nit=0,
+            jac=np.array([], dtype=float),
+        )
+    joint_nfev = int(getattr(polish, "nfev", 0))
+    joint_nit = int(getattr(polish, "nit", 0))
     polish_objective = float(polish.fun)
-    objective_tolerance = 1e-10 * max(1.0, abs(pre_polish_objective))
+    tolerance = 1e-10 * max(1.0, abs(current_objective))
     polish_is_finite = bool(
         np.isfinite(polish_objective) and np.all(np.isfinite(polish.x))
     )
     polish_did_not_worsen = bool(
-        polish_is_finite
-        and polish_objective <= pre_polish_objective + objective_tolerance
+        polish_is_finite and polish_objective <= current_objective + tolerance
     )
     if polish_did_not_worsen:
-        current_loglik = polish_objective
-        current_params = polish.x.copy()
+        current_objective = polish_objective
+        current_params = np.asarray(polish.x, dtype=float).copy()
 
-    optimizer_retries = 0
     if (
         not polish.success
-        and "ITERATIONS" in str(polish.message).upper()
-        and int(retry_multiplier) > 1
+        and (
+            optimizer_stopped_at_limit(polish.message)
+            or "ABNORMAL" in str(polish.message).upper()
+        )
+        and retry_multiplier > 1
     ):
-        optimizer_retries = 1
-        retry_start_objective = current_loglik
+        optimizer_retries += 1
+        retry_start_objective = current_objective
         retry = minimize(
             fun=objective_correlated_with_gradient,
             x0=current_params,
@@ -300,14 +606,15 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
             jac=True,
             bounds=bounds,
             options=dict(
-                maxiter=int(max_iter) * int(retry_multiplier),
-                maxfun=int(max_fun) * int(retry_multiplier),
-                ftol=1e-12,
-                gtol=1e-6,
+                maxiter=max_iter * retry_multiplier,
+                maxfun=max_fun * retry_multiplier,
+                ftol=np.finfo(float).eps,
+                gtol=1e-8,
+                maxls=200,
             ),
         )
-        total_nfev += int(getattr(retry, "nfev", 0))
-        total_nit += int(getattr(retry, "nit", 0))
+        joint_nfev += int(getattr(retry, "nfev", 0))
+        joint_nit += int(getattr(retry, "nit", 0))
         retry_objective = float(retry.fun)
         retry_tolerance = 1e-10 * max(1.0, abs(retry_start_objective))
         retry_is_finite = bool(
@@ -321,37 +628,152 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
             polish_objective = retry_objective
             polish_is_finite = True
             polish_did_not_worsen = True
-            current_loglik = retry_objective
-            current_params = retry.x.copy()
+            current_objective = retry_objective
+            current_params = np.asarray(retry.x, dtype=float).copy()
 
-    jac = np.asarray(getattr(polish, "jac", np.array([])), dtype=float)
-    gradient_max_abs = (
-        float(np.max(np.abs(jac))) if jac.size and np.all(np.isfinite(jac)) else None
+    final_age_params = current_params[rsize : rsize + asize]
+    joint_decode_error = None
+    try:
+        final_ages = _decode_age_params(
+            final_age_params,
+            ages_init,
+            ages_idxs,
+            ages_bounds,
+            children_map,
+            dist_floor=DIST_FLOOR,
+        )
+    except (ToytreeError, ValueError) as exc:
+        joint_decode_error = str(exc)
+        final_ages = profiled_ages.copy()
+        current_params = np.hstack([profile.log_rates, age_params_hat])
+        current_objective = float(profiled_objective)
+    final_rate_fit = _fit_profiled_correlated_rates(
+        current_params[:rsize],
+        final_ages,
+        rate_bounds,
+        edges,
+        edata,
+        parent_edges,
+        lam,
+        valid_loglik,
+        observation_mask,
+        observation_loss,
+        max_iter,
+        max_fun,
     )
-    converged = bool(polish.success and polish_did_not_worsen)
+    profile.total_rate_nfev += int(final_rate_fit["nfev"])
+    profile.total_rate_nit += int(final_rate_fit["nit"])
+    final_rate_objective = float(final_rate_fit["objective"])
+    if (
+        np.isfinite(final_rate_objective)
+        and final_rate_objective <= current_objective + tolerance
+    ):
+        current_objective = final_rate_objective
+        current_params[:rsize] = np.asarray(final_rate_fit["params"], dtype=float)
+    rate_gradient_max_abs = float(final_rate_fit["projected_gradient_max_abs"])
+    joint_gradient = np.asarray(getattr(polish, "jac", np.array([])), dtype=float)
+    gradient_max_abs = (
+        float(np.max(np.abs(joint_gradient)))
+        if joint_gradient.size and np.all(np.isfinite(joint_gradient))
+        else None
+    )
+    profile_rate_converged = bool(rate_gradient_max_abs <= 1e-6)
+    joint_polish_usable = bool(
+        joint_polish_error is not None
+        or joint_decode_error is not None
+        or (polish.success and polish_did_not_worsen)
+    )
+    converged = bool(outer_success and profile_rate_converged and joint_polish_usable)
     message = str(polish.message)
-    if polish_is_finite and not polish_did_not_worsen:
+    if not outer_success:
+        message = f"profiled age optimization failed: {outer_message}"
+    elif not profile_rate_converged:
+        message = (
+            "conditional rate solution failed projected-gradient tolerance: "
+            f"{rate_gradient_max_abs:.6g}"
+        )
+    elif joint_polish_error is not None or joint_decode_error is not None:
+        transform_error = joint_polish_error or joint_decode_error
+        message = (
+            "profiled solution converged; joint-polish age transform was "
+            f"unavailable: {transform_error}"
+        )
+    elif polish_is_finite and not polish_did_not_worsen:
         message = (
             "final joint polish worsened the objective beyond tolerance: "
-            f"{pre_polish_objective:.12g} -> {polish_objective:.12g}"
+            f"{profiled_objective:.12g} -> {polish_objective:.12g}"
         )
-    if current_loglik >= invalid_objective - 1e-9:
+    invalid_objective = _invalid_objective(valid_loglik)
+    if current_objective >= invalid_objective - 1e-9:
         converged = False
         message = "invalid objective plateau from infeasible start"
     return {
         "start": start,
         "start_kind": start_kind,
-        "objective": float(current_loglik),
+        "objective": float(current_objective),
         "converged": converged,
         "message": message,
-        "nfev": total_nfev,
-        "nit": total_nit,
-        "refinement_cycles": refinement_cycles,
-        "final_joint_converged": bool(polish.success),
+        "nfev": outer_nfev + profile.total_rate_nfev + joint_nfev,
+        "nit": outer_nit + profile.total_rate_nit + joint_nit,
+        "refinement_cycles": int(profile.evaluations),
+        "profile_evaluations": int(profile.evaluations),
+        "outer_profile_converged": bool(outer_success),
+        "all_profile_rate_solves_converged": bool(profile.all_rate_solves_converged),
+        "profile_rate_converged": profile_rate_converged,
+        "rate_gradient_max_abs": rate_gradient_max_abs,
+        "final_joint_converged": bool(
+            polish.success and joint_polish_error is None and joint_decode_error is None
+        ),
         "gradient_max_abs": gradient_max_abs,
         "optimizer_retries": optimizer_retries,
         "params": current_params,
+        "ages": final_ages,
+        "rates": _unpack_log_rates(current_params[:rsize]),
     }
+
+
+def _correlated_input_branch_diagnostics(
+    tree: ToyTree,
+    branch_lengths: np.ndarray,
+) -> dict[str, Any]:
+    """Return threshold-free diagnostics for zero and small input edges."""
+    values = np.asarray(branch_lengths, dtype=float)
+    child_idxs = np.asarray(tree.get_edges("idx")[:, 0], dtype=int)
+    zeros = values == 0.0
+    terminal = child_idxs < int(tree.ntips)
+    positive = values[values > 0.0]
+    minimum_positive = float(np.min(positive)) if positive.size else None
+    median_positive = float(np.median(positive)) if positive.size else None
+    relative_minimum = (
+        float(minimum_positive / median_positive)
+        if minimum_positive is not None
+        and median_positive is not None
+        and median_positive > 0.0
+        else None
+    )
+    return {
+        "zero_length_branch_count": int(np.sum(zeros)),
+        "zero_length_branch_fraction": float(np.mean(zeros)),
+        "zero_length_terminal_branch_count": int(np.sum(zeros & terminal)),
+        "zero_length_internal_branch_count": int(np.sum(zeros & ~terminal)),
+        "minimum_positive_branch_length": minimum_positive,
+        "median_positive_branch_length": median_positive,
+        "minimum_positive_to_median_ratio": relative_minimum,
+    }
+
+
+def _canonical_calibration_ratio(value: float, scale: float) -> float:
+    """Return a unit-independent finite calibration ratio.
+
+    Mathematically equivalent inputs such as ``x / y`` and
+    ``(1e6 * x) / (1e6 * y)`` can differ by one floating-point bit. Fifteen
+    significant digits remove that path dependence while retaining much more
+    precision than the optimizer or calibration tolerances use.
+    """
+    ratio = float(value) / float(scale)
+    if not np.isfinite(ratio):
+        return ratio
+    return float(f"{ratio:.15g}")
 
 
 @add_subpackage_method(TreeModAPI)
@@ -364,7 +786,7 @@ def edges_make_ultrametric_correlated(
     max_iter: int = 100_000,
     max_fun: int = 100_000,
     max_refine: int = 20,
-    nstarts: int = 1,
+    nstarts: int = 4,
     ncores: int = 1,
     seed: int | None = None,
     _observation_mask: np.ndarray | None = None,
@@ -373,12 +795,52 @@ def edges_make_ultrametric_correlated(
     _initial_ages: Any = None,
     _retry_multiplier: int = 4,
 ) -> Union[ToyTree, dict[str, Any]]:
-    """Return a tree made ultrametric under a correlated relaxed-clock model.
+    """Return a tree fitted under complete-tree correlated log-rate smoothing.
 
-    This model estimates one rate per edge and penalizes abrupt changes
-    between adjacent edges by minimizing differences among parent-child
-    edge rates on a log scale. Basal edges are connected through a profiled
-    root log-rate equal to their mean.
+    This model estimates one rate per edge and penalizes squared differences
+    between adjacent log rates. Basal edges are connected through their
+    profiled mean log rate, so smoothing covers the complete rooted tree.
+    ``lam`` controls the strength of smoothing and must be selected or supplied
+    by the user; it is not an ordinary model parameter.
+
+    Branch lengths may use any finite, nonnegative additive unit. Returned
+    rates use input-branch-length units per calibration-time unit. With no
+    calibrations, root age is fixed to one and rates are per relative root-age
+    unit.
+
+    Rates are conditionally profiled for every directly constrained age
+    evaluation. Exact-zero input edges remain zero observations. Calibration
+    ages are normalized internally, so changing only their common time unit
+    rescales returned ages and rates without changing the fitted chronogram.
+    Four starts are evaluated by default; full results report convergence,
+    profile-gradient, basin-replication, and zero-edge diagnostics.
+
+    Parameters
+    ----------
+    tree : ToyTree
+        Rooted tree with finite, nonnegative additive branch lengths.
+    lam : float
+        Finite positive log-rate smoothing multiplier.
+    calibrations : dict or None
+        Internal-node age constraints. Scalars fix ages and two-tuples define
+        inclusive lower and upper bounds.
+    full, inplace : bool
+        Return fit metadata instead of only a tree, and optionally modify the
+        input tree.
+    max_iter, max_fun : int
+        Optimizer iteration and objective-evaluation budgets.
+    max_refine : int
+        Retained for the common ultrametric-model API. Conditional profiling
+        supersedes block-refinement cycles for this model.
+    nstarts, ncores : int
+        Number of optimizer starts and worker processes.
+    seed : int or None
+        Random seed for perturbed starts.
+
+    Returns
+    -------
+    ToyTree or dict[str, Any]
+        Fitted ultrametric tree, or a result dictionary when ``full=True``.
     """
     lam = _validate_lambda(lam)
     observation_loss = _validate_correlated_observation_loss(_observation_loss)
@@ -389,28 +851,87 @@ def edges_make_ultrametric_correlated(
     retry_multiplier = int(_retry_multiplier)
     if retry_multiplier < 1:
         raise ValueError("_retry_multiplier must be a positive integer.")
-    if calibrations is None:
-        calibrations = {}
-    calibrations = _normalize_calibrations(
-        tree,
-        calibrations,
-        dist_floor=DIST_FLOOR,
-    )
+    calibrations = {} if calibrations is None else calibrations
+    calibrations = _normalize_calibrations(tree, calibrations, dist_floor=DIST_FLOOR)
 
-    # get init and fixed node ages that make tree ultrametric
-    ages_init, _ = _get_init_ages(tree, calibrations)
+    calibration_time_scale = 1.0
+    if calibrations:
+        finite_upper = [
+            float(upper)
+            for _, upper in calibrations.values()
+            if np.isfinite(upper) and float(upper) > 0.0
+        ]
+        positive_lower = [
+            float(lower)
+            for lower, _ in calibrations.values()
+            if np.isfinite(lower) and float(lower) > 0.0
+        ]
+        if finite_upper:
+            calibration_time_scale = max(finite_upper)
+        elif positive_lower:
+            calibration_time_scale = max(positive_lower)
+        calibrations = {
+            int(idx): (
+                _canonical_calibration_ratio(lower, calibration_time_scale),
+                _canonical_calibration_ratio(upper, calibration_time_scale),
+            )
+            for idx, (lower, upper) in calibrations.items()
+        }
+
     continuation_ages = _validate_correlated_warm_start(
         _initial_ages, tree.nnodes, "_initial_ages", positive=False
     )
+    if continuation_ages is not None:
+        continuation_ages /= calibration_time_scale
+    continuation_rates = _validate_correlated_warm_start(
+        _initial_rates, tree.nedges, "_initial_rates", positive=True
+    )
+    if continuation_rates is not None:
+        continuation_rates *= calibration_time_scale
 
-    # get bounds on params that need to be inferred; are not fixed
-    rates_bounds, ages_bounds = _get_params_bounds(tree, calibrations)
-
-    # get edges, dists and log-factorial-dists from rate-x-time edges
-    edges = tree.get_edges("idx")
+    interior_ages, _ = _get_init_ages(tree, calibrations)
     dists_o = _validate_branch_lengths(tree)
-    dists_lf = gammaln(dists_o + 1.0)
-    edata = np.vstack([dists_o, dists_lf]).T
+    branch_diagnostics = _correlated_input_branch_diagnostics(tree, dists_o)
+    if branch_diagnostics["zero_length_branch_count"]:
+        logger.warning(
+            "Correlated-rate input contains "
+            f"{branch_diagnostics['zero_length_branch_count']} exact-zero edges "
+            f"({branch_diagnostics['zero_length_internal_branch_count']} internal, "
+            f"{branch_diagnostics['zero_length_terminal_branch_count']} terminal). "
+            "Zeros are retained as observations, but can weaken rate-time "
+            "identifiability; inspect multistart stability diagnostics."
+        )
+
+    independent_ages = np.asarray(interior_ages, dtype=float).copy()
+    clock_warm_start_used = False
+    try:
+        clock = edges_make_ultrametric_clock(
+            tree,
+            calibrations=calibrations,
+            full=True,
+            inplace=False,
+            max_iter=min(int(max_iter), 200),
+            max_fun=min(int(max_fun), 500),
+            max_refine=0,
+            nstarts=1,
+            ncores=1,
+            seed=seed,
+            _observation_mask=_observation_mask,
+            _retry_multiplier=1,
+        )
+        if clock["converged"]:
+            independent_ages = (
+                clock["tree"].get_node_data("height").to_numpy(dtype=float)
+            )
+            clock_warm_start_used = True
+    except (ToytreeError, RuntimeError, ValueError):
+        pass
+
+    rates_bounds, ages_bounds_map = _get_params_bounds(tree, calibrations)
+    edges = np.asarray(tree.get_edges("idx"), dtype=int)
+    ages_idxs = np.asarray(sorted(ages_bounds_map), dtype=int)
+    ages_bounds = [ages_bounds_map[idx] for idx in ages_idxs]
+    children_map = _get_children_map_from_edges(edges)
     observation_mask = _validate_observation_mask(_observation_mask, tree.nedges)
     if observation_loss == "multiplicative_gamma" and np.any(
         dists_o[observation_mask] <= 0.0
@@ -418,65 +939,55 @@ def edges_make_ultrametric_correlated(
         raise ValueError(
             "multiplicative_gamma requires strictly positive observed branches."
         )
-
-    # get starting rates as old/new edge dists.
-    init_times = ages_init[edges[:, 1]] - ages_init[edges[:, 0]]
-    rates_init = np.clip(dists_o / init_times, RATE_FLOOR, None)
-    continuation_rates = _validate_correlated_warm_start(
-        _initial_rates, tree.nedges, "_initial_rates", positive=True
-    )
-    # Strong smoothing is poorly conditioned when optimization starts from
-    # raw edgewise rates. Center at the fixed-age common-rate estimate and
-    # shrink only the initial log-rate deviations as lambda increases.
-    observed_total = float(np.sum(dists_o[observation_mask]))
-    time_total = float(np.sum(init_times[observation_mask]))
-    common_rate = max(observed_total / time_total, RATE_FLOOR)
-    log_deviations = np.log(rates_init) - np.mean(np.log(rates_init))
-    init_shrinkage = 1.0 / (1.0 + np.sqrt(lam))
-    rates_init = np.exp(np.log(common_rate) + init_shrinkage * log_deviations)
-    has_continuation = continuation_rates is not None or continuation_ages is not None
-    if continuation_ages is None:
-        continuation_ages = ages_init
-    if continuation_rates is None:
-        continuation_times = (
-            continuation_ages[edges[:, 1]] - continuation_ages[edges[:, 0]]
-        )
-        continuation_rates = np.clip(
-            dists_o / continuation_times,
-            RATE_FLOOR,
-            None,
-        )
-
-    # map edges to their parent edge index for correlation penalty.
+    edata = np.column_stack([dists_o, gammaln(dists_o + 1.0)])
     child_to_eidx = {int(child): idx for idx, (child, _) in enumerate(edges)}
-    parent_edges = np.array(
+    parent_edges = np.asarray(
         [child_to_eidx.get(int(parent), -1) for _, parent in edges], dtype=int
     )
-
-    # get indices of which node ages will be estimated
-    ages_idxs = np.array(sorted(ages_bounds))
-    children_map = _get_children_map_from_edges(edges)
-
-    # slim bounds to only those needing to be estimated
-    ages_bounds = [ages_bounds[i] for i in ages_idxs]
-    rates_bounds = [rates_bounds[i] for i in range(tree.nnodes - 1)]
-    rates_bounds = [
+    log_rate_bounds = [
         (np.log(max(lo, RATE_FLOOR)), np.log(max(hi, RATE_FLOOR)))
-        for (lo, hi) in rates_bounds
+        for lo, hi in (rates_bounds[idx] for idx in range(tree.nedges))
     ]
-    age_params_init = _encode_age_params(
-        ages_init,
-        ages_idxs,
-        ages_bounds,
-        children_map,
-        dist_floor=DIST_FLOOR,
-    )
-    bounds = rates_bounds + [(None, None)] * age_params_init.size
 
-    # get loglik at a valid starting params to scale invalid-geometry penalty
+    def rates_from_ages(ages: np.ndarray) -> np.ndarray:
+        times = ages[edges[:, 1]] - ages[edges[:, 0]]
+        raw = np.clip(dists_o / times, RATE_FLOOR, None)
+        observed_total = float(np.sum(dists_o[observation_mask]))
+        time_total = float(np.sum(times[observation_mask]))
+        common = max(observed_total / time_total, RATE_FLOOR)
+        deviations = np.log(raw) - float(np.mean(np.log(raw)))
+        shrinkage = 1.0 / (1.0 + np.sqrt(lam))
+        return np.exp(np.log(common) + shrinkage * deviations)
+
+    independent_rates = rates_from_ages(independent_ages)
+    base_starts: list[tuple[str, np.ndarray, np.ndarray]] = [
+        ("independent", independent_ages, independent_rates)
+    ]
+    has_continuation = continuation_ages is not None or continuation_rates is not None
+    if has_continuation:
+        continued_ages = (
+            independent_ages
+            if continuation_ages is None
+            else np.asarray(continuation_ages, dtype=float)
+        )
+        continued_rates = (
+            rates_from_ages(continued_ages)
+            if continuation_rates is None
+            else np.asarray(continuation_rates, dtype=float)
+        )
+        base_starts.append(("continuation", continued_ages, continued_rates))
+    elif clock_warm_start_used:
+        base_starts.append(
+            (
+                "interior",
+                np.asarray(interior_ages, dtype=float),
+                rates_from_ages(interior_ages),
+            )
+        )
+
     valid_loglik = _correlated_branch_pseudologlik(
-        rates_init,
-        ages_init,
+        independent_rates,
+        independent_ages,
         edges,
         edata,
         parent_edges,
@@ -485,112 +996,168 @@ def edges_make_ultrametric_correlated(
         observation_mask,
         observation_loss,
     )
-
-    params = np.hstack(
-        [_pack_log_rates(rates_init, rate_floor=RATE_FLOOR), age_params_init]
+    interior_age_params = _encode_age_params(
+        interior_ages,
+        ages_idxs,
+        ages_bounds,
+        children_map,
+        dist_floor=DIST_FLOOR,
     )
     requested_nstarts = max(1, int(nstarts))
-    ncores = max(1, int(ncores))
+    effective_nstarts = max(requested_nstarts, len(base_starts))
+    effective_ncores = max(1, int(ncores))
     rng = np.random.default_rng(seed)
-    payloads = []
-    base_starts = [("independent", params)]
-    if has_continuation:
-        continuation_age_params = _encode_age_params(
-            continuation_ages,
-            ages_idxs,
-            ages_bounds,
-            children_map,
-            dist_floor=DIST_FLOOR,
-        )
-        continuation_params = np.hstack(
-            [
-                _pack_log_rates(continuation_rates, rate_floor=RATE_FLOOR),
-                continuation_age_params,
-            ]
-        )
-        base_starts.append(("continuation", continuation_params))
-    nstarts = max(requested_nstarts, len(base_starts))
-    rsize = rates_init.size
+    rsize = tree.nedges
     asize = ages_idxs.size
-    for start in range(nstarts):
-        base_kind, base_params = base_starts[start % len(base_starts)]
-        sparams = base_params.copy()
-        direct_base = start < len(base_starts)
-        if not direct_base:
-            sparams[:rsize] += rng.normal(0.0, 0.25, size=rsize)
-            if asize:
-                sparams[rsize : rsize + asize] += rng.normal(0.0, 0.25, size=asize)
-        payloads.append(
-            dict(
-                start_kind=base_kind if direct_base else f"{base_kind}_perturbed",
-                start=start,
-                params=sparams,
-                bounds=bounds,
-                rates_init=_unpack_log_rates(base_params[:rsize]),
-                age_params_init=base_params[rsize : rsize + asize],
-                ages_init=ages_init,
-                ages_idxs=ages_idxs,
-                ages_bounds=ages_bounds,
-                children_map=children_map,
-                edges=edges,
-                edata=edata,
-                parent_edges=parent_edges,
-                lam=lam,
-                valid_loglik=valid_loglik,
-                observation_mask=observation_mask,
-                max_iter=max_iter,
-                max_fun=max_fun,
-                max_refine=max_refine,
-                retry_multiplier=retry_multiplier,
-                observation_loss=observation_loss,
+    bounds = log_rate_bounds + [(None, None)] * asize
+    payloads = []
+    for start in range(effective_nstarts):
+        if start < len(base_starts):
+            start_kind, age_start, rate_start = base_starts[start]
+        else:
+            base_kind, base_ages, base_rates = base_starts[start % len(base_starts)]
+            start_kind = f"{base_kind}_perturbed"
+            rate_start = np.asarray(base_rates, dtype=float) * np.exp(
+                rng.normal(0.0, 0.25, size=rsize)
             )
-        )
-    starts = _run_multistart(_fit_correlated_start, payloads, ncores=ncores)
-    for result in starts:
-        if "params" not in result:
-            continue
+            age_params = np.clip(interior_age_params, -6.0, 6.0)
+            age_params += rng.normal(0.0, 0.25, size=asize)
+            try:
+                age_start = _decode_age_params(
+                    age_params,
+                    interior_ages,
+                    ages_idxs,
+                    ages_bounds,
+                    children_map,
+                    dist_floor=DIST_FLOOR,
+                )
+            except (ToytreeError, ValueError):
+                age_start = np.asarray(base_ages, dtype=float)
         try:
-            result_ages = _decode_age_params(
-                result["params"][rsize : rsize + asize],
-                ages_init,
+            encoded_ages = _encode_age_params(
+                age_start,
                 ages_idxs,
                 ages_bounds,
                 children_map,
                 dist_floor=DIST_FLOOR,
             )
-            result["ages"] = _finalize_ultrametric_ages(
+        except (ToytreeError, ValueError):
+            age_start = np.asarray(interior_ages, dtype=float)
+            encoded_ages = interior_age_params.copy()
+        start_params = np.hstack(
+            [np.log(np.clip(rate_start, RATE_FLOOR, None)), encoded_ages]
+        )
+        payloads.append(
+            {
+                "start": start,
+                "start_kind": start_kind,
+                "params": start_params,
+                "bounds": bounds,
+                "rates_init": np.asarray(rate_start, dtype=float),
+                "ages_init": np.asarray(interior_ages, dtype=float),
+                "age_start_ages": np.asarray(age_start, dtype=float),
+                "ages_idxs": ages_idxs,
+                "ages_bounds": ages_bounds,
+                "children_map": children_map,
+                "edges": edges,
+                "edata": edata,
+                "parent_edges": parent_edges,
+                "lam": lam,
+                "valid_loglik": valid_loglik,
+                "observation_mask": observation_mask,
+                "observation_loss": observation_loss,
+                "max_iter": int(max_iter),
+                "max_fun": int(max_fun),
+                "max_refine": int(max_refine),
+                "retry_multiplier": retry_multiplier,
+            }
+        )
+
+    starts = _run_multistart(_fit_correlated_start, payloads, ncores=effective_ncores)
+
+    def finalize_start(result: dict[str, Any]) -> None:
+        if "ages" not in result or "rates" not in result:
+            return
+        try:
+            result_ages = _finalize_ultrametric_ages(
                 tree,
-                result_ages,
+                np.asarray(result["ages"], dtype=float),
                 calibrations=calibrations,
                 dist_floor=DIST_FLOOR,
             )
-        except ValueError as exc:
+            result_rates = np.asarray(result["rates"], dtype=float)
+            rescored = _correlated_branch_pseudologlik(
+                result_rates,
+                result_ages,
+                edges,
+                edata,
+                parent_edges,
+                lam,
+                valid_loglik,
+                observation_mask,
+                observation_loss,
+            )
+            result["ages"] = result_ages
+            result["rates"] = result_rates
+            result["objective"] = float(-rescored)
+        except (ToytreeError, ValueError) as exc:
             result["objective"] = float("inf")
             result["converged"] = False
-            result["message"] = (
-                f"{result.get('message', '')}; invalid finalized ages: {exc}"
-            ).lstrip("; ")
-    best = _select_best_multistart(starts)
-    stability = _assess_correlated_solution_stability(
-        starts,
-        best,
-        ntips=tree.ntips,
+            result["message"] = f"invalid finalized ages: {exc}"
+
+    for result in starts:
+        finalize_start(result)
+    preliminary_best = _select_best_multistart(starts)
+    preliminary_stability = _assess_correlated_solution_stability(
+        starts, preliminary_best, ntips=tree.ntips
     )
-    current_params = best["params"]
+    basin_confirmation_run = False
+    if (
+        effective_nstarts >= 2
+        and preliminary_best.get("converged", False)
+        and int(preliminary_stability["near_optimal_starts"]) < 2
+    ):
+        confirmation_ages = 0.95 * np.asarray(
+            preliminary_best["ages"], dtype=float
+        ) + 0.05 * np.asarray(interior_ages, dtype=float)
+        confirmation_rates = np.asarray(
+            preliminary_best["rates"], dtype=float
+        ) * np.exp(rng.normal(0.0, 0.05, size=rsize))
+        confirmation_payload = dict(payloads[0])
+        confirmation_payload.update(
+            {
+                "start": effective_nstarts,
+                "start_kind": "basin_confirmation",
+                "params": np.hstack([np.log(confirmation_rates), interior_age_params]),
+                "rates_init": confirmation_rates,
+                "age_start_ages": confirmation_ages,
+            }
+        )
+        confirmation = _run_multistart(
+            _fit_correlated_start, [confirmation_payload], ncores=1
+        )[0]
+        finalize_start(confirmation)
+        starts.append(confirmation)
+        basin_confirmation_run = True
+
+    best = _select_best_multistart(starts)
+    stability = _assess_correlated_solution_stability(starts, best, ntips=tree.ntips)
+    best_basin_replicates = int(stability["near_optimal_starts"])
+    best_basin_replicated = best_basin_replicates >= 2
+    stability["best_basin_replicates"] = best_basin_replicates
+    stability["best_basin_replicated"] = best_basin_replicated
+    if stability["stability_assessed"]:
+        stability["solution_stable"] = bool(
+            stability["solution_stable"] and best_basin_replicated
+        )
     if not best["converged"]:
         logger.warning(f"Best multistart fit did not converge: {best['message']}")
-    logger.debug(
-        "correlated multistart best objective="
-        f"{best['objective']}, start={best['start']}, nstarts={nstarts}"
-    )
 
-    ages = np.asarray(best["ages"], dtype=float)
-    tree = tree.set_node_data("height", ages, inplace=inplace)
-    rates = _unpack_log_rates(current_params[:rsize])
-
+    fit_ages = np.asarray(best["ages"], dtype=float)
+    fit_rates = np.asarray(best["rates"], dtype=float)
     penalized_pseudologlik = _correlated_branch_pseudologlik(
-        rates,
-        ages,
+        fit_rates,
+        fit_ages,
         edges,
         edata,
         parent_edges,
@@ -600,8 +1167,8 @@ def edges_make_ultrametric_correlated(
         observation_loss,
     )
     pseudologlik = _correlated_branch_pseudologlik(
-        rates,
-        ages,
+        fit_rates,
+        fit_ages,
         edges,
         edata,
         parent_edges,
@@ -610,15 +1177,16 @@ def edges_make_ultrametric_correlated(
         observation_mask,
         observation_loss,
     )
-    penalty = _correlated_penalty(rates, parent_edges)
+    penalty = _correlated_penalty(fit_rates, parent_edges)
     basal = parent_edges < 0
-    profiled_root_rate = float(np.exp(np.log(rates[basal]).mean()))
-    time_dists = ages[edges[:, 1]] - ages[edges[:, 0]]
-    expected = time_dists * rates
-
+    profiled_root_rate = float(np.exp(np.mean(np.log(fit_rates[basal]))))
+    time_dists = fit_ages[edges[:, 1]] - fit_ages[edges[:, 0]]
+    expected = time_dists * fit_rates
+    ages = fit_ages * calibration_time_scale
+    rates = fit_rates / calibration_time_scale
+    tree = tree.set_node_data("height", ages, inplace=inplace)
     if not full:
         return tree
-
     return {
         "model": "correlated",
         "pseudologlik": pseudologlik,
@@ -634,9 +1202,17 @@ def edges_make_ultrametric_correlated(
         "penalty": penalty,
         "penalty_model": "summed_log_rate_autocorrelation",
         "scale_invariant": True,
+        "calibration_time_unit_invariant": True,
+        "internal_calibration_time_scale": calibration_time_scale,
+        "clock_warm_start_used": clock_warm_start_used,
+        "interior_multistart_included": bool(
+            not clock_warm_start_used
+            or any(item["start_kind"].startswith("interior") for item in starts)
+        ),
+        "optimizer_strategy": "profiled_rates_joint_polish",
         "lam": lam,
         "nparams": len(bounds),
-        "profiled_root_rate": profiled_root_rate,
+        "profiled_root_rate": profiled_root_rate / calibration_time_scale,
         "rates": list(rates),
         "expected_branch_lengths": expected.tolist(),
         "observed_branch_lengths": dists_o.tolist(),
@@ -646,31 +1222,46 @@ def edges_make_ultrametric_correlated(
         "nfev": int(best.get("nfev", -1)),
         "nit": int(best.get("nit", -1)),
         "refinement_cycles": int(best.get("refinement_cycles", -1)),
+        "profile_evaluations": int(best.get("profile_evaluations", -1)),
+        "outer_profile_converged": bool(best.get("outer_profile_converged", False)),
+        "profile_rate_converged": bool(best.get("profile_rate_converged", False)),
+        "rate_gradient_max_abs": best.get("rate_gradient_max_abs"),
         "final_joint_converged": bool(best.get("final_joint_converged", False)),
         "gradient_max_abs": best.get("gradient_max_abs"),
         "optimizer_retries": int(best.get("optimizer_retries", 0)),
         "observation_loss": observation_loss,
-        "nstarts": nstarts,
+        **branch_diagnostics,
+        "nstarts": effective_nstarts,
+        "evaluated_starts": len(starts),
+        "basin_confirmation_run": basin_confirmation_run,
         "requested_nstarts": requested_nstarts,
-        "ncores": max(1, min(ncores, nstarts)),
+        "ncores": max(1, min(effective_ncores, effective_nstarts)),
         "best_start": int(best["start"]),
         "best_start_kind": str(best["start_kind"]),
         **stability,
         "starts": [
             {
-                "start": int(i["start"]),
-                "objective": float(i["objective"]),
-                "start_kind": str(i.get("start_kind", f"start_{i['start']}")),
-                "converged": bool(i["converged"]),
-                "message": str(i["message"]),
-                "nfev": int(i.get("nfev", -1)),
-                "nit": int(i.get("nit", -1)),
-                "refinement_cycles": int(i.get("refinement_cycles", -1)),
-                "final_joint_converged": bool(i.get("final_joint_converged", False)),
-                "gradient_max_abs": i.get("gradient_max_abs"),
-                "optimizer_retries": int(i.get("optimizer_retries", 0)),
+                "start": int(item["start"]),
+                "start_kind": str(item["start_kind"]),
+                "objective": float(item["objective"]),
+                "converged": bool(item["converged"]),
+                "message": str(item["message"]),
+                "nfev": int(item.get("nfev", -1)),
+                "nit": int(item.get("nit", -1)),
+                "refinement_cycles": int(item.get("refinement_cycles", -1)),
+                "profile_evaluations": int(item.get("profile_evaluations", -1)),
+                "outer_profile_converged": bool(
+                    item.get("outer_profile_converged", False)
+                ),
+                "profile_rate_converged": bool(
+                    item.get("profile_rate_converged", False)
+                ),
+                "rate_gradient_max_abs": item.get("rate_gradient_max_abs"),
+                "final_joint_converged": bool(item.get("final_joint_converged", False)),
+                "gradient_max_abs": item.get("gradient_max_abs"),
+                "optimizer_retries": int(item.get("optimizer_retries", 0)),
             }
-            for i in starts
+            for item in starts
         ],
     }
 

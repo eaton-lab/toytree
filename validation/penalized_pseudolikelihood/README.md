@@ -3,6 +3,15 @@
 This directory contains the pinned simulation and predictive-validation study
 for ToyTree's ultrametric branch-length pseudolikelihood models.
 
+## Version 14: targeted correlated optimizer replay
+
+The [V14 design](README-v14.md) replays all 14 numerical failures from the V13
+pilot plus six matched passing controls. It tests the new conditional
+log-rate Newton solve, direct constrained-age optimization, adaptive basin
+confirmation, exact-zero handling, and exact calibration-time-unit
+normalization. V14 is diagnostic-only; a passing replay leads to a fresh
+independently seeded fixed-lambda confirmation.
+
 ## Version 13: fixed-lambda correlated validation
 
 The [V13 design](README-v13.md) evaluates correlated-rate dating with lambda
