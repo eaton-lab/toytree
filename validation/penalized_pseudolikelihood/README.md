@@ -3,6 +3,15 @@
 This directory contains the pinned simulation and predictive-validation study
 for ToyTree's ultrametric branch-length pseudolikelihood models.
 
+## Version 13: fixed-lambda correlated validation
+
+The [V13 design](README-v13.md) evaluates correlated-rate dating with lambda
+fixed by the generating log-rate increment variance. Independent default,
+doubled-start, truth-initialized, and fixed-age fits separate ordinary
+optimization, missed basins, and rate identifiability. Calibration-unit
+rescaling is tested separately. V13 contains no lambda selection or
+cross-validation release gate.
+
 ## Version 12: profiled fixed-lambda UCLN validation
 
 The [V12 design](README-v12.md) replaces joint age-rate optimization with
@@ -320,7 +329,7 @@ scale-invariance gates, but failed all doubled-start stability gates. Targeted
 removed from the public API. Its private helper and V8/V10 evidence are retained
 for reproducibility; no confirmation run is planned. See README-v10.md.
 
-### Deferred correlated and UCLN work
+### Deferred correlated lambda-selection work
 
 The correlated V9 result should not be summarized as showing that lambda is
 generally unidentifiable. V9 deliberately replayed difficult cases. It showed
