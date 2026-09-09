@@ -11,6 +11,7 @@ from toytree.mod._src.penalized_pseudolikelihood.correlated import (
     edges_make_ultrametric_correlated,
 )
 from toytree.mod._src.penalized_pseudolikelihood.discrete import (
+    _edges_make_ultrametric_discrete_gamma_experimental,
     edges_make_ultrametric_discrete,
 )
 from toytree.mod._src.penalized_pseudolikelihood.uncorrelated_lognormal import (
@@ -124,8 +125,8 @@ class TestPenalizedLikelihoodMultistart(PytestCompat):
         self.assertEqual(res["nstarts"], 2)
         self.assertTrue(res["tree"].is_ultrametric())
 
-    def test_discrete_default_uses_four_starts(self):
-        """Discrete fits should use the validated four-start default."""
+    def test_discrete_default_uses_eight_starts(self):
+        """Discrete fits should use the validated eight-start default."""
         tree = get_tree_with_categorical_rates(ntips=6, nrates=2, seed=321)
         result = edges_make_ultrametric_discrete(
             tree,
@@ -138,4 +139,21 @@ class TestPenalizedLikelihoodMultistart(PytestCompat):
             ncores=1,
             seed=9,
         )
-        self.assertEqual(result["nstarts"], 4)
+        self.assertEqual(result["nstarts"], 8)
+
+    def test_private_discrete_gamma_default_uses_sixteen_starts(self):
+        """Archived Gamma replays retain their historical start count."""
+        tree = get_tree_with_categorical_rates(ntips=6, nrates=2, seed=321)
+        result = _edges_make_ultrametric_discrete_gamma_experimental(
+            tree,
+            ncategories=2,
+            calibrations={-1: 1.0},
+            branch_cv=0.1,
+            full=True,
+            max_iter=300,
+            max_fun=600,
+            max_refine=2,
+            ncores=1,
+            seed=9,
+        )
+        self.assertEqual(result["nstarts"], 16)

@@ -1,0 +1,22 @@
+[
+  {
+    "calibration": "root",
+    "fit_seed": 2125516913,
+    "model": "fractional_poisson",
+    "ncategories": 2,
+    "ntips": 8,
+    "replicate": 0,
+    "seed": 2124816912,
+    "true_cv": null
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 1574674278,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 8,
+    "replicate": 0,
+    "seed": 1573974277,
+    "true_cv": 0.1
+  }
+]

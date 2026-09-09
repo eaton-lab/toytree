@@ -1,0 +1,106 @@
+{
+  "config": {
+    "confirmation_seed": 214260831,
+    "decision_gates": {
+      "age_mae_median": 0.08,
+      "calibration_validity": 1.0,
+      "fit_convergence": 0.98,
+      "fixed_age_rate_spearman_median": 0.9,
+      "maximum_absolute_age_bias": 0.02,
+      "maximum_default_stress_age_difference": 0.02,
+      "maximum_relative_objective_gap": 1e-05,
+      "maximum_time_unit_age_difference": 1e-05,
+      "maximum_time_unit_penalty_relative_error": 1e-05,
+      "maximum_time_unit_rate_relative_error": 1e-05,
+      "stress_solution_stability": 0.98
+    },
+    "development_seed": 114260831,
+    "fit": {
+      "default_nstarts": 4,
+      "max_fun": 10000,
+      "max_iter": 5000,
+      "max_refine": 10,
+      "retry_multiplier": 4,
+      "stress_nstarts": 8
+    },
+    "modes": {
+      "confirmation": {
+        "calibrations": [
+          "root",
+          "root_and_internal_interval"
+        ],
+        "ntips": [
+          24,
+          48,
+          96
+        ],
+        "observation_models": [
+          "expected_branch",
+          "fractional_poisson",
+          "continuous_gamma"
+        ],
+        "replicates": 10,
+        "sigma_log": [
+          0.1,
+          0.3,
+          0.6
+        ]
+      },
+      "pilot": {
+        "calibrations": [
+          "root",
+          "root_and_internal_interval"
+        ],
+        "ntips": [
+          24,
+          48
+        ],
+        "observation_models": [
+          "expected_branch",
+          "fractional_poisson",
+          "continuous_gamma"
+        ],
+        "replicates": 2,
+        "sigma_log": [
+          0.1,
+          0.3,
+          0.6
+        ]
+      },
+      "smoke": {
+        "calibrations": [
+          "root",
+          "root_and_internal_interval"
+        ],
+        "ntips": [
+          6
+        ],
+        "observation_models": [
+          "expected_branch",
+          "fractional_poisson",
+          "continuous_gamma"
+        ],
+        "replicates": 1,
+        "sigma_log": [
+          0.3
+        ]
+      }
+    },
+    "noise": {
+      "gamma_shape": 100.0
+    },
+    "simulation": {
+      "baseline_rate": 20.0
+    },
+    "study_version": 11
+  },
+  "config_hash": "4302b18b02dadedff92eb1d516a9b7a337542b509020dad1049d85cad5fa5d7e",
+  "environment": {
+    "numpy": "2.4.6",
+    "platform": "Linux-7.0.0-28-generic-x86_64-with-glibc2.39",
+    "python": "3.11.9 (main, Apr 19 2024, 16:48:06) [GCC 11.2.0]",
+    "scipy": "1.15.1",
+    "toytree": "3.1.0.dev1"
+  },
+  "source_hash": "7d05d25feac21a94622757032655d531b0ec663cac52a016ab0eab5b6acef231"
+}

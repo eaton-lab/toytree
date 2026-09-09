@@ -67,7 +67,7 @@ def test_all_full_results_declare_observation_model_and_units():
             **config,
         )
         assert result["observation_model"] == "fractional_poisson"
-        assert result["branch_length_units"] == "substitutions_per_site"
+        assert result["branch_length_units"] == "input_tree_units"
         assert "pseudologlik" in result
         assert "penalized_pseudologlik" in result
         assert "loglik" not in result

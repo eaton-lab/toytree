@@ -1,0 +1,55 @@
+{
+  "study_version": 11,
+  "development_seed": 114260831,
+  "confirmation_seed": 214260831,
+  "fit": {
+    "max_iter": 5000,
+    "max_fun": 10000,
+    "max_refine": 10,
+    "default_nstarts": 4,
+    "stress_nstarts": 8,
+    "retry_multiplier": 4
+  },
+  "simulation": {
+    "baseline_rate": 20.0
+  },
+  "noise": {
+    "gamma_shape": 100.0
+  },
+  "modes": {
+    "smoke": {
+      "ntips": [6],
+      "calibrations": ["root", "root_and_internal_interval"],
+      "observation_models": ["expected_branch", "fractional_poisson", "continuous_gamma"],
+      "sigma_log": [0.3],
+      "replicates": 1
+    },
+    "pilot": {
+      "ntips": [24, 48],
+      "calibrations": ["root", "root_and_internal_interval"],
+      "observation_models": ["expected_branch", "fractional_poisson", "continuous_gamma"],
+      "sigma_log": [0.1, 0.3, 0.6],
+      "replicates": 2
+    },
+    "confirmation": {
+      "ntips": [24, 48, 96],
+      "calibrations": ["root", "root_and_internal_interval"],
+      "observation_models": ["expected_branch", "fractional_poisson", "continuous_gamma"],
+      "sigma_log": [0.1, 0.3, 0.6],
+      "replicates": 10
+    }
+  },
+  "decision_gates": {
+    "fit_convergence": 0.98,
+    "stress_solution_stability": 0.98,
+    "calibration_validity": 1.0,
+    "maximum_relative_objective_gap": 1e-5,
+    "maximum_default_stress_age_difference": 0.02,
+    "age_mae_median": 0.08,
+    "maximum_absolute_age_bias": 0.02,
+    "fixed_age_rate_spearman_median": 0.90,
+    "maximum_time_unit_age_difference": 1e-5,
+    "maximum_time_unit_rate_relative_error": 1e-5,
+    "maximum_time_unit_penalty_relative_error": 1e-5
+  }
+}

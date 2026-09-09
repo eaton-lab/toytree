@@ -1,0 +1,386 @@
+[
+  {
+    "calibration": "root",
+    "ntips": 12,
+    "observation_model": "noiseless",
+    "replicate": 0,
+    "scenario": "strict-clock-recovery",
+    "seed": 104260831
+  },
+  {
+    "calibration": "root",
+    "ntips": 12,
+    "observation_model": "noiseless",
+    "replicate": 1,
+    "scenario": "strict-clock-recovery",
+    "seed": 104360834
+  },
+  {
+    "calibration": "root",
+    "ntips": 12,
+    "observation_model": "noiseless",
+    "replicate": 2,
+    "scenario": "strict-clock-recovery",
+    "seed": 104460837
+  },
+  {
+    "calibration": "root",
+    "ntips": 12,
+    "observation_model": "noiseless",
+    "replicate": 3,
+    "scenario": "strict-clock-recovery",
+    "seed": 104560840
+  },
+  {
+    "calibration": "root",
+    "ntips": 12,
+    "observation_model": "gamma",
+    "replicate": 0,
+    "scenario": "strict-clock-recovery",
+    "seed": 104660843
+  },
+  {
+    "calibration": "root",
+    "ntips": 12,
+    "observation_model": "gamma",
+    "replicate": 1,
+    "scenario": "strict-clock-recovery",
+    "seed": 104760846
+  },
+  {
+    "calibration": "root",
+    "ntips": 12,
+    "observation_model": "gamma",
+    "replicate": 2,
+    "scenario": "strict-clock-recovery",
+    "seed": 104860849
+  },
+  {
+    "calibration": "root",
+    "ntips": 12,
+    "observation_model": "gamma",
+    "replicate": 3,
+    "scenario": "strict-clock-recovery",
+    "seed": 104960852
+  },
+  {
+    "calibration": "root",
+    "ntips": 12,
+    "observation_model": "lognormal",
+    "replicate": 0,
+    "scenario": "strict-clock-recovery",
+    "seed": 105060855
+  },
+  {
+    "calibration": "root",
+    "ntips": 12,
+    "observation_model": "lognormal",
+    "replicate": 1,
+    "scenario": "strict-clock-recovery",
+    "seed": 105160858
+  },
+  {
+    "calibration": "root",
+    "ntips": 12,
+    "observation_model": "lognormal",
+    "replicate": 2,
+    "scenario": "strict-clock-recovery",
+    "seed": 105260861
+  },
+  {
+    "calibration": "root",
+    "ntips": 12,
+    "observation_model": "lognormal",
+    "replicate": 3,
+    "scenario": "strict-clock-recovery",
+    "seed": 105360864
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 12,
+    "observation_model": "noiseless",
+    "replicate": 0,
+    "scenario": "strict-clock-recovery",
+    "seed": 105460867
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 12,
+    "observation_model": "noiseless",
+    "replicate": 1,
+    "scenario": "strict-clock-recovery",
+    "seed": 105560870
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 12,
+    "observation_model": "noiseless",
+    "replicate": 2,
+    "scenario": "strict-clock-recovery",
+    "seed": 105660873
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 12,
+    "observation_model": "noiseless",
+    "replicate": 3,
+    "scenario": "strict-clock-recovery",
+    "seed": 105760876
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 12,
+    "observation_model": "gamma",
+    "replicate": 0,
+    "scenario": "strict-clock-recovery",
+    "seed": 105860879
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 12,
+    "observation_model": "gamma",
+    "replicate": 1,
+    "scenario": "strict-clock-recovery",
+    "seed": 105960882
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 12,
+    "observation_model": "gamma",
+    "replicate": 2,
+    "scenario": "strict-clock-recovery",
+    "seed": 106060885
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 12,
+    "observation_model": "gamma",
+    "replicate": 3,
+    "scenario": "strict-clock-recovery",
+    "seed": 106160888
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 12,
+    "observation_model": "lognormal",
+    "replicate": 0,
+    "scenario": "strict-clock-recovery",
+    "seed": 106260891
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 12,
+    "observation_model": "lognormal",
+    "replicate": 1,
+    "scenario": "strict-clock-recovery",
+    "seed": 106360894
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 12,
+    "observation_model": "lognormal",
+    "replicate": 2,
+    "scenario": "strict-clock-recovery",
+    "seed": 106460897
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 12,
+    "observation_model": "lognormal",
+    "replicate": 3,
+    "scenario": "strict-clock-recovery",
+    "seed": 106560900
+  },
+  {
+    "calibration": "root",
+    "ntips": 48,
+    "observation_model": "noiseless",
+    "replicate": 0,
+    "scenario": "strict-clock-recovery",
+    "seed": 106660903
+  },
+  {
+    "calibration": "root",
+    "ntips": 48,
+    "observation_model": "noiseless",
+    "replicate": 1,
+    "scenario": "strict-clock-recovery",
+    "seed": 106760906
+  },
+  {
+    "calibration": "root",
+    "ntips": 48,
+    "observation_model": "noiseless",
+    "replicate": 2,
+    "scenario": "strict-clock-recovery",
+    "seed": 106860909
+  },
+  {
+    "calibration": "root",
+    "ntips": 48,
+    "observation_model": "noiseless",
+    "replicate": 3,
+    "scenario": "strict-clock-recovery",
+    "seed": 106960912
+  },
+  {
+    "calibration": "root",
+    "ntips": 48,
+    "observation_model": "gamma",
+    "replicate": 0,
+    "scenario": "strict-clock-recovery",
+    "seed": 107060915
+  },
+  {
+    "calibration": "root",
+    "ntips": 48,
+    "observation_model": "gamma",
+    "replicate": 1,
+    "scenario": "strict-clock-recovery",
+    "seed": 107160918
+  },
+  {
+    "calibration": "root",
+    "ntips": 48,
+    "observation_model": "gamma",
+    "replicate": 2,
+    "scenario": "strict-clock-recovery",
+    "seed": 107260921
+  },
+  {
+    "calibration": "root",
+    "ntips": 48,
+    "observation_model": "gamma",
+    "replicate": 3,
+    "scenario": "strict-clock-recovery",
+    "seed": 107360924
+  },
+  {
+    "calibration": "root",
+    "ntips": 48,
+    "observation_model": "lognormal",
+    "replicate": 0,
+    "scenario": "strict-clock-recovery",
+    "seed": 107460927
+  },
+  {
+    "calibration": "root",
+    "ntips": 48,
+    "observation_model": "lognormal",
+    "replicate": 1,
+    "scenario": "strict-clock-recovery",
+    "seed": 107560930
+  },
+  {
+    "calibration": "root",
+    "ntips": 48,
+    "observation_model": "lognormal",
+    "replicate": 2,
+    "scenario": "strict-clock-recovery",
+    "seed": 107660933
+  },
+  {
+    "calibration": "root",
+    "ntips": 48,
+    "observation_model": "lognormal",
+    "replicate": 3,
+    "scenario": "strict-clock-recovery",
+    "seed": 107760936
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 48,
+    "observation_model": "noiseless",
+    "replicate": 0,
+    "scenario": "strict-clock-recovery",
+    "seed": 107860939
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 48,
+    "observation_model": "noiseless",
+    "replicate": 1,
+    "scenario": "strict-clock-recovery",
+    "seed": 107960942
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 48,
+    "observation_model": "noiseless",
+    "replicate": 2,
+    "scenario": "strict-clock-recovery",
+    "seed": 108060945
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 48,
+    "observation_model": "noiseless",
+    "replicate": 3,
+    "scenario": "strict-clock-recovery",
+    "seed": 108160948
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 48,
+    "observation_model": "gamma",
+    "replicate": 0,
+    "scenario": "strict-clock-recovery",
+    "seed": 108260951
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 48,
+    "observation_model": "gamma",
+    "replicate": 1,
+    "scenario": "strict-clock-recovery",
+    "seed": 108360954
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 48,
+    "observation_model": "gamma",
+    "replicate": 2,
+    "scenario": "strict-clock-recovery",
+    "seed": 108460957
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 48,
+    "observation_model": "gamma",
+    "replicate": 3,
+    "scenario": "strict-clock-recovery",
+    "seed": 108560960
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 48,
+    "observation_model": "lognormal",
+    "replicate": 0,
+    "scenario": "strict-clock-recovery",
+    "seed": 108660963
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 48,
+    "observation_model": "lognormal",
+    "replicate": 1,
+    "scenario": "strict-clock-recovery",
+    "seed": 108760966
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 48,
+    "observation_model": "lognormal",
+    "replicate": 2,
+    "scenario": "strict-clock-recovery",
+    "seed": 108860969
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "ntips": 48,
+    "observation_model": "lognormal",
+    "replicate": 3,
+    "scenario": "strict-clock-recovery",
+    "seed": 108960972
+  }
+]

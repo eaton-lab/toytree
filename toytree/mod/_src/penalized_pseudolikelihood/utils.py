@@ -186,7 +186,7 @@ def _result_observation_metadata() -> dict[str, str]:
     """Return the declared branch-length pseudolikelihood observation model."""
     return {
         "observation_model": "fractional_poisson",
-        "branch_length_units": "substitutions_per_site",
+        "branch_length_units": "input_tree_units",
     }
 
 

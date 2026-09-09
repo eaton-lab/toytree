@@ -1,0 +1,115 @@
+{
+  "study_version": 10,
+  "development_seed": 10902027,
+  "confirmation_seed": 20902027,
+  "fit": {
+    "max_iter": 5000,
+    "max_fun": 10000,
+    "max_refine": 20,
+    "nstarts_by_model": {
+      "fractional_poisson": 8,
+      "multiplicative_gamma": 16
+    },
+    "stress_nstarts_by_model": {
+      "fractional_poisson": 16,
+      "multiplicative_gamma": 32
+    }
+  },
+  "modes": {
+    "failure-replay": {
+      "cells": [
+        {"calibration": "root", "fit_seed": 1404529610, "model": "fractional_poisson", "ncategories": 2, "ntips": 24, "replicate": 0, "seed": 1403829609, "true_cv": null},
+        {"calibration": "root", "fit_seed": 319223760, "model": "fractional_poisson", "ncategories": 2, "ntips": 48, "replicate": 0, "seed": 318523759, "true_cv": null},
+        {"calibration": "root_and_internal_interval", "fit_seed": 342687790, "model": "fractional_poisson", "ncategories": 2, "ntips": 48, "replicate": 1, "seed": 341987789, "true_cv": null},
+        {"calibration": "root_and_internal_interval", "fit_seed": 1152757084, "model": "fractional_poisson", "ncategories": 3, "ntips": 24, "replicate": 0, "seed": 1152057083, "true_cv": null},
+        {"calibration": "root", "fit_seed": 1725642162, "model": "fractional_poisson", "ncategories": 3, "ntips": 48, "replicate": 0, "seed": 1724942161, "true_cv": null},
+        {"calibration": "root", "fit_seed": 169281009, "model": "fractional_poisson", "ncategories": 3, "ntips": 48, "replicate": 1, "seed": 168581008, "true_cv": null},
+        {"calibration": "root_and_internal_interval", "fit_seed": 650724188, "model": "fractional_poisson", "ncategories": 3, "ntips": 48, "replicate": 0, "seed": 650024187, "true_cv": null},
+        {"calibration": "root_and_internal_interval", "fit_seed": 538358993, "model": "fractional_poisson", "ncategories": 3, "ntips": 48, "replicate": 1, "seed": 537658992, "true_cv": null},
+        {"calibration": "root_and_internal_interval", "fit_seed": 573846020, "model": "multiplicative_gamma", "ncategories": 2, "ntips": 48, "replicate": 0, "seed": 573146019, "true_cv": 0.2}
+      ]
+    },
+
+    "smoke": {
+      "ntips": [
+        8
+      ],
+      "calibrations": [
+        "root"
+      ],
+      "ncategories": [
+        2
+      ],
+      "poisson_replicates": 1,
+      "gamma_replicates": 1,
+      "gamma_true_cv": [
+        0.1
+      ]
+    },
+    "pilot": {
+      "ntips": [
+        24,
+        48
+      ],
+      "calibrations": [
+        "root",
+        "root_and_internal_interval"
+      ],
+      "ncategories": [
+        2,
+        3
+      ],
+      "poisson_replicates": 2,
+      "gamma_replicates": 2,
+      "gamma_true_cv": [
+        0.05,
+        0.1,
+        0.2
+      ]
+    },
+    "confirmation": {
+      "ntips": [
+        24,
+        96
+      ],
+      "calibrations": [
+        "root",
+        "root_and_internal_interval"
+      ],
+      "ncategories": [
+        2,
+        3
+      ],
+      "poisson_replicates": 25,
+      "gamma_replicates": 10,
+      "gamma_true_cv": [
+        0.05,
+        0.1,
+        0.2
+      ]
+    }
+  },
+  "decision_gates": {
+    "convergence_wilson_lower": 0.98,
+    "calibration_validity": 1,
+    "poisson_age_mae_median": 0.06,
+    "gamma_age_mae_median_by_true_cv": {
+      "0.05": 0.05,
+      "0.1": 0.07,
+      "0.2": 0.1
+    },
+    "maximum_absolute_age_bias": 0.025,
+    "poisson_fixed_age_mixture_wasserstein_median": 0.15,
+    "gamma_fixed_age_mixture_wasserstein_median_by_true_cv": {
+      "0.05": 0.1,
+      "0.1": 0.15,
+      "0.2": 0.25
+    },
+    "stress_age_rmse_p90": 0.01,
+    "stress_age_rmse_maximum": 0.05,
+    "stress_relative_objective_improvement_maximum": 0.001,
+    "gamma_scale_normalized_age_maximum": 0.0002,
+    "gamma_scale_relative_rate_maximum": 0.002,
+    "gamma_scale_weight_maximum": 0.002
+  }
+}

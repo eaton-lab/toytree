@@ -1,0 +1,148 @@
+"""Regression tests for the V11 fixed-lambda UCLN study."""
+
+# ruff: noqa: E402 -- repository validation package is not installed.
+
+import json
+import sys
+from pathlib import Path
+
+import numpy as np
+
+REPO = Path(__file__).parents[2]
+if str(REPO) not in sys.path:
+    sys.path.insert(0, str(REPO))
+
+from validation.penalized_pseudolikelihood import run_validation_v11_ucln as study
+
+
+def _config():
+    return json.loads(study.CONFIG_PATH.read_text())
+
+
+def test_v11_is_fixed_lambda_and_has_independent_seed_streams():
+    """The study validates fixed penalties rather than selecting lambda."""
+    config = _config()
+    assert config["study_version"] == 11
+    assert config["development_seed"] != config["confirmation_seed"]
+    assert "lambda_grid" not in json.dumps(config)
+    assert config["fit"]["default_nstarts"] == 4
+    assert config["fit"]["stress_nstarts"] == 8
+
+
+def test_v11_smoke_expands_each_dataset_into_parallel_fit_tasks(tmp_path):
+    """One dataset does not monopolize one remote worker."""
+    config = _config()
+    datasets = study._datasets(config, "smoke", resume=True)
+    tasks = study._task_payloads(datasets, tmp_path)
+    assert len(datasets) == 6
+    assert len(tasks) == 24
+    assert len({task["cache_path"] for task in tasks}) == len(tasks)
+    roles = {}
+    for task in tasks:
+        roles.setdefault(study._dataset_id(task), set()).add(task["role"])
+        assert "cache-v11" in task["cache_path"]
+    assert all(
+        value == {"default", "stress", "fixed_age", "time_scaled"}
+        for value in roles.values()
+    )
+
+
+def test_v11_fit_uses_sigma_matched_lambda(monkeypatch):
+    """The generating sigma deterministically defines the fitted penalty."""
+    captured = {}
+
+    def fake_ucln(*args, **kwargs):
+        captured.update(kwargs)
+        return {"sentinel": True}
+
+    monkeypatch.setattr(
+        study, "edges_make_ultrametric_uncorrelated_lognormal", fake_ucln
+    )
+    monkeypatch.setattr(study, "_slim", lambda fit: fit)
+    payload = {
+        "sigma_log": 0.5,
+        "fit_seed": 7,
+        "config": {
+            "fit": {
+                "max_iter": 10,
+                "max_fun": 20,
+                "max_refine": 1,
+                "retry_multiplier": 4,
+            }
+        },
+    }
+    result = study._fit(object(), {-1: 1.0}, payload, nstarts=4)
+    assert result == {"sentinel": True}
+    assert np.isclose(captured["lam"], 2.0)
+    assert captured["nstarts"] == 4
+    assert captured["ncores"] == 1
+
+
+def test_v11_score_record_uses_four_start_ages_and_fixed_age_rates():
+    """Age and rate validation score the intended independent fit roles."""
+    true_ages = [0.0, 0.0, 0.5, 1.0]
+    fit = {
+        "converged": True,
+        "ages": true_ages,
+        "rates": [0.5, 2.0, 1.0],
+        "objective": 10.0,
+        "penalty": 1.0,
+        "optimizer_retries": 0,
+        "solution_stable": True,
+    }
+    record = {
+        "dataset_id": "example",
+        "scenario": "fixed-lambda-ucln-recovery",
+        "ntips": 2,
+        "calibration": "root",
+        "observation_model": "expected_branch",
+        "sigma_log": 0.5,
+        "lam": 2.0,
+        "replicate": 1,
+        "seed": 1,
+        "true_ages": true_ages,
+        "true_rates": [0.5, 2.0, 1.0],
+        "calibrations": [{"idx": -1, "lower": 1.0, "upper": 1.0}],
+        "fits": {
+            "default": dict(fit),
+            "stress": dict(fit),
+            "fixed_age": dict(fit),
+        },
+    }
+    row = study._score_record(record)
+    assert row["age_mae"] == 0.0
+    assert row["relative_objective_gap"] == 0.0
+    assert np.isclose(row["fixed_age_rate_spearman"], 1.0)
+
+
+def test_v11_summary_gates_clean_synthetic_results():
+    """The prespecified summary accepts an ideal complete result."""
+    scale = {
+        "converged": True,
+        "calibration_valid": True,
+        "maximum_normalized_age_difference": 0.0,
+        "maximum_rate_relative_error": 0.0,
+        "penalty_relative_error": 0.0,
+    }
+    rows = [
+        {
+            "default_converged": True,
+            "stress_converged": True,
+            "fixed_age_converged": True,
+            "stress_solution_stable": True,
+            "calibration_valid": True,
+            "relative_objective_gap": 0.0,
+            "default_stress_maximum_age_difference": 0.0,
+            "age_mae": 0.01,
+            "age_bias": 0.0,
+            "fixed_age_rate_spearman": 0.99,
+            "fixed_age_centered_log_rate_rmse": 0.01,
+            "optimizer_retries": 0,
+            "time_unit_scale": scale,
+            "observation_model": "expected_branch",
+            "sigma_log": 0.3,
+        }
+    ]
+    summary = study._summarize(rows, _config()["decision_gates"])
+    assert summary["gates_passed"]
+    assert all(summary["checks"].values())

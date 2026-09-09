@@ -16,7 +16,6 @@ from toytree.mod._src.penalized_pseudolikelihood.correlated import (
 )
 from toytree.mod._src.penalized_pseudolikelihood.discrete import (
     edges_make_ultrametric_discrete,
-    edges_make_ultrametric_discrete_gamma,
 )
 from toytree.mod._src.penalized_pseudolikelihood.relaxed import (
     edges_make_ultrametric_relaxed,
@@ -39,7 +38,6 @@ def _validate_method(method: str) -> str:
     valid = {
         "clock",
         "discrete",
-        "discrete_gamma",
         "relaxed",
         "uncorrelated_lognormal",
         "correlated",
@@ -54,7 +52,6 @@ def _run_one(
     method: str,
     calibrations: dict[int, Any],
     ncategories: int | None,
-    branch_cv: float | None,
     lam: float | None,
     full: bool,
     inplace: bool,
@@ -83,21 +80,6 @@ def _run_one(
         return edges_make_ultrametric_discrete(
             tree,
             ncategories=ncategories,
-            calibrations=calibrations,
-            full=full,
-            inplace=inplace,
-            max_iter=max_iter,
-            max_fun=max_fun,
-            max_refine=max_refine,
-            nstarts=nstarts,
-            ncores=ncores,
-            seed=seed,
-        )
-    if method == "discrete_gamma":
-        return edges_make_ultrametric_discrete_gamma(
-            tree,
-            ncategories=ncategories,
-            branch_cv=0.1 if branch_cv is None else branch_cv,
             calibrations=calibrations,
             full=full,
             inplace=inplace,
@@ -157,14 +139,12 @@ def edges_make_ultrametric(
     method: Literal[
         "clock",
         "discrete",
-        "discrete_gamma",
         "relaxed",
         "uncorrelated_lognormal",
         "correlated",
     ],
     calibrations: dict[int, Any] | None = None,
     ncategories: int | None = None,
-    branch_cv: float | None = None,
     lam: float | None = None,
     full: bool = False,
     inplace: bool = False,
@@ -177,9 +157,8 @@ def edges_make_ultrametric(
 ):
     """Make a tree ultrametric using one explicitly configured workflow.
 
-    Most fits use a fractional-Poisson branch-length pseudolikelihood;
-    `discrete_gamma` instead uses a multiplicative-Gamma observation model.
-    This function fits one explicitly configured model. Use
+    All supported fits use a fractional-Poisson branch-length
+    pseudolikelihood. This function fits one explicitly configured model. Use
     :meth:`edges_make_ultrametric_correlated_lambda_cv` to select lambda by
     terminal-edge cross-validation within the correlated-rate model.
 
@@ -192,8 +171,7 @@ def edges_make_ultrametric(
     is fixed to 1, so returned edge lengths are relative time and fitted rates
     use input-edge units per relative root-age unit. The ``relaxed`` method is
     provided for ape::chronos parity; ``uncorrelated_lognormal`` is recommended
-    for continuous uncorrelated rates and ``discrete_gamma`` for finite rate
-    categories in new analyses.
+    for continuous uncorrelated rates.
 
     Parameters
     ----------
@@ -202,20 +180,16 @@ def edges_make_ultrametric(
         additive unit. Values must not be support values or unrelated edge
         weights.
     method
-        One of `clock`, `discrete`, `discrete_gamma`, `relaxed`,
-        `uncorrelated_lognormal`, or `correlated`.
+        One of `clock`, `discrete`, `relaxed`, `uncorrelated_lognormal`,
+        or `correlated`.
         Ultrametricization workflow.
     calibrations : dict or None
         Internal-node age constraints whose unit becomes the returned tree's
         time unit. With none, the root age is fixed to 1 and all methods
         estimate relative time.
     ncategories : int or None
-        Required scalar category count for method="discrete" and
-        method="discrete_gamma"; invalid for all other methods.
-    branch_cv : float or None
-        Within-category branch-length coefficient of variation for
-        method="discrete_gamma". Defaults to 0.1 and is invalid for other
-        methods.
+        Required scalar category count for method="discrete"; invalid for all
+        other methods.
     lam : float or None
         Required finite, positive penalty multiplier for relaxed,
         uncorrelated-lognormal, and correlated fits and invalid for
@@ -226,7 +200,8 @@ def edges_make_ultrametric(
     max_iter, max_fun, max_refine : int
         Optimizer and complete refinement-cycle limits.
     nstarts, ncores : int
-        Multistart count and worker-process count.
+        Multistart count and worker-process count. When ``nstarts`` is omitted,
+        discrete uses eight starts, UCLN uses four, and other methods use one.
     seed : int or None
         Random seed for multistart initialization.
 
@@ -239,7 +214,7 @@ def edges_make_ultrametric(
     """
     method = _validate_method(method)
     if nstarts is None:
-        nstarts = 4 if method in {"discrete", "discrete_gamma"} else 1
+        nstarts = {"discrete": 8, "uncorrelated_lognormal": 4}.get(method, 1)
     calibrations = {} if calibrations is None else calibrations
     penalized = {"relaxed", "uncorrelated_lognormal", "correlated"}
 
@@ -250,8 +225,8 @@ def edges_make_ultrametric(
     elif lam is not None:
         raise ToytreeError(f"lam is only valid for methods {sorted(penalized)}.")
 
-    discrete_methods = {"discrete", "discrete_gamma"}
-    if method in discrete_methods:
+    discrete_methods = {"discrete"}
+    if method == "discrete":
         if ncategories is None:
             raise ToytreeError(f"ncategories is required for method={method!r}.")
         ncategories = _validate_ncategories(ncategories, tree.nedges)
@@ -259,15 +234,11 @@ def edges_make_ultrametric(
         raise ToytreeError(
             f"ncategories is only valid for methods {sorted(discrete_methods)}."
         )
-    if method != "discrete_gamma" and branch_cv is not None:
-        raise ToytreeError("branch_cv is only valid for method='discrete_gamma'.")
-
     return _run_one(
         tree=tree,
         method=method,
         calibrations=calibrations,
         ncategories=ncategories,
-        branch_cv=branch_cv,
         lam=lam,
         full=full,
         inplace=inplace,

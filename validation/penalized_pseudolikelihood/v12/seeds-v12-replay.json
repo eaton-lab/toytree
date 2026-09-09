@@ -1,0 +1,402 @@
+[
+  {
+    "calibration": "root",
+    "fit_seed": 219260961,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 218560960,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 219460967,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 218760966,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 228061225,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 227361224,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 229061255,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 228361254,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 238061525,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 237361524,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 238161528,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 237461527,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 238261531,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 237561530,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 238461537,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 237761536,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 238561540,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 237861539,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 238761546,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 238061545,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 245761756,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 245061755,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 245961762,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 245261761,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 246361774,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 245661773,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 246561780,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 245861779,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 247461807,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 246761806,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 253962002,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 253262001,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 254162008,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 253462007,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 254262011,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 253562010,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 254662023,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 253962022,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 254962032,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 254262031,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 255762056,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 255062055,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 255962062,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 255262061,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 256262071,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 255562070,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 256462077,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 255762076,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 256662083,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 255962082,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 256762086,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 256062085,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 256862089,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 256162088,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 263762296,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 263062295,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 263862299,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 263162298,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 263962302,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 263262301,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 264062305,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 263362304,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 264262311,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 263562310,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 264362314,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 263662313,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 264562320,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 263862319,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 264762326,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 264062325,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 264862329,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 264162328,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 265162338,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 264462337,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 265562350,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 264862349,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 265762356,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 265062355,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 265862359,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "v11-failed-numerical-gate-replay",
+    "seed": 265162358,
+    "sigma_log": 0.6
+  }
+]

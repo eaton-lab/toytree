@@ -6,9 +6,11 @@ observation model, or irreducible age-rate confounding. It does not change the
 public API or make the experimental warning eligible for removal.
 
 The study never accepts alignment length, sequence length, or an inferred
-effective site count. Both estimators consume only phylogram branches in
-substitutions per site. The multiplicative-Gamma candidate uses a scale-free
-working loss and has no precision parameter.
+effective site count. Its simulated phylogram branches happen to use expected
+substitutions per site, but that is a study design choice rather than an API
+requirement: the estimators accept any consistent additive branch-length unit.
+The multiplicative-Gamma candidate uses a scale-free working loss and has no
+precision parameter.
 
 ## Changes under test
 

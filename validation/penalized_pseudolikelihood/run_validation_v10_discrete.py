@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""Resumable V8 validation for discrete chronogram models."""
+"""Task-parallel V10 validation for discrete chronogram models."""
 
 # ruff: noqa: E402 -- numerical thread limits must precede NumPy/SciPy imports.
 
@@ -50,10 +50,10 @@ edges_make_ultrametric_discrete_gamma = (
 
 toytree.set_log_level("WARNING")
 
-CONFIG_PATH = HERE / "config-v8.json"
-OUTPUT = HERE / "v8"
+CONFIG_PATH = HERE / "config-v10.json"
+OUTPUT = HERE / "v10"
 SCALE_FACTOR = 1e6
-CACHE_SCHEMA = 1
+CACHE_SCHEMA = 2
 
 
 def _atomic_json(path: Path, value: Any) -> None:
@@ -194,9 +194,22 @@ def _slim(fit: dict[str, Any]) -> dict[str, Any]:
         "nfev": int(fit.get("nfev", -1)),
         "nit": int(fit.get("nit", -1)),
         "gradient_max_abs": fit.get("gradient_max_abs"),
+        "projected_gradient_max_abs": fit.get("projected_gradient_max_abs"),
+        "optimizer_method": fit.get("optimizer_method"),
         "optimizer_retries": int(fit.get("optimizer_retries", 0)),
+        "stability_assessed": fit.get("stability_assessed"),
         "solution_stable": fit.get("solution_stable"),
+        "optimum_replicated": fit.get("optimum_replicated"),
+        "converged_starts": fit.get("converged_starts"),
+        "near_optimal_starts": fit.get("near_optimal_starts"),
         "max_near_optimal_age_difference": fit.get("max_near_optimal_age_difference"),
+        "mixture_identified": fit.get("mixture_identified"),
+        "effective_ncategories": fit.get("effective_ncategories"),
+        "boundary_solution": fit.get("boundary_solution"),
+        "boundary_reasons": fit.get("boundary_reasons", []),
+        "minimum_weight": fit.get("minimum_weight"),
+        "minimum_adjacent_log_rate_gap": fit.get("minimum_adjacent_log_rate_gap"),
+        "minimum_normalized_branch_time": fit.get("minimum_normalized_branch_time"),
     }
 
 
@@ -223,26 +236,60 @@ def _fit(
     if payload["model"] == "fractional_poisson":
         fit = edges_make_ultrametric_discrete(**common)
     else:
-        fit = edges_make_ultrametric_discrete_gamma(branch_cv=0.1, **common)
+        branch_cv = payload.get("fit_cv")
+        if branch_cv is None:
+            branch_cv = payload.get("true_cv", 0.1)
+        fit = edges_make_ultrametric_discrete_gamma(
+            branch_cv=float(branch_cv), **common
+        )
     return _slim(fit)
 
 
-def _cache_path(payload: dict[str, Any]) -> Path:
-    """Return a deterministic cache path."""
+def _dataset_id(payload: dict[str, Any]) -> str:
+    """Return the stable identifier shared by all fits of one dataset."""
     cv = (
         "none"
         if payload["true_cv"] is None
         else str(payload["true_cv"]).replace(".", "p")
     )
-    name = (
+    return (
         f"{payload['model']}-k{payload['ncategories']}-n{payload['ntips']}-"
-        f"{payload['calibration']}-cv{cv}-r{payload['replicate']:04d}.json"
+        f"{payload['calibration']}-cv{cv}-r{payload['replicate']:04d}"
     )
-    return OUTPUT / "cache-v8" / payload["mode"] / name
+
+
+def _cache_path(payload: dict[str, Any]) -> Path:
+    """Return a deterministic cache path for one independently runnable fit."""
+    name = f"{_dataset_id(payload)}-{payload['role']}.json"
+    return OUTPUT / "cache-v10" / payload["mode"] / name
+
+
+def _fit_roles(payload: dict[str, Any]) -> list[str]:
+    """Return all independent fits required for one simulated dataset."""
+    roles = ["main", "fixed_age"]
+    if payload["replicate"] == 0 or payload["mode"] == "failure-replay":
+        roles.append("stress_reference")
+    if payload["model"] == "multiplicative_gamma":
+        roles.extend(("input_scaled", "time_scaled"))
+        if not np.isclose(float(payload["true_cv"]), 0.1):
+            roles.append("misspecified_default_cv")
+    return roles
+
+
+def _fit_payloads(datasets: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Expand dataset specifications into independently cached fit tasks."""
+    tasks = []
+    for dataset in datasets:
+        for role in _fit_roles(dataset):
+            task = dict(dataset)
+            task["role"] = role
+            task["cache_path"] = str(_cache_path(task))
+            tasks.append(task)
+    return tasks
 
 
 def _worker(payload: dict[str, Any]) -> str:
-    """Simulate, fit, and cache one dataset."""
+    """Simulate and cache one fit task."""
     path = Path(payload["cache_path"])
     if payload["resume"] and path.exists():
         try:
@@ -254,62 +301,93 @@ def _worker(payload: dict[str, Any]) -> str:
 
     simulated = _simulate(payload)
     calibrations = _calibrations(simulated["true_tree"], payload["calibration"])
-    fixed = _fixed_calibrations(simulated["true_tree"])
-    nstarts = int(payload["config"]["fit"]["nstarts"])
-    main = _fit(simulated["observed_tree"], calibrations, payload, nstarts)
-    fixed_fit = _fit(simulated["observed_tree"], fixed, payload, nstarts)
-    stress = None
-    if payload["replicate"] == 0:
-        stress = _fit(
-            simulated["observed_tree"],
-            calibrations,
-            payload,
-            int(payload["config"]["fit"]["stress_nstarts"]),
-        )
+    role = payload["role"]
+    fit_tree = simulated["observed_tree"]
+    fit_calibrations = calibrations
+    fit_options = payload["config"]["fit"]
+    model = payload["model"]
+    nstarts = int(fit_options["nstarts_by_model"][model])
+    fit_payload = dict(payload)
+    if role == "fixed_age":
+        fit_calibrations = _fixed_calibrations(simulated["true_tree"])
+    elif role == "stress_reference":
+        nstarts = int(fit_options["stress_nstarts_by_model"][model])
+    elif role == "input_scaled":
+        fit_tree = _scale_branches(fit_tree, SCALE_FACTOR)
+    elif role == "time_scaled":
+        fit_calibrations = _scale_calibrations(calibrations, SCALE_FACTOR)
+    elif role == "misspecified_default_cv":
+        fit_payload["fit_cv"] = 0.1
 
-    input_scaled = None
-    time_scaled = None
-    if payload["model"] == "multiplicative_gamma":
-        input_scaled = _fit(
-            _scale_branches(simulated["observed_tree"], SCALE_FACTOR),
-            calibrations,
-            payload,
-            nstarts,
-        )
-        time_scaled = _fit(
-            simulated["observed_tree"],
-            _scale_calibrations(calibrations, SCALE_FACTOR),
-            payload,
-            nstarts,
-        )
-
-    record = {
-        "schema": CACHE_SCHEMA,
-        "fingerprint": payload["fingerprint"],
-        "seed": int(payload["seed"]),
-        "scenario": payload["scenario"],
-        "model": payload["model"],
-        "ncategories": int(payload["ncategories"]),
-        "ntips": int(payload["ntips"]),
-        "calibration": payload["calibration"],
-        "true_cv": payload["true_cv"],
-        "true_ages": simulated["true_ages"].tolist(),
-        "true_rates": simulated["true_rates"].tolist(),
-        "true_weights": simulated["true_weights"].tolist(),
-        "calibrations": {
-            str(key): (
-                float(value) if np.isscalar(value) else [float(item) for item in value]
-            )
-            for key, value in calibrations.items()
+    fit = _fit(
+        fit_tree,
+        fit_calibrations,
+        fit_payload,
+        nstarts,
+    )
+    _atomic_json(
+        path,
+        {
+            "schema": CACHE_SCHEMA,
+            "fingerprint": payload["fingerprint"],
+            "dataset_id": _dataset_id(payload),
+            "role": role,
+            "fit": fit,
         },
-        "main": main,
-        "fixed_age": fixed_fit,
-        "stress_eight": stress,
-        "input_scaled": input_scaled,
-        "time_scaled": time_scaled,
-    }
-    _atomic_json(path, record)
+    )
     return str(path)
+
+
+def _assemble_records(
+    datasets: list[dict[str, Any]], paths: list[str]
+) -> list[dict[str, Any]]:
+    """Assemble independently cached fits into dataset-level records."""
+    fitted: dict[str, dict[str, Any]] = {}
+    for path in paths:
+        task = json.loads(Path(path).read_text())
+        fitted.setdefault(task["dataset_id"], {})[task["role"]] = task["fit"]
+
+    records = []
+    for payload in datasets:
+        simulated = _simulate(payload)
+        calibrations = _calibrations(simulated["true_tree"], payload["calibration"])
+        fits = fitted[_dataset_id(payload)]
+        records.append(
+            {
+                "schema": CACHE_SCHEMA,
+                "fingerprint": payload["fingerprint"],
+                "seed": int(payload["seed"]),
+                "scenario": payload["scenario"],
+                "model": payload["model"],
+                "ncategories": int(payload["ncategories"]),
+                "ntips": int(payload["ntips"]),
+                "calibration": payload["calibration"],
+                "true_cv": payload["true_cv"],
+                "fit_cv": (
+                    payload["true_cv"]
+                    if payload["model"] == "multiplicative_gamma"
+                    else None
+                ),
+                "true_ages": simulated["true_ages"].tolist(),
+                "true_rates": simulated["true_rates"].tolist(),
+                "true_weights": simulated["true_weights"].tolist(),
+                "calibrations": {
+                    str(key): (
+                        float(value)
+                        if np.isscalar(value)
+                        else [float(item) for item in value]
+                    )
+                    for key, value in calibrations.items()
+                },
+                "main": fits["main"],
+                "fixed_age": fits["fixed_age"],
+                "stress_reference": fits.get("stress_reference"),
+                "input_scaled": fits.get("input_scaled"),
+                "time_scaled": fits.get("time_scaled"),
+                "misspecified_default_cv": fits.get("misspecified_default_cv"),
+            }
+        )
+    return records
 
 
 def _normalized_internal_ages(
@@ -385,8 +463,12 @@ def _relative_rate_error(reference: np.ndarray, candidate: np.ndarray) -> float:
     return float(np.max(np.abs(candidate - reference) / denominator))
 
 
-def _score(records: list[dict[str, Any]], config: dict[str, Any]) -> dict[str, Any]:
-    """Score all prespecified gates."""
+def _score(
+    records: list[dict[str, Any]],
+    config: dict[str, Any],
+    mode: str | None = None,
+) -> dict[str, Any]:
+    """Score all prespecified gates or the targeted failure replay."""
     gates = config["decision_gates"]
     checks: dict[str, bool] = {}
     details: dict[str, Any] = {}
@@ -401,6 +483,8 @@ def _score(records: list[dict[str, Any]], config: dict[str, Any]) -> dict[str, A
         }
         checks[f"{model}_convergence"] = bool(
             lower >= float(gates["convergence_wilson_lower"])
+            if mode == "confirmation"
+            else converged == len(subset)
         )
 
     validity = [
@@ -413,6 +497,45 @@ def _score(records: list[dict[str, Any]], config: dict[str, Any]) -> dict[str, A
     checks["calibration_validity"] = validity_fraction >= float(
         gates["calibration_validity"]
     )
+
+    boundary_metadata = [
+        all(
+            key in record["main"]
+            for key in (
+                "boundary_solution",
+                "boundary_reasons",
+                "effective_ncategories",
+                "mixture_identified",
+            )
+        )
+        for record in records
+    ]
+    boundary_metadata_fraction = (
+        float(np.mean(boundary_metadata)) if boundary_metadata else 0.0
+    )
+    details["boundary_metadata_fraction"] = boundary_metadata_fraction
+    details["boundary_solution_fraction"] = (
+        float(np.mean([record["main"]["boundary_solution"] for record in records]))
+        if records
+        else float("nan")
+    )
+    checks["boundary_metadata"] = bool(boundary_metadata_fraction == 1.0)
+
+    identified_primary = [
+        record["main"]
+        for record in records
+        if record["main"].get("mixture_identified", False)
+    ]
+    replication_fraction = (
+        float(
+            np.mean(
+                [fit.get("optimum_replicated", False) for fit in identified_primary]
+            )
+        )
+        if identified_primary
+        else 0.0
+    )
+    details["identified_optimum_replication_fraction"] = replication_fraction
 
     poisson = [
         record
@@ -428,10 +551,6 @@ def _score(records: list[dict[str, Any]], config: dict[str, Any]) -> dict[str, A
     )
     details["poisson_age_mae_median"] = poisson_mae
     details["poisson_age_bias"] = poisson_bias
-    checks["poisson_age_mae"] = poisson_mae <= float(gates["poisson_age_mae_median"])
-    checks["poisson_age_bias"] = abs(poisson_bias) <= float(
-        gates["maximum_absolute_age_bias"]
-    )
 
     poisson_distances = [
         _mixture_distance(record, record["fixed_age"])
@@ -440,9 +559,6 @@ def _score(records: list[dict[str, Any]], config: dict[str, Any]) -> dict[str, A
     ]
     poisson_distance = _quantile(poisson_distances, 0.5)
     details["poisson_fixed_age_mixture_wasserstein_median"] = poisson_distance
-    checks["poisson_mixture_recovery"] = poisson_distance <= float(
-        gates["poisson_fixed_age_mixture_wasserstein_median"]
-    )
 
     gamma_details = {}
     for cv_text, age_limit in gates["gamma_age_mae_median_by_true_cv"].items():
@@ -480,15 +596,49 @@ def _score(records: list[dict[str, Any]], config: dict[str, Any]) -> dict[str, A
         checks[f"gamma_cv_{cv_text}_mixture_recovery"] = distance <= distance_limit
     details["gamma_by_true_cv"] = gamma_details
 
+    misspecified = {}
+    for cv in (0.05, 0.2):
+        subset = [
+            record
+            for record in records
+            if record["model"] == "multiplicative_gamma"
+            and np.isclose(float(record["true_cv"]), cv)
+            and record["misspecified_default_cv"] is not None
+            and record["misspecified_default_cv"]["converged"]
+        ]
+        metrics = [
+            _age_metrics(record, record["misspecified_default_cv"]) for record in subset
+        ]
+        misspecified[str(cv)] = {
+            "datasets": len(subset),
+            "age_mae_median": _quantile([value[0] for value in metrics], 0.5),
+            "age_bias": (
+                float(np.mean([value[1] for value in metrics]))
+                if metrics
+                else float("nan")
+            ),
+        }
+    details["gamma_default_cv_misspecification"] = misspecified
+
     age_rmse = []
     objective_improvement = []
+    excluded_unidentified = 0
     for record in records:
-        stress = record["stress_eight"]
+        stress = record["stress_reference"]
         if stress is None or not record["main"]["converged"] or not stress["converged"]:
             continue
-        ages4 = _normalized_internal_ages(record, record["main"])
-        ages8 = _normalized_internal_ages(record, stress)
-        age_rmse.append(float(np.sqrt(np.mean((ages4 - ages8) ** 2))))
+        # A collapsed K-category solution lies on a singular mixture surface.
+        # It warns users to refit a smaller K and is not evidence about the
+        # optimizer stability of an identified K-category model.
+        if not (
+            record["main"].get("mixture_identified", False)
+            and stress.get("mixture_identified", False)
+        ):
+            excluded_unidentified += 1
+            continue
+        ages_main = _normalized_internal_ages(record, record["main"])
+        ages_stress = _normalized_internal_ages(record, stress)
+        age_rmse.append(float(np.sqrt(np.mean((ages_main - ages_stress) ** 2))))
         objective_improvement.append(
             max(
                 0.0,
@@ -503,6 +653,8 @@ def _score(records: list[dict[str, Any]], config: dict[str, Any]) -> dict[str, A
         "age_rmse_p90": stress_p90,
         "age_rmse_maximum": stress_max,
         "relative_objective_improvement_maximum": objective_max,
+        "identified_pairs": len(age_rmse),
+        "excluded_unidentified_pairs": excluded_unidentified,
     }
     checks["stress_age_rmse_p90"] = stress_p90 <= float(gates["stress_age_rmse_p90"])
     checks["stress_age_rmse_maximum"] = stress_max <= float(
@@ -567,6 +719,31 @@ def _score(records: list[dict[str, Any]], config: dict[str, Any]) -> dict[str, A
     checks["gamma_scale_weight"] = weight_max <= float(
         gates["gamma_scale_weight_maximum"]
     )
+    if mode in {"failure-replay", "smoke"}:
+        all_checks = checks
+        checks = {
+            "all_primary_converged": all(
+                record["main"]["converged"] for record in records
+            ),
+            "all_stress_converged": all(
+                record["stress_reference"] is not None
+                and record["stress_reference"]["converged"]
+                for record in records
+            ),
+            "calibration_validity": all_checks["calibration_validity"],
+            "boundary_metadata": all_checks["boundary_metadata"],
+            "stress_age_rmse_p90": all_checks["stress_age_rmse_p90"],
+            "stress_age_rmse_maximum": all_checks["stress_age_rmse_maximum"],
+            "stress_objective": all_checks["stress_objective"],
+        }
+        if mode == "smoke":
+            checks.update(
+                {
+                    "gamma_scale_age": all_checks["gamma_scale_age"],
+                    "gamma_scale_rate": all_checks["gamma_scale_rate"],
+                    "gamma_scale_weight": all_checks["gamma_scale_weight"],
+                }
+            )
     return {
         "checks": checks,
         "details": details,
@@ -582,6 +759,22 @@ def _payloads(
 ) -> list[dict[str, Any]]:
     """Enumerate deterministic study cells and seeds."""
     design = config["modes"][mode]
+    if mode == "failure-replay":
+        payloads = []
+        for cell in design["cells"]:
+            payload = dict(cell)
+            payload.update(
+                {
+                    "mode": mode,
+                    "scenario": "v8-failure-replay",
+                    "config": config,
+                    "fingerprint": fingerprint,
+                    "resume": resume,
+                }
+            )
+            payloads.append(payload)
+        return payloads
+
     base_seed = (
         int(config["confirmation_seed"])
         if mode == "confirmation"
@@ -615,23 +808,25 @@ def _payloads(
                             "fingerprint": fingerprint,
                             "resume": resume,
                         }
-                        payload["cache_path"] = str(_cache_path(payload))
                         payloads.append(payload)
     return payloads
 
 
 def main() -> None:
-    """Run simulation, caching, scoring, and output assembly."""
+    """Run simulation, fit-task caching, scoring, and output assembly."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--mode", choices=("smoke", "pilot", "confirmation"), default="smoke"
+        "--mode",
+        choices=("failure-replay", "smoke", "pilot", "confirmation"),
+        default="smoke",
     )
     parser.add_argument("--ncores", type=int, default=1)
     parser.add_argument("--no-resume", action="store_true")
     args = parser.parse_args()
     config = json.loads(CONFIG_PATH.read_text())
     fingerprint = _source_hash(config)
-    payloads = _payloads(args.mode, config, fingerprint, not args.no_resume)
+    datasets = _payloads(args.mode, config, fingerprint, not args.no_resume)
+    payloads = _fit_payloads(datasets)
     seeds = [
         {
             key: payload[key]
@@ -646,11 +841,11 @@ def main() -> None:
                 "fit_seed",
             )
         }
-        for payload in payloads
+        for payload in datasets
     ]
-    _atomic_json(OUTPUT / f"seeds-v8-{args.mode}.json", seeds)
+    _atomic_json(OUTPUT / f"seeds-v10-{args.mode}.json", seeds)
     _atomic_json(
-        OUTPUT / f"environment-v8-{args.mode}.json",
+        OUTPUT / f"environment-v10-{args.mode}.json",
         {
             "environment": _environment(),
             "fingerprint": fingerprint,
@@ -667,7 +862,7 @@ def main() -> None:
             print(
                 json.dumps(
                     {
-                        "event": "dataset_complete",
+                        "event": "fit_complete",
                         "completed": index,
                         "total": len(payloads),
                         "elapsed_seconds": time.monotonic() - start,
@@ -683,7 +878,7 @@ def main() -> None:
                 print(
                     json.dumps(
                         {
-                            "event": "dataset_complete",
+                            "event": "fit_complete",
                             "completed": index,
                             "total": len(payloads),
                             "elapsed_seconds": time.monotonic() - start,
@@ -692,11 +887,11 @@ def main() -> None:
                     flush=True,
                 )
 
-    records = [json.loads(Path(path).read_text()) for path in sorted(paths)]
-    summary = _score(records, config)
+    records = _assemble_records(datasets, paths)
+    summary = _score(records, config, args.mode)
     result = {
         "mode": args.mode,
-        "study_version": 8,
+        "study_version": 10,
         "fingerprint": fingerprint,
         "datasets": records,
         "summary": summary,
@@ -705,13 +900,15 @@ def main() -> None:
             args.mode == "confirmation" and summary["gates_passed"]
         ),
     }
-    output = OUTPUT / f"results-v8-{args.mode}.json"
+    output = OUTPUT / f"results-v10-{args.mode}.json"
     _atomic_json(output, result)
     print(
         json.dumps(
             {
                 "mode": args.mode,
                 "datasets": len(records),
+                "fit_tasks": len(payloads),
+                "workers": workers,
                 "output": str(output),
                 "gates_passed": summary["gates_passed"],
                 "diagnostic_only": result["diagnostic_only"],

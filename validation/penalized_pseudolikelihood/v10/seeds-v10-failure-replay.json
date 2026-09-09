@@ -1,0 +1,92 @@
+[
+  {
+    "calibration": "root",
+    "fit_seed": 1404529610,
+    "model": "fractional_poisson",
+    "ncategories": 2,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 1403829609,
+    "true_cv": null
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 319223760,
+    "model": "fractional_poisson",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 318523759,
+    "true_cv": null
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 342687790,
+    "model": "fractional_poisson",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 341987789,
+    "true_cv": null
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 1152757084,
+    "model": "fractional_poisson",
+    "ncategories": 3,
+    "ntips": 24,
+    "replicate": 0,
+    "seed": 1152057083,
+    "true_cv": null
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 1725642162,
+    "model": "fractional_poisson",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 1724942161,
+    "true_cv": null
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 169281009,
+    "model": "fractional_poisson",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 168581008,
+    "true_cv": null
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 650724188,
+    "model": "fractional_poisson",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 650024187,
+    "true_cv": null
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 538358993,
+    "model": "fractional_poisson",
+    "ncategories": 3,
+    "ntips": 48,
+    "replicate": 1,
+    "seed": 537658992,
+    "true_cv": null
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 573846020,
+    "model": "multiplicative_gamma",
+    "ncategories": 2,
+    "ntips": 48,
+    "replicate": 0,
+    "seed": 573146019,
+    "true_cv": 0.2
+  }
+]

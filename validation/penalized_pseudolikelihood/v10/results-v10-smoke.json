@@ -1,0 +1,572 @@
+{
+  "all_release_gates_passed": false,
+  "datasets": [
+    {
+      "calibration": "root",
+      "calibrations": {
+        "-1": 1.0
+      },
+      "fingerprint": "e8dd2999c2e96bbcb6ec3ea24abcd6200eb6c0f02ea010faa4eac8fcecda431b",
+      "fit_cv": null,
+      "fixed_age": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.1175864583991418,
+          0.15103467338767518,
+          0.22790751120422412,
+          0.26126242161040536,
+          0.7297734947602438,
+          0.2211934493759766,
+          1.0
+        ],
+        "boundary_reasons": [],
+        "boundary_solution": false,
+        "converged": true,
+        "converged_starts": 8,
+        "effective_ncategories": 2,
+        "gradient_max_abs": 6.154025022908627e-08,
+        "max_near_optimal_age_difference": 0.0,
+        "minimum_adjacent_log_rate_gap": 0.9119192143494743,
+        "minimum_normalized_branch_time": 0.03335491040618124,
+        "minimum_weight": 0.3851075782848314,
+        "mixture_identified": true,
+        "near_optimal_starts": 8,
+        "nfev": 13,
+        "nit": 5,
+        "objective": 34.09015621161365,
+        "optimizer_message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "optimizer_method": "L-BFGS-B",
+        "optimizer_retries": 0,
+        "optimum_replicated": true,
+        "projected_gradient_max_abs": 6.154025022908627e-08,
+        "pseudologlik": -34.09015621161365,
+        "rates": [
+          19.728295670947144,
+          49.10560327950441
+        ],
+        "solution_stable": true,
+        "stability_assessed": true,
+        "weights": [
+          0.6148924217151686,
+          0.3851075782848314
+        ]
+      },
+      "input_scaled": null,
+      "main": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.040245164485866305,
+          0.094553674159973,
+          0.094553674162973,
+          0.1608337558153342,
+          0.7352848896303891,
+          0.11630829557483438,
+          1.0
+        ],
+        "boundary_reasons": [
+          "near_zero_branch_time"
+        ],
+        "boundary_solution": true,
+        "converged": true,
+        "converged_starts": 8,
+        "effective_ncategories": 2,
+        "gradient_max_abs": 1.910058005184231e-06,
+        "max_near_optimal_age_difference": 5.950299664103653e-08,
+        "minimum_adjacent_log_rate_gap": 0.7885770069570985,
+        "minimum_normalized_branch_time": 3.0000030237786746e-12,
+        "minimum_weight": 0.1310031206564109,
+        "mixture_identified": true,
+        "near_optimal_starts": 8,
+        "nfev": 53,
+        "nit": 37,
+        "objective": 27.877134770489995,
+        "optimizer_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "optimizer_method": "L-BFGS-B",
+        "optimizer_retries": 0,
+        "optimum_replicated": true,
+        "projected_gradient_max_abs": 1.910058005184231e-06,
+        "pseudologlik": -27.877134770489995,
+        "rates": [
+          20.372369847707287,
+          44.82457645197749
+        ],
+        "solution_stable": true,
+        "stability_assessed": true,
+        "weights": [
+          0.1310031206564109,
+          0.8689968793435892
+        ]
+      },
+      "misspecified_default_cv": null,
+      "model": "fractional_poisson",
+      "ncategories": 2,
+      "ntips": 8,
+      "scenario": "discrete-recovery",
+      "schema": 2,
+      "seed": 2124816912,
+      "stress_reference": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.04024517177897459,
+          0.09455368072707401,
+          0.09455368073007402,
+          0.16083376472177913,
+          0.7352849001425438,
+          0.11630829836094525,
+          1.0
+        ],
+        "boundary_reasons": [
+          "near_zero_branch_time"
+        ],
+        "boundary_solution": true,
+        "converged": true,
+        "converged_starts": 16,
+        "effective_ncategories": 2,
+        "gradient_max_abs": 6.379350805491654e-07,
+        "max_near_optimal_age_difference": 4.899084193876746e-08,
+        "minimum_adjacent_log_rate_gap": 0.7885771796624703,
+        "minimum_normalized_branch_time": 3.0000030237786746e-12,
+        "minimum_weight": 0.13100317765420413,
+        "mixture_identified": true,
+        "near_optimal_starts": 16,
+        "nfev": 60,
+        "nit": 43,
+        "objective": 27.87713477048948,
+        "optimizer_message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "optimizer_method": "L-BFGS-B",
+        "optimizer_retries": 0,
+        "optimum_replicated": true,
+        "projected_gradient_max_abs": 6.379350805491654e-07,
+        "pseudologlik": -27.87713477048948,
+        "rates": [
+          20.372366191363223,
+          44.82457614850248
+        ],
+        "solution_stable": true,
+        "stability_assessed": true,
+        "weights": [
+          0.13100317765420413,
+          0.8689968223457959
+        ]
+      },
+      "time_scaled": null,
+      "true_ages": [
+        2.090354889881946e-16,
+        2.090354889881946e-16,
+        2.090354889881946e-16,
+        0.0,
+        0.0,
+        2.090354889881946e-16,
+        2.090354889881946e-16,
+        2.090354889881946e-16,
+        0.1175864583991418,
+        0.15103467338767518,
+        0.22790751120422412,
+        0.26126242161040536,
+        0.7297734947602438,
+        0.2211934493759766,
+        1.0
+      ],
+      "true_cv": null,
+      "true_rates": [
+        20.0,
+        50.0
+      ],
+      "true_weights": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "calibration": "root",
+      "calibrations": {
+        "-1": 1.0
+      },
+      "fingerprint": "e8dd2999c2e96bbcb6ec3ea24abcd6200eb6c0f02ea010faa4eac8fcecda431b",
+      "fit_cv": 0.1,
+      "fixed_age": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.12717565244032997,
+          0.18806248607126996,
+          0.11146057112508999,
+          0.5787823286002399,
+          0.7297261312034898,
+          0.8526180898175099,
+          0.9999999999999999
+        ],
+        "boundary_reasons": [],
+        "boundary_solution": false,
+        "converged": true,
+        "converged_starts": 16,
+        "effective_ncategories": 2,
+        "gradient_max_abs": 3.715631306015184e-14,
+        "max_near_optimal_age_difference": 0.0,
+        "minimum_adjacent_log_rate_gap": 1.058842567156722,
+        "minimum_normalized_branch_time": 0.060886833630939996,
+        "minimum_weight": 0.4999999999999999,
+        "mixture_identified": true,
+        "near_optimal_starts": 12,
+        "nfev": 5,
+        "nit": 0,
+        "objective": -3.3023332135966537,
+        "optimizer_message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "optimizer_method": "L-BFGS-B",
+        "optimizer_retries": 0,
+        "optimum_replicated": true,
+        "projected_gradient_max_abs": 3.715631306015184e-14,
+        "pseudologlik": 3.3023332135966537,
+        "rates": [
+          0.5343413168816254,
+          1.54052319099749
+        ],
+        "solution_stable": true,
+        "stability_assessed": true,
+        "weights": [
+          0.4999999999999999,
+          0.5000000000000001
+        ]
+      },
+      "input_scaled": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.14090881112554787,
+          0.16387312224430117,
+          0.10808680061788198,
+          0.569710952807463,
+          0.7490375167492935,
+          0.8527320308556378,
+          1.0
+        ],
+        "boundary_reasons": [],
+        "boundary_solution": false,
+        "converged": true,
+        "converged_starts": 16,
+        "effective_ncategories": 2,
+        "gradient_max_abs": 2.4634685409550424e-06,
+        "max_near_optimal_age_difference": 7.668428114726566e-09,
+        "minimum_adjacent_log_rate_gap": 0.9973890462158643,
+        "minimum_normalized_branch_time": 0.0229643111187533,
+        "minimum_weight": 0.4285714151462567,
+        "mixture_identified": true,
+        "near_optimal_starts": 3,
+        "nfev": 59,
+        "nit": 28,
+        "objective": -7.228128763600064,
+        "optimizer_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "optimizer_method": "L-BFGS-B",
+        "optimizer_retries": 0,
+        "optimum_replicated": true,
+        "projected_gradient_max_abs": 2.4634685409550424e-06,
+        "pseudologlik": 7.228128763600064,
+        "rates": [
+          547027.5892848358,
+          1483097.796215041
+        ],
+        "solution_stable": true,
+        "stability_assessed": true,
+        "weights": [
+          0.4285714151462567,
+          0.5714285848537433
+        ]
+      },
+      "main": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.14090881112554787,
+          0.16387312224430117,
+          0.10808680061788198,
+          0.569710952807463,
+          0.7490375167492935,
+          0.8527320308556378,
+          1.0
+        ],
+        "boundary_reasons": [],
+        "boundary_solution": false,
+        "converged": true,
+        "converged_starts": 16,
+        "effective_ncategories": 2,
+        "gradient_max_abs": 2.4634685409550424e-06,
+        "max_near_optimal_age_difference": 7.668428114726566e-09,
+        "minimum_adjacent_log_rate_gap": 0.9973890462158643,
+        "minimum_normalized_branch_time": 0.0229643111187533,
+        "minimum_weight": 0.4285714151462567,
+        "mixture_identified": true,
+        "near_optimal_starts": 3,
+        "nfev": 59,
+        "nit": 28,
+        "objective": -7.228128763600064,
+        "optimizer_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "optimizer_method": "L-BFGS-B",
+        "optimizer_retries": 0,
+        "optimum_replicated": true,
+        "projected_gradient_max_abs": 2.4634685409550424e-06,
+        "pseudologlik": 7.228128763600064,
+        "rates": [
+          0.5470275892848354,
+          1.48309779621504
+        ],
+        "solution_stable": true,
+        "stability_assessed": true,
+        "weights": [
+          0.4285714151462567,
+          0.5714285848537433
+        ]
+      },
+      "misspecified_default_cv": null,
+      "model": "multiplicative_gamma",
+      "ncategories": 2,
+      "ntips": 8,
+      "scenario": "discrete-recovery",
+      "schema": 2,
+      "seed": 1573974277,
+      "stress_reference": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.14090881112554787,
+          0.16387312224430117,
+          0.10808680061788198,
+          0.569710952807463,
+          0.7490375167492935,
+          0.8527320308556378,
+          1.0
+        ],
+        "boundary_reasons": [],
+        "boundary_solution": false,
+        "converged": true,
+        "converged_starts": 32,
+        "effective_ncategories": 2,
+        "gradient_max_abs": 2.4634685409550424e-06,
+        "max_near_optimal_age_difference": 1.2993497722213476e-08,
+        "minimum_adjacent_log_rate_gap": 0.9973890462158643,
+        "minimum_normalized_branch_time": 0.0229643111187533,
+        "minimum_weight": 0.4285714151462567,
+        "mixture_identified": true,
+        "near_optimal_starts": 6,
+        "nfev": 59,
+        "nit": 28,
+        "objective": -7.228128763600064,
+        "optimizer_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "optimizer_method": "L-BFGS-B",
+        "optimizer_retries": 0,
+        "optimum_replicated": true,
+        "projected_gradient_max_abs": 2.4634685409550424e-06,
+        "pseudologlik": 7.228128763600064,
+        "rates": [
+          0.5470275892848354,
+          1.48309779621504
+        ],
+        "solution_stable": true,
+        "stability_assessed": true,
+        "weights": [
+          0.4285714151462567,
+          0.5714285848537433
+        ]
+      },
+      "time_scaled": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          140908.8111255479,
+          163873.12224430116,
+          108086.80061788198,
+          569710.952807463,
+          749037.5167492935,
+          852732.0308556377,
+          1000000.0
+        ],
+        "boundary_reasons": [],
+        "boundary_solution": false,
+        "converged": true,
+        "converged_starts": 16,
+        "effective_ncategories": 2,
+        "gradient_max_abs": 2.4634685409550424e-06,
+        "max_near_optimal_age_difference": 7.668428114726566e-09,
+        "minimum_adjacent_log_rate_gap": 0.9973890462158643,
+        "minimum_normalized_branch_time": 0.0229643111187533,
+        "minimum_weight": 0.4285714151462567,
+        "mixture_identified": true,
+        "near_optimal_starts": 3,
+        "nfev": 59,
+        "nit": 28,
+        "objective": -7.228128763600064,
+        "optimizer_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "optimizer_method": "L-BFGS-B",
+        "optimizer_retries": 0,
+        "optimum_replicated": true,
+        "projected_gradient_max_abs": 2.4634685409550424e-06,
+        "pseudologlik": 7.228128763600064,
+        "rates": [
+          5.470275892848354e-07,
+          1.48309779621504e-06
+        ],
+        "solution_stable": true,
+        "stability_assessed": true,
+        "weights": [
+          0.4285714151462567,
+          0.5714285848537433
+        ]
+      },
+      "true_ages": [
+        1.18228032644262e-16,
+        1.18228032644262e-16,
+        1.18228032644262e-16,
+        0.0,
+        0.0,
+        1.18228032644262e-16,
+        1.18228032644262e-16,
+        1.18228032644262e-16,
+        0.12717565244033252,
+        0.18806248607127438,
+        0.11146057112508692,
+        0.5787823286002408,
+        0.7297261312034943,
+        0.852618089817514,
+        0.9999999999999999
+      ],
+      "true_cv": 0.1,
+      "true_rates": [
+        0.5,
+        1.5
+      ],
+      "true_weights": [
+        0.5,
+        0.5
+      ]
+    }
+  ],
+  "diagnostic_only": true,
+  "fingerprint": "e8dd2999c2e96bbcb6ec3ea24abcd6200eb6c0f02ea010faa4eac8fcecda431b",
+  "mode": "smoke",
+  "study_version": 10,
+  "summary": {
+    "checks": {
+      "all_primary_converged": true,
+      "all_stress_converged": true,
+      "boundary_metadata": true,
+      "calibration_validity": true,
+      "gamma_scale_age": true,
+      "gamma_scale_rate": true,
+      "gamma_scale_weight": true,
+      "stress_age_rmse_maximum": true,
+      "stress_age_rmse_p90": true,
+      "stress_objective": true
+    },
+    "details": {
+      "boundary_metadata_fraction": 1.0,
+      "boundary_solution_fraction": 0.5,
+      "calibration_validity": 1.0,
+      "fractional_poisson_convergence": {
+        "successes": 1,
+        "total": 1,
+        "wilson_lower": 0.20654931437723742
+      },
+      "gamma_by_true_cv": {
+        "0.05": {
+          "age_bias": NaN,
+          "age_mae_median": NaN,
+          "fixed_age_mixture_wasserstein_median": NaN
+        },
+        "0.1": {
+          "age_bias": -0.0004965749796882844,
+          "age_mae_median": 0.009970427913727754,
+          "fixed_age_mixture_wasserstein_median": 0.015061407482282792
+        },
+        "0.2": {
+          "age_bias": NaN,
+          "age_mae_median": NaN,
+          "fixed_age_mixture_wasserstein_median": NaN
+        }
+      },
+      "gamma_default_cv_misspecification": {
+        "0.05": {
+          "age_bias": NaN,
+          "age_mae_median": NaN,
+          "datasets": 0
+        },
+        "0.2": {
+          "age_bias": NaN,
+          "age_mae_median": NaN,
+          "datasets": 0
+        }
+      },
+      "gamma_scale": {
+        "normalized_age_maximum": 2.7755575615628914e-17,
+        "relative_rate_maximum": 8.118223258732693e-16,
+        "weight_maximum": 0.0
+      },
+      "identified_optimum_replication_fraction": 1.0,
+      "multiplicative_gamma_convergence": {
+        "successes": 1,
+        "total": 1,
+        "wilson_lower": 0.20654931437723742
+      },
+      "optimizer_stress": {
+        "age_rmse_maximum": 6.938872193556775e-09,
+        "age_rmse_p90": 6.244984974201098e-09,
+        "excluded_unidentified_pairs": 0,
+        "identified_pairs": 2,
+        "relative_objective_improvement_maximum": 1.8479068515011074e-14
+      },
+      "poisson_age_bias": -0.06671122212975669,
+      "poisson_age_mae_median": 0.06828590637836963,
+      "poisson_fixed_age_mixture_wasserstein_median": 0.1822262970397337
+    },
+    "gates_passed": true
+  }
+}

@@ -628,7 +628,7 @@ def edges_make_ultrametric_correlated(
             if observation_loss == "fractional_poisson"
             else {
                 "observation_model": "multiplicative_gamma_working_loss",
-                "branch_length_units": "substitutions_per_site",
+                "branch_length_units": "input_tree_units",
             }
         ),
         "penalty": penalty,

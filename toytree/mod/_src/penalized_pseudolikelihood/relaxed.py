@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 
-"""ape::chronos-compatible non-correlated relaxed-rate model."""
+"""Non-correlated relaxed-rate model provided for ape::chronos parity."""
 
 from toytree.mod._src.penalized_pseudolikelihood.uncorrelated_lognormal import (
     _relaxed_penalty as _relaxed_penalty,

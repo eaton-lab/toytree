@@ -3,6 +3,47 @@
 This directory contains the pinned simulation and predictive-validation study
 for ToyTree's ultrametric branch-length pseudolikelihood models.
 
+## Version 12: profiled fixed-lambda UCLN validation
+
+The [V12 design](README-v12.md) replaces joint age-rate optimization with
+conditional log-rate profiling and direct, linearly constrained age
+optimization. It retains observed zero-length branches exactly and reports
+their number, location, and fraction rather than silently imposing a positive
+floor. V12 first replays all 40 datasets that failed a V11 numerical gate; its
+thresholds are unchanged. Only a passing replay and development pilot permit a
+new independently seeded confirmation. The replay and 72-dataset pilot passed
+every gate. In the independently seeded 540-dataset confirmation, all fits
+converged and every positive expected-branch and continuous-Gamma dataset
+passed, but three high-variance, zero-rich fractional-Poisson datasets failed at
+least one objective/chronogram uniqueness gate. UCLN is therefore validated for
+positive continuous additive branch lengths within this design; zero-rich fits
+remain conditional on their reported basin-replication and solution-stability
+diagnostics.
+
+## Version 11: frozen failed UCLN confirmation
+
+The [V11 design](README-v11.md) evaluates the hardened
+`uncorrelated_lognormal` optimizer at prespecified, simulation-matched fixed
+lambda values. It is not a lambda-selection study. Four-start default,
+eight-start stress, fixed-age, and calibration-time-rescaled fits are cached as
+separate tasks so server runs can use all available cores; scoring never
+repeats optimization. The 72-dataset pilot passed, but the frozen 540-dataset
+confirmation failed objective, chronogram, and calibration-time-unit numerical
+parity gates. Failures were concentrated in zero-rich fractional-Poisson data.
+V12 supersedes the optimizer; V11 results and thresholds remain unchanged.
+
+## Version 10: discrete-model finalization
+
+The [V10 design](README-v10.md) finalizes the chronos-compatible `discrete`
+implementation and evaluates a multiplicative-Gamma candidate. Smoke and the
+nine-case historical failure replay pass after EM initialization, analytic
+gradients, bounded fallback optimization, and explicit boundary diagnostics.
+The Gamma candidate passes convergence, calibration, recovery, and unit-
+invariance gates but fails all doubled-start optimizer-stability gates; better
+identified optima continue to appear through 256 starts. Therefore `discrete`
+is complete within its compatibility scope, while the Gamma candidate is
+retired from the public API and retained privately only for reproducibility.
+
 ## Version 9: correlated-lambda uncertainty replay
 
 The [V9 design](README-v9.md) uses a single global worker pool over held-tip
@@ -19,11 +60,10 @@ because its cases were selected from prior failures.
 
 The v8 design and run instructions are recorded in
 [README-v8.md](README-v8.md). It validates the hardened
-chronos-compatible fractional-Poisson mixture and the new scale-equivariant
-multiplicative-Gamma mixture. The development pilot passes the Gamma
-scale-equivariance and recovery thresholds, but it does not pass the
-prespecified optimizer-stability gates; confirmation must wait until those
-failures are resolved.
+chronos-compatible fractional-Poisson mixture and evaluates a scale-equivariant
+multiplicative-Gamma candidate. The development pilot passes the Gamma
+scale-equivariance and recovery thresholds but not the prespecified optimizer-
+stability gates. V10 supersedes this study and retires the Gamma candidate.
 
 ## Version 7: strict-clock validation
 
@@ -258,5 +298,42 @@ seeds converged with four starts. Four- and eight-start objectives had a median
 absolute difference of 6.2e-9 and a maximum difference of 0.0192. The 20
 fixed-age uncorrelated controls had median log-rate Spearman 0.930, showing
 that the weaker free-age result is primarily age-rate nonidentifiability.
-Consequently, discrete fits default to four starts; other methods default to
-one unless nstarts is supplied explicitly.
+This justified the historical four-start default. V10 supersedes that
+recommendation after replaying newer zero-rich and Gamma-mixture failures:
+public `discrete` now defaults to eight starts and is stress-tested against
+sixteen. The retired private Gamma helper used sixteen versus thirty-two starts
+in its final evaluation; other public methods retain their model-specific
+defaults.
+
+
+### V10 discrete finalization
+
+V8 established Gamma recovery and exact input/calibration scale behavior but
+found fractional-Poisson boundary fits and four-versus-eight-start instability.
+V10 adds EM mixture initialization, a bounded fallback optimizer, projected
+gradient diagnostics, and explicit category/time-boundary metadata. Its
+nine-dataset failure replay passes all targeted gates using each model-specific
+default and its doubled-start reference. The development pilot passed convergence, calibration, Gamma-recovery, and
+scale-invariance gates, but failed all doubled-start stability gates. Targeted
+128- and 256-start fits continued to find better optima. Consequently,
+`discrete` is finalized for chronos compatibility, while the Gamma candidate is
+removed from the public API. Its private helper and V8/V10 evidence are retained
+for reproducibility; no confirmation run is planned. See README-v10.md.
+
+### Deferred correlated and UCLN work
+
+The correlated V9 result should not be summarized as showing that lambda is
+generally unidentifiable. V9 deliberately replayed difficult cases. It showed
+that minimum-mean terminal-edge CV can select a useful point estimate while
+the supported lambda interval and chronogram sensitivity remain broad for
+some individual trees. Future correlated work should retain the current point
+selector and expose lambda-support/chronogram-sensitivity diagnostics.
+
+The UCLN V4 result is not an equivalent per-tree CV result. Its lambda was
+selected across a simulation pilot using known true ages and then frozen for
+confirmation. Before claiming that UCLN lambda is more identifiable than
+correlated lambda, run both penalties through the same per-tree held-edge CV
+design on paired trees, calibrations, and lambda grids. The expected advantage
+of UCLN is its single global centered-log-rate shrinkage direction, whereas
+the correlated penalty regularizes many local parent-child contrasts; that
+hypothesis remains to be tested directly.

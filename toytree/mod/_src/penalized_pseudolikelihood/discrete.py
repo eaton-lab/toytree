@@ -2,6 +2,7 @@
 
 """Discrete-mixture branch-length pseudolikelihood fitting."""
 
+import warnings
 from numbers import Real
 from typing import Any, Literal, Union
 
@@ -36,14 +37,16 @@ from toytree.mod._src.penalized_pseudolikelihood.utils import (
 )
 from toytree.utils import ToytreeError
 
-__all__ = [
-    "edges_make_ultrametric_discrete",
-    "edges_make_ultrametric_discrete_gamma",
-]
+__all__ = ["edges_make_ultrametric_discrete"]
 RATE_FLOOR = 1e-12
 DIST_FLOOR = 1e-12
 INVALID_LOG_LIK_DROP = 1e6
 DEFAULT_BRANCH_CV = 0.1
+MIXTURE_WEIGHT_BOUNDARY = 1e-6
+MIXTURE_LOG_RATE_GAP_BOUNDARY = 1e-4
+NORMALIZED_TIME_BOUNDARY = 100.0 * DIST_FLOOR
+PROJECTED_GRADIENT_TOL = 1e-4
+PARAMETER_BOUND = 30.0
 ObservationModel = Literal["fractional_poisson", "multiplicative_gamma"]
 
 
@@ -111,6 +114,161 @@ def _pack_ordered_rates(rates: np.ndarray) -> np.ndarray:
         gaps = np.clip(np.diff(logs), np.finfo(float).eps, None)
         params[1:] = gaps + np.log(-np.expm1(-gaps))
     return params
+
+
+def _projected_gradient(
+    params: np.ndarray,
+    gradient: np.ndarray,
+    bound: float = PARAMETER_BOUND,
+) -> np.ndarray:
+    """Return the gradient projected onto the optimizer's feasible box."""
+    values = np.asarray(params, dtype=float)
+    projected = np.asarray(gradient, dtype=float).copy()
+    tolerance = 1e-8 * max(1.0, abs(float(bound)))
+    at_lower = values <= -float(bound) + tolerance
+    at_upper = values >= float(bound) - tolerance
+    projected[at_lower & (projected > 0.0)] = 0.0
+    projected[at_upper & (projected < 0.0)] = 0.0
+    return projected
+
+
+def _em_initialize_mixture(
+    rates: np.ndarray,
+    weights: np.ndarray,
+    ages: np.ndarray,
+    edges: np.ndarray,
+    edata: np.ndarray,
+    observation_mask: np.ndarray,
+    observation_model: ObservationModel,
+    gamma_shape: float | None,
+    max_iter: int = 250,
+    tolerance: float = 1e-10,
+) -> tuple[np.ndarray, np.ndarray, int, float]:
+    """Optimize rates and weights by EM while holding node ages fixed."""
+    rates_hat = np.sort(np.clip(np.asarray(rates, dtype=float), RATE_FLOOR, None))
+    weights_hat = np.clip(np.asarray(weights, dtype=float), np.finfo(float).tiny, None)
+    weights_hat = weights_hat / weights_hat.sum()
+    mask = np.asarray(observation_mask, dtype=bool)
+    observed = np.asarray(edata[:, 0], dtype=float)[mask]
+    times = (ages[edges[:, 1]] - ages[edges[:, 0]])[mask]
+    if not observed.size or np.any(times <= DIST_FLOOR):
+        return rates_hat, weights_hat, 0, -np.inf
+
+    previous = -np.inf
+    iterations = 0
+    for iterations in range(1, max(1, int(max_iter)) + 1):
+        means = rates_hat[:, None] * times[None, :]
+        if observation_model == "fractional_poisson":
+            components = (
+                observed[None, :] * np.log(means) - means - edata[mask, 1][None, :]
+            )
+        else:
+            if gamma_shape is None or np.any(observed <= 0.0):
+                return rates_hat, weights_hat, iterations - 1, -np.inf
+            shape = float(gamma_shape)
+            components = (
+                shape * np.log(observed)[None, :]
+                - shape * observed[None, :] / means
+                - gammaln(shape)
+                - shape * np.log(means / shape)
+            )
+        log_joint = components + np.log(weights_hat)[:, None]
+        branch_scores = logsumexp(log_joint, axis=0)
+        responsibilities = np.exp(log_joint - branch_scores[None, :])
+
+        component_mass = responsibilities.sum(axis=1)
+        weights_new = np.clip(
+            component_mass / observed.size, np.finfo(float).tiny, None
+        )
+        weights_new = weights_new / weights_new.sum()
+        if observation_model == "fractional_poisson":
+            numerator = np.sum(responsibilities * observed[None, :], axis=1)
+            denominator = np.sum(responsibilities * times[None, :], axis=1)
+            rates_new = numerator / np.maximum(denominator, RATE_FLOOR)
+        else:
+            rates_new = np.sum(
+                responsibilities * (observed / times)[None, :], axis=1
+            ) / np.maximum(component_mass, RATE_FLOOR)
+        rates_new = np.clip(rates_new, RATE_FLOOR, None)
+        order = np.argsort(rates_new, kind="stable")
+        rates_hat = rates_new[order]
+        weights_hat = weights_new[order]
+
+        means = rates_hat[:, None] * times[None, :]
+        if observation_model == "fractional_poisson":
+            components = (
+                observed[None, :] * np.log(means) - means - edata[mask, 1][None, :]
+            )
+        else:
+            shape = float(gamma_shape)
+            components = (
+                shape * np.log(observed)[None, :]
+                - shape * observed[None, :] / means
+                - gammaln(shape)
+                - shape * np.log(means / shape)
+            )
+        score = float(
+            np.sum(
+                logsumexp(
+                    components + np.log(weights_hat)[:, None],
+                    axis=0,
+                )
+            )
+        )
+        if np.isfinite(previous) and score - previous <= (
+            float(tolerance) * max(1.0, abs(previous))
+        ):
+            previous = score
+            break
+        previous = score
+    return rates_hat, weights_hat, iterations, float(previous)
+
+
+def _mixture_boundary_diagnostics(
+    rates: np.ndarray,
+    weights: np.ndarray,
+    ages: np.ndarray,
+    edges: np.ndarray,
+) -> dict[str, Any]:
+    """Describe numerical category or branch-time boundary solutions."""
+    rates_hat = np.asarray(rates, dtype=float)
+    weights_hat = np.asarray(weights, dtype=float)
+    log_rates = np.log(np.clip(rates_hat, RATE_FLOOR, None))
+    gaps = np.diff(log_rates)
+    minimum_weight = float(weights_hat.min())
+    minimum_gap = float(gaps.min()) if gaps.size else None
+
+    active_logs = log_rates[weights_hat > MIXTURE_WEIGHT_BOUNDARY]
+    effective = 0
+    previous = None
+    for value in active_logs:
+        if previous is None or float(value - previous) > MIXTURE_LOG_RATE_GAP_BOUNDARY:
+            effective += 1
+        previous = float(value)
+
+    age_values = np.asarray(ages, dtype=float)
+    times = age_values[edges[:, 1]] - age_values[edges[:, 0]]
+    root_age = max(abs(float(age_values[-1])), DIST_FLOOR)
+    minimum_normalized_time = float(times.min() / root_age)
+    reasons = []
+    if minimum_weight <= MIXTURE_WEIGHT_BOUNDARY:
+        reasons.append("near_zero_weight")
+    if gaps.size and float(minimum_gap) <= MIXTURE_LOG_RATE_GAP_BOUNDARY:
+        reasons.append("coincident_rates")
+    if minimum_normalized_time <= NORMALIZED_TIME_BOUNDARY:
+        reasons.append("near_zero_branch_time")
+    return {
+        "mixture_identified": bool(effective == rates_hat.size),
+        "effective_ncategories": int(effective),
+        "boundary_solution": bool(reasons),
+        "boundary_reasons": reasons,
+        "minimum_weight": minimum_weight,
+        "minimum_adjacent_log_rate_gap": minimum_gap,
+        "minimum_normalized_branch_time": minimum_normalized_time,
+        "mixture_weight_boundary": MIXTURE_WEIGHT_BOUNDARY,
+        "mixture_log_rate_gap_boundary": MIXTURE_LOG_RATE_GAP_BOUNDARY,
+        "normalized_time_boundary": NORMALIZED_TIME_BOUNDARY,
+    }
 
 
 def _mixture_objective_with_gradient(
@@ -207,7 +365,7 @@ def _run_joint_fit(x0, args, max_iter, max_fun):
         args=args,
         method="L-BFGS-B",
         jac=True,
-        bounds=[(-30.0, 30.0)] * len(x0),
+        bounds=[(-PARAMETER_BOUND, PARAMETER_BOUND)] * len(x0),
         options={
             "maxiter": int(max_iter),
             "maxfun": int(max_fun),
@@ -217,10 +375,33 @@ def _run_joint_fit(x0, args, max_iter, max_fun):
     )
 
 
+def _run_joint_fallback(x0, args, max_iter):
+    """Run SLSQP after an unresolved L-BFGS-B line-search failure."""
+    with warnings.catch_warnings():
+        warnings.filterwarnings(
+            "ignore",
+            message="Values in x were outside bounds during a minimize step",
+            category=RuntimeWarning,
+            module="scipy.optimize._slsqp_py",
+        )
+        return minimize(
+            _mixture_objective_with_gradient,
+            np.asarray(x0, dtype=float),
+            args=args,
+            method="SLSQP",
+            jac=True,
+            bounds=[(-PARAMETER_BOUND, PARAMETER_BOUND)] * len(x0),
+            options={
+                "maxiter": int(max_iter),
+                "ftol": 1e-10,
+            },
+        )
+
+
 def _select_best_discrete_start(
     results: list[dict[str, Any]],
 ) -> dict[str, Any]:
-    """Return the lowest finalized finite objective, independent of status."""
+    """Return the best stationary fit unless a lower fit is unresolved."""
     finite = [
         result
         for result in results
@@ -228,7 +409,27 @@ def _select_best_discrete_start(
     ]
     if not finite:
         raise RuntimeError("all discrete multistarts failed")
-    return min(finite, key=lambda result: float(result["objective"]))
+    best_finite = min(finite, key=lambda result: float(result["objective"]))
+    stationary = [result for result in finite if result.get("converged", False)]
+    if not stationary:
+        best_finite["unresolved_better_start"] = True
+        return best_finite
+
+    best_stationary = min(stationary, key=lambda result: float(result["objective"]))
+    tolerance = 1e-4 + 1e-6 * max(1.0, abs(float(best_stationary["objective"])))
+    if (
+        not best_finite.get("converged", False)
+        and float(best_finite["objective"])
+        < float(best_stationary["objective"]) - tolerance
+    ):
+        best_finite["unresolved_better_start"] = True
+        best_finite["message"] = (
+            f"{best_finite['message']}; a nonstationary start has a "
+            "materially better finalized objective"
+        )
+        return best_finite
+    best_stationary["unresolved_better_start"] = False
+    return best_stationary
 
 
 def _fit_discrete_start(payload: dict[str, Any]) -> dict[str, Any]:
@@ -253,6 +454,33 @@ def _fit_discrete_start(payload: dict[str, Any]) -> dict[str, Any]:
     asize = int(payload["ages_idxs"].size)
     fsize = int(payload["weight_params_init"].size)
 
+    try:
+        initial_ages = _decode_age_params(
+            params[rsize : rsize + asize],
+            payload["ages_init"],
+            payload["ages_idxs"],
+            payload["ages_bounds"],
+            payload["children_map"],
+            dist_floor=DIST_FLOOR,
+        )
+    except (ToytreeError, ValueError):
+        initial_ages = np.asarray(payload["ages_init"], dtype=float)
+    initial_rates = _unpack_ordered_rate_params(params[:rsize])
+    initial_weights, _ = _unpack_simplex_logits(params[rsize + asize :])
+    em_rates, em_weights, em_iterations, em_loglik = _em_initialize_mixture(
+        initial_rates,
+        initial_weights,
+        initial_ages,
+        payload["edges"],
+        payload["edata"],
+        payload["observation_mask"],
+        payload.get("observation_model", "fractional_poisson"),
+        payload.get("gamma_shape"),
+    )
+    params[:rsize] = _pack_ordered_rates(em_rates)
+    if fsize:
+        params[rsize + asize :] = _pack_simplex_weights(em_weights)
+
     # First identify the mixture conditional on the starting chronogram. This
     # prevents a joint step from distorting ages before categories separate.
     mixture_indices = np.concatenate(
@@ -274,7 +502,7 @@ def _fit_discrete_start(payload: dict[str, Any]) -> dict[str, Any]:
         params[mixture_indices],
         method="L-BFGS-B",
         jac=True,
-        bounds=[(-30.0, 30.0)] * mixture_indices.size,
+        bounds=[(-PARAMETER_BOUND, PARAMETER_BOUND)] * mixture_indices.size,
         options={
             "maxiter": max_iter,
             "maxfun": max_fun,
@@ -313,7 +541,7 @@ def _fit_discrete_start(payload: dict[str, Any]) -> dict[str, Any]:
                 current[block],
                 method="L-BFGS-B",
                 jac=True,
-                bounds=[(-30.0, 30.0)] * current[block].size,
+                bounds=[(-PARAMETER_BOUND, PARAMETER_BOUND)] * current[block].size,
                 options={
                     "maxiter": max_iter,
                     "maxfun": max_fun,
@@ -338,19 +566,49 @@ def _fit_discrete_start(payload: dict[str, Any]) -> dict[str, Any]:
     total_nfev += int(getattr(authoritative, "nfev", 0))
     total_nit += int(getattr(authoritative, "nit", 0))
     current = np.asarray(authoritative.x, dtype=float).copy()
-    retries = 0
+    attempts = [("L-BFGS-B", authoritative)]
     if not authoritative.success:
-        retries = 1
         retry = _run_joint_fit(current, args, max_iter * 4, max_fun * 4)
         total_nfev += int(getattr(retry, "nfev", 0))
         total_nit += int(getattr(retry, "nit", 0))
-        tolerance = 1e-10 * max(1.0, abs(float(authoritative.fun)))
-        if (
-            np.isfinite(retry.fun)
-            and float(retry.fun) <= float(authoritative.fun) + tolerance
-        ):
-            authoritative = retry
-            current = np.asarray(retry.x, dtype=float).copy()
+        attempts.append(("L-BFGS-B retry", retry))
+        finite_attempts = [item for item in attempts if np.isfinite(item[1].fun)]
+        if not any(item[1].success for item in finite_attempts):
+            fallback_start = min(finite_attempts, key=lambda item: float(item[1].fun))[
+                1
+            ]
+            fallback = _run_joint_fallback(
+                np.asarray(fallback_start.x, dtype=float),
+                args,
+                max_iter * 4,
+            )
+            total_nfev += int(getattr(fallback, "nfev", 0))
+            total_nit += int(getattr(fallback, "nit", 0))
+            attempts.append(("SLSQP", fallback))
+
+        finite_attempts = [item for item in attempts if np.isfinite(item[1].fun)]
+        best_finite_method, best_finite = min(
+            finite_attempts, key=lambda item: float(item[1].fun)
+        )
+        successful = [item for item in finite_attempts if item[1].success]
+        if successful:
+            best_success_method, best_success = min(
+                successful, key=lambda item: float(item[1].fun)
+            )
+            tolerance = 1e-4 + 1e-6 * max(1.0, abs(float(best_success.fun)))
+            if float(best_success.fun) <= float(best_finite.fun) + tolerance:
+                optimizer_method = best_success_method
+                authoritative = best_success
+            else:
+                optimizer_method = best_finite_method
+                authoritative = best_finite
+        else:
+            optimizer_method = best_finite_method
+            authoritative = best_finite
+        current = np.asarray(authoritative.x, dtype=float).copy()
+    else:
+        optimizer_method = "L-BFGS-B"
+    retries = len(attempts) - 1
 
     objective, gradient = _mixture_objective_with_gradient(current, *args)
     try:
@@ -367,15 +625,21 @@ def _fit_discrete_start(payload: dict[str, Any]) -> dict[str, Any]:
         objective = -(float(payload["valid_loglik"]) - INVALID_LOG_LIK_DROP)
 
     gradient_max_abs = float(np.max(np.abs(gradient))) if gradient.size else 0.0
-    first_order_converged = bool(np.isfinite(objective) and gradient_max_abs <= 1e-4)
+    projected = _projected_gradient(current, gradient)
+    projected_gradient_max_abs = (
+        float(np.max(np.abs(projected))) if projected.size else 0.0
+    )
+    first_order_converged = bool(
+        np.isfinite(objective) and projected_gradient_max_abs <= PROJECTED_GRADIENT_TOL
+    )
     converged = bool(
         np.isfinite(objective) and (authoritative.success or first_order_converged)
     )
     message = str(authoritative.message)
     if first_order_converged and not authoritative.success:
         message = (
-            "first-order convergence after line-search termination "
-            f"(max|gradient|={gradient_max_abs:.3g})"
+            "projected first-order convergence after line-search termination "
+            f"(max|projected gradient|={projected_gradient_max_abs:.3g})"
         )
     invalid_objective = -(float(payload["valid_loglik"]) - INVALID_LOG_LIK_DROP)
     if objective >= invalid_objective - 1e-9:
@@ -386,12 +650,17 @@ def _fit_discrete_start(payload: dict[str, Any]) -> dict[str, Any]:
         "objective": float(objective),
         "converged": converged,
         "message": message,
+        "optimizer_method": optimizer_method,
         "nfev": total_nfev,
         "nit": total_nit,
         "refinement_cycles": cycles,
         "final_joint_converged": bool(authoritative.success or first_order_converged),
         "gradient_max_abs": gradient_max_abs,
+        "projected_gradient_max_abs": projected_gradient_max_abs,
         "optimizer_retries": retries,
+        "em_iterations": int(em_iterations),
+        "em_loglik": float(em_loglik),
+        "unresolved_better_start": False,
         "params": current,
         "ages": ages,
     }
@@ -407,7 +676,7 @@ def edges_make_ultrametric_discrete(
     max_iter: int = 1e5,
     max_fun: int = 1e5,
     max_refine: int = 20,
-    nstarts: int = 4,
+    nstarts: int = 8,
     ncores: int = 1,
     seed: int | None = None,
     _observation_mask: np.ndarray | None = None,
@@ -418,13 +687,19 @@ def edges_make_ultrametric_discrete(
 
     Every branch likelihood is independently integrated over `ncategories`
     ordered rate categories using fitted simplex weights. Categories are not
-    persistent assignments inherited along the tree. Input branches may use
-    any consistent additive unit, and fitted rates use that input unit per
+    persistent assignments inherited along the tree. A fitted component can
+    collapse to zero weight or coincide with another rate when the data
+    support fewer than the requested number of categories. This is returned
+    as a converged boundary solution with explicit diagnostics and a warning,
+    rather than interpreted as support for all requested categories.
+
+    Input branches may use any consistent additive unit, and fitted rates use
+    that input unit per
     calibration-time unit. This model is invariant to calibration-time units
     but not to numerical rescaling of input branches, whose magnitude controls
-    fractional-Poisson working information. Use
-    :func:`edges_make_ultrametric_discrete_gamma` when input-scale invariance
-    is required.
+    fractional-Poisson working information. For new analyses requiring an
+    uncorrelated, scale-invariant rate model, use
+    :func:`edges_make_ultrametric_uncorrelated_lognormal`.
 
     Parameters
     ----------
@@ -518,10 +793,23 @@ def edges_make_ultrametric_discrete(
         dres = dict(cres)
         dres["model"] = "discrete"
         dres["ncategories"] = 1
+        dres["requested_ncategories"] = 1
         dres["rates"] = [float(dres.pop("rate"))]
         dres["weights"] = [1.0]
+        dres["branch_length_units"] = "input_tree_units"
         dres["calibration_time_unit_invariant"] = True
         dres["input_branch_scale_invariant"] = False
+        ages = dres["tree"].get_node_data("height").to_numpy(dtype=float)
+        dres.update(
+            _mixture_boundary_diagnostics(
+                np.asarray(dres["rates"]),
+                np.asarray(dres["weights"]),
+                ages,
+                tree.get_edges("idx"),
+            )
+        )
+        if dres["boundary_solution"]:
+            logger.warning("One-category discrete fit reached a branch-time boundary.")
         return dres
 
     # Normalize Gamma input and calibration units internally. The transformed
@@ -534,7 +822,8 @@ def edges_make_ultrametric_discrete(
     if _observation_model == "multiplicative_gamma":
         if np.any(dists_o <= 0.0):
             raise ToytreeError(
-                "method='discrete_gamma' requires strictly positive branch lengths."
+                "The experimental multiplicative-Gamma fitter requires "
+                "strictly positive branch lengths."
             )
         observation_scale = float(np.exp(np.mean(np.log(dists_o))))
         normalized_dists = np.round(dists_o / observation_scale, 10)
@@ -753,6 +1042,28 @@ def edges_make_ultrametric_discrete(
     time_dists = ages[edges[:, 1]] - ages[edges[:, 0]]
     expected = time_dists * float(np.dot(weights, rates))
     stability = assess_solution_stability(starts, best, ntips=fit_tree.ntips)
+    stability["optimum_replicated"] = bool(
+        stability["near_optimal_starts"] >= 2
+    )
+    if nstarts > 1 and not stability["optimum_replicated"]:
+        logger.warning(
+            "The best discrete-mixture optimum was found by only one start; "
+            "increase nstarts before relying on this fit."
+        )
+    boundary = _mixture_boundary_diagnostics(
+        rates_fit,
+        weights,
+        ages_fit,
+        edges,
+    )
+    if boundary["boundary_solution"]:
+        logger.warning(
+            "Discrete mixture reached a numerical boundary "
+            f"({', '.join(boundary['boundary_reasons'])}); "
+            f"requested K={ncategories}, effective K="
+            f"{boundary['effective_ncategories']}."
+        )
+
     output_tree = tree.set_node_data("height", ages, inplace=inplace)
 
     # return as a tree or a dict
@@ -767,13 +1078,7 @@ def edges_make_ultrametric_discrete(
         "pseudologlik": pseudologlik,
         "penalized_pseudologlik": pseudologlik,
         "observation_model": _observation_model,
-        # Keep the legacy key value until the V6-frozen shared metadata
-        # migration can update every model and its tests together.
-        "branch_length_units": (
-            "substitutions_per_site"
-            if _observation_model == "fractional_poisson"
-            else "input_tree_units"
-        ),
+        "branch_length_units": "input_tree_units",
         "calibration_time_unit_invariant": True,
         "input_branch_scale_invariant": (_observation_model == "multiplicative_gamma"),
         **(
@@ -788,6 +1093,8 @@ def edges_make_ultrametric_discrete(
         ),
         "nparams": len(bounds),
         "ncategories": ncategories,
+        "requested_ncategories": ncategories,
+        **boundary,
         "rates": list(rates),
         "weights": list(weights),
         "expected_branch_lengths": expected.tolist(),
@@ -795,10 +1102,15 @@ def edges_make_ultrametric_discrete(
         "tree": output_tree,
         "converged": bool(best["converged"]),
         "optimizer_message": str(best["message"]),
+        "optimizer_method": str(best.get("optimizer_method", "unknown")),
         "nfev": int(best.get("nfev", -1)),
         "nit": int(best.get("nit", -1)),
         "gradient_max_abs": best.get("gradient_max_abs"),
+        "projected_gradient_max_abs": best.get("projected_gradient_max_abs"),
         "optimizer_retries": int(best.get("optimizer_retries", 0)),
+        "em_iterations": int(best.get("em_iterations", 0)),
+        "em_loglik": best.get("em_loglik"),
+        "unresolved_better_start": bool(best.get("unresolved_better_start", False)),
         "refinement_cycles": int(best.get("refinement_cycles", 0)),
         "final_joint_converged": bool(best.get("final_joint_converged", False)),
         **stability,
@@ -811,12 +1123,19 @@ def edges_make_ultrametric_discrete(
                 "objective": float(i["objective"]),
                 "converged": bool(i["converged"]),
                 "message": str(i["message"]),
+                "optimizer_method": str(i.get("optimizer_method", "unknown")),
                 "nfev": int(i.get("nfev", -1)),
                 "nit": int(i.get("nit", -1)),
                 "refinement_cycles": int(i.get("refinement_cycles", 0)),
                 "final_joint_converged": bool(i.get("final_joint_converged", False)),
                 "gradient_max_abs": i.get("gradient_max_abs"),
+                "projected_gradient_max_abs": i.get("projected_gradient_max_abs"),
                 "optimizer_retries": int(i.get("optimizer_retries", 0)),
+                "em_iterations": int(i.get("em_iterations", 0)),
+                "em_loglik": i.get("em_loglik"),
+                "unresolved_better_start": bool(
+                    i.get("unresolved_better_start", False)
+                ),
             }
             for i in starts
         ],
@@ -1001,8 +1320,7 @@ def _discrete_gamma_branch_pseudologlik(
     )
 
 
-@add_subpackage_method(TreeModAPI)
-def edges_make_ultrametric_discrete_gamma(
+def _edges_make_ultrametric_discrete_gamma_experimental(
     tree: ToyTree,
     ncategories: int,
     calibrations: Calibrations | None = None,
@@ -1012,12 +1330,12 @@ def edges_make_ultrametric_discrete_gamma(
     max_iter: int = 100_000,
     max_fun: int = 100_000,
     max_refine: int = 20,
-    nstarts: int = 4,
+    nstarts: int = 16,
     ncores: int = 1,
     seed: int | None = None,
     _observation_mask: np.ndarray | None = None,
 ) -> Union[ToyTree, dict[str, Any]]:
-    """Fit a scale-free multiplicative-Gamma discrete-rate mixture.
+    """Fit the retired multiplicative-Gamma mixture for research replays.
 
     branch_cv is the fixed within-category coefficient of variation of an
     observed branch around rate times elapsed time. It describes branch-noise
@@ -1027,11 +1345,22 @@ def edges_make_ultrametric_discrete_gamma(
 
     The reported score is `log f(x) + log(x)` per branch, which differs from
     the Gamma log-density only by a data-only term and has identical parameter
-    estimates. This model is invariant to changes in both input-branch and
-    calibration-time units. It is recommended for new finite-category
-    analyses. Use UCLN
-    instead when rates are better represented by a continuous iid lognormal
-    distribution.
+    estimates. It must not be compared directly with the fractional-Poisson
+    score from `edges_make_ultrametric_discrete`. This model is invariant to
+    changes in both input-branch and calibration-time units. This private
+    helper is retained only to reproduce the V8/V10 validation studies. Its
+    free-age solution did not achieve multistart saturation and it is not a
+    supported public dating model. Use UCLN for continuous iid lognormal rates.
+
+    Full results separate numerical convergence from mixture support using
+    `mixture_identified`, `effective_ncategories`, `boundary_solution`,
+    and `boundary_reasons`. A converged boundary result is a valid fit but
+    does not show that all requested categories are identifiable.
+
+    Sixteen starts are used by default because the concentrated likelihood
+    at small ``branch_cv`` values has more local optima than the
+    fractional-Poisson compatibility model. Starts can run concurrently by
+    setting ``ncores`` greater than one.
     """
     return edges_make_ultrametric_discrete(
         tree=tree,

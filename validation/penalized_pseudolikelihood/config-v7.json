@@ -1,0 +1,58 @@
+{
+  "study_version": 7,
+  "development_seed": 104260831,
+  "confirmation_seed": 204260831,
+  "fit": {
+    "max_iter": 5000,
+    "max_fun": 10000,
+    "nstarts_comparison": [1, 4],
+    "retry_multiplier": 4
+  },
+  "noise": {
+    "gamma": {
+      "shape": 100.0
+    },
+    "lognormal": {
+      "coefficient_of_variation": 0.1
+    }
+  },
+  "smoke": [
+    {
+      "name": "pipeline-smoke",
+      "ntips": [6],
+      "calibrations": ["root_and_internal_interval"],
+      "observation_models": ["noiseless", "gamma"],
+      "replicates": 1
+    }
+  ],
+  "pilot": [
+    {
+      "name": "strict-clock-recovery",
+      "ntips": [12, 48],
+      "calibrations": ["root", "root_and_internal_interval"],
+      "observation_models": ["noiseless", "gamma", "lognormal"],
+      "replicates": 4
+    }
+  ],
+  "confirmation": [
+    {
+      "name": "strict-clock-confirmation",
+      "ntips": [12, 48, 96],
+      "calibrations": ["root", "root_and_internal_interval"],
+      "observation_models": ["noiseless", "gamma", "lognormal"],
+      "replicates": 20
+    }
+  ],
+  "decision_gates": {
+    "fit_convergence": 1.0,
+    "four_start_solution_stability": 1.0,
+    "calibration_validity": 1.0,
+    "maximum_relative_objective_gap": 1e-6,
+    "maximum_one_four_age_difference": 0.02,
+    "maximum_time_unit_age_difference": 1e-5,
+    "maximum_time_unit_rate_relative_error": 1e-5,
+    "noiseless_age_mae_median": 0.0001,
+    "noisy_age_mae_median": 0.05,
+    "maximum_absolute_age_bias": 0.02
+  }
+}

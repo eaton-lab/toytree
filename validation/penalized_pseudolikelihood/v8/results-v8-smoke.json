@@ -1,0 +1,454 @@
+{
+  "all_release_gates_passed": false,
+  "datasets": [
+    {
+      "calibration": "root",
+      "calibrations": {
+        "-1": 1.0
+      },
+      "fingerprint": "821f5d905fd52aa0c0932988ee7700360171a9fb9acb78dd11cf582db08da4b1",
+      "fixed_age": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.010671305260177871,
+          0.1289708673201062,
+          0.4218815163836289,
+          0.1638828295505031,
+          0.2833797683537456,
+          0.43061027139282243,
+          1.0
+        ],
+        "converged": true,
+        "gradient_max_abs": 9.682131378992002e-08,
+        "max_near_optimal_age_difference": 0.0,
+        "nfev": 21,
+        "nit": 16,
+        "objective": 32.7046460031666,
+        "optimizer_message": "CONVERGENCE: NORM OF PROJECTED GRADIENT <= PGTOL",
+        "optimizer_retries": 0,
+        "pseudologlik": -32.7046460031666,
+        "rates": [
+          18.95489194580167,
+          42.57567840701029
+        ],
+        "solution_stable": true,
+        "weights": [
+          0.4916594948513839,
+          0.5083405051486162
+        ]
+      },
+      "input_scaled": null,
+      "main": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          4.0769378109322065e-12,
+          0.1192700483578917,
+          0.6530207643147028,
+          0.1363267479049646,
+          0.3254213773839325,
+          0.38723393530943506,
+          1.0
+        ],
+        "converged": true,
+        "gradient_max_abs": 3.9037333761102205e-06,
+        "max_near_optimal_age_difference": 1.6844664296744583e-07,
+        "nfev": 96,
+        "nit": 76,
+        "objective": 29.845451828258824,
+        "optimizer_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "optimizer_retries": 0,
+        "pseudologlik": -29.845451828258824,
+        "rates": [
+          14.962890048999308,
+          37.59150603597857
+        ],
+        "solution_stable": true,
+        "weights": [
+          0.32496695324799235,
+          0.6750330467520076
+        ]
+      },
+      "model": "fractional_poisson",
+      "ncategories": 2,
+      "ntips": 8,
+      "scenario": "discrete-recovery",
+      "schema": 1,
+      "seed": 1403829609,
+      "stress_eight": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          3e-12,
+          0.11927003695064817,
+          0.6530206937602023,
+          0.13632669506702666,
+          0.32542123379499766,
+          0.38723388010315596,
+          1.0
+        ],
+        "converged": true,
+        "gradient_max_abs": 1.103914908614126e-06,
+        "max_near_optimal_age_difference": 1.4358893485333368e-07,
+        "nfev": 116,
+        "nit": 91,
+        "objective": 29.845451828204588,
+        "optimizer_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "optimizer_retries": 0,
+        "pseudologlik": -29.845451828204588,
+        "rates": [
+          14.962895822403638,
+          37.59150727215979
+        ],
+        "solution_stable": true,
+        "weights": [
+          0.3249669731236657,
+          0.6750330268763343
+        ]
+      },
+      "time_scaled": null,
+      "true_ages": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        1.4059413593692352e-16,
+        1.4059413593692352e-16,
+        1.4059413593692352e-16,
+        1.4059413593692352e-16,
+        0.010671305260177871,
+        0.1289708673201062,
+        0.4218815163836289,
+        0.1638828295505031,
+        0.2833797683537456,
+        0.43061027139282243,
+        1.0
+      ],
+      "true_cv": null,
+      "true_rates": [
+        20.0,
+        50.0
+      ],
+      "true_weights": [
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "calibration": "root",
+      "calibrations": {
+        "-1": 1.0
+      },
+      "fingerprint": "821f5d905fd52aa0c0932988ee7700360171a9fb9acb78dd11cf582db08da4b1",
+      "fixed_age": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.2804355200966159,
+          0.4538089370548291,
+          0.6831248629223015,
+          0.19055120980609871,
+          0.4209329277238316,
+          0.48894627691747033,
+          1.0
+        ],
+        "converged": true,
+        "gradient_max_abs": 2.6778311446417197e-06,
+        "max_near_optimal_age_difference": 0.0,
+        "nfev": 65,
+        "nit": 21,
+        "objective": -2.9360026398848413,
+        "optimizer_message": "first-order convergence after line-search termination (max|gradient|=2.68e-06)",
+        "optimizer_retries": 0,
+        "pseudologlik": 2.9360026398848413,
+        "rates": [
+          0.4934102766753332,
+          1.4850979683301666
+        ],
+        "solution_stable": true,
+        "weights": [
+          0.5000000084387634,
+          0.49999999156123665
+        ]
+      },
+      "input_scaled": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.31187169460962944,
+          0.4773367602339157,
+          0.7076213818331829,
+          0.5335878284875218,
+          0.7398712537421137,
+          0.8163667081898937,
+          1.0
+        ],
+        "converged": true,
+        "gradient_max_abs": 2.4718271754128585e-06,
+        "max_near_optimal_age_difference": 2.6981150758054184e-08,
+        "nfev": 66,
+        "nit": 40,
+        "objective": 21.859593420492793,
+        "optimizer_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "optimizer_retries": 0,
+        "pseudologlik": -21.859593420492793,
+        "rates": [
+          431450.8048904057,
+          1517604.8580689186
+        ],
+        "solution_stable": true,
+        "weights": [
+          0.5714285690232741,
+          0.4285714309767259
+        ]
+      },
+      "main": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.31187168750608535,
+          0.4773367509841847,
+          0.7076213724466796,
+          0.533587834755518,
+          0.7398712612263794,
+          0.8163667159364716,
+          1.0
+        ],
+        "converged": true,
+        "gradient_max_abs": 3.3428082683666076e-06,
+        "max_near_optimal_age_difference": 2.1285932794157247e-08,
+        "nfev": 79,
+        "nit": 39,
+        "objective": 21.859593420491986,
+        "optimizer_message": "first-order convergence after line-search termination (max|gradient|=3.34e-06)",
+        "optimizer_retries": 0,
+        "pseudologlik": -21.859593420491986,
+        "rates": [
+          0.43145080630972193,
+          1.5176048602254202
+        ],
+        "solution_stable": true,
+        "weights": [
+          0.5714285690128846,
+          0.4285714309871153
+        ]
+      },
+      "model": "multiplicative_gamma",
+      "ncategories": 2,
+      "ntips": 8,
+      "scenario": "discrete-recovery",
+      "schema": 1,
+      "seed": 763778478,
+      "stress_eight": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.31187168750608535,
+          0.4773367509841847,
+          0.7076213724466796,
+          0.533587834755518,
+          0.7398712612263794,
+          0.8163667159364716,
+          1.0
+        ],
+        "converged": true,
+        "gradient_max_abs": 3.3428082683666076e-06,
+        "max_near_optimal_age_difference": 2.1285932794157247e-08,
+        "nfev": 79,
+        "nit": 39,
+        "objective": 21.859593420491986,
+        "optimizer_message": "first-order convergence after line-search termination (max|gradient|=3.34e-06)",
+        "optimizer_retries": 0,
+        "pseudologlik": -21.859593420491986,
+        "rates": [
+          0.43145080630972193,
+          1.5176048602254202
+        ],
+        "solution_stable": true,
+        "weights": [
+          0.5714285690128846,
+          0.4285714309871153
+        ]
+      },
+      "time_scaled": {
+        "ages": [
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          0.0,
+          311871.6950163897,
+          477336.7601864999,
+          707621.3816220406,
+          533587.8275861277,
+          739871.2534099728,
+          816366.7080388385,
+          1000000.0
+        ],
+        "converged": true,
+        "gradient_max_abs": 2.5553888319442837e-06,
+        "max_near_optimal_age_difference": 2.8651289525441827e-08,
+        "nfev": 66,
+        "nit": 41,
+        "objective": 21.85959342049199,
+        "optimizer_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+        "optimizer_retries": 0,
+        "pseudologlik": -21.85959342049199,
+        "rates": [
+          4.314508043646032e-07,
+          1.5176048527085084e-06
+        ],
+        "solution_stable": true,
+        "weights": [
+          0.5714285690153953,
+          0.4285714309846047
+        ]
+      },
+      "true_ages": [
+        0.0,
+        0.0,
+        1.8732689095887315e-16,
+        0.0,
+        1.8732689095887315e-16,
+        0.0,
+        0.0,
+        0.0,
+        0.2804355200966159,
+        0.4538089370548291,
+        0.6831248629223015,
+        0.19055120980609871,
+        0.4209329277238316,
+        0.48894627691747033,
+        1.0
+      ],
+      "true_cv": 0.1,
+      "true_rates": [
+        0.5,
+        1.5
+      ],
+      "true_weights": [
+        0.5,
+        0.5
+      ]
+    }
+  ],
+  "diagnostic_only": true,
+  "fingerprint": "821f5d905fd52aa0c0932988ee7700360171a9fb9acb78dd11cf582db08da4b1",
+  "mode": "smoke",
+  "study_version": 8,
+  "summary": {
+    "checks": {
+      "calibration_validity": true,
+      "fractional_poisson_convergence": false,
+      "gamma_cv_0.05_age_bias": false,
+      "gamma_cv_0.05_age_mae": false,
+      "gamma_cv_0.05_mixture_recovery": false,
+      "gamma_cv_0.1_age_bias": false,
+      "gamma_cv_0.1_age_mae": false,
+      "gamma_cv_0.1_mixture_recovery": true,
+      "gamma_cv_0.2_age_bias": false,
+      "gamma_cv_0.2_age_mae": false,
+      "gamma_cv_0.2_mixture_recovery": false,
+      "gamma_scale_age": true,
+      "gamma_scale_rate": true,
+      "gamma_scale_weight": true,
+      "multiplicative_gamma_convergence": false,
+      "poisson_age_bias": false,
+      "poisson_age_mae": true,
+      "poisson_mixture_recovery": true,
+      "stress_age_rmse_maximum": true,
+      "stress_age_rmse_p90": true,
+      "stress_objective": true
+    },
+    "details": {
+      "calibration_validity": 1.0,
+      "fractional_poisson_convergence": {
+        "successes": 1,
+        "total": 1,
+        "wilson_lower": 0.20654931437723742
+      },
+      "gamma_by_true_cv": {
+        "0.05": {
+          "age_bias": NaN,
+          "age_mae_median": NaN,
+          "fixed_age_mixture_wasserstein_median": NaN
+        },
+        "0.1": {
+          "age_bias": 0.15269369833345306,
+          "age_mae_median": 0.15269369833345306,
+          "fixed_age_mixture_wasserstein_median": 0.001230014706076667
+        },
+        "0.2": {
+          "age_bias": NaN,
+          "age_mae_median": NaN,
+          "fixed_age_mixture_wasserstein_median": NaN
+        }
+      },
+      "gamma_scale": {
+        "normalized_age_maximum": 9.38650335235991e-09,
+        "relative_rate_maximum": 4.953141596154311e-09,
+        "weight_maximum": 1.0389467064442215e-11
+      },
+      "multiplicative_gamma_convergence": {
+        "successes": 1,
+        "total": 1,
+        "wilson_lower": 0.20654931437723742
+      },
+      "optimizer_stress": {
+        "age_rmse_maximum": 6.715166830475539e-08,
+        "age_rmse_p90": 6.043650147427985e-08,
+        "relative_objective_improvement_maximum": 1.8172191640038945e-12
+      },
+      "poisson_age_bias": 0.025982330716288495,
+      "poisson_age_mae_median": 0.052069342701214584,
+      "poisson_fixed_age_mixture_wasserstein_median": 0.0534899257551446
+    },
+    "gates_passed": false
+  }
+}

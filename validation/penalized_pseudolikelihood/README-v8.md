@@ -44,6 +44,11 @@ fractional-Poisson model also reports failed convergence on datasets with many
 exactly zero branch lengths. These are implementation findings to resolve,
 not reasons to relax the confirmation thresholds.
 
+V8 is preserved as the diagnostic that motivated the optimizer changes and is
+superseded by V10 for release decisions. V10 retired the Gamma candidate from
+the public API. Do not overwrite these historical pilot artifacts.
+
+
 Workers write atomic files below `v8/cache-v8/<mode>/`. Re-running the same
 command resumes matching cached records. Results, seed manifests, and
 environment metadata are written below `v8/`. Confirmation gates are
