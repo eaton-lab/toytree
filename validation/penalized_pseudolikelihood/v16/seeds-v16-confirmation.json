@@ -1,0 +1,5402 @@
+[
+  {
+    "calibration": "root",
+    "fit_seed": 713960832,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 713260831,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 714060835,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 713360834,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 714160838,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 713460837,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 714260841,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 713560840,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 714360844,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 713660843,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 714460847,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 713760846,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 714560850,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 713860849,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 714660853,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 713960852,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 714760856,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 714060855,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 714860859,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 714160858,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 714960862,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 714260861,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 715060865,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 714360864,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 715160868,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 714460867,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 715260871,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 714560870,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 715360874,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 714660873,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 715460877,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 714760876,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 715560880,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 714860879,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 715660883,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 714960882,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 715760886,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 715060885,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 715860889,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 715160888,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 715960892,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 715260891,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 716060895,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 715360894,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 716160898,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 715460897,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 716260901,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 715560900,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 716360904,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 715660903,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 716460907,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 715760906,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 716560910,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 715860909,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 716660913,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 715960912,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 716760916,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 716060915,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 716860919,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 716160918,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 716960922,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 716260921,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 717060925,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 716360924,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 717160928,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 716460927,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 717260931,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 716560930,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 717360934,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 716660933,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 717460937,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 716760936,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 717560940,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 716860939,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 717660943,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 716960942,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 717760946,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 717060945,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 717860949,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 717160948,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 717960952,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 717260951,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 718060955,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 717360954,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 718160958,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 717460957,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 718260961,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 717560960,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 718360964,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 717660963,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 718460967,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 717760966,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 718560970,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 717860969,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 718660973,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 717960972,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 718760976,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 718060975,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 718860979,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 718160978,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 718960982,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 718260981,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 719060985,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 718360984,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 719160988,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 718460987,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 719260991,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 718560990,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 719360994,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 718660993,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 719460997,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 718760996,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 719561000,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 718860999,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 719661003,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 718961002,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 719761006,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 719061005,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 719861009,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 719161008,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 719961012,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 719261011,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 720061015,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 719361014,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 720161018,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 719461017,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 720261021,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 719561020,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 720361024,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 719661023,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 720461027,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 719761026,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 720561030,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 719861029,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 720661033,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 719961032,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 720761036,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 720061035,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 720861039,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 720161038,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 720961042,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 720261041,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 721061045,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 720361044,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 721161048,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 720461047,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 721261051,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 720561050,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 721361054,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 720661053,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 721461057,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 720761056,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 721561060,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 720861059,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 721661063,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 720961062,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 721761066,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 721061065,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 721861069,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 721161068,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 721961072,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 721261071,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 722061075,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 721361074,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 722161078,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 721461077,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 722261081,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 721561080,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 722361084,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 721661083,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 722461087,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 721761086,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 722561090,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 721861089,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 722661093,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 721961092,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 722761096,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 722061095,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 722861099,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 722161098,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 722961102,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 722261101,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 723061105,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 722361104,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 723161108,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 722461107,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 723261111,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 722561110,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 723361114,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 722661113,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 723461117,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 722761116,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 723561120,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 722861119,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 723661123,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 722961122,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 723761126,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 723061125,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 723861129,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 723161128,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 723961132,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 723261131,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 724061135,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 723361134,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 724161138,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 723461137,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 724261141,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 723561140,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 724361144,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 723661143,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 724461147,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 723761146,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 724561150,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 723861149,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 724661153,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 723961152,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 724761156,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 724061155,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 724861159,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 724161158,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 724961162,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 724261161,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 725061165,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 724361164,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 725161168,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 724461167,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 725261171,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 724561170,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 725361174,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 724661173,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 725461177,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 724761176,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 725561180,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 724861179,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 725661183,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 724961182,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 725761186,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 725061185,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 725861189,
+    "ntips": 24,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 725161188,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 725961192,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 725261191,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 726061195,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 725361194,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 726161198,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 725461197,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 726261201,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 725561200,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 726361204,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 725661203,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 726461207,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 725761206,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 726561210,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 725861209,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 726661213,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 725961212,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 726761216,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 726061215,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 726861219,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 726161218,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 726961222,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 726261221,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 727061225,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 726361224,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 727161228,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 726461227,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 727261231,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 726561230,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 727361234,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 726661233,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 727461237,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 726761236,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 727561240,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 726861239,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 727661243,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 726961242,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 727761246,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 727061245,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 727861249,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 727161248,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 727961252,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 727261251,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 728061255,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 727361254,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 728161258,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 727461257,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 728261261,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 727561260,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 728361264,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 727661263,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 728461267,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 727761266,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 728561270,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 727861269,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 728661273,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 727961272,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 728761276,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 728061275,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 728861279,
+    "ntips": 24,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 728161278,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 728961282,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 728261281,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 729061285,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 728361284,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 729161288,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 728461287,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 729261291,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 728561290,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 729361294,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 728661293,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 729461297,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 728761296,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 729561300,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 728861299,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 729661303,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 728961302,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 729761306,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 729061305,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 729861309,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 729161308,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 729961312,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 729261311,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 730061315,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 729361314,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 730161318,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 729461317,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 730261321,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 729561320,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 730361324,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 729661323,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 730461327,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 729761326,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 730561330,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 729861329,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 730661333,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 729961332,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 730761336,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 730061335,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 730861339,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 730161338,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 730961342,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 730261341,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 731061345,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 730361344,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 731161348,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 730461347,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 731261351,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 730561350,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 731361354,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 730661353,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 731461357,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 730761356,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 731561360,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 730861359,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 731661363,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 730961362,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 731761366,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 731061365,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 731861369,
+    "ntips": 24,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 731161368,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 731961372,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 731261371,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 732061375,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 731361374,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 732161378,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 731461377,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 732261381,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 731561380,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 732361384,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 731661383,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 732461387,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 731761386,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 732561390,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 731861389,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 732661393,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 731961392,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 732761396,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 732061395,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 732861399,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 732161398,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 732961402,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 732261401,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 733061405,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 732361404,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 733161408,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 732461407,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 733261411,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 732561410,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 733361414,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 732661413,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 733461417,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 732761416,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 733561420,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 732861419,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 733661423,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 732961422,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 733761426,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 733061425,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 733861429,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 733161428,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 733961432,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 733261431,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 734061435,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 733361434,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 734161438,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 733461437,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 734261441,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 733561440,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 734361444,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 733661443,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 734461447,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 733761446,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 734561450,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 733861449,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 734661453,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 733961452,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 734761456,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 734061455,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 734861459,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 734161458,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 734961462,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 734261461,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 735061465,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 734361464,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 735161468,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 734461467,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 735261471,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 734561470,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 735361474,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 734661473,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 735461477,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 734761476,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 735561480,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 734861479,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 735661483,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 734961482,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 735761486,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 735061485,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 735861489,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 735161488,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 735961492,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 735261491,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 736061495,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 735361494,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 736161498,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 735461497,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 736261501,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 735561500,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 736361504,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 735661503,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 736461507,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 735761506,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 736561510,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 735861509,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 736661513,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 735961512,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 736761516,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 736061515,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 736861519,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 736161518,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 736961522,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 736261521,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 737061525,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 736361524,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 737161528,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 736461527,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 737261531,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 736561530,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 737361534,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 736661533,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 737461537,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 736761536,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 737561540,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 736861539,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 737661543,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 736961542,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 737761546,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 737061545,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 737861549,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 737161548,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 737961552,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 737261551,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 738061555,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 737361554,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 738161558,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 737461557,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 738261561,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 737561560,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 738361564,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 737661563,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 738461567,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 737761566,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 738561570,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 737861569,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 738661573,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 737961572,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 738761576,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 738061575,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 738861579,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 738161578,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 738961582,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 738261581,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 739061585,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 738361584,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 739161588,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 738461587,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 739261591,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 738561590,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 739361594,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 738661593,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 739461597,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 738761596,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 739561600,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 738861599,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 739661603,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 738961602,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 739761606,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 739061605,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 739861609,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 739161608,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 739961612,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 739261611,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 740061615,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 739361614,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 740161618,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 739461617,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 740261621,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 739561620,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 740361624,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 739661623,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 740461627,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 739761626,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 740561630,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 739861629,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 740661633,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 739961632,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 740761636,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 740061635,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 740861639,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 740161638,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 740961642,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 740261641,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 741061645,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 740361644,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 741161648,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 740461647,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 741261651,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 740561650,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 741361654,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 740661653,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 741461657,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 740761656,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 741561660,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 740861659,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 741661663,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 740961662,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 741761666,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 741061665,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 741861669,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 741161668,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 741961672,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 741261671,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 742061675,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 741361674,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 742161678,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 741461677,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 742261681,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 741561680,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 742361684,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 741661683,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 742461687,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 741761686,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 742561690,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 741861689,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 742661693,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 741961692,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 742761696,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 742061695,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 742861699,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 742161698,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 742961702,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 742261701,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 743061705,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 742361704,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 743161708,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 742461707,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 743261711,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 742561710,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 743361714,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 742661713,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 743461717,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 742761716,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 743561720,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 742861719,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 743661723,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 742961722,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 743761726,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 743061725,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 743861729,
+    "ntips": 48,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 743161728,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 743961732,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 743261731,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 744061735,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 743361734,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 744161738,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 743461737,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 744261741,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 743561740,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 744361744,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 743661743,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 744461747,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 743761746,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 744561750,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 743861749,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 744661753,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 743961752,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 744761756,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 744061755,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 744861759,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 744161758,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 744961762,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 744261761,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 745061765,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 744361764,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 745161768,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 744461767,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 745261771,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 744561770,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 745361774,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 744661773,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 745461777,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 744761776,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 745561780,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 744861779,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 745661783,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 744961782,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 745761786,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 745061785,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 745861789,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 745161788,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 745961792,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 745261791,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 746061795,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 745361794,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 746161798,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 745461797,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 746261801,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 745561800,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 746361804,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 745661803,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 746461807,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 745761806,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 746561810,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 745861809,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 746661813,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 745961812,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 746761816,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 746061815,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 746861819,
+    "ntips": 48,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 746161818,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 746961822,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 746261821,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 747061825,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 746361824,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 747161828,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 746461827,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 747261831,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 746561830,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 747361834,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 746661833,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 747461837,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 746761836,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 747561840,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 746861839,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 747661843,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 746961842,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 747761846,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 747061845,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 747861849,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 747161848,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 747961852,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 747261851,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 748061855,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 747361854,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 748161858,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 747461857,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 748261861,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 747561860,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 748361864,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 747661863,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 748461867,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 747761866,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 748561870,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 747861869,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 748661873,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 747961872,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 748761876,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 748061875,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 748861879,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 748161878,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 748961882,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 748261881,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 749061885,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 748361884,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 749161888,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 748461887,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 749261891,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 748561890,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 749361894,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 748661893,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 749461897,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 748761896,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 749561900,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 748861899,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 749661903,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 748961902,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 749761906,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 749061905,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 749861909,
+    "ntips": 48,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 749161908,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 749961912,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 749261911,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 750061915,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 749361914,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 750161918,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 749461917,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 750261921,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 749561920,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 750361924,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 749661923,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 750461927,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 749761926,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 750561930,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 749861929,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 750661933,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 749961932,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 750761936,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 750061935,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 750861939,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 750161938,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 750961942,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 750261941,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 751061945,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 750361944,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 751161948,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 750461947,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 751261951,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 750561950,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 751361954,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 750661953,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 751461957,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 750761956,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 751561960,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 750861959,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 751661963,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 750961962,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 751761966,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 751061965,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 751861969,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 751161968,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 751961972,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 751261971,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 752061975,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 751361974,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 752161978,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 751461977,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 752261981,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 751561980,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 752361984,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 751661983,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 752461987,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 751761986,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 752561990,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 751861989,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 752661993,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 751961992,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 752761996,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 752061995,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 752861999,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 752161998,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 752962002,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 752262001,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 753062005,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 752362004,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 753162008,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 752462007,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 753262011,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 752562010,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 753362014,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 752662013,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 753462017,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 752762016,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 753562020,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 752862019,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 753662023,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 752962022,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 753762026,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 753062025,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 753862029,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 753162028,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 753962032,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 753262031,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 754062035,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 753362034,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 754162038,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 753462037,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 754262041,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 753562040,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 754362044,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 753662043,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 754462047,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 753762046,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 754562050,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 753862049,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 754662053,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 753962052,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 754762056,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 754062055,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 754862059,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 754162058,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 754962062,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 754262061,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 755062065,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 754362064,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 755162068,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 754462067,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 755262071,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 754562070,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 755362074,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 754662073,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 755462077,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 754762076,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 755562080,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 754862079,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 755662083,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 754962082,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 755762086,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 755062085,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 755862089,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 755162088,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 755962092,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 755262091,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 756062095,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 755362094,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 756162098,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 755462097,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 756262101,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 755562100,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 756362104,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 755662103,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 756462107,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 755762106,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 756562110,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 755862109,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 756662113,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 755962112,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 756762116,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 756062115,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 756862119,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 756162118,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 756962122,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 756262121,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 757062125,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 756362124,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 757162128,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 756462127,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 757262131,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 756562130,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 757362134,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 756662133,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 757462137,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 756762136,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 757562140,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 756862139,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 757662143,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 756962142,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 757762146,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 757062145,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 757862149,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 757162148,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 757962152,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 757262151,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 758062155,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 757362154,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 758162158,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 757462157,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 758262161,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 757562160,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 758362164,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 757662163,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 758462167,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 757762166,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 758562170,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 757862169,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 758662173,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 757962172,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 758762176,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 758062175,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root",
+    "fit_seed": 758862179,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 758162178,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 758962182,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 758262181,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 759062185,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 758362184,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 759162188,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 758462187,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 759262191,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 758562190,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 759362194,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 758662193,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 759462197,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 758762196,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 759562200,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 758862199,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 759662203,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 758962202,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 759762206,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 759062205,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 759862209,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 759162208,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 759962212,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 759262211,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 760062215,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 759362214,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 760162218,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 759462217,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 760262221,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 759562220,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 760362224,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 759662223,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 760462227,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 759762226,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 760562230,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 759862229,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 760662233,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 759962232,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 760762236,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 760062235,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 760862239,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 760162238,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 760962242,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 760262241,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 761062245,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 760362244,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 761162248,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 760462247,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 761262251,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 760562250,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 761362254,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 760662253,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 761462257,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 760762256,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 761562260,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 760862259,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 761662263,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 760962262,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 761762266,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 761062265,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 761862269,
+    "ntips": 96,
+    "observation_model": "expected_branch",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 761162268,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 761962272,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 761262271,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 762062275,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 761362274,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 762162278,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 761462277,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 762262281,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 761562280,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 762362284,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 761662283,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 762462287,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 761762286,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 762562290,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 761862289,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 762662293,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 761962292,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 762762296,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 762062295,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 762862299,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 762162298,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 762962302,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 762262301,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 763062305,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 762362304,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 763162308,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 762462307,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 763262311,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 762562310,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 763362314,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 762662313,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 763462317,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 762762316,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 763562320,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 762862319,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 763662323,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 762962322,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 763762326,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 763062325,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 763862329,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 763162328,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 763962332,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 763262331,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 764062335,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 763362334,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 764162338,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 763462337,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 764262341,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 763562340,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 764362344,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 763662343,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 764462347,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 763762346,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 764562350,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 763862349,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 764662353,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 763962352,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 764762356,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 764062355,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 764862359,
+    "ntips": 96,
+    "observation_model": "fractional_poisson",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 764162358,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 764962362,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 764262361,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 765062365,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 764362364,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 765162368,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 764462367,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 765262371,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 764562370,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 765362374,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 764662373,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 765462377,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 764762376,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 765562380,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 764862379,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 765662383,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 764962382,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 765762386,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 765062385,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 765862389,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 765162388,
+    "sigma_log": 0.1
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 765962392,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 765262391,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 766062395,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 765362394,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 766162398,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 765462397,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 766262401,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 765562400,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 766362404,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 765662403,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 766462407,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 765762406,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 766562410,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 765862409,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 766662413,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 765962412,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 766762416,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 766062415,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 766862419,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 766162418,
+    "sigma_log": 0.3
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 766962422,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 0,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 766262421,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 767062425,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 1,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 766362424,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 767162428,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 2,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 766462427,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 767262431,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 3,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 766562430,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 767362434,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 4,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 766662433,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 767462437,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 5,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 766762436,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 767562440,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 6,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 766862439,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 767662443,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 7,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 766962442,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 767762446,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 8,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 767062445,
+    "sigma_log": 0.6
+  },
+  {
+    "calibration": "root_and_internal_interval",
+    "fit_seed": 767862449,
+    "ntips": 96,
+    "observation_model": "continuous_gamma",
+    "replicate": 9,
+    "scenario": "fixed-lambda-correlated-recovery",
+    "seed": 767162448,
+    "sigma_log": 0.6
+  }
+]
