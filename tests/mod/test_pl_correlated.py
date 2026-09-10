@@ -77,7 +77,7 @@ class TestPenalizedLikelihoodCorrelated(PytestCompat):
         tree = get_tree_with_correlated_rates(ntips=6, mean=1.0, sigma=0.5, seed=31)
         edges = np.asarray(tree.get_edges("idx"), dtype=int)
         ages = tree.get_node_data("height").to_numpy(dtype=float)
-        observed = tree.get_node_data("dist").to_numpy(dtype=float)[:-1]
+        observed = tree.get_node_data("dist").to_numpy(dtype=float)[:-1].copy()
         observed[0] = 0.0
         edata = np.column_stack([observed, np.zeros(tree.nedges)])
         edge_for_child = {int(child): idx for idx, (child, _) in enumerate(edges)}
