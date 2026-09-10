@@ -128,6 +128,9 @@ def _slim(fit: dict[str, Any]) -> dict[str, Any]:
                 fit.get("final_rate_polish_accepted", False)
             ),
             "final_rate_polish_message": fit.get("final_rate_polish_message"),
+            "final_rate_polish_stationarity_steps": int(
+                fit.get("final_rate_polish_stationarity_steps", 0)
+            ),
             "outer_profile_converged": bool(fit.get("outer_profile_converged", False)),
             "zero_length_branch_count": int(fit.get("zero_length_branch_count", 0)),
             "evaluated_starts": int(fit.get("evaluated_starts", fit["nstarts"])),

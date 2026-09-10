@@ -100,6 +100,7 @@ def test_v16_replay_summary_requires_all_target_gradients_to_pass():
                     "all_profile_rate_converged": True,
                     "maximum_projected_rate_gradient": 1e-8,
                     "final_rate_polish_roles": [],
+                    "final_rate_polish_stationarity_steps": {},
                     "all_used_final_rate_polishes_accepted": True,
                 }
             )

@@ -139,6 +139,7 @@ def test_v14_slim_result_preserves_new_optimizer_diagnostics():
         "final_rate_polish_used": True,
         "final_rate_polish_accepted": True,
         "final_rate_polish_message": "converged",
+        "final_rate_polish_stationarity_steps": 1,
         "outer_profile_converged": True,
         "zero_length_branch_count": 3,
         "evaluated_starts": 5,
@@ -153,5 +154,6 @@ def test_v14_slim_result_preserves_new_optimizer_diagnostics():
     assert slim["final_rate_polish_used"]
     assert slim["final_rate_polish_accepted"]
     assert slim["final_rate_polish_message"] == "converged"
+    assert slim["final_rate_polish_stationarity_steps"] == 1
     assert slim["zero_length_branch_count"] == 3
     assert slim["evaluated_starts"] == 5

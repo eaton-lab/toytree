@@ -217,6 +217,11 @@ def _score_records(
                 "final_rate_polish_roles": [
                     role for role, fit in fits.items() if fit["final_rate_polish_used"]
                 ],
+                "final_rate_polish_stationarity_steps": {
+                    role: int(fit["final_rate_polish_stationarity_steps"])
+                    for role, fit in fits.items()
+                    if fit["final_rate_polish_used"]
+                },
                 "all_used_final_rate_polishes_accepted": all(
                     fit["final_rate_polish_accepted"]
                     for fit in fits.values()
@@ -280,6 +285,9 @@ def _replay_summary(
         "maximum_control_age_mae_increase": max(control_age_increases, default=0.0),
         "datasets_using_final_rate_polish": sum(
             bool(row["final_rate_polish_roles"]) for row in rows
+        ),
+        "total_final_rate_polish_stationarity_steps": sum(
+            sum(row["final_rate_polish_stationarity_steps"].values()) for row in rows
         ),
         "all_used_final_rate_polishes_accepted": all(
             row["all_used_final_rate_polishes_accepted"] for row in rows

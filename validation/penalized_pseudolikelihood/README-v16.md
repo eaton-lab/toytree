@@ -11,8 +11,10 @@ The corrected estimator retains the Newton conditional-rate solver and adds a
 bounded L-BFGS-B polish only when the *final* fixed-chronogram rate solve misses
 the existing gradient tolerance. It accepts the polish only when its objective
 is non-worsening to floating-point precision and its projected gradient does
-not increase. This does not change the model, lambda, objective, or convergence
-threshold.
+not increase. If objective-relative L-BFGS-B termination still leaves the
+gradient above tolerance, bound-aware Newton steps directly refine stationarity
+under the same acceptance rule. This does not change the model, lambda,
+objective, or convergence threshold.
 
 ## Frozen development replay
 

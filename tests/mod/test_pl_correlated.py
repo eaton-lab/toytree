@@ -137,6 +137,7 @@ class TestPenalizedLikelihoodCorrelated(PytestCompat):
         self.assertFalse(unpolished["converged"])
         self.assertTrue(polished["final_polish_used"])
         self.assertTrue(polished["final_polish_accepted"])
+        self.assertGreater(polished["final_polish_stationarity_steps"], 0)
         self.assertTrue(polished["converged"])
         self.assertLessEqual(polished["objective"], unpolished["objective"])
         self.assertLess(
@@ -299,6 +300,7 @@ class TestPenalizedLikelihoodCorrelated(PytestCompat):
             "final_rate_polish_used",
             "final_rate_polish_accepted",
             "final_rate_polish_message",
+            "final_rate_polish_stationarity_steps",
         ):
             self.assertIn(key, result)
             self.assertIn(key, result["starts"][0])

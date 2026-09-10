@@ -203,6 +203,47 @@ def _correlated_rate_objective_with_gradient(
     return float(objective), gradient
 
 
+def _correlated_rate_newton_direction(
+    params: np.ndarray,
+    gradient: np.ndarray,
+    lower: np.ndarray,
+    upper: np.ndarray,
+    penalty_hessian: np.ndarray,
+    times: np.ndarray,
+    edata: np.ndarray,
+    mask: np.ndarray,
+    observation_loss: str,
+) -> np.ndarray:
+    """Return a bound-aware Newton direction for conditional log rates."""
+    at_lower = (params <= lower + 1e-10) & (gradient > 0.0)
+    at_upper = (params >= upper - 1e-10) & (gradient < 0.0)
+    free = ~(at_lower | at_upper)
+    direction = np.zeros_like(params)
+    if np.any(free):
+        expected = np.exp(params) * times
+        curvature = np.zeros(params.size, dtype=float)
+        if observation_loss == "fractional_poisson":
+            curvature[mask] = expected[mask]
+        else:
+            curvature[mask] = edata[mask, 0] / expected[mask]
+        free_idxs = np.flatnonzero(free)
+        hessian = penalty_hessian[np.ix_(free_idxs, free_idxs)].copy()
+        hessian.flat[:: hessian.shape[0] + 1] += curvature[free]
+        try:
+            direction[free] = -np.linalg.solve(hessian, gradient[free])
+        except np.linalg.LinAlgError:
+            ridge = 1e-10 * max(1.0, float(np.max(np.diag(hessian))))
+            hessian.flat[:: hessian.shape[0] + 1] += ridge
+            direction[free] = -np.linalg.lstsq(hessian, gradient[free], rcond=None)[0]
+
+    slope = float(np.dot(gradient, direction))
+    if not np.isfinite(slope) or slope >= 0.0:
+        scale = np.maximum(1.0, np.diag(penalty_hessian))
+        direction = -gradient / scale
+        direction[at_lower | at_upper] = 0.0
+    return direction
+
+
 def _fit_profiled_correlated_rates(
     log_rates_init: np.ndarray,
     ages_hat: np.ndarray,
@@ -260,34 +301,17 @@ def _fit_profiled_correlated_rates(
             message = "conditional rate projected gradient converged"
             break
 
-        at_lower = (params <= lower + 1e-10) & (gradient > 0.0)
-        at_upper = (params >= upper - 1e-10) & (gradient < 0.0)
-        free = ~(at_lower | at_upper)
-        direction = np.zeros_like(params)
-        if np.any(free):
-            expected = np.exp(params) * times
-            curvature = np.zeros(params.size, dtype=float)
-            if observation_loss == "fractional_poisson":
-                curvature[mask] = expected[mask]
-            else:
-                curvature[mask] = edata[mask, 0] / expected[mask]
-            free_idxs = np.flatnonzero(free)
-            hessian = penalty_hessian[np.ix_(free_idxs, free_idxs)].copy()
-            hessian.flat[:: hessian.shape[0] + 1] += curvature[free]
-            try:
-                direction[free] = -np.linalg.solve(hessian, gradient[free])
-            except np.linalg.LinAlgError:
-                ridge = 1e-10 * max(1.0, float(np.max(np.diag(hessian))))
-                hessian.flat[:: hessian.shape[0] + 1] += ridge
-                direction[free] = -np.linalg.lstsq(hessian, gradient[free], rcond=None)[
-                    0
-                ]
-
-        slope = float(np.dot(gradient, direction))
-        if not np.isfinite(slope) or slope >= 0.0:
-            scale = np.maximum(1.0, np.diag(penalty_hessian))
-            direction = -gradient / scale
-            direction[at_lower | at_upper] = 0.0
+        direction = _correlated_rate_newton_direction(
+            params,
+            gradient,
+            lower,
+            upper,
+            penalty_hessian,
+            times,
+            edata,
+            mask,
+            observation_loss,
+        )
 
         accepted = False
         step_scale = 1.0
@@ -327,6 +351,7 @@ def _fit_profiled_correlated_rates(
     polish_used = bool(final_polish and projected > RATE_GRADIENT_TOL)
     polish_accepted = False
     polish_message = None
+    stationarity_steps = 0
     if polish_used:
         polish_args = (
             ages_hat,
@@ -383,6 +408,77 @@ def _fit_profiled_correlated_rates(
         except (FloatingPointError, RuntimeError, ValueError) as exc:
             polish_message = f"{type(exc).__name__}: {exc}"
 
+        # Near a conditional optimum, the objective improvement from a Newton
+        # step can be smaller than double-precision resolution even while the
+        # absolute projected gradient remains just above its release gate.
+        # Refine stationarity directly, but accept a step only when its exact
+        # objective is non-worsening to floating-point precision and its
+        # projected gradient strictly decreases.
+        for _ in range(20):
+            if projected <= RATE_GRADIENT_TARGET:
+                break
+            direction = _correlated_rate_newton_direction(
+                params,
+                gradient,
+                lower,
+                upper,
+                penalty_hessian,
+                times,
+                edata,
+                mask,
+                observation_loss,
+            )
+            accepted = False
+            step_scale = 1.0
+            for _ in range(60):
+                candidate = np.clip(params + step_scale * direction, lower, upper)
+                step = candidate - params
+                if not np.any(step):
+                    break
+                candidate_objective, candidate_gradient = (
+                    _correlated_rate_objective_with_gradient(
+                        candidate,
+                        ages_hat,
+                        edges,
+                        edata,
+                        parent_edges,
+                        lam,
+                        valid_loglik,
+                        observation_mask,
+                        observation_loss,
+                    )
+                )
+                nfev += 1
+                candidate_projected = projected_gradient_max_abs(
+                    candidate, candidate_gradient, rate_bounds
+                )
+                objective_tolerance = (
+                    128.0 * np.finfo(float).eps * max(1.0, abs(float(objective)))
+                )
+                if (
+                    np.isfinite(candidate_objective)
+                    and candidate_objective <= objective + objective_tolerance
+                    and candidate_projected < projected
+                ):
+                    params = candidate
+                    objective = float(candidate_objective)
+                    gradient = np.asarray(candidate_gradient, dtype=float)
+                    projected = float(candidate_projected)
+                    stationarity_steps += 1
+                    nit += 1
+                    polish_accepted = True
+                    accepted = True
+                    break
+                step_scale *= 0.5
+            if not accepted:
+                break
+        if stationarity_steps:
+            suffix = f"{stationarity_steps} Newton stationarity refinement step(s)"
+            polish_message = (
+                suffix if polish_message is None else f"{polish_message}; {suffix}"
+            )
+            message = f"conditional rate final polish: {polish_message}"
+
     if projected <= RATE_GRADIENT_TOL:
         converged = True
         if "converged" not in message:
@@ -397,6 +493,7 @@ def _fit_profiled_correlated_rates(
         "final_polish_used": polish_used,
         "final_polish_accepted": polish_accepted,
         "final_polish_message": polish_message,
+        "final_polish_stationarity_steps": stationarity_steps,
         "nfev": int(nfev),
         "nit": int(nit),
     }
@@ -807,6 +904,9 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
         "final_rate_polish_used": bool(final_rate_fit["final_polish_used"]),
         "final_rate_polish_accepted": bool(final_rate_fit["final_polish_accepted"]),
         "final_rate_polish_message": final_rate_fit["final_polish_message"],
+        "final_rate_polish_stationarity_steps": int(
+            final_rate_fit["final_polish_stationarity_steps"]
+        ),
         "final_joint_converged": bool(
             polish.success and joint_polish_error is None and joint_decode_error is None
         ),
@@ -1323,6 +1423,9 @@ def edges_make_ultrametric_correlated(
             best.get("final_rate_polish_accepted", False)
         ),
         "final_rate_polish_message": best.get("final_rate_polish_message"),
+        "final_rate_polish_stationarity_steps": int(
+            best.get("final_rate_polish_stationarity_steps", 0)
+        ),
         "final_joint_converged": bool(best.get("final_joint_converged", False)),
         "gradient_max_abs": best.get("gradient_max_abs"),
         "optimizer_retries": int(best.get("optimizer_retries", 0)),
@@ -1368,6 +1471,9 @@ def edges_make_ultrametric_correlated(
                     item.get("final_rate_polish_accepted", False)
                 ),
                 "final_rate_polish_message": item.get("final_rate_polish_message"),
+                "final_rate_polish_stationarity_steps": int(
+                    item.get("final_rate_polish_stationarity_steps", 0)
+                ),
                 "final_joint_converged": bool(item.get("final_joint_converged", False)),
                 "gradient_max_abs": item.get("gradient_max_abs"),
                 "optimizer_retries": int(item.get("optimizer_retries", 0)),
