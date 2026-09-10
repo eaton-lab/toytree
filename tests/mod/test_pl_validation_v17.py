@@ -14,6 +14,9 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from validation.penalized_pseudolikelihood import (
+    diagnose_relaxed_v17 as relaxed_diagnostics,
+)
+from validation.penalized_pseudolikelihood import (
     diagnose_validation_v17 as diagnostics,
 )
 from validation.penalized_pseudolikelihood import (
@@ -275,6 +278,44 @@ def test_v17_diagnostic_supports_existing_pilot_schema():
     assert failure["datasets"] == 1
     assert failure["zero_containing"] == 1
     assert observed["diagnostic_only"]
+
+
+def test_v17_relaxed_diagnostic_selects_failures_and_controls():
+    """Target the strongest objective gaps in both directions."""
+    pairs = []
+    for idx, difference in enumerate((-4.0, -3.0, -2.0, 1.0, 2.0)):
+        pairs.append(
+            {
+                "dataset_id": f"d{idx}",
+                "scenario": "relaxed_gamma_shape4",
+                "comparison_eligible": True,
+                "toytree_minus_ape_objective": difference,
+            }
+        )
+    observed = relaxed_diagnostics._select_dataset_ids(
+        {"pairs": pairs}, ape_better=2, toytree_better=1
+    )
+    assert observed == ["d0", "d1", "d4"]
+
+
+def test_v17_relaxed_diagnostic_reproduces_reported_objective():
+    """Clade-mapped cache values reproduce the fitted relaxed objective."""
+    payload = next(
+        item
+        for item in study._dataset_payloads(CONFIG, "smoke")
+        if item["scenario"] == "relaxed_gamma_shape4"
+    )
+    manifest = study._simulate_dataset(payload)
+    fit = study._fit_toytree(manifest, CONFIG["fit"])
+
+    observed = relaxed_diagnostics._evaluate_fit(manifest, fit)
+
+    assert np.isclose(observed["reported_objective_error"], 0.0, atol=1e-10)
+    assert np.isclose(
+        observed["penalized_pseudologlik"],
+        fit["penalized_pseudologlik"],
+        atol=1e-10,
+    )
 
 
 def test_v17_r_adapter_has_no_jsonlite_dependency():

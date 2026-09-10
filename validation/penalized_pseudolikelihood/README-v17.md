@@ -86,8 +86,33 @@ python validation/penalized_pseudolikelihood/run_validation_v17_benchmark.py \
   --mode pilot --stage timing --ncores 1
 ```
 
-After reviewing the pilot, freeze any justified design changes before using
-the untouched confirmation seed stream:
+### Targeted relaxed-basin diagnostic
+
+The pilot's relaxed-model result must be diagnosed before confirmation. The
+targeted runner selects the four largest cases where ape has the better
+penalized objective and two opposite-direction controls. It independently
+re-evaluates both cached fits under ToyTree's ape-compatible objective, then
+runs three trials of eight randomized starts for each selected dataset. The 18
+fit tasks are globally parallel and independently resumable:
+
+~~~bash
+python validation/penalized_pseudolikelihood/diagnose_relaxed_v17.py \
+  --mode pilot --stage fit --ncores "$(nproc)"
+
+python validation/penalized_pseudolikelihood/diagnose_relaxed_v17.py \
+  --mode pilot --stage score --ncores 1
+~~~
+
+If objective re-evaluation matches the cached values and random multistarts
+reach ape's objective, the compatibility problem is initialization or default
+start coverage. If re-evaluation matches but random multistarts do not reach
+ape, the next diagnostic is an ape-solution warm start and gradient check.
+Neither outcome justifies running confirmation yet.
+
+### Confirmation
+
+After resolving the relaxed result and freezing the benchmark design, use the
+untouched confirmation seed stream:
 
 ```bash
 python validation/penalized_pseudolikelihood/run_validation_v17_benchmark.py \
