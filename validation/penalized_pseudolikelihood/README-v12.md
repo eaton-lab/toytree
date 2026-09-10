@@ -78,6 +78,22 @@ fit should be used for inference only when `converged`,
 diagnostics indicates data-specific weak identifiability, not a reason to
 replace zeros by arbitrary pseudo-lengths.
 
+This completes fixed-lambda UCLN development within that scope. V12 supplied
+the generating, prespecified lambda; it did not validate a per-tree lambda
+selector, and ToyTree does not expose one. The earlier V4 pilot chose lambda
+using known simulated ages before freezing it for confirmation, which is not a
+procedure available for empirical trees.
+
+The committed confirmation records source hash
+`370a04071ea1c6b430c6edbfdd904064300d93581d718685f8a67d09a86f396d`.
+Later correlated-model work changed the broad V12 hash because it added unused
+functions to `optimization.py` and enriched only exception records in
+`_run_multistart`. The UCLN solver, clock initializer, and V12 runner remain
+byte-for-byte unchanged, and successful multistart behavior is unchanged. The
+machine-readable compatibility audit in
+`v12/compatibility-v12-current.json` pins both source hashes and the reviewed
+differences; no equivalent 1,674-fit rerun is required.
+
 ## Run order
 
 Run focused tests and an inexpensive smoke study locally:

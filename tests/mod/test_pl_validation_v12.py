@@ -171,3 +171,33 @@ def test_v12_summary_gates_clean_synthetic_results():
     summary = study._summarize(rows, _config()["decision_gates"])
     assert summary["gates_passed"]
     assert all(summary["checks"].values())
+
+
+def test_v12_committed_positive_branch_scope_passes_every_gate():
+    """The 360 positive-branch confirmation datasets pass the frozen gates."""
+    result_path = study.DEFAULT_OUTPUT / "results-v12-confirmation.json"
+    result = json.loads(result_path.read_text())
+    positive = [
+        row
+        for row in result["datasets"]
+        if row["observation_model"] in {"expected_branch", "continuous_gamma"}
+    ]
+    summary = study._summarize(positive, _config()["decision_gates"])
+
+    assert result["mode"] == "confirmation"
+    assert result["lambda_selection"] is False
+    assert len(positive) == 360
+    assert summary["gates_passed"] is True
+    assert all(summary["checks"].values())
+
+
+def test_v12_compatibility_audit_pins_historical_and_current_sources():
+    """Later shared-helper additions do not alter validated UCLN fitted values."""
+    result_path = study.DEFAULT_OUTPUT / "results-v12-confirmation.json"
+    audit_path = study.DEFAULT_OUTPUT / "compatibility-v12-current.json"
+    result = json.loads(result_path.read_text())
+    audit = json.loads(audit_path.read_text())
+
+    assert result["source_hash"] == audit["historical_confirmation_source_hash"]
+    assert study._source_hash(_config()) == audit["current_source_hash"]
+    assert audit["equivalent_for_v12_fitted_values"] is True

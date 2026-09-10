@@ -216,6 +216,12 @@ class TestCorrelatedLambdaCV(PytestCompat):
             hasattr(toytree.mod, "edges_make_ultrametric_correlated_lambda_cv")
         )
         self.assertFalse(hasattr(toytree.mod, "edges_make_ultrametric_cv_model_select"))
+        self.assertFalse(
+            hasattr(
+                toytree.mod,
+                "edges_make_ultrametric_uncorrelated_lognormal_lambda_cv",
+            )
+        )
         tree = toytree.tree("(a:1,b:1);")
         self.assertTrue(
             hasattr(tree.mod, "edges_make_ultrametric_correlated_lambda_cv")

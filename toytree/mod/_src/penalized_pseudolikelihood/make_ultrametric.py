@@ -163,6 +163,9 @@ def edges_make_ultrametric(
     terminal-edge cross-validation within the correlated-rate model. The
     correlated estimator at a supplied lambda is validated within its
     documented scope; the lambda-CV point selector remains experimental.
+    UCLN fitting at a supplied lambda is validated for positive continuous
+    branch lengths within its documented scope. ToyTree does not currently
+    expose a per-tree UCLN lambda selector.
 
 
     Input edge lengths may use any consistent, finite, non-negative additive
@@ -195,7 +198,8 @@ def edges_make_ultrametric(
     lam : float or None
         Required finite, positive penalty multiplier for relaxed,
         uncorrelated-lognormal, and correlated fits and invalid for
-        all other methods.
+        all other methods. For UCLN this fixes the assumed log-rate dispersion;
+        it is not automatically estimated from the input tree.
     full, inplace : bool
         Return fit metadata instead of only a tree, and optionally modify the
         input tree.

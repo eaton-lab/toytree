@@ -62,6 +62,11 @@ positive continuous additive branch lengths within this design; zero-rich fits
 remain conditional on their reported basin-replication and solution-stability
 diagnostics.
 
+Fixed-lambda UCLN development is complete within that scope. ToyTree does not
+provide a validated per-tree UCLN lambda selector. A compatibility audit pins
+the historical confirmation source and verifies that subsequent shared-helper
+changes do not alter UCLN fitted values.
+
 ## Version 11: frozen failed UCLN confirmation
 
 The [V11 design](README-v11.md) evaluates the hardened

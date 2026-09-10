@@ -1,0 +1,23 @@
+{
+  "audited_current_commit": "9deb33a",
+  "audited_differences": [
+    {
+      "assessment": "Additive functions that are not imported or called by the UCLN implementation.",
+      "file": "toytree/mod/_src/penalized_pseudolikelihood/optimization.py"
+    },
+    {
+      "assessment": "Adds start_kind only to exception records and retains the same successful-result collection, sorting, objective, and selection behavior.",
+      "file": "toytree/mod/_src/penalized_pseudolikelihood/utils.py",
+      "function": "_run_multistart"
+    }
+  ],
+  "current_source_hash": "30457949bfe8d1968b6bcd6b75d1341470268c39fa16255734106f996fea692d",
+  "equivalent_for_v12_fitted_values": true,
+  "historical_confirmation_commit": "98125ee",
+  "historical_confirmation_source_hash": "370a04071ea1c6b430c6edbfdd904064300d93581d718685f8a67d09a86f396d",
+  "unchanged_since_confirmation": [
+    "toytree/mod/_src/penalized_pseudolikelihood/uncorrelated_lognormal.py",
+    "toytree/mod/_src/penalized_pseudolikelihood/clock.py",
+    "validation/penalized_pseudolikelihood/run_validation_v12_ucln.py"
+  ]
+}
