@@ -109,6 +109,24 @@ start coverage. If re-evaluation matches but random multistarts do not reach
 ape, the next diagnostic is an ape-solution warm start and gradient check.
 Neither outcome justifies running confirmation yet.
 
+The pilot random-multistart diagnostic reproduced the cached objectives to
+floating-point precision (maximum error below `3e-14`), but it still failed to
+reach the ape solution in the four strongest `n=48` failures. The next focused
+test maps each cached ape solution into ToyTree's parameterization, evaluates
+the gradient there, and starts the existing ToyTree optimizer from that exact
+point:
+
+```bash
+python validation/penalized_pseudolikelihood/diagnose_relaxed_warmstart_v17.py \
+  --mode pilot --stage fit --ncores "$(nproc)"
+
+python validation/penalized_pseudolikelihood/diagnose_relaxed_warmstart_v17.py \
+  --mode pilot --stage score --ncores 1
+```
+
+This diagnostic runs only four independent tasks, uses the cached ape fits,
+and does not invoke R or refit ape. Its per-dataset results are resumable.
+
 ### Confirmation
 
 After resolving the relaxed result and freezing the benchmark design, use the

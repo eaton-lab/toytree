@@ -17,6 +17,9 @@ from validation.penalized_pseudolikelihood import (
     diagnose_relaxed_v17 as relaxed_diagnostics,
 )
 from validation.penalized_pseudolikelihood import (
+    diagnose_relaxed_warmstart_v17 as warmstart_diagnostics,
+)
+from validation.penalized_pseudolikelihood import (
     diagnose_validation_v17 as diagnostics,
 )
 from validation.penalized_pseudolikelihood import (
@@ -316,6 +319,34 @@ def test_v17_relaxed_diagnostic_reproduces_reported_objective():
         fit["penalized_pseudologlik"],
         atol=1e-10,
     )
+
+    problem = warmstart_diagnostics._problem(manifest, fit)
+    function = warmstart_diagnostics._objective(problem)
+    assert np.isclose(
+        -function(problem["params"]),
+        fit["penalized_pseudologlik"],
+        atol=1e-10,
+    )
+    gradient = warmstart_diagnostics._projected_gradient(
+        problem["params"], function, problem["bounds"]
+    )
+    assert np.isfinite(gradient["projected_gradient_max_abs"])
+
+
+def test_v17_relaxed_warmstart_targets_only_ape_better_cases():
+    """Warm starts focus on the strongest negative objective gaps."""
+    result = {
+        "pairs": [
+            {
+                "dataset_id": f"d{idx}",
+                "scenario": "relaxed_gamma_shape4",
+                "comparison_eligible": True,
+                "toytree_minus_ape_objective": difference,
+            }
+            for idx, difference in enumerate((-1.0, -4.0, 2.0, -3.0))
+        ]
+    }
+    assert warmstart_diagnostics._target_ids(result, 2) == ["d1", "d3"]
 
 
 def test_v17_r_adapter_has_no_jsonlite_dependency():
