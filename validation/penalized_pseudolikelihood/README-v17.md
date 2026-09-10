@@ -149,14 +149,26 @@ python validation/penalized_pseudolikelihood/run_validation_v17_relaxed_initiali
   --mode pilot --stage score --ncores 1
 ```
 
-This replay invokes neither R nor ape. Confirmation remains blocked until the
-full pilot shows that the new initialization improves recovery without merely
-selecting higher-objective but weakly identified chronograms.
+This replay invokes neither R nor ape. All 36 fits converged with valid
+calibrations. Median normalized age MAE fell from `0.396` under the former
+topology-only start to `0.052`, compared with `0.109` for ape among its 31
+eligible fits. The paired mean improvement over ape was `0.0666` with a 95%
+bootstrap interval of `0.0542` to `0.0795`, and every ToyTree fit reached an
+objective at least as high as ape. The clock start improved the former
+ToyTree objective in 35 of 36 datasets. In the exception, the objective was
+only `0.0324` lower while age MAE improved from `0.124` to `0.087`; ape did
+not converge. Running both deterministic starts would therefore double work
+to select a less accurate chronogram in this case, illustrating the weak
+alignment between this compatibility objective and age recovery.
+
+The pilot supports retaining the strict-clock start and unblocks the frozen
+confirmation benchmark. It does not change `relaxed` from compatibility-only
+status or make it preferable to UCLN for new analyses.
 
 ### Confirmation
 
-After resolving the relaxed result and freezing the benchmark design, use the
-untouched confirmation seed stream:
+The relaxed issue is resolved for the benchmark and the design is frozen. Use
+the untouched confirmation seed stream:
 
 ```bash
 python validation/penalized_pseudolikelihood/run_validation_v17_benchmark.py \

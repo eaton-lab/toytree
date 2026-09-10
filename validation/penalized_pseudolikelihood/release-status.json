@@ -75,7 +75,9 @@
     "relaxed": {
       "evidence": [
         "tests/data/penalized_pseudolikelihood/ape-5.8.1.json",
-        "validation/penalized_pseudolikelihood/v4/results-v4-confirmation.json"
+        "validation/penalized_pseudolikelihood/v4/results-v4-confirmation.json",
+        "validation/penalized_pseudolikelihood/v17/relaxed-warmstart-v17-pilot.json",
+        "validation/penalized_pseudolikelihood/v17/relaxed-initialization-v17-pilot.json"
       ],
       "public_api": "edges_make_ultrametric_relaxed",
       "scope": "ape::chronos Gamma-CDF objective parity only; prefer UCLN for new uncorrelated-rate analyses.",
