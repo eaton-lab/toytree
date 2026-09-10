@@ -1,0 +1,20 @@
+{
+  "ape": "5.8.1",
+  "git_commit": "df87ef319d448c49a361565e490fb19ca397bee9",
+  "logical_cpus": 80,
+  "machine": "x86_64",
+  "numerical_thread_limits": {
+    "MKL_NUM_THREADS": "1",
+    "NUMEXPR_NUM_THREADS": "1",
+    "OMP_NUM_THREADS": "1",
+    "OPENBLAS_NUM_THREADS": "1",
+    "VECLIB_MAXIMUM_THREADS": "1"
+  },
+  "numpy": "2.5.2",
+  "platform": "Linux-5.15.0-157-generic-x86_64-with-glibc2.35",
+  "processor": "x86_64",
+  "python": "3.14.7 | packaged by conda-forge | (main, Aug 26 2026, 21:34:29) [GCC 15.3.0]",
+  "rscript": "R scripting front-end version 4.1.2 (2021-11-01)",
+  "scipy": "1.18.1",
+  "toytree": "3.1.0.dev1"
+}
