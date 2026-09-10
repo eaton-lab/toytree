@@ -118,6 +118,6 @@
     "scipy": "1.18.1",
     "toytree": "3.1.0.dev1"
   },
-  "fit_source_hash": "73dbae390587f78cb77b294db734da2e7c5b47bf8b4f2e2763e8d0f82c4c647f",
-  "scoring_hash": "e351ff816588efebe3da343b21642339afba6d8c0b4d4f791415f132c5cf9244"
+  "fit_source_hash": "39e667e02cc9848c501f961d8c4fdaa72279d5507c43f2d76d67d6c84f876679",
+  "scoring_hash": "b2223a9b4ce320d235ce5aaa318b28cd2988db383e39065844879aa06e7d4418"
 }
