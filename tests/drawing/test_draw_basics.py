@@ -170,23 +170,23 @@ class TestDrawMarkDomainExtent(PytestCompat):
 
         # extents should increase only in max-x of tip Nodes as tip names extend
         ntips = self.rtree.ntips
-        self.assertTrue(np.alltrue(ext2[0] == ext1[0]))
-        self.assertTrue(np.alltrue(ext2[1][:ntips] > ext1[1][:ntips]))
-        self.assertTrue(np.alltrue(ext2[1][ntips:] == ext1[1][ntips:]))
-        self.assertTrue(np.alltrue(ext2[2] == ext1[2]))
-        self.assertTrue(np.alltrue(ext2[3] == ext1[3]))
+        self.assertTrue(np.all(ext2[0] == ext1[0]))
+        self.assertTrue(np.all(ext2[1][:ntips] > ext1[1][:ntips]))
+        self.assertTrue(np.all(ext2[1][ntips:] == ext1[1][ntips:]))
+        self.assertTrue(np.all(ext2[2] == ext1[2]))
+        self.assertTrue(np.all(ext2[3] == ext1[3]))
 
         # Larger font size should increase tip-node extents in the
         # right, up, and down directions.
         self.assertTrue(
-            np.alltrue(ext3[0][:ntips] == ext2[0][:ntips])
+            np.all(ext3[0][:ntips] == ext2[0][:ntips])
         )  # not in left dir
-        self.assertTrue(np.alltrue(ext3[1][:ntips] > ext2[1][:ntips]))
-        self.assertTrue(np.alltrue(ext3[1][ntips:] == ext2[1][ntips:]))
+        self.assertTrue(np.all(ext3[1][:ntips] > ext2[1][:ntips]))
+        self.assertTrue(np.all(ext3[1][ntips:] == ext2[1][ntips:]))
         self.assertTrue(
-            np.alltrue(ext3[2][:ntips] < ext2[2][:ntips])
+            np.all(ext3[2][:ntips] < ext2[2][:ntips])
         )  # larger min is more negative
-        self.assertTrue(np.alltrue(ext3[3][:ntips] > ext2[3][:ntips]))
+        self.assertTrue(np.all(ext3[3][:ntips] > ext2[3][:ntips]))
 
     # def test_extents_node_sizes(self):
     #     """TODO: this test will overlap with annotations tests."""
