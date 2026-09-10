@@ -70,3 +70,14 @@ gradient was `9.71e-7`, below the prespecified `1e-6` limit.
 This completes validation of correlated fitting at prespecified lambda values
 within the study's simulation scope. It does not validate automatic lambda
 selection; that remains a separate experimental workflow.
+
+## Later compatibility audit
+
+Commit `58b55ef` added a direct-age fallback for public strict-clock
+line-search failures. Correlated fitting explicitly disables that fallback for
+its internal clock initializer, and the shared SLSQP helper's new `args=()`
+parameter is optional and omitted by existing correlated calls. Consequently,
+the V16 objective, initialization, profiled-rate solver, multistarts, and fit
+selection remain fitted-value equivalent. The historical and current hashes
+and this assessment are pinned in `v16/compatibility-v16-current.json` rather
+than rewriting the frozen confirmation result.

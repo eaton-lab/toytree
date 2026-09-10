@@ -1,0 +1,24 @@
+{
+  "audited_current_commit": "58b55ef",
+  "audited_differences": [
+    {
+      "assessment": "Adds a direct-age fallback for public clock line-search failures. The correlated internal clock initializer explicitly passes _direct_age_fallback=False.",
+      "file": "toytree/mod/_src/penalized_pseudolikelihood/clock.py",
+      "function": "edges_make_ultrametric_clock"
+    },
+    {
+      "assessment": "Explicitly disables the new clock fallback for its internal warm start, preserving the V16 initialization, objective, profiled rate solver, multistarts, and fit selection.",
+      "file": "toytree/mod/_src/penalized_pseudolikelihood/correlated.py",
+      "function": "edges_make_ultrametric_correlated"
+    },
+    {
+      "assessment": "Adds an optional args=() pass-through. Existing correlated calls omit it and therefore retain identical arguments and fitted-value behavior.",
+      "file": "toytree/mod/_src/penalized_pseudolikelihood/optimization.py",
+      "function": "minimize_profiled_ages"
+    }
+  ],
+  "current_fit_source_hash": "304b7970b82125564c82a91d112561925816d25f3ee1068d731ea8889a394ff3",
+  "equivalent_for_v16_fitted_values": true,
+  "historical_confirmation_commit": "394bd75",
+  "historical_confirmation_fit_source_hash": "39e667e02cc9848c501f961d8c4fdaa72279d5507c43f2d76d67d6c84f876679"
+}

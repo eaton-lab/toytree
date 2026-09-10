@@ -117,9 +117,13 @@ def test_v16_replay_summary_requires_all_target_gradients_to_pass():
 def test_v16_committed_confirmation_passes_frozen_release_gates():
     """The committed result validates the exact fixed-lambda implementation."""
     path = study.DEFAULT_OUTPUT / "results-v16-confirmation.json"
+    audit_path = study.DEFAULT_OUTPUT / "compatibility-v16-current.json"
     result = json.loads(path.read_text())
+    audit = json.loads(audit_path.read_text())
 
-    assert result["fit_source_hash"] == study._fit_source_hash(_config())
+    assert result["fit_source_hash"] == audit["historical_confirmation_fit_source_hash"]
+    assert study._fit_source_hash(_config()) == audit["current_fit_source_hash"]
+    assert audit["equivalent_for_v16_fitted_values"] is True
     assert result["mode"] == "confirmation"
     assert result["lambda_selection"] is False
     assert result["release_eligible"] is True
