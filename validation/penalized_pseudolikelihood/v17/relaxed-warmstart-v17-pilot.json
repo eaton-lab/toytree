@@ -1,0 +1,69 @@
+{
+  "all_warm_starts_converged": true,
+  "datasets": 4,
+  "diagnostic_only": true,
+  "maximum_projected_gradient_at_ape": 0.24537456551255327,
+  "mode": "pilot",
+  "objective_reproduced": true,
+  "records": [
+    {
+      "ape_reported_penalized_pseudologlik": -109.80517121409571,
+      "dataset_id": "relaxed_gamma_shape4-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 46.14425803348422,
+      "fingerprint": "8b8119adcc04f9ca52118087d0e4023066a11fd66d057d00ed920e96d6c9a243",
+      "gradient_max_abs": 0.24537456551255327,
+      "initial_penalized_pseudologlik": -109.8051712140957,
+      "optimized_converged": true,
+      "optimized_improvement": 0.3645273673590168,
+      "optimized_penalized_pseudologlik": -109.44064384673668,
+      "optimizer_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+      "projected_gradient_max_abs": 0.24537456551255327,
+      "warmstart_schema": 1
+    },
+    {
+      "ape_reported_penalized_pseudologlik": -95.52715485043355,
+      "dataset_id": "relaxed_gamma_shape4-n48-root-fractional_poisson-r0000",
+      "elapsed_seconds": 40.84777343645692,
+      "fingerprint": "33f6c6456e7ba211abf64ea0b7d247f7132cca3ce742c947e500a009deb3a905",
+      "gradient_max_abs": 0.024957529306490485,
+      "initial_penalized_pseudologlik": -95.52715485043353,
+      "optimized_converged": true,
+      "optimized_improvement": 0.07763477893264792,
+      "optimized_penalized_pseudologlik": -95.44952007150088,
+      "optimizer_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+      "projected_gradient_max_abs": 0.024957529306490485,
+      "warmstart_schema": 1
+    },
+    {
+      "ape_reported_penalized_pseudologlik": -116.81000226315054,
+      "dataset_id": "relaxed_gamma_shape4-n48-root-continuous_gamma-r0002",
+      "elapsed_seconds": 49.662271317094564,
+      "fingerprint": "bb75815a8eb57dffe0553f89846dad24d3d5d01e536329e82528cc2ac5bedf55",
+      "gradient_max_abs": 0.021146035974014776,
+      "initial_penalized_pseudologlik": -116.81000226315054,
+      "optimized_converged": true,
+      "optimized_improvement": 0.0980612423126388,
+      "optimized_penalized_pseudologlik": -116.7119410208379,
+      "optimizer_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+      "projected_gradient_max_abs": 0.021146035974014776,
+      "warmstart_schema": 1
+    },
+    {
+      "ape_reported_penalized_pseudologlik": -111.48918230069894,
+      "dataset_id": "relaxed_gamma_shape4-n48-root-expected_branch-r0002",
+      "elapsed_seconds": 78.4107158742845,
+      "fingerprint": "3fc012b9bb758d3f59de1adb0a7d76710fed3cf6d6516e55ed5a7ea9224e8a0a",
+      "gradient_max_abs": 0.07521151680347857,
+      "initial_penalized_pseudologlik": -111.48918230069891,
+      "optimized_converged": true,
+      "optimized_improvement": 0.762951563954303,
+      "optimized_penalized_pseudologlik": -110.72623073674461,
+      "optimizer_message": "CONVERGENCE: RELATIVE REDUCTION OF F <= FACTR*EPSMCH",
+      "projected_gradient_max_abs": 0.07521151680347857,
+      "warmstart_schema": 1
+    }
+  ],
+  "study_version": 17,
+  "warm_start_retained_or_improved_ape": true,
+  "warmstart_schema": 1
+}
