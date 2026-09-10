@@ -88,9 +88,11 @@ The committed confirmation records source hash
 `370a04071ea1c6b430c6edbfdd904064300d93581d718685f8a67d09a86f396d`.
 Later correlated-model work changed the broad V12 hash because it added unused
 functions to `optimization.py` and enriched only exception records in
-`_run_multistart`. The UCLN solver, clock initializer, and V12 runner remain
-byte-for-byte unchanged, and successful multistart behavior is unchanged. The
-machine-readable compatibility audit in
+`_run_multistart`. Subsequent work changed the legacy `relaxed` path stored in
+the same source file as UCLN. The public UCLN function dispatches to its
+separate profiled implementation, whose fitted-value path is unchanged; the
+clock initializer and V12 runner also remain unchanged. The machine-readable
+compatibility audit in
 `v12/compatibility-v12-current.json` pins both source hashes and the reviewed
 differences; no equivalent 1,674-fit rerun is required.
 
