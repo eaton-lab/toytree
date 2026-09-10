@@ -3,7 +3,16 @@
 This directory contains the pinned simulation and predictive-validation study
 for ToyTree's ultrametric branch-length pseudolikelihood models.
 
-## Version 15: correlated confirmation
+## Version 16: correlated final-rate polish
+
+The [V16 design](README-v16.md) adds a conservative, bounded final conditional-
+rate polish for the single numerical termination failure exposed by V15. It
+first replays all 14 V15 cases above a prespecified near-threshold gradient plus
+six controls, then reserves a fresh seed stream for an unchanged-gate,
+540-dataset confirmation. The model, fixed lambda values, statistical design,
+and release thresholds are unchanged.
+
+## Version 15: frozen correlated confirmation
 
 The [V15 design](README-v15.md) freezes the profiled correlated estimator after
 the passing V14 replay and evaluates it on 540 datasets from an untouched,

@@ -48,6 +48,8 @@ INVALID_LOG_LIK_DROP = 1e6
 SOLUTION_OBJECTIVE_ATOL = 1e-4
 SOLUTION_OBJECTIVE_RTOL = 1e-6
 SOLUTION_MAX_NORMALIZED_AGE_DIFFERENCE = 0.02
+RATE_GRADIENT_TARGET = 1e-8
+RATE_GRADIENT_TOL = 1e-6
 CORRELATED_OBSERVATION_LOSSES = frozenset(
     {"fractional_poisson", "multiplicative_gamma"}
 )
@@ -214,8 +216,16 @@ def _fit_profiled_correlated_rates(
     observation_loss: str,
     max_iter: int,
     max_fun: int,
+    *,
+    final_polish: bool = False,
+    retry_multiplier: int = 1,
 ) -> dict[str, Any]:
-    """Solve the convex conditional correlated log-rate problem."""
+    """Solve the convex conditional correlated log-rate problem.
+
+    The Newton solve is used for every age-profile evaluation. A bounded
+    L-BFGS-B polish can be requested for the final fixed-chronogram solve only;
+    this avoids multiplying the cost of every outer objective evaluation.
+    """
     lower = np.asarray(
         [-np.inf if bound[0] is None else float(bound[0]) for bound in rate_bounds]
     )
@@ -245,7 +255,7 @@ def _fit_profiled_correlated_rates(
     for iteration in range(max_newton_iter):
         nit = iteration + 1
         projected = projected_gradient_max_abs(params, gradient, rate_bounds)
-        if projected <= 1e-8:
+        if projected <= RATE_GRADIENT_TARGET:
             converged = True
             message = "conditional rate projected gradient converged"
             break
@@ -313,7 +323,67 @@ def _fit_profiled_correlated_rates(
             break
 
     projected = projected_gradient_max_abs(params, gradient, rate_bounds)
-    if projected <= 1e-6:
+    gradient_before_polish = float(projected)
+    polish_used = bool(final_polish and projected > RATE_GRADIENT_TOL)
+    polish_accepted = False
+    polish_message = None
+    if polish_used:
+        polish_args = (
+            ages_hat,
+            edges,
+            edata,
+            parent_edges,
+            lam,
+            valid_loglik,
+            observation_mask,
+            observation_loss,
+        )
+        try:
+            polish = minimize(
+                fun=_correlated_rate_objective_with_gradient,
+                x0=params,
+                args=polish_args,
+                method="L-BFGS-B",
+                jac=True,
+                bounds=rate_bounds,
+                options=dict(
+                    maxiter=max(1, int(max_iter) * int(retry_multiplier)),
+                    maxfun=max(1, int(max_fun) * int(retry_multiplier)),
+                    ftol=np.finfo(float).eps,
+                    gtol=RATE_GRADIENT_TARGET,
+                    maxls=200,
+                ),
+            )
+            nfev += int(getattr(polish, "nfev", 0))
+            nit += int(getattr(polish, "nit", 0))
+            candidate = np.clip(np.asarray(polish.x, dtype=float), lower, upper)
+            candidate_objective, candidate_gradient = (
+                _correlated_rate_objective_with_gradient(candidate, *polish_args)
+            )
+            nfev += 1
+            candidate_projected = projected_gradient_max_abs(
+                candidate, candidate_gradient, rate_bounds
+            )
+            objective_tolerance = (
+                128.0 * np.finfo(float).eps * max(1.0, abs(float(objective)))
+            )
+            polish_accepted = bool(
+                np.isfinite(candidate_objective)
+                and np.all(np.isfinite(candidate))
+                and candidate_objective <= objective + objective_tolerance
+                and candidate_projected <= projected
+            )
+            polish_message = str(polish.message)
+            if polish_accepted:
+                params = candidate
+                objective = float(candidate_objective)
+                gradient = np.asarray(candidate_gradient, dtype=float)
+                projected = float(candidate_projected)
+                message = f"conditional rate final polish: {polish.message}"
+        except (FloatingPointError, RuntimeError, ValueError) as exc:
+            polish_message = f"{type(exc).__name__}: {exc}"
+
+    if projected <= RATE_GRADIENT_TOL:
         converged = True
         if "converged" not in message:
             message = "conditional rate projected gradient converged"
@@ -323,6 +393,10 @@ def _fit_profiled_correlated_rates(
         "converged": bool(converged),
         "message": message,
         "projected_gradient_max_abs": float(projected),
+        "gradient_before_final_polish": gradient_before_polish,
+        "final_polish_used": polish_used,
+        "final_polish_accepted": polish_accepted,
+        "final_polish_message": polish_message,
         "nfev": int(nfev),
         "nit": int(nit),
     }
@@ -660,7 +734,11 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
         observation_loss,
         max_iter,
         max_fun,
+        final_polish=retry_multiplier > 1,
+        retry_multiplier=retry_multiplier,
     )
+    if final_rate_fit["final_polish_used"]:
+        optimizer_retries += 1
     profile.total_rate_nfev += int(final_rate_fit["nfev"])
     profile.total_rate_nit += int(final_rate_fit["nit"])
     final_rate_objective = float(final_rate_fit["objective"])
@@ -677,7 +755,9 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
         if joint_gradient.size and np.all(np.isfinite(joint_gradient))
         else None
     )
-    profile_rate_converged = bool(rate_gradient_max_abs <= 1e-6)
+    profile_rate_converged = bool(rate_gradient_max_abs <= RATE_GRADIENT_TOL)
+    if not asize:
+        outer_success = profile_rate_converged
     joint_polish_usable = bool(
         joint_polish_error is not None
         or joint_decode_error is not None
@@ -721,6 +801,12 @@ def _fit_correlated_start(payload: dict[str, Any]) -> dict[str, Any]:
         "all_profile_rate_solves_converged": bool(profile.all_rate_solves_converged),
         "profile_rate_converged": profile_rate_converged,
         "rate_gradient_max_abs": rate_gradient_max_abs,
+        "rate_gradient_before_final_polish": float(
+            final_rate_fit["gradient_before_final_polish"]
+        ),
+        "final_rate_polish_used": bool(final_rate_fit["final_polish_used"]),
+        "final_rate_polish_accepted": bool(final_rate_fit["final_polish_accepted"]),
+        "final_rate_polish_message": final_rate_fit["final_polish_message"],
         "final_joint_converged": bool(
             polish.success and joint_polish_error is None and joint_decode_error is None
         ),
@@ -1229,6 +1315,14 @@ def edges_make_ultrametric_correlated(
         "outer_profile_converged": bool(best.get("outer_profile_converged", False)),
         "profile_rate_converged": bool(best.get("profile_rate_converged", False)),
         "rate_gradient_max_abs": best.get("rate_gradient_max_abs"),
+        "rate_gradient_before_final_polish": best.get(
+            "rate_gradient_before_final_polish"
+        ),
+        "final_rate_polish_used": bool(best.get("final_rate_polish_used", False)),
+        "final_rate_polish_accepted": bool(
+            best.get("final_rate_polish_accepted", False)
+        ),
+        "final_rate_polish_message": best.get("final_rate_polish_message"),
         "final_joint_converged": bool(best.get("final_joint_converged", False)),
         "gradient_max_abs": best.get("gradient_max_abs"),
         "optimizer_retries": int(best.get("optimizer_retries", 0)),
@@ -1264,6 +1358,16 @@ def edges_make_ultrametric_correlated(
                     item.get("profile_rate_converged", False)
                 ),
                 "rate_gradient_max_abs": item.get("rate_gradient_max_abs"),
+                "rate_gradient_before_final_polish": item.get(
+                    "rate_gradient_before_final_polish"
+                ),
+                "final_rate_polish_used": bool(
+                    item.get("final_rate_polish_used", False)
+                ),
+                "final_rate_polish_accepted": bool(
+                    item.get("final_rate_polish_accepted", False)
+                ),
+                "final_rate_polish_message": item.get("final_rate_polish_message"),
                 "final_joint_converged": bool(item.get("final_joint_converged", False)),
                 "gradient_max_abs": item.get("gradient_max_abs"),
                 "optimizer_retries": int(item.get("optimizer_retries", 0)),

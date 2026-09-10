@@ -103,6 +103,48 @@ class TestPenalizedLikelihoodCorrelated(PytestCompat):
         self.assertLessEqual(fit["projected_gradient_max_abs"], 1e-6)
         self.assertTrue(np.isfinite(fit["objective"]))
 
+    def test_final_rate_polish_recovers_underiterated_newton_solve(self):
+        """The bounded final fallback improves a nonconverged Newton solve."""
+        tree = get_tree_with_correlated_rates(ntips=8, mean=1.0, sigma=0.8, seed=91)
+        edges = np.asarray(tree.get_edges("idx"), dtype=int)
+        ages = tree.get_node_data("height").to_numpy(dtype=float)
+        observed = tree.get_node_data("dist").to_numpy(dtype=float)[:-1]
+        edata = np.column_stack([observed, np.zeros(tree.nedges)])
+        edge_for_child = {int(child): idx for idx, (child, _) in enumerate(edges)}
+        parent_edges = np.asarray(
+            [edge_for_child.get(int(parent), -1) for _, parent in edges], dtype=int
+        )
+        args = (
+            np.full(tree.nedges, 4.0),
+            ages,
+            [(-30.0, 30.0)] * tree.nedges,
+            edges,
+            edata,
+            parent_edges,
+            1.0,
+            -1.0,
+            np.ones(tree.nedges, dtype=bool),
+            "fractional_poisson",
+            1,
+            1,
+        )
+
+        unpolished = _fit_profiled_correlated_rates(*args)
+        polished = _fit_profiled_correlated_rates(
+            *args, final_polish=True, retry_multiplier=1_000
+        )
+
+        self.assertFalse(unpolished["converged"])
+        self.assertTrue(polished["final_polish_used"])
+        self.assertTrue(polished["final_polish_accepted"])
+        self.assertTrue(polished["converged"])
+        self.assertLessEqual(polished["objective"], unpolished["objective"])
+        self.assertLess(
+            polished["projected_gradient_max_abs"],
+            polished["gradient_before_final_polish"],
+        )
+        self.assertLessEqual(polished["projected_gradient_max_abs"], 1e-6)
+
     def test_near_equivalent_starts_with_different_ages_are_unstable(self):
         """Equivalent objectives cannot hide materially different chronograms."""
         starts = [
@@ -253,6 +295,10 @@ class TestPenalizedLikelihoodCorrelated(PytestCompat):
             "refinement_cycles",
             "final_joint_converged",
             "gradient_max_abs",
+            "rate_gradient_before_final_polish",
+            "final_rate_polish_used",
+            "final_rate_polish_accepted",
+            "final_rate_polish_message",
         ):
             self.assertIn(key, result)
             self.assertIn(key, result["starts"][0])

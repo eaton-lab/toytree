@@ -72,6 +72,14 @@ Use a clean checkout of the pushed commit:
 Rerunning the fit command resumes matching tasks. Scoring never fits and its
 fingerprint is separate from the expensive fit fingerprint.
 
+The completed confirmation passed every statistical-performance gate but
+failed two linked numerical gates because one truth-initialized diagnostic fit
+ended at a projected conditional-rate gradient of `1.963e-6`, just above the
+frozen `1e-6` threshold. The independent default and stress fits agreed in
+objective to approximately `1e-11`. The gate was not weakened; V16 treats the
+V15 result as development evidence, repairs the final-solve retry gap, and
+uses a fresh confirmation stream.
+
 After scoring, commit only the compact artifacts:
 
     git add \

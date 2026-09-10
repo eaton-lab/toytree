@@ -1,0 +1,89 @@
+{
+  "study_version": 16,
+  "source_study": 15,
+  "development_seed": 513260831,
+  "confirmation_seed": 713260831,
+  "fit": {
+    "max_iter": 5000,
+    "max_fun": 10000,
+    "max_refine": 10,
+    "default_nstarts": 4,
+    "stress_nstarts": 8,
+    "oracle_nstarts": 2,
+    "retry_multiplier": 4
+  },
+  "simulation": {"baseline_rate": 20.0},
+  "noise": {"gamma_shape": 100.0},
+  "modes": {
+    "smoke": {
+      "ntips": [6],
+      "calibrations": ["root", "root_and_internal_interval"],
+      "observation_models": [
+        "expected_branch",
+        "fractional_poisson",
+        "continuous_gamma"
+      ],
+      "sigma_log": [0.3],
+      "replicates": 1
+    },
+    "confirmation": {
+      "ntips": [24, 48, 96],
+      "calibrations": ["root", "root_and_internal_interval"],
+      "observation_models": [
+        "expected_branch",
+        "fractional_poisson",
+        "continuous_gamma"
+      ],
+      "sigma_log": [0.1, 0.3, 0.6],
+      "replicates": 10
+    }
+  },
+  "replay_targets": [
+    "correlated-n24-root-expected_branch-sigma0p3-r0002",
+    "correlated-n24-root-continuous_gamma-sigma0p6-r0002",
+    "correlated-n24-root_and_internal_interval-expected_branch-sigma0p1-r0007",
+    "correlated-n24-root_and_internal_interval-expected_branch-sigma0p6-r0007",
+    "correlated-n48-root-expected_branch-sigma0p1-r0006",
+    "correlated-n48-root-expected_branch-sigma0p6-r0001",
+    "correlated-n48-root-continuous_gamma-sigma0p3-r0003",
+    "correlated-n48-root_and_internal_interval-expected_branch-sigma0p6-r0001",
+    "correlated-n48-root_and_internal_interval-continuous_gamma-sigma0p6-r0002",
+    "correlated-n96-root-continuous_gamma-sigma0p6-r0001",
+    "correlated-n96-root-continuous_gamma-sigma0p6-r0004",
+    "correlated-n96-root-continuous_gamma-sigma0p6-r0009",
+    "correlated-n96-root_and_internal_interval-expected_branch-sigma0p6-r0003",
+    "correlated-n96-root_and_internal_interval-expected_branch-sigma0p6-r0004"
+  ],
+  "replay_controls": [
+    "correlated-n24-root-expected_branch-sigma0p1-r0005",
+    "correlated-n24-root_and_internal_interval-fractional_poisson-sigma0p3-r0001",
+    "correlated-n48-root-continuous_gamma-sigma0p3-r0002",
+    "correlated-n48-root_and_internal_interval-fractional_poisson-sigma0p6-r0002",
+    "correlated-n96-root-expected_branch-sigma0p3-r0006",
+    "correlated-n96-root_and_internal_interval-continuous_gamma-sigma0p3-r0009"
+  ],
+  "replay_gates": {
+    "maximum_projected_rate_gradient": 1e-6,
+    "maximum_relative_objective_gap": 1e-5,
+    "maximum_default_reference_age_difference": 0.02,
+    "maximum_control_age_mae_increase": 0.005
+  },
+  "decision_gates": {
+    "fit_convergence": 0.995,
+    "stress_solution_stability": 0.99,
+    "calibration_validity": 1.0,
+    "profile_rate_convergence": 1.0,
+    "best_basin_replication": 0.98,
+    "maximum_projected_rate_gradient": 1e-6,
+    "maximum_relative_objective_gap": 1e-5,
+    "maximum_default_reference_age_difference": 0.02,
+    "age_mae_median": 0.08,
+    "age_mae_p90": 0.15,
+    "positive_continuous_age_mae_p90": 0.12,
+    "maximum_absolute_age_bias": 0.02,
+    "fixed_age_rate_spearman_median": 0.9,
+    "maximum_time_unit_age_difference": 1e-5,
+    "maximum_time_unit_rate_relative_error": 1e-5,
+    "maximum_time_unit_penalty_relative_error": 1e-5
+  }
+}

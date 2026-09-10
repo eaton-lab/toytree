@@ -118,6 +118,16 @@ def _slim(fit: dict[str, Any]) -> dict[str, Any]:
                 if fit.get("rate_gradient_max_abs") is None
                 else float(fit["rate_gradient_max_abs"])
             ),
+            "rate_gradient_before_final_polish": (
+                None
+                if fit.get("rate_gradient_before_final_polish") is None
+                else float(fit["rate_gradient_before_final_polish"])
+            ),
+            "final_rate_polish_used": bool(fit.get("final_rate_polish_used", False)),
+            "final_rate_polish_accepted": bool(
+                fit.get("final_rate_polish_accepted", False)
+            ),
+            "final_rate_polish_message": fit.get("final_rate_polish_message"),
             "outer_profile_converged": bool(fit.get("outer_profile_converged", False)),
             "zero_length_branch_count": int(fit.get("zero_length_branch_count", 0)),
             "evaluated_starts": int(fit.get("evaluated_starts", fit["nstarts"])),
