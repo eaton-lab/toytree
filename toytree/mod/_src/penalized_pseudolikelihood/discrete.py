@@ -862,6 +862,7 @@ def edges_make_ultrametric_discrete(
             ncores=1,
             seed=seed,
             _observation_mask=_observation_mask,
+            _direct_age_fallback=False,
         )
         if clock_start["converged"]:
             ages_init = (
@@ -1042,9 +1043,7 @@ def edges_make_ultrametric_discrete(
     time_dists = ages[edges[:, 1]] - ages[edges[:, 0]]
     expected = time_dists * float(np.dot(weights, rates))
     stability = assess_solution_stability(starts, best, ntips=fit_tree.ntips)
-    stability["optimum_replicated"] = bool(
-        stability["near_optimal_starts"] >= 2
-    )
+    stability["optimum_replicated"] = bool(stability["near_optimal_starts"] >= 2)
     if nstarts > 1 and not stability["optimum_replicated"]:
         logger.warning(
             "The best discrete-mixture optimum was found by only one start; "

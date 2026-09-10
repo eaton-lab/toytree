@@ -12,6 +12,7 @@ from toytree.mod._src.penalized_pseudolikelihood.optimization import (
     assess_solution_stability,
 )
 from toytree.mod._src.penalized_pseudolikelihood.utils import (
+    _decode_age_params,
     _encode_age_params,
     _get_children_map_from_edges,
     _get_init_ages,
@@ -92,6 +93,69 @@ def test_profiled_clock_gradient_matches_central_difference():
         numerical[idx] = (upper - lower) / (2.0 * epsilon)
     scale = np.maximum(1.0, np.maximum(abs(gradient), abs(numerical)))
     assert np.max(abs(gradient - numerical) / scale) < 1e-5
+
+
+def test_profiled_clock_direct_gradient_matches_central_difference():
+    tree = get_tree_with_categorical_rates(ntips=8, nrates=1, seed=457)
+    params, args = _profiled_objective_inputs(tree, {-1: 2.0})
+    params = params + np.linspace(-0.05, 0.05, params.size)
+    ages_base, age_idxs, age_bounds, children_map, edges, edata, bounds, valid, mask = (
+        args
+    )
+    ages = _decode_age_params(
+        params,
+        ages_base,
+        age_idxs,
+        age_bounds,
+        children_map,
+        dist_floor=clock.DIST_FLOOR,
+    )
+    direct_args = (ages_base, age_idxs, edges, edata, bounds, valid, mask)
+    _, gradient = clock.objective_clock_direct_with_gradient(
+        ages[age_idxs], *direct_args
+    )
+    epsilon = 1e-6
+    numerical = np.empty_like(gradient)
+    for idx in range(gradient.size):
+        delta = np.zeros_like(gradient)
+        delta[idx] = epsilon
+        upper = clock.objective_clock_direct_with_gradient(
+            ages[age_idxs] + delta, *direct_args
+        )[0]
+        lower = clock.objective_clock_direct_with_gradient(
+            ages[age_idxs] - delta, *direct_args
+        )[0]
+        numerical[idx] = (upper - lower) / (2.0 * epsilon)
+    scale = np.maximum(1.0, np.maximum(abs(gradient), abs(numerical)))
+    assert np.max(abs(gradient - numerical) / scale) < 1e-5
+
+
+def test_clock_uses_direct_age_fallback_after_abnormal_line_search():
+    tree = get_tree_with_categorical_rates(ntips=8, nrates=1, seed=458)
+    tree[0]._dist = 0.0
+
+    def fail_transformed_fit(fun, x0, args, **kwargs):
+        value, gradient = fun(np.asarray(x0), *args)
+        return OptimizeResult(
+            x=np.asarray(x0).copy(),
+            fun=float(value),
+            success=False,
+            message="ABNORMAL: ",
+            nfev=1,
+            nit=0,
+            jac=np.asarray(gradient),
+        )
+
+    with patch.object(clock, "minimize", side_effect=fail_transformed_fit):
+        result = tree.mod.edges_make_ultrametric_clock(
+            calibrations={-1: 2.0}, full=True
+        )
+
+    assert result["converged"]
+    assert result["direct_age_fallback_used"]
+    assert result["direct_age_fallback_converged"]
+    assert result["direct_age_fallback_accepted"]
+    assert result["optimizer_message"].startswith("direct-age constrained fallback")
 
 
 def test_fully_fixed_clock_profiles_rate_without_optimizer():
@@ -212,15 +276,9 @@ def test_profiled_clock_is_calibration_time_unit_invariant():
 
 
 def test_profiled_clock_accepts_and_rescales_arbitrary_input_units():
-    base_tree = toytree.tree(
-        "((a:0.2,b:0.4):0.3,(c:0.5,d:0.7):0.2);"
-    )
-    scaled_tree = toytree.tree(
-        "((a:20,b:40):30,(c:50,d:70):20);"
-    )
-    base = base_tree.mod.edges_make_ultrametric_clock(
-        calibrations={-1: 2.0}, full=True
-    )
+    base_tree = toytree.tree("((a:0.2,b:0.4):0.3,(c:0.5,d:0.7):0.2);")
+    scaled_tree = toytree.tree("((a:20,b:40):30,(c:50,d:70):20);")
+    base = base_tree.mod.edges_make_ultrametric_clock(calibrations={-1: 2.0}, full=True)
     scaled = scaled_tree.mod.edges_make_ultrametric_clock(
         calibrations={-1: 2.0}, full=True
     )
@@ -231,12 +289,10 @@ def test_profiled_clock_accepts_and_rescales_arbitrary_input_units():
 
 
 def test_uncalibrated_clock_returns_root_age_one_relative_time():
-    tree = toytree.tree(
-        "((a:2,b:4):3,(c:5,d:7):2);"
-    )
+    tree = toytree.tree("((a:2,b:4):3,(c:5,d:7):2);")
     result = tree.mod.edges_make_ultrametric_clock(full=True)
     ages = result["tree"].get_node_data("height").to_numpy(dtype=float)
     assert result["converged"]
     assert np.isclose(ages[-1], 1.0)
-    assert np.allclose(ages[:tree.ntips], 0.0)
+    assert np.allclose(ages[: tree.ntips], 0.0)
     assert result["tree"].is_ultrametric()

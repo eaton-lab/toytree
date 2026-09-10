@@ -59,6 +59,23 @@ compatible-objective loss greater than `1e-6`, and no normalized age-MAE
 increase greater than `0.005`. Do not rerun the 2,880-dataset confirmation or
 overwrite its original caches.
 
+The production-budget replay resolved all 31 relaxed evaluation-limit cases:
+every fit converged, retained valid calibrations, and improved the compatible
+penalized objective by `0.096` to `1.405`. It did not pass the deliberately
+strict truth-recovery noninferiority diagnostic. Only 3/31 optimized
+chronograms improved age MAE, and the median age-MAE change was `+0.0102`.
+This is evidence that further optimization of the chronos relaxed objective
+need not improve historical-time recovery, not an optimization failure. It
+supports retaining `relaxed` for chronos compatibility while recommending
+ToyTree's scale-invariant UCLN model for general uncorrelated-rate analysis.
+
+The one clock replay repeated an `ABNORMAL` transformed-coordinate line-search
+termination. Its analytic transformed gradient was not stationary and
+misrepresented a nonsmooth descendant-boundary direction created by an exact
+zero observation. A direct-age SLSQP fallback with explicit linear ancestry
+constraints resolved that frozen case, improved its pseudologlikelihood, and
+is now used only after this class of clock line-search failure.
+
 ## Dependencies
 
 The Python environment must contain ToyTree's development dependencies. R must

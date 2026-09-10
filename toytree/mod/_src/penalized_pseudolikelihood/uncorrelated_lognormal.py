@@ -1304,6 +1304,7 @@ def _edges_make_ultrametric_ucln(
             seed=seed,
             _observation_mask=_observation_mask,
             _retry_multiplier=1,
+            _direct_age_fallback=False,
         )
         if clock_start["converged"]:
             ages_init = (

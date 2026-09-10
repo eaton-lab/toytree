@@ -1104,6 +1104,7 @@ def edges_make_ultrametric_correlated(
             seed=seed,
             _observation_mask=_observation_mask,
             _retry_multiplier=1,
+            _direct_age_fallback=False,
         )
         if clock["converged"]:
             independent_ages = (

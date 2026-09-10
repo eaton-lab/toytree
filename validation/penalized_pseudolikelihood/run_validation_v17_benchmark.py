@@ -532,6 +532,9 @@ def _slim_toytree_fit(fit: dict[str, Any], elapsed: float) -> dict[str, Any]:
         "optimizer_message": str(fit.get("optimizer_message", "")),
         "nfev": _optional_int(fit.get("nfev")),
         "nit": _optional_int(fit.get("nit")),
+        "direct_age_fallback_used": fit.get("direct_age_fallback_used"),
+        "direct_age_fallback_converged": fit.get("direct_age_fallback_converged"),
+        "direct_age_fallback_accepted": fit.get("direct_age_fallback_accepted"),
         "solution_stable": fit.get("solution_stable"),
         "near_optimal_starts": _optional_int(fit.get("near_optimal_starts")),
     }

@@ -79,6 +79,7 @@ def minimize_profiled_ages(
     constraints: tuple,
     max_iter: int,
     ftol: float,
+    args: tuple = (),
 ):
     """Run direct-age SLSQP while suppressing benign clipping warnings."""
     with warnings.catch_warnings():
@@ -91,6 +92,7 @@ def minimize_profiled_ages(
         return minimize(
             fun=objective,
             x0=np.asarray(initial, dtype=float),
+            args=args,
             method="SLSQP",
             jac=True,
             bounds=bounds,

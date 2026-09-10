@@ -14,6 +14,8 @@ from toytree.core.apis import TreeModAPI, add_subpackage_method
 from toytree.mod._src.penalized_pseudolikelihood.optimization import (
     assess_solution_stability,
     decode_age_params_with_jacobian,
+    direct_age_linear_constraint,
+    minimize_profiled_ages,
     optimizer_stopped_at_limit,
 )
 from toytree.mod._src.penalized_pseudolikelihood.utils import (
@@ -125,6 +127,56 @@ def objective_clock_profiled_with_gradient(
     return float(objective), age_jacobian.T @ age_gradient
 
 
+def objective_clock_direct_with_gradient(
+    free_ages: np.ndarray,
+    ages_base: np.ndarray,
+    ages_idxs: np.ndarray,
+    edges: np.ndarray,
+    edata: np.ndarray,
+    rate_bounds: tuple[float, float],
+    valid_loglik: float,
+    observation_mask: np.ndarray,
+) -> tuple[float, np.ndarray]:
+    """Return the profiled clock objective in constrained direct ages."""
+    ages_hat = np.asarray(ages_base, dtype=float).copy()
+    ages_hat[ages_idxs] = np.asarray(free_ages, dtype=float)
+    times = ages_hat[edges[:, 1]] - ages_hat[edges[:, 0]]
+    rate_hat = _profile_clock_rate(
+        ages_hat,
+        edges,
+        edata[:, 0],
+        observation_mask,
+        rate_bounds,
+    )
+    if (
+        not np.isfinite(rate_hat)
+        or np.any(times < DIST_FLOOR)
+        or np.any(~np.isfinite(times))
+    ):
+        return _invalid_objective(valid_loglik), np.zeros_like(free_ages)
+
+    objective = -_poisson_branch_pseudologlik(
+        rate_hat,
+        ages_hat,
+        edges,
+        edata,
+        valid_loglik,
+        observation_mask,
+    )
+    if not np.isfinite(objective):
+        return _invalid_objective(valid_loglik), np.zeros_like(free_ages)
+
+    expected = rate_hat * times
+    time_gradient = np.zeros(edges.shape[0], dtype=float)
+    time_gradient[observation_mask] = (
+        expected[observation_mask] - edata[observation_mask, 0]
+    ) / times[observation_mask]
+    age_gradient = np.zeros(ages_hat.size, dtype=float)
+    np.add.at(age_gradient, edges[:, 1], time_gradient)
+    np.add.at(age_gradient, edges[:, 0], -time_gradient)
+    return float(objective), age_gradient[ages_idxs]
+
+
 def _fit_clock_start(payload: dict[str, Any]) -> dict[str, Any]:
     """Optimize one profiled-rate clock start and return diagnostics."""
     start = int(payload["start"])
@@ -142,6 +194,7 @@ def _fit_clock_start(payload: dict[str, Any]) -> dict[str, Any]:
     max_iter = payload["max_iter"]
     max_fun = payload["max_fun"]
     retry_multiplier = payload["retry_multiplier"]
+    direct_age_fallback = payload.get("direct_age_fallback", True)
 
     args = (
         ages_init,
@@ -225,12 +278,90 @@ def _fit_clock_start(payload: dict[str, Any]) -> dict[str, Any]:
             current_objective = retry_objective
             current_params = np.asarray(retry.x, dtype=float).copy()
 
+    direct_age_fallback_used = False
+    direct_age_fallback_converged = False
+    direct_age_fallback_accepted = False
+    if (
+        direct_age_fallback
+        and not authoritative.success
+        and not optimizer_stopped_at_limit(authoritative.message)
+    ):
+        direct_age_fallback_used = True
+        try:
+            current_ages = _decode_age_params(
+                current_params,
+                ages_init,
+                ages_idxs,
+                ages_bounds,
+                children_map,
+                dist_floor=DIST_FLOOR,
+            )
+            constraints = direct_age_linear_constraint(
+                ages_init,
+                ages_idxs,
+                edges,
+                dist_floor=DIST_FLOOR,
+            )
+            direct = minimize_profiled_ages(
+                objective_clock_direct_with_gradient,
+                current_ages[ages_idxs],
+                ages_bounds,
+                constraints,
+                max_iter=max_iter,
+                ftol=1e-12,
+                args=(
+                    ages_init,
+                    ages_idxs,
+                    edges,
+                    edata,
+                    rate_bounds,
+                    valid_loglik,
+                    observation_mask,
+                ),
+            )
+            total_nfev += int(getattr(direct, "nfev", 0))
+            total_nit += int(getattr(direct, "nit", 0))
+            direct_age_fallback_converged = bool(direct.success)
+            direct_ages = np.asarray(ages_init, dtype=float).copy()
+            direct_ages[ages_idxs] = np.asarray(direct.x, dtype=float)
+            direct_params = _encode_age_params(
+                direct_ages,
+                ages_idxs,
+                ages_bounds,
+                children_map,
+                dist_floor=DIST_FLOOR,
+            )
+            direct_objective, _ = objective_clock_profiled_with_gradient(
+                direct_params,
+                *args,
+            )
+            tolerance = 1e-10 * max(1.0, abs(current_objective))
+            if (
+                np.isfinite(direct_objective)
+                and np.all(np.isfinite(direct_params))
+                and direct_objective <= current_objective + tolerance
+            ):
+                direct_age_fallback_accepted = True
+                authoritative = direct
+                current_objective = float(direct_objective)
+                current_params = direct_params
+        except (ToytreeError, ValueError):
+            direct_age_fallback_converged = False
+
     jac = np.asarray(getattr(authoritative, "jac", np.array([])), dtype=float)
     gradient_max_abs = (
-        float(np.max(np.abs(jac))) if jac.size and np.all(np.isfinite(jac)) else None
+        None
+        if direct_age_fallback_accepted
+        else (
+            float(np.max(np.abs(jac)))
+            if jac.size and np.all(np.isfinite(jac))
+            else None
+        )
     )
     converged = bool(authoritative.success and np.isfinite(current_objective))
     message = str(authoritative.message)
+    if direct_age_fallback_accepted:
+        message = f"direct-age constrained fallback: {message}"
     if current_objective >= _invalid_objective(valid_loglik) - 1e-9:
         converged = False
         message = "invalid objective plateau from infeasible start"
@@ -246,6 +377,9 @@ def _fit_clock_start(payload: dict[str, Any]) -> dict[str, Any]:
         "final_joint_converged": bool(authoritative.success),
         "gradient_max_abs": gradient_max_abs,
         "optimizer_retries": optimizer_retries,
+        "direct_age_fallback_used": direct_age_fallback_used,
+        "direct_age_fallback_converged": direct_age_fallback_converged,
+        "direct_age_fallback_accepted": direct_age_fallback_accepted,
         "params": current_params,
     }
 
@@ -264,6 +398,7 @@ def edges_make_ultrametric_clock(
     seed: int | None = None,
     _observation_mask: np.ndarray | None = None,
     _retry_multiplier: int = 4,
+    _direct_age_fallback: bool = True,
 ) -> Union[ToyTree, dict[str, Any]]:
     """Return a tree made ultrametric under a molecular clock.
 
@@ -326,6 +461,9 @@ def edges_make_ultrametric_clock(
     retry_multiplier = int(_retry_multiplier)
     if retry_multiplier < 1:
         raise ValueError("_retry_multiplier must be a positive integer.")
+    if not isinstance(_direct_age_fallback, (bool, np.bool_)):
+        raise ValueError("_direct_age_fallback must be a boolean.")
+    direct_age_fallback = bool(_direct_age_fallback)
     if calibrations is None:
         calibrations = {}
     calibrations = _normalize_calibrations(
@@ -399,6 +537,7 @@ def edges_make_ultrametric_clock(
                 max_iter=max_iter,
                 max_fun=max_fun,
                 retry_multiplier=retry_multiplier,
+                direct_age_fallback=direct_age_fallback,
             )
         )
     starts = _run_multistart(_fit_clock_start, payloads, ncores=ncores)
@@ -481,6 +620,13 @@ def edges_make_ultrametric_clock(
         "final_joint_converged": bool(best.get("final_joint_converged", False)),
         "gradient_max_abs": best.get("gradient_max_abs"),
         "optimizer_retries": int(best.get("optimizer_retries", 0)),
+        "direct_age_fallback_used": bool(best.get("direct_age_fallback_used", False)),
+        "direct_age_fallback_converged": bool(
+            best.get("direct_age_fallback_converged", False)
+        ),
+        "direct_age_fallback_accepted": bool(
+            best.get("direct_age_fallback_accepted", False)
+        ),
         "nstarts": nstarts,
         "requested_nstarts": requested_nstarts,
         "ncores": max(1, min(ncores, nstarts)),
@@ -498,6 +644,15 @@ def edges_make_ultrametric_clock(
                 "final_joint_converged": bool(i.get("final_joint_converged", False)),
                 "gradient_max_abs": i.get("gradient_max_abs"),
                 "optimizer_retries": int(i.get("optimizer_retries", 0)),
+                "direct_age_fallback_used": bool(
+                    i.get("direct_age_fallback_used", False)
+                ),
+                "direct_age_fallback_converged": bool(
+                    i.get("direct_age_fallback_converged", False)
+                ),
+                "direct_age_fallback_accepted": bool(
+                    i.get("direct_age_fallback_accepted", False)
+                ),
             }
             for i in starts
         ],
