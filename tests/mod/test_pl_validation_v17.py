@@ -26,6 +26,9 @@ from validation.penalized_pseudolikelihood import (
     run_validation_v17_benchmark as study,
 )
 from validation.penalized_pseudolikelihood import (
+    run_validation_v17_failure_replay as failure_replay,
+)
+from validation.penalized_pseudolikelihood import (
     run_validation_v17_relaxed_initialization as relaxed_initialization,
 )
 
@@ -363,6 +366,45 @@ def test_v17_relaxed_initialization_replay_targets_all_relaxed_pairs():
         ]
     }
     assert relaxed_initialization._target_ids(result) == ["r1", "r2"]
+
+
+def test_v17_failure_replay_targets_only_ineligible_toytree_fits():
+    """Production-budget replay excludes eligible and ape fits."""
+    result = {
+        "rows": [
+            {"dataset_id": "eligible", "engine": "toytree", "accuracy_eligible": True},
+            {"dataset_id": "ape-failure", "engine": "ape", "accuracy_eligible": False},
+            {
+                "dataset_id": "relaxed-failure",
+                "engine": "toytree",
+                "accuracy_eligible": False,
+            },
+            {
+                "dataset_id": "clock-failure",
+                "engine": "toytree",
+                "accuracy_eligible": False,
+            },
+        ]
+    }
+
+    observed = failure_replay._target_rows(result)
+
+    assert [row["dataset_id"] for row in observed] == [
+        "clock-failure",
+        "relaxed-failure",
+    ]
+
+
+def test_v17_failure_replay_restores_public_production_budget():
+    """The diagnostic changes budgets without mutating frozen V17 config."""
+    original = deepcopy(CONFIG["fit"])
+
+    observed = failure_replay._fit_options(CONFIG)
+
+    assert observed["max_iter"] == 100_000
+    assert observed["max_fun"] == 100_000
+    assert observed["max_refine"] == 20
+    assert CONFIG["fit"] == original
 
 
 def test_v17_r_adapter_has_no_jsonlite_dependency():

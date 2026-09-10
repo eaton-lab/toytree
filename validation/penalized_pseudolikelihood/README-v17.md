@@ -31,6 +31,34 @@ ToyTree inputs, but `chronos` frequently returns a nonconverged tree for them.
 Those cells measure input robustness and are not allowed to contaminate
 objective-parity or accuracy summaries.
 
+### Confirmation failure replay
+
+The confirmation run used a common computational cap of 5,000 optimizer
+iterations and 10,000 function evaluations. All 31 nonconverged relaxed fits
+were 192-tip datasets that exhausted the function-evaluation cap; the only
+other ToyTree failure was one clock line-search termination. A 192-tip relaxed
+fit jointly estimates about 573 values, so numerical differentiation permits
+only about 17 complete L-BFGS-B gradient evaluations under the confirmation
+cap. This is a computational-budget diagnostic, not evidence that the returned
+calibration-valid chronograms are statistically invalid.
+
+Replay only these 32 cases with the public production budget. This uses new
+caches, leaves the frozen confirmation outputs untouched, and counts both the
+original failed attempt and replay when reporting cumulative elapsed time:
+
+```bash
+python validation/penalized_pseudolikelihood/run_validation_v17_failure_replay.py \
+  --mode confirmation --stage fit --ncores "$(nproc)"
+
+python validation/penalized_pseudolikelihood/run_validation_v17_failure_replay.py \
+  --mode confirmation --stage score --ncores 1
+```
+
+The replay gates require every target to converge with valid calibrations, no
+compatible-objective loss greater than `1e-6`, and no normalized age-MAE
+increase greater than `0.005`. Do not rerun the 2,880-dataset confirmation or
+overwrite its original caches.
+
 ## Dependencies
 
 The Python environment must contain ToyTree's development dependencies. R must
