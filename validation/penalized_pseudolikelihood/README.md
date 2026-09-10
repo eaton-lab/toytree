@@ -3,6 +3,29 @@
 This directory contains the pinned simulation and predictive-validation study
 for ToyTree's ultrametric branch-length pseudolikelihood models.
 
+## Release status
+
+The module is release-ready with workflow-specific validation scopes; it is not
+an undifferentiated experimental module. The machine-readable
+[release-status ledger](release-status.json) records every public workflow,
+retired private prototype, unavailable selector, and supporting evidence.
+
+- `clock` is validated.
+- `discrete` is validated for `ape::chronos` finite-mixture compatibility.
+- `correlated` is validated when lambda is supplied.
+- `uncorrelated_lognormal` is validated with supplied lambda for positive
+  continuous branches; zero-rich fits remain conditional on diagnostics.
+- `relaxed` is compatibility-only and is retained to reproduce the
+  `ape::chronos` Gamma-CDF convention.
+- correlated lambda CV remains an experimental point selector.
+- cross-family selection, UCLN lambda selection, automatic discrete-category
+  selection, and PHIIC are not implemented as public workflows; the
+  discrete-Gamma prototype is retired and private.
+
+Calling the observation model a branch-length pseudolikelihood describes its
+statistical assumption; it is not, by itself, an experimental-status warning.
+All common exclusions and model-specific limitations remain explicit.
+
 ## Version 16: correlated final-rate polish
 
 The [V16 design](README-v16.md) adds a conservative, bounded final conditional-

@@ -167,6 +167,12 @@ def edges_make_ultrametric(
     branch lengths within its documented scope. ToyTree does not currently
     expose a per-tree UCLN lambda selector.
 
+    The strict clock is validated directly, while ``discrete`` is validated
+    for ape::chronos compatibility with an explicit category count. The
+    ``relaxed`` workflow is compatibility-only and is not recommended over
+    UCLN for new uncorrelated-rate analyses. These scoped statuses replace any
+    blanket experimental designation for this module.
+
 
     Input edge lengths may use any consistent, finite, non-negative additive
     unit for which branch length equals elapsed time multiplied by rate;

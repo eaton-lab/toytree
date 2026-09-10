@@ -15,6 +15,19 @@ ToyTree provides a fast edge-extension method and five branch-length pseudolikel
 
 The lognormal and correlated penalties are sums rather than means, so a fixed **lam** has the same per-contrast interpretation as tree size changes. Under the lognormal interpretation, `lam = 1 / (2 * sigma_log**2)` for a fixed log-rate standard deviation and profiled mean. Passing **lam** therefore fixes the assumed log-rate dispersion; it does not estimate **sigma_log** or select **lam** from the tree. With `full=True`, `implied_sigma_log = sqrt(1 / (2 * lam))` reports that deterministic interpretation. The chronos-relaxed penalty is a distribution-matching penalty, not a local smoothing penalty.
 
+### Release status
+
+| Workflow | Status | Supported scope |
+| --- | --- | --- |
+| `clock` | Validated | One shared rate |
+| `discrete` | Validated compatibility | `ape::chronos` branchwise finite mixture with an explicit **ncategories** |
+| `uncorrelated_lognormal` | Validated, with a zero-rich-data condition | Supplied **lam** and positive continuous additive branches; zero-rich fits must pass reported diagnostics |
+| `correlated` | Validated | Supplied **lam** |
+| `relaxed` | Compatibility only | Reproducing the `ape::chronos` Gamma-CDF objective; prefer UCLN for new analyses |
+| correlated lambda CV | Experimental selector | Exploratory point selection with sensitivity analysis |
+
+There is no public cross-family model selector, UCLN lambda selector, automatic discrete-category selector, PHIIC, or discrete-Gamma workflow. The branch-length pseudolikelihood is a stated statistical model rather than a blanket experimental designation; workflow-specific assumptions and exclusions still apply.
+
 
 ## Calibrations and scale
 

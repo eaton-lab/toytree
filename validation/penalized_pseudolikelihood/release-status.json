@@ -1,0 +1,101 @@
+{
+  "common_exclusions": [
+    "topology error",
+    "calibration-model misspecification",
+    "heterochronous tips",
+    "automatic propagation of branch-length estimation uncertainty"
+  ],
+  "module_status": "release_ready_with_scoped_validation",
+  "observation_framework": {
+    "description": "Fractional-Poisson branch-length pseudolikelihood on finite non-negative additive edge lengths.",
+    "status": "documented_model_assumption"
+  },
+  "schema_version": 1,
+  "workflows": {
+    "clock": {
+      "evidence": [
+        "validation/penalized_pseudolikelihood/v7/results-v7-confirmation.json"
+      ],
+      "public_api": "edges_make_ultrametric_clock",
+      "status": "validated"
+    },
+    "correlated": {
+      "evidence": [
+        "validation/penalized_pseudolikelihood/v16/results-v16-confirmation.json"
+      ],
+      "public_api": "edges_make_ultrametric_correlated",
+      "scope": "User-supplied positive lambda.",
+      "status": "validated_fixed_lambda"
+    },
+    "correlated_lambda_cv": {
+      "evidence": [
+        "validation/penalized_pseudolikelihood/v9/diagnostics-v9-selectors-uncertainty-replay.json"
+      ],
+      "public_api": "edges_make_ultrametric_correlated_lambda_cv",
+      "scope": "Exploratory point selection; supported lambda ranges and chronograms can remain broad.",
+      "status": "experimental"
+    },
+    "cross_family_model_selection": {
+      "evidence": [
+        "validation/penalized_pseudolikelihood/README.md"
+      ],
+      "public_api": null,
+      "status": "not_public"
+    },
+    "discrete": {
+      "evidence": [
+        "tests/data/penalized_pseudolikelihood/ape-5.8.1.json",
+        "validation/penalized_pseudolikelihood/v10/results-v10-failure-replay.json"
+      ],
+      "public_api": "edges_make_ultrametric_discrete",
+      "scope": "ape::chronos branchwise finite-mixture compatibility with an explicit category count.",
+      "status": "validated_compatibility"
+    },
+    "discrete_category_selection": {
+      "evidence": [
+        "validation/penalized_pseudolikelihood/README-v10.md"
+      ],
+      "public_api": null,
+      "status": "not_implemented"
+    },
+    "discrete_gamma": {
+      "evidence": [
+        "validation/penalized_pseudolikelihood/v10/results-v10-pilot.json"
+      ],
+      "public_api": null,
+      "status": "retired_private"
+    },
+    "phiic": {
+      "evidence": [
+        "validation/penalized_pseudolikelihood/README.md"
+      ],
+      "public_api": null,
+      "status": "not_implemented"
+    },
+    "relaxed": {
+      "evidence": [
+        "tests/data/penalized_pseudolikelihood/ape-5.8.1.json",
+        "validation/penalized_pseudolikelihood/v4/results-v4-confirmation.json"
+      ],
+      "public_api": "edges_make_ultrametric_relaxed",
+      "scope": "ape::chronos Gamma-CDF objective parity only; prefer UCLN for new uncorrelated-rate analyses.",
+      "status": "compatibility_only"
+    },
+    "uncorrelated_lognormal": {
+      "evidence": [
+        "validation/penalized_pseudolikelihood/v12/results-v12-confirmation.json",
+        "validation/penalized_pseudolikelihood/v12/compatibility-v12-current.json"
+      ],
+      "public_api": "edges_make_ultrametric_uncorrelated_lognormal",
+      "scope": "User-supplied positive lambda and positive continuous additive branches; zero-rich fits require passing fit-specific diagnostics.",
+      "status": "validated_fixed_lambda_positive_branches"
+    },
+    "uncorrelated_lognormal_lambda_selection": {
+      "evidence": [
+        "validation/penalized_pseudolikelihood/README-v12.md"
+      ],
+      "public_api": null,
+      "status": "not_implemented"
+    }
+  }
+}
