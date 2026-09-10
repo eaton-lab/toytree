@@ -1,0 +1,95 @@
+{
+  "compatible_fit_source_hashes": {
+    "5a7a517aba69be977ac2bc9f8ccb066febfa88922853c219d1828dba1080149b": "pre-fix V15 source; failed-start metadata schema only"
+  },
+  "config": {
+    "confirmation_seed": 613260831,
+    "decision_gates": {
+      "age_mae_median": 0.08,
+      "age_mae_p90": 0.15,
+      "best_basin_replication": 0.98,
+      "calibration_validity": 1.0,
+      "fit_convergence": 0.995,
+      "fixed_age_rate_spearman_median": 0.9,
+      "maximum_absolute_age_bias": 0.02,
+      "maximum_default_reference_age_difference": 0.02,
+      "maximum_projected_rate_gradient": 1e-06,
+      "maximum_relative_objective_gap": 1e-05,
+      "maximum_time_unit_age_difference": 1e-05,
+      "maximum_time_unit_penalty_relative_error": 1e-05,
+      "maximum_time_unit_rate_relative_error": 1e-05,
+      "positive_continuous_age_mae_p90": 0.12,
+      "profile_rate_convergence": 1.0,
+      "stress_solution_stability": 0.99
+    },
+    "development_seed": 513260831,
+    "fit": {
+      "default_nstarts": 4,
+      "max_fun": 10000,
+      "max_iter": 5000,
+      "max_refine": 10,
+      "oracle_nstarts": 2,
+      "retry_multiplier": 4,
+      "stress_nstarts": 8
+    },
+    "modes": {
+      "confirmation": {
+        "calibrations": [
+          "root",
+          "root_and_internal_interval"
+        ],
+        "ntips": [
+          24,
+          48,
+          96
+        ],
+        "observation_models": [
+          "expected_branch",
+          "fractional_poisson",
+          "continuous_gamma"
+        ],
+        "replicates": 10,
+        "sigma_log": [
+          0.1,
+          0.3,
+          0.6
+        ]
+      },
+      "smoke": {
+        "calibrations": [
+          "root",
+          "root_and_internal_interval"
+        ],
+        "ntips": [
+          6
+        ],
+        "observation_models": [
+          "expected_branch",
+          "fractional_poisson",
+          "continuous_gamma"
+        ],
+        "replicates": 1,
+        "sigma_log": [
+          0.3
+        ]
+      }
+    },
+    "noise": {
+      "gamma_shape": 100.0
+    },
+    "simulation": {
+      "baseline_rate": 20.0
+    },
+    "study_version": 15
+  },
+  "config_hash": "dd3922f2feff4454e4c623adaeef750ff01695c1bd34b5dfa02680a7c5f12073",
+  "environment": {
+    "numpy": "2.5.2",
+    "platform": "Linux-5.15.0-157-generic-x86_64-with-glibc2.35",
+    "python": "3.14.7 | packaged by conda-forge | (main, Aug 26 2026, 21:34:29) [GCC 15.3.0]",
+    "scipy": "1.18.1",
+    "toytree": "3.1.0.dev1"
+  },
+  "fit_source_hash": "14e2a6a961bd7920d5e18c48b5a452657e9f4ed3da4fcb2048e8006f40080127",
+  "scoring_hash": "d250be19ebf862e5e0b7d2badf66de2243edcdf4cbc237f37a66b3b74a8119ea"
+}
