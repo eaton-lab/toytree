@@ -1,0 +1,97 @@
+{
+  "study_version": 17,
+  "study_name": "paired-toytree-ape-chronos-benchmark",
+  "development_seed": 170913337,
+  "confirmation_seed": 170913937,
+  "expected_ape_version": "5.8.1",
+  "simulation": {
+    "baseline_rate": 20.0,
+    "observation_gamma_shape": 100.0
+  },
+  "fit": {
+    "max_iter": 5000,
+    "max_fun": 10000,
+    "max_refine": 10,
+    "toytree_nstarts": {
+      "clock": 1,
+      "discrete": 8,
+      "correlated": 4,
+      "relaxed": 1,
+      "uncorrelated_lognormal": 4
+    }
+  },
+  "scenarios": [
+    {
+      "id": "clock",
+      "generator": "clock",
+      "fit_model": "clock",
+      "ape_model": "clock"
+    },
+    {
+      "id": "discrete_k2",
+      "generator": "discrete",
+      "fit_model": "discrete",
+      "ape_model": "discrete",
+      "ncategories": 2,
+      "rate_multipliers": [0.5, 1.5]
+    },
+    {
+      "id": "discrete_k3",
+      "generator": "discrete",
+      "fit_model": "discrete",
+      "ape_model": "discrete",
+      "ncategories": 3,
+      "rate_multipliers": [0.5, 1.0, 2.0]
+    },
+    {
+      "id": "correlated_sigma0p3",
+      "generator": "correlated",
+      "fit_model": "correlated",
+      "ape_model": "correlated",
+      "sigma_log": 0.3,
+      "lambda": 5.555555555555555
+    },
+    {
+      "id": "relaxed_gamma_shape4",
+      "generator": "independent_gamma",
+      "fit_model": "relaxed",
+      "ape_model": "relaxed",
+      "rate_gamma_shape": 4.0,
+      "lambda": 0.5
+    },
+    {
+      "id": "ucln_sigma0p3",
+      "generator": "uncorrelated_lognormal",
+      "fit_model": "uncorrelated_lognormal",
+      "ape_model": null,
+      "sigma_log": 0.3,
+      "lambda": 5.555555555555555
+    }
+  ],
+  "modes": {
+    "smoke": {
+      "ntips": [6],
+      "calibrations": ["root"],
+      "observation_models": ["expected_branch"],
+      "replicates": 1,
+      "bootstrap_replicates": 100,
+      "timing_replicates": 1
+    },
+    "pilot": {
+      "ntips": [24, 48],
+      "calibrations": ["root", "root_and_internal_interval"],
+      "observation_models": ["expected_branch", "fractional_poisson", "continuous_gamma"],
+      "replicates": 3,
+      "bootstrap_replicates": 1000,
+      "timing_replicates": 1
+    },
+    "confirmation": {
+      "ntips": [24, 48, 96, 192],
+      "calibrations": ["root", "root_and_internal_interval"],
+      "observation_models": ["expected_branch", "fractional_poisson", "continuous_gamma"],
+      "replicates": 20,
+      "bootstrap_replicates": 2000,
+      "timing_replicates": 3
+    }
+  }
+}

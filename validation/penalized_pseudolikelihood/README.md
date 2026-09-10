@@ -26,6 +26,17 @@ Calling the observation model a branch-length pseudolikelihood describes its
 statistical assumption; it is not, by itself, an experimental-status warning.
 All common exclusions and model-specific limitations remain explicit.
 
+## Version 17: paired ToyTree--ape benchmark
+
+The [V17 design](README-v17.md) provides a publication-oriented comparison of
+ToyTree with `ape::chronos` on identical simulated trees and calibrations.
+Accuracy fits are globally task-parallel and resumable. A separate serial,
+alternating timing subset avoids treating timings collected under heavy
+parallel contention as publication-quality speed measurements. UCLN is
+included as a ToyTree-only comparator; correlated objectives are not compared
+numerically because the implementations intentionally use different
+penalties.
+
 ## Version 16: correlated final-rate polish
 
 The [V16 design](README-v16.md) adds a conservative, bounded final conditional-
