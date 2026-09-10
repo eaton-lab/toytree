@@ -83,7 +83,7 @@
       "observation_models": ["expected_branch", "fractional_poisson", "continuous_gamma"],
       "replicates": 3,
       "bootstrap_replicates": 1000,
-      "timing_replicates": 1
+      "timing_replicates": 3
     },
     "confirmation": {
       "ntips": [24, 48, 96, 192],
@@ -91,7 +91,7 @@
       "observation_models": ["expected_branch", "fractional_poisson", "continuous_gamma"],
       "replicates": 20,
       "bootstrap_replicates": 2000,
-      "timing_replicates": 3
+      "timing_replicates": 10
     }
   }
 }

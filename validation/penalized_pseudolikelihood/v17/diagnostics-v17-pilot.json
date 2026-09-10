@@ -1,0 +1,4528 @@
+{
+  "diagnostic_only": true,
+  "engine_cells": {
+    "clock:ape:n24:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.017609906680242374,
+        "maximum_absolute": 0.017609906680242374,
+        "median": 0.006537770458783083,
+        "n": 3,
+        "p90": 0.015395479435950517
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.02137474705561702,
+        "maximum_absolute": 0.02137474705561702,
+        "median": 0.008722861951981185,
+        "n": 3,
+        "p90": 0.018844370034889854
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:ape:n24:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 5.454640445209241e-07,
+        "maximum_absolute": 5.454640445209241e-07,
+        "median": 2.6797759773246016e-07,
+        "n": 3,
+        "p90": 4.899667551632314e-07
+      },
+      "normalized_age_rmse": {
+        "maximum": 6.93455150664022e-07,
+        "maximum_absolute": 6.93455150664022e-07,
+        "median": 3.755406662877819e-07,
+        "n": 3,
+        "p90": 6.29872253788774e-07
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:ape:n24:root:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "clock:ape:n24:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.008091090363611103,
+        "maximum_absolute": 0.008091090363611103,
+        "median": 0.0070693987142248175,
+        "n": 3,
+        "p90": 0.007886752033733846
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.011841633871693574,
+        "maximum_absolute": 0.011841633871693574,
+        "median": 0.009926026360913413,
+        "n": 3,
+        "p90": 0.011458512369537542
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:ape:n24:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 8.434281104399888e-07,
+        "maximum_absolute": 8.434281104399888e-07,
+        "median": 5.048268297611164e-07,
+        "n": 3,
+        "p90": 7.757078543042144e-07
+      },
+      "normalized_age_rmse": {
+        "maximum": 1.0246791344700504e-06,
+        "maximum_absolute": 1.0246791344700504e-06,
+        "median": 6.72142405242686e-07,
+        "n": 3,
+        "p90": 9.541717886245776e-07
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:ape:n24:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "clock:ape:n48:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.010740071448560169,
+        "maximum_absolute": 0.010740071448560169,
+        "median": 0.010099019653525785,
+        "n": 3,
+        "p90": 0.010611861089553292
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.014872834501088122,
+        "maximum_absolute": 0.014872834501088122,
+        "median": 0.014079198867542546,
+        "n": 3,
+        "p90": 0.014714107374379008
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:ape:n48:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 4.01682647268458e-07,
+        "maximum_absolute": 4.01682647268458e-07,
+        "median": 3.5767342396124616e-07,
+        "n": 3,
+        "p90": 3.9288080260701563e-07
+      },
+      "normalized_age_rmse": {
+        "maximum": 4.807667812333301e-07,
+        "maximum_absolute": 4.807667812333301e-07,
+        "median": 4.454722188602007e-07,
+        "n": 3,
+        "p90": 4.7370786875870416e-07
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:ape:n48:root:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "clock:ape:n48:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.008250394801911169,
+        "maximum_absolute": 0.008250394801911169,
+        "median": 0.007306311007882263,
+        "n": 3,
+        "p90": 0.008061578043105387
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.011102461029664418,
+        "maximum_absolute": 0.011102461029664418,
+        "median": 0.00987397571432441,
+        "n": 3,
+        "p90": 0.010856763966596416
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:ape:n48:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 5.765715737520961e-07,
+        "maximum_absolute": 5.765715737520961e-07,
+        "median": 5.433712519002436e-07,
+        "n": 3,
+        "p90": 5.699315093817257e-07
+      },
+      "normalized_age_rmse": {
+        "maximum": 8.563999644004698e-07,
+        "maximum_absolute": 8.563999644004698e-07,
+        "median": 7.238073015159858e-07,
+        "n": 3,
+        "p90": 8.29881431823573e-07
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:ape:n48:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "clock:toytree:n24:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.017610258584028236,
+        "maximum_absolute": 0.017610258584028236,
+        "median": 0.006537729705394515,
+        "n": 3,
+        "p90": 0.015395752808301492
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.021375117912786703,
+        "maximum_absolute": 0.021375117912786703,
+        "median": 0.008722957664311557,
+        "n": 3,
+        "p90": 0.018844685863091674
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:toytree:n24:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 9.627995898790259e-08,
+        "maximum_absolute": 9.627995898790259e-08,
+        "median": 8.824920299769236e-08,
+        "n": 3,
+        "p90": 9.467380778986055e-08
+      },
+      "normalized_age_rmse": {
+        "maximum": 1.2512302332682918e-07,
+        "maximum_absolute": 1.2512302332682918e-07,
+        "median": 1.1460168194267806e-07,
+        "n": 3,
+        "p90": 1.2301875504999896e-07
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:toytree:n24:root:fractional_poisson": {
+      "accuracy_eligible": 2,
+      "converged": 2,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.05149728852301642,
+        "maximum_absolute": 0.05149728852301642,
+        "median": 0.04663021211388934,
+        "n": 2,
+        "p90": 0.050523873241191
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.07170649556697711,
+        "maximum_absolute": 0.07170649556697711,
+        "median": 0.06200879371356568,
+        "n": 2,
+        "p90": 0.06976695519629483
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "clock:toytree:n24:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.008091038956450313,
+        "maximum_absolute": 0.008091038956450313,
+        "median": 0.0070695369339177005,
+        "n": 3,
+        "p90": 0.00788673855194379
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.011841703352803995,
+        "maximum_absolute": 0.011841703352803995,
+        "median": 0.009926324191602526,
+        "n": 3,
+        "p90": 0.0114586275205637
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:toytree:n24:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 3.431123304708693e-07,
+        "maximum_absolute": 3.431123304708693e-07,
+        "median": 7.608593375440496e-08,
+        "n": 3,
+        "p90": 2.8970705112757646e-07
+      },
+      "normalized_age_rmse": {
+        "maximum": 4.783541045124743e-07,
+        "maximum_absolute": 4.783541045124743e-07,
+        "median": 9.633540299282771e-08,
+        "n": 3,
+        "p90": 4.01950364208545e-07
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:toytree:n24:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.058909075170682154,
+        "maximum_absolute": 0.058909075170682154,
+        "median": 0.042520329529264995,
+        "n": 3,
+        "p90": 0.055631326042398725
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.0699378223542051,
+        "maximum_absolute": 0.0699378223542051,
+        "median": 0.05014098269223742,
+        "n": 3,
+        "p90": 0.06597845442181156
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "clock:toytree:n48:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.010740970441318057,
+        "maximum_absolute": 0.010740970441318057,
+        "median": 0.010098331850576042,
+        "n": 3,
+        "p90": 0.010612442723169654
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.0148734509965586,
+        "maximum_absolute": 0.0148734509965586,
+        "median": 0.014078794820205947,
+        "n": 3,
+        "p90": 0.01471451976128807
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:toytree:n48:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 1.321794156368136e-07,
+        "maximum_absolute": 1.321794156368136e-07,
+        "median": 1.1956465832806068e-07,
+        "n": 3,
+        "p90": 1.2965646417506302e-07
+      },
+      "normalized_age_rmse": {
+        "maximum": 1.6505904097250183e-07,
+        "maximum_absolute": 1.6505904097250183e-07,
+        "median": 1.649677719963083e-07,
+        "n": 3,
+        "p90": 1.6504078717726313e-07
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:toytree:n48:root:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.04837882934184952,
+        "maximum_absolute": 0.04837882934184952,
+        "median": 0.04220016519028682,
+        "n": 3,
+        "p90": 0.04714309651153698
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.06286947505242478,
+        "maximum_absolute": 0.06286947505242478,
+        "median": 0.06014076065514061,
+        "n": 3,
+        "p90": 0.062323732172967945
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "clock:toytree:n48:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.008250815076731933,
+        "maximum_absolute": 0.008250815076731933,
+        "median": 0.00730636615617469,
+        "n": 3,
+        "p90": 0.008061925292620484
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.011103013339644531,
+        "maximum_absolute": 0.011103013339644531,
+        "median": 0.009874071550265104,
+        "n": 3,
+        "p90": 0.010857224981768646
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:toytree:n48:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 1.2539188648636235e-07,
+        "maximum_absolute": 1.2539188648636235e-07,
+        "median": 4.90194523655405e-08,
+        "n": 3,
+        "p90": 1.1011739966219798e-07
+      },
+      "normalized_age_rmse": {
+        "maximum": 1.5190640448962307e-07,
+        "maximum_absolute": 1.5190640448962307e-07,
+        "median": 6.156038425311304e-08,
+        "n": 3,
+        "p90": 1.3383720044232108e-07
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "clock:toytree:n48:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.04407876309517765,
+        "maximum_absolute": 0.04407876309517765,
+        "median": 0.0419186503482461,
+        "n": 3,
+        "p90": 0.04364674054579134
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.0581778711626736,
+        "maximum_absolute": 0.0581778711626736,
+        "median": 0.055620599143938826,
+        "n": 3,
+        "p90": 0.05766641675892665
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "correlated_sigma0p3:ape:n24:root:continuous_gamma": {
+      "accuracy_eligible": 2,
+      "converged": 2,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.0971181445827434,
+        "maximum_absolute": 0.0971181445827434,
+        "median": 0.08276329695906487,
+        "n": 2,
+        "p90": 0.0942471750580077
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.11956159536744691,
+        "maximum_absolute": 0.11956159536744691,
+        "median": 0.10652291720539037,
+        "n": 2,
+        "p90": 0.11695385973503561
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:ape:n24:root:expected_branch": {
+      "accuracy_eligible": 2,
+      "converged": 2,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06754670590502279,
+        "maximum_absolute": 0.06754670590502279,
+        "median": 0.049927540902873616,
+        "n": 2,
+        "p90": 0.06402287290459295
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.0957074973739444,
+        "maximum_absolute": 0.0957074973739444,
+        "median": 0.07058219658430266,
+        "n": 2,
+        "p90": 0.09068243721601606
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:ape:n24:root:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "correlated_sigma0p3:ape:n24:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.10073203192534165,
+        "maximum_absolute": 0.10073203192534165,
+        "median": 0.06706753506184289,
+        "n": 3,
+        "p90": 0.0939991325526419
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.13887712255580784,
+        "maximum_absolute": 0.13887712255580784,
+        "median": 0.10136851602778275,
+        "n": 3,
+        "p90": 0.13137540125020283
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:ape:n24:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 2,
+      "converged": 2,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.12567918116457755,
+        "maximum_absolute": 0.12567918116457755,
+        "median": 0.08703974148340647,
+        "n": 2,
+        "p90": 0.11795129322834333
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.1563186437763945,
+        "maximum_absolute": 0.1563186437763945,
+        "median": 0.1079438310721307,
+        "n": 2,
+        "p90": 0.14664368123554175
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:ape:n24:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "correlated_sigma0p3:ape:n48:root:continuous_gamma": {
+      "accuracy_eligible": 1,
+      "converged": 1,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.05492785095220142,
+        "maximum_absolute": 0.05492785095220142,
+        "median": 0.05492785095220142,
+        "n": 1,
+        "p90": 0.05492785095220142
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.08261707588299796,
+        "maximum_absolute": 0.08261707588299796,
+        "median": 0.08261707588299796,
+        "n": 1,
+        "p90": 0.08261707588299796
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:ape:n48:root:expected_branch": {
+      "accuracy_eligible": 2,
+      "converged": 2,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.08206620607254149,
+        "maximum_absolute": 0.08206620607254149,
+        "median": 0.06170663414160417,
+        "n": 2,
+        "p90": 0.07799429168635402
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.10813301046690504,
+        "maximum_absolute": 0.10813301046690504,
+        "median": 0.08130581450968266,
+        "n": 2,
+        "p90": 0.10276757127546057
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:ape:n48:root:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "correlated_sigma0p3:ape:n48:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:ape:n48:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 2,
+      "converged": 2,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06720603573299179,
+        "maximum_absolute": 0.06720603573299179,
+        "median": 0.06082366015053271,
+        "n": 2,
+        "p90": 0.06592956061649997
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.08769666672779051,
+        "maximum_absolute": 0.08769666672779051,
+        "median": 0.08183860329685408,
+        "n": 2,
+        "p90": 0.08652505404160322
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:ape:n48:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "correlated_sigma0p3:toytree:n24:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.07785813295938171,
+        "maximum_absolute": 0.07785813295938171,
+        "median": 0.027249226845658166,
+        "n": 3,
+        "p90": 0.067736351736637
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.09627384758553144,
+        "maximum_absolute": 0.09627384758553144,
+        "median": 0.032322192464704115,
+        "n": 3,
+        "p90": 0.08348351656136598
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:toytree:n24:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.05880984312281261,
+        "maximum_absolute": 0.05880984312281261,
+        "median": 0.01805059617880445,
+        "n": 3,
+        "p90": 0.050657993734010975
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.06576134041080824,
+        "maximum_absolute": 0.06576134041080824,
+        "median": 0.022782187237461435,
+        "n": 3,
+        "p90": 0.05716550977613888
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:toytree:n24:root:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.08378936939564206,
+        "maximum_absolute": 0.08378936939564206,
+        "median": 0.0701184990034816,
+        "n": 3,
+        "p90": 0.08105519531720998
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.10365266518584743,
+        "maximum_absolute": 0.10365266518584743,
+        "median": 0.0862323573305048,
+        "n": 3,
+        "p90": 0.1001686036147789
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "correlated_sigma0p3:toytree:n24:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.039299742061159375,
+        "maximum_absolute": 0.039299742061159375,
+        "median": 0.030673793316409036,
+        "n": 3,
+        "p90": 0.037574552312209304
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.05254654799503276,
+        "maximum_absolute": 0.05254654799503276,
+        "median": 0.04391158858629662,
+        "n": 3,
+        "p90": 0.05081955611328553
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:toytree:n24:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.04704115060271405,
+        "maximum_absolute": 0.04704115060271405,
+        "median": 0.03417245117738153,
+        "n": 3,
+        "p90": 0.044467410717647544
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.05978725544444046,
+        "maximum_absolute": 0.05978725544444046,
+        "median": 0.04422067132798774,
+        "n": 3,
+        "p90": 0.056673938621149916
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:toytree:n24:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.059090033491278365,
+        "maximum_absolute": 0.059090033491278365,
+        "median": 0.04394531057095885,
+        "n": 3,
+        "p90": 0.056061088907214465
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.07342500143944466,
+        "maximum_absolute": 0.07342500143944466,
+        "median": 0.05749986066519109,
+        "n": 3,
+        "p90": 0.07023997328459396
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "correlated_sigma0p3:toytree:n48:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.024294201120781452,
+        "maximum_absolute": 0.024294201120781452,
+        "median": 0.015848443091658927,
+        "n": 3,
+        "p90": 0.022605049514956947
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.032666400560380365,
+        "maximum_absolute": 0.032666400560380365,
+        "median": 0.022892421123987976,
+        "n": 3,
+        "p90": 0.030711604673101887
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:toytree:n48:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.05134885361752661,
+        "maximum_absolute": 0.05134885361752661,
+        "median": 0.021221945495063694,
+        "n": 3,
+        "p90": 0.045323471993034034
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.06189977942723891,
+        "maximum_absolute": 0.06189977942723891,
+        "median": 0.031194502568449103,
+        "n": 3,
+        "p90": 0.05575872405548095
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:toytree:n48:root:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06613007481938808,
+        "maximum_absolute": 0.06613007481938808,
+        "median": 0.062032827351874535,
+        "n": 3,
+        "p90": 0.06531062532588537
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.0871486275427043,
+        "maximum_absolute": 0.0871486275427043,
+        "median": 0.08637002646490063,
+        "n": 3,
+        "p90": 0.08699290732714357
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "correlated_sigma0p3:toytree:n48:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.0356939570462441,
+        "maximum_absolute": 0.0356939570462441,
+        "median": 0.03284092285103382,
+        "n": 3,
+        "p90": 0.035123350207202045
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.04779792959888262,
+        "maximum_absolute": 0.04779792959888262,
+        "median": 0.0398476161044676,
+        "n": 3,
+        "p90": 0.04620786689999962
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:toytree:n48:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.029154679365746634,
+        "maximum_absolute": 0.029154679365746634,
+        "median": 0.025796959099185092,
+        "n": 3,
+        "p90": 0.028483135312434325
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.035538876047913594,
+        "maximum_absolute": 0.035538876047913594,
+        "median": 0.03547209234539397,
+        "n": 3,
+        "p90": 0.035525519307409666
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:toytree:n48:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06370369880946902,
+        "maximum_absolute": 0.06370369880946902,
+        "median": 0.056650131031310044,
+        "n": 3,
+        "p90": 0.062292985253837224
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.09557780717820949,
+        "maximum_absolute": 0.09557780717820949,
+        "median": 0.08700636696043049,
+        "n": 3,
+        "p90": 0.09386351913465368
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k2:ape:n24:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06502593245833396,
+        "maximum_absolute": 0.06502593245833396,
+        "median": 0.06032290469622883,
+        "n": 3,
+        "p90": 0.06408532690591294
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.08862830866901832,
+        "maximum_absolute": 0.08862830866901832,
+        "median": 0.08310999596351029,
+        "n": 3,
+        "p90": 0.08752464612791672
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:ape:n24:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.07008636984536346,
+        "maximum_absolute": 0.07008636984536346,
+        "median": 0.04063265745401377,
+        "n": 3,
+        "p90": 0.06419562736709351
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.08881456272764546,
+        "maximum_absolute": 0.08881456272764546,
+        "median": 0.06978863380908142,
+        "n": 3,
+        "p90": 0.08500937694393265
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:ape:n24:root:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k2:ape:n24:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.045180596523225494,
+        "maximum_absolute": 0.045180596523225494,
+        "median": 0.02987412570447733,
+        "n": 3,
+        "p90": 0.04211930235947586
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.07606209096785178,
+        "maximum_absolute": 0.07606209096785178,
+        "median": 0.04325580301964621,
+        "n": 3,
+        "p90": 0.06950083337821067
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:ape:n24:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.07481981066296084,
+        "maximum_absolute": 0.07481981066296084,
+        "median": 0.05446484900127331,
+        "n": 3,
+        "p90": 0.07074881833062334
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.09067145712564047,
+        "maximum_absolute": 0.09067145712564047,
+        "median": 0.07398168036938661,
+        "n": 3,
+        "p90": 0.0873335017743897
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:ape:n24:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k2:ape:n48:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.058927723447827283,
+        "maximum_absolute": 0.058927723447827283,
+        "median": 0.04829970440384518,
+        "n": 3,
+        "p90": 0.05680211963903086
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.07762335068592344,
+        "maximum_absolute": 0.07762335068592344,
+        "median": 0.06840889616243619,
+        "n": 3,
+        "p90": 0.07578045978122598
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:ape:n48:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06301618899943726,
+        "maximum_absolute": 0.06301618899943726,
+        "median": 0.05656476537668989,
+        "n": 3,
+        "p90": 0.061725904274887784
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.09324146353108431,
+        "maximum_absolute": 0.09324146353108431,
+        "median": 0.07343507743615676,
+        "n": 3,
+        "p90": 0.0892801863120988
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:ape:n48:root:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k2:ape:n48:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06402825263590131,
+        "maximum_absolute": 0.06402825263590131,
+        "median": 0.037434542007879996,
+        "n": 3,
+        "p90": 0.05870951051029705
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.09673050204142841,
+        "maximum_absolute": 0.09673050204142841,
+        "median": 0.06289966997152918,
+        "n": 3,
+        "p90": 0.08996433562744857
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:ape:n48:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.04142556826682187,
+        "maximum_absolute": 0.04142556826682187,
+        "median": 0.03787818449797481,
+        "n": 3,
+        "p90": 0.04071609151305246
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.058363926614395684,
+        "maximum_absolute": 0.058363926614395684,
+        "median": 0.05247710587106146,
+        "n": 3,
+        "p90": 0.05718656246572884
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:ape:n48:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k2:toytree:n24:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06502599566835422,
+        "maximum_absolute": 0.06502599566835422,
+        "median": 0.06032303924246039,
+        "n": 3,
+        "p90": 0.06408540438317546
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.08862833597914492,
+        "maximum_absolute": 0.08862833597914492,
+        "median": 0.08311016930920101,
+        "n": 3,
+        "p90": 0.08752470264515613
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:toytree:n24:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.07008628707589085,
+        "maximum_absolute": 0.07008628707589085,
+        "median": 0.04063260303271826,
+        "n": 3,
+        "p90": 0.06419555026725633
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.08881444397500737,
+        "maximum_absolute": 0.08881444397500737,
+        "median": 0.06978869564457413,
+        "n": 3,
+        "p90": 0.08500929430892072
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:toytree:n24:root:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.11640610912901715,
+        "maximum_absolute": 0.11640610912901715,
+        "median": 0.05183093125289257,
+        "n": 3,
+        "p90": 0.10349107355379224
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.14653928145184478,
+        "maximum_absolute": 0.14653928145184478,
+        "median": 0.07133028099307176,
+        "n": 3,
+        "p90": 0.13149748136009018
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k2:toytree:n24:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.045180754353162045,
+        "maximum_absolute": 0.045180754353162045,
+        "median": 0.029874179312679515,
+        "n": 3,
+        "p90": 0.04211943934506554
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.07606232047905451,
+        "maximum_absolute": 0.07606232047905451,
+        "median": 0.043255859550545034,
+        "n": 3,
+        "p90": 0.06950102829335261
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:toytree:n24:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.07481969377312024,
+        "maximum_absolute": 0.07481969377312024,
+        "median": 0.05446497385407403,
+        "n": 3,
+        "p90": 0.070748749789311
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.09067148311603111,
+        "maximum_absolute": 0.09067148311603111,
+        "median": 0.07957150325020004,
+        "n": 3,
+        "p90": 0.0884514871428649
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:toytree:n24:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.1016208935125767,
+        "maximum_absolute": 0.1016208935125767,
+        "median": 0.06913031767523439,
+        "n": 3,
+        "p90": 0.09512277834510824
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.14329893017621578,
+        "maximum_absolute": 0.14329893017621578,
+        "median": 0.08736842158906441,
+        "n": 3,
+        "p90": 0.13211282845878553
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k2:toytree:n48:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.05840304250223664,
+        "maximum_absolute": 0.05840304250223664,
+        "median": 0.048299342386239105,
+        "n": 3,
+        "p90": 0.05638230247903714
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.07712516240383337,
+        "maximum_absolute": 0.07712516240383337,
+        "median": 0.06840840894597776,
+        "n": 3,
+        "p90": 0.07538181171226224
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:toytree:n48:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06301634423660556,
+        "maximum_absolute": 0.06301634423660556,
+        "median": 0.05656433895341897,
+        "n": 3,
+        "p90": 0.06172594317996824
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.09324167630844483,
+        "maximum_absolute": 0.09324167630844483,
+        "median": 0.07343450457966273,
+        "n": 3,
+        "p90": 0.08928024196268841
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:toytree:n48:root:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.0858803141980541,
+        "maximum_absolute": 0.0858803141980541,
+        "median": 0.057613941692498616,
+        "n": 3,
+        "p90": 0.080227039696943
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.11616432952198441,
+        "maximum_absolute": 0.11616432952198441,
+        "median": 0.07933603882149477,
+        "n": 3,
+        "p90": 0.10879867138188648
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k2:toytree:n48:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06402825073841317,
+        "maximum_absolute": 0.06402825073841317,
+        "median": 0.037434558123703214,
+        "n": 3,
+        "p90": 0.05870951221547118
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.09673051141168827,
+        "maximum_absolute": 0.09673051141168827,
+        "median": 0.06289964723849298,
+        "n": 3,
+        "p90": 0.08996433857704922
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:toytree:n48:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.04037005343638095,
+        "maximum_absolute": 0.04037005343638095,
+        "median": 0.039086396089004403,
+        "n": 3,
+        "p90": 0.04011332196690564
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.05758975559623578,
+        "maximum_absolute": 0.05758975559623578,
+        "median": 0.05247729530988999,
+        "n": 3,
+        "p90": 0.05656726353896662
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k2:toytree:n48:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.058662459844235744,
+        "maximum_absolute": 0.058662459844235744,
+        "median": 0.04866559781681211,
+        "n": 3,
+        "p90": 0.056663087438751016
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.07957149450688014,
+        "maximum_absolute": 0.07957149450688014,
+        "median": 0.07778035044234323,
+        "n": 3,
+        "p90": 0.07921326569397276
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k3:ape:n24:root:continuous_gamma": {
+      "accuracy_eligible": 2,
+      "converged": 2,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.05257382004105036,
+        "maximum_absolute": 0.05257382004105036,
+        "median": 0.04821150418643806,
+        "n": 2,
+        "p90": 0.0517013568701279
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.07511562672454358,
+        "maximum_absolute": 0.07511562672454358,
+        "median": 0.06767354761983986,
+        "n": 2,
+        "p90": 0.07362721090360284
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:ape:n24:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.053193951709084586,
+        "maximum_absolute": 0.053193951709084586,
+        "median": 0.05212207795914504,
+        "n": 3,
+        "p90": 0.05297957695909668
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.0751939660242978,
+        "maximum_absolute": 0.0751939660242978,
+        "median": 0.0664619005540004,
+        "n": 3,
+        "p90": 0.07344755293023832
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:ape:n24:root:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 2,
+      "zero_containing": 3
+    },
+    "discrete_k3:ape:n24:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06363800587819235,
+        "maximum_absolute": 0.06363800587819235,
+        "median": 0.057668298865275976,
+        "n": 3,
+        "p90": 0.062444064475609073
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.09584988821550969,
+        "maximum_absolute": 0.09584988821550969,
+        "median": 0.0793241675459213,
+        "n": 3,
+        "p90": 0.09254474408159201
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:ape:n24:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06784472628460733,
+        "maximum_absolute": 0.06784472628460733,
+        "median": 0.04397753322741873,
+        "n": 3,
+        "p90": 0.06307128767316961
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.09792559337536709,
+        "maximum_absolute": 0.09792559337536709,
+        "median": 0.05757476381104989,
+        "n": 3,
+        "p90": 0.08985542746250365
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:ape:n24:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k3:ape:n48:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.028581378511299948,
+        "maximum_absolute": 0.028581378511299948,
+        "median": 0.02708443991702645,
+        "n": 3,
+        "p90": 0.028281990792445248
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.04701364481368259,
+        "maximum_absolute": 0.04701364481368259,
+        "median": 0.038804021602679505,
+        "n": 3,
+        "p90": 0.04537172017148197
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:ape:n48:root:expected_branch": {
+      "accuracy_eligible": 2,
+      "converged": 2,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.04508834361297794,
+        "maximum_absolute": 0.04508834361297794,
+        "median": 0.03767406799445933,
+        "n": 2,
+        "p90": 0.04360548848927422
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.05925712950014447,
+        "maximum_absolute": 0.05925712950014447,
+        "median": 0.05188043748921432,
+        "n": 2,
+        "p90": 0.057781791097958446
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:ape:n48:root:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k3:ape:n48:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.04521380706353653,
+        "maximum_absolute": 0.04521380706353653,
+        "median": 0.04059104588943402,
+        "n": 3,
+        "p90": 0.044289254828716026
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.06561374025029876,
+        "maximum_absolute": 0.06561374025029876,
+        "median": 0.054103773163895565,
+        "n": 3,
+        "p90": 0.06331174683301811
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:ape:n48:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.04758332891277697,
+        "maximum_absolute": 0.04758332891277697,
+        "median": 0.045182452497830115,
+        "n": 3,
+        "p90": 0.0471031536297876
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.06578816258586026,
+        "maximum_absolute": 0.06578816258586026,
+        "median": 0.06332760641698572,
+        "n": 3,
+        "p90": 0.06529605135208535
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:ape:n48:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 0,
+      "converged": 0,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "normalized_age_rmse": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k3:toytree:n24:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.07852351736716391,
+        "maximum_absolute": 0.07852351736716391,
+        "median": 0.05257350431369711,
+        "n": 3,
+        "p90": 0.07333351475647056
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.09699529923628132,
+        "maximum_absolute": 0.09699529923628132,
+        "median": 0.07511538645756423,
+        "n": 3,
+        "p90": 0.09261931668053791
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:toytree:n24:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.05319394860723093,
+        "maximum_absolute": 0.05319394860723093,
+        "median": 0.0514552903464541,
+        "n": 3,
+        "p90": 0.05284621695507556
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.07519399739850782,
+        "maximum_absolute": 0.07519399739850782,
+        "median": 0.06617240503870571,
+        "n": 3,
+        "p90": 0.0733896789265474
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:toytree:n24:root:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.1199453113330351,
+        "maximum_absolute": 0.1199453113330351,
+        "median": 0.07722238147952862,
+        "n": 3,
+        "p90": 0.11140072536233381
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.18235153834529508,
+        "maximum_absolute": 0.18235153834529508,
+        "median": 0.10845182571476594,
+        "n": 3,
+        "p90": 0.16757159581918926
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k3:toytree:n24:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.08295854676167048,
+        "maximum_absolute": 0.08295854676167048,
+        "median": 0.057668189090156724,
+        "n": 3,
+        "p90": 0.07790047522736773
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.10592774656856488,
+        "maximum_absolute": 0.10592774656856488,
+        "median": 0.09584975552608777,
+        "n": 3,
+        "p90": 0.10391214836006946
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:toytree:n24:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06971909310654333,
+        "maximum_absolute": 0.06971909310654333,
+        "median": 0.04397755819818399,
+        "n": 3,
+        "p90": 0.06457078612487147
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.09845891199910797,
+        "maximum_absolute": 0.09845891199910797,
+        "median": 0.057574815167908265,
+        "n": 3,
+        "p90": 0.09028209263286803
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:toytree:n24:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.07314631563650713,
+        "maximum_absolute": 0.07314631563650713,
+        "median": 0.064906965095449,
+        "n": 3,
+        "p90": 0.0714984455282955
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.09493760553454955,
+        "maximum_absolute": 0.09493760553454955,
+        "median": 0.08602549442916367,
+        "n": 3,
+        "p90": 0.09315518331347238
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k3:toytree:n48:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.028581313057876204,
+        "maximum_absolute": 0.028581313057876204,
+        "median": 0.027810195576241724,
+        "n": 3,
+        "p90": 0.02842708956154931
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.04473627884782909,
+        "maximum_absolute": 0.04473627884782909,
+        "median": 0.03880396010638928,
+        "n": 3,
+        "p90": 0.043549815099541124
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:toytree:n48:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.04202330921476848,
+        "maximum_absolute": 0.04202330921476848,
+        "median": 0.03672870097704856,
+        "n": 3,
+        "p90": 0.0409643875672245
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.05697432413023086,
+        "maximum_absolute": 0.05697432413023086,
+        "median": 0.05625020820893929,
+        "n": 3,
+        "p90": 0.05682950094597255
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:toytree:n48:root:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.11247482899569726,
+        "maximum_absolute": 0.11247482899569726,
+        "median": 0.07175693735033996,
+        "n": 3,
+        "p90": 0.1043312506666258
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.14958097299832163,
+        "maximum_absolute": 0.14958097299832163,
+        "median": 0.09575695175808173,
+        "n": 3,
+        "p90": 0.13881616875027364
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "discrete_k3:toytree:n48:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.0520272275496303,
+        "maximum_absolute": 0.0520272275496303,
+        "median": 0.04138662159684128,
+        "n": 3,
+        "p90": 0.0498991063590725
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.07525917021844547,
+        "maximum_absolute": 0.07525917021844547,
+        "median": 0.05529093294191241,
+        "n": 3,
+        "p90": 0.07126552276313886
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:toytree:n48:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.04758335142309683,
+        "maximum_absolute": 0.04758335142309683,
+        "median": 0.04428497585568574,
+        "n": 3,
+        "p90": 0.046923676309614616
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.06502168415850632,
+        "maximum_absolute": 0.06502168415850632,
+        "median": 0.06332765399069812,
+        "n": 3,
+        "p90": 0.06468287812494468
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "discrete_k3:toytree:n48:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.059888218341287366,
+        "maximum_absolute": 0.059888218341287366,
+        "median": 0.055164543568997484,
+        "n": 3,
+        "p90": 0.05894348338682939
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.07827479929122709,
+        "maximum_absolute": 0.07827479929122709,
+        "median": 0.07606856689440837,
+        "n": 3,
+        "p90": 0.07783355281186334
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "relaxed_gamma_shape4:ape:n24:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.096373621829381,
+        "maximum_absolute": 0.096373621829381,
+        "median": 0.09372273107930082,
+        "n": 3,
+        "p90": 0.09584344367936497
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.13844740147370888,
+        "maximum_absolute": 0.13844740147370888,
+        "median": 0.13787063845433067,
+        "n": 3,
+        "p90": 0.13833204886983325
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:ape:n24:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.14187488766860049,
+        "maximum_absolute": 0.14187488766860049,
+        "median": 0.13259654837467763,
+        "n": 3,
+        "p90": 0.1400192198098159
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.1936990034029364,
+        "maximum_absolute": 0.1936990034029364,
+        "median": 0.1728990506441867,
+        "n": 3,
+        "p90": 0.18953901285118646
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:ape:n24:root:fractional_poisson": {
+      "accuracy_eligible": 1,
+      "converged": 1,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.18470448153789928,
+        "maximum_absolute": 0.18470448153789928,
+        "median": 0.18470448153789928,
+        "n": 1,
+        "p90": 0.18470448153789928
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.24064942089344207,
+        "maximum_absolute": 0.24064942089344207,
+        "median": 0.24064942089344207,
+        "n": 1,
+        "p90": 0.24064942089344207
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "relaxed_gamma_shape4:ape:n24:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.14229188601697443,
+        "maximum_absolute": 0.14229188601697443,
+        "median": 0.12652849510344755,
+        "n": 3,
+        "p90": 0.13913920783426906
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.17514515377350193,
+        "maximum_absolute": 0.17514515377350193,
+        "median": 0.14692920829749803,
+        "n": 3,
+        "p90": 0.16950196467830114
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:ape:n24:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.10442637646352576,
+        "maximum_absolute": 0.10442637646352576,
+        "median": 0.09496555337192013,
+        "n": 3,
+        "p90": 0.10253421184520463
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.13876905143930798,
+        "maximum_absolute": 0.13876905143930798,
+        "median": 0.131782566821934,
+        "n": 3,
+        "p90": 0.1373717545158332
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:ape:n24:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 2,
+      "converged": 2,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.11221430611186393,
+        "maximum_absolute": 0.11221430611186393,
+        "median": 0.10451925161834032,
+        "n": 2,
+        "p90": 0.1106752952131592
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.16622955349670462,
+        "maximum_absolute": 0.16622955349670462,
+        "median": 0.1448590939294894,
+        "n": 2,
+        "p90": 0.16195546158326157
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "relaxed_gamma_shape4:ape:n48:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.17967847845642207,
+        "maximum_absolute": 0.17967847845642207,
+        "median": 0.16563439220469575,
+        "n": 3,
+        "p90": 0.1768696612060768
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.2357797178041794,
+        "maximum_absolute": 0.2357797178041794,
+        "median": 0.20962964612279222,
+        "n": 3,
+        "p90": 0.23054970346790196
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:ape:n48:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.10677222551299988,
+        "maximum_absolute": 0.10677222551299988,
+        "median": 0.10126433739993383,
+        "n": 3,
+        "p90": 0.10567064789038667
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.14473007116219616,
+        "maximum_absolute": 0.14473007116219616,
+        "median": 0.13822381799364566,
+        "n": 3,
+        "p90": 0.14342882052848607
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:ape:n48:root:fractional_poisson": {
+      "accuracy_eligible": 2,
+      "converged": 2,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.12249404220295843,
+        "maximum_absolute": 0.12249404220295843,
+        "median": 0.10665841828188743,
+        "n": 2,
+        "p90": 0.11932691741874422
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.15654200263830267,
+        "maximum_absolute": 0.15654200263830267,
+        "median": 0.13507879174497908,
+        "n": 2,
+        "p90": 0.15224936045963797
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "relaxed_gamma_shape4:ape:n48:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.1320612011944626,
+        "maximum_absolute": 0.1320612011944626,
+        "median": 0.10854781621287203,
+        "n": 3,
+        "p90": 0.1273585241981445
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.17240331720708849,
+        "maximum_absolute": 0.17240331720708849,
+        "median": 0.16113699223567862,
+        "n": 3,
+        "p90": 0.17015005221280652
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:ape:n48:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.1524702699921494,
+        "maximum_absolute": 0.1524702699921494,
+        "median": 0.10993246642350607,
+        "n": 3,
+        "p90": 0.14396270927842075
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.21874361928851468,
+        "maximum_absolute": 0.21874361928851468,
+        "median": 0.14957029601914065,
+        "n": 3,
+        "p90": 0.20490895463463987
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:ape:n48:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 2,
+      "converged": 2,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.19511897914046855,
+        "maximum_absolute": 0.19511897914046855,
+        "median": 0.1493397190266943,
+        "n": 2,
+        "p90": 0.1859631271177137
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.2367100881747523,
+        "maximum_absolute": 0.2367100881747523,
+        "median": 0.184343711092116,
+        "n": 2,
+        "p90": 0.22623681275822505
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "relaxed_gamma_shape4:toytree:n24:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.5931981589514173,
+        "maximum_absolute": 0.5931981589514173,
+        "median": 0.211420117748742,
+        "n": 3,
+        "p90": 0.5168425507108823
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.6123598661282474,
+        "maximum_absolute": 0.6123598661282474,
+        "median": 0.23598083096637912,
+        "n": 3,
+        "p90": 0.5370840590958738
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:toytree:n24:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.4748160707287786,
+        "maximum_absolute": 0.4748160707287786,
+        "median": 0.19487909684998186,
+        "n": 3,
+        "p90": 0.41882867595301926
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.5127576492931492,
+        "maximum_absolute": 0.5127576492931492,
+        "median": 0.21933837228291073,
+        "n": 3,
+        "p90": 0.4540737938911015
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:toytree:n24:root:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.5863270050001984,
+        "maximum_absolute": 0.5863270050001984,
+        "median": 0.4911801125632463,
+        "n": 3,
+        "p90": 0.567297626512808
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.6112336490752608,
+        "maximum_absolute": 0.6112336490752608,
+        "median": 0.5254140391876241,
+        "n": 3,
+        "p90": 0.5940697270977334
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "relaxed_gamma_shape4:toytree:n24:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.22004114726658025,
+        "maximum_absolute": 0.22004114726658025,
+        "median": 0.18635939936717816,
+        "n": 3,
+        "p90": 0.21330479768669983
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.2627736679087381,
+        "maximum_absolute": 0.2627736679087381,
+        "median": 0.21948120173469934,
+        "n": 3,
+        "p90": 0.25411517467393036
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:toytree:n24:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.3606608587633643,
+        "maximum_absolute": 0.3606608587633643,
+        "median": 0.21325304177055618,
+        "n": 3,
+        "p90": 0.3311792953648027
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.4030540794020614,
+        "maximum_absolute": 0.4030540794020614,
+        "median": 0.2503651940248986,
+        "n": 3,
+        "p90": 0.37251630232662886
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:toytree:n24:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.4899224474496185,
+        "maximum_absolute": 0.4899224474496185,
+        "median": 0.14282440644566677,
+        "n": 3,
+        "p90": 0.42050283924882814
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.5288230675601732,
+        "maximum_absolute": 0.5288230675601732,
+        "median": 0.1897093690430386,
+        "n": 3,
+        "p90": 0.4610003278567463
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "relaxed_gamma_shape4:toytree:n48:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.49951774873216537,
+        "maximum_absolute": 0.49951774873216537,
+        "median": 0.48701308838644547,
+        "n": 3,
+        "p90": 0.4970168166630214
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.5215915578101383,
+        "maximum_absolute": 0.5215915578101383,
+        "median": 0.5192185670497353,
+        "n": 3,
+        "p90": 0.5211169596580577
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:toytree:n48:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.5643737671722082,
+        "maximum_absolute": 0.5643737671722082,
+        "median": 0.5353786809182324,
+        "n": 3,
+        "p90": 0.5585747499214131
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.5902899764824407,
+        "maximum_absolute": 0.5902899764824407,
+        "median": 0.5659950756201279,
+        "n": 3,
+        "p90": 0.5854309963099782
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:toytree:n48:root:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.5692290224154873,
+        "maximum_absolute": 0.5692290224154873,
+        "median": 0.5060515907415397,
+        "n": 3,
+        "p90": 0.5565935360806978
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.5916901873277634,
+        "maximum_absolute": 0.5916901873277634,
+        "median": 0.5293361893210519,
+        "n": 3,
+        "p90": 0.579219387726421
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "relaxed_gamma_shape4:toytree:n48:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.5463291583467177,
+        "maximum_absolute": 0.5463291583467177,
+        "median": 0.5329109559947055,
+        "n": 3,
+        "p90": 0.5436455178763152
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.5770245559444879,
+        "maximum_absolute": 0.5770245559444879,
+        "median": 0.555533675616705,
+        "n": 3,
+        "p90": 0.5727263798789313
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:toytree:n48:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.5432728174374291,
+        "maximum_absolute": 0.5432728174374291,
+        "median": 0.3230361177211132,
+        "n": 3,
+        "p90": 0.4992254774941659
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.5657823571128563,
+        "maximum_absolute": 0.5657823571128563,
+        "median": 0.35531512399701587,
+        "n": 3,
+        "p90": 0.5236889104896882
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "relaxed_gamma_shape4:toytree:n48:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.4828909406854746,
+        "maximum_absolute": 0.4828909406854746,
+        "median": 0.2711392373901695,
+        "n": 3,
+        "p90": 0.4405406000264136
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.5146295558785537,
+        "maximum_absolute": 0.5146295558785537,
+        "median": 0.31058386622823725,
+        "n": 3,
+        "p90": 0.47382041794849045
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "ucln_sigma0p3:toytree:n24:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.029428001067101014,
+        "maximum_absolute": 0.029428001067101014,
+        "median": 0.02785872903667652,
+        "n": 3,
+        "p90": 0.029114146661016117
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.048853519685416465,
+        "maximum_absolute": 0.048853519685416465,
+        "median": 0.03702652751463802,
+        "n": 3,
+        "p90": 0.046488121251260776
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "ucln_sigma0p3:toytree:n24:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.03402528029939956,
+        "maximum_absolute": 0.03402528029939956,
+        "median": 0.027228161589878685,
+        "n": 3,
+        "p90": 0.03266585655749538
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.05152267481034307,
+        "maximum_absolute": 0.05152267481034307,
+        "median": 0.03921262222313322,
+        "n": 3,
+        "p90": 0.049060664292901096
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "ucln_sigma0p3:toytree:n24:root:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.0548564059747968,
+        "maximum_absolute": 0.0548564059747968,
+        "median": 0.04857118276966428,
+        "n": 3,
+        "p90": 0.0535993613337703
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.07222976670588618,
+        "maximum_absolute": 0.07222976670588618,
+        "median": 0.0659864508257483,
+        "n": 3,
+        "p90": 0.0709811035298586
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "ucln_sigma0p3:toytree:n24:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.033700892385539465,
+        "maximum_absolute": 0.033700892385539465,
+        "median": 0.0253061102413641,
+        "n": 3,
+        "p90": 0.03202193595670439
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.04124604256640678,
+        "maximum_absolute": 0.04124604256640678,
+        "median": 0.040908177687090826,
+        "n": 3,
+        "p90": 0.04117846959054359
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "ucln_sigma0p3:toytree:n24:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.037467353525605936,
+        "maximum_absolute": 0.037467353525605936,
+        "median": 0.03689384669849168,
+        "n": 3,
+        "p90": 0.03735265216018308
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.05340991878204898,
+        "maximum_absolute": 0.05340991878204898,
+        "median": 0.0460868077155282,
+        "n": 3,
+        "p90": 0.051945296568744824
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "ucln_sigma0p3:toytree:n24:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06354396951708091,
+        "maximum_absolute": 0.06354396951708091,
+        "median": 0.0559352285961655,
+        "n": 3,
+        "p90": 0.06202222133289783
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.0846764837525124,
+        "maximum_absolute": 0.0846764837525124,
+        "median": 0.06759406672874634,
+        "n": 3,
+        "p90": 0.08126000034775918
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "ucln_sigma0p3:toytree:n48:root:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.034693010964177935,
+        "maximum_absolute": 0.034693010964177935,
+        "median": 0.02579517478202183,
+        "n": 3,
+        "p90": 0.03291344372774672
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.052639955730684626,
+        "maximum_absolute": 0.052639955730684626,
+        "median": 0.03586924651679632,
+        "n": 3,
+        "p90": 0.04928581388790697
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "ucln_sigma0p3:toytree:n48:root:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.023820180312248137,
+        "maximum_absolute": 0.023820180312248137,
+        "median": 0.021497193204273873,
+        "n": 3,
+        "p90": 0.023355582890653283
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.03561431205885659,
+        "maximum_absolute": 0.03561431205885659,
+        "median": 0.03038855644114417,
+        "n": 3,
+        "p90": 0.034569160935314105
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "ucln_sigma0p3:toytree:n48:root:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.04537027462809388,
+        "maximum_absolute": 0.04537027462809388,
+        "median": 0.044665853815403174,
+        "n": 3,
+        "p90": 0.045229390465555734
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.06662400892794726,
+        "maximum_absolute": 0.06662400892794726,
+        "median": 0.06518720315711221,
+        "n": 3,
+        "p90": 0.06633664777378025
+      },
+      "successful": 3,
+      "zero_containing": 3
+    },
+    "ucln_sigma0p3:toytree:n48:root_and_internal_interval:continuous_gamma": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.03487216790867563,
+        "maximum_absolute": 0.03487216790867563,
+        "median": 0.027028219613131545,
+        "n": 3,
+        "p90": 0.03330337824956681
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.05419124642001038,
+        "maximum_absolute": 0.05419124642001038,
+        "median": 0.03449699138122047,
+        "n": 3,
+        "p90": 0.0502523954122524
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "ucln_sigma0p3:toytree:n48:root_and_internal_interval:expected_branch": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.02187522863595989,
+        "maximum_absolute": 0.02187522863595989,
+        "median": 0.021231470336746914,
+        "n": 3,
+        "p90": 0.021746476976117295
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.03264285971199569,
+        "maximum_absolute": 0.03264285971199569,
+        "median": 0.032419450653276935,
+        "n": 3,
+        "p90": 0.032598177900251935
+      },
+      "successful": 3,
+      "zero_containing": 0
+    },
+    "ucln_sigma0p3:toytree:n48:root_and_internal_interval:fractional_poisson": {
+      "accuracy_eligible": 3,
+      "converged": 3,
+      "datasets": 3,
+      "normalized_age_mae": {
+        "maximum": 0.06777144906109392,
+        "maximum_absolute": 0.06777144906109392,
+        "median": 0.06092254561909691,
+        "n": 3,
+        "p90": 0.06640166837269451
+      },
+      "normalized_age_rmse": {
+        "maximum": 0.08488387586462817,
+        "maximum_absolute": 0.08488387586462817,
+        "median": 0.07573444385174195,
+        "n": 3,
+        "p90": 0.08305398946205093
+      },
+      "successful": 3,
+      "zero_containing": 3
+    }
+  },
+  "failure_patterns": {
+    "clock:ape:fractional_poisson": {
+      "dataset_ids": [
+        "clock-n24-root-fractional_poisson-r0000",
+        "clock-n24-root-fractional_poisson-r0001",
+        "clock-n24-root-fractional_poisson-r0002",
+        "clock-n24-root_and_internal_interval-fractional_poisson-r0000",
+        "clock-n24-root_and_internal_interval-fractional_poisson-r0001",
+        "clock-n24-root_and_internal_interval-fractional_poisson-r0002",
+        "clock-n48-root-fractional_poisson-r0000",
+        "clock-n48-root-fractional_poisson-r0001",
+        "clock-n48-root-fractional_poisson-r0002",
+        "clock-n48-root_and_internal_interval-fractional_poisson-r0000",
+        "clock-n48-root_and_internal_interval-fractional_poisson-r0001",
+        "clock-n48-root_and_internal_interval-fractional_poisson-r0002"
+      ],
+      "datasets": 12,
+      "zero_containing": 12
+    },
+    "clock:toytree:fractional_poisson": {
+      "dataset_ids": [
+        "clock-n24-root-fractional_poisson-r0000"
+      ],
+      "datasets": 1,
+      "zero_containing": 1
+    },
+    "correlated_sigma0p3:ape:continuous_gamma": {
+      "dataset_ids": [
+        "correlated_sigma0p3-n24-root-continuous_gamma-r0000",
+        "correlated_sigma0p3-n48-root-continuous_gamma-r0000",
+        "correlated_sigma0p3-n48-root-continuous_gamma-r0002",
+        "correlated_sigma0p3-n48-root_and_internal_interval-continuous_gamma-r0000",
+        "correlated_sigma0p3-n48-root_and_internal_interval-continuous_gamma-r0001",
+        "correlated_sigma0p3-n48-root_and_internal_interval-continuous_gamma-r0002"
+      ],
+      "datasets": 6,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:ape:expected_branch": {
+      "dataset_ids": [
+        "correlated_sigma0p3-n24-root-expected_branch-r0001",
+        "correlated_sigma0p3-n24-root_and_internal_interval-expected_branch-r0001",
+        "correlated_sigma0p3-n48-root-expected_branch-r0001",
+        "correlated_sigma0p3-n48-root_and_internal_interval-expected_branch-r0001"
+      ],
+      "datasets": 4,
+      "zero_containing": 0
+    },
+    "correlated_sigma0p3:ape:fractional_poisson": {
+      "dataset_ids": [
+        "correlated_sigma0p3-n24-root-fractional_poisson-r0000",
+        "correlated_sigma0p3-n24-root-fractional_poisson-r0001",
+        "correlated_sigma0p3-n24-root-fractional_poisson-r0002",
+        "correlated_sigma0p3-n24-root_and_internal_interval-fractional_poisson-r0000",
+        "correlated_sigma0p3-n24-root_and_internal_interval-fractional_poisson-r0001",
+        "correlated_sigma0p3-n24-root_and_internal_interval-fractional_poisson-r0002",
+        "correlated_sigma0p3-n48-root-fractional_poisson-r0000",
+        "correlated_sigma0p3-n48-root-fractional_poisson-r0001",
+        "correlated_sigma0p3-n48-root-fractional_poisson-r0002",
+        "correlated_sigma0p3-n48-root_and_internal_interval-fractional_poisson-r0000",
+        "correlated_sigma0p3-n48-root_and_internal_interval-fractional_poisson-r0001",
+        "correlated_sigma0p3-n48-root_and_internal_interval-fractional_poisson-r0002"
+      ],
+      "datasets": 12,
+      "zero_containing": 12
+    },
+    "discrete_k2:ape:fractional_poisson": {
+      "dataset_ids": [
+        "discrete_k2-n24-root-fractional_poisson-r0000",
+        "discrete_k2-n24-root-fractional_poisson-r0001",
+        "discrete_k2-n24-root-fractional_poisson-r0002",
+        "discrete_k2-n24-root_and_internal_interval-fractional_poisson-r0000",
+        "discrete_k2-n24-root_and_internal_interval-fractional_poisson-r0001",
+        "discrete_k2-n24-root_and_internal_interval-fractional_poisson-r0002",
+        "discrete_k2-n48-root-fractional_poisson-r0000",
+        "discrete_k2-n48-root-fractional_poisson-r0001",
+        "discrete_k2-n48-root-fractional_poisson-r0002",
+        "discrete_k2-n48-root_and_internal_interval-fractional_poisson-r0000",
+        "discrete_k2-n48-root_and_internal_interval-fractional_poisson-r0001",
+        "discrete_k2-n48-root_and_internal_interval-fractional_poisson-r0002"
+      ],
+      "datasets": 12,
+      "zero_containing": 12
+    },
+    "discrete_k3:ape:continuous_gamma": {
+      "dataset_ids": [
+        "discrete_k3-n24-root-continuous_gamma-r0002"
+      ],
+      "datasets": 1,
+      "zero_containing": 0
+    },
+    "discrete_k3:ape:expected_branch": {
+      "dataset_ids": [
+        "discrete_k3-n48-root-expected_branch-r0002"
+      ],
+      "datasets": 1,
+      "zero_containing": 0
+    },
+    "discrete_k3:ape:fractional_poisson": {
+      "dataset_ids": [
+        "discrete_k3-n24-root-fractional_poisson-r0000",
+        "discrete_k3-n24-root-fractional_poisson-r0001",
+        "discrete_k3-n24-root-fractional_poisson-r0002",
+        "discrete_k3-n24-root_and_internal_interval-fractional_poisson-r0000",
+        "discrete_k3-n24-root_and_internal_interval-fractional_poisson-r0001",
+        "discrete_k3-n24-root_and_internal_interval-fractional_poisson-r0002",
+        "discrete_k3-n48-root-fractional_poisson-r0000",
+        "discrete_k3-n48-root-fractional_poisson-r0001",
+        "discrete_k3-n48-root-fractional_poisson-r0002",
+        "discrete_k3-n48-root_and_internal_interval-fractional_poisson-r0000",
+        "discrete_k3-n48-root_and_internal_interval-fractional_poisson-r0001",
+        "discrete_k3-n48-root_and_internal_interval-fractional_poisson-r0002"
+      ],
+      "datasets": 12,
+      "zero_containing": 12
+    },
+    "relaxed_gamma_shape4:ape:fractional_poisson": {
+      "dataset_ids": [
+        "relaxed_gamma_shape4-n24-root-fractional_poisson-r0001",
+        "relaxed_gamma_shape4-n24-root-fractional_poisson-r0002",
+        "relaxed_gamma_shape4-n24-root_and_internal_interval-fractional_poisson-r0002",
+        "relaxed_gamma_shape4-n48-root-fractional_poisson-r0002",
+        "relaxed_gamma_shape4-n48-root_and_internal_interval-fractional_poisson-r0000"
+      ],
+      "datasets": 5,
+      "zero_containing": 5
+    }
+  },
+  "fit_source_hashes": {
+    "ape:clock": "f9e9126d8c986b3f9e2ded75159e932717c5b40e563b393b8325e809dfbee905",
+    "ape:correlated": "f9e9126d8c986b3f9e2ded75159e932717c5b40e563b393b8325e809dfbee905",
+    "ape:discrete": "f9e9126d8c986b3f9e2ded75159e932717c5b40e563b393b8325e809dfbee905",
+    "ape:relaxed": "f9e9126d8c986b3f9e2ded75159e932717c5b40e563b393b8325e809dfbee905",
+    "toytree:clock": "e13b57958e06fcd98bcdf66242b8246ce35ae2c6d63599f03d5b69628275ab9e",
+    "toytree:correlated": "ab4e0f96a20624ffd1dcfcef2194c839139d08d5a8af5572a4b3f91d83e11e4e",
+    "toytree:discrete": "6af59b070edae031b7eb0fc830407b1f1a39db78f038da1bcc1bf3cada01d84d",
+    "toytree:relaxed": "c819933affdc447143c93c47681b4280f202f4da7ef2c834e2cba17c4c3977a7",
+    "toytree:uncorrelated_lognormal": "d6a59b320832e0f0d04602bb8cc87a7209e4d90bf31bcaffddde73a73f07251f"
+  },
+  "interpretation": {
+    "primary_accuracy_population": "successful, converged, calibration-valid engine fits",
+    "primary_parity_population": "paired successful, converged, calibration-valid fits",
+    "runtime_ratio": "ToyTree elapsed time divided by ape elapsed time"
+  },
+  "mode": "pilot",
+  "paired_cells": {
+    "clock:n24:root:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 1.8227098413925447e-06,
+        "maximum_absolute": 1.8227098413925447e-06,
+        "median": 1.7005338937003955e-06,
+        "n": 3,
+        "p90": 1.7982746518541148e-06
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 3.519037858612517e-07,
+        "maximum_absolute": 3.519037858612517e-07,
+        "median": 1.9441367432593282e-07,
+        "n": 3,
+        "p90": 3.204057635541879e-07
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 2.354113348701503e-09,
+        "maximum_absolute": 2.354113348701503e-09,
+        "median": 2.3356392375717405e-09,
+        "n": 3,
+        "p90": 2.3504185264755506e-09
+      }
+    },
+    "clock:n24:root:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 1.71817215322001e-06,
+        "maximum_absolute": 1.71817215322001e-06,
+        "median": 1.00466806185473e-06,
+        "n": 3,
+        "p90": 1.575471334946954e-06
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": -1.566510594407857e-07,
+        "maximum_absolute": 4.491840855330215e-07,
+        "median": -1.7972839473476782e-07,
+        "n": 3,
+        "p90": -1.612665264995821e-07
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 1.1022933676940738e-09,
+        "maximum_absolute": 1.1022933676940738e-09,
+        "median": 4.687379373535805e-10,
+        "n": 3,
+        "p90": 9.755822816259752e-10
+      }
+    },
+    "clock:n24:root:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "clock:n24:root_and_internal_interval:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 1.814575733893875e-06,
+        "maximum_absolute": 1.814575733893875e-06,
+        "median": 1.5970825472111372e-06,
+        "n": 3,
+        "p90": 1.7710770965573276e-06
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 1.3821969288303065e-07,
+        "maximum_absolute": 1.7449805041289818e-07,
+        "median": -5.140716079037044e-08,
+        "n": 3,
+        "p90": 1.0029432214835045e-07
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 1.9543691109902284e-09,
+        "maximum_absolute": 1.9543691109902284e-09,
+        "median": 1.3700045542464068e-09,
+        "n": 3,
+        "p90": 1.837496199641464e-09
+      }
+    },
+    "clock:n24:root_and_internal_interval:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 2.2236337872127976e-06,
+        "maximum_absolute": 2.2236337872127976e-06,
+        "median": 1.4565669456123587e-06,
+        "n": 3,
+        "p90": 2.07022041889271e-06
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": -6.166044088638673e-08,
+        "maximum_absolute": 7.881661487737046e-07,
+        "median": -4.2874089600671145e-07,
+        "n": 3,
+        "p90": -1.3507653191045166e-07
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 6.570928690052824e-09,
+        "maximum_absolute": 6.570928690052824e-09,
+        "median": 1.8305144067198853e-09,
+        "n": 3,
+        "p90": 5.622845833386237e-09
+      }
+    },
+    "clock:n24:root_and_internal_interval:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "clock:n48:root:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 4.8217627812707775e-06,
+        "maximum_absolute": 4.8217627812707775e-06,
+        "median": 4.435189082885316e-06,
+        "n": 3,
+        "p90": 4.744448041593685e-06
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 8.989927578889612e-07,
+        "maximum_absolute": 8.989927578889612e-07,
+        "median": -3.387954267616844e-07,
+        "n": 3,
+        "p90": 6.514351209588321e-07
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 3.740322540579655e-08,
+        "maximum_absolute": 3.740322540579655e-08,
+        "median": 3.215259880562371e-08,
+        "n": 3,
+        "p90": 3.635310008576198e-08
+      }
+    },
+    "clock:n48:root:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 1.235722994596955e-06,
+        "maximum_absolute": 1.235722994596955e-06,
+        "median": 1.140932164078734e-06,
+        "n": 3,
+        "p90": 1.2167648284933108e-06
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": -1.597556238971169e-07,
+        "maximum_absolute": 2.754037472307605e-07,
+        "median": -2.695032316316444e-07,
+        "n": 3,
+        "p90": -1.817051454440224e-07
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 1.92723348391155e-09,
+        "maximum_absolute": 1.92723348391155e-09,
+        "median": 1.3263985465528094e-09,
+        "n": 3,
+        "p90": 1.807066496439802e-09
+      }
+    },
+    "clock:n48:root:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "clock:n48:root_and_internal_interval:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 5.009205727657395e-06,
+        "maximum_absolute": 5.009205727657395e-06,
+        "median": 2.5449891634110604e-06,
+        "n": 3,
+        "p90": 4.516362414808129e-06
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 4.2027482076434364e-07,
+        "maximum_absolute": 4.2027482076434364e-07,
+        "median": 5.5148292427489864e-08,
+        "n": 3,
+        "p90": 3.472495150969729e-07
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 2.8577360922099615e-08,
+        "maximum_absolute": 2.8577360922099615e-08,
+        "median": 2.4917724772421934e-08,
+        "n": 3,
+        "p90": 2.7845433692164078e-08
+      }
+    },
+    "clock:n48:root_and_internal_interval:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 2.5199612672111016e-06,
+        "maximum_absolute": 2.5199612672111016e-06,
+        "median": 1.7903429765375736e-06,
+        "n": 3,
+        "p90": 2.374037609076396e-06
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": -2.3837749107354178e-07,
+        "maximum_absolute": 5.37220222472611e-07,
+        "median": -4.943517995347031e-07,
+        "n": 3,
+        "p90": -2.8957235276577403e-07
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 3.1493632945966965e-07,
+        "maximum_absolute": 3.1493632945966965e-07,
+        "median": 3.2231071145361057e-09,
+        "n": 3,
+        "p90": 2.5259368499064297e-07
+      }
+    },
+    "clock:n48:root_and_internal_interval:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "correlated_sigma0p3:n24:root:continuous_gamma": {
+      "comparison_eligible": 2,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.2172716840777478,
+        "maximum_absolute": 0.2172716840777478,
+        "median": 0.18302376380056967,
+        "n": 2,
+        "p90": 0.21042210002231218
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": -0.041159222489728184,
+        "maximum_absolute": 0.07496546628199066,
+        "median": -0.05806234438585942,
+        "n": 2,
+        "p90": -0.04453984686895443
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "correlated_sigma0p3:n24:root:expected_branch": {
+      "comparison_eligible": 2,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.2036443844920388,
+        "maximum_absolute": 0.2036443844920388,
+        "median": 0.16017602806962045,
+        "n": 2,
+        "p90": 0.19495071320755514
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.026501467222088175,
+        "maximum_absolute": 0.049973371840127304,
+        "median": -0.011735952309019564,
+        "n": 2,
+        "p90": 0.01885398331586663
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "correlated_sigma0p3:n24:root:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "correlated_sigma0p3:n24:root_and_internal_interval:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.20717304743278586,
+        "maximum_absolute": 0.20717304743278586,
+        "median": 0.1916510014745616,
+        "n": 3,
+        "p90": 0.20406863824114102
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.0010516387749177694,
+        "maximum_absolute": 0.061432289864182275,
+        "median": -0.036393741745433854,
+        "n": 3,
+        "p90": -0.006437437329152553
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "correlated_sigma0p3:n24:root_and_internal_interval:expected_branch": {
+      "comparison_eligible": 2,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.22934367875672512,
+        "maximum_absolute": 0.22934367875672512,
+        "median": 0.15289532263253675,
+        "n": 2,
+        "p90": 0.21405400753188744
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": -0.027421925514983514,
+        "maximum_absolute": 0.0786380305618635,
+        "median": -0.053029978038423506,
+        "n": 2,
+        "p90": -0.03254353601967151
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "correlated_sigma0p3:n24:root_and_internal_interval:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "correlated_sigma0p3:n48:root:continuous_gamma": {
+      "comparison_eligible": 1,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.23293059834281782,
+        "maximum_absolute": 0.23293059834281782,
+        "median": 0.23293059834281782,
+        "n": 1,
+        "p90": 0.23293059834281782
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": -0.039079407860542495,
+        "maximum_absolute": 0.039079407860542495,
+        "median": -0.039079407860542495,
+        "n": 1,
+        "p90": -0.039079407860542495
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "correlated_sigma0p3:n48:root:expected_branch": {
+      "comparison_eligible": 2,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.21761771486206716,
+        "maximum_absolute": 0.21761771486206716,
+        "median": 0.16726007350093247,
+        "n": 2,
+        "p90": 0.20754618658984023
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.010001791406859757,
+        "maximum_absolute": 0.0608442605774778,
+        "median": -0.02542123458530902,
+        "n": 2,
+        "p90": 0.0029171862084260035
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "correlated_sigma0p3:n48:root:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "correlated_sigma0p3:n48:root_and_internal_interval:continuous_gamma": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "correlated_sigma0p3:n48:root_and_internal_interval:expected_branch": {
+      "comparison_eligible": 2,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.14844794889700075,
+        "maximum_absolute": 0.14844794889700075,
+        "median": 0.13648879824663773,
+        "n": 2,
+        "p90": 0.14605611876692814
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": -0.030561506275217223,
+        "maximum_absolute": 0.03805135636724516,
+        "median": -0.03430643132123119,
+        "n": 2,
+        "p90": -0.03131049128442002
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "correlated_sigma0p3:n48:root_and_internal_interval:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "discrete_k2:n24:root:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 8.442318534251925e-07,
+        "maximum_absolute": 8.442318534251925e-07,
+        "median": 4.3194333987361944e-07,
+        "n": 3,
+        "p90": 7.617741507148779e-07
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 1.3454623155884082e-07,
+        "maximum_absolute": 1.3454623155884082e-07,
+        "median": 6.321002025966305e-08,
+        "n": 3,
+        "p90": 1.2027898929900528e-07
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 7.500489118683618e-11,
+        "maximum_absolute": 2.5164865746774012e-09,
+        "median": -6.822631348768482e-11,
+        "n": 3,
+        "p90": 4.635865025193199e-11
+      }
+    },
+    "discrete_k2:n24:root:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 9.428428666691246e-07,
+        "maximum_absolute": 9.428428666691246e-07,
+        "median": 6.891485249127528e-07,
+        "n": 3,
+        "p90": 8.921039983178503e-07
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 1.7690017638238853e-08,
+        "maximum_absolute": 8.276947260910106e-08,
+        "median": -5.4421295504758493e-08,
+        "n": 3,
+        "p90": 3.2677550096393867e-09
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 1.6858336948644137e-10,
+        "maximum_absolute": 3.957438821089454e-10,
+        "median": 1.418811734765768e-10,
+        "n": 3,
+        "p90": 1.6324293028446847e-10
+      }
+    },
+    "discrete_k2:n24:root:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "discrete_k2:n24:root_and_internal_interval:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 3.4569166634801363e-06,
+        "maximum_absolute": 3.4569166634801363e-06,
+        "median": 9.979725325015567e-07,
+        "n": 3,
+        "p90": 2.9651278372844204e-06
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 1.5782993655066857e-07,
+        "maximum_absolute": 6.350261266621637e-07,
+        "median": 5.3608202186389287e-08,
+        "n": 3,
+        "p90": 1.3698558967781273e-07
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 2.57726640029432e-09,
+        "maximum_absolute": 2.57726640029432e-09,
+        "median": 2.1382362547228695e-10,
+        "n": 3,
+        "p90": 2.1045778453299135e-09
+      }
+    },
+    "discrete_k2:n24:root_and_internal_interval:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.021314379697347396,
+        "maximum_absolute": 0.021314379697347396,
+        "median": 2.9587322575297392e-06,
+        "n": 3,
+        "p90": 0.017052095504329425
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.0024335480972089846,
+        "maximum_absolute": 0.0024335480972089846,
+        "median": 1.2485280071611315e-07,
+        "n": 3,
+        "p90": 0.001946863448327331
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 0.43852710387339755,
+        "maximum_absolute": 0.43852710387339755,
+        "median": 2.0043557924509514e-09,
+        "n": 3,
+        "p90": 0.3508216834995892
+      }
+    },
+    "discrete_k2:n24:root_and_internal_interval:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "discrete_k2:n48:root:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.008895224386858969,
+        "maximum_absolute": 0.008895224386858969,
+        "median": 3.2867219209586906e-06,
+        "n": 3,
+        "p90": 0.007116836853871367
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": -3.620176060731284e-07,
+        "maximum_absolute": 0.0005246809455906401,
+        "median": -3.6804520699151855e-07,
+        "n": 3,
+        "p90": -3.632231262568064e-07
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 0.3019268791613854,
+        "maximum_absolute": 0.3019268791613854,
+        "median": 3.810271209658822e-09,
+        "n": 3,
+        "p90": 0.24154150409116257
+      }
+    },
+    "discrete_k2:n48:root:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 7.202782480231207e-06,
+        "maximum_absolute": 7.202782480231207e-06,
+        "median": 2.3092644289013364e-06,
+        "n": 3,
+        "p90": 6.224078869965233e-06
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 1.5523716830057044e-07,
+        "maximum_absolute": 4.2642327092307086e-07,
+        "median": -3.100682327214499e-07,
+        "n": 3,
+        "p90": 6.217608809616639e-08
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 3.2454749998578336e-09,
+        "maximum_absolute": 4.6006789489183575e-09,
+        "median": -1.6558487914153375e-10,
+        "n": 3,
+        "p90": 2.5632630240579602e-09
+      }
+    },
+    "discrete_k2:n48:root:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "discrete_k2:n48:root_and_internal_interval:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 9.792765268690218e-07,
+        "maximum_absolute": 9.792765268690218e-07,
+        "median": 7.983146520507135e-07,
+        "n": 3,
+        "p90": 9.430841519053602e-07
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 1.611582321758842e-08,
+        "maximum_absolute": 1.1471746115890302e-07,
+        "median": -1.8974881388356124e-09,
+        "n": 3,
+        "p90": 1.2513160946303615e-08
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 6.258744633669266e-10,
+        "maximum_absolute": 1.196431753669458e-08,
+        "median": -6.586731160496129e-11,
+        "n": 3,
+        "p90": 4.875261083725491e-10
+      }
+    },
+    "discrete_k2:n48:root_and_internal_interval:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.021261892381290615,
+        "maximum_absolute": 0.021261892381290615,
+        "median": 0.007951744081176937,
+        "n": 3,
+        "p90": 0.01859986272126788
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.001208211591029594,
+        "maximum_absolute": 0.001208211591029594,
+        "median": 6.888815890643274e-08,
+        "n": 3,
+        "p90": 0.0009665830504554566
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 0.5210390178623072,
+        "maximum_absolute": 0.5210390178623072,
+        "median": -2.099284301948501e-09,
+        "n": 3,
+        "p90": 0.41683121386998895
+      }
+    },
+    "discrete_k2:n48:root_and_internal_interval:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "discrete_k3:n24:root:continuous_gamma": {
+      "comparison_eligible": 2,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 2.6211033522516303e-06,
+        "maximum_absolute": 2.6211033522516303e-06,
+        "median": 1.5983691055709848e-06,
+        "n": 2,
+        "p90": 2.416556502915501e-06
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": -5.6803615144929154e-08,
+        "maximum_absolute": 3.1572735324780776e-07,
+        "median": -1.8626548419636846e-07,
+        "n": 2,
+        "p90": -8.269598895521701e-08
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 2.4286492816827376e-09,
+        "maximum_absolute": 2.636284079926554e-09,
+        "median": -1.0381739912190824e-10,
+        "n": 2,
+        "p90": 1.9221559455218086e-09
+      }
+    },
+    "discrete_k3:n24:root:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.07551707849377032,
+        "maximum_absolute": 0.07551707849377032,
+        "median": 0.020761687443961896,
+        "n": 3,
+        "p90": 0.06456600028380864
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.0008897265010472041,
+        "maximum_absolute": 0.0008897265010472041,
+        "median": -3.1018536558735654e-09,
+        "n": 3,
+        "p90": 0.0007117805804670322
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 0.16606815129931363,
+        "maximum_absolute": 0.16606815129931363,
+        "median": 0.03730598186342604,
+        "n": 3,
+        "p90": 0.1403157174121361
+      }
+    },
+    "discrete_k3:n24:root:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "discrete_k3:n24:root_and_internal_interval:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.21202635280972604,
+        "maximum_absolute": 0.21202635280972604,
+        "median": 7.193405867633729e-07,
+        "n": 3,
+        "p90": 0.1696212261158982
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.019320540883478135,
+        "maximum_absolute": 0.019320540883478135,
+        "median": 3.3397926597900085e-08,
+        "n": 3,
+        "p90": 0.015456439386367829
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 1.8001260757623498,
+        "maximum_absolute": 1.8001260757623498,
+        "median": -1.0369660685682902e-10,
+        "n": 3,
+        "p90": 1.4401008605891406
+      }
+    },
+    "discrete_k3:n24:root_and_internal_interval:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.025345213745502915,
+        "maximum_absolute": 0.025345213745502915,
+        "median": 0.01990043431905597,
+        "n": 3,
+        "p90": 0.024256257860213525
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.0018743668219359938,
+        "maximum_absolute": 0.0026273502619117636,
+        "median": 2.4970765261089767e-08,
+        "n": 3,
+        "p90": 0.0014994984517018473
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 0.8854743600367243,
+        "maximum_absolute": 0.8854743600367243,
+        "median": 1.0471978839632357e-10,
+        "n": 3,
+        "p90": 0.7083794880503235
+      }
+    },
+    "discrete_k3:n24:root_and_internal_interval:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "discrete_k3:n48:root:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.021512044360224913,
+        "maximum_absolute": 0.021512044360224913,
+        "median": 9.390650939078427e-07,
+        "n": 3,
+        "p90": 0.017209823301198714
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.0007257556592152742,
+        "maximum_absolute": 0.0007257556592152742,
+        "median": 2.1532211916253097e-09,
+        "n": 3,
+        "p90": 0.0005806049580164577
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 0.5552610856196907,
+        "maximum_absolute": 0.5552610856196907,
+        "median": -2.7898749976884574e-10,
+        "n": 3,
+        "p90": 0.44420886843995505
+      }
+    },
+    "discrete_k3:n48:root:expected_branch": {
+      "comparison_eligible": 2,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.01810145242260086,
+        "maximum_absolute": 0.01810145242260086,
+        "median": 0.013307469339961409,
+        "n": 2,
+        "p90": 0.017142655806072972
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.00047730836363379936,
+        "maximum_absolute": 0.0030650343982094597,
+        "median": -0.0012938630172878302,
+        "n": 2,
+        "p90": 0.00012307408744947353
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 0.04391135746536179,
+        "maximum_absolute": 0.04391135746536179,
+        "median": 0.033842636754307875,
+        "n": 2,
+        "p90": 0.041897613323151006
+      }
+    },
+    "discrete_k3:n48:root:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "discrete_k3:n48:root_and_internal_interval:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.1920734650536519,
+        "maximum_absolute": 0.1920734650536519,
+        "median": 0.007949329641309788,
+        "n": 3,
+        "p90": 0.1552486379711835
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.00681342048609377,
+        "maximum_absolute": 0.00681342048609377,
+        "median": 0.0007955757074072645,
+        "n": 3,
+        "p90": 0.00560985153035647
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 0.32331478785400236,
+        "maximum_absolute": 0.32331478785400236,
+        "median": 0.03437488930796917,
+        "n": 3,
+        "p90": 0.26552680814479573
+      }
+    },
+    "discrete_k3:n48:root_and_internal_interval:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.015021102281132405,
+        "maximum_absolute": 0.015021102281132405,
+        "median": 1.7458733880815203e-06,
+        "n": 3,
+        "p90": 0.012017230999583541
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 7.101236465523186e-08,
+        "maximum_absolute": 0.0008974766421443736,
+        "median": 2.251031985811558e-08,
+        "n": 3,
+        "p90": 6.13119556958086e-08
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 0.08542085444102554,
+        "maximum_absolute": 0.08542085444102554,
+        "median": -1.256722725884174e-09,
+        "n": 3,
+        "p90": 0.0683366833014759
+      }
+    },
+    "discrete_k3:n48:root_and_internal_interval:fractional_poisson": {
+      "comparison_eligible": 0,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": null,
+        "maximum_absolute": null,
+        "median": null,
+        "n": 0,
+        "p90": null
+      }
+    },
+    "relaxed_gamma_shape4:n24:root:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.8851197962758057,
+        "maximum_absolute": 0.8851197962758057,
+        "median": 0.49728616550488525,
+        "n": 3,
+        "p90": 0.8075530701216216
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.4994754278721164,
+        "maximum_absolute": 0.4994754278721164,
+        "median": 0.12101705386074457,
+        "n": 3,
+        "p90": 0.42378375306984206
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 0.45080961862666413,
+        "maximum_absolute": 4.7167498094883555,
+        "median": 0.19874112491983453,
+        "n": 3,
+        "p90": 0.4003959198852982
+      }
+    },
+    "relaxed_gamma_shape4:n24:root:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.8249015099460275,
+        "maximum_absolute": 0.8249015099460275,
+        "median": 0.5654308085046452,
+        "n": 3,
+        "p90": 0.7730073696577511
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.342219522354101,
+        "maximum_absolute": 0.342219522354101,
+        "median": 0.05300420918138138,
+        "n": 3,
+        "p90": 0.2843764597195571
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 1.1361209948127282,
+        "maximum_absolute": 4.901857636974789,
+        "median": 0.14284151828445601,
+        "n": 3,
+        "p90": 0.9374650995070738
+      }
+    },
+    "relaxed_gamma_shape4:n24:root:fractional_poisson": {
+      "comparison_eligible": 1,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.8404550315234254,
+        "maximum_absolute": 0.8404550315234254,
+        "median": 0.8404550315234254,
+        "n": 1,
+        "p90": 0.8404550315234254
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.24596663955363204,
+        "maximum_absolute": 0.24596663955363204,
+        "median": 0.24596663955363204,
+        "n": 1,
+        "p90": 0.24596663955363204
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": -4.238272423086535,
+        "maximum_absolute": 4.238272423086535,
+        "median": -4.238272423086535,
+        "n": 1,
+        "p90": -4.238272423086535
+      }
+    },
+    "relaxed_gamma_shape4:n24:root_and_internal_interval:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.48181546301767386,
+        "maximum_absolute": 0.48181546301767386,
+        "median": 0.35180132281845733,
+        "n": 3,
+        "p90": 0.45581263497783053
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.12400516536751895,
+        "maximum_absolute": 0.12400516536751895,
+        "median": 0.04406751335020373,
+        "n": 3,
+        "p90": 0.1080176349640559
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 0.6642818301120315,
+        "maximum_absolute": 0.6642818301120315,
+        "median": 0.5256566896356603,
+        "n": 3,
+        "p90": 0.6365568020167572
+      }
+    },
+    "relaxed_gamma_shape4:n24:root_and_internal_interval:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.6202315389496899,
+        "maximum_absolute": 0.6202315389496899,
+        "median": 0.516288497631677,
+        "n": 3,
+        "p90": 0.5994429306860872
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.26569530539144415,
+        "maximum_absolute": 0.26569530539144415,
+        "median": 0.10882666530703042,
+        "n": 3,
+        "p90": 0.2343215773745614
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 0.49149303936720656,
+        "maximum_absolute": 2.0345276836892197,
+        "median": -0.2043333205411244,
+        "n": 3,
+        "p90": 0.3523277673855404
+      }
+    },
+    "relaxed_gamma_shape4:n24:root_and_internal_interval:fractional_poisson": {
+      "comparison_eligible": 2,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.7548391102684288,
+        "maximum_absolute": 0.7548391102684288,
+        "median": 0.539513885482851,
+        "n": 2,
+        "p90": 0.7117740653113133
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.37770814133775454,
+        "maximum_absolute": 0.37770814133775454,
+        "median": 0.2118541753293023,
+        "n": 2,
+        "p90": 0.3445373481360641
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 0.3721754549670919,
+        "maximum_absolute": 2.8202079181689044,
+        "median": -1.2240162316009062,
+        "n": 2,
+        "p90": 0.05293711765349235
+      }
+    },
+    "relaxed_gamma_shape4:n48:root:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.9028305810579678,
+        "maximum_absolute": 0.9028305810579678,
+        "median": 0.8891976857698434,
+        "n": 3,
+        "p90": 0.9001040020003429
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.3342575466865201,
+        "maximum_absolute": 0.3342575466865201,
+        "median": 0.32137869618174975,
+        "n": 3,
+        "p90": 0.331681776585566
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": -2.962670541690315,
+        "maximum_absolute": 10.886209079554888,
+        "median": -9.798926112187402,
+        "n": 3,
+        "p90": -4.329921655789732
+      }
+    },
+    "relaxed_gamma_shape4:n48:root:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.8795423618049347,
+        "maximum_absolute": 0.8795423618049347,
+        "median": 0.8524036323917904,
+        "n": 3,
+        "p90": 0.8741146159223059
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.4631094297722744,
+        "maximum_absolute": 0.4631094297722744,
+        "median": 0.435778788336174,
+        "n": 3,
+        "p90": 0.4576433014850543
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": -5.07474105958579,
+        "maximum_absolute": 10.655608031604984,
+        "median": -9.747028977510027,
+        "n": 3,
+        "p90": -6.009198643170637
+      }
+    },
+    "relaxed_gamma_shape4:n48:root:fractional_poisson": {
+      "comparison_eligible": 2,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.8640946462599869,
+        "maximum_absolute": 0.8640946462599869,
+        "median": 0.7262304861607749,
+        "n": 2,
+        "p90": 0.8365218142401445
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.38355754853858126,
+        "maximum_absolute": 0.38355754853858126,
+        "median": 0.32513112956820445,
+        "n": 2,
+        "p90": 0.3718722647445059
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": -1.519480306563679,
+        "maximum_absolute": 11.197306723587104,
+        "median": -6.358393515075392,
+        "n": 2,
+        "p90": -2.4872629482660216
+      }
+    },
+    "relaxed_gamma_shape4:n48:root_and_internal_interval:continuous_gamma": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.8826974027642583,
+        "maximum_absolute": 0.8826974027642583,
+        "median": 0.8275911495487543,
+        "n": 3,
+        "p90": 0.8716761521211576
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.4377813421338457,
+        "maximum_absolute": 0.4377813421338457,
+        "median": 0.4283011286162404,
+        "n": 3,
+        "p90": 0.4358852994303246
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": -1.631465460514093,
+        "maximum_absolute": 11.526302843151882,
+        "median": -5.864157239707296,
+        "n": 3,
+        "p90": -2.4780038163527336
+      }
+    },
+    "relaxed_gamma_shape4:n48:root_and_internal_interval:expected_branch": {
+      "comparison_eligible": 3,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.7392757770767839,
+        "maximum_absolute": 0.7392757770767839,
+        "median": 0.6106119835893599,
+        "n": 3,
+        "p90": 0.7135430183792991
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.4764664623800242,
+        "maximum_absolute": 0.4764664623800242,
+        "median": 0.19289115348701796,
+        "n": 3,
+        "p90": 0.41975140060142296
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": -2.011173549431831,
+        "maximum_absolute": 6.418063820841027,
+        "median": -2.7395569536573845,
+        "n": 3,
+        "p90": -2.156850230276942
+      }
+    },
+    "relaxed_gamma_shape4:n48:root_and_internal_interval:fractional_poisson": {
+      "comparison_eligible": 2,
+      "datasets": 3,
+      "maximum_normalized_chronogram_difference": {
+        "maximum": 0.8971616609815011,
+        "maximum_absolute": 0.8971616609815011,
+        "median": 0.762650580552283,
+        "n": 2,
+        "p90": 0.8702594448956574
+      },
+      "toytree_minus_ape_age_mae": {
+        "maximum": 0.3793304817725546,
+        "maximum_absolute": 0.3793304817725546,
+        "median": 0.22767537001112775,
+        "n": 2,
+        "p90": 0.3489994594202692
+      },
+      "toytree_minus_ape_objective": {
+        "maximum": 0.48816468157104964,
+        "maximum_absolute": 8.89163251916672,
+        "median": -4.201733918797835,
+        "n": 2,
+        "p90": -0.4498150385027271
+      }
+    }
+  },
+  "relaxed": {
+    "ape_objective_better": 21,
+    "chronogram_difference": {
+      "maximum": 0.9028305810579678,
+      "maximum_absolute": 0.9028305810579678,
+      "median": 0.6807472350660145,
+      "n": 31,
+      "p90": 0.8851197962758057
+    },
+    "comparison_eligible": 31,
+    "largest_chronogram_disagreements": [
+      {
+        "calibration": "root",
+        "dataset_id": "relaxed_gamma_shape4-n48-root-continuous_gamma-r0000",
+        "maximum_normalized_chronogram_difference": 0.9028305810579678,
+        "ntips": 48,
+        "observation_model": "continuous_gamma",
+        "toytree_minus_ape_objective": -9.798926112187402
+      },
+      {
+        "calibration": "root_and_internal_interval",
+        "dataset_id": "relaxed_gamma_shape4-n48-root_and_internal_interval-fractional_poisson-r0002",
+        "maximum_normalized_chronogram_difference": 0.8971616609815011,
+        "ntips": 48,
+        "observation_model": "fractional_poisson",
+        "toytree_minus_ape_objective": -8.89163251916672
+      },
+      {
+        "calibration": "root",
+        "dataset_id": "relaxed_gamma_shape4-n48-root-continuous_gamma-r0002",
+        "maximum_normalized_chronogram_difference": 0.8891976857698434,
+        "ntips": 48,
+        "observation_model": "continuous_gamma",
+        "toytree_minus_ape_objective": -10.886209079554888
+      },
+      {
+        "calibration": "root",
+        "dataset_id": "relaxed_gamma_shape4-n24-root-continuous_gamma-r0000",
+        "maximum_normalized_chronogram_difference": 0.8851197962758057,
+        "ntips": 24,
+        "observation_model": "continuous_gamma",
+        "toytree_minus_ape_objective": -4.7167498094883555
+      },
+      {
+        "calibration": "root_and_internal_interval",
+        "dataset_id": "relaxed_gamma_shape4-n48-root_and_internal_interval-continuous_gamma-r0000",
+        "maximum_normalized_chronogram_difference": 0.8826974027642583,
+        "ntips": 48,
+        "observation_model": "continuous_gamma",
+        "toytree_minus_ape_objective": -11.526302843151882
+      },
+      {
+        "calibration": "root",
+        "dataset_id": "relaxed_gamma_shape4-n48-root-expected_branch-r0001",
+        "maximum_normalized_chronogram_difference": 0.8795423618049347,
+        "ntips": 48,
+        "observation_model": "expected_branch",
+        "toytree_minus_ape_objective": -9.747028977510027
+      },
+      {
+        "calibration": "root",
+        "dataset_id": "relaxed_gamma_shape4-n48-root-fractional_poisson-r0000",
+        "maximum_normalized_chronogram_difference": 0.8640946462599869,
+        "ntips": 48,
+        "observation_model": "fractional_poisson",
+        "toytree_minus_ape_objective": -11.197306723587104
+      },
+      {
+        "calibration": "root",
+        "dataset_id": "relaxed_gamma_shape4-n48-root-expected_branch-r0002",
+        "maximum_normalized_chronogram_difference": 0.8524036323917904,
+        "ntips": 48,
+        "observation_model": "expected_branch",
+        "toytree_minus_ape_objective": -10.655608031604984
+      },
+      {
+        "calibration": "root",
+        "dataset_id": "relaxed_gamma_shape4-n24-root-fractional_poisson-r0000",
+        "maximum_normalized_chronogram_difference": 0.8404550315234254,
+        "ntips": 24,
+        "observation_model": "fractional_poisson",
+        "toytree_minus_ape_objective": -4.238272423086535
+      },
+      {
+        "calibration": "root_and_internal_interval",
+        "dataset_id": "relaxed_gamma_shape4-n48-root_and_internal_interval-continuous_gamma-r0002",
+        "maximum_normalized_chronogram_difference": 0.8275911495487543,
+        "ntips": 48,
+        "observation_model": "continuous_gamma",
+        "toytree_minus_ape_objective": -5.864157239707296
+      }
+    ],
+    "objective_difference": {
+      "maximum": 1.1361209948127282,
+      "maximum_absolute": 11.526302843151882,
+      "median": -2.7395569536573845,
+      "n": 31,
+      "p90": 0.49149303936720656
+    },
+    "objective_tied": 0,
+    "toytree_objective_better": 10
+  },
+  "source_config_hash": "4591531186d6ae5d1e2bd9eb4df413c1a1c275667952611632f8883fbee8dac0",
+  "study_version": 17
+}

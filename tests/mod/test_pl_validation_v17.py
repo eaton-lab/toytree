@@ -14,6 +14,9 @@ if str(REPO) not in sys.path:
     sys.path.insert(0, str(REPO))
 
 from validation.penalized_pseudolikelihood import (
+    diagnose_validation_v17 as diagnostics,
+)
+from validation.penalized_pseudolikelihood import (
     run_validation_v17_benchmark as study,
 )
 
@@ -84,6 +87,7 @@ def test_v17_objective_parity_is_limited_to_compatible_models():
         "observation_model": "expected_branch",
         "replicate": 0,
         "true_ages": true_ages,
+        "calibrations": [{"clade": study.ROOT_CLADE, "lower": 1.0, "upper": 1.0}],
     }
     caches = {
         "toytree": {
@@ -109,6 +113,7 @@ def test_v17_objective_parity_is_limited_to_compatible_models():
     assert clock["objective_kind"] == "pseudologlik"
     assert clock["toytree_minus_ape_objective"] == 1.0
     assert clock["toytree_over_ape_runtime"] == 2.0
+    assert clock["comparison_eligible"]
 
     dataset["fit_model"] = "correlated"
     correlated = study._pair_score(dataset, caches)
@@ -183,6 +188,93 @@ def test_v17_summary_helpers_are_deterministic():
     )
     assert first == second
     assert first["estimate"] == 2.0
+
+
+def test_v17_primary_summaries_exclude_nonconverged_outputs():
+    """Sentinel objectives and ages remain diagnostic, not inferential."""
+    rows = []
+    pairs = []
+    for dataset_id, ape_converged, ape_age, objective in (
+        ("good", True, 0.2, 0.5),
+        ("failed", False, 0.9, 1e100),
+    ):
+        for engine, age in (("toytree", 0.1), ("ape", ape_age)):
+            converged = engine == "toytree" or ape_converged
+            rows.append(
+                {
+                    "dataset_id": dataset_id,
+                    "scenario": "clock",
+                    "engine": engine,
+                    "status": "ok",
+                    "converged": converged,
+                    "calibrations_valid": True,
+                    "accuracy_eligible": converged,
+                    "ntips": 8,
+                    "calibration": "root",
+                    "observation_model": "fractional_poisson",
+                    "elapsed_seconds": 1.0,
+                    "normalized_age_mae": age,
+                    "normalized_age_rmse": age,
+                    "rate_spearman": None,
+                }
+            )
+        pairs.append(
+            {
+                "dataset_id": dataset_id,
+                "scenario": "clock",
+                "ntips": 8,
+                "calibration": "root",
+                "observation_model": "fractional_poisson",
+                "both_converged": ape_converged,
+                "comparison_eligible": ape_converged,
+                "maximum_normalized_chronogram_difference": ape_age,
+                "toytree_minus_ape_objective": objective,
+                "toytree_over_ape_runtime": 1.0,
+            }
+        )
+
+    summary = study._summarize(rows, pairs, 100, 123)
+
+    assert summary["engines"]["clock:ape"]["normalized_age_mae"]["n"] == 1
+    assert summary["engines"]["clock:ape"]["normalized_age_mae_all_returned"]["n"] == 2
+    paired = summary["paired"]["clock"]
+    assert paired["objective_difference"]["n"] == 1
+    assert paired["objective_difference"]["median"] == 0.5
+    assert paired["objective_difference_all_returned"]["p90"] > 1e99
+    assert paired["age_mae_difference_bootstrap"]["estimate"] == -0.1
+
+
+def test_v17_diagnostic_supports_existing_pilot_schema():
+    """The diagnostic can analyze results written before scoring was refined."""
+    result = {
+        "mode": "pilot",
+        "config_hash": "config",
+        "fit_source_hashes": {"ape:clock": "ape", "toytree:clock": "toy"},
+        "rows": [
+            {
+                "dataset_id": "failed",
+                "scenario": "clock",
+                "engine": "ape",
+                "status": "ok",
+                "converged": False,
+                "calibrations_valid": True,
+                "ntips": 8,
+                "calibration": "root",
+                "observation_model": "fractional_poisson",
+                "zero_branch_count": 2,
+                "normalized_age_mae": 0.9,
+                "normalized_age_rmse": 1.0,
+            }
+        ],
+        "pairs": [],
+    }
+
+    observed = diagnostics.diagnose(result)
+
+    failure = observed["failure_patterns"]["clock:ape:fractional_poisson"]
+    assert failure["datasets"] == 1
+    assert failure["zero_containing"] == 1
+    assert observed["diagnostic_only"]
 
 
 def test_v17_r_adapter_has_no_jsonlite_dependency():

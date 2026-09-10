@@ -787,6 +787,16 @@ def _score_fit(dataset: dict[str, Any], cached: dict[str, Any]) -> dict[str, Any
                 [value[0] for value in pairs],
                 [value[1] for value in pairs],
             )
+    calibrations_valid = _calibrations_valid(ages, dataset["calibrations"])
+    converged = bool(fit.get("converged", False))
+    status = fit.get("status", "error")
+    accuracy_eligible = bool(
+        status == "ok"
+        and converged
+        and calibrations_valid
+        and age_mae is not None
+        and age_rmse is not None
+    )
     return {
         "dataset_id": dataset["dataset_id"],
         "scenario": dataset["scenario"],
@@ -798,9 +808,10 @@ def _score_fit(dataset: dict[str, Any], cached: dict[str, Any]) -> dict[str, Any
         "replicate": dataset["replicate"],
         "seed": dataset["seed"],
         "zero_branch_count": dataset["zero_branch_count"],
-        "status": fit.get("status", "error"),
-        "converged": bool(fit.get("converged", False)),
-        "calibrations_valid": _calibrations_valid(ages, dataset["calibrations"]),
+        "status": status,
+        "converged": converged,
+        "calibrations_valid": calibrations_valid,
+        "accuracy_eligible": accuracy_eligible,
         "elapsed_seconds": fit.get("elapsed_seconds"),
         "normalized_age_mae": age_mae,
         "normalized_age_rmse": age_rmse,
@@ -809,6 +820,7 @@ def _score_fit(dataset: dict[str, Any], cached: dict[str, Any]) -> dict[str, Any
         "pseudologlik": fit.get("pseudologlik"),
         "penalized_pseudologlik": fit.get("penalized_pseudologlik"),
         "error": fit.get("error"),
+        "optimizer_message": fit.get("optimizer_message", fit.get("message", "")),
         "warnings": fit.get("warnings", ""),
     }
 
@@ -846,6 +858,19 @@ def _pair_score(
     runtime_ratio = None
     if toy_time is not None and ape_time is not None and float(ape_time) > 0.0:
         runtime_ratio = float(toy_time) / float(ape_time)
+    both_succeeded = bool(toy.get("status") == "ok" and ape.get("status") == "ok")
+    both_converged = bool(
+        both_succeeded and toy.get("converged") and ape.get("converged")
+    )
+    both_calibrations_valid = bool(
+        _calibrations_valid(toy_ages, dataset["calibrations"])
+        and _calibrations_valid(ape_ages, dataset["calibrations"])
+    )
+    comparison_eligible = bool(
+        both_converged
+        and both_calibrations_valid
+        and maximum_age_difference is not None
+    )
     return {
         "dataset_id": dataset["dataset_id"],
         "scenario": dataset["scenario"],
@@ -854,7 +879,10 @@ def _pair_score(
         "calibration": dataset["calibration"],
         "observation_model": dataset["observation_model"],
         "replicate": dataset["replicate"],
-        "both_converged": bool(toy.get("converged") and ape.get("converged")),
+        "both_succeeded": both_succeeded,
+        "both_converged": both_converged,
+        "both_calibrations_valid": both_calibrations_valid,
+        "comparison_eligible": comparison_eligible,
         "maximum_normalized_chronogram_difference": maximum_age_difference,
         "objective_kind": objective_kind,
         "toytree_minus_ape_objective": objective_difference,
@@ -922,9 +950,10 @@ def _summarize(
     engine_groups = defaultdict(list)
     for row in rows:
         engine_groups[(row["scenario"], row["engine"])].append(row)
-    engines = {}
-    for (scenario, engine), group in sorted(engine_groups.items()):
-        engines[f"{scenario}:{engine}"] = {
+
+    def summarize_engine_group(group: list[dict[str, Any]]) -> dict[str, Any]:
+        eligible = [row for row in group if row["accuracy_eligible"]]
+        return {
             "datasets": len(group),
             "fit_success_fraction": float(
                 np.mean([row["status"] == "ok" for row in group])
@@ -933,25 +962,53 @@ def _summarize(
             "calibration_validity_fraction": float(
                 np.mean([row["calibrations_valid"] for row in group])
             ),
+            "accuracy_eligible_fraction": float(len(eligible) / len(group)),
             "elapsed_seconds": _summary_stats(
                 [row["elapsed_seconds"] for row in group]
             ),
             "normalized_age_mae": _summary_stats(
-                [row["normalized_age_mae"] for row in group]
+                [row["normalized_age_mae"] for row in eligible]
             ),
             "normalized_age_rmse": _summary_stats(
+                [row["normalized_age_rmse"] for row in eligible]
+            ),
+            "normalized_age_mae_all_returned": _summary_stats(
+                [row["normalized_age_mae"] for row in group]
+            ),
+            "normalized_age_rmse_all_returned": _summary_stats(
                 [row["normalized_age_rmse"] for row in group]
             ),
-            "rate_spearman": _summary_stats([row["rate_spearman"] for row in group]),
+            "rate_spearman": _summary_stats([row["rate_spearman"] for row in eligible]),
         }
+
+    engines = {}
+    for (scenario, engine), group in sorted(engine_groups.items()):
+        engines[f"{scenario}:{engine}"] = summarize_engine_group(group)
+
+    cell_groups = defaultdict(list)
+    for row in rows:
+        key = (
+            row["scenario"],
+            row["engine"],
+            row["ntips"],
+            row["calibration"],
+            row["observation_model"],
+        )
+        cell_groups[key].append(row)
+    cells = {}
+    for key, group in sorted(cell_groups.items()):
+        scenario, engine, ntips, calibration, observation = key
+        label = f"{scenario}:{engine}:n{ntips}:{calibration}:{observation}"
+        cells[label] = summarize_engine_group(group)
     pair_groups = defaultdict(list)
     for row in pairs:
         pair_groups[row["scenario"]].append(row)
     row_by_key = {(row["dataset_id"], row["engine"]): row for row in rows}
     paired = {}
     for offset, (scenario, group) in enumerate(sorted(pair_groups.items())):
+        eligible_pairs = [row for row in group if row["comparison_eligible"]]
         valid_accuracy = []
-        for pair in group:
+        for pair in eligible_pairs:
             toy = row_by_key[(pair["dataset_id"], "toytree")]
             ape = row_by_key[(pair["dataset_id"], "ape")]
             if (
@@ -975,10 +1032,20 @@ def _summarize(
             "both_converged_fraction": float(
                 np.mean([row["both_converged"] for row in group])
             ),
+            "comparison_eligible_fraction": float(len(eligible_pairs) / len(group)),
             "maximum_normalized_chronogram_difference": _summary_stats(
-                [row["maximum_normalized_chronogram_difference"] for row in group]
+                [
+                    row["maximum_normalized_chronogram_difference"]
+                    for row in eligible_pairs
+                ]
             ),
             "objective_difference": _summary_stats(
+                [row["toytree_minus_ape_objective"] for row in eligible_pairs]
+            ),
+            "maximum_normalized_chronogram_difference_all_returned": _summary_stats(
+                [row["maximum_normalized_chronogram_difference"] for row in group]
+            ),
+            "objective_difference_all_returned": _summary_stats(
                 [row["toytree_minus_ape_objective"] for row in group]
             ),
             "runtime_ratio": _summary_stats(
@@ -1003,7 +1070,7 @@ def _summarize(
                 bootstrap_seed + offset * 2 + 1,
             ),
         }
-    return {"engines": engines, "paired": paired}
+    return {"engines": engines, "cells": cells, "paired": paired}
 
 
 def _write_rows_csv(path: Path, rows: list[dict[str, Any]]) -> None:
@@ -1057,6 +1124,12 @@ def _score_timing(
                 "scenario": engines["toytree"]["scenario"],
                 "ntips": engines["toytree"]["ntips"],
                 "toytree_over_ape_runtime": ratio,
+                "both_converged": bool(
+                    engines["toytree"]["status"] == "ok"
+                    and engines["ape"]["status"] == "ok"
+                    and engines["toytree"]["converged"]
+                    and engines["ape"]["converged"]
+                ),
             }
         )
     summaries = {}
@@ -1064,9 +1137,17 @@ def _score_timing(
     for pair in pairs:
         by_cell[(pair["scenario"], pair["ntips"])].append(pair)
     for (scenario, ntips), group in sorted(by_cell.items()):
-        summaries[f"{scenario}:n{ntips}"] = _summary_stats(
-            [row["toytree_over_ape_runtime"] for row in group]
-        )
+        eligible = [row for row in group if row["both_converged"]]
+        summaries[f"{scenario}:n{ntips}"] = {
+            "pairs": len(group),
+            "jointly_converged_pairs": len(eligible),
+            "toytree_over_ape_runtime": _summary_stats(
+                [row["toytree_over_ape_runtime"] for row in eligible]
+            ),
+            "toytree_over_ape_runtime_all_returned": _summary_stats(
+                [row["toytree_over_ape_runtime"] for row in group]
+            ),
+        }
     result = {
         "study_version": 17,
         "mode": mode,

@@ -22,6 +22,15 @@ bootstrap confidence intervals for paired accuracy and speed contrasts. Raw
 per-dataset results are retained so publication figures and alternative
 summaries can be reproduced without refitting.
 
+Primary recovery summaries include only successful, converged,
+calibration-valid fits. Primary parity summaries additionally require both
+engines to meet those conditions on the same dataset. All returned values are
+retained under explicitly named diagnostic fields. This distinction matters
+for fractional-Poisson simulations: exact zero branch lengths are valid
+ToyTree inputs, but `chronos` frequently returns a nonconverged tree for them.
+Those cells measure input robustness and are not allowed to contaminate
+objective-parity or accuracy summaries.
+
 ## Dependencies
 
 The Python environment must contain ToyTree's development dependencies. R must
@@ -57,6 +66,9 @@ python validation/penalized_pseudolikelihood/run_validation_v17_benchmark.py \
 
 python validation/penalized_pseudolikelihood/run_validation_v17_benchmark.py \
   --mode pilot --stage score --ncores 1
+
+python validation/penalized_pseudolikelihood/diagnose_validation_v17.py \
+  --mode pilot
 ```
 
 Every engine fit is an atomic file below `v17/cache-v17/`. Repeating the fit
@@ -66,7 +78,8 @@ does not invalidate fit caches.
 The elapsed times from this highly parallel stage measure throughput under
 contention and are not used as publication-quality speed estimates. Run the
 separate paired timing subset on an otherwise idle server. It is serial,
-alternates engine order, and has its own resumable caches:
+alternates engine order, and has its own resumable caches. The pilot uses
+three paired replicates per tree-size/model cell; confirmation uses ten:
 
 ```bash
 python validation/penalized_pseudolikelihood/run_validation_v17_benchmark.py \
@@ -85,6 +98,9 @@ python validation/penalized_pseudolikelihood/run_validation_v17_benchmark.py \
 
 python validation/penalized_pseudolikelihood/run_validation_v17_benchmark.py \
   --mode confirmation --stage score --ncores 1
+
+python validation/penalized_pseudolikelihood/diagnose_validation_v17.py \
+  --mode confirmation
 
 python validation/penalized_pseudolikelihood/run_validation_v17_benchmark.py \
   --mode confirmation --stage timing --ncores 1
