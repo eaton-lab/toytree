@@ -1,5 +1,6 @@
 {
-  "audited_current_commit": "58b55ef",
+  "audited_base_commit": "59cbdf0",
+  "audited_current_commit": null,
   "audited_differences": [
     {
       "assessment": "Adds a direct-age fallback for public clock line-search failures. The UCLN internal clock initializer explicitly passes _direct_age_fallback=False, retaining its validated initialization path.",
@@ -20,9 +21,14 @@
       "assessment": "Previously audited start_kind exception metadata remains additive and does not alter successful-result selection.",
       "file": "toytree/mod/_src/penalized_pseudolikelihood/utils.py",
       "function": "_run_multistart"
+    },
+    {
+      "assessment": "Adds private, opt-in _initial_rates/_initial_ages continuation starts for V18 lambda paths and additive start-kind metadata. When those arguments are omitted, the validated default start vectors and RNG sequence are unchanged; six deterministic four-start fits across three seeds and two lambdas were bit-identical to an isolated 59cbdf0 archive.",
+      "file": "toytree/mod/_src/penalized_pseudolikelihood/uncorrelated_lognormal.py",
+      "function": "_edges_make_ultrametric_ucln"
     }
   ],
-  "current_source_hash": "c07f097ff7e908a97996a798b77618cce933143705bf3d8423b217616abc02d4",
+  "current_source_hash": "d876a4d64236ab0a86a1f1beea4cdbaaea73ff74c26c2cee5dfd7792994809a4",
   "equivalent_for_v12_fitted_values": true,
   "historical_confirmation_commit": "98125ee",
   "historical_confirmation_source_hash": "370a04071ea1c6b430c6edbfdd904064300d93581d718685f8a67d09a86f396d",

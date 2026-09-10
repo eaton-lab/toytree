@@ -1,0 +1,73 @@
+{
+  "study_version": 18,
+  "study_name": "paired-per-tree-lambda-identifiability",
+  "development_seed": 180910337,
+  "confirmation_seed": 180910937,
+  "bootstrap_seed": 180911337,
+  "simulation": {
+    "baseline_rate": 20.0,
+    "observation_gamma_shape": 100.0
+  },
+  "fit": {
+    "max_iter": 5000,
+    "max_fun": 10000,
+    "max_refine": 10,
+    "nstarts": 2,
+    "retry_multiplier": 4
+  },
+  "lambdas": [
+    0.0001,
+    0.00031622776601683794,
+    0.001,
+    0.0031622776601683794,
+    0.01,
+    0.03162277660168379,
+    0.1,
+    0.31622776601683794,
+    1.0,
+    3.1622776601683795,
+    10.0,
+    31.622776601683793,
+    100.0,
+    316.22776601683796,
+    1000.0,
+    3162.2776601683795,
+    10000.0
+  ],
+  "modes": {
+    "smoke": {
+      "ntips": [6],
+      "sigma_log": [0.3],
+      "calibrations": ["root"],
+      "observation_models": ["expected_branch"],
+      "replicates": 1,
+      "bootstrap_replicates": 100,
+      "lambdas": [0.1, 1.0, 10.0]
+    },
+    "pilot": {
+      "ntips": [24, 48],
+      "sigma_log": [0.3, 0.6],
+      "calibrations": ["root", "root_and_three_internal_intervals"],
+      "observation_models": ["expected_branch", "continuous_gamma"],
+      "replicates": 4,
+      "bootstrap_replicates": 2000
+    },
+    "confirmation": {
+      "ntips": [96],
+      "sigma_log": [0.3, 0.6],
+      "calibrations": ["root", "root_and_three_internal_intervals"],
+      "observation_models": ["expected_branch", "continuous_gamma"],
+      "replicates": 10,
+      "bootstrap_replicates": 2000
+    }
+  },
+  "decision_gates": {
+    "valid_stable_selected_fit_fraction": 0.99,
+    "calibration_validity_fraction": 1.0,
+    "maximum_boundary_selection_fraction": 0.10,
+    "maximum_selected_age_oracle_ratio_median": 1.25,
+    "maximum_selected_age_oracle_ratio_p90": 2.0,
+    "maximum_supported_chronogram_spread_median": 0.05,
+    "maximum_supported_chronogram_spread_p90": 0.15
+  }
+}

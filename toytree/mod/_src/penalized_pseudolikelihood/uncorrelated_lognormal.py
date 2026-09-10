@@ -52,6 +52,24 @@ DIST_FLOOR = 1e-12
 INVALID_LOG_LIK_DROP = 1e6
 
 
+def _validate_ucln_warm_start(
+    values: Any,
+    size: int,
+    name: str,
+    *,
+    positive: bool,
+) -> np.ndarray | None:
+    """Return one validated private continuation vector."""
+    if values is None:
+        return None
+    array = np.asarray(values, dtype=float)
+    if array.shape != (size,) or np.any(~np.isfinite(array)):
+        raise ValueError(f"{name} must contain {size} finite values.")
+    if positive and np.any(array <= 0.0):
+        raise ValueError(f"{name} values must be strictly positive.")
+    return array.copy()
+
+
 def _invalid_objective(valid_loglik: float) -> float:
     """Return the finite objective value used for invalid fits."""
     return float(-(valid_loglik - INVALID_LOG_LIK_DROP))
@@ -1177,6 +1195,7 @@ def _fit_ucln_start(payload: dict[str, Any]) -> dict[str, Any]:
         message = "invalid objective plateau from infeasible start"
     return {
         "start": start,
+        "start_kind": str(payload.get("start_kind", f"start_{start}")),
         "objective": float(current_objective),
         "converged": converged,
         "message": message,
@@ -1243,6 +1262,8 @@ def _edges_make_ultrametric_ucln(
     seed: int | None = None,
     _observation_mask: np.ndarray | None = None,
     _retry_multiplier: int = 4,
+    _initial_rates: Any = None,
+    _initial_ages: Any = None,
 ) -> Union[ToyTree, dict[str, Any]]:
     """Fit the hardened centered-log-rate UCLN model."""
     lam = _validate_lambda(lam)
@@ -1275,6 +1296,17 @@ def _edges_make_ultrametric_ucln(
             )
             for idx, (lower, upper) in calibrations.items()
         }
+
+    continuation_ages = _validate_ucln_warm_start(
+        _initial_ages, tree.nnodes, "_initial_ages", positive=False
+    )
+    if continuation_ages is not None:
+        continuation_ages /= calibration_time_scale
+    continuation_rates = _validate_ucln_warm_start(
+        _initial_rates, tree.nedges, "_initial_rates", positive=True
+    )
+    if continuation_rates is not None:
+        continuation_rates *= calibration_time_scale
 
     ages_init, _ = _get_init_ages(tree, calibrations)
     interior_ages_init = np.asarray(ages_init, dtype=float).copy()
@@ -1374,24 +1406,82 @@ def _edges_make_ultrametric_ucln(
         observation_mask,
         "uncorrelated_lognormal",
     )
-    params = np.hstack(
-        [_pack_log_rates(rates_init, rate_floor=RATE_FLOOR), age_params_init]
-    )
-
     requested_nstarts = max(1, int(nstarts))
-    effective_nstarts = requested_nstarts
+    base_starts: list[tuple[str, np.ndarray, np.ndarray, np.ndarray]] = [
+        (
+            "clock" if clock_warm_start_used else "interior",
+            warm_ages_init,
+            rates_init,
+            age_params_init,
+        )
+    ]
+    has_continuation = continuation_ages is not None or continuation_rates is not None
+    if has_continuation:
+        continued_ages = (
+            warm_ages_init
+            if continuation_ages is None
+            else np.asarray(continuation_ages, dtype=float)
+        )
+        continued_rates = (
+            np.clip(
+                dists_o
+                / np.maximum(
+                    continued_ages[edges[:, 1]] - continued_ages[edges[:, 0]],
+                    DIST_FLOOR,
+                ),
+                RATE_FLOOR,
+                None,
+            )
+            if continuation_rates is None
+            else np.asarray(continuation_rates, dtype=float)
+        )
+        try:
+            continued_params = _encode_age_params(
+                continued_ages,
+                ages_idxs,
+                ages_bounds,
+                children_map,
+                dist_floor=DIST_FLOOR,
+            )
+            base_starts.append(
+                ("continuation", continued_ages, continued_rates, continued_params)
+            )
+        except ToytreeError:
+            pass
+    elif clock_warm_start_used and requested_nstarts >= 2:
+        base_starts.append(
+            ("interior", interior_ages_init, rates_init, interior_age_params)
+        )
+
+    effective_nstarts = max(requested_nstarts, len(base_starts))
     effective_ncores = max(1, int(ncores))
     rng = np.random.default_rng(seed)
     rsize = rates_init.size
     asize = ages_idxs.size
     payloads = []
     for start in range(effective_nstarts):
-        start_params = params.copy()
-        age_start_ages = warm_ages_init.copy()
-        if clock_warm_start_used and start == 1:
-            start_params[rsize:] = interior_age_params
-            age_start_ages = interior_ages_init.copy()
-        elif start:
+        if start < len(base_starts):
+            start_kind, age_start_ages, rate_start, start_age_params = base_starts[
+                start
+            ]
+            start_params = np.hstack(
+                [
+                    _pack_log_rates(rate_start, rate_floor=RATE_FLOOR),
+                    start_age_params,
+                ]
+            )
+            age_start_ages = np.asarray(age_start_ages, dtype=float).copy()
+        else:
+            base_index = start % len(base_starts) if has_continuation else 0
+            base_kind, base_ages, base_rates, _ = base_starts[base_index]
+            start_kind = f"{base_kind}_perturbed"
+            start_params = np.hstack(
+                [
+                    _pack_log_rates(base_rates, rate_floor=RATE_FLOOR),
+                    interior_age_params,
+                ]
+            )
+            age_start_ages = np.asarray(base_ages, dtype=float).copy()
             start_params[:rsize] += rng.normal(0.0, 0.25, size=rsize)
             if asize:
                 # Pull transformed ages away from saturated interval edges
@@ -1418,6 +1508,7 @@ def _edges_make_ultrametric_ucln(
         payloads.append(
             {
                 "start": start,
+                "start_kind": start_kind,
                 "params": start_params,
                 "bounds": bounds,
                 "rates_init": rates_init,
@@ -1609,10 +1700,16 @@ def _edges_make_ultrametric_ucln(
         "requested_nstarts": requested_nstarts,
         "ncores": max(1, min(effective_ncores, effective_nstarts)),
         "best_start": int(best["start"]),
+        "best_start_kind": str(
+            best.get("start_kind", f"start_{int(best.get('start', -1))}")
+        ),
         **stability,
         "starts": [
             {
                 "start": int(item["start"]),
+                "start_kind": str(
+                    item.get("start_kind", f"start_{int(item.get('start', -1))}")
+                ),
                 "objective": float(item["objective"]),
                 "converged": bool(item["converged"]),
                 "message": str(item["message"]),

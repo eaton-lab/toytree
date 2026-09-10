@@ -26,6 +26,17 @@ Calling the observation model a branch-length pseudolikelihood describes its
 statistical assumption; it is not, by itself, an experimental-status warning.
 All common exclusions and model-specific limitations remain explicit.
 
+## Version 18: matched per-tree lambda identifiability
+
+The [V18 design](README-v18.md) performs the first like-for-like per-tree
+terminal-edge CV comparison of the validated fixed-lambda correlated and UCLN
+estimators. It uses paired simulations, complete lambda paths, fold-bootstrap
+support intervals, oracle chronogram recovery, and globally parallel resumable
+path tasks. V18 is validation-only: UCLN lambda selection remains unavailable
+publicly, correlated selection remains experimental, and same-data bootstrap-
+tree aggregation is deferred unless per-tree CV first demonstrates useful
+predictive signal.
+
 ## Version 17: paired ToyTree--ape benchmark
 
 The [V17 design](README-v17.md) provides a publication-oriented comparison of
