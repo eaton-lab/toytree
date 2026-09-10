@@ -447,6 +447,8 @@ def _complete_correlated_cv_problem(
     selected = selection["selected_candidate"]
     return {
         "model": "correlated",
+        "fixed_lambda_estimator_validation_status": "validated",
+        "selection_validation_status": "experimental",
         "selection_method": "leave_one_terminal_edge_out",
         "selection_target": "lambda",
         "score": (
@@ -482,7 +484,7 @@ def edges_make_ultrametric_correlated_lambda_cv(
     seed: int | None = None,
     _observation_loss: str = "fractional_poisson",
 ) -> dict[str, Any]:
-    """Select correlated-rate smoothing by terminal-edge LOOCV.
+    """Experimentally select correlated-rate smoothing by terminal-edge LOOCV.
 
     This implements the lineage-pruning prediction criterion described by
     Sanderson (2002). Each terminal branch observation is excluded in turn,
@@ -490,6 +492,13 @@ def edges_make_ultrametric_correlated_lambda_cv(
     through its profiled rate under the ancestral log-rate penalty. The
     lambda with minimum mean Pearson prediction error is selected. Exact
     numerical ties favor stronger smoothing.
+
+    The correlated estimator at a user-supplied lambda has passed ToyTree's
+    fixed-lambda validation. This selector has not: validation studies found
+    that its point selection can be useful while the supported lambda range
+    and resulting chronograms remain broad for some trees. Treat the selected
+    lambda as exploratory, inspect candidate and fold diagnostics, and assess
+    chronogram sensitivity across plausible lambda values.
 
     Parameters
     ----------
@@ -515,7 +524,9 @@ def edges_make_ultrametric_correlated_lambda_cv(
     -------
     dict
         Selected lambda and full fit, candidate and fold diagnostics, and
-        whether selection occurred at a lambda-grid boundary.
+        whether selection occurred at a lambda-grid boundary. The
+        ``selection_validation_status`` field explicitly records that lambda
+        selection remains experimental.
     """
     ncores = _validate_parallel_option(ncores, "ncores")
     problem = _prepare_correlated_cv_problem(

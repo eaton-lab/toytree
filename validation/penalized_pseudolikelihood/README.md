@@ -12,6 +12,12 @@ six controls, then reserves a fresh seed stream for an unchanged-gate,
 540-dataset confirmation. The model, fixed lambda values, statistical design,
 and release thresholds are unchanged.
 
+The 20-dataset replay and independently seeded 540-dataset confirmation both
+passed every frozen gate. Fixed-lambda correlated development is complete
+within the tested scope. This result does not validate the separate
+terminal-edge cross-validation lambda selector, whose uncertainty limitations
+remain documented below.
+
 ## Version 15: frozen correlated confirmation
 
 The [V15 design](README-v15.md) freezes the profiled correlated estimator after

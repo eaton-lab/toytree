@@ -54,3 +54,19 @@ tune against these data before running the confirmation.
 Rerunning a fit command resumes matching atomic caches. Commit only the
 `results`, `environment`, and `seeds` JSON files for the completed mode; never
 commit `v16/cache-v16/`.
+
+## Recorded outcome
+
+The targeted replay passed all frozen gates: all 14 prior near-threshold cases
+were resolved, all six controls remained valid, and one dataset used three
+accepted Newton stationarity-refinement steps. The subsequent independently
+seeded confirmation also passed every frozen release gate across 540 datasets
+and 2,214 fit tasks. All 2,160 primary fits converged, calibration validity was
+100%, median root-normalized internal-age MAE was `0.0374`, its 90th percentile
+was `0.0705`, maximum absolute age bias was `0.0101`, and median fixed-age rate
+Spearman correlation was `0.942`. The maximum projected conditional-rate
+gradient was `9.71e-7`, below the prespecified `1e-6` limit.
+
+This completes validation of correlated fitting at prespecified lambda values
+within the study's simulation scope. It does not validate automatic lambda
+selection; that remains a separate experimental workflow.

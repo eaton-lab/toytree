@@ -160,7 +160,9 @@ def edges_make_ultrametric(
     All supported fits use a fractional-Poisson branch-length
     pseudolikelihood. This function fits one explicitly configured model. Use
     :meth:`edges_make_ultrametric_correlated_lambda_cv` to select lambda by
-    terminal-edge cross-validation within the correlated-rate model.
+    terminal-edge cross-validation within the correlated-rate model. The
+    correlated estimator at a supplied lambda is validated within its
+    documented scope; the lambda-CV point selector remains experimental.
 
 
     Input edge lengths may use any consistent, finite, non-negative additive

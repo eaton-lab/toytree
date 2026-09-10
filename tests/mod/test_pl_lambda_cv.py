@@ -201,6 +201,10 @@ class TestCorrelatedLambdaCV(PytestCompat):
             )
 
         self.assertEqual(result["selected_lam"], 1.0)
+        self.assertEqual(
+            result["fixed_lambda_estimator_validation_status"], "validated"
+        )
+        self.assertEqual(result["selection_validation_status"], "experimental")
         self.assertFalse(result["candidates"][0]["stable"])
         self.assertFalse(result["candidates"][0]["valid"])
         self.assertTrue(result["candidates"][1]["stable"])

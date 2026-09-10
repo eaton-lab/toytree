@@ -112,3 +112,17 @@ def test_v16_replay_summary_requires_all_target_gradients_to_pass():
     assert not summary["gates_passed"]
     assert not summary["checks"]["all_target_numerical_failures_resolved"]
     assert not summary["checks"]["profile_rate_gradient"]
+
+
+def test_v16_committed_confirmation_passes_frozen_release_gates():
+    """The committed result validates the exact fixed-lambda implementation."""
+    path = study.DEFAULT_OUTPUT / "results-v16-confirmation.json"
+    result = json.loads(path.read_text())
+
+    assert result["fit_source_hash"] == study._fit_source_hash(_config())
+    assert result["mode"] == "confirmation"
+    assert result["lambda_selection"] is False
+    assert result["release_eligible"] is True
+    assert result["summary"]["gates_passed"] is True
+    assert result["all_release_gates_passed"] is True
+    assert all(result["summary"]["checks"].values())
