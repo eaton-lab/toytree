@@ -25,6 +25,9 @@ from validation.penalized_pseudolikelihood import (
 from validation.penalized_pseudolikelihood import (
     run_validation_v17_benchmark as study,
 )
+from validation.penalized_pseudolikelihood import (
+    run_validation_v17_relaxed_initialization as relaxed_initialization,
+)
 
 CONFIG = json.loads(study.CONFIG_PATH.read_text())
 
@@ -347,6 +350,19 @@ def test_v17_relaxed_warmstart_targets_only_ape_better_cases():
         ]
     }
     assert warmstart_diagnostics._target_ids(result, 2) == ["d1", "d3"]
+
+
+def test_v17_relaxed_initialization_replay_targets_all_relaxed_pairs():
+    """The replay includes every relaxed pair once, regardless of convergence."""
+    result = {
+        "pairs": [
+            {"dataset_id": "r1", "scenario": "relaxed_gamma_shape4"},
+            {"dataset_id": "clock", "scenario": "clock"},
+            {"dataset_id": "r1", "scenario": "relaxed_gamma_shape4"},
+            {"dataset_id": "r2", "scenario": "relaxed_gamma_shape4"},
+        ]
+    }
+    assert relaxed_initialization._target_ids(result) == ["r1", "r2"]
 
 
 def test_v17_r_adapter_has_no_jsonlite_dependency():

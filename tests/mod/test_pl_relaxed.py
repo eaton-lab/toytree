@@ -49,6 +49,7 @@ class TestPenalizedPseudolikelihoodRelaxed(PytestCompat):
         self.assertTrue(result["tree"].is_ultrametric())
         self.assertEqual(result["model"], "relaxed")
         self.assertEqual(result["penalty_model"], "chronos_gamma_cdf")
+        self.assertEqual(result["initialization_strategy"], "profiled_clock_chronogram")
         self.assertFalse(result["scale_invariant"])
         self.assertNotIn("PHIIC", result)
         self.assertTrue(

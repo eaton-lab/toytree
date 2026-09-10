@@ -239,7 +239,9 @@ def _edges_make_ultrametric_independent(
         model rates while keeping ages fixed, or vice-versa, to search
         for improvements on the joint fit model.
     nstarts: int
-        Number of random starting points; best objective is retained.
+        Number of starting points; the first uses the model-specific
+        deterministic initialization and additional starts perturb it. The
+        best objective is retained.
     ncores: int
         Number of worker processes for multistart; used if nstarts > 1.
     seed: int or None
@@ -266,8 +268,38 @@ def _edges_make_ultrametric_independent(
         dist_floor=DIST_FLOOR,
     )
 
-    # get init and fixed node ages that make tree ultrametric
+    # Get feasible topology-only ages first. For the chronos-compatible
+    # relaxed objective, replace these with the data-informed strict-clock
+    # chronogram when that inexpensive nested fit succeeds. The Gamma-CDF
+    # penalty is strongly non-convex, and local perturbations of the
+    # topology-only ages repeatedly occupy the same poor basin on larger
+    # trees. UCLN has its own profiled optimizer and retains its established
+    # initialization.
     ages_init, _ = _get_init_ages(tree, calibrations)
+    initialization_strategy = "topology_feasible"
+    if model == "relaxed":
+        clock_start = edges_make_ultrametric_clock(
+            tree,
+            calibrations=calibrations,
+            full=True,
+            inplace=False,
+            max_iter=max_iter,
+            max_fun=max_fun,
+            nstarts=1,
+            ncores=1,
+            seed=seed,
+            _observation_mask=_observation_mask,
+        )
+        if clock_start["converged"]:
+            ages_init = (
+                clock_start["tree"].get_node_data("height").to_numpy(dtype=float)
+            )
+            initialization_strategy = "profiled_clock_chronogram"
+        else:
+            logger.warning(
+                "Strict-clock initialization did not converge; using the "
+                "feasible topology-only relaxed-model start."
+            )
 
     # get bounds on params that need to be inferred; are not fixed
     rates_bounds, ages_bounds = _get_params_bounds(tree, calibrations)
@@ -413,6 +445,7 @@ def _edges_make_ultrametric_independent(
         "tree": tree,
         "converged": bool(best["converged"]),
         "optimizer_message": str(best["message"]),
+        "initialization_strategy": initialization_strategy,
         "nstarts": nstarts,
         "ncores": max(1, min(ncores, nstarts)),
         "best_start": int(best["start"]),
@@ -1687,6 +1720,16 @@ def edges_make_ultrametric_relaxed(
     substitutions per site are common but not required. Calibration ages
     define the output-tree time unit, and fitted rates are in input-edge units
     per calibration unit. Without calibrations, the root age is fixed to 1,
+    so the output is relative time and rates are in input-edge units per
+    relative root-age unit.
+
+    The optimizer begins from a profiled strict-clock chronogram when that
+    nested fit converges, then estimates independent rates under the shared
+    chronos Gamma-CDF objective. This data-informed start avoids poor
+    topology-only basins seen on larger trees. It does not make the objective
+    strongly identifiable: materially different chronograms can still have
+    nearly equal penalized objective values. With ``full=True``, the returned
+    ``initialization_strategy`` records which start was used.
     """
     return _edges_make_ultrametric_independent(
         tree=tree,

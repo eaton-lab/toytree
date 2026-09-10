@@ -127,6 +127,32 @@ python validation/penalized_pseudolikelihood/diagnose_relaxed_warmstart_v17.py \
 This diagnostic runs only four independent tasks, uses the cached ape fits,
 and does not invoke R or refit ape. Its per-dataset results are resumable.
 
+That test reproduced all four ape objectives exactly, but the projected
+gradient at ape's reported solutions ranged from `0.021` to `0.245`. Starting
+ToyTree at those points improved the objective by `0.078` to `0.763`. The
+Gamma-CDF objective is therefore shared, while the optimizers stop in
+different basins and ape's supplied relaxed-penalty gradient is not the full
+derivative of that objective.
+
+A regenerated failure showed that a strict-clock chronogram provides a much
+better deterministic start without using ape: normalized age MAE fell from
+`0.535` to `0.060`, versus `0.100` for ape, while the penalized objective
+improved by `12.19`. The production relaxed fitter now uses this start when
+the nested clock fit converges. Replay all 36 relaxed pilot datasets in a new
+cache namespace, leaving the frozen original fits intact:
+
+```bash
+python validation/penalized_pseudolikelihood/run_validation_v17_relaxed_initialization.py \
+  --mode pilot --stage fit --ncores "$(nproc)"
+
+python validation/penalized_pseudolikelihood/run_validation_v17_relaxed_initialization.py \
+  --mode pilot --stage score --ncores 1
+```
+
+This replay invokes neither R nor ape. Confirmation remains blocked until the
+full pilot shows that the new initialization improves recovery without merely
+selecting higher-objective but weakly identified chronograms.
+
 ### Confirmation
 
 After resolving the relaxed result and freezing the benchmark design, use the
