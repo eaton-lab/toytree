@@ -44,6 +44,14 @@ CONFIG_PATH = HERE / "config-v15.json"
 DEFAULT_OUTPUT = HERE / "v15"
 CACHE_SCHEMA = 1
 ROLES = ("default", "stress", "oracle_start", "fixed_age")
+COMPATIBLE_FIT_SOURCE_HASHES = {
+    # V15 was already running remotely when a reporting-only KeyError was
+    # found for failed multistart records. Successful caches produced by this
+    # source remain numerically compatible with the repaired implementation.
+    "5a7a517aba69be977ac2bc9f8ccb066febfa88922853c219d1828dba1080149b": (
+        "pre-fix V15 source; failed-start metadata schema only"
+    ),
+}
 
 
 def _fit_source_hash(config: dict[str, Any]) -> str:
@@ -139,18 +147,35 @@ def _task_payloads(
         for role in _roles(dataset):
             task = dict(dataset)
             task["role"] = role
-            fingerprint_value = {
-                key: value
-                for key, value in task.items()
-                if key not in {"resume", "source_hash"}
-            } | {
-                "source_hash": task["source_hash"],
-                "cache_schema": CACHE_SCHEMA,
-            }
-            task["fingerprint"] = v14._json_hash(fingerprint_value)
+            task["fingerprint"] = _task_fingerprint(task, task["source_hash"])
             task["cache_path"] = str(_cache_path(output_dir, task))
             tasks.append(task)
     return tasks
+
+
+def _task_fingerprint(payload: dict[str, Any], source_hash: str) -> str:
+    """Return one fit-task fingerprint for an explicit source hash."""
+    fingerprint_value = {
+        key: value
+        for key, value in payload.items()
+        if key
+        not in {
+            "resume",
+            "source_hash",
+            "fingerprint",
+            "cache_path",
+        }
+    } | {
+        "source_hash": source_hash,
+        "cache_schema": CACHE_SCHEMA,
+    }
+    return v14._json_hash(fingerprint_value)
+
+
+def _accepted_task_fingerprints(payload: dict[str, Any]) -> set[str]:
+    """Return current and explicitly audited compatible fingerprints."""
+    source_hashes = {payload["source_hash"], *COMPATIBLE_FIT_SOURCE_HASHES}
+    return {_task_fingerprint(payload, value) for value in source_hashes}
 
 
 def _worker(payload: dict[str, Any]) -> str:
@@ -159,7 +184,7 @@ def _worker(payload: dict[str, Any]) -> str:
     if payload["resume"] and path.exists():
         try:
             cached = json.loads(path.read_text())
-            if cached.get("fingerprint") == payload["fingerprint"]:
+            if cached.get("fingerprint") in _accepted_task_fingerprints(payload):
                 return str(path)
         except (OSError, json.JSONDecodeError):
             pass
@@ -209,7 +234,7 @@ def _read_task_caches(tasks: list[dict[str, Any]]) -> list[Path]:
         if not path.exists():
             raise FileNotFoundError(f"missing cache: {path}")
         cached = json.loads(path.read_text())
-        if cached.get("fingerprint") != task["fingerprint"]:
+        if cached.get("fingerprint") not in _accepted_task_fingerprints(task):
             raise RuntimeError(f"stale cache fingerprint: {path}")
         paths.append(path)
     return paths
@@ -391,6 +416,7 @@ def main() -> None:
         {
             "environment": v13._environment(),
             "fit_source_hash": _fit_source_hash(config),
+            "compatible_fit_source_hashes": COMPATIBLE_FIT_SOURCE_HASHES,
             "scoring_hash": _scoring_hash(config),
             "config_hash": v14._json_hash(config),
             "config": config,
@@ -438,6 +464,7 @@ def main() -> None:
     result = {
         "study_version": int(config["study_version"]),
         "fit_source_hash": _fit_source_hash(config),
+        "compatible_fit_source_hashes": COMPATIBLE_FIT_SOURCE_HASHES,
         "scoring_hash": _scoring_hash(config),
         "config_hash": v14._json_hash(config),
         "mode": args.mode,

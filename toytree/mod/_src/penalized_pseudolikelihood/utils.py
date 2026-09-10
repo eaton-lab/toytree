@@ -40,6 +40,9 @@ def _run_multistart(
     - objective: float
     - converged: bool
     - message: str
+
+    Failure records also preserve the optional ``start_kind`` payload field,
+    falling back to ``start_<index>`` when it is absent.
     """
     if not payloads:
         return []
@@ -54,6 +57,12 @@ def _run_multistart(
                 results.append(
                     {
                         "start": int(payload.get("start", -1)),
+                        "start_kind": str(
+                            payload.get(
+                                "start_kind",
+                                f"start_{int(payload.get('start', -1))}",
+                            )
+                        ),
                         "objective": float("inf"),
                         "converged": False,
                         "message": f"{type(exc).__name__}: {exc}",
@@ -64,18 +73,21 @@ def _run_multistart(
 
     try:
         with ProcessPoolExecutor(max_workers=workers) as pool:
-            fut_to_start = {
-                pool.submit(worker, payload): int(payload.get("start", -1))
-                for payload in payloads
+            fut_to_payload = {
+                pool.submit(worker, payload): payload for payload in payloads
             }
-            for fut in as_completed(fut_to_start):
-                start = fut_to_start[fut]
+            for fut in as_completed(fut_to_payload):
+                payload = fut_to_payload[fut]
+                start = int(payload.get("start", -1))
                 try:
                     results.append(fut.result())
                 except Exception as exc:
                     results.append(
                         {
                             "start": start,
+                            "start_kind": str(
+                                payload.get("start_kind", f"start_{start}")
+                            ),
                             "objective": float("inf"),
                             "converged": False,
                             "message": f"{type(exc).__name__}: {exc}",

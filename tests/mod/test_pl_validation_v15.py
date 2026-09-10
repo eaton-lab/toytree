@@ -73,6 +73,21 @@ def test_v15_gate_edits_do_not_invalidate_fit_fingerprints():
     assert study._scoring_hash(config) != study._scoring_hash(changed)
 
 
+def test_v15_accepts_audited_prefixed_cache_fingerprint(tmp_path):
+    """The reporting-only fix reuses successful pre-fix remote caches."""
+    config = _config()
+    dataset = study._datasets(config, "smoke", resume=True)[0]
+    task = study._task_payloads([dataset], tmp_path)[0]
+    legacy_hash = next(iter(study.COMPATIBLE_FIT_SOURCE_HASHES))
+    legacy_fingerprint = study._task_fingerprint(task, legacy_hash)
+    path = Path(task["cache_path"])
+    path.parent.mkdir(parents=True)
+    path.write_text(json.dumps({"fingerprint": legacy_fingerprint}))
+
+    assert legacy_fingerprint != task["fingerprint"]
+    assert study._read_task_caches([task]) == [path]
+
+
 def test_v15_increment_recovery_is_diagnostic_not_release_gating():
     """The frozen summary reports but does not gate shrunken increments."""
     config = _config()

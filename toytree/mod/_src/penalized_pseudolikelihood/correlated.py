@@ -1207,7 +1207,10 @@ def edges_make_ultrametric_correlated(
         "clock_warm_start_used": clock_warm_start_used,
         "interior_multistart_included": bool(
             not clock_warm_start_used
-            or any(item["start_kind"].startswith("interior") for item in starts)
+            or any(
+                str(item.get("start_kind", "")).startswith("interior")
+                for item in starts
+            )
         ),
         "optimizer_strategy": "profiled_rates_joint_polish",
         "lam": lam,
@@ -1237,12 +1240,16 @@ def edges_make_ultrametric_correlated(
         "requested_nstarts": requested_nstarts,
         "ncores": max(1, min(effective_ncores, effective_nstarts)),
         "best_start": int(best["start"]),
-        "best_start_kind": str(best["start_kind"]),
+        "best_start_kind": str(
+            best.get("start_kind", f"start_{int(best.get('start', -1))}")
+        ),
         **stability,
         "starts": [
             {
                 "start": int(item["start"]),
-                "start_kind": str(item["start_kind"]),
+                "start_kind": str(
+                    item.get("start_kind", f"start_{int(item.get('start', -1))}")
+                ),
                 "objective": float(item["objective"]),
                 "converged": bool(item["converged"]),
                 "message": str(item["message"]),

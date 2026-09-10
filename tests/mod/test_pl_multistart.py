@@ -18,14 +18,36 @@ from toytree.mod._src.penalized_pseudolikelihood.uncorrelated_lognormal import (
     edges_make_ultrametric_uncorrelated_lognormal,
 )
 from toytree.mod._src.penalized_pseudolikelihood.utils import (
+    _run_multistart,
     get_tree_with_categorical_rates,
     get_tree_with_correlated_rates,
     get_tree_with_uncorrelated_rates,
 )
 
 
+def _raise_multistart_error(payload):
+    """Raise predictably to exercise failed-start metadata handling."""
+    raise RuntimeError(f"failed start {payload['start']}")
+
+
 class TestPenalizedLikelihoodMultistart(PytestCompat):
     """Multistart regression tests for penalized-likelihood fits."""
+
+    def test_failed_start_preserves_start_kind(self):
+        """Serial and process failures retain metadata needed by reporting."""
+        payloads = [
+            {"start": 3, "start_kind": "interior_perturbed"},
+            {"start": 4, "start_kind": "independent_perturbed"},
+        ]
+        for ncores in (1, 2):
+            results = _run_multistart(_raise_multistart_error, payloads, ncores=ncores)
+            self.assertEqual([item["start"] for item in results], [3, 4])
+            self.assertEqual(
+                [item["start_kind"] for item in results],
+                ["interior_perturbed", "independent_perturbed"],
+            )
+            self.assertTrue(all(not item["converged"] for item in results))
+            self.assertTrue(all(item["error"] for item in results))
 
     def test_clock_multistart_full_fields(self):
         """Clock fits should expose multistart metadata."""
