@@ -1,0 +1,385 @@
+{
+  "fit_source_hashes": {
+    "ape:clock": "f9e9126d8c986b3f9e2ded75159e932717c5b40e563b393b8325e809dfbee905",
+    "ape:correlated": "f9e9126d8c986b3f9e2ded75159e932717c5b40e563b393b8325e809dfbee905",
+    "ape:discrete": "f9e9126d8c986b3f9e2ded75159e932717c5b40e563b393b8325e809dfbee905",
+    "ape:relaxed": "f9e9126d8c986b3f9e2ded75159e932717c5b40e563b393b8325e809dfbee905",
+    "toytree:clock": "e13b57958e06fcd98bcdf66242b8246ce35ae2c6d63599f03d5b69628275ab9e",
+    "toytree:correlated": "ab4e0f96a20624ffd1dcfcef2194c839139d08d5a8af5572a4b3f91d83e11e4e",
+    "toytree:discrete": "6af59b070edae031b7eb0fc830407b1f1a39db78f038da1bcc1bf3cada01d84d",
+    "toytree:relaxed": "c819933affdc447143c93c47681b4280f202f4da7ef2c834e2cba17c4c3977a7",
+    "toytree:uncorrelated_lognormal": "d6a59b320832e0f0d04602bb8cc87a7209e4d90bf31bcaffddde73a73f07251f"
+  },
+  "fit_tasks": 22,
+  "mode": "pilot",
+  "pairs": [
+    {
+      "dataset_id": "clock-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "ntips": 24,
+      "scenario": "clock",
+      "toytree_over_ape_runtime": 1.5532899392293948
+    },
+    {
+      "dataset_id": "clock-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "ntips": 48,
+      "scenario": "clock",
+      "toytree_over_ape_runtime": 0.698176031904434
+    },
+    {
+      "dataset_id": "correlated_sigma0p3-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "ntips": 24,
+      "scenario": "correlated_sigma0p3",
+      "toytree_over_ape_runtime": 0.5653307397061815
+    },
+    {
+      "dataset_id": "correlated_sigma0p3-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "ntips": 48,
+      "scenario": "correlated_sigma0p3",
+      "toytree_over_ape_runtime": 2.972371227557386
+    },
+    {
+      "dataset_id": "discrete_k2-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "ntips": 24,
+      "scenario": "discrete_k2",
+      "toytree_over_ape_runtime": 8.402841449375972
+    },
+    {
+      "dataset_id": "discrete_k2-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "ntips": 48,
+      "scenario": "discrete_k2",
+      "toytree_over_ape_runtime": 1.2402765461324234
+    },
+    {
+      "dataset_id": "discrete_k3-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "ntips": 24,
+      "scenario": "discrete_k3",
+      "toytree_over_ape_runtime": 17.780772720774017
+    },
+    {
+      "dataset_id": "discrete_k3-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "ntips": 48,
+      "scenario": "discrete_k3",
+      "toytree_over_ape_runtime": 4.434707979697966
+    },
+    {
+      "dataset_id": "relaxed_gamma_shape4-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "ntips": 24,
+      "scenario": "relaxed_gamma_shape4",
+      "toytree_over_ape_runtime": 7.537256339829524
+    },
+    {
+      "dataset_id": "relaxed_gamma_shape4-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "ntips": 48,
+      "scenario": "relaxed_gamma_shape4",
+      "toytree_over_ape_runtime": 1.80163436093915
+    }
+  ],
+  "rows": [
+    {
+      "converged": true,
+      "dataset_id": "clock-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 0.20400000000000001,
+      "engine": "ape",
+      "model": "clock",
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "clock",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "clock-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 0.31687114760279655,
+      "engine": "toytree",
+      "model": "clock",
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "clock",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "clock-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 0.268,
+      "engine": "ape",
+      "model": "clock",
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "clock",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "clock-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 0.18711117655038834,
+      "engine": "toytree",
+      "model": "clock",
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "clock",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "correlated_sigma0p3-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 1.248,
+      "engine": "ape",
+      "model": "correlated",
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "correlated_sigma0p3",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "correlated_sigma0p3-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 0.7055327631533146,
+      "engine": "toytree",
+      "model": "correlated",
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "correlated_sigma0p3",
+      "status": "ok"
+    },
+    {
+      "converged": false,
+      "dataset_id": "correlated_sigma0p3-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 0.402,
+      "engine": "ape",
+      "model": "correlated",
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "correlated_sigma0p3",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "correlated_sigma0p3-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 1.1948932334780693,
+      "engine": "toytree",
+      "model": "correlated",
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "correlated_sigma0p3",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "discrete_k2-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 0.15100000000000002,
+      "engine": "ape",
+      "model": "discrete",
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "discrete_k2",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "discrete_k2-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 1.268829058855772,
+      "engine": "toytree",
+      "model": "discrete",
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "discrete_k2",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "discrete_k2-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 6.162999999999999,
+      "engine": "ape",
+      "model": "discrete",
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "discrete_k2",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "discrete_k2-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 7.643824353814125,
+      "engine": "toytree",
+      "model": "discrete",
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "discrete_k2",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "discrete_k3-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 0.11399999999999999,
+      "engine": "ape",
+      "model": "discrete",
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "discrete_k3",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "discrete_k3-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 2.0270080901682377,
+      "engine": "toytree",
+      "model": "discrete",
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "discrete_k3",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "discrete_k3-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 0.708,
+      "engine": "ape",
+      "model": "discrete",
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "discrete_k3",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "discrete_k3-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 3.1397732496261597,
+      "engine": "toytree",
+      "model": "discrete",
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "discrete_k3",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "relaxed_gamma_shape4-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 2.1470000000000002,
+      "engine": "ape",
+      "model": "relaxed",
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "relaxed_gamma_shape4",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "relaxed_gamma_shape4-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 16.18248936161399,
+      "engine": "toytree",
+      "model": "relaxed",
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "relaxed_gamma_shape4",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "relaxed_gamma_shape4-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 4.706,
+      "engine": "ape",
+      "model": "relaxed",
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "relaxed_gamma_shape4",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "relaxed_gamma_shape4-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 8.478491302579641,
+      "engine": "toytree",
+      "model": "relaxed",
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "relaxed_gamma_shape4",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "ucln_sigma0p3-n24-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 0.28107214719057083,
+      "engine": "toytree",
+      "model": "uncorrelated_lognormal",
+      "ntips": 24,
+      "replicate": 0,
+      "scenario": "ucln_sigma0p3",
+      "status": "ok"
+    },
+    {
+      "converged": true,
+      "dataset_id": "ucln_sigma0p3-n48-root_and_internal_interval-continuous_gamma-r0000",
+      "elapsed_seconds": 0.9611938707530499,
+      "engine": "toytree",
+      "model": "uncorrelated_lognormal",
+      "ntips": 48,
+      "replicate": 0,
+      "scenario": "ucln_sigma0p3",
+      "status": "ok"
+    }
+  ],
+  "study_version": 17,
+  "summary": {
+    "clock:n24": {
+      "mean": 1.5532899392293948,
+      "median": 1.5532899392293948,
+      "n": 1,
+      "p90": 1.5532899392293948
+    },
+    "clock:n48": {
+      "mean": 0.698176031904434,
+      "median": 0.698176031904434,
+      "n": 1,
+      "p90": 0.698176031904434
+    },
+    "correlated_sigma0p3:n24": {
+      "mean": 0.5653307397061815,
+      "median": 0.5653307397061815,
+      "n": 1,
+      "p90": 0.5653307397061815
+    },
+    "correlated_sigma0p3:n48": {
+      "mean": 2.972371227557386,
+      "median": 2.972371227557386,
+      "n": 1,
+      "p90": 2.972371227557386
+    },
+    "discrete_k2:n24": {
+      "mean": 8.402841449375972,
+      "median": 8.402841449375972,
+      "n": 1,
+      "p90": 8.402841449375972
+    },
+    "discrete_k2:n48": {
+      "mean": 1.2402765461324234,
+      "median": 1.2402765461324234,
+      "n": 1,
+      "p90": 1.2402765461324234
+    },
+    "discrete_k3:n24": {
+      "mean": 17.780772720774017,
+      "median": 17.780772720774017,
+      "n": 1,
+      "p90": 17.780772720774017
+    },
+    "discrete_k3:n48": {
+      "mean": 4.434707979697966,
+      "median": 4.434707979697966,
+      "n": 1,
+      "p90": 4.434707979697966
+    },
+    "relaxed_gamma_shape4:n24": {
+      "mean": 7.537256339829524,
+      "median": 7.537256339829524,
+      "n": 1,
+      "p90": 7.537256339829524
+    },
+    "relaxed_gamma_shape4:n48": {
+      "mean": 1.80163436093915,
+      "median": 1.80163436093915,
+      "n": 1,
+      "p90": 1.80163436093915
+    }
+  },
+  "timing_protocol": "serial-alternating-v1"
+}
