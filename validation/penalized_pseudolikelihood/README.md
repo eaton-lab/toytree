@@ -3,6 +3,15 @@
 This directory contains the pinned simulation and predictive-validation study
 for ToyTree's ultrametric branch-length pseudolikelihood models.
 
+## Version 15: correlated confirmation
+
+The [V15 design](README-v15.md) freezes the profiled correlated estimator after
+the passing V14 replay and evaluates it on 540 datasets from an untouched,
+independent seed stream. It is release-gating for fixed-lambda correlated
+fitting, not for automatic lambda selection. Increment recovery is retained as
+a diagnostic rather than a gate because smoothing intentionally shrinks the
+increments being measured.
+
 ## Version 14: targeted correlated optimizer replay
 
 The [V14 design](README-v14.md) replays all 14 numerical failures from the V13

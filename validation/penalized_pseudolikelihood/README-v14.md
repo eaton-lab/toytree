@@ -61,5 +61,5 @@ Each fit role is a separate process-pool task and is cached atomically under
 `v14/cache-v14/`. The score stage never refits. Commit only the compact
 environment, seeds, and result JSON files, not the task cache.
 
-V14 is diagnostic-only. If it passes, the next release-gating step is a fresh,
-independently seeded V13-style confirmation using the frozen estimator.
+V14 is diagnostic-only. Its passing replay led to the independently seeded,
+release-gating V15 confirmation design in `README-v15.md`.
