@@ -26,6 +26,7 @@ from toytree.mod._src.penalized_pseudolikelihood.utils import (
     Calibrations,
     _decode_age_params,
     _encode_age_params,
+    _finalize_fit_result,
     _finalize_ultrametric_ages,
     _get_children_map_from_edges,
     _get_init_ages,
@@ -1319,10 +1320,8 @@ def _edges_make_ultrametric_correlated(
     expected = time_dists * fit_rates
     ages = fit_ages * calibration_time_scale
     rates = fit_rates / calibration_time_scale
-    tree = tree.set_node_data("height", ages, inplace=inplace)
-    if not full:
-        return tree
-    return {
+    output_tree = tree.set_node_data("height", ages, inplace=False)
+    result = {
         "model": "correlated",
         "pseudologlik": pseudologlik,
         "penalized_pseudologlik": penalized_pseudologlik,
@@ -1354,7 +1353,7 @@ def _edges_make_ultrametric_correlated(
         "rates": list(rates),
         "expected_branch_lengths": expected.tolist(),
         "observed_branch_lengths": dists_o.tolist(),
-        "tree": tree,
+        "tree": output_tree,
         "converged": bool(best["converged"]),
         "optimizer_message": str(best["message"]),
         "nfev": int(best.get("nfev", -1)),
@@ -1430,6 +1429,7 @@ def _edges_make_ultrametric_correlated(
             for item in starts
         ],
     }
+    return _finalize_fit_result(result, tree, full=full, inplace=inplace)
 
 
 def _correlated_penalty(rates_hat: np.ndarray, parent_edges: np.ndarray) -> float:
@@ -1670,7 +1670,12 @@ def edges_make_ultrametric_correlated(
     ``lam`` is a user-supplied smoothing assumption; automatic estimation is
     intentionally not provided. Input edge units are arbitrary additive units,
     and calibrations define the returned time unit. Without calibrations, root
-    age is one and returned times are relative.
+    age is one and returned times are relative. By default, only a usable
+    tree is returned; nonconvergence or explicitly unstable multistart
+    diagnostics raise :class:`ToytreeError`. Set ``full=True`` to always
+    receive the candidate tree and diagnostics, including ``fit_usable`` and
+    ``failure_reasons``. ``inplace=True`` mutates the input only after the fit
+    is declared usable.
     """
     return _edges_make_ultrametric_correlated(
         tree=tree,

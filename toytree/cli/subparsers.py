@@ -1691,7 +1691,7 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
         type=int,
         default=None,
         metavar="int",
-        help="PL only: starts; defaults to discrete=4, otherwise=1",
+        help="PL only: starts; defaults discrete=8, UCLN/correlated=4, others=1",
     )
     opt_group.add_argument(
         "--ncores",
@@ -1710,12 +1710,12 @@ def get_parser_make_ultrametric(parser: ArgumentParser | None = None) -> Argumen
     opt_group.add_argument(
         "--full",
         action="store_true",
-        help="PL only: print model-fit summary fields to stderr",
+        help="PL only: print diagnostics to stderr, including before fit failure",
     )
     opt_group.add_argument(
         "--json",
         action="store_true",
-        help="PL only: print model-fit summary as JSON to stderr",
+        help="PL only: print diagnostics as JSON to stderr, including on failure",
     )
 
     options_group = p.add_argument_group(title="Options")

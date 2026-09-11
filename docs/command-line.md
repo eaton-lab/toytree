@@ -240,6 +240,13 @@ toytree make-ultrametric -i TREE.nwk -m uncorrelated_lognormal --lam 0.5 > UTREE
 toytree make-ultrametric -i TREE.nwk -m correlated --lam 0.5 --nstarts 8 --ncores 4 --seed 123 > UTREE.nwk
 ```
 
+Penalized-likelihood CLI fits are fail-closed. The command writes Newick only
+when the optimizer result is usable; nonconvergence or explicitly unstable
+multistart diagnostics produce a nonzero exit and no tree output. Use `--json`
+or `--full` to print diagnostics to stderr before that failure. JSON includes
+`fit_usable`, `failure_reasons`, and `optimizer_message`, so shell pipelines can
+retain the diagnostic record without accepting a failed candidate tree.
+
 ## `anc-state-discrete`
 
 `anc-state-discrete` fits a discrete CTMC model (`ER`, `SYM`, or `ARD`) to a

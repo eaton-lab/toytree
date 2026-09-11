@@ -22,6 +22,7 @@ from toytree.mod._src.penalized_pseudolikelihood.utils import (
     Calibrations,
     _decode_age_params,
     _encode_age_params,
+    _finalize_fit_result,
     _finalize_ultrametric_ages,
     _get_children_map_from_edges,
     _get_init_ages,
@@ -585,7 +586,7 @@ def _edges_make_ultrametric_clock(
     )
 
     ages = np.asarray(best["ages"], dtype=float)
-    tree = tree.set_node_data("height", ages, inplace=inplace)
+    output_tree = tree.set_node_data("height", ages, inplace=False)
     rate = float(best["rate"])
 
     pseudologlik = _poisson_branch_pseudologlik(
@@ -594,10 +595,7 @@ def _edges_make_ultrametric_clock(
     time_dists = ages[edges[:, 1]] - ages[edges[:, 0]]
     expected = time_dists * rate
 
-    # return as a tree or a dict
-    if not full:
-        return tree
-    return {
+    result = {
         "model": "clock",
         "pseudologlik": pseudologlik,
         "penalized_pseudologlik": pseudologlik,
@@ -609,7 +607,7 @@ def _edges_make_ultrametric_clock(
         "rate": rate,
         "expected_branch_lengths": expected.tolist(),
         "observed_branch_lengths": dists_o.tolist(),
-        "tree": tree,
+        "tree": output_tree,
         "converged": bool(best["converged"]),
         "optimizer_message": str(best["message"]),
         "nfev": int(best.get("nfev", -1)),
@@ -655,6 +653,7 @@ def _edges_make_ultrametric_clock(
             for i in starts
         ],
     }
+    return _finalize_fit_result(result, tree, full=full, inplace=inplace)
 
 
 def _poisson_branch_pseudologlik(
@@ -753,7 +752,12 @@ def edges_make_ultrametric_clock(
     Input edge lengths may use any finite, nonnegative additive unit for which
     branch length equals elapsed time multiplied by rate. Calibrations define
     the returned time unit and rates use input-edge units per calibration-time
-    unit. With no calibrations, root age is one and times are relative.
+    unit. With no calibrations, root age is one and times are relative. By
+    default, only a usable tree is returned; nonconvergence or explicitly
+    unstable multistart diagnostics raise :class:`ToytreeError`. Set
+    ``full=True`` to always receive the candidate tree and diagnostics,
+    including ``fit_usable`` and ``failure_reasons``. ``inplace=True`` mutates
+    the input only after the fit is declared usable.
     """
     return _edges_make_ultrametric_clock(
         tree=tree,

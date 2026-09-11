@@ -202,6 +202,47 @@ def _result_observation_metadata() -> dict[str, str]:
     }
 
 
+def _finalize_fit_result(
+    result: dict[str, Any],
+    input_tree: ToyTree,
+    *,
+    full: bool,
+    inplace: bool,
+) -> ToyTree | dict[str, Any]:
+    """Apply the shared public contract for a completed PL fit.
+
+    A fit is unusable when its optimizer did not converge or when multistart
+    diagnostics explicitly mark the solution as unstable. Unassessed
+    stability is not itself a failure. Candidate trees from unusable fits are
+    available only through ``full=True`` and never mutate ``input_tree``.
+    """
+    failure_reasons: list[str] = []
+    if not bool(result.get("converged", False)):
+        failure_reasons.append("optimizer_not_converged")
+    solution_stable = result.get("solution_stable")
+    if solution_stable is not None and not bool(solution_stable):
+        failure_reasons.append("solution_unstable")
+
+    result["failure_reasons"] = failure_reasons
+    result["fit_usable"] = not failure_reasons
+    if failure_reasons:
+        if full:
+            return result
+        model = str(result.get("model", "penalized-likelihood"))
+        reasons = ", ".join(failure_reasons)
+        message = str(result.get("optimizer_message", "no optimizer message"))
+        raise ToytreeError(
+            f"{model} fit is unusable ({reasons}): {message}. "
+            "Re-run with full=True to inspect the candidate tree and diagnostics."
+        )
+
+    if inplace:
+        candidate = result["tree"]
+        heights = candidate.get_node_data("height").to_numpy(dtype=float)
+        result["tree"] = input_tree.set_node_data("height", heights, inplace=True)
+    return result if full else result["tree"]
+
+
 def _coerce_calibration_interval(calib: Any) -> tuple[float, float]:
     """Return one calibration coerced to a finite closed interval."""
     if isinstance(calib, bool):
