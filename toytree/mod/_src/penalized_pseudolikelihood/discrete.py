@@ -23,6 +23,7 @@ from toytree.mod._src.penalized_pseudolikelihood.utils import (
     Calibrations,
     _decode_age_params,
     _encode_age_params,
+    _finalize_fit_result,
     _finalize_ultrametric_ages,
     _get_children_map_from_edges,
     _get_init_ages,
@@ -628,7 +629,13 @@ def edges_make_ultrametric_discrete(
     but not to numerical rescaling of input branches, whose magnitude controls
     fractional-Poisson working information. For new analyses requiring an
     uncorrelated, scale-invariant rate model, use
-    :func:`edges_make_ultrametric_uncorrelated_lognormal`.
+    :func:`edges_make_ultrametric_uncorrelated_lognormal`. A converged,
+    replicated boundary optimum remains usable but does not support all
+    requested categories. By default, only a usable tree is returned;
+    nonconvergence or explicitly unstable multistart diagnostics raise
+    :class:`ToytreeError`. Set ``full=True`` to always receive the candidate
+    tree plus ``fit_usable`` and ``failure_reasons``. ``inplace=True`` mutates
+    the input only after the fit is declared usable.
 
     Parameters
     ----------
@@ -945,12 +952,9 @@ def edges_make_ultrametric_discrete(
             f"{boundary['effective_ncategories']}."
         )
 
-    output_tree = tree.set_node_data("height", ages, inplace=inplace)
+    output_tree = tree.set_node_data("height", ages, inplace=False)
 
-    # return as a tree or a dict
-    if not full:
-        return output_tree
-    return {
+    result = {
         "model": "discrete",
         "pseudologlik": pseudologlik,
         "penalized_pseudologlik": pseudologlik,
@@ -1007,6 +1011,7 @@ def edges_make_ultrametric_discrete(
             for i in starts
         ],
     }
+    return _finalize_fit_result(result, tree, full=full, inplace=inplace)
 
 
 def objective_discrete(

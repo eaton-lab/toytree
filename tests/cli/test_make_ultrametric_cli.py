@@ -5,6 +5,7 @@ import json
 import tempfile
 from contextlib import redirect_stderr, redirect_stdout
 from pathlib import Path
+from unittest.mock import patch
 
 from conftest import PytestCompat
 
@@ -18,6 +19,7 @@ from toytree.cli.subparsers import (
     get_parser_make_ultrametric,
     normalize_calibration_argv,
 )
+from toytree.core.apis import TreeModAPI
 from toytree.utils import ToytreeError
 
 
@@ -227,3 +229,35 @@ class TestMakeUltrametricCLI(PytestCompat):
             self.parser.parse_args(
                 ["-i", str(self.tree_path), "--method", "clock", "--estimate", "3"]
             )
+
+    def test_failed_fit_emits_requested_json_but_never_writes_tree(self):
+        """A failed fit reports diagnostics, raises, and leaves stdout empty."""
+        args = self.parser.parse_args(
+            ["-i", str(self.tree_path), "--method", "clock", "--json"]
+        )
+        failed = {
+            "model": "clock",
+            "tree": toytree.tree("(a:1,b:1);"),
+            "converged": False,
+            "solution_stable": None,
+            "fit_usable": False,
+            "failure_reasons": ["optimizer_not_converged"],
+            "optimizer_message": "iteration limit reached",
+        }
+        out = io.StringIO()
+        err = io.StringIO()
+        with (
+            patch.object(TreeModAPI, "edges_make_ultrametric", return_value=failed),
+            redirect_stdout(out),
+            redirect_stderr(err),
+        ):
+            with self.assertRaisesRegex(
+                ToytreeError, "clock fit is unusable.*optimizer_not_converged"
+            ):
+                run_make_ultrametric(args)
+
+        self.assertEqual(out.getvalue(), "")
+        payload = json.loads(err.getvalue())
+        self.assertFalse(payload["fit_usable"])
+        self.assertEqual(payload["failure_reasons"], ["optimizer_not_converged"])
+        self.assertEqual(payload["optimizer_message"], "iteration limit reached")

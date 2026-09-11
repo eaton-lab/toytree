@@ -119,7 +119,9 @@ def run_make_ultrametric(args):
             calibrations=calibrations,
             ncategories=args.ncat,
             lam=args.lam,
-            full=report_full,
+            # Always request diagnostics so the CLI never serializes an
+            # unusable candidate tree as though it were a successful fit.
+            full=True,
             inplace=False,
             max_iter=args.max_iter,
             max_fun=args.max_fun,
@@ -128,17 +130,28 @@ def run_make_ultrametric(args):
             ncores=args.ncores,
             seed=args.seed,
         )
-    if report_full:
-        if args.json:
-            payload = {"method": args.method}
-            for key, val in result.items():
-                if key != "tree":
-                    payload[str(key)] = _jsonify_value(val)
-            print(json.dumps(payload, ensure_ascii=False, indent=2), file=sys.stderr)
-        else:
-            for key, val in result.items():
-                if key != "tree":
-                    print(f"{key}={val}", file=sys.stderr)
+    if args.method != "extend":
+        if report_full:
+            if args.json:
+                payload = {"method": args.method}
+                for key, val in result.items():
+                    if key != "tree":
+                        payload[str(key)] = _jsonify_value(val)
+                print(
+                    json.dumps(payload, ensure_ascii=False, indent=2),
+                    file=sys.stderr,
+                )
+            else:
+                for key, val in result.items():
+                    if key != "tree":
+                        print(f"{key}={val}", file=sys.stderr)
+        if not result["fit_usable"]:
+            reasons = ", ".join(result["failure_reasons"])
+            message = result.get("optimizer_message", "no optimizer message")
+            raise ToytreeError(
+                f"{args.method} fit is unusable ({reasons}): {message}. "
+                "No output tree was written."
+            )
         tre = result["tree"]
     else:
         tre = result

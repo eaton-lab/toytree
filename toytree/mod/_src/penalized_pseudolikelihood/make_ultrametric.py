@@ -171,6 +171,14 @@ def edges_make_ultrametric(
     UCLN for new uncorrelated-rate analyses. These scoped statuses replace any
     blanket experimental designation for this module.
 
+    Tree-only mode is fail-closed: nonconvergence or an explicitly unstable
+    multistart solution raises :class:`ToytreeError` instead of returning a
+    candidate tree. Set ``full=True`` to always receive diagnostics and the
+    candidate, then inspect ``fit_usable`` and ``failure_reasons``. Unassessed
+    stability is not fatal. A converged discrete boundary optimum is also not
+    fatal by itself, because it can validly indicate fewer effective than
+    requested categories. ``inplace=True`` is applied only to usable fits.
+
 
     Input edge lengths may use any consistent, finite, non-negative additive
     unit for which branch length equals elapsed time multiplied by rate;

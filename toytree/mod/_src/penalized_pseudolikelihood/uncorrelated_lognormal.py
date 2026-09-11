@@ -26,6 +26,7 @@ from toytree.mod._src.penalized_pseudolikelihood.utils import (
     Calibrations,
     _decode_age_params,
     _encode_age_params,
+    _finalize_fit_result,
     _finalize_ultrametric_ages,
     _get_children_map_from_edges,
     _get_init_ages,
@@ -1160,10 +1161,8 @@ def _edges_make_ultrametric_ucln(
     expected = time_dists * fit_rates
     ages = fit_ages * calibration_time_scale
     rates = fit_rates / calibration_time_scale
-    tree = tree.set_node_data("height", ages, inplace=inplace)
-    if not full:
-        return tree
-    return {
+    output_tree = tree.set_node_data("height", ages, inplace=False)
+    result = {
         "model": "uncorrelated_lognormal",
         "pseudologlik": pseudologlik,
         "penalized_pseudologlik": penalized_pseudologlik,
@@ -1185,7 +1184,7 @@ def _edges_make_ultrametric_ucln(
         "profiled_mean_rate": float(np.exp(np.mean(np.log(rates)))),
         "expected_branch_lengths": expected.tolist(),
         "observed_branch_lengths": dists_o.tolist(),
-        "tree": tree,
+        "tree": output_tree,
         "converged": bool(best["converged"]),
         "optimizer_message": str(best["message"]),
         "nfev": int(best.get("nfev", -1)),
@@ -1236,6 +1235,7 @@ def _edges_make_ultrametric_ucln(
             for item in starts
         ],
     }
+    return _finalize_fit_result(result, tree, full=full, inplace=inplace)
 
 
 @add_subpackage_method(TreeModAPI)
@@ -1274,7 +1274,11 @@ def edges_make_ultrametric_uncorrelated_lognormal(
     pseudo-lengths. They can weaken rate-time identifiability, so full results
     report zero-edge and independent best-basin replication diagnostics. Four
     starts are used by default; a basin reached by only one start is not
-    reported as stable.
+    reported as stable. By default, only a usable tree is returned;
+    nonconvergence or explicitly unstable multistart diagnostics raise
+    :class:`ToytreeError`. Set ``full=True`` to always receive the candidate
+    tree and diagnostics, including ``fit_usable`` and ``failure_reasons``.
+    ``inplace=True`` mutates the input only after the fit is declared usable.
     """
     return _edges_make_ultrametric_ucln(
         tree=tree,

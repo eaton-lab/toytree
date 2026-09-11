@@ -19,6 +19,7 @@ from toytree.mod._src.penalized_pseudolikelihood.utils import (
     Calibrations,
     _decode_age_params,
     _encode_age_params,
+    _finalize_fit_result,
     _finalize_ultrametric_ages,
     _get_children_map_from_edges,
     _get_init_ages,
@@ -371,7 +372,7 @@ def _fit_relaxed(
         calibrations=calibrations,
         dist_floor=DIST_FLOOR,
     )
-    tree = tree.set_node_data("height", ages, inplace=inplace)
+    output_tree = tree.set_node_data("height", ages, inplace=False)
 
     # get rates params
     rates = _unpack_log_rates(current_params[:rsize])
@@ -386,10 +387,7 @@ def _fit_relaxed(
     time_dists = ages[edges[:, 1]] - ages[edges[:, 0]]
     expected = time_dists * rates
 
-    # return as a tree or a dict
-    if not full:
-        return tree
-    return {
+    result = {
         "model": "relaxed",
         "pseudologlik": pseudologlik,
         "penalized_pseudologlik": penalized_pseudologlik,
@@ -403,7 +401,7 @@ def _fit_relaxed(
         "profiled_mean_rate": float(np.mean(rates)),
         "expected_branch_lengths": expected.tolist(),
         "observed_branch_lengths": dists_o.tolist(),
-        "tree": tree,
+        "tree": output_tree,
         "converged": bool(best["converged"]),
         "optimizer_message": str(best["message"]),
         "initialization_strategy": initialization_strategy,
@@ -422,6 +420,7 @@ def _fit_relaxed(
             for i in starts
         ],
     }
+    return _finalize_fit_result(result, tree, full=full, inplace=inplace)
 
 
 @add_subpackage_method(TreeModAPI)
@@ -460,7 +459,11 @@ def edges_make_ultrametric_relaxed(
     topology-only basins seen on larger trees. It does not make the objective
     strongly identifiable: materially different chronograms can still have
     nearly equal penalized objective values. With ``full=True``, the returned
-    ``initialization_strategy`` records which start was used.
+    ``initialization_strategy`` records which start was used. By default,
+    only a usable tree is returned; a nonconverged fit raises
+    :class:`ToytreeError`. Set ``full=True`` to always receive the candidate
+    tree and diagnostics, including ``fit_usable`` and ``failure_reasons``.
+    ``inplace=True`` mutates the input only after the fit is declared usable.
     """
     return _fit_relaxed(
         tree=tree,
