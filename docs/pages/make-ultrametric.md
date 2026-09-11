@@ -2,7 +2,7 @@
 
 # Make trees ultrametric
 
-ToyTree provides a fast edge-extension method and five branch-length pseudolikelihood chronogram models. Choose the model from its biological rate assumptions. An experimental terminal-edge cross-validation helper can select a point value of **lam** within the correlated-rate model; it is not a cross-family model selector and does not establish that the selected value is precise. PHIIC is intentionally not calculated.
+ToyTree provides a fast edge-extension method and five branch-length pseudolikelihood chronogram models. Choose the model from its biological rate assumptions. Correlated and UCLN fits require a user-supplied **lam**; automatic lambda estimation is intentionally not exposed because development studies found broad supported ranges for individual trees. PHIIC is intentionally not calculated.
 
 
 ## Models
@@ -24,9 +24,8 @@ The lognormal and correlated penalties are sums rather than means, so a fixed **
 | `uncorrelated_lognormal` | Validated, with a zero-rich-data condition | Supplied **lam** and positive continuous additive branches; zero-rich fits must pass reported diagnostics |
 | `correlated` | Validated | Supplied **lam** |
 | `relaxed` | Compatibility only | Reproducing the `ape::chronos` Gamma-CDF objective; prefer UCLN for new analyses |
-| correlated lambda CV | Experimental selector | Exploratory point selection with sensitivity analysis |
 
-There is no public cross-family model selector, UCLN lambda selector, automatic discrete-category selector, PHIIC, or discrete-Gamma workflow. The branch-length pseudolikelihood is a stated statistical model rather than a blanket experimental designation; workflow-specific assumptions and exclusions still apply.
+There is no public automatic lambda selector, cross-family model selector, automatic discrete-category selector, PHIIC, or discrete-Gamma workflow. The branch-length pseudolikelihood is a stated statistical model rather than a blanket experimental designation; workflow-specific assumptions and exclusions still apply.
 
 
 ## Calibrations and scale
@@ -139,26 +138,11 @@ correlated["penalty_model"], correlated["profiled_root_rate"]
 
 Choose the clock family from its assumptions: strict clock for one shared rate, correlated for ancestor-descendant autocorrelation, and `uncorrelated_lognormal` for continuous independent lognormal rates. Retain `discrete` when `ape::chronos` fractional-Poisson mixture compatibility is required. Use `relaxed` only when reproducing the `ape::chronos` Gamma-CDF convention is specifically required. Neither PHIIC nor terminal-edge prediction identifies the family or the discrete **ncategories** value.
 
-!!! warning "Experimental correlated lambda selection"
-    Validation of the correlated estimator at a supplied **lam** does not validate automatic **lam** selection. `tree.mod.edges_make_ultrametric_correlated_lambda_cv(...)` performs deterministic leave-one-terminal-edge-out prediction over a supplied grid, but development studies found that supported lambda ranges and resulting chronograms can remain broad for some trees even when the point selection is useful. Treat `selected_lam` as exploratory: inspect candidate and fold diagnostics, expand a grid-boundary selection, and report chronogram sensitivity across plausible values. Exact score ties favor the larger **lam**.
-
-!!! note "UCLN lambda is specified, not selected"
-    ToyTree does not currently expose a per-tree UCLN lambda selector. For `uncorrelated_lognormal`, **lam** fixes the assumed dispersion through `lam = 1 / (2 * sigma_log**2)`; choose it from external knowledge or report sensitivity across scientifically plausible values. V4 selected lambda across simulations using known true ages before confirmation, so its result validates the retained fixed-lambda model rather than an empirical-tree selection procedure.
+!!! note "Lambda is specified, not estimated"
+    ToyTree does not expose an automatic lambda estimator for either `correlated` or `uncorrelated_lognormal`. Per-tree terminal-edge cross-validation was investigated but frequently supported broad lambda ranges and materially different chronograms. Supply **lam** from external knowledge and report sensitivity across scientifically plausible values. For `uncorrelated_lognormal`, **lam** fixes dispersion through `lam = 1 / (2 * sigma_log**2)`.
 
 Choose the `discrete` **ncategories** value a priori from the scientific model or compare sensitivity across explicitly reported values; ToyTree does not automatically select it.
 
 PHIIC is omitted deliberately. The former ToyTree expression matched neither the optimized penalized objective nor the distinct criterion returned by `ape::chronos`. Paradis (2013) proposed PHIIC for penalized-likelihood model selection, so it is not invalid merely because it differs from the fitting objective, but it has not been validated for ToyTree's modified log-rate penalties or as a lambda selector here. Exact objective parity with `ape::chronos` does not by itself justify exposing PHIIC.
 
 Inspect **converged**, **optimizer_message**, **projected_gradient_max_abs**, **solution_stable**, and the per-start metadata when requesting **full=True**. UCLN results additionally report **profile_rate_converged**, **rate_gradient_max_abs**, **best_basin_replicated**, and zero-length branch diagnostics. A single best-basin replicate is not evidence of a stable optimum. Discrete results additionally report **mixture_identified**, **effective_ncategories**, **boundary_solution**, **boundary_reasons**, and **optimum_replicated**. A converged boundary fit can be numerically valid while showing that the requested K-category mixture is not fully identified. Full results declare their observation model and report `pseudologlik` plus `penalized_pseudologlik`. Multiple starts perturb rates, internal ages, and mixture weights. `discrete` defaults to eight starts and `uncorrelated_lognormal` defaults to four; other methods default to one unless `nstarts` is supplied.
-
-
-
-```python
-selected = tree.mod.edges_make_ultrametric_correlated_lambda_cv(
-    lambdas=[0.01, 0.1, 1.0, 10.0],
-    calibrations=calibrations,
-    seed=123,
-)
-selected["selected_lam"], selected["mean_score"]
-
-```

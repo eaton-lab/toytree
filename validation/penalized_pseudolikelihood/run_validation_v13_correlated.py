@@ -39,9 +39,9 @@ from scipy.stats import spearmanr
 
 import toytree
 from toytree.mod._src.penalized_pseudolikelihood.correlated import (
-    edges_make_ultrametric_correlated,
+    _edges_make_ultrametric_correlated as edges_make_ultrametric_correlated,
 )
-from validation.penalized_pseudolikelihood.run_validation_v2 import (
+from validation.penalized_pseudolikelihood.simulation_helpers import (
     _scale_true_tree,
     _simulate_rates,
 )
@@ -173,9 +173,7 @@ def _calibration_records(values: dict[int, Any]) -> list[dict[str, float]]:
     records = []
     for key, value in values.items():
         lower, upper = (value, value) if np.isscalar(value) else value
-        records.append(
-            {"idx": int(key), "lower": float(lower), "upper": float(upper)}
-        )
+        records.append({"idx": int(key), "lower": float(lower), "upper": float(upper)})
     return records
 
 
@@ -222,10 +220,7 @@ def _simulate(payload: dict[str, Any]) -> dict[str, Any]:
         raise ValueError(f"unknown observation model: {observation_model}")
     observed_tree = true_tree.set_node_data(
         "dist",
-        {
-            int(child): float(observed[index])
-            for index, (child, _) in enumerate(edges)
-        },
+        {int(child): float(observed[index]) for index, (child, _) in enumerate(edges)},
         inplace=False,
     )
     return {
@@ -260,9 +255,7 @@ def _slim(fit: dict[str, Any]) -> dict[str, Any]:
         "near_optimal_starts": int(fit.get("near_optimal_starts", 0)),
         "stability_assessed": bool(fit.get("stability_assessed", False)),
         "solution_stable": fit.get("solution_stable"),
-        "max_near_optimal_age_difference": fit.get(
-            "max_near_optimal_age_difference"
-        ),
+        "max_near_optimal_age_difference": fit.get("max_near_optimal_age_difference"),
         "best_start_kind": str(fit.get("best_start_kind", "")),
     }
 
@@ -535,15 +528,12 @@ def _score_record(record: dict[str, Any]) -> dict[str, Any]:
     true_internal = truth[ntips:] / root_age
     default_ages = np.asarray(default["ages"], dtype=float)
     reference_ages = np.asarray(reference["ages"], dtype=float)
-    fitted_internal = default_ages[ntips:] / max(
-        abs(float(default_ages[-1])), EPS
-    )
+    fitted_internal = default_ages[ntips:] / max(abs(float(default_ages[-1])), EPS)
     age_delta = fitted_internal - true_internal
     objective_scale = max(1.0, abs(float(reference["objective"])))
     objective_gap = max(
         0.0,
-        (float(default["objective"]) - float(reference["objective"]))
-        / objective_scale,
+        (float(default["objective"]) - float(reference["objective"])) / objective_scale,
     )
     default_reference_age_difference = float(
         np.max(np.abs(default_ages[ntips:] - reference_ages[ntips:])) / root_age
@@ -573,8 +563,7 @@ def _score_record(record: dict[str, Any]) -> dict[str, Any]:
                 scaled_ages, record["calibrations"], factor=TIME_UNIT_FACTOR
             ),
             "maximum_normalized_age_difference": float(
-                np.max(np.abs(scaled_ages / TIME_UNIT_FACTOR - default_ages))
-                / root_age
+                np.max(np.abs(scaled_ages / TIME_UNIT_FACTOR - default_ages)) / root_age
             ),
             "maximum_rate_relative_error": float(
                 np.max(
@@ -611,9 +600,7 @@ def _score_record(record: dict[str, Any]) -> dict[str, Any]:
         "reference_role": reference_role,
         "calibration_valid": calibration_valid,
         "relative_objective_gap": objective_gap,
-        "default_reference_maximum_age_difference": (
-            default_reference_age_difference
-        ),
+        "default_reference_maximum_age_difference": (default_reference_age_difference),
         "age_mae": float(np.mean(np.abs(age_delta))),
         "age_bias": float(np.mean(age_delta)),
         "fixed_age_rate_spearman": _safe_spearman(true_rates, fixed_rates),
@@ -627,8 +614,7 @@ def _score_record(record: dict[str, Any]) -> dict[str, Any]:
             np.sqrt(np.mean(increment_error * increment_error))
         ),
         "optimizer_retries": sum(
-            int(fit["optimizer_retries"])
-            for fit in (default, stress, oracle, fixed)
+            int(fit["optimizer_retries"]) for fit in (default, stress, oracle, fixed)
         ),
         "zero_length_branch_count": int(np.sum(observed == 0.0)),
         "zero_length_branch_fraction": float(np.mean(observed == 0.0)),
@@ -678,15 +664,13 @@ def _summarize(rows: list[dict[str, Any]], gates: dict[str, float]) -> dict[str,
         }
 
     observation_summaries = {
-        name: summarize_group(group)
-        for name, group in sorted(by_observation.items())
+        name: summarize_group(group) for name, group in sorted(by_observation.items())
     }
     sigma_summaries = {
         name: summarize_group(group) for name, group in sorted(by_sigma.items())
     }
     calibration_summaries = {
-        name: summarize_group(group)
-        for name, group in sorted(by_calibration.items())
+        name: summarize_group(group) for name, group in sorted(by_calibration.items())
     }
     identifiable = [
         row
@@ -710,10 +694,7 @@ def _summarize(rows: list[dict[str, Any]], gates: dict[str, float]) -> dict[str,
             (row["relative_objective_gap"] for row in rows), default=float("inf")
         ),
         "maximum_default_reference_age_difference": max(
-            (
-                row["default_reference_maximum_age_difference"]
-                for row in rows
-            ),
+            (row["default_reference_maximum_age_difference"] for row in rows),
             default=float("inf"),
         ),
         "age_mae_median": _finite_median([row["age_mae"] for row in rows]),
@@ -763,8 +744,7 @@ def _summarize(rows: list[dict[str, Any]], gates: dict[str, float]) -> dict[str,
         "time_unit_checks_valid": bool(
             scale_rows
             and all(
-                item["converged"] and item["calibration_valid"]
-                for item in scale_rows
+                item["converged"] and item["calibration_valid"] for item in scale_rows
             )
         ),
         "optimizer_retries": int(sum(row["optimizer_retries"] for row in rows)),
@@ -785,18 +765,14 @@ def _summarize(rows: list[dict[str, Any]], gates: dict[str, float]) -> dict[str,
         >= gates["calibration_validity"],
         "objective_parity": metrics["maximum_relative_objective_gap"]
         <= gates["maximum_relative_objective_gap"],
-        "chronogram_parity": metrics[
-            "maximum_default_reference_age_difference"
-        ]
+        "chronogram_parity": metrics["maximum_default_reference_age_difference"]
         <= gates["maximum_default_reference_age_difference"],
         "age_recovery": metrics["age_mae_median"] <= gates["age_mae_median"],
         "age_bias": metrics["maximum_absolute_age_bias"]
         <= gates["maximum_absolute_age_bias"],
         "fixed_age_rate_recovery": metrics["fixed_age_rate_spearman_median"]
         >= gates["fixed_age_rate_spearman_median"],
-        "fixed_age_increment_recovery": metrics[
-            "fixed_age_increment_spearman_median"
-        ]
+        "fixed_age_increment_recovery": metrics["fixed_age_increment_spearman_median"]
         >= gates["fixed_age_increment_spearman_median"],
         "time_unit_invariance": bool(
             metrics["time_unit_checks_valid"]
@@ -818,9 +794,7 @@ def _summarize(rows: list[dict[str, Any]], gates: dict[str, float]) -> dict[str,
     }
 
 
-def _datasets(
-    config: dict[str, Any], mode: str, resume: bool
-) -> list[dict[str, Any]]:
+def _datasets(config: dict[str, Any], mode: str, resume: bool) -> list[dict[str, Any]]:
     """Enumerate deterministic study cells and independent seed streams."""
     design = config["modes"][mode]
     base_seed = int(
@@ -981,9 +955,7 @@ def main() -> None:
         "release_eligible": is_confirmation,
         "datasets": rows,
         "summary": summary,
-        "all_release_gates_passed": bool(
-            is_confirmation and summary["gates_passed"]
-        ),
+        "all_release_gates_passed": bool(is_confirmation and summary["gates_passed"]),
     }
     result_path = args.output_dir / f"results-v13-{args.mode}.json"
     _atomic_json(result_path, result)

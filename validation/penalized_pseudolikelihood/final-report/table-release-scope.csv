@@ -1,0 +1,9 @@
+workflow,status,public_api,scope
+clock,validated,edges_make_ultrametric_clock,
+discrete,validated_compatibility,edges_make_ultrametric_discrete,ape::chronos branchwise finite-mixture compatibility with an explicit category count.
+correlated,validated_fixed_lambda,edges_make_ultrametric_correlated,User-supplied positive lambda; report sensitivity across scientifically plausible values.
+uncorrelated_lognormal,validated_fixed_lambda_positive_branches,edges_make_ultrametric_uncorrelated_lognormal,"User-supplied positive lambda; validated for positive continuous additive branches, with zero-rich fits conditional on diagnostics."
+relaxed,compatibility_only,edges_make_ultrametric_relaxed,ape::chronos Gamma-CDF objective parity only; prefer UCLN for new uncorrelated-rate analyses.
+automatic_lambda_selection,unsupported_by_design,,Per-tree CV did not identify lambda precisely enough for a general public estimator. Supply lambda and report sensitivity.
+discrete_gamma,retired_removed,,Prototype removed from the active source; recoverable from the pinned archive commit.
+phiic,removed_unvalidated,,Not calculated or exposed.

@@ -33,7 +33,6 @@ from toytree.mod._src.penalized_pseudolikelihood.utils import (
     _unpack_log_rates,
     _validate_branch_lengths,
     _validate_observation_mask,
-    get_tree_with_categorical_rates,
 )
 from toytree.utils import ToytreeError
 
@@ -384,8 +383,7 @@ def _fit_clock_start(payload: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-@add_subpackage_method(TreeModAPI)
-def edges_make_ultrametric_clock(
+def _edges_make_ultrametric_clock(
     tree: ToyTree,
     calibrations: Calibrations | None = None,
     full: bool = False,
@@ -737,18 +735,35 @@ def objective_clock(
     )
 
 
-if __name__ == "__main__":
-    import numpy as np
+@add_subpackage_method(TreeModAPI)
+def edges_make_ultrametric_clock(
+    tree: ToyTree,
+    calibrations: Calibrations | None = None,
+    full: bool = False,
+    inplace: bool = False,
+    max_iter: int = 100_000,
+    max_fun: int = 100_000,
+    max_refine: int = 20,
+    nstarts: int = 1,
+    ncores: int = 1,
+    seed: int | None = None,
+) -> Union[ToyTree, dict[str, Any]]:
+    """Return an ultrametric tree fitted under one shared branch rate.
 
-    import toytree
-
-    toytree.set_log_level("DEBUG")
-
-    tree = get_tree_with_categorical_rates(ntips=50, nrates=1, seed=123)
-    res = edges_make_ultrametric_clock(
-        tree, calibrations={-1: 50}, full=True, max_fun=1e6, max_iter=1e6, max_refine=50
+    Input edge lengths may use any finite, nonnegative additive unit for which
+    branch length equals elapsed time multiplied by rate. Calibrations define
+    the returned time unit and rates use input-edge units per calibration-time
+    unit. With no calibrations, root age is one and times are relative.
+    """
+    return _edges_make_ultrametric_clock(
+        tree=tree,
+        calibrations=calibrations,
+        full=full,
+        inplace=inplace,
+        max_iter=max_iter,
+        max_fun=max_fun,
+        max_refine=max_refine,
+        nstarts=nstarts,
+        ncores=ncores,
+        seed=seed,
     )
-    print(res)
-
-    # c1, _, _ = tree.draw(ts='s', use_edge_lengths=True, scale_bar=True)
-    # tree.write("/tmp/test.nwk")

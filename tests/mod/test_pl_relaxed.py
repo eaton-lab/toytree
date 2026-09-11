@@ -4,14 +4,14 @@
 
 import numpy as np
 from conftest import PytestCompat
+from pl_test_helpers import (
+    get_tree_with_uncorrelated_rates,
+)
 from scipy import stats
 
 from toytree.mod._src.penalized_pseudolikelihood.relaxed import (
     _relaxed_penalty,
     edges_make_ultrametric_relaxed,
-)
-from toytree.mod._src.penalized_pseudolikelihood.utils import (
-    get_tree_with_uncorrelated_rates,
 )
 from toytree.utils import ToytreeError
 

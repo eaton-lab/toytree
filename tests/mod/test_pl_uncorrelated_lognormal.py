@@ -4,18 +4,21 @@ from unittest.mock import patch
 
 import numpy as np
 from conftest import PytestCompat
+from pl_test_helpers import (
+    get_tree_with_uncorrelated_rates,
+)
 from scipy.optimize import OptimizeResult
 
 import toytree
+from toytree.mod._src.penalized_pseudolikelihood import (
+    optimization as pl_optimization,
+)
 from toytree.mod._src.penalized_pseudolikelihood import (
     uncorrelated_lognormal as ucln,
 )
 from toytree.mod._src.penalized_pseudolikelihood.uncorrelated_lognormal import (
     _uncorrelated_lognormal_penalty,
     edges_make_ultrametric_uncorrelated_lognormal,
-)
-from toytree.mod._src.penalized_pseudolikelihood.utils import (
-    get_tree_with_uncorrelated_rates,
 )
 from toytree.utils import ToytreeError
 
@@ -105,7 +108,7 @@ class TestPenalizedPseudolikelihoodUncorrelated(PytestCompat):
         """A valid direct-age result survives joint-transform saturation."""
         tree = get_tree_with_uncorrelated_rates(ntips=6, seed=124)
         original_decode = ucln._decode_age_params
-        original_minimize = ucln._minimize_profiled_ucln_ages
+        original_minimize = ucln.minimize_profiled_ages
         profile_started = False
         decode_calls = 0
 
@@ -125,7 +128,7 @@ class TestPenalizedPseudolikelihoodUncorrelated(PytestCompat):
         with (
             patch.object(
                 ucln,
-                "_minimize_profiled_ucln_ages",
+                "minimize_profiled_ages",
                 side_effect=track_profile,
             ),
             patch.object(
@@ -209,7 +212,10 @@ class TestPenalizedPseudolikelihoodUncorrelated(PytestCompat):
                 jac=np.asarray(gradient),
             )
 
-        with patch.object(ucln, "minimize", side_effect=fake_minimize):
+        with (
+            patch.object(ucln, "minimize", side_effect=fake_minimize),
+            patch.object(pl_optimization, "minimize", side_effect=fake_minimize),
+        ):
             result = edges_make_ultrametric_uncorrelated_lognormal(
                 tree,
                 lam=1.0,
@@ -249,7 +255,10 @@ class TestPenalizedPseudolikelihoodUncorrelated(PytestCompat):
                 jac=np.asarray(gradient),
             )
 
-        with patch.object(ucln, "minimize", side_effect=fake_minimize):
+        with (
+            patch.object(ucln, "minimize", side_effect=fake_minimize),
+            patch.object(pl_optimization, "minimize", side_effect=fake_minimize),
+        ):
             result = edges_make_ultrametric_uncorrelated_lognormal(
                 tree,
                 lam=1.0,
@@ -431,7 +440,6 @@ class TestPenalizedPseudolikelihoodUncorrelated(PytestCompat):
             2.0,
             None,
             mask,
-            "uncorrelated_lognormal",
         )
         low = ucln._fit_profiled_ucln_rates(
             np.full(tree.nedges, -4.0),
@@ -469,12 +477,12 @@ class TestPenalizedPseudolikelihoodUncorrelated(PytestCompat):
         tree = toytree.rtree.unittree(8, treeheight=1.0, seed=45)
         ages = tree.get_node_data("height").to_numpy(dtype=float)
         ages_idxs = np.arange(tree.ntips, tree.nnodes - 1, dtype=int)
-        constraint = ucln._direct_age_linear_constraint(
+        constraint = ucln.direct_age_linear_constraint(
             ages,
             ages_idxs,
             tree.get_edges("idx"),
         )
-        self.assertIsInstance(constraint, ucln.LinearConstraint)
+        self.assertIsInstance(constraint, pl_optimization.LinearConstraint)
         self.assertEqual(constraint.A.shape[1], ages_idxs.size)
         self.assertGreaterEqual(constraint.A.shape[0], ages_idxs.size)
 

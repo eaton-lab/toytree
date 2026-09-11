@@ -1,0 +1,7 @@
+model,label,objective_relationship,datasets_per_engine,toytree_convergence_fraction,ape_convergence_fraction,both_converged_fraction,toytree_median_normalized_age_mae,ape_median_normalized_age_mae,paired_age_mae_difference,paired_age_mae_difference_lower,paired_age_mae_difference_upper
+clock,Strict clock,Shared strict-clock fractional-Poisson objective,480,0.9979166666666667,0.5708333333333333,0.5708333333333333,0.00667917059803096,0.0034022244128777707,-0.00016157012013380147,-0.0003958533942636208,-2.8693646206185e-05
+discrete_k2,Discrete K=2,Shared chronos branchwise mixture objective,480,1.0,0.5395833333333333,0.5395833333333333,0.04212573479380853,0.036691017752493824,-0.0006038841031874667,-0.0012716281706662775,-9.133729733446106e-05
+discrete_k3,Discrete K=3,Shared chronos branchwise mixture objective,480,1.0,0.525,0.525,0.044643378284579066,0.040697576769457296,-0.00010378069132060403,-0.001917079981505894,0.00151569574327294
+correlated_sigma0p3,Correlated,Analogous model; ToyTree uses complete-tree log-rate smoothing,480,1.0,0.35,0.35,0.029781454730899035,0.059326589650359814,-0.038872934824197646,-0.04342079403502525,-0.0342892054608686
+relaxed_gamma_shape4,Relaxed (chronos),Shared chronos Gamma-CDF convention,480,0.9354166666666667,0.7125,0.6958333333333333,0.042714364871287276,0.09902748912479717,-0.0656979737981957,-0.0693825844184665,-0.062172348681465
+ucln_sigma0p3,UCLN,ToyTree-only centered-log-rate model,480,1.0,,,0.025703532315492376,,,,

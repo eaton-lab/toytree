@@ -1,0 +1,72 @@
+{
+  "dataset_count": 128,
+  "decision": "Do not expose automatic lambda estimation. Require user-supplied lambda and sensitivity analysis for correlated and uncorrelated_lognormal.",
+  "fit_source_hash": "82c3b359bfb345f35c7a2022a633a7608058d3d9ceb97f115356c17f93264ca2",
+  "mode": "pilot",
+  "next_stage": "retain_supplied_lambda_and_sensitivity_analysis",
+  "raw_artifact": {
+    "bytes": 53936547,
+    "git_blob": "803c792878e796b9fc5be03cb4cba0a2de403f44",
+    "path_at_source_commit": "validation/penalized_pseudolikelihood/v18/results-v18-pilot.json",
+    "recovery": "git show 321852a:validation/penalized_pseudolikelihood/v18/results-v18-pilot.json",
+    "sha256": "d2261efc0e77d1429e8e80da51f7bbaab014ba50c376db34fe6c9b6fea1c9128",
+    "source_commit": "321852a"
+  },
+  "schema_version": 1,
+  "study": "V18 matched per-tree lambda identifiability pilot",
+  "summary": {
+    "all_models_passed": false,
+    "models": {
+      "correlated": {
+        "checks": {
+          "all_datasets_scored": true,
+          "boundary_selection": false,
+          "calibration_validity": true,
+          "selected_age_oracle_ratio_median": true,
+          "selected_age_oracle_ratio_p90": false,
+          "supported_chronogram_spread_median": false,
+          "supported_chronogram_spread_p90": false,
+          "valid_stable_selected_fits": true
+        },
+        "gates_passed": false,
+        "metrics": {
+          "all_supported_lambdas_valid_fraction": 1.0,
+          "boundary_selection_fraction": 0.234375,
+          "calibration_validity_fraction": 1.0,
+          "datasets": 64,
+          "expected_datasets": 64,
+          "selected_age_oracle_ratio_median": 1.1201648476187982,
+          "selected_age_oracle_ratio_p90": 2.3870592777332313,
+          "supported_chronogram_spread_median": 0.13957531669822185,
+          "supported_chronogram_spread_p90": 0.4590101143040199,
+          "valid_stable_selected_fit_fraction": 1.0
+        }
+      },
+      "uncorrelated_lognormal": {
+        "checks": {
+          "all_datasets_scored": true,
+          "boundary_selection": false,
+          "calibration_validity": true,
+          "selected_age_oracle_ratio_median": true,
+          "selected_age_oracle_ratio_p90": true,
+          "supported_chronogram_spread_median": true,
+          "supported_chronogram_spread_p90": true,
+          "valid_stable_selected_fits": true
+        },
+        "gates_passed": false,
+        "metrics": {
+          "all_supported_lambdas_valid_fraction": 1.0,
+          "boundary_selection_fraction": 0.28125,
+          "calibration_validity_fraction": 1.0,
+          "datasets": 64,
+          "expected_datasets": 64,
+          "selected_age_oracle_ratio_median": 1.0382443045969905,
+          "selected_age_oracle_ratio_p90": 1.2446578718497117,
+          "supported_chronogram_spread_median": 0.04637937499323633,
+          "supported_chronogram_spread_p90": 0.10282404042282757,
+          "valid_stable_selected_fit_fraction": 1.0
+        }
+      }
+    }
+  }
+}
