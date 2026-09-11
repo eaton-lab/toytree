@@ -28,6 +28,23 @@ The lognormal and correlated penalties are sums rather than means, so a fixed **
 There is no public automatic lambda selector, cross-family model selector, automatic discrete-category selector, PHIIC, or discrete-Gamma workflow. The branch-length pseudolikelihood is a stated statistical model rather than a blanket experimental designation; workflow-specific assumptions and exclusions still apply.
 
 
+## Fit usability and failure behavior
+
+Every model returns a standardized **fit_usable** Boolean and
+**failure_reasons** list when **full=True**. A fit is unusable if the optimizer
+did not converge or if multistart diagnostics explicitly mark the solution as
+unstable. Stability that was not assessed is not a failure. A converged
+`discrete` boundary optimum is also not a failure by itself: it indicates that
+the fitted data support fewer effective categories than requested.
+
+The default tree-only call is fail-closed. It raises `ToytreeError` instead of
+returning an unusable candidate and directs the caller to rerun with
+**full=True** for diagnostics. Full mode returns the candidate tree even on
+failure, but **fit_usable** remains false. With **inplace=True**, the source tree
+is modified only after a fit passes this usability check; a failed fit leaves it
+unchanged.
+
+
 ## Calibrations and scale
 
 Calibrations map a selector that resolves to exactly one internal node to either a fixed age or a finite minimum-maximum interval. Ages must be non-negative. Tip calibrations are rejected because heterochronous tips are not implemented. Finite ancestor maxima are propagated through descendants during optimization rather than checked only after fitting.

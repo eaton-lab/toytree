@@ -37,6 +37,13 @@ def test_release_status_ledger_has_final_public_surface():
         "correlated": "validated_fixed_lambda",
     }
     assert status["module_status"] == "release_ready_with_scoped_validation"
+    assert status["schema_version"] == 3
+    assert status["fit_failure_policy"] == {
+        "full_result": "return_candidate_and_diagnostics",
+        "inplace": "mutate_only_when_fit_usable",
+        "tree_only": "raise_on_nonconvergence_or_explicit_instability",
+        "unassessed_stability": "nonfatal",
+    }
     assert set(status["public_api"]) == PUBLIC_METHODS
     for name, expected_status in expected.items():
         entry = status["workflows"][name]

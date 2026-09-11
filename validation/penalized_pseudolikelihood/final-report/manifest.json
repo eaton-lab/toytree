@@ -1,7 +1,7 @@
 {
   "generator": "validation/penalized_pseudolikelihood/final-report/generate_report.py",
   "inputs": {
-    "validation/penalized_pseudolikelihood/release-status.json": "f241974613c9fd8a1604b265e04a7d58e236f683905dfda4ce107651156f28af",
+    "validation/penalized_pseudolikelihood/release-status.json": "40473706f97c368935ee67cbeeb6f27e6f8306c14a55fa9923ef5509882fab1e",
     "validation/penalized_pseudolikelihood/v17/failure-replay-v17-confirmation.json": "d25d0881b5f9fef6e4450f36546aa7ea5fcf6031f1962ebb66a42be6c784747b",
     "validation/penalized_pseudolikelihood/v17/results-v17-confirmation.json": "7680ba78044c6a7c60047b9a5121f0d75e6a37573fd07753d391ca1e224d7329",
     "validation/penalized_pseudolikelihood/v18/summary-v18-pilot.json": "64b89b1889f53224085ee2f5368b78bb2ecdf4e5fc7a3155c2dd512b5046fcf2"

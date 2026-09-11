@@ -5,6 +5,12 @@
     "heterochronous tips",
     "automatic propagation of branch-length estimation uncertainty"
   ],
+  "fit_failure_policy": {
+    "full_result": "return_candidate_and_diagnostics",
+    "inplace": "mutate_only_when_fit_usable",
+    "tree_only": "raise_on_nonconvergence_or_explicit_instability",
+    "unassessed_stability": "nonfatal"
+  },
   "module_status": "release_ready_with_scoped_validation",
   "observation_framework": {
     "description": "Fractional-Poisson branch-length pseudolikelihood on finite non-negative additive edge lengths.",
@@ -18,7 +24,7 @@
     "edges_make_ultrametric_uncorrelated_lognormal",
     "edges_make_ultrametric_correlated"
   ],
-  "schema_version": 2,
+  "schema_version": 3,
   "workflows": {
     "automatic_lambda_selection": {
       "evidence": [

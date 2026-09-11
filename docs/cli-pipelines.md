@@ -158,6 +158,11 @@ toytree make-ultrametric -i TREE.nwk -m correlated --lam 0.5 --json \
   > UTREE.nwk 2> ultrametric-fit.json
 ```
 
+If a penalized-likelihood fit is not usable, `make-ultrametric` exits nonzero
+and writes no Newick. With `--json`, the diagnostic JSON is still written to
+stderr first and includes `fit_usable`, `failure_reasons`, and
+`optimizer_message`.
+
 ## Inspecting intermediate results
 
 `tee` is useful when you want to keep a binary intermediate without breaking
