@@ -209,6 +209,46 @@ trait simulator. It remains in `pcm.sim` but is documented separately. It must:
 6. Fixed-seed quick and confirmation validation scripts with recorded evidence.
 7. Source-notebook repair, paired-page regeneration, focused and broad tests.
 
+## Replicated recovery study
+
+`run_validation.py` provides two deterministic, task-parallel study modes:
+
+```bash
+python validation/pcm_simulation/run_validation.py --mode quick --ncores 4
+python validation/pcm_simulation/run_validation.py --mode confirmation --ncores 8
+```
+
+The quick mode uses 16 independent 64-tip trees. The confirmation mode uses
+100 independent 128-tip trees. Each replicate simulates and refits BM, OU, EB,
+ER, ARD, PGLS, and binomial PGLM data; it also checks standardized PICs and
+Blomberg's K. Seeds are spawned deterministically from the recorded base seed,
+and each replicate is an independent process task.
+
+The checked-in `results-confirmation.json` passed every predeclared release
+gate. Across 100 datasets, all BM/OU/EB and PGLS fits converged. Median ratios
+of estimated to generating diffusion variance were 1.002 for BM, 1.173 for OU,
+and 0.786 for EB; median OU-alpha and EB-r errors were 0.184 and 0.157. BM
+standardized PIC variance was 1.009 times its expectation and median Blomberg's
+K was 0.944. PGLS recovered its coefficients without material average bias,
+with median variance ratio 0.998 and median lambda error -0.002. ER and ARD
+preserved the entered state order and their median rate ratios were close to
+one.
+
+The complete distributions are important. A single discrete character can
+provide very little information about a CTMC rate, so ER/ARD rate estimates
+have a long upper tail despite good median recovery. OU alpha and diffusion
+likewise show a correlated upper tail on individual datasets. These are
+single-dataset inference-identifiability limitations, not failures of the
+independently validated transition simulators. PGLM is reported separately as
+diagnostic-only: its exact latent generator exposed modest attenuation in the
+current approximate fitter (mean binomial intercept and slope errors 0.091 and
+-0.092), which belongs to inference hardening rather than simulator repair.
+
+The evidence files are intentionally compact: `results-quick.json` is the
+development check and `results-confirmation.json` is the release record. They
+store every per-replicate estimate, environment versions, configuration,
+seeds, summaries, and gate outcomes without caches or large intermediate data.
+
 Each milestone is committed and pushed only after its focused tests pass. Public
 API breaks outside the compatibility rules above require explicit review. The
 developer README itself must remain absent from `mkdocs.yml`.

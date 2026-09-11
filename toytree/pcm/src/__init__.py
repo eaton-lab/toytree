@@ -1,23 +1,8 @@
 #!/usr/bin/env python
 
+"""Implementation modules for :mod:`toytree.pcm`.
+
+Public PCM functions and result classes are exposed lazily from
+``toytree.pcm`` and as bound methods on ``tree.pcm``. This internal package is
+not itself a user-facing API.
 """
-Organization and API access of the pcm subpackage.
-
-The modules in :mod:`toytree.pcm.src` contain Classes that are
-exposed in user-facing factory functions written and documented
-in :mod:`toytree.pcm.src.api`. The API docs are built from `api`,
-
-Examples
---------
->>> toytree.pcm.get_vcv()
->>> toytree.pcm.get_qmatrix()
-
->>> toytree.pcm.sim_discrete_markov_data()
->>> toytree.pcm.sim_continuous_data()
-
->>> toytree.pcm.div_equal_splits()
->>> toytree.pcm.div_tip_level()
->>> toytree.pcm.div_tip_level()
-"""
-
-# from .fit_discrete_ctmc import simulate_discrete_markov_data

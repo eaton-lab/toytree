@@ -1,16 +1,11 @@
 #!/usr/bin/env python
 
-"""Discrete State Markov Model Simulator.
+"""Simulate finite-state traits under continuous-time Markov chains.
 
-This module implements a discrete trait simulator based on a Markov
-model. The root state is either randomly sampled, or assigned, and
-transitions among states occur probabilistiically along the edges of
-a phylogeny. Transition rates can be specified for models with
-unequal transition rates.
-
-References
-----------
-- Yang...
+The public API constructs direct-Q equal-rates (ER), symmetric-rates (SYM),
+and all-rates-different (ARD) models and simulates states from the root toward
+the tips. Root probabilities are kept separate from the transition-rate
+parameterization.
 """
 
 from __future__ import annotations
@@ -314,15 +309,9 @@ class MarkovModel:
         probability /= probability.sum(axis=1, keepdims=True)
         return probability
 
-    # def _repr_html_(self):
-    #     """Return a html representation of the Markov model.
-    #     TODO: return multiple tables?
-    #     """
-
     def __repr__(self):
         """Return a str representation of the Markov model."""
         return f"MarkovModel(nstates={self.nstates}, model={self.mtype.name})"
-        # Debug repr expansion omitted for readability.
 
 
 @dataclass
@@ -397,60 +386,66 @@ def get_markov_model(
     nstates: int,
     model: str = "ER",
     rate_scalar: float = 1.0,
-    relative_rates: Optional[np.ndarray] = None,
+    relative_rates: float | np.ndarray | None = None,
     root_prior: Optional[np.ndarray] = None,
     seed: RNGSeed = None,
 ) -> MarkovModel:
-    """Return a parameterized MarkovModel instance.
+    """Return a validated ER, SYM, or ARD continuous-time Markov model.
 
-    The MarkovModel class is used to get an instantaneous transition
-    rate matrix (Q) for calculating the probabilities of transitions
-    between discrete character states in a Markov model. This
-    is used primarily for didactic purposes, and is also used
-    internally in functions such as :meth:`~toytree.pcm.simulate_discrete_trait`.
-
-    It checks that the user input for rates and root_prior
-    is valid given the model type and number of states, and can
-    return random valid paramterizations for each model type.
+    Off-diagonal entries of the instantaneous rate matrix are defined as
+    ``q_ij = rate_scalar * relative_rates[i, j]`` and diagonal entries are
+    set to the negative row sums. The returned object can calculate
+    ``P(t) = expm(Q*t)`` and is the model used by
+    :meth:`~toytree.pcm.simulate_discrete_trait`.
 
     Parameters
     ----------
-    nstates: int
-        The number of modeled states, ordered internally as state indices
-        ``0`` to ``nstates - 1``.
-    model: str
-        The Markov model name ("ER", "SYM", or "ARD"). This is used
-        to either sample random valid parameters for a model of the
-        specified type, or to check that user-entered value are valid.
-    rate_scalar: float
-        A scalar by which the Q-matrix will be multipled to act
-        as a unit scaler. Example, rate=1e-6 would mean that a 1
-        in the relatives rates matrix represents 1 change per
-        million edge length units on a tree.
-    relative_rates: Optional[numpy.ndarray]
-        The relative transition rates between states as an array
-        of size (nstates x nstates). Values on the diagonal are
-        ignored. Only relative differences matter. See rate.
-    root_prior: Optional[numpy.ndarray]
-        Root-state probabilities in state-index order. This does not alter Q
-        or its derived stationary frequencies. If None, the unique stationary
-        distribution of Q is used.
-    seed: int, numpy.random.Generator, numpy.random.SeedSequence, or None
+    nstates : int
+        Number of modeled states. States are ordered internally as integer
+        indices from ``0`` through ``nstates - 1`` and at least two states are
+        required.
+    model : {"ER", "SYM", "ARD"}, default="ER"
+        Constraint on off-diagonal relative rates. ER requires one shared
+        rate, SYM requires ``r_ij = r_ji``, and ARD permits every direction to
+        differ. Names are case-insensitive.
+    rate_scalar : float, default=1.0
+        Finite nonnegative multiplier applied to every off-diagonal relative
+        rate. Its units are transitions per tree branch-length unit. A value
+        of zero produces a no-transition model.
+    relative_rates : numpy.ndarray | None, default=None
+        Numeric ``(nstates, nstates)`` matrix in state-index order. Diagonal
+        values are ignored; off-diagonal values must be finite, nonnegative,
+        and satisfy ``model``. A scalar or one-element array is also accepted
+        for ER and expanded to every off-diagonal entry. If None, ER uses
+        ones, whereas valid SYM and ARD rates are sampled from the supplied
+        random-number stream.
+    root_prior : numpy.ndarray | None, default=None
+        Root-state probability vector in state-index order. It affects root
+        sampling but does not alter Q. If None, use Q's unique stationary
+        distribution. Reducible ER/SYM models use a canonical uniform prior;
+        reducible ARD models require an explicit prior.
+    seed : int | numpy.random.Generator | numpy.random.SeedSequence | None
         Random-number source used for any sampled parameters. A supplied
-        Generator is consumed in place.
+        Generator is consumed in place; integers and SeedSequences initialize
+        a new Generator. The seed has no effect when no parameters are sampled.
 
     Returns
     -------
     MarkovModel
-        A parameterized MarkovModel class instance. The parameters
-        of Markov model can be accessed from this instance from its
-        attributes `.qmatrix`, `.state_frequencies`, etc.
+        Parameterized model. Important attributes include ``qmatrix``,
+        ``relative_rates``, ``root_prior``, and ``state_frequencies``.
+
+    Raises
+    ------
+    ToytreeError
+        If a parameter is malformed, rates violate the requested model, a
+        probability vector is invalid, or reducible ARD lacks a root prior.
 
     Examples
     --------
     >>> print(toytree.pcm.get_markov_model(nstates=3, model="ER"))
     >>> print(toytree.pcm.get_markov_model(nstates=3, model="SYM"))
-    >>> print(toytree.pcm.get_markov_model(nstates=3, model="ARD")
+    >>> print(toytree.pcm.get_markov_model(nstates=3, model="ARD", seed=123))
     """
     return MarkovModel(
         mtype=str(model).upper(),
@@ -467,7 +462,7 @@ def simulate_discrete_trait(
     tree: ToyTree,
     nstates: int,
     model: str = "ER",
-    relative_rates: Optional[np.ndarray] = None,
+    relative_rates: float | np.ndarray | None = None,
     root_prior: Optional[np.ndarray] = None,
     rate_scalar: float = 1.0,
     tips_only: bool = False,
@@ -478,46 +473,47 @@ def simulate_discrete_trait(
 ) -> pd.Series:
     """Return trait values simulated under a discrete Markov model.
 
-    The number of states and model type can be entered without any
-    parameters to the Markov model (e.g., relative rates and/or a
-    root prior) to generate a random set of parameters that
-    are valid under the specified model. Or, if parameters are entered
-    then they are checked for validity with the specified model type,
-    and then used to parameterize the Markov model simulation.
+    State histories are generated from the root toward the tips using
+    ``P(t) = expm(Q*t)`` on each edge. Parameters may be supplied explicitly;
+    otherwise ER uses unit relative rates and SYM/ARD sample valid relative
+    rates from the same random stream used for state evolution.
 
     Parameters
     ----------
-    tree: toytree.ToyTree
-        The tree on which to simulate the trait, usually ultrametric.
-    nstates: int
+    tree : toytree.ToyTree
+        Tree on which to simulate. It need not be ultrametric. Edge lengths
+        must be finite and nonnegative and must use units reciprocal to the
+        transition-rate units.
+    nstates : int
         The number of states to simulate. By default, states are labeled
         ``"A"``, ``"B"``, ``"C"``, ... for small state spaces and fall back
         to numeric strings for larger ``nstates``.
-    model: str
-        The Markov model name ("ER", "SYM", or "ARD"). This is used
-        to either sample random valid parameters for a model of the
-        specified type, or to check that user-entered value are valid.
-    relative_rates: Optional[numpy.ndarray]
-        The relative transition rates between states as an array
-        of size (nstates x nstates). Values on the diagonal are
-        ignored. Only relative differences matter. See rate_scalar.
-    root_prior: Optional[numpy.ndarray]
-        Root-state probabilities in state-index order. The supplied prior
+    model : {"ER", "SYM", "ARD"}, default="ER"
+        Constraint on the off-diagonal rates; names are case-insensitive.
+        ER shares one rate, SYM shares a rate for each unordered state pair,
+        and ARD permits every directional rate to differ.
+    relative_rates : numpy.ndarray | None, default=None
+        Finite nonnegative ``(nstates, nstates)`` matrix in ``state_names``
+        order. Diagonal values are ignored. A scalar/one-element value is
+        accepted for ER. If None, ER uses ones and SYM/ARD sample valid rates.
+    root_prior : numpy.ndarray | None, default=None
+        Root-state probabilities in ``state_names`` order. The supplied prior
         affects only root sampling, not Q or its stationary frequencies. If
         None, the root is sampled from Q's unique stationary distribution.
-        A one-hot vector fixes the root to one state.
-    rate_scalar: float
-        A scalar by which the Q-matrix will be multipled to act
-        as a unit scaler. Example, rate=1e-6 would mean that a 1
-        in the relatives rates matrix represents 1 change per
-        million edge length units on a tree. Default=1 (no scaling)
-    tips_only: bool
+        Reducible ER/SYM models instead use a canonical uniform prior, whereas
+        reducible ARD requires this argument. A one-hot vector fixes the root.
+    rate_scalar : float, default=1.0
+        Finite nonnegative multiplier in transitions per branch-length unit.
+        For example, if tree edges are in years, ``1e-6`` means that a unit
+        relative rate corresponds to one expected transition per million
+        years. Zero produces no transitions.
+    tips_only : bool, default=False
         If True values are only returned for tip Nodes, else values are
         returned for all Nodes in the tree.
     name : str, default="X"
         Name for the returned Series and for inplace storage on the tree when
         ``inplace=True``.
-    state_names: Sequence[Any] | None
+    state_names : Sequence[str] | Sequence[int] | None, default=None
         Labels to substitute for simulated integer state indices in the
         entered order. If None, defaults are uppercase single-letter labels
         for ``nstates <= 26`` and numeric strings otherwise.
@@ -525,20 +521,22 @@ def simulate_discrete_trait(
         Random-number source. A supplied Generator is consumed in place;
         sampled model parameters and trait evolution use one continuous random
         stream. Integer and SeedSequence inputs initialize a new Generator.
-    inplace: bool
+    inplace : bool, default=False
         If True, simulated trait data are also written to the input tree as
         node features. The simulated Series is still returned.
 
     Returns
     -------
     pandas.Series
-        Simulated trait values indexed by node idx, or by tip idx rows only if
-        ``tips_only=True``.
+        Simulated trait values indexed by numeric node idx, or tip idx only if
+        ``tips_only=True``. Metadata on the Series records the state order, Q,
+        and root prior so direct input to ``fit_discrete_ctmc`` preserves ARD
+        directionality.
 
     Raises
     ------
     ToytreeError
-        If ``name`` is blank or if ``state_names`` does not match ``nstates``.
+        If the tree or any model/output/random-number parameter is invalid.
 
     Examples
     --------

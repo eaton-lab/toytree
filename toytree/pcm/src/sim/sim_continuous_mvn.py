@@ -392,7 +392,7 @@ def simulate_multivariate_continuous_trait(
         or unique node names.
     inplace : bool, default=False
         If True, write each simulated trait column to tree node data.
-    seed : int | numpy.random.Generator | None, default=None
+    seed : int | numpy.random.Generator | numpy.random.SeedSequence | None
         Random-number source. A supplied Generator is consumed in place.
         Integer and SeedSequence inputs initialize a new Generator.
     optimum_states : sequence, numpy.ndarray, mapping, or None, keyword-only

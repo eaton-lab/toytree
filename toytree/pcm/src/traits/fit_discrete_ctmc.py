@@ -542,7 +542,57 @@ def fit_discrete_ctmc(
     root_prior: Optional[np.ndarray] = None,
     state_names: Optional[Sequence[Any]] = None,
 ) -> PCMDiscreteCTMCFitResult:
-    """Fit a discrete Markov model for one trait.
+    """Fit an ER, SYM, or ARD continuous-time Markov model to one trait.
+
+    The likelihood is computed on the fixed input tree by Felsenstein pruning.
+    Off-diagonal entries of Q are parameterized directly subject to the named
+    model constraint; stationary frequencies are derived from Q and are not
+    independently estimated.
+
+    Parameters
+    ----------
+    tree : ToyTree
+        Tree with finite nonnegative branch lengths. Rate estimates are in
+        expected transitions per branch-length unit.
+    data : str | pandas.Series
+        Trait observations as a node-feature name or a Series indexed by node
+        idx, unique node name, or tip name. Tip-only data are the normal use
+        case. Missing values are permitted. Nonmissing internal observations
+        are treated as hard constraints and trigger a warning.
+    nstates : int
+        Total number of modeled states, including any states absent from the
+        observations. Must be at least two and no smaller than the number of
+        observed labels.
+    model : {"ER", "SYM", "ARD"}
+        Rate constraint. ER estimates one shared off-diagonal rate, SYM one
+        rate per unordered pair, and ARD one rate per ordered pair, except
+        where ``fixed_rates`` fixes entries.
+    fixed_rates : numpy.ndarray | None, default=None
+        Optional ``(nstates, nstates)`` matrix in ``state_names`` order.
+        Numeric off-diagonal entries are fixed and ``numpy.nan`` entries are
+        estimated. Diagonals are ignored. ER/SYM fixed entries must obey their
+        equality constraints.
+    root_prior : numpy.ndarray | None, default=None
+        Fixed root-state probability vector in ``state_names`` order. It enters
+        the likelihood but is separate from Q. If None, the unique stationary
+        distribution implied by each candidate Q is used.
+    state_names : sequence[str] | sequence[int] | None, default=None
+        Complete state labels in Q row/column order. A Series returned directly
+        by ``simulate_discrete_trait`` supplies this order through metadata.
+        Specify it explicitly after conversions that discard pandas metadata,
+        especially for direction-sensitive ARD models.
+
+    Returns
+    -------
+    PCMDiscreteCTMCFitResult
+        Fitted Q, relative rates, root prior, derived stationary frequencies,
+        state-label order, maximized log likelihood, and parameter count.
+
+    Raises
+    ------
+    ToytreeError
+        If tree, data, state labels, root prior, rate constraints, or model name
+        are invalid, or a stationary root prior cannot be defined.
 
     Notes
     -----

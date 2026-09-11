@@ -21,14 +21,6 @@ def _get_time_from_root(tree) -> np.ndarray:
     return times
 
 
-def _validate_feature_name(name: str) -> str:
-    """Return a validated feature name used for simulated outputs."""
-    name = str(name)
-    if not name.strip():
-        raise ToytreeError("name must be a non-empty string.")
-    return name
-
-
 def _get_unique_node_name_map(tree) -> dict[str, int]:
     """Return a mapping from unique non-empty node names to node idx labels."""
     mapping: dict[str, int] = {}

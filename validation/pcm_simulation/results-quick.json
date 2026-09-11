@@ -1,0 +1,1074 @@
+{
+  "base_seed": 20260911,
+  "config": {
+    "nreplicates": 16,
+    "ntips": 64
+  },
+  "environment": {
+    "numpy": "2.4.6",
+    "platform": "Linux-7.0.0-28-generic-x86_64-with-glibc2.39",
+    "python": "3.11.9 (main, Apr 19 2024, 16:48:06) [GCC 11.2.0]",
+    "toytree": "3.1.0.dev1"
+  },
+  "mode": "quick",
+  "records": [
+    {
+      "ard": {
+        "rate_01": 2.0147742800608817,
+        "rate_10": 3.303985248708659,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 0.8632791033194626,
+        "converged": true,
+        "mu": 0.40455604634553705,
+        "pic_mean": 0.14542654369485863,
+        "pic_variance": 0.7648150128905052,
+        "r": null,
+        "sigma2": 0.7617329721047867
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.7175573597844739,
+        "r": -0.8963548807088015,
+        "sigma2": 1.504198820437537
+      },
+      "er": {
+        "rate": 0.7886902536891282,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 1.365700679310622,
+        "converged": true,
+        "mu": 0.5604443909472245,
+        "r": null,
+        "sigma2": 1.0776809384077943
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": -0.2023781481035102,
+        "slope": 0.7040982836640758
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.8069580902593401,
+        "lambda": 0.3417521074670202,
+        "sigma2": 0.892124357306918,
+        "slope": 1.3237387726464527
+      },
+      "replicate": 0,
+      "seed": 324622707
+    },
+    {
+      "ard": {
+        "rate_01": 0.624394924779235,
+        "rate_10": 1.690434884358897,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 0.9445825311717986,
+        "converged": true,
+        "mu": 0.46668690705758686,
+        "pic_mean": -0.09800563663220273,
+        "pic_variance": 0.7615905140684202,
+        "r": null,
+        "sigma2": 0.7472458355527827
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.7144877378460758,
+        "r": -1.1219242475187998,
+        "sigma2": 0.9375440534297028
+      },
+      "er": {
+        "rate": 21.021111204411408,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 1.2382517883122193,
+        "converged": true,
+        "mu": 0.37634740430190133,
+        "r": null,
+        "sigma2": 0.9581499334197894
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": -0.574403218964479,
+        "slope": 0.5620664985488195
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.3535334481230739,
+        "lambda": 0.3984701614266002,
+        "sigma2": 0.7844940244868389,
+        "slope": 1.1523365250569377
+      },
+      "replicate": 1,
+      "seed": 252920760
+    },
+    {
+      "ard": {
+        "rate_01": 0.31716485287613405,
+        "rate_10": 0.11335462870384345,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 1.0290911246403605,
+        "converged": true,
+        "mu": 0.5581241755552239,
+        "pic_mean": 0.08033319816660595,
+        "pic_variance": 0.8408075389395334,
+        "r": null,
+        "sigma2": 0.8208848913452288
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.5453607683988849,
+        "r": -0.6991161515864677,
+        "sigma2": 0.750883125615379
+      },
+      "er": {
+        "rate": 1.6290078119445548,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 4.363005939336145,
+        "converged": true,
+        "mu": 0.30253425216475455,
+        "r": null,
+        "sigma2": 3.06498984347423
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": 0.14506883124746847,
+        "slope": 0.8847914663282382
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.47632829808304833,
+        "lambda": 0.6749836018925619,
+        "sigma2": 0.831737744844517,
+        "slope": 1.3242072561748064
+      },
+      "replicate": 2,
+      "seed": 269396659
+    },
+    {
+      "ard": {
+        "rate_01": 15.688488586432221,
+        "rate_10": 32.12405837616995,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 0.8046271044269299,
+        "converged": true,
+        "mu": 0.5121413165451785,
+        "pic_mean": -0.13140126517469414,
+        "pic_variance": 0.9576424397406221,
+        "r": null,
+        "sigma2": 0.9447126201680892
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.4703490007459782,
+        "r": -1.0471040046719642,
+        "sigma2": 1.0211941492178995
+      },
+      "er": {
+        "rate": 22.028087509626506,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 1.5635531102644165,
+        "converged": true,
+        "mu": 0.36899165247916504,
+        "r": null,
+        "sigma2": 1.319232632309891
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": -0.5602152590876265,
+        "slope": 1.0434070616082578
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.7338073537704415,
+        "lambda": 1.0823043729163764,
+        "sigma2": 0.6036649731966686,
+        "slope": 1.2636590815995097
+      },
+      "replicate": 3,
+      "seed": 4249928669
+    },
+    {
+      "ard": {
+        "rate_01": 0.47425370828457153,
+        "rate_10": 0.823354879018331,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 1.1025291034816722,
+        "converged": true,
+        "mu": 0.8145336898883416,
+        "pic_mean": -0.02180813996314834,
+        "pic_variance": 0.9280520981532996,
+        "r": null,
+        "sigma2": 0.8995186338832758
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.8980552014683484,
+        "r": -0.3852293096642988,
+        "sigma2": 0.6467437552759359
+      },
+      "er": {
+        "rate": 0.6635664645893478,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 19.99999584574663,
+        "converged": true,
+        "mu": 0.5230146836035278,
+        "r": null,
+        "sigma2": 13.531862627512005
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": 0.20787577593624582,
+        "slope": 1.0911798764819158
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.47549128097840715,
+        "lambda": 0.7376666074017468,
+        "sigma2": 0.6947831261374964,
+        "slope": 1.1106429931730382
+      },
+      "replicate": 4,
+      "seed": 7775544
+    },
+    {
+      "ard": {
+        "rate_01": 0.5797763797505558,
+        "rate_10": 1.4795268012871903,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 1.5808910541221333,
+        "converged": true,
+        "mu": 0.5179561018705656,
+        "pic_mean": -0.06660698609323298,
+        "pic_variance": 0.8405042518027116,
+        "r": null,
+        "sigma2": 0.8186056643647324
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.5983330877841754,
+        "r": -0.4398899496425285,
+        "sigma2": 0.4940335545797082
+      },
+      "er": {
+        "rate": 1.2151928154414278,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 1.5056230077258994,
+        "converged": true,
+        "mu": 0.560978403787909,
+        "r": null,
+        "sigma2": 0.9490759345496791
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": -0.04733669893815692,
+        "slope": 0.801316157551462
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.9319673619876975,
+        "lambda": 0.5229266402263522,
+        "sigma2": 0.6755859239896849,
+        "slope": 1.2791132744295122
+      },
+      "replicate": 5,
+      "seed": 2991872158
+    },
+    {
+      "ard": {
+        "rate_01": 0.3947684173722245,
+        "rate_10": 0.6536723048616249,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 0.8398277570667481,
+        "converged": true,
+        "mu": 0.37278573020210726,
+        "pic_mean": 0.15058715680540222,
+        "pic_variance": 0.7712230612035573,
+        "r": null,
+        "sigma2": 0.7694445121513885
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.7532698757563503,
+        "r": -0.3196269301725995,
+        "sigma2": 0.5136839259953103
+      },
+      "er": {
+        "rate": 2.289363507264126,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 3.74393037880223,
+        "converged": true,
+        "mu": 0.6484785328289296,
+        "r": null,
+        "sigma2": 2.8249708497781296
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": -0.005435865834737375,
+        "slope": 0.7092819774861088
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.5568657780092573,
+        "lambda": 6.457600402082978e-06,
+        "sigma2": 0.6637998905934529,
+        "slope": 1.2373337570860086
+      },
+      "replicate": 6,
+      "seed": 4173291017
+    },
+    {
+      "ard": {
+        "rate_01": 2.750377468044968,
+        "rate_10": 4.622267891750295,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 0.9338239376989615,
+        "converged": true,
+        "mu": 0.38388896457630106,
+        "pic_mean": 0.015101088878417806,
+        "pic_variance": 0.9491483062240859,
+        "r": null,
+        "sigma2": 0.9197119013698145
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.13890291741025004,
+        "r": -0.7721271496677201,
+        "sigma2": 0.8400912097916312
+      },
+      "er": {
+        "rate": 0.44394786937112346,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 0.49136669822479323,
+        "converged": true,
+        "mu": 0.5598072191714752,
+        "r": null,
+        "sigma2": 0.43484898972114516
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": -0.1782927603207429,
+        "slope": 1.1091755611646936
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.7393013233711474,
+        "lambda": 0.42570652581733304,
+        "sigma2": 0.668326887020103,
+        "slope": 1.1970260284687915
+      },
+      "replicate": 7,
+      "seed": 265416146
+    },
+    {
+      "ard": {
+        "rate_01": 0.7048266085520234,
+        "rate_10": 1.0682592846627006,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 0.7612288698798458,
+        "converged": true,
+        "mu": -0.14562298477355023,
+        "pic_mean": 0.11063334118966793,
+        "pic_variance": 0.8018594441789627,
+        "r": null,
+        "sigma2": 0.7888498268533031
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.09841606176851818,
+        "r": -0.5924874268124402,
+        "sigma2": 0.5647654358647312
+      },
+      "er": {
+        "rate": 1.3939382424681248,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 1.1033932026281377,
+        "converged": true,
+        "mu": 0.46191550453696695,
+        "r": null,
+        "sigma2": 0.9553387446425428
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": -0.46762150949259257,
+        "slope": 0.910895961107382
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.4085845299769249,
+        "lambda": 0.7511140232021211,
+        "sigma2": 1.0937688859414325,
+        "slope": 1.3245733825053765
+      },
+      "replicate": 8,
+      "seed": 639663301
+    },
+    {
+      "ard": {
+        "rate_01": 0.545179749921375,
+        "rate_10": 0.9584656122721287,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 0.9879452748305617,
+        "converged": true,
+        "mu": 0.3950597655787883,
+        "pic_mean": 0.038612129189832395,
+        "pic_variance": 0.7413044181305058,
+        "r": null,
+        "sigma2": 0.7196062563263662
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.477085082643205,
+        "r": -0.23672410570487568,
+        "sigma2": 0.36533203800749636
+      },
+      "er": {
+        "rate": 1.538159913014789,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 0.8855101215494641,
+        "converged": true,
+        "mu": 0.3440291187556576,
+        "r": null,
+        "sigma2": 0.5261424226785589
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": 0.07127706656671103,
+        "slope": 0.5892502214702154
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.12166419076067712,
+        "lambda": 0.7541902690140955,
+        "sigma2": 0.48600841520933585,
+        "slope": 1.2996303569365513
+      },
+      "replicate": 9,
+      "seed": 3542732996
+    },
+    {
+      "ard": {
+        "rate_01": 14.756248520933184,
+        "rate_10": 24.59375556739389,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 1.0445675649589277,
+        "converged": true,
+        "mu": 0.6485916910225297,
+        "pic_mean": 0.07738667283759164,
+        "pic_variance": 0.7594198557733087,
+        "r": null,
+        "sigma2": 0.741583109020564
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.09557384784798828,
+        "r": -1.539358564552003,
+        "sigma2": 2.0443735737141164
+      },
+      "er": {
+        "rate": 0.5246146935174536,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 0.3813754270388007,
+        "converged": true,
+        "mu": 0.3562895709060801,
+        "r": null,
+        "sigma2": 0.47760616013398116
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": 0.04004345186322341,
+        "slope": 0.8351431395487763
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.6438534294217131,
+        "lambda": 0.7668290246942951,
+        "sigma2": 0.7151181275215434,
+        "slope": 1.2272894106747332
+      },
+      "replicate": 10,
+      "seed": 1502012068
+    },
+    {
+      "ard": {
+        "rate_01": 0.8070952187799588,
+        "rate_10": 1.990193864453959,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 0.7340018871463492,
+        "converged": true,
+        "mu": 0.21601454143691728,
+        "pic_mean": 0.14337602731787202,
+        "pic_variance": 0.6369733121685696,
+        "r": null,
+        "sigma2": 0.637303383166359
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": -0.14602469926537356,
+        "r": -0.2856763304244981,
+        "sigma2": 0.4407398404965787
+      },
+      "er": {
+        "rate": 0.8841119190973079,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 0.6046828925992065,
+        "converged": true,
+        "mu": 0.17829087954374084,
+        "r": null,
+        "sigma2": 0.7118070923118136
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": -0.3898961660970234,
+        "slope": 0.9707322730408792
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.6223574452914075,
+        "lambda": 0.6207320693451113,
+        "sigma2": 0.5460941950594794,
+        "slope": 1.2921675703083353
+      },
+      "replicate": 11,
+      "seed": 1752030155
+    },
+    {
+      "ard": {
+        "rate_01": 0.33889395663624644,
+        "rate_10": 0.9278900204701914,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 0.7612732843034804,
+        "converged": true,
+        "mu": 1.2205099151360848,
+        "pic_mean": -0.058518753467127066,
+        "pic_variance": 0.7478257778377962,
+        "r": null,
+        "sigma2": 0.7278271598422836
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.6890419646789285,
+        "r": -0.6943693342420413,
+        "sigma2": 0.5981393527211198
+      },
+      "er": {
+        "rate": 0.8391650274037924,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 0.8207084597280193,
+        "converged": true,
+        "mu": 0.5607619877670935,
+        "r": null,
+        "sigma2": 0.6168585880436499
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": -0.3241549846329367,
+        "slope": 0.32749032725596766
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.16974851067573993,
+        "lambda": 0.7412772102448438,
+        "sigma2": 0.821121287013377,
+        "slope": 1.1663717548218402
+      },
+      "replicate": 12,
+      "seed": 466477790
+    },
+    {
+      "ard": {
+        "rate_01": 0.6994041411519532,
+        "rate_10": 2.2010658069929034,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 1.0998413922406478,
+        "converged": true,
+        "mu": 0.20841163748637245,
+        "pic_mean": 0.0376467001275611,
+        "pic_variance": 0.8260706893836143,
+        "r": null,
+        "sigma2": 0.8016511094641445
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.34932237985881043,
+        "r": -0.37879854094015464,
+        "sigma2": 0.6892446314871021
+      },
+      "er": {
+        "rate": 11.504063934397452,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 19.99999325103059,
+        "converged": true,
+        "mu": 0.31435156902846517,
+        "r": null,
+        "sigma2": 10.216705646160563
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": -0.3305147987473566,
+        "slope": 0.6529447715743643
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.7446890037853406,
+        "lambda": 0.3132570924533466,
+        "sigma2": 0.8225473901727001,
+        "slope": 1.2056239998325677
+      },
+      "replicate": 13,
+      "seed": 836463073
+    },
+    {
+      "ard": {
+        "rate_01": 1.4340777831108793,
+        "rate_10": 1.986780182643481,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 1.3467174156627093,
+        "converged": true,
+        "mu": 0.32925233625967276,
+        "pic_mean": 0.061415775148121805,
+        "pic_variance": 0.7448417994045263,
+        "r": null,
+        "sigma2": 0.7252784547127257
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.5690117208603526,
+        "r": -0.06380947954853007,
+        "sigma2": 0.3365947169117475
+      },
+      "er": {
+        "rate": 0.46961249451160225,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 2.79849707558264,
+        "converged": true,
+        "mu": 0.4894136965991703,
+        "r": null,
+        "sigma2": 2.208194164614172
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": -0.3765224246731836,
+        "slope": 0.7162549179147392
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.2326427481826168,
+        "lambda": 0.8085894975336052,
+        "sigma2": 0.8053563274420693,
+        "slope": 1.3780295222672614
+      },
+      "replicate": 14,
+      "seed": 1468714013
+    },
+    {
+      "ard": {
+        "rate_01": 0.5232120485328129,
+        "rate_10": 0.8428608658628839,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "bm": {
+        "alpha": null,
+        "blomberg_k": 0.7826713696702594,
+        "converged": true,
+        "mu": 0.07555639631917312,
+        "pic_mean": 0.051397933478355716,
+        "pic_variance": 0.799517844032517,
+        "r": null,
+        "sigma2": 0.7771333816666299
+      },
+      "eb": {
+        "alpha": null,
+        "converged": true,
+        "mu": 0.10481728364338112,
+        "r": -0.7025379915322478,
+        "sigma2": 0.884475654147849
+      },
+      "er": {
+        "rate": 0.5884018095762104,
+        "state_order": [
+          "later",
+          "earlier"
+        ]
+      },
+      "ou": {
+        "alpha": 0.9379774024215327,
+        "converged": true,
+        "mu": 0.5544830951161693,
+        "r": null,
+        "sigma2": 0.6951993045536742
+      },
+      "pglm": {
+        "converged": true,
+        "fit_succeeded": true,
+        "intercept": -0.0724123200845329,
+        "slope": 0.8227777971219691
+      },
+      "pgls": {
+        "converged": true,
+        "intercept": 0.49180245327965644,
+        "lambda": 0.6249175657120113,
+        "sigma2": 0.893620180420364,
+        "slope": 1.1150600502678418
+      },
+      "replicate": 15,
+      "seed": 2862850809
+    }
+  ],
+  "summary": {
+    "all_release_gates_passed": true,
+    "ard": {
+      "rate_01_ratio": {
+        "mean": 3.8082979147517166,
+        "median": 0.9455707613794202,
+        "n": 16,
+        "p90": 12.504732849270109
+      },
+      "rate_10_ratio": {
+        "mean": 3.5437467062326307,
+        "median": 1.1321291734450312,
+        "n": 16,
+        "p90": 10.434294092551495
+      },
+      "state_order_preserved": true
+    },
+    "bm": {
+      "blomberg_k": {
+        "mean": 0.9760561734138029,
+        "median": 0.93920323443538,
+        "n": 16,
+        "p90": 1.2246232595721906
+      },
+      "convergence_fraction": 1.0,
+      "mu_error": {
+        "mean": 0.03615288940667684,
+        "median": -0.00019209403783734813,
+        "n": 16,
+        "p90": 0.3315626904554356
+      },
+      "pic_mean": {
+        "mean": 0.03347348659399263,
+        "median": 0.04500503133409406,
+        "n": 16,
+        "p90": 0.14440128550636533
+      },
+      "pic_variance_ratio": {
+        "mean": 1.0055934659322294,
+        "median": 0.9817130657725465,
+        "n": 16,
+        "p90": 1.173250252735866
+      },
+      "sigma2_ratio": {
+        "mean": 0.9844601337494121,
+        "median": 0.9666111836362615,
+        "n": 16,
+        "p90": 1.1370190845331813
+      }
+    },
+    "checks": {
+      "ard_rate_recovery": true,
+      "blomberg_k_calibration": true,
+      "continuous_convergence": true,
+      "continuous_diffusion_recovery": true,
+      "discrete_state_order": true,
+      "eb_r_recovery": true,
+      "er_rate_recovery": true,
+      "ou_alpha_recovery": true,
+      "pgls_coefficient_recovery": true,
+      "pgls_convergence": true,
+      "pgls_covariance_recovery": true,
+      "pic_calibration": true
+    },
+    "eb": {
+      "convergence_fraction": 1.0,
+      "mu_error": {
+        "mean": 0.042097474451896696,
+        "median": 0.11122292552104493,
+        "n": 16,
+        "p90": 0.33541361777041206
+      },
+      "r_error": {
+        "mean": 0.06405410016312679,
+        "median": 0.05657161947275924,
+        "n": 16,
+        "p90": 0.4387997819353131
+      },
+      "sigma2_ratio": {
+        "mean": 0.9868779560698316,
+        "median": 0.8349927417268987,
+        "n": 16,
+        "p90": 1.5783706060346476
+      }
+    },
+    "er": {
+      "rate_ratio": {
+        "mean": 5.29851839611909,
+        "median": 1.3120654590867096,
+        "n": 16,
+        "p90": 20.328234461755535
+      },
+      "state_order_preserved": true
+    },
+    "ou": {
+      "alpha_error": {
+        "mean": 2.8627228300188343,
+        "median": 0.3019762338114206,
+        "n": 16,
+        "p90": 11.181499595183366
+      },
+      "convergence_fraction": 1.0,
+      "mu_error": {
+        "mean": 0.047508247596139405,
+        "median": 0.07566460056806859,
+        "n": 16,
+        "p90": 0.16087019577750122
+      },
+      "sigma2_ratio": {
+        "mean": 3.169426865024345,
+        "median": 1.1959304237889574,
+        "n": 16,
+        "p90": 8.301059681021744
+      }
+    },
+    "pglm_diagnostic_only": {
+      "convergence_fraction": 1.0,
+      "fit_success_fraction": 1.0,
+      "intercept_error": {
+        "mean": 0.20844256066479813,
+        "median": 0.20966454578787347,
+        "n": 16,
+        "p90": 0.5081729489070897
+      },
+      "reason": "pglm is an approximate IRLS fit to the exact latent generator",
+      "release_gate": false,
+      "slope_error": {
+        "mean": -0.20432460675825848,
+        "median": -0.18795302266328445,
+        "n": 16,
+        "p90": 0.06729346904508682
+      }
+    },
+    "pgls": {
+      "convergence_fraction": 1.0,
+      "intercept_error": {
+        "mean": 0.031849702872280596,
+        "median": 0.024334115644456866,
+        "n": 16,
+        "p90": 0.27582354702234035
+      },
+      "lambda_error": {
+        "mean": -0.002204798315761057,
+        "median": 0.04995058380228662,
+        "n": 16,
+        "p90": 0.1877092611139502
+      },
+      "sigma2_ratio": {
+        "mean": 1.0712635478889272,
+        "median": 1.0711515371488445,
+        "n": 16,
+        "p90": 1.2755318126623445
+      },
+      "slope_error": {
+        "mean": 0.04355023351559781,
+        "median": 0.05049641934275917,
+        "n": 16,
+        "p90": 0.12439031934009148
+      }
+    },
+    "replicates": 16
+  }
+}
