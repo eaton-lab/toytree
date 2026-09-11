@@ -2,7 +2,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from toytree.pcm.src.sim.sim_discrete import MarkovModel, simulate_discrete_trait
+from toytree.pcm.src.sim.sim_discrete import (
+    DiscreteMarkovSimulator,
+    MarkovModel,
+    simulate_discrete_trait,
+)
+from toytree.pcm.src.traits.fit_discrete_ctmc import fit_discrete_ctmc
 from toytree.utils import ToytreeError
 
 
@@ -152,6 +157,117 @@ class TestDiscreteMarkovModelSim:
         values = set(data.dropna().tolist())
         assert values.issubset({"alpha", "beta", "gamma"})
 
+    def test_transition_draws_match_analytic_probability(self, tree6):
+        """Repeated edge draws recover exp(Qt) transition probabilities."""
+        model = MarkovModel(
+            nstates=2,
+            mtype="ARD",
+            relative_rates=np.array([[0.0, 2.0], [1.0, 0.0]]),
+            root_prior=[1.0, 0.0],
+        )
+        simulator = DiscreteMarkovSimulator(tree6, model, seed=12345)
+        expected = model.get_transition_probability_matrix(0.7)[0]
+        draws = np.array([simulator._edge_sim(0, 0.7) for _ in range(20_000)])
+        observed = np.bincount(draws, minlength=2) / draws.size
+        np.testing.assert_allclose(observed, expected, atol=0.01, rtol=0.0)
+
+    def test_single_rng_stream_matches_explicit_construction(self, tree6):
+        """Parameter generation and trait evolution consume one RNG stream."""
+        public = simulate_discrete_trait(
+            tree6,
+            3,
+            model="ARD",
+            root_prior=[1.0, 0.0, 0.0],
+            seed=2345,
+        )
+
+        rng = np.random.default_rng(2345)
+        model = MarkovModel(
+            3,
+            "ARD",
+            root_prior=[1.0, 0.0, 0.0],
+            seed=rng,
+        )
+        indices = DiscreteMarkovSimulator(tree6, model, seed=rng).run()
+        expected = pd.Series(
+            np.asarray(["A", "B", "C"], dtype=object)[indices],
+            index=range(tree6.nnodes),
+            name="X",
+            dtype=object,
+        )
+        pd.testing.assert_series_equal(public, expected)
+
+    def test_zero_rate_symmetric_model_is_deterministic(self, tree6):
+        """A zero-rate ER/SYM model uses a uniform root but never changes."""
+        data = simulate_discrete_trait(
+            tree6,
+            3,
+            model="ER",
+            relative_rates=0.0,
+            seed=7,
+        )
+        assert data.nunique() == 1
+
+    def test_state_labels_preserve_qmatrix_order(self, tree6):
+        """state_names position is the explicit Q row and column order."""
+        data = simulate_discrete_trait(
+            tree6,
+            3,
+            model="ARD",
+            relative_rates=np.zeros((3, 3)),
+            root_prior=[0.0, 1.0, 0.0],
+            state_names=["zebra", "ant", "moose"],
+            seed=8,
+        )
+        assert set(data) == {"ant"}
+
+    def test_custom_state_order_is_carried_into_fitting(self, tree6):
+        """A direct simulation Series keeps ARD row/column semantics in fitting."""
+        rates = np.array(
+            [
+                [0.0, 0.3, 0.8],
+                [1.2, 0.0, 0.5],
+                [0.4, 1.5, 0.0],
+            ]
+        )
+        labels = ["zebra", "ant", "moose"]
+        data = simulate_discrete_trait(
+            tree6,
+            3,
+            model="ARD",
+            relative_rates=rates,
+            root_prior=[0.2, 0.3, 0.5],
+            state_names=labels,
+            tips_only=True,
+            seed=81,
+        )
+        fit = fit_discrete_ctmc(
+            tree6,
+            data,
+            nstates=3,
+            model="ARD",
+            fixed_rates=rates,
+            root_prior=[0.2, 0.3, 0.5],
+        )
+        assert fit.state_labels == tuple(labels)
+        np.testing.assert_allclose(fit.relative_rates, rates)
+
+    def test_model_constraints_raise_toytree_errors(self):
+        """Invalid ER/SYM matrices never rely on removable assertions."""
+        with pytest.raises(ToytreeError, match="off-diagonal rates"):
+            MarkovModel(2, "ER", relative_rates=[[0.0, 1.0], [2.0, 0.0]])
+        with pytest.raises(ToytreeError, match="must be symmetric"):
+            MarkovModel(2, "SYM", relative_rates=[[0.0, 1.0], [2.0, 0.0]])
+        with pytest.raises(ToytreeError, match="must have shape"):
+            MarkovModel(3, "ARD", relative_rates=np.ones((2, 2)))
+
+    def test_zero_time_transition_is_exact_identity(self):
+        """A zero-duration CTMC transition is exactly the identity matrix."""
+        model = MarkovModel(3, "ER")
+        np.testing.assert_array_equal(
+            model.get_transition_probability_matrix(0.0), np.eye(3)
+        )
+
 
 def test_default_series_name_is_x(tree6):
     """Single discrete simulations default to the Series name X."""
@@ -227,3 +343,35 @@ def test_state_names_must_match_nstates(tree6):
             model="ER",
             state_names=["A", "B"],
         )
+
+
+@pytest.mark.parametrize(
+    "state_names",
+    [
+        ["A", "A"],
+        ["A", 1],
+        [True, False],
+    ],
+)
+def test_state_names_are_unique_and_homogeneous(tree6, state_names):
+    """State labels are unambiguous for downstream Q-matrix ordering."""
+    with pytest.raises(ToytreeError, match="state_names"):
+        simulate_discrete_trait(tree6, 2, state_names=state_names)
+
+
+@pytest.mark.parametrize("nstates", [True, 1, 0, -1, 2.5])
+def test_nstates_requires_at_least_two_integer_states(tree6, nstates):
+    """Invalid or degenerate state-space sizes are rejected consistently."""
+    with pytest.raises(ToytreeError, match="nstates"):
+        simulate_discrete_trait(tree6, nstates)
+
+
+def test_seedsequence_is_supported_and_reproducible(tree6):
+    """Equivalent SeedSequences reproduce parameters and states."""
+    first = simulate_discrete_trait(
+        tree6, 3, model="SYM", seed=np.random.SeedSequence(9)
+    )
+    second = simulate_discrete_trait(
+        tree6, 3, model="SYM", seed=np.random.SeedSequence(9)
+    )
+    pd.testing.assert_series_equal(first, second)

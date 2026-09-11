@@ -122,9 +122,11 @@ P(t) = expm(Q*t).
 
 ER shares one off-diagonal rate, SYM shares rates between each state pair, and
 ARD permits each direction to differ. The stationary distribution is derived
-from Q. `root_prior=None` uses that distribution when it is unique; otherwise an
-explicit prior is required. A supplied root prior changes root sampling but does
-not change Q.
+from Q. `root_prior=None` uses that distribution when it is unique. For a
+reducible ER or SYM model, the canonical uniform stationary prior is used; a
+reducible ARD model requires an explicit prior because Q does not select a
+unique default. A supplied root prior changes root sampling but does not change
+Q.
 
 State labels must be unique, nonmissing, hashable, and either all strings or all
 non-Boolean integers. Their entered order defines Q row/column order and must be
@@ -135,7 +137,8 @@ carried into fitting so custom labels cannot silently reorder an ARD model.
 - empirical single-edge transition frequencies agree with `expm(Q*t)`;
 - empirical root frequencies agree with the resolved root prior;
 - long-time frequencies approach the stationary distribution for irreducible Q;
-- reducible and zero-rate Q matrices require or honor an explicit root prior;
+- reducible ARD matrices require an explicit root prior, while zero-rate ER/SYM
+  matrices use or override their canonical uniform prior correctly;
 - ER, SYM, and ARD constraints and parameter counts are exact;
 - custom state-label order survives simulation and fitting;
 - fitted ER/SYM/ARD rates recover generating rates over replicated,

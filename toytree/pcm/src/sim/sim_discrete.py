@@ -25,6 +25,17 @@ import pandas as pd
 import scipy.linalg
 
 from toytree.core.apis import PhyloCompAPI, add_subpackage_method
+from toytree.pcm.src.sim._utils import (
+    RNGSeed,
+    get_rng,
+    make_node_series,
+    validate_bool,
+    validate_feature_name,
+    validate_nonnegative_float,
+    validate_positive_int,
+    validate_state_labels,
+    validate_tree_for_simulation,
+)
 from toytree.utils.src.exceptions import ToytreeError
 
 if TYPE_CHECKING:
@@ -77,7 +88,7 @@ def _coerce_root_prior(
         raise ToytreeError("root_prior must contain finite non-negative values")
     if not np.isclose(prior.sum(), 1.0):
         raise ToytreeError("root_prior must sum to 1")
-    return prior
+    return prior / prior.sum()
 
 
 class ModelType(Enum):
@@ -115,8 +126,8 @@ class MarkovModel:
     """: Root-state distribution. If None, use the stationary distribution."""
     rate_scalar: float = 1.0
     """: Rate scalar to multiple relative rates by."""
-    seed: int | np.random.Generator | None = None
-    """: Random seed used if relative_rates is None."""
+    seed: RNGSeed = None
+    """: Random-number source used if relative_rates is None."""
 
     # attributes filled after init.
     rng: np.random.Generator = field(init=False, repr=False)
@@ -129,23 +140,34 @@ class MarkovModel:
     """: Unique stationary distribution implied by Q, if one exists."""
 
     def __post_init__(self):
-        self.rng = (
-            self.seed
-            if isinstance(self.seed, np.random.Generator)
-            else np.random.default_rng(self.seed)
-        )
-        self.mtype = ModelType(str(self.mtype).upper())
+        self.rng = get_rng(self.seed)
+        self.nstates = validate_positive_int(self.nstates, "nstates")
+        if self.nstates < 2:
+            raise ToytreeError("nstates must be at least 2.")
+        if not isinstance(self.mtype, ModelType):
+            try:
+                self.mtype = ModelType(str(self.mtype).upper())
+            except ValueError as exc:
+                raise ToytreeError("model must be one of: 'ER', 'SYM', 'ARD'.") from exc
+        self.rate_scalar = validate_nonnegative_float(self.rate_scalar, "rate_scalar")
         self._check_rates()
         self._set_transition_matrix()
         self.state_frequencies = get_stationary_frequencies(self.qmatrix)
         entered_prior = _coerce_root_prior(self.root_prior, self.nstates)
         if entered_prior is None:
             if self.state_frequencies is None:
-                raise ToytreeError(
-                    "root_prior is required when Q has no unique stationary "
-                    "distribution"
-                )
-            entered_prior = self.state_frequencies.copy()
+                if self.mtype in (ModelType.ER, ModelType.SYM):
+                    # Uniform frequencies are stationary under every symmetric
+                    # Q, including reducible boundary cases where the
+                    # stationary distribution is not unique.
+                    entered_prior = np.full(self.nstates, 1.0 / self.nstates)
+                else:
+                    raise ToytreeError(
+                        "root_prior is required when Q has no unique stationary "
+                        "distribution"
+                    )
+            else:
+                entered_prior = self.state_frequencies.copy()
         self.root_prior = entered_prior
 
     def _check_rates(self):
@@ -181,32 +203,42 @@ class MarkovModel:
 
         # if user entered rates then check that they are valid.
         else:
-            rates = np.array(rates, dtype=float)
-            # check if singular for ER model
-            if self.mtype.name == "ER":
-                if rates.size == 1:
-                    rates = np.repeat(rates, self.nstates * self.nstates).reshape(
-                        (self.nstates, self.nstates)
-                    )
-                assert (
-                    len(set(rates[rates != 0])) == 1
-                ), "all rates should be equal in ER model. See SYM model."
-            # check if symmetric for SYM models
-            elif self.mtype.name == "SYM":
-                assert np.allclose(
-                    rates, rates.T, rtol=1e-5, atol=1e-8
-                ), "rates should be symmetric in SYM model. See ARD model."
-            # check shape
-            assert rates.shape == (self.nstates, self.nstates), (
-                f"given nstates={self.nstates} the rates matrix should "
-                f"be shape ({self.nstates}, {self.nstates})."
-            )
+            try:
+                rates = np.asarray(rates, dtype=float)
+            except (TypeError, ValueError) as exc:
+                raise ToytreeError(
+                    "relative_rates must contain numeric values."
+                ) from exc
+            if self.mtype == ModelType.ER and rates.size == 1:
+                rates = np.full(
+                    (self.nstates, self.nstates), float(rates.reshape(-1)[0])
+                )
+            if rates.shape != (self.nstates, self.nstates):
+                raise ToytreeError(
+                    f"given nstates={self.nstates}, relative_rates must have "
+                    f"shape ({self.nstates}, {self.nstates})."
+                )
+            rates = rates.copy()
             np.fill_diagonal(rates, 0)
         rates = np.asarray(rates, dtype=float)
         offdiag = ~np.eye(self.nstates, dtype=bool)
         if np.any(~np.isfinite(rates[offdiag])) or np.any(rates[offdiag] < 0.0):
             raise ToytreeError(
                 "relative_rates must contain finite non-negative off-diagonal values"
+            )
+        if self.mtype == ModelType.ER:
+            values = rates[offdiag]
+            if not np.allclose(values, values[0], rtol=1e-5, atol=1e-8):
+                raise ToytreeError(
+                    "all off-diagonal rates must be equal in an ER model; "
+                    "use SYM or ARD for unequal rates."
+                )
+        elif self.mtype == ModelType.SYM and not np.allclose(
+            rates, rates.T, rtol=1e-5, atol=1e-8
+        ):
+            raise ToytreeError(
+                "relative_rates must be symmetric in a SYM model; use ARD "
+                "for directional rates."
             )
         self.relative_rates = rates
 
@@ -223,8 +255,6 @@ class MarkovModel:
          [1, -2, 1]
          [1, 1, -2]]
         """
-        if (not np.isfinite(self.rate_scalar)) or self.rate_scalar < 0.0:
-            raise ToytreeError("rate_scalar must be finite and non-negative")
         trans_mat = np.asarray(self.relative_rates, dtype=float).copy()
         np.fill_diagonal(trans_mat, 0)
         trans_mat *= self.rate_scalar
@@ -274,7 +304,15 @@ class MarkovModel:
          [0.33333333 0.33333333 0.33333333]
          [0.33333333 0.33333333 0.33333333]]
         """
-        return scipy.linalg.expm(self.qmatrix * time)
+        time = validate_nonnegative_float(time, "time")
+        if time == 0.0:
+            return np.eye(self.nstates, dtype=float)
+        probability = scipy.linalg.expm(self.qmatrix * time)
+        # Remove only floating-point artifacts from the matrix exponential.
+        probability[np.abs(probability) < 1e-15] = 0.0
+        probability = np.clip(probability, 0.0, 1.0)
+        probability /= probability.sum(axis=1, keepdims=True)
+        return probability
 
     # def _repr_html_(self):
     #     """Return a html representation of the Markov model.
@@ -301,22 +339,19 @@ class DiscreteMarkovSimulator:
     """: ToyTree with edge lengths in units of ..."""
     model: MarkovModel
     """: MarkovModel object with parameterized Q matrix."""
-    seed: int | np.random.Generator | None = None
+    seed: RNGSeed = None
     """: ..."""
     rng: np.random.Generator = field(init=False)
     """: ..."""
 
     def __post_init__(self):
-        self.rng = (
-            self.seed
-            if isinstance(self.seed, np.random.Generator)
-            else np.random.default_rng(self.seed)
-        )
+        self.tree = validate_tree_for_simulation(self.tree)
+        self.rng = get_rng(self.seed)
 
     def _edge_sim(self, state: int, time: float) -> int:
         """Return the state at end of this time given starting state."""
         prob = scipy.linalg.expm(self.model.qmatrix * time)
-        return self.rng.multinomial(1, prob[state]).argmax()
+        return int(self.rng.choice(self.model.nstates, p=prob[state]))
 
     def _traversal_sim(self) -> np.ndarray:
         """Traverse tree from root to tips simulating trait."""
@@ -324,7 +359,7 @@ class DiscreteMarkovSimulator:
 
         # MarkovModel resolves a missing root prior to the stationary
         # distribution during construction.
-        arr[-1] = self.rng.multinomial(1, self.model.root_prior).argmax()
+        arr[-1] = self.rng.choice(self.model.nstates, p=self.model.root_prior)
 
         # traverse down tree simulating traits
         for node in self.tree[::-1][1:]:
@@ -336,14 +371,6 @@ class DiscreteMarkovSimulator:
     def run(self) -> np.ndarray:
         """Return one simulated realization indexed by node idx."""
         return self._traversal_sim()
-
-
-def _coerce_trait_name(name: str) -> str:
-    """Return a validated trait name."""
-    name = str(name)
-    if not name.strip():
-        raise ToytreeError("name must be a non-empty string.")
-    return name
 
 
 def _default_state_names(nstates: int) -> list[str]:
@@ -360,10 +387,7 @@ def _coerce_state_names(
     """Return validated state labels for a discrete simulation."""
     if state_names is None:
         return _default_state_names(nstates)
-    labels = list(state_names)
-    if len(labels) != nstates:
-        raise ToytreeError("state_names length must match nstates.")
-    return labels
+    return validate_state_labels(state_names, nstates)
 
 
 ####################################################################
@@ -375,7 +399,7 @@ def get_markov_model(
     rate_scalar: float = 1.0,
     relative_rates: Optional[np.ndarray] = None,
     root_prior: Optional[np.ndarray] = None,
-    seed: int | np.random.Generator | None = None,
+    seed: RNGSeed = None,
 ) -> MarkovModel:
     """Return a parameterized MarkovModel instance.
 
@@ -411,8 +435,9 @@ def get_markov_model(
         Root-state probabilities in state-index order. This does not alter Q
         or its derived stationary frequencies. If None, the unique stationary
         distribution of Q is used.
-    seed: int | numpy.random.Generator | None
-        Seed or random-number generator used for any sampled parameters.
+    seed: int, numpy.random.Generator, numpy.random.SeedSequence, or None
+        Random-number source used for any sampled parameters. A supplied
+        Generator is consumed in place.
 
     Returns
     -------
@@ -427,7 +452,7 @@ def get_markov_model(
     >>> print(toytree.pcm.get_markov_model(nstates=3, model="SYM"))
     >>> print(toytree.pcm.get_markov_model(nstates=3, model="ARD")
     """
-    model = MarkovModel(
+    return MarkovModel(
         mtype=str(model).upper(),
         nstates=nstates,
         rate_scalar=rate_scalar,
@@ -435,7 +460,6 @@ def get_markov_model(
         root_prior=root_prior,
         seed=seed,
     )
-    return model
 
 
 @add_subpackage_method(PhyloCompAPI)
@@ -445,11 +469,11 @@ def simulate_discrete_trait(
     model: str = "ER",
     relative_rates: Optional[np.ndarray] = None,
     root_prior: Optional[np.ndarray] = None,
-    rate_scalar: Optional[float] = 1.0,
+    rate_scalar: float = 1.0,
     tips_only: bool = False,
     name: str = "X",
     state_names: Sequence[Any] | None = None,
-    seed: int | np.random.Generator | None = None,
+    seed: RNGSeed = None,
     inplace: bool = False,
 ) -> pd.Series:
     """Return trait values simulated under a discrete Markov model.
@@ -497,8 +521,10 @@ def simulate_discrete_trait(
         Labels to substitute for simulated integer state indices in the
         entered order. If None, defaults are uppercase single-letter labels
         for ``nstates <= 26`` and numeric strings otherwise.
-    seed : int | numpy.random.Generator | None
-        Seed or random-number generator.
+    seed : int, numpy.random.Generator, numpy.random.SeedSequence, or None
+        Random-number source. A supplied Generator is consumed in place;
+        sampled model parameters and trait evolution use one continuous random
+        stream. Integer and SeedSequence inputs initialize a new Generator.
     inplace: bool
         If True, simulated trait data are also written to the input tree as
         node features. The simulated Series is still returned.
@@ -529,36 +555,46 @@ def simulate_discrete_trait(
     ...     tips_only=True,
     ... )
     """
-    name = _coerce_trait_name(name)
+    tree = validate_tree_for_simulation(tree)
+    nstates = validate_positive_int(nstates, "nstates")
+    if nstates < 2:
+        raise ToytreeError("nstates must be at least 2.")
+    tips_only = validate_bool(tips_only, "tips_only")
+    inplace = validate_bool(inplace, "inplace")
+    name = validate_feature_name(name)
     labels = _coerce_state_names(state_names, nstates)
+    rng = get_rng(seed)
     model = MarkovModel(
         mtype=str(model).upper(),
         nstates=nstates,
         relative_rates=relative_rates,
         root_prior=root_prior,
         rate_scalar=rate_scalar,
-        seed=seed,
+        seed=rng,
     )
     simulator = DiscreteMarkovSimulator(
         tree=tree,
         model=model,
-        seed=seed,
+        seed=rng,
     )
-
-    traits = pd.Series(
-        simulator.run(), index=range(tree.nnodes), name=name, dtype=object
+    indices = simulator.run()
+    values = np.asarray(labels, dtype=object)[indices]
+    traits = make_node_series(
+        tree,
+        values,
+        name=name,
+        tips_only=tips_only,
+        inplace=inplace,
+        dtype=object,
     )
-
-    if tips_only:
-        traits = traits.iloc[: tree.ntips].copy()
-
-    # Convert integer state indices to user-facing categorical labels before
-    # optionally storing the result on the tree.
-    for idx, value in enumerate(labels):
-        traits.replace(to_replace=idx, value=value, inplace=True)
-
-    if inplace:
-        tree.set_node_data(traits.name, traits, inplace=True, default=np.nan)
+    # Preserve the complete state-space order even when a realized sample does
+    # not contain every state. ``fit_discrete_ctmc`` reads this metadata from a
+    # directly supplied Series; ``state_names=`` remains available after data
+    # have been copied through formats that do not retain pandas attrs.
+    traits.attrs["state_names"] = tuple(labels)
+    traits.attrs["model"] = model.mtype.value
+    traits.attrs["qmatrix"] = tuple(tuple(row) for row in model.qmatrix)
+    traits.attrs["root_prior"] = tuple(model.root_prior)
     return traits
 
 

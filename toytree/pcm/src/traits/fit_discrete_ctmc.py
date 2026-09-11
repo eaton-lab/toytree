@@ -11,7 +11,7 @@ from __future__ import annotations
 
 import sys
 from dataclasses import dataclass
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 
 import numpy as np
 import pandas as pd
@@ -21,6 +21,7 @@ from scipy.optimize import minimize
 # from loguru import logger
 from toytree.core.apis import PhyloCompAPI, add_subpackage_method
 from toytree.data._src.expand_node_mapping import expand_node_mapping
+from toytree.pcm.src.sim._utils import validate_positive_int, validate_state_labels
 from toytree.pcm.src.sim.sim_discrete import MarkovModel
 from toytree.pcm.src.traits.aic_table import PCMModelResult
 from toytree.utils.src.exceptions import ToytreeError
@@ -140,11 +141,21 @@ class DiscreteMarkovModelFit:
         fixed_rates: Optional[np.ndarray] = None,
         root_prior: Optional[np.ndarray] = None,
         rate_scalar: float = 1.0,
+        state_names: Optional[Sequence[Any]] = None,
     ) -> None:
         self.tree = tree
+        self.nstates = validate_positive_int(nstates, "nstates")
+        if self.nstates < 2:
+            raise ToytreeError("nstates must be at least 2.")
+        if state_names is None and isinstance(data, pd.Series):
+            state_names = data.attrs.get("state_names")
+        self._entered_state_names = (
+            None
+            if state_names is None
+            else validate_state_labels(state_names, self.nstates)
+        )
         self.data = self._coerce_data(data)
         self.model = model.upper()
-        self.nstates = nstates
         self.rate_scalar = rate_scalar
 
         if self.model not in {"ER", "SYM", "ARD"}:
@@ -185,12 +196,27 @@ class DiscreteMarkovModelFit:
         """Build a map from observed categorical states to integer indices."""
         observed = pd.unique(self.data.values)
         observed = [val for val in observed if pd.notna(val)]
-        state_labels = sorted(observed)
+        if self._entered_state_names is None:
+            try:
+                state_labels = sorted(observed)
+            except TypeError as exc:
+                raise ToytreeError(
+                    "observed states must be all strings or all integers."
+                ) from exc
+        else:
+            state_labels = list(self._entered_state_names)
+            missing = [state for state in observed if state not in state_labels]
+            if missing:
+                raise ToytreeError(
+                    f"observed states are absent from state_names: {missing!r}."
+                )
         state_map = {state: idx for idx, state in enumerate(state_labels)}
         return state_labels, state_map
 
     def _build_state_names(self) -> List[object]:
         """Return state labels for all nstates (including unobserved)."""
+        if self._entered_state_names is not None:
+            return list(self._entered_state_names)
         names = list(self.state_labels)
         if len(names) < self.nstates:
             names.extend(range(len(names), self.nstates))
@@ -514,6 +540,7 @@ def fit_discrete_ctmc(
     model: str,
     fixed_rates: Optional[np.ndarray] = None,
     root_prior: Optional[np.ndarray] = None,
+    state_names: Optional[Sequence[Any]] = None,
 ) -> PCMDiscreteCTMCFitResult:
     """Fit a discrete Markov model for one trait.
 
@@ -530,6 +557,7 @@ def fit_discrete_ctmc(
         model=model,
         fixed_rates=fixed_rates,
         root_prior=root_prior,
+        state_names=state_names,
     )
     return fitter.fit(compute_posteriors=False)
 
@@ -543,6 +571,7 @@ def infer_ancestral_states_discrete_ctmc(
     fixed_rates: Optional[np.ndarray] = None,
     root_prior: Optional[np.ndarray] = None,
     inplace: bool = False,
+    state_names: Optional[Sequence[Any]] = None,
 ) -> Dict[str, object]:
     """Infer ancestral discrete trait states under a CTMC model.
 
@@ -583,6 +612,11 @@ def infer_ancestral_states_discrete_ctmc(
         stationary frequencies. It does enter the likelihood and can therefore
         affect fitted rate estimates. If None, Q's unique stationary
         distribution is used.
+    state_names : sequence[str] | sequence[int] | None
+        Complete state labels in Q-matrix row/column order. When ``data`` is a
+        Series returned directly by ``simulate_discrete_trait``, its stored
+        state order is used automatically. Supply this explicitly if the data
+        have passed through a format that discards pandas metadata.
     inplace : bool
         If True, write inferred states and posterior tuples to the input tree
         as node features. If False, the input tree is not modified.
@@ -675,6 +709,7 @@ def infer_ancestral_states_discrete_ctmc(
         model=model,
         fixed_rates=fixed_rates,
         root_prior=root_prior,
+        state_names=state_names,
     )
     result = fitter.fit(compute_posteriors=False)
     node_probs, node_states = fitter._compute_node_posteriors(
