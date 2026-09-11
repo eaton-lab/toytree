@@ -6,7 +6,7 @@ There are innumerous ways to style toytree drawings by combining different argum
 
 ```python
 import toytree
-tree = toytree.rtree.bdtree(ntips=10, seed=123)
+tree = toytree.rtree.birth_death_conditioned_tree(ntips=10, seed=123, crown_age=1.0)
 ```
 
 ## Builtins

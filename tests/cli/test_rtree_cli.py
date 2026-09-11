@@ -1,6 +1,4 @@
-#!/usr/bin/env python
-
-"""Tests for rtree CLI generation methods and argument validation."""
+"""Tests for explicit rtree CLI generation methods."""
 
 import io
 import tempfile
@@ -17,10 +15,10 @@ from toytree.utils import ToytreeError
 
 
 class TestRTreeCLI(PytestCompat):
-    """Validate random-tree generation command behavior."""
+    """Validate tree-simulation command behavior."""
 
     def setUp(self):
-        """Set up temp directory and parser for each test."""
+        """Set up a temporary directory and standalone parser."""
         self.tmpdir = Path(tempfile.mkdtemp(prefix="toytree-cli-rtree-"))
         self.parser = get_parser_rtree()
 
@@ -32,100 +30,131 @@ class TestRTreeCLI(PytestCompat):
             run_rtree(args)
         return out.getvalue().strip(), err.getvalue().strip()
 
-    def test_default_method_generates_parseable_tree(self):
-        """Default method should emit a parseable Newick with requested tips."""
+    def test_default_random_topology(self):
+        """The default method emits a parseable Yule topology."""
         out, _ = self._run_capture(["-n", "12", "--seed", "123"])
-        tree = toytree.tree(out)
-        self.assertEqual(tree.ntips, 12)
+        self.assertEqual(toytree.tree(out).ntips, 12)
 
-    def test_unittree_respects_treeheight(self):
-        """Unittree mode should produce an ultrametric tree at target height."""
+    def test_pda_topology(self):
+        """The topology model selector exposes PDA sampling."""
         out, _ = self._run_capture(
-            ["--method", "unittree", "-n", "10", "--treeheight", "3.5", "--seed", "1"]
+            ["--topology-model", "pda", "-n", "12", "--seed", "123"]
+        )
+        self.assertEqual(toytree.tree(out).ntips, 12)
+
+    def test_unittree_height_and_prefix(self):
+        """Unambiguous method prefixes retain convenient CLI parsing."""
+        out, _ = self._run_capture(
+            ["--method", "u", "-n", "10", "--treeheight", "3.5", "--seed", "1"]
         )
         tree = toytree.tree(out)
         self.assertTrue(tree.is_ultrametric())
         self.assertAlmostEqual(tree.treenode.height, 3.5, places=6)
 
-    def test_method_unambiguous_prefix_u_maps_to_unittree(self):
-        """Method shorthand should resolve unambiguous prefix values."""
-        out, _ = self._run_capture(
-            ["-m", "u", "-n", "10", "--treeheight", "2.0", "--seed", "1"]
-        )
-        tree = toytree.tree(out)
-        self.assertTrue(tree.is_ultrametric())
-        self.assertAlmostEqual(tree.treenode.height, 2.0, places=6)
+    def test_balanced_tree_accepts_odd_tip_count(self):
+        """The CLI exposes the corrected odd-sized balanced generator."""
+        out, _ = self._run_capture(["--method", "baltree", "-n", "9"])
+        self.assertEqual(toytree.tree(out).ntips, 9)
 
-    def test_method_unambiguous_prefix_bd_maps_to_bdtree(self):
-        """Method shorthand 'bd' should resolve to bdtree."""
-        out, _ = self._run_capture(
-            ["-m", "bd", "-n", "8", "--stop", "taxa", "--seed", "7"]
-        )
-        tree = toytree.tree(out)
-        self.assertEqual(tree.ntips, 8)
-
-    def test_coaltree_uses_ntips_and_N(self):
-        """Coaltree should use -n as k and accept --N."""
-        out, _ = self._run_capture(
-            ["--method", "coaltree", "-n", "9", "--N", "250", "--seed", "5"]
-        )
-        tree = toytree.tree(out)
-        self.assertEqual(tree.ntips, 9)
-
-    def test_bdtree_stats_print_to_stderr(self):
-        """Bdtree stats mode should print key-value stats to stderr."""
+    def test_birth_death_process_stats(self):
+        """Forward-process statistics are printed separately from Newick."""
         out, err = self._run_capture(
             [
                 "--method",
-                "bdtree",
+                "birth-death-process",
                 "-n",
                 "8",
-                "--stop",
-                "taxa",
+                "--birth-rate",
+                "1.0",
+                "--death-rate",
+                "0.2",
                 "--stats",
+                "--seed",
+                "7",
+            ]
+        )
+        self.assertEqual(toytree.tree(out).ntips, 8)
+        self.assertIn("elapsed_time=", err)
+        self.assertIn("births=", err)
+
+    def test_birth_death_process_time_stop(self):
+        """An explicit time stop does not also receive the default tip stop."""
+        out, _ = self._run_capture(
+            [
+                "--method",
+                "birth-death-process",
+                "--stop-time",
+                "2.5",
+                "--birth-rate",
+                "1.0",
+                "--death-rate",
+                "0.0",
+                "--seed",
+                "7",
+            ]
+        )
+        self.assertGreaterEqual(toytree.tree(out).ntips, 1)
+
+    def test_birth_death_conditioned(self):
+        """The conditioned method requires and honors an explicit age."""
+        out, _ = self._run_capture(
+            [
+                "--method",
+                "birth-death-conditioned",
+                "-n",
+                "8",
+                "--crown-age",
+                "4",
                 "--seed",
                 "7",
             ]
         )
         tree = toytree.tree(out)
         self.assertEqual(tree.ntips, 8)
-        self.assertIn("time=", err)
-        self.assertIn("births=", err)
-        self.assertIn("deaths=", err)
+        self.assertAlmostEqual(tree.treenode.height, 4.0, places=6)
 
-    def test_binary_output_writes_transport_payload(self):
-        """Binary mode should write a valid transport payload."""
+    def test_coalescent_tree(self):
+        """Coalescent options use explicit Ne and ploidy names."""
+        out, _ = self._run_capture(
+            [
+                "--method",
+                "coalescent-tree",
+                "-n",
+                "9",
+                "--Ne",
+                "250",
+                "--ploidy",
+                "2",
+                "--seed",
+                "5",
+            ]
+        )
+        self.assertEqual(toytree.tree(out).ntips, 9)
+
+    def test_binary_output(self):
+        """Binary mode writes a transport payload for new method names."""
         outpath = self.tmpdir / "rtree.bin"
         args = self.parser.parse_args(
-            ["--method", "rtree", "-n", "6", "-b", "-o", str(outpath)]
+            ["--method", "random-topology", "-n", "6", "-b", "-o", str(outpath)]
         )
         run_rtree(args)
-        tree = read_tree_auto(str(outpath))
-        self.assertEqual(tree.ntips, 6)
+        self.assertEqual(read_tree_auto(str(outpath)).ntips, 6)
 
-    def test_reject_incompatible_N_for_non_coalescent_method(self):
-        """Method-incompatible coalescent arg should be rejected."""
-        args = self.parser.parse_args(["--method", "rtree", "-n", "6", "--N", "100"])
+    def test_reject_incompatible_options(self):
+        """Method-specific options cannot silently affect other generators."""
+        args = self.parser.parse_args(
+            ["--method", "random-topology", "-n", "6", "--Ne", "100"]
+        )
         with self.assertRaises(ToytreeError):
             run_rtree(args)
-
-    def test_reject_incompatible_treeheight_for_coalescent_method(self):
-        """Method-incompatible treeheight arg should be rejected."""
         args = self.parser.parse_args(
-            ["--method", "coaltree", "-n", "6", "--treeheight", "3.0"]
+            ["--method", "coalescent-tree", "-n", "6", "--treeheight", "3"]
         )
         with self.assertRaises(ToytreeError):
             run_rtree(args)
 
-    def test_names_length_mismatch_raises(self):
-        """Names length mismatch should propagate validation error."""
-        args = self.parser.parse_args(
-            ["--method", "rtree", "-n", "4", "--names", "a", "b", "c"]
-        )
-        with self.assertRaises(ValueError):
-            run_rtree(args)
-
-    def test_method_ambiguous_prefix_b_raises_parser_error(self):
-        """Ambiguous shorthand should fail parse with SystemExit."""
-        with self.assertRaises(SystemExit):
-            self.parser.parse_args(["-m", "b", "-n", "6"])
+    def test_legacy_method_names_are_parser_errors(self):
+        """Removed method names do not silently select new distributions."""
+        for name in ("rtree", "bdtree", "coaltree"):
+            with self.assertRaises(SystemExit):
+                self.parser.parse_args(["--method", name])

@@ -12,7 +12,7 @@ Bars are normalized to the largest tip value and drawn into the tip slots define
 import toytree
 
 # an example tree
-tree = toytree.rtree.bdtree(ntips=15, seed=123)
+tree = toytree.rtree.birth_death_conditioned_tree(ntips=15, seed=123, crown_age=1.0)
 
 # simulate a categorical and quantitative trait
 tree.pcm.simulate_continuous_trait(name="Y", root_state=5, inplace=True, seed=321);
@@ -69,7 +69,7 @@ The bars are plotted relative to each tip node on the drawn tree. Thus, if you a
 
 ```python
 # a tree with unaligned tips
-tree2 = toytree.rtree.rtree(ntips=15, seed=123)
+tree2 = toytree.rtree.random_topology(ntips=15, seed=123)
 
 # draw a tree
 canvas, axes, m0 = tree2.draw(layout="r", tip_labels_align=True, width=350)

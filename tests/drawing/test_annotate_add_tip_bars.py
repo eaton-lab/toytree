@@ -187,7 +187,7 @@ class TestAnnotateAddTipBars(PytestCompat):
         other = toytree.rtree.unittree(
             ntips=self.tree.ntips,
             seed=333,
-            random_names=True,
+            randomize_labels=True,
         )
         _, axes, tmark1 = self.tree.draw(layout="r", width=500)
         _, axes, tmark2 = other.draw(axes=axes, layout="l", xbaseline=2)
@@ -487,7 +487,7 @@ class TestAnnotateAddTipBars(PytestCompat):
         self._assert_layout_u_tip_bars_fit_axes(mark, axes, stroke_half_width=1.5)
 
     def test_add_tip_bars_visible_stroke_fits_bdtree_width_u(self):
-        tree = toytree.rtree.bdtree(10, seed=123)
+        tree = toytree.rtree.birth_death_conditioned_tree(10, crown_age=1.0, seed=123)
         canvas, axes, _ = tree.draw(
             layout="u",
             tip_labels_align=True,

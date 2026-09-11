@@ -959,7 +959,7 @@ if __name__ == "__main__":
 
     import toytree
 
-    tree = toytree.rtree.rtree(10)
+    tree = toytree.rtree.random_topology(10)
     tree[3].hello = "3"
     print(tree.features)
     print(tree.get_node_data("support"))

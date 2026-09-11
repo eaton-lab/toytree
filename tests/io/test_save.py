@@ -140,7 +140,7 @@ def test_save_pdf_reportlab_warns_on_filled_paths(
     capsys,
 ) -> None:
     """Explicit ReportLab export warns when SVG contains filled paths."""
-    tree = toytree.rtree.coaltree(20, seed=123)
+    tree = toytree.rtree.coalescent_tree(20, seed=123)
     trait = tree.pcm.simulate_discrete_trait(
         nstates=3,
         model="ER",

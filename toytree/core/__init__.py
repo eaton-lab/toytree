@@ -15,7 +15,7 @@ Parse tree data to a ToyTree instance:
 
 Generate random ToyTrees
 >>> tree = toytree.rtree.unittree(ntips=10)
->>> tree = toytree.rtree.bdtree(ntips=10, b=0.5, d=0.1)
+>>> tree = toytree.rtree.birth_death_conditioned_tree(ntips=10, crown_age=1.0, birth_rate=0.5, death_rate=0.1)
 
 Generate a MultiTree object
 >>> trees = [toytree.rtree.unittree(10) for i in range(5)]

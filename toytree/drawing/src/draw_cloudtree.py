@@ -157,7 +157,7 @@ def draw_cloudtree(mtree: MultiTree, **kwargs) -> Sequence[Mark]:
 if __name__ == "__main__":
     import toytree
 
-    trees = [toytree.rtree.coaltree(k=6, seed=i) for i in range(100)]
+    trees = [toytree.rtree.coalescent_tree(nsample=6, seed=i) for i in range(100)]
     mtree = toytree.mtree(trees)
     c, a, m = mtree.draw_cloud_tree()
     toytree.utils.show([c], tmpdir="~")

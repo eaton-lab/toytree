@@ -795,8 +795,8 @@ if __name__ == "__main__":
     # print("\n t2-4")
     # print(_validate(t2, t4))
 
-    # t1 = toytree.rtree.baltree(10, random_names=True)
-    # t2 = toytree.rtree.imbtree(10, random_names=True)
+    # t1 = toytree.rtree.baltree(10, randomize_labels=True)
+    # t2 = toytree.rtree.imbtree(10, randomize_labels=True)
     # print(get_treedist_rf(t1, t2, True))
     # print(_expected_variation(t1, t2, 'rf', normalize=True))
     # print(_expected_variation(t1, t2, 'rfi', normalize=True))

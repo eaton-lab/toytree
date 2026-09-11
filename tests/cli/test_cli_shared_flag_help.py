@@ -283,23 +283,30 @@ def test_rtree_method_help_lists_all_options():
     parser = subparsers.get_parser_rtree()
     assert (
         _help_text(parser, "--method")
-        == "method: rtree|unittree|imbtree|baltree|bdtree|coaltree [rtree]"
+        == "method: random-topology|unittree|imbtree|baltree|"
+        "birth-death-process|birth-death-conditioned|coalescent-tree "
+        "[random-topology]"
     )
 
 
-def test_rtree_bdtree_help_order_and_stop_description():
-    """Rtree bdtree args should appear in requested order with expanded stop help."""
+def test_rtree_birth_death_help_lists_explicit_process_and_age_options():
+    """Birth-death help distinguishes process stops from conditioned ages."""
     help_text = subparsers.get_parser_rtree().format_help()
-    bd_idx = help_text.index("Birth-Death (bdtree):")
-    coal_idx = help_text.index("Coalescent (coaltree):")
+    bd_idx = help_text.index("Birth-Death:")
+    coal_idx = help_text.index("Coalescent:")
     bd_text = help_text[bd_idx:coal_idx]
-    b_idx = bd_text.index("--b ")
-    d_idx = bd_text.index("--d ")
-    stop_idx = bd_text.index("--stop ")
-    time_idx = bd_text.index("--time ")
-    assert b_idx < d_idx < stop_idx < time_idx
-    assert "'taxa' stops at ntips" in bd_text
-    assert "'time' stops at elapsed time" in bd_text
+    ordered = [
+        bd_text.index(option)
+        for option in (
+            "--birth-rate",
+            "--death-rate",
+            "--stop-time",
+            "--stop-ntips",
+            "--crown-age",
+            "--origin-age",
+        )
+    ]
+    assert ordered == sorted(ordered)
 
 
 def test_json_output_flags_present_for_reporting_commands():

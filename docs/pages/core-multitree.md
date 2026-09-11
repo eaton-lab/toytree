@@ -50,7 +50,7 @@ Similarly, you can create a `MultiTree` by providing a collection of `ToyTree` o
 
 ```python
 # generate 50 random coalescent trees each with 6 tips
-coaltrees = [toytree.rtree.coaltree(k=6) for i in range(50)]
+coaltrees = [toytree.rtree.coalescent_tree(nsample=6) for i in range(50)]
 ```
 
 

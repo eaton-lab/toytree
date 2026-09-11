@@ -8,11 +8,11 @@ module as well as from ToyTree instances as an API.
 
 Examples
 --------
->>> tree = toytree.rtree.bdtree(10, seed=123)
+>>> tree = toytree.rtree.birth_death_conditioned_tree(10, crown_age=1.0, seed=123)
 >>> c, a, m = tree.draw(layout='d')
 >>> toytree.annotate.add_node_pie_markers(axes=a, **kwargs)
 
->>> tree = toytree.rtree.bdtree(10, seed=123)
+>>> tree = toytree.rtree.birth_death_conditioned_tree(10, crown_age=1.0, seed=123)
 >>> c, a, m = tree.draw(layout='d', xbaseline=10)
 >>> tree.annotate.node_pie_charts(axes=a, layout='d', xbaseline=10)
 

@@ -13,12 +13,13 @@ def _edge_array(tree: ToyTree) -> np.ndarray:
 
 
 def _scale_true_tree(ntips: int, seed: int) -> ToyTree:
-    tree = toytree.rtree.bdtree(ntips=ntips, b=1.0, d=0.2, seed=seed)
-    root = tree.treenode
-    while root.up is not None:
-        root = root.up
-    tree = ToyTree(root).mod.remove_unary_nodes()
-    return tree.mod.edges_scale_to_root_height(1.0)
+    return toytree.rtree.birth_death_conditioned_tree(
+        ntips=ntips,
+        birth_rate=1.0,
+        death_rate=0.2,
+        crown_age=1.0,
+        seed=seed,
+    )
 
 
 def _simulate_rates(

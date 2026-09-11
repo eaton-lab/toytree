@@ -243,6 +243,8 @@ if __name__ == "__main__":
     # print(get_equal_splits(mtree, 2))
     # print(get_tip_level_diversification(mtree, 2))
 
-    TREE = toytree.rtree.bdtree(ntips=100, b=0.5, d=0.5)
+    TREE = toytree.rtree.birth_death_conditioned_tree(
+        ntips=100, crown_age=1.0, birth_rate=0.5, death_rate=0.5
+    )
     MTREE = [TREE, TREE, TREE]
     print(get_tip_level_diversification(MTREE, njobs=10))

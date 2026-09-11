@@ -13,7 +13,7 @@ import toytree
 class TestRootByMinimalAncestorDeviation(PytestCompat):
     def setUp(self):
         self.tree = (
-            toytree.rtree.rtree(5, seed=123)
+            toytree.rtree.random_topology(5, seed=123)
             .unroot()
             .set_node_data(
                 "name",

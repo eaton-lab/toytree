@@ -47,6 +47,9 @@ nav:
           - parsing tree data: parse_trees.md
           - writing tree data: write_trees.md
 
+      - 'Simulation':
+          - trees and branch rates: random-trees.md
+
       - 'Core Concepts':
           - Node: core-node.md
           - ToyTree: core-toytree.md

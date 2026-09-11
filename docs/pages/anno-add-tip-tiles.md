@@ -9,7 +9,7 @@ The annotation ``add_tip_tiles`` adds a tile (rectangle or annular wedge) across
 import toytree
 
 # an example tree
-tree = toytree.rtree.bdtree(ntips=15, seed=123)
+tree = toytree.rtree.birth_death_conditioned_tree(ntips=15, seed=123, crown_age=1.0)
 
 # simulate a categorical and quantitative trait
 tree.pcm.simulate_discrete_trait(nstates=2, name="X", inplace=True, seed=123);
@@ -129,7 +129,7 @@ Annular tiles follow the same logic, but are shaped to follow polar rather than 
 
 ```python
 # simulate a big tree with a discrete trait
-big_tree = toytree.rtree.bdtree(200)
+big_tree = toytree.rtree.birth_death_conditioned_tree(200, crown_age=1.0)
 big_tree.pcm.simulate_discrete_trait(nstates=2, name="X", inplace=True);
 
 # draw the tree in layout 'c' and add tiles for trait 'X'

@@ -79,7 +79,7 @@ def save(
 
     Example
     -------
-    >>> tree = toytree.rtree.coaltree(10)
+    >>> tree = toytree.rtree.coalescent_tree(10)
     >>> canvas, axes, mark = tree.draw(ts='c')
     >>> toytree.save(canvas, "./drawing.pdf")
     >>> toytree.save(canvas, "./drawing.png", output_width=1600)

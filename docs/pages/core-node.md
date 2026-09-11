@@ -14,7 +14,7 @@ import toytree
 
 ```python
 # create an example tree
-tree = toytree.rtree.rtree(ntips=8, seed=321)
+tree = toytree.rtree.random_topology(ntips=8, seed=321)
 tree.draw('c');
 ```
 

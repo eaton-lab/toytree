@@ -1,0 +1,158 @@
+{
+  "all_checks_passed": true,
+  "checks": {
+    "birth_death_process": true,
+    "branch_rate_processes": true,
+    "coalescent_expectations": true,
+    "conditioned_birth_death_times": true,
+    "conditioned_pure_birth_mean": true,
+    "scaling": true,
+    "topology_distributions": true
+  },
+  "environment": {
+    "numpy": "2.4.6",
+    "platform": "Linux-7.0.0-28-generic-x86_64-with-glibc2.39",
+    "python": "3.11.9"
+  },
+  "generated_at_utc": "2026-09-11T20:05:00.889199+00:00",
+  "mode": "confirmation",
+  "results": {
+    "birth_death_process": {
+      "absolute_error": 0.0047095561291145005,
+      "birth_fraction": 0.5952904438708855,
+      "births": 18682,
+      "deaths": 12701,
+      "expected_birth_fraction": 0.6,
+      "nreps": 5000,
+      "passed": true,
+      "richness_stop_valid": true,
+      "time_stop_valid": true,
+      "tolerance": 0.025
+    },
+    "branch_rate_processes": {
+      "acln": {
+        "standardized_increment_mean_absolute_error": 0.002029014712055417,
+        "standardized_increment_sd_absolute_error": 0.00018389493694814796
+      },
+      "ntips": 20000,
+      "passed": true,
+      "tolerances": {
+        "acln_standardized": 0.035,
+        "ucln_correlation": 0.035,
+        "ucln_log_sd": 0.02,
+        "ucln_mean": 0.02
+      },
+      "ucln": {
+        "adjacent_rate_absolute_correlation": 0.004686097232149673,
+        "log_sd_absolute_error": 0.0033002027896530395,
+        "mean_relative_error": 0.0019402518801654445
+      }
+    },
+    "coalescent_expectations": {
+      "first_interval_expected": 7.142857142857143,
+      "first_interval_mean": 7.184125582639656,
+      "first_interval_relative_error": 0.005777581569551771,
+      "nreps": 10000,
+      "passed": true,
+      "tmrca_expected": 350.0,
+      "tmrca_mean": 350.5054959210276,
+      "tmrca_relative_error": 0.001444274060078854,
+      "tolerance": 0.035
+    },
+    "conditioned_birth_death_times": {
+      "dkw_alpha": 1e-06,
+      "dkw_bound": 0.026933861344527098,
+      "ks_distance": 0.010358963498897533,
+      "nreps": 10000,
+      "passed": true
+    },
+    "conditioned_pure_birth_mean": {
+      "expected_mean": 1.0099377600145667,
+      "nreps": 10000,
+      "observed_mean": 0.9961214953518666,
+      "passed": true,
+      "relative_error": 0.013680312995229427,
+      "tolerance": 0.025
+    },
+    "scaling": {
+      "maximum_doubling_ratio": 3.75,
+      "methods": {
+        "coalescent": {
+          "doubling_ratios": [
+            2.0448945303637664,
+            2.337769540571762
+          ],
+          "median_seconds": {
+            "16000": 0.08864098996855319,
+            "4000": 0.018542231060564518,
+            "8000": 0.03791690687648952
+          },
+          "passed": true
+        },
+        "pda": {
+          "doubling_ratios": [
+            2.0476428424231967,
+            2.203693134579096
+          ],
+          "median_seconds": {
+            "16000": 0.06948891002684832,
+            "4000": 0.01539962599053979,
+            "8000": 0.03153293393552303
+          },
+          "passed": true
+        },
+        "pure_birth_process": {
+          "doubling_ratios": [
+            2.117961142045576,
+            2.6958845643034657
+          ],
+          "median_seconds": {
+            "16000": 0.19430805812589824,
+            "4000": 0.03403075085952878,
+            "8000": 0.07207580795511603
+          },
+          "passed": true
+        },
+        "yule": {
+          "doubling_ratios": [
+            1.9074456571322367,
+            2.170506527134744
+          ],
+          "median_seconds": {
+            "16000": 0.05289219017140567,
+            "4000": 0.012775511015206575,
+            "8000": 0.024368593003600836
+          },
+          "passed": true
+        }
+      },
+      "passed": true,
+      "repeats": 5,
+      "sizes": [
+        4000,
+        8000,
+        16000
+      ]
+    },
+    "topology_distributions": {
+      "models": {
+        "pda": {
+          "absolute_error": 0.002150000000000013,
+          "balanced_fraction": 0.19785,
+          "expected": 0.2,
+          "passed": true
+        },
+        "yule": {
+          "absolute_error": 0.003916666666666679,
+          "balanced_fraction": 0.33725,
+          "expected": 0.3333333333333333,
+          "passed": true
+        }
+      },
+      "nreps": 20000,
+      "passed": true,
+      "tolerance": 0.012
+    }
+  },
+  "schema": "toytree-rtree-validation-v1"
+}

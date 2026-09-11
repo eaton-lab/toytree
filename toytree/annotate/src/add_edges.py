@@ -106,7 +106,7 @@ def add_edges(
 
     Examples
     --------
-    >>> tree = toytree.rtree.bdtree(20, seed=123)
+    >>> tree = toytree.rtree.birth_death_conditioned_tree(20, crown_age=1.0, seed=123)
     >>> tree.pcm.simulate_discrete_trait(
     ...     3, name="X", state_names="ABC", inplace=True
     ... )

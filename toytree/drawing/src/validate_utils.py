@@ -66,7 +66,7 @@ if __name__ == "__main__":
     from toytree.core import TreeStyle
     from toytree.drawing.src.validate_style import validate_style
 
-    tree = toytree.rtree.rtree(5)
+    tree = toytree.rtree.random_topology(5)
     style = TreeStyle()
     style = validate_style(tree, style)
 

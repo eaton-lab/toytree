@@ -738,7 +738,7 @@ The examples below are only a brief orientation. Treat this section as a map of 
 
 ```python
 # generate a birth-death tree
-btree = toytree.rtree.bdtree(ntips=8, b=1, d=0.1, seed=123, random_names=True)
+btree = toytree.rtree.birth_death_conditioned_tree(ntips=8, birth_rate=1, death_rate=0.1, seed=123, randomize_labels=True, crown_age=1.0)
 btree.draw(scale_bar=True);
 ```
 
@@ -963,8 +963,8 @@ toytree.distance.get_tip_distance_matrix(tree, df=True)
 
 ```python
 # return the Robinson-Foulds tree distance between two random 10-tip trees
-rtree1 = toytree.rtree.rtree(10, seed=123)
-rtree2 = toytree.rtree.rtree(10, seed=321)
+rtree1 = toytree.rtree.random_topology(10, seed=123)
+rtree2 = toytree.rtree.random_topology(10, seed=321)
 toytree.distance.get_treedist_rf(rtree1, rtree2, normalize=True)
 ```
 

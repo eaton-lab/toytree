@@ -95,7 +95,7 @@ toytree rtree -n 20 | toytree draw -v
 
 `rtree` exposes several tree generators from `toytree.rtree`. The
 `-m/--method` argument accepts full names or unambiguous prefixes such as
-`-m u` for `unittree` and `-m bd` for `bdtree`.
+`-m u` for `unittree`.
 
 ```bash
 # default random bifurcating topology
@@ -105,10 +105,10 @@ toytree rtree -n 10 --seed 123 > TREE.nwk
 toytree rtree --method unittree -n 20 --treeheight 5 --seed 123 > TREE.nwk
 
 # birth-death simulation
-toytree rtree --method bdtree -n 25 --b 1.0 --d 0.2 --stop taxa --stats > TREE.nwk
+toytree rtree --method birth-death-process -n 25 --birth-rate 1.0 --death-rate 0.2 --stats > TREE.nwk
 
 # coalescent simulation
-toytree rtree --method coaltree -n 16 --N 500 --seed 7 > TREE.nwk
+toytree rtree --method coalescent-tree -n 16 --Ne 500 --seed 7 > TREE.nwk
 ```
 
 ## `root`

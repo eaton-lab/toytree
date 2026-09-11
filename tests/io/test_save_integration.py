@@ -79,7 +79,7 @@ def test_save_png_respects_output_width_and_background_override(
 
 def test_save_pdf_png_pie_markers_render_filled_exports(tmp_path: Path) -> None:
     """Pie-marker exports render nonblank PDF and PNG outputs."""
-    tree = toytree.rtree.coaltree(50, seed=123)
+    tree = toytree.rtree.coalescent_tree(50, seed=123)
     trait = tree.pcm.simulate_discrete_trait(
         nstates=3,
         model="ER",

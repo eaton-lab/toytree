@@ -669,10 +669,12 @@ if __name__ == "__main__":
     toytree.set_log_level("INFO")
     import numpy as np
 
-    # tree = toytree.rtree.rtree(6, seed=123).unroot()
-    tree = toytree.rtree.bdtree(6, seed=123).root("r1")
+    # tree = toytree.rtree.random_topology(6, seed=123).unroot()
+    tree = toytree.rtree.birth_death_conditioned_tree(6, crown_age=1.0, seed=123).root(
+        "r1"
+    )
     # tree[5]._dist = 3.
-    # tree = toytree.rtree.rtree(5, seed=123).mod.ladderize()#.unroot()
+    # tree = toytree.rtree.random_topology(5, seed=123).mod.ladderize()#.unroot()
     # tree.set_node_data('dist', {4: 5, 7: 3}, inplace=True)
     # tree.set_node_data('name', {5: "X", 6: "Y", 7: "Z"}, inplace=True)
     # tree.treenode.draw_ascii()
@@ -683,7 +685,7 @@ if __name__ == "__main__":
     toytree.utils.show([c1, c2, c3], tmpdir="~")
 
     # test1 rtree 5-tips variable edgelens
-    # tree = toytree.rtree.rtree(5, seed=123).unroot()
+    # tree = toytree.rtree.random_topology(5, seed=123).unroot()
     # tree.set_node_data('name', {i: j for (i, j) in enumerate("abcdeXYR")}, inplace=True)
     # tree.set_node_data('dist', {'e': 5, 'Y': 3}, inplace=True)
     # tree.write("/tmp/test1.tree")
@@ -695,7 +697,7 @@ if __name__ == "__main__":
     # toytree.utils.show([c1, c2])
 
     # test1 alt-rooting rtree 5-tips variable edgelens
-    # tree = toytree.rtree.rtree(5, seed=123).unroot()
+    # tree = toytree.rtree.random_topology(5, seed=123).unroot()
     # tree.set_node_data('name', {i: j for (i, j) in enumerate("abcdeXYR")}, inplace=True)
     # tree.set_node_data('dist', {'e': 5, 'Y': 3}, inplace=True)
     # tree.write("/tmp/test1.tree")
@@ -707,7 +709,7 @@ if __name__ == "__main__":
     # toytree.utils.show([c1, c2])
 
     # test2
-    # tree = toytree.rtree.rtree(5, seed=123).unroot()
+    # tree = toytree.rtree.random_topology(5, seed=123).unroot()
     # tree.set_node_data('name', {i: j for (i, j) in enumerate("abcdeXYR")}, inplace=True)
     # tree.set_node_data('dist', {'e': 5, 'Y': 3, 'X': 10}, inplace=True)
     # tree.write("/tmp/test2.tree")
@@ -719,7 +721,7 @@ if __name__ == "__main__":
     # toytree.utils.show([c1, c2])
 
     # test w/ polytomies
-    # tree = toytree.rtree.rtree(10, seed=123).unroot()
+    # tree = toytree.rtree.random_topology(10, seed=123).unroot()
     # tree.mod.collapse_nodes(1, 2, 12, 15, inplace=True)
     # tree.set_node_data('dist', {2: 5, 12: 3, 13: 10}, inplace=True)
     # tree.write("/tmp/test3.tree")

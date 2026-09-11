@@ -262,7 +262,7 @@ def edges_set_node_heights(
 if __name__ == "__main__":
     import toytree
 
-    TREE = toytree.rtree.rtree(ntips=6)
+    TREE = toytree.rtree.random_topology(ntips=6)
     TREE = toytree.rtree.unittree(ntips=6, treeheight=100, seed=123)
 
     NEW_HEIGHTS = {

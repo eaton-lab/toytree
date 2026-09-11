@@ -185,7 +185,7 @@ class TestAnnotateAddTipPaths(PytestCompat):
         other = toytree.rtree.unittree(
             ntips=self.tree.ntips,
             seed=333,
-            random_names=True,
+            randomize_labels=True,
         )
         _, axes, tmark1 = self.tree.draw(layout="r", width=500)
         _, axes, tmark2 = other.draw(axes=axes, layout="l", xbaseline=2)

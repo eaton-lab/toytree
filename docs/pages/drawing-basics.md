@@ -9,7 +9,7 @@ import toytree
 import numpy as np
 
 # an example tree
-tree = toytree.rtree.bdtree(ntips=6, seed=123)
+tree = toytree.rtree.birth_death_conditioned_tree(ntips=6, seed=123, crown_age=1.0)
 ```
 
 ## Drawing class objects

@@ -206,7 +206,7 @@ Here is a simple example: access the names of every leaf node in a large tree. T
 
 
 ```python
-bigtree = toytree.rtree.rtree(ntips=300)
+bigtree = toytree.rtree.random_topology(ntips=300)
 ```
 
 

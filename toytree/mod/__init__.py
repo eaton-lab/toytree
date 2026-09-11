@@ -2,7 +2,7 @@
 
 """toytree subpackage for modifying tree topology or features.
 
->>> tree = toytree.tree.rtree(10)
+>>> tree = toytree.rtree.random_topology(10)
 
 >>> tree = tree.mod.root()
 >>> tree = tree.mod.unroot()

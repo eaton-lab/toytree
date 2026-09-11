@@ -95,7 +95,15 @@ def _parse_int_or_str(value: str):
         return value
 
 
-RTREE_METHODS = ("rtree", "unittree", "imbtree", "baltree", "bdtree", "coaltree")
+RTREE_METHODS = (
+    "random-topology",
+    "unittree",
+    "imbtree",
+    "baltree",
+    "birth-death-process",
+    "birth-death-conditioned",
+    "coalescent-tree",
+)
 
 
 def _parse_rtree_method(value: str) -> str:
@@ -2017,13 +2025,16 @@ def get_parser_rtree(parser: ArgumentParser | None = None) -> ArgumentParser:
             $ rtree --method unittree -n 20 --treeheight 5 --seed 123 > TREE.nwk
 
             # Balanced topology with randomized tip names
-            $ rtree --method baltree -n 12 --random-names --seed 3 > TREE.nwk
+            $ rtree --method baltree -n 12 --randomize-labels --seed 3 > TREE.nwk
 
             # Birth-death simulation with stats to stderr
-            $ rtree --method bdtree -n 25 --b 1.0 --d 0.2 --stop taxa --stats > TREE.nwk
+            $ rtree --method birth-death-process -n 25 --birth-rate 1.0 --death-rate 0.2 --stats > TREE.nwk
 
-            # Coalescent simulation (uses -n as k)
-            $ rtree --method coaltree -n 16 --N 500 --seed 7 > TREE.nwk
+            # Conditioned reconstructed birth-death tree
+            $ rtree --method birth-death-conditioned -n 25 --crown-age 4 --seed 7 > TREE.nwk
+
+            # Coalescent simulation
+            $ rtree --method coalescent-tree -n 16 --Ne 500 --seed 7 > TREE.nwk
 
             # Binary output for large-tree or metadata-safe piping
             $ rtree -n 100 -b | draw -i - -a
@@ -2060,9 +2071,20 @@ def get_parser_rtree(parser: ArgumentParser | None = None) -> ArgumentParser:
         "--method",
         type=_parse_rtree_method,
         metavar="method",
-        default="rtree",
+        default="random-topology",
         choices=RTREE_METHODS,
-        help="method: rtree|unittree|imbtree|baltree|bdtree|coaltree [rtree]",
+        help=(
+            "method: random-topology|unittree|imbtree|baltree|"
+            "birth-death-process|birth-death-conditioned|coalescent-tree "
+            "[random-topology]"
+        ),
+    )
+
+    method_group.add_argument(
+        "--topology-model",
+        choices=["yule", "pda"],
+        default="yule",
+        help="topology distribution for random-topology [yule]",
     )
 
     common_group = p.add_argument_group(title="Common")
@@ -2072,7 +2094,7 @@ def get_parser_rtree(parser: ArgumentParser | None = None) -> ArgumentParser:
         type=int,
         metavar="int",
         default=10,
-        help="number of tips (or k for coaltree) [10]",
+        help="number of tips or sampled gene copies [10]",
     )
     common_group.add_argument(
         "-s",
@@ -2082,7 +2104,7 @@ def get_parser_rtree(parser: ArgumentParser | None = None) -> ArgumentParser:
         help="random seed",
     )
     common_group.add_argument(
-        "--random-names", action="store_true", help="assign names in random order"
+        "--randomize-labels", action="store_true", help="randomize labels over tips"
     )
     common_group.add_argument(
         "--names",
@@ -2100,45 +2122,83 @@ def get_parser_rtree(parser: ArgumentParser | None = None) -> ArgumentParser:
         help="tree height (valid for unittree, imbtree, baltree)",
     )
 
-    bd_group = p.add_argument_group(title="Birth-Death (bdtree)")
-    bd_group.add_argument("--b", type=float, metavar="float", help="birth rate")
-    bd_group.add_argument("--d", type=float, metavar="float", help="death rate")
+    bd_group = p.add_argument_group(title="Birth-Death")
     bd_group.add_argument(
-        "--stop",
-        type=str,
-        metavar="name",
-        choices=["taxa", "time"],
-        help="'taxa' stops at ntips; 'time' stops at elapsed time. [taxa]",
-    )
-    bd_group.add_argument(
-        "--time",
+        "--birth-rate",
         type=float,
         metavar="float",
-        help="simulation time horizon (used with --stop time)",
+        help="per-lineage birth/speciation rate per time unit [1.0]",
     )
     bd_group.add_argument(
-        "--retain-extinct",
-        action="store_true",
-        help="retain extinct lineages in reconstructed tree",
+        "--death-rate",
+        type=float,
+        metavar="float",
+        help="per-lineage extinction rate per time unit [0.0]",
     )
     bd_group.add_argument(
-        "--max-resets",
+        "--stop-time",
+        type=float,
+        metavar="float",
+        help="process observation time; mutually exclusive with richness stop",
+    )
+    bd_group.add_argument(
+        "--stop-ntips",
         type=int,
         metavar="int",
-        help="max restarts after total extinction",
+        help="process richness target; defaults to --ntips when no time is given",
+    )
+    bd_group.add_argument(
+        "--start",
+        choices=["stem", "crown"],
+        help="process starts with one stem or two crown lineages [stem]",
+    )
+    bd_group.add_argument(
+        "--crown-age",
+        type=float,
+        metavar="float",
+        help="conditioned tree MRCA age; exclusive with --origin-age",
+    )
+    bd_group.add_argument(
+        "--origin-age",
+        type=float,
+        metavar="float",
+        help="conditioned tree one-lineage origin age; exclusive with crown age",
+    )
+    bd_group.add_argument(
+        "--max-restarts",
+        type=int,
+        metavar="int",
+        help="maximum extinct process attempts discarded [1000]",
+    )
+    bd_group.add_argument(
+        "--max-events",
+        type=int,
+        metavar="int",
+        help="maximum events across all process attempts [1000000]",
+    )
+    bd_group.add_argument(
+        "--complete",
+        action="store_true",
+        help="write the complete event history instead of the reconstructed tree",
     )
     bd_group.add_argument(
         "--stats",
         action="store_true",
-        help="print bdtree simulation statistics to stderr",
+        help="print birth-death process statistics to stderr",
     )
 
-    coal_group = p.add_argument_group(title="Coalescent (coaltree)")
+    coal_group = p.add_argument_group(title="Coalescent")
     coal_group.add_argument(
-        "--N",
+        "--Ne",
         type=float,
         metavar="float",
-        help="effective population size scalar [100]",
+        help="effective population size [100]",
+    )
+    coal_group.add_argument(
+        "--ploidy",
+        type=float,
+        metavar="float",
+        help="gene copies per individual [2]",
     )
 
     options_group = p.add_argument_group(title="Options")

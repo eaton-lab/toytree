@@ -177,7 +177,7 @@ if __name__ == "__main__":
 
     import toytree
 
-    TREE = toytree.rtree.bdtree(30, seed=123)
+    TREE = toytree.rtree.birth_death_conditioned_tree(30, crown_age=1.0, seed=123)
     c, a, m = TREE.draw(width=400, height=600, node_sizes=5)
     DATA = np.array([[0.5, 0.3, 0.2]] * (TREE.nnodes))
     COLORS = toytree.color.COLORS1

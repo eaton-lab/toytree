@@ -252,7 +252,7 @@ See the [co-phylogeny plot cookbook](cookbook-cophylogeny) for more examples.
 ```python
 # get two trees with differen topologies
 tree1 = toytree.rtree.unittree(ntips=10, seed=123)
-tree2 = toytree.rtree.unittree(ntips=10, seed=333, random_names=True)
+tree2 = toytree.rtree.unittree(ntips=10, seed=333, randomize_labels=True)
 
 # the distance between the two trees in data (dist) units
 DIST = 2.0

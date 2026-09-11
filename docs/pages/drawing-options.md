@@ -22,7 +22,7 @@ We will use one small local tree throughout this page. It includes a few extra f
 import numpy as np
 import toytree
 
-tree = toytree.rtree.bdtree(ntips=8, seed=123)
+tree = toytree.rtree.birth_death_conditioned_tree(ntips=8, seed=123, crown_age=1.0)
 
 support_map = {
     idx: value

@@ -484,7 +484,10 @@ class ToyTree(metaclass=ToyTreeMeta):
         Node objects are immutable.
         """
         # clear depth counters used to get heights during traversal
-        depths = {self.treenode: 0.0}
+        # Node hashes depend on mutable display metadata, so use object ids for
+        # temporary traversal bookkeeping. This also prevents the collision
+        # cascade among newly constructed Nodes whose idx values are all -1.
+        depths = {id(self.treenode): 0.0}
 
         # queue starts with root children, and stack starts with root.
         queue = list(self.treenode._children)
@@ -503,7 +506,7 @@ class ToyTree(metaclass=ToyTreeMeta):
             node = queue.pop()
 
             # set depth of this node from the root
-            depths[node] = depths[node._up] + node._dist
+            depths[id(node)] = depths[id(node._up)] + node._dist
 
             # if leaf add to output stack and update farthest depth
             if node.is_leaf():
@@ -524,7 +527,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         # return nodes in reverse order they were added to stack
         while outer_stack:
             node = outer_stack.pop()
-            node._height = max_depth - depths[node]
+            node._height = max_depth - depths[id(node)]
             node._x = idx
             node._idx = idx
             self._idx_dict[idx] = node
@@ -534,7 +537,7 @@ class ToyTree(metaclass=ToyTreeMeta):
         # return internal nodes, or just root if only a single Node.
         while inner_stack:
             node = inner_stack.pop()
-            node._height = max_depth - depths[node]
+            node._height = max_depth - depths[id(node)]
             node._x = sum(i._x for i in node._children) / len(node._children)
             node._idx = idx
             self._idx_dict[idx] = node

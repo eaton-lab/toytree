@@ -243,7 +243,9 @@ if __name__ == "__main__":
     import toytree
 
     # ...
-    tree = toytree.rtree.bdtree(50, b=5, d=2.5)
+    tree = toytree.rtree.birth_death_conditioned_tree(
+        50, crown_age=1.0, birth_rate=5, death_rate=2.5
+    )
     c1, a, m = tree.draw(
         scale_bar=True, width=300, height=225, tip_labels=False, padding=10
     )

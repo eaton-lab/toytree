@@ -219,7 +219,7 @@ def iter_quartets(
 if __name__ == "__main__":
     import toytree
 
-    tree = toytree.rtree.unittree(6, seed=123, random_names=True)
+    tree = toytree.rtree.unittree(6, seed=123, randomize_labels=True)
 
     print("type=set, collapse=False, sort=False")
     for qrt in iter_quartets(tree, type=set, collapse=False, sort=False):

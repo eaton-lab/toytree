@@ -271,7 +271,7 @@ if __name__ == "__main__":
     ts = toytree.tree(a)
     ll = toytree.layout.LinearLayout(ts, ts.style)
 
-    # tre = toytree.rtree.rtree(5)
+    # tre = toytree.rtree.random_topology(5)
     # tre.style.tip_labels_align = True
     # tre.style.xbaseline = 5
     # tre.style.ybaseline = 2.5

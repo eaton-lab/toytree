@@ -168,7 +168,7 @@ def make_imbtree() -> Callable[[int, float, int, bool], toytree.ToyTree]:
             ntips=ntips,
             treeheight=treeheight,
             seed=seed,
-            random_names=random_names,
+            randomize_labels=random_names,
         )
 
     return _make
@@ -188,7 +188,7 @@ def make_baltree() -> Callable[[int, float, int, bool], toytree.ToyTree]:
             ntips=ntips,
             treeheight=treeheight,
             seed=seed,
-            random_names=random_names,
+            randomize_labels=random_names,
         )
 
     return _make
@@ -404,7 +404,7 @@ def gradient_canvas_factory() -> Callable[[], object]:
     """Return a helper that builds a canvas with gradient edge annotations."""
 
     def _make():
-        tree = toytree.rtree.bdtree(8, seed=123)
+        tree = toytree.rtree.birth_death_conditioned_tree(8, crown_age=1.0, seed=123)
         tree.pcm.simulate_discrete_trait(
             3,
             name="X",

@@ -10,10 +10,10 @@ import toytree
 class TestGetTopologyID(PytestCompat):
     def setUp(self):
         self.itree = toytree.rtree.imbtree(
-            ntips=8, treeheight=10, seed=123, random_names=True
+            ntips=8, treeheight=10, seed=123, randomize_labels=True
         )
         self.btree = toytree.rtree.baltree(
-            ntips=8, treeheight=10, seed=123, random_names=True
+            ntips=8, treeheight=10, seed=123, randomize_labels=True
         )
         self.trees = [self.itree, self.btree]
 

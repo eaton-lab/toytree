@@ -1,18 +1,32 @@
 #!/usr/bin/env python
 
-"""Random or fixed tree generation subpackage
+"""Simulate tree topologies, time trees, genealogies, and branch rates.
 
-The :mod:`toytree.core.random.rtree` is accessible from the top-level
-of the toytree package as :mod:`toytree.rtree`. This module includes
-functions for generating random trees, like `rtree` and `bdtree`, or
-fixed trees of topology shapes that are often useful for research,
-such as `baltree` or `imbtree`.
-
-Examples
---------
->>> tree1 = toytree.rtree.rtree(10)
->>> tree2 = toytree.rtree.unittree(ntips=10, seed=123)
->>> tree3 = toytree.rtree.baltree(ntips=10, treeheight=1e6)
+The public functions distinguish topology distributions from time-tree
+processes and molecular-rate models. See each function's docstring for its
+conditioning assumptions and edge-length units.
 """
 
-from toytree.rtree._src.rtree import baltree, bdtree, coaltree, imbtree, rtree, unittree
+from toytree.rtree._src.birth_death_conditioned import (
+    birth_death_conditioned_tree,
+)
+from toytree.rtree._src.birth_death_process import (
+    BirthDeathProcessResult,
+    birth_death_process,
+)
+from toytree.rtree._src.coalescent import coalescent_tree
+from toytree.rtree._src.rates import simulate_branch_rates
+from toytree.rtree._src.shapes import baltree, imbtree, unittree
+from toytree.rtree._src.topology import random_topology
+
+__all__ = [
+    "BirthDeathProcessResult",
+    "baltree",
+    "birth_death_conditioned_tree",
+    "birth_death_process",
+    "coalescent_tree",
+    "imbtree",
+    "random_topology",
+    "simulate_branch_rates",
+    "unittree",
+]

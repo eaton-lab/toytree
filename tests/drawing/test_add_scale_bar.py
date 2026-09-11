@@ -933,7 +933,7 @@ class TestAddScaleBar(PytestCompat):
 
     def test_node_markers_select_tree_specific_mark_on_shared_axes(self):
         tree1 = toytree.rtree.unittree(ntips=10, seed=123)
-        tree2 = toytree.rtree.unittree(ntips=10, seed=333, random_names=True)
+        tree2 = toytree.rtree.unittree(ntips=10, seed=333, randomize_labels=True)
         _, axes, tmark1 = tree1.draw(layout="r", width=500)
         _, axes, tmark2 = tree2.draw(axes=axes, layout="l", xbaseline=2)
         mark = tree1.annotate.add_node_markers(axes, mask=False)
@@ -950,7 +950,7 @@ class TestAddScaleBar(PytestCompat):
 
     def test_get_last_toytree_mark_for_tree_rejects_ambiguous_shared_axes(self):
         tree1 = toytree.rtree.unittree(ntips=10, seed=123)
-        tree2 = toytree.rtree.unittree(ntips=10, seed=333, random_names=True)
+        tree2 = toytree.rtree.unittree(ntips=10, seed=333, randomize_labels=True)
         _, axes, tmark1 = tree1.draw(layout="r", width=500)
         _, axes, tmark2 = tree2.draw(axes=axes, layout="l", xbaseline=2)
         if hasattr(tmark1, "_toytree_source_tree"):

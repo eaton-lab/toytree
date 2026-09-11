@@ -549,7 +549,7 @@ def simulate_continuous_trait(
 
     Examples
     --------
-    >>> tre = toytree.rtree.bdtree(30, seed=123)
+    >>> tre = toytree.rtree.birth_death_conditioned_tree(30, crown_age=1.0, seed=123)
     >>> x = tre.pcm.simulate_continuous_trait("bm", params=1.0, name="X", seed=1)
     >>> x.head()
     >>> x_ou = tre.pcm.simulate_continuous_trait("ou", params=(1.0, 0.5), seed=2)
