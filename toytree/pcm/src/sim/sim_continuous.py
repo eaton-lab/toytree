@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
-from typing import TYPE_CHECKING, Literal, Mapping, Sequence, TypeAlias
+from typing import TYPE_CHECKING, Literal, Mapping, TypeAlias
 
 import numpy as np
 import pandas as pd
@@ -21,6 +21,15 @@ from toytree.core.apis import PhyloCompAPI, add_subpackage_method
 from toytree.pcm.src.sim._continuous_sim_shared import (
     _coerce_regime_labels,
     _get_time_from_root,
+)
+from toytree.pcm.src.sim._utils import (
+    RNGSeed,
+    get_rng,
+    make_node_series,
+    validate_bool,
+    validate_feature_name,
+    validate_finite_float,
+    validate_tree_for_simulation,
 )
 from toytree.utils.src.exceptions import ToytreeError
 
@@ -47,151 +56,6 @@ class ContinuousModelType(Enum):
     EB = "EB"
 
 
-@dataclass
-class ContinuousModel:
-    """Container for one-trait continuous model parameters."""
-
-    mtype: ContinuousModelType
-    sigma2: float
-    alpha: float = 0.0
-    r: float = 0.0
-    optimum: float = 0.0
-
-    def __post_init__(self):
-        if isinstance(self.mtype, ContinuousModelType):
-            pass
-        else:
-            self.mtype = ContinuousModelType(str(self.mtype).upper())
-        self.sigma2 = float(self.sigma2)
-        self.alpha = float(self.alpha)
-        self.r = float(self.r)
-        self.optimum = float(self.optimum)
-        if self.sigma2 <= 0:
-            raise ToytreeError("sigma2 must be > 0.")
-        if self.alpha < 0:
-            raise ToytreeError("alpha must be >= 0.")
-
-
-def _coerce_model_vector(
-    x,
-    ntraits: int,
-    names: list[str],
-    default: float | None = None,
-    param_name: str = "parameter",
-) -> np.ndarray:
-    """Coerce scalar/sequence/mapping parameter to float vector."""
-    if x is None:
-        if default is None:
-            raise ToytreeError(f"{param_name} is required for this model.")
-        return np.repeat(float(default), ntraits).astype(float)
-    if np.isscalar(x):
-        return np.repeat(float(x), ntraits).astype(float)
-    if isinstance(x, Mapping):
-        vals = []
-        for name in names:
-            if name not in x:
-                if default is None:
-                    raise ToytreeError(
-                        f"{param_name} mapping is missing trait name '{name}'."
-                    )
-                vals.append(float(default))
-            else:
-                vals.append(float(x[name]))
-        return np.asarray(vals, dtype=float)
-    arr = np.asarray(list(x), dtype=float)
-    if arr.size != ntraits:
-        raise ToytreeError(
-            f"{param_name} length must match number of traits ({ntraits})."
-        )
-    return arr
-
-
-def _coerce_sigma2_and_names(
-    sigma2: float | Sequence[float] | Mapping[str, float],
-) -> tuple[np.ndarray, list[str]]:
-    """Coerce sigma2 input and derive trait names."""
-    if isinstance(sigma2, Mapping):
-        names = [str(i) for i in sigma2.keys()]
-        vals = np.asarray(list(sigma2.values()), dtype=float)
-    elif np.isscalar(sigma2):
-        names = ["t0"]
-        vals = np.asarray([sigma2], dtype=float)
-    else:
-        vals = np.asarray(list(sigma2), dtype=float)
-        names = [f"t{i}" for i in range(vals.size)]
-    if vals.size == 0:
-        raise ToytreeError("sigma2 must define at least one trait.")
-    if np.any(vals <= 0):
-        raise ToytreeError("sigma2 values must all be > 0.")
-    return vals, names
-
-
-def _coerce_root_state(
-    root_state,
-    ntraits: int,
-    names: list[str],
-) -> np.ndarray:
-    """Coerce root state to float vector of ntraits."""
-    if root_state is None:
-        return np.zeros(ntraits, dtype=float)
-    if np.isscalar(root_state):
-        return np.repeat(float(root_state), ntraits).astype(float)
-    if isinstance(root_state, Mapping):
-        vals = []
-        for name in names:
-            if name not in root_state:
-                raise ToytreeError(
-                    f"root_state mapping is missing trait name '{name}'."
-                )
-            vals.append(float(root_state[name]))
-        return np.asarray(vals, dtype=float)
-    arr = np.asarray(list(root_state), dtype=float)
-    if arr.size != ntraits:
-        raise ToytreeError("root_state length must match number of traits.")
-    return arr
-
-
-def _simulate_increment_univariate(
-    model: ContinuousModel,
-    parent_value: float,
-    branch_length: float,
-    parent_time: float,
-    child_time: float,
-    rng: np.random.Generator,
-) -> float:
-    """Sample child value on a branch for one trait."""
-    t = float(branch_length)
-    if t <= 0:
-        return float(parent_value)
-    if model.mtype == ContinuousModelType.BM:
-        mean = float(parent_value)
-        var = model.sigma2 * t
-    elif model.mtype == ContinuousModelType.OU:
-        e = np.exp(-model.alpha * t)
-        mean = model.optimum + (float(parent_value) - model.optimum) * e
-        if model.alpha == 0.0:
-            var = model.sigma2 * t
-        else:
-            var = (
-                model.sigma2
-                * (1.0 - np.exp(-2.0 * model.alpha * t))
-                / (2.0 * model.alpha)
-            )
-    else:
-        mean = float(parent_value)
-        if model.r == 0.0:
-            var = model.sigma2 * t
-        else:
-            var = (
-                model.sigma2
-                * (np.exp(model.r * child_time) - np.exp(model.r * parent_time))
-                / model.r
-            )
-    var = max(float(var), 0.0)
-    std = float(np.sqrt(var))
-    return float(rng.normal(loc=mean, scale=std))
-
-
 def _simulate_increment_univariate_params(
     mtype: ContinuousModelType,
     sigma2: float,
@@ -204,22 +68,35 @@ def _simulate_increment_univariate_params(
     child_time: float,
     rng: np.random.Generator,
 ) -> float:
-    """Sample child value on a branch for one trait from scalar params."""
-    model = ContinuousModel(
-        mtype=mtype,
-        sigma2=sigma2,
-        alpha=alpha,
-        r=r,
-        optimum=optimum,
-    )
-    return _simulate_increment_univariate(
-        model=model,
-        parent_value=parent_value,
-        branch_length=branch_length,
-        parent_time=parent_time,
-        child_time=child_time,
-        rng=rng,
-    )
+    """Sample one child value from validated scalar model parameters."""
+    t = float(branch_length)
+    if t == 0.0:
+        return float(parent_value)
+    if mtype == ContinuousModelType.BM:
+        mean = float(parent_value)
+        var = sigma2 * t
+    elif mtype == ContinuousModelType.OU:
+        e = np.exp(-alpha * t)
+        mean = optimum + (float(parent_value) - optimum) * e
+        if alpha == 0.0:
+            var = sigma2 * t
+        else:
+            var = sigma2 * (-np.expm1(-2.0 * alpha * t)) / (2.0 * alpha)
+    else:
+        mean = float(parent_value)
+        if r == 0.0:
+            var = sigma2 * t
+        else:
+            var = (
+                sigma2
+                * np.exp(r * parent_time)
+                * np.expm1(r * (child_time - parent_time))
+                / r
+            )
+    var = max(float(var), 0.0)
+    if var == 0.0:
+        return float(mean)
+    return float(rng.normal(loc=mean, scale=np.sqrt(var)))
 
 
 def _coerce_scalar_root_state(root_state: float | None) -> float:
@@ -227,7 +104,7 @@ def _coerce_scalar_root_state(root_state: float | None) -> float:
     if root_state is None:
         return 0.0
     if np.isscalar(root_state):
-        return float(root_state)
+        return validate_finite_float(root_state, "root_state")
     raise ToytreeError("root_state must be a scalar float or None.")
 
 
@@ -244,9 +121,10 @@ def _coerce_bm_regime_params(
         if not pmap:
             raise ToytreeError("params mapping must define at least one regime state.")
         for key, val in pmap.items():
-            if val <= 0:
+            if not np.isfinite(val) or val < 0:
                 raise ToytreeError(
-                    f"BM params values must be > 0. Invalid value for regime {key!r}."
+                    "BM params values must be finite and >= 0. "
+                    f"Invalid value for regime {key!r}."
                 )
         if regime is None:
             raise ToytreeError("regime is required when params is a dict.")
@@ -269,8 +147,8 @@ def _coerce_bm_regime_params(
     if not np.isscalar(params):
         raise ToytreeError("BM params must be a float or dict[str, float].")
     sigma2 = float(params)
-    if sigma2 <= 0:
-        raise ToytreeError("BM params (sigma2) must be > 0.")
+    if not np.isfinite(sigma2) or sigma2 < 0:
+        raise ToytreeError("BM params (sigma2) must be finite and >= 0.")
     sigma2_by_node[:] = sigma2
     return sigma2_by_node, labels
 
@@ -292,6 +170,7 @@ def _coerce_ou_regime_params(
     params: OUParams | Mapping[str, OUParams],
     regime: str | pd.Series | None,
     root_state: float,
+    optimum: float | Mapping[str, float] | None,
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Return per-node OU arrays (sigma2, alpha, optimum)."""
     labels = _coerce_regime_labels(tree, regime)
@@ -306,9 +185,15 @@ def _coerce_ou_regime_params(
         if not pmap:
             raise ToytreeError("params mapping must define at least one regime state.")
         for key, (sigma2, alpha) in pmap.items():
-            if sigma2 <= 0 or alpha < 0:
+            if (
+                not np.isfinite(sigma2)
+                or sigma2 < 0
+                or not np.isfinite(alpha)
+                or alpha < 0
+            ):
                 raise ToytreeError(
-                    f"OU params for regime {key!r} must satisfy sigma2>0 and alpha>=0."
+                    f"OU params for regime {key!r} must contain finite values "
+                    "with sigma2>=0 and alpha>=0."
                 )
         for node in tree[:-1]:
             raw = labels[node.idx]
@@ -326,13 +211,42 @@ def _coerce_ou_regime_params(
         sigma2_by_node[tree.treenode.idx], alpha_by_node[tree.treenode.idx] = next(
             iter(pmap.values())
         )
-        return sigma2_by_node, alpha_by_node, optimum_by_node
+    else:
+        sigma2, alpha = _coerce_pair(params, model="OU")
+        if not np.isfinite(sigma2) or sigma2 < 0 or not np.isfinite(alpha) or alpha < 0:
+            raise ToytreeError(
+                "OU params must contain finite values with sigma2>=0 and alpha>=0."
+            )
+        sigma2_by_node[:] = sigma2
+        alpha_by_node[:] = alpha
 
-    sigma2, alpha = _coerce_pair(params, model="OU")
-    if sigma2 <= 0 or alpha < 0:
-        raise ToytreeError("OU params must satisfy sigma2>0 and alpha>=0.")
-    sigma2_by_node[:] = sigma2
-    alpha_by_node[:] = alpha
+    if optimum is None:
+        optimum_by_node[:] = root_state
+    elif isinstance(optimum, Mapping):
+        if regime is None:
+            raise ToytreeError("regime is required when optimum is a dict.")
+        omap = {
+            str(key): validate_finite_float(value, "optimum")
+            for key, value in optimum.items()
+        }
+        if not omap:
+            raise ToytreeError("optimum mapping must define at least one regime state.")
+        for node in tree[:-1]:
+            raw = labels[node.idx]
+            if pd.isna(raw):
+                raise ToytreeError(
+                    "regime labels must be present on all non-root nodes when "
+                    "optimum is a dict."
+                )
+            state = str(raw)
+            if state not in omap:
+                raise ToytreeError(
+                    f"optimum is missing a value for regime state {state!r}."
+                )
+            optimum_by_node[node.idx] = omap[state]
+        optimum_by_node[tree.treenode.idx] = float(next(iter(omap.values())))
+    else:
+        optimum_by_node[:] = validate_finite_float(optimum, "optimum")
     return sigma2_by_node, alpha_by_node, optimum_by_node
 
 
@@ -353,9 +267,10 @@ def _coerce_eb_regime_params(
         if not pmap:
             raise ToytreeError("params mapping must define at least one regime state.")
         for key, (sigma2, rval) in pmap.items():
-            if sigma2 <= 0 or not np.isfinite(rval):
+            if sigma2 < 0 or not np.isfinite(sigma2) or not np.isfinite(rval):
                 raise ToytreeError(
-                    f"EB params for regime {key!r} must satisfy sigma2>0 and finite r."
+                    f"EB params for regime {key!r} must satisfy finite sigma2>=0 "
+                    "and finite r."
                 )
         for node in tree[:-1]:
             raw = labels[node.idx]
@@ -376,8 +291,8 @@ def _coerce_eb_regime_params(
         return sigma2_by_node, r_by_node
 
     sigma2, rval = _coerce_pair(params, model="EB")
-    if sigma2 <= 0 or not np.isfinite(rval):
-        raise ToytreeError("EB params must satisfy sigma2>0 and finite r.")
+    if sigma2 < 0 or not np.isfinite(sigma2) or not np.isfinite(rval):
+        raise ToytreeError("EB params must satisfy finite sigma2>=0 and finite r.")
     sigma2_by_node[:] = sigma2
     r_by_node[:] = rval
     return sigma2_by_node, r_by_node
@@ -395,7 +310,7 @@ def _simulate_continuous_single_trait(
     name: str,
     tips_only: bool,
     inplace: bool,
-    seed: int | np.random.Generator | None,
+    seed: RNGSeed,
 ) -> pd.Series:
     """Simulate one continuous trait and optionally write it to the tree."""
     simulator = ContinuousTraitRegimeSimulator(
@@ -409,13 +324,14 @@ def _simulate_continuous_single_trait(
         seed=seed,
     )
     arr = simulator.run(nreplicates=1)[:, 0, 0]
-    series = pd.Series(arr, index=range(tree.nnodes), name=name, dtype=float)
-    if tips_only:
-        series = series.iloc[: tree.ntips].copy()
-    if inplace:
-        # Preserve full-tree feature coverage even when only tips are returned.
-        tree.set_node_data(name, dict(series.dropna()), default=np.nan, inplace=True)
-    return series
+    return make_node_series(
+        tree,
+        arr,
+        name=name,
+        tips_only=tips_only,
+        inplace=inplace,
+        dtype=float,
+    )
 
 
 @dataclass
@@ -429,10 +345,10 @@ class ContinuousTraitRegimeSimulator:
     r_by_node: np.ndarray
     optimum_by_node: np.ndarray
     root_state: np.ndarray
-    seed: int | np.random.Generator | None = None
+    seed: RNGSeed = None
 
     def __post_init__(self):
-        self.rng = np.random.default_rng(self.seed)
+        self.rng = get_rng(self.seed)
         self.times = _get_time_from_root(self.tree)
         self.ntraits = int(self.root_state.size)
 
@@ -481,7 +397,9 @@ def simulate_continuous_trait(
     tips_only: bool = False,
     regime: str | pd.Series | None = None,
     inplace: bool = False,
-    seed: int | np.random.Generator | None = None,
+    seed: RNGSeed = None,
+    *,
+    optimum: float | Mapping[str, float] | None = None,
 ) -> pd.Series:
     # fmt: on
     """Simulate one continuous trait under BM, OU, or EB models.
@@ -492,8 +410,8 @@ def simulate_continuous_trait(
     - ``"bm"`` (Brownian motion): a random walk in which variance accumulates
       linearly with branch length. ``params`` is ``sigma2``.
     - ``"ou"`` (Ornstein-Uhlenbeck): Brownian motion with attraction toward an
-      optimum. In this simplified API, the optimum is set to ``root_state``.
-      ``params`` is ``(sigma2, alpha)``.
+      optimum. ``params`` is ``(sigma2, alpha)`` and ``optimum`` defaults to
+      ``root_state``.
     - ``"eb"`` (early burst): branchwise variance is scaled through time by
       parameter ``r`` (e.g., accelerating or decelerating evolutionary rates).
       ``params`` is ``(sigma2, r)``.
@@ -519,7 +437,7 @@ def simulate_continuous_trait(
         type alias.
     root_state : float | None, default=None
         Root state for the simulated trait. If None, the root state is ``0.0``.
-        For ``model='ou'``, the OU optimum is set internally to this same value.
+        For ``model='ou'``, the OU optimum defaults to this same value.
     name : str, default="X"
         Feature name used for the returned Series and for inplace storage on
         the tree when ``inplace=True``.
@@ -532,8 +450,13 @@ def simulate_continuous_trait(
     inplace : bool, default=False
         If True, store simulated values as a node feature on ``tree`` and still
         return the simulated Series.
-    seed : int | numpy.random.Generator | None, default=None
-        Seed or random-number generator.
+    seed : int, numpy.random.Generator, numpy.random.SeedSequence, or None
+        Random-number source. A supplied Generator is consumed in place.
+        Integer and SeedSequence inputs initialize a new Generator.
+    optimum : float, Mapping[str, float], or None, keyword-only
+        OU optimum. If None, use ``root_state``. A scalar applies to every
+        edge. A mapping supplies child-edge optima by regime label and requires
+        ``regime``. This argument is invalid for BM and EB.
 
     Returns
     -------
@@ -559,11 +482,15 @@ def simulate_continuous_trait(
     ... )
     >>> x2 = tre.pcm.simulate_continuous_trait("eb", params=(1.0, -0.5), inplace=True)
     """
+    tree = validate_tree_for_simulation(tree)
+    tips_only = validate_bool(tips_only, "tips_only")
+    inplace = validate_bool(inplace, "inplace")
     mkey = str(model).lower()
     root = _coerce_scalar_root_state(root_state)
-    name = str(name)
-    if not name.strip():
-        raise ToytreeError("name must be a non-empty string.")
+    name = validate_feature_name(name)
+    rng = get_rng(seed)
+    if mkey != "ou" and optimum is not None:
+        raise ToytreeError("optimum is only valid when model='ou'.")
 
     # Dispatch to model-specific parameter coercers so each model enforces its
     # own parameter shape and value constraints before simulation.
@@ -575,7 +502,11 @@ def simulate_continuous_trait(
         model_type = ContinuousModelType.BM
     elif mkey == "ou":
         sigma2_by_node, alpha_by_node, optimum_by_node = _coerce_ou_regime_params(
-            tree, params=params, regime=regime, root_state=root
+            tree,
+            params=params,
+            regime=regime,
+            root_state=root,
+            optimum=optimum,
         )
         r_by_node = np.zeros(tree.nnodes, dtype=float)
         model_type = ContinuousModelType.OU
@@ -600,5 +531,5 @@ def simulate_continuous_trait(
         name=name,
         tips_only=tips_only,
         inplace=inplace,
-        seed=seed,
+        seed=rng,
     )

@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from toytree.pcm.src.sim.sim_continuous_mvn import _ou_covariance_full_matrix
 from toytree.utils import ToytreeError
 
 
@@ -277,6 +278,95 @@ class TestContinuousBMSim:
             seed=17,
         )
         assert not np.allclose(out0.values, out1.values)
+
+    def test_zero_diffusion_is_exactly_deterministic(self):
+        """Zero diffusion represents a deterministic process, not tiny noise."""
+        bm = self.tree.pcm.simulate_continuous_trait(
+            "bm", params=0.0, root_state=2.0, seed=17
+        )
+        assert np.array_equal(bm.to_numpy(), np.full(self.tree.nnodes, 2.0))
+
+        ou = self.tree.pcm.simulate_continuous_trait(
+            "ou",
+            params=(0.0, 1.5),
+            root_state=2.0,
+            optimum=5.0,
+            seed=17,
+        )
+        times = self.tree.treenode.height - self.tree.get_node_data("height").to_numpy()
+        expected = 5.0 + (2.0 - 5.0) * np.exp(-1.5 * times)
+        np.testing.assert_allclose(ou.to_numpy(), expected, atol=1e-14, rtol=1e-14)
+
+    def test_zero_length_branch_copies_parent_exactly(self):
+        """A zero-length edge introduces no drift or variance."""
+        tree = self.tree.copy()
+        child = tree[0]
+        child._dist = 0.0
+        out = tree.pcm.simulate_continuous_trait("bm", params=2.0, seed=19)
+        assert out[child.idx] == out[child.up.idx]
+
+    def test_multivariate_psd_and_zero_covariance_are_supported(self):
+        """Singular and zero diffusion matrices retain their exact rank."""
+        singular = np.ones((2, 2), dtype=float)
+        out = self.tree.pcm.simulate_multivariate_continuous_trait(
+            "bm", params=singular, root_states=[1.0, 2.0], seed=20
+        )
+        np.testing.assert_allclose(out["X1"] - 1.0, out["X2"] - 2.0)
+
+        deterministic = self.tree.pcm.simulate_multivariate_continuous_trait(
+            "bm", params=np.zeros((2, 2)), root_states=[1.0, 2.0], seed=20
+        )
+        expected = np.repeat([[1.0, 2.0]], self.tree.nnodes, axis=0)
+        np.testing.assert_array_equal(deterministic.to_numpy(), expected)
+
+    def test_multivariate_ou_optimum_and_stability_validation(self):
+        """Multivariate OU supports explicit optima and rejects unstable A."""
+        out = self.tree.pcm.simulate_multivariate_continuous_trait(
+            "ou",
+            params=(np.zeros((2, 2)), np.eye(2)),
+            root_states=[0.0, 1.0],
+            optimum_states=[2.0, 3.0],
+            seed=21,
+        )
+        times = self.tree.treenode.height - self.tree.get_node_data("height").to_numpy()
+        expected = np.column_stack(
+            [2.0 - 2.0 * np.exp(-times), 3.0 - 2.0 * np.exp(-times)]
+        )
+        np.testing.assert_allclose(out.to_numpy(), expected, atol=1e-14, rtol=1e-14)
+
+        with pytest.raises(ToytreeError, match="must be stable"):
+            self.tree.pcm.simulate_multivariate_continuous_trait(
+                "ou",
+                params=(np.eye(2), np.diag([-0.1, 1.0])),
+            )
+
+    def test_multivariate_ou_covariance_handles_neutral_dimension(self):
+        """The OU covariance integral remains correct when A is singular."""
+        cov = _ou_covariance_full_matrix(
+            np.eye(2), np.diag([0.0, 1.0]), branch_length=2.0
+        )
+        expected = np.diag([2.0, -np.expm1(-4.0) / 2.0])
+        np.testing.assert_allclose(cov, expected, atol=1e-12, rtol=1e-12)
+
+    def test_seedsequence_and_generator_contract(self):
+        """SeedSequence is reproducible and a Generator is consumed in place."""
+        seed_a = np.random.SeedSequence(12345)
+        seed_b = np.random.SeedSequence(12345)
+        a = self.tree.pcm.simulate_continuous_trait("bm", 1.0, seed=seed_a)
+        b = self.tree.pcm.simulate_continuous_trait("bm", 1.0, seed=seed_b)
+        pd.testing.assert_series_equal(a, b)
+
+        rng = np.random.default_rng(12345)
+        first = self.tree.pcm.simulate_continuous_trait("bm", 1.0, seed=rng)
+        second = self.tree.pcm.simulate_continuous_trait("bm", 1.0, seed=rng)
+        assert not np.array_equal(first.to_numpy(), second.to_numpy())
+
+    def test_strict_boolean_and_seed_validation(self):
+        """Shared simulation controls reject ambiguous coercions."""
+        with pytest.raises(ToytreeError, match="tips_only must be a bool"):
+            self.tree.pcm.simulate_continuous_trait("bm", 1.0, tips_only=1)
+        with pytest.raises(ToytreeError, match="seed must be"):
+            self.tree.pcm.simulate_continuous_trait("bm", 1.0, seed=True)
 
     def test_old_kwargs_removed(self):
         """Removed legacy kwargs should raise TypeError."""

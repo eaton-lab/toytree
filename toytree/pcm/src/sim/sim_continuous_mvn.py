@@ -15,6 +15,14 @@ from toytree.pcm.src.sim._continuous_sim_shared import (
     _coerce_regime_labels,
     _get_time_from_root,
 )
+from toytree.pcm.src.sim._utils import (
+    RNGSeed,
+    get_rng,
+    make_node_dataframe,
+    validate_bool,
+    validate_feature_name,
+    validate_tree_for_simulation,
+)
 from toytree.utils.src.exceptions import ToytreeError
 
 if TYPE_CHECKING:
@@ -40,15 +48,19 @@ def _as_square_matrix(x: object, param_name: str) -> np.ndarray:
     return arr
 
 
-def _validate_symmetric_pd(x: np.ndarray, param_name: str) -> np.ndarray:
-    """Return a symmetric positive-definite matrix."""
+def _validate_symmetric_psd(x: np.ndarray, param_name: str) -> np.ndarray:
+    """Return a symmetric positive-semidefinite matrix."""
     if not np.allclose(x, x.T, atol=1e-12, rtol=1e-10):
         raise ToytreeError(f"{param_name} must be symmetric.")
-    try:
-        np.linalg.cholesky(x)
-    except np.linalg.LinAlgError as exc:
-        raise ToytreeError(f"{param_name} must be positive definite.") from exc
-    return x
+    sym = (x + x.T) / 2.0
+    evals, evecs = np.linalg.eigh(sym)
+    tol = 1e-10 * max(1.0, float(np.max(np.abs(evals))))
+    if float(np.min(evals)) < -tol:
+        raise ToytreeError(f"{param_name} must be positive semidefinite.")
+    if np.any(evals < 0.0):
+        sym = evecs @ np.diag(np.clip(evals, 0.0, None)) @ evecs.T
+        sym = (sym + sym.T) / 2.0
+    return sym
 
 
 def _infer_ntraits_from_multivariate_params(
@@ -81,12 +93,9 @@ def _coerce_trait_names_for_multivariate(
     """Return validated trait names for multivariate outputs."""
     if names is None:
         return [f"X{i + 1}" for i in range(ntraits)]
-    onames = [str(i) for i in names]
+    onames = [validate_feature_name(i, parameter="names entry") for i in names]
     if len(onames) != ntraits:
         raise ToytreeError("names length must match inferred trait dimension.")
-    for name in onames:
-        if not name.strip():
-            raise ToytreeError("names must be non-empty strings.")
     if len(set(onames)) != len(onames):
         raise ToytreeError("names must be unique.")
     return onames
@@ -114,7 +123,7 @@ def _coerce_model_params_multivariate(
 ) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
     """Return validated (R, A, r) arrays for one regime or global params."""
     if model_key == "bm":
-        rmat = _validate_symmetric_pd(_as_square_matrix(raw, "R matrix"), "R matrix")
+        rmat = _validate_symmetric_psd(_as_square_matrix(raw, "R matrix"), "R matrix")
         if rmat.shape[0] != ntraits:
             raise ToytreeError(
                 "R matrix dimension must match inferred trait dimension."
@@ -129,7 +138,7 @@ def _coerce_model_params_multivariate(
         raise ToytreeError(f"{model_key.upper()} params must be a tuple of length 2.")
     if len(raw) != 2:
         raise ToytreeError(f"{model_key.upper()} params must be length 2.")
-    rmat = _validate_symmetric_pd(_as_square_matrix(raw[0], "R matrix"), "R matrix")
+    rmat = _validate_symmetric_psd(_as_square_matrix(raw[0], "R matrix"), "R matrix")
     if rmat.shape[0] != ntraits:
         raise ToytreeError("R matrix dimension must match inferred trait dimension.")
 
@@ -137,8 +146,12 @@ def _coerce_model_params_multivariate(
         amat = _as_square_matrix(raw[1], "A matrix")
         if amat.shape != (ntraits, ntraits):
             raise ToytreeError("A matrix dimension must match R matrix.")
-        if not np.all(np.isfinite(amat)):
-            raise ToytreeError("A matrix entries must be finite.")
+        eigvals = np.linalg.eigvals(amat)
+        if float(np.min(np.real(eigvals))) < -1e-10:
+            raise ToytreeError(
+                "A matrix must be stable: every eigenvalue must have a "
+                "non-negative real part."
+            )
         return rmat, amat, np.zeros(ntraits, dtype=float)
 
     rvec = np.asarray(list(raw[1]), dtype=float)
@@ -202,15 +215,69 @@ def _coerce_params_by_node_multivariate(
     return r_by_node, a_by_node, rv_by_node
 
 
-def _regularize_covariance(cov: np.ndarray) -> np.ndarray:
-    """Return a numerically stable covariance matrix for MVN sampling."""
+def _coerce_optima_by_node_multivariate(
+    tree: ToyTree,
+    optimum_states: Sequence[float]
+    | np.ndarray
+    | Mapping[str, Sequence[float] | np.ndarray]
+    | None,
+    regime: str | pd.Series | None,
+    root_states: np.ndarray,
+    ntraits: int,
+) -> np.ndarray:
+    """Return per-child-edge OU optimum vectors."""
+    out = np.repeat(root_states[None, :], tree.nnodes, axis=0)
+    if optimum_states is None:
+        return out
+    if not isinstance(optimum_states, Mapping):
+        optimum = np.asarray(optimum_states, dtype=float)
+        if optimum.shape != (ntraits,) or not np.all(np.isfinite(optimum)):
+            raise ToytreeError(
+                "optimum_states must contain one finite value per trait."
+            )
+        out[:] = optimum
+        return out
+    if regime is None:
+        raise ToytreeError("regime is required when optimum_states is a dict.")
+    if not optimum_states:
+        raise ToytreeError("optimum_states mapping must define at least one regime.")
+    omap: dict[str, np.ndarray] = {}
+    for key, value in optimum_states.items():
+        optimum = np.asarray(value, dtype=float)
+        if optimum.shape != (ntraits,) or not np.all(np.isfinite(optimum)):
+            raise ToytreeError(
+                "each optimum_states value must contain one finite value per trait."
+            )
+        omap[str(key)] = optimum
+    labels = _coerce_regime_labels(tree, regime)
+    for node in tree[:-1]:
+        raw_label = labels[node.idx]
+        if pd.isna(raw_label):
+            raise ToytreeError(
+                "regime labels must be present on all non-root nodes when "
+                "optimum_states is a dict."
+            )
+        state = str(raw_label)
+        if state not in omap:
+            raise ToytreeError(
+                f"optimum_states is missing values for regime state {state!r}."
+            )
+        out[node.idx] = omap[state]
+    out[tree.treenode.idx] = next(iter(omap.values()))
+    return out
+
+
+def _validate_computed_covariance(cov: np.ndarray) -> np.ndarray:
+    """Return a symmetric PSD covariance without adding artificial variance."""
     sym = (cov + cov.T) / 2.0
     evals, evecs = np.linalg.eigh(sym)
-    if np.min(evals) < -1e-8:
+    tol = 1e-9 * max(1.0, float(np.max(np.abs(evals))))
+    if float(np.min(evals)) < -tol:
         raise ToytreeError("Computed covariance is not positive semidefinite.")
-    evals = np.clip(evals, 1e-14, None)
-    out = evecs @ np.diag(evals) @ evecs.T
-    return (out + out.T) / 2.0
+    if np.any(evals < 0.0):
+        sym = evecs @ np.diag(np.clip(evals, 0.0, None)) @ evecs.T
+        sym = (sym + sym.T) / 2.0
+    return sym
 
 
 def _ou_covariance_full_matrix(
@@ -221,20 +288,22 @@ def _ou_covariance_full_matrix(
     """Return OU transition covariance for full selection matrix A."""
     if branch_length <= 0:
         return np.zeros_like(rmat)
-    if np.allclose(amat, 0.0):
+    if np.count_nonzero(amat) == 0:
         return rmat * branch_length
     ntraits = rmat.shape[0]
     eye = np.eye(ntraits, dtype=float)
     ksum = np.kron(eye, amat) + np.kron(amat, eye)
-    exp_term = expm(-ksum * branch_length)
     vec_r = rmat.reshape(ntraits * ntraits, order="F")
-    rhs = (np.eye(ntraits * ntraits, dtype=float) - exp_term) @ vec_r
-    try:
-        vec_cov = np.linalg.solve(ksum, rhs)
-    except np.linalg.LinAlgError:
-        vec_cov = np.linalg.lstsq(ksum, rhs, rcond=None)[0]
+    # The augmented exponential evaluates int_0^t exp(-K s) vec(R) ds
+    # directly. Unlike solving K vec(V) = (I-exp(-Kt)) vec(R), this remains
+    # valid when A contains neutral (zero-eigenvalue) trait dimensions.
+    nflat = ntraits * ntraits
+    augmented = np.zeros((nflat + 1, nflat + 1), dtype=float)
+    augmented[:nflat, :nflat] = -ksum
+    augmented[:nflat, nflat] = vec_r
+    vec_cov = expm(augmented * branch_length)[:nflat, nflat]
     cov = vec_cov.reshape((ntraits, ntraits), order="F")
-    return _regularize_covariance(cov)
+    return _validate_computed_covariance(cov)
 
 
 def _eb_covariance_multivariate(
@@ -266,7 +335,7 @@ def _eb_covariance_multivariate(
             raise ToytreeError("EB covariance overflowed; reduce r values.") from exc
     if not np.all(np.isfinite(ints)):
         raise ToytreeError("EB covariance overflowed; reduce r values.")
-    return _regularize_covariance(rmat * ints)
+    return _validate_computed_covariance(rmat * ints)
 
 
 @add_subpackage_method(PhyloCompAPI)
@@ -279,7 +348,12 @@ def simulate_multivariate_continuous_trait(
     tips_only: bool = False,
     regime: str | pd.Series | None = None,
     inplace: bool = False,
-    seed: int | np.random.Generator | None = None,
+    seed: RNGSeed = None,
+    *,
+    optimum_states: Sequence[float]
+    | np.ndarray
+    | Mapping[str, Sequence[float] | np.ndarray]
+    | None = None,
 ) -> pd.DataFrame:
     """Simulate multiple continuous traits under BM, OU, or EB models.
 
@@ -289,7 +363,7 @@ def simulate_multivariate_continuous_trait(
     - ``"bm"`` (Brownian motion): trait vectors follow a multivariate random
       walk with covariance accumulation proportional to branch length.
     - ``"ou"`` (Ornstein-Uhlenbeck): Brownian diffusion with matrix-valued
-      pull toward an optimum vector (here anchored to ``root_states``).
+      pull toward an optimum vector. The optimum defaults to ``root_states``.
     - ``"eb"`` (early burst): branchwise diffusion covariance is scaled through
       time by per-trait exponential rate parameters.
 
@@ -319,7 +393,12 @@ def simulate_multivariate_continuous_trait(
     inplace : bool, default=False
         If True, write each simulated trait column to tree node data.
     seed : int | numpy.random.Generator | None, default=None
-        Random seed or numpy Generator.
+        Random-number source. A supplied Generator is consumed in place.
+        Integer and SeedSequence inputs initialize a new Generator.
+    optimum_states : sequence, numpy.ndarray, mapping, or None, keyword-only
+        OU optimum vector. If None, use ``root_states``. A single vector
+        applies to every edge. A mapping supplies child-edge optima by regime
+        label and requires ``regime``. Invalid for BM and EB.
 
     Returns
     -------
@@ -331,14 +410,19 @@ def simulate_multivariate_continuous_trait(
     ------
     ToytreeError
         If ``model`` is invalid, parameters are malformed, required regime
-        information is missing, matrix constraints fail (e.g., symmetry / PD),
+        information is missing, matrix constraints fail (e.g., symmetry / PSD),
         or covariance calculations become numerically invalid.
     """
+    tree = validate_tree_for_simulation(tree)
+    tips_only = validate_bool(tips_only, "tips_only")
+    inplace = validate_bool(inplace, "inplace")
     model_key = str(model).lower()
     if model_key not in ("bm", "ou", "eb"):
         raise ToytreeError("model must be one of: 'bm', 'ou', 'eb'.")
     if params is None:
         raise ToytreeError("params is required.")
+    if model_key != "ou" and optimum_states is not None:
+        raise ToytreeError("optimum_states is only valid when model='ou'.")
 
     ntraits = _infer_ntraits_from_multivariate_params(model_key, params)
     onames = _coerce_trait_names_for_multivariate(names, ntraits)
@@ -350,8 +434,15 @@ def simulate_multivariate_continuous_trait(
         regime=regime,
         ntraits=ntraits,
     )
+    optimum_by_node = _coerce_optima_by_node_multivariate(
+        tree,
+        optimum_states,
+        regime,
+        root_vec,
+        ntraits,
+    )
 
-    rng = np.random.default_rng(seed)
+    rng = get_rng(seed)
     times = _get_time_from_root(tree)
     arr = np.zeros((tree.nnodes, ntraits), dtype=float)
     ridx = tree.treenode.idx
@@ -369,30 +460,26 @@ def simulate_multivariate_continuous_trait(
         child_time = float(times[nidx])
         rmat = r_by_node[nidx]
         if model_key == "bm":
-            cov = _regularize_covariance(rmat * t)
-            delta = rng.multivariate_normal(mean=zeros, cov=cov)
+            cov = _validate_computed_covariance(rmat * t)
+            delta = rng.multivariate_normal(mean=zeros, cov=cov, check_valid="raise")
             arr[nidx] = arr[pidx] + delta
         elif model_key == "ou":
             amat = a_by_node[nidx]
             trans = expm(-amat * t)
-            mean = root_vec + trans @ (arr[pidx] - root_vec)
+            optimum = optimum_by_node[nidx]
+            mean = optimum + trans @ (arr[pidx] - optimum)
             cov = _ou_covariance_full_matrix(rmat, amat, t)
-            arr[nidx] = rng.multivariate_normal(mean=mean, cov=cov)
+            arr[nidx] = rng.multivariate_normal(mean=mean, cov=cov, check_valid="raise")
         else:
             rvec = rv_by_node[nidx]
             cov = _eb_covariance_multivariate(rmat, rvec, parent_time, child_time)
-            delta = rng.multivariate_normal(mean=zeros, cov=cov)
+            delta = rng.multivariate_normal(mean=zeros, cov=cov, check_valid="raise")
             arr[nidx] = arr[pidx] + delta
 
-    out = pd.DataFrame(arr, index=range(tree.nnodes), columns=onames)
-    if tips_only:
-        out = out.iloc[: tree.ntips].copy()
-    if inplace:
-        for feature in out.columns:
-            tree.set_node_data(
-                feature,
-                dict(out[feature].dropna()),
-                default=np.nan,
-                inplace=True,
-            )
-    return out
+    return make_node_dataframe(
+        tree,
+        arr,
+        names=onames,
+        tips_only=tips_only,
+        inplace=inplace,
+    )
