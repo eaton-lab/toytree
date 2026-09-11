@@ -15,7 +15,7 @@ numerical corner cases.
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Literal, Optional, Union
+from typing import Literal, Union
 
 import numpy as np
 import pandas as pd
@@ -24,6 +24,12 @@ from scipy.special import gammaln
 
 from toytree.core.apis import PhyloCompAPI, add_subpackage_method
 from toytree.data._src.expand_node_mapping import expand_node_mapping
+from toytree.pcm.src.sim._utils import (
+    RNGSeed,
+    get_rng,
+    validate_positive_int,
+    validate_tree_for_simulation,
+)
 from toytree.pcm.src.traits.fit_discrete_ctmc import (
     DiscreteMarkovModelFit,
     PCMDiscreteCTMCFitResult,
@@ -208,6 +214,7 @@ def _sample_jump_count_conditioned(
     rng: np.random.Generator,
     max_terms: int,
     tol: float,
+    endpoint_probability: float,
 ) -> tuple[int, list[np.ndarray]]:
     """Sample N from P(N=n | start=i, end=j, t) using truncated conditioning."""
     lam = omega * t
@@ -240,12 +247,12 @@ def _sample_jump_count_conditioned(
         raise ToytreeError(
             "uniformization conditioning weights are numerically unstable"
         )
-    probs = w / z
-
-    if float(np.sum(probs)) < 1.0 - tol:
+    log_captured_mass = m + np.log(z) - np.log(endpoint_probability)
+    if (not np.isfinite(log_captured_mass)) or log_captured_mass < np.log1p(-tol):
         raise ToytreeError(
             "uniformization truncation too aggressive; increase max_terms"
         )
+    probs = w / z
 
     n = int(rng.choice(ns, p=probs))
     return n, rpowers[: n + 1]
@@ -308,6 +315,7 @@ def _sample_branch_history_uniformized(
         rng,
         max_terms=max_terms,
         tol=tol,
+        endpoint_probability=pij,
     )
 
     if n == 0:
@@ -827,7 +835,7 @@ def simulate_stochastic_map(
     data: Union[str, pd.Series],
     model_fit: PCMDiscreteCTMCFitResult,
     nreplicates: int = 1,
-    seed: Optional[int] = None,
+    seed: RNGSeed = None,
     max_branch_attempts: int = 10_000,
     engine: Literal["uniformization", "rejection"] = "uniformization",
 ) -> PCMStochasticMapResult:
@@ -849,8 +857,9 @@ def simulate_stochastic_map(
         A fitted MK model result from ``fit_discrete_ctmc``.
     nreplicates : int, default=1
         Number of map replicates to sample.
-    seed : int | None, default=None
-        Seed for the random number generator.
+    seed : int, numpy.random.Generator, numpy.random.SeedSequence, or None
+        Random-number source. A supplied Generator is consumed in place;
+        integer and SeedSequence inputs initialize a new Generator.
     max_branch_attempts : int, default=10000
         Maximum attempts for the rejection engine and fallback behavior.
     engine : {"uniformization", "rejection"}, default="uniformization"
@@ -888,15 +897,19 @@ def simulate_stochastic_map(
     >>> result.segments.head()
 
     """
+    tree = validate_tree_for_simulation(tree)
     if not isinstance(model_fit, PCMDiscreteCTMCFitResult):
         raise ToytreeError(
             "model_fit is required and must be a PCMDiscreteCTMCFitResult "
             "(fit with fit_discrete_ctmc first)."
         )
-    if int(max_branch_attempts) < 1:
-        raise ToytreeError("max_branch_attempts must be >= 1")
-    nreplicates = max(1, int(nreplicates))
-    eng = str(engine).lower()
+    max_branch_attempts = validate_positive_int(
+        max_branch_attempts, "max_branch_attempts"
+    )
+    nreplicates = validate_positive_int(nreplicates, "nreplicates")
+    if not isinstance(engine, str):
+        raise ToytreeError("engine must be one of: 'uniformization', 'rejection'")
+    eng = engine.lower()
     if eng not in {"uniformization", "rejection"}:
         raise ToytreeError("engine must be one of: 'uniformization', 'rejection'")
 
@@ -912,6 +925,7 @@ def simulate_stochastic_map(
         fixed_rates=model_fit.relative_rates,
         root_prior=model_fit.root_prior,
         rate_scalar=1.0,
+        state_names=model_fit.state_labels,
     )
 
     qmatrix = np.array(model_fit.qmatrix, dtype=float)
@@ -927,7 +941,7 @@ def simulate_stochastic_map(
     edges = tree.get_edges("idx")
     dists = tree.get_node_data("dist").to_numpy(dtype=float)
     heights = tree.get_node_data("height").to_numpy(dtype=float)
-    rng = np.random.default_rng(seed)
+    rng = get_rng(seed)
     transition_matrices = {
         node._idx: expm(qmatrix * float(node.dist))
         for node in tree.treenode.traverse("preorder")
@@ -1000,7 +1014,7 @@ def simulate_stochastic_map(
                     start_state=start_state,
                     end_state=end_state,
                     rng=rng,
-                    max_attempts=int(max_branch_attempts),
+                    max_attempts=max_branch_attempts,
                 )
             else:
                 try:
@@ -1021,7 +1035,7 @@ def simulate_stochastic_map(
                         start_state=start_state,
                         end_state=end_state,
                         rng=rng,
-                        max_attempts=int(max_branch_attempts),
+                        max_attempts=max_branch_attempts,
                     )
 
             parent_height = float(heights[parent])
@@ -1049,5 +1063,5 @@ def simulate_stochastic_map(
         state_labels=tuple(state_labels),
         model=model_fit.model,
         engine=eng,
-        nreplicates=int(nreplicates),
+        nreplicates=nreplicates,
     )

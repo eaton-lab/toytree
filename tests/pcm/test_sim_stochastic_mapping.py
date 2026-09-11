@@ -7,6 +7,10 @@ import pandas as pd
 import pytest
 
 import toytree
+from toytree.pcm.src.sim.sim_stochastic_mapping import (
+    _sample_branch_history_rejection,
+    _sample_branch_history_uniformized,
+)
 from toytree.utils import ToytreeError
 
 
@@ -174,6 +178,48 @@ def test_uniformization_and_rejection_engines(tree_data_fit):
     assert set(uni.segments.columns) == set(rej.segments.columns)
 
 
+def test_uniformization_and_rejection_match_conditioned_moments():
+    """Both branch engines sample the same endpoint-conditioned CTMC law."""
+    qmatrix = np.array([[-1.0, 1.0], [1.0, -1.0]])
+    uni_rng = np.random.default_rng(123)
+    rej_rng = np.random.default_rng(456)
+    uni_stats = []
+    rej_stats = []
+    for _ in range(3000):
+        uni = _sample_branch_history_uniformized(
+            qmatrix,
+            length=1.0,
+            start_state=0,
+            end_state=0,
+            rng=uni_rng,
+            omega_buffer=0.05,
+            max_terms=5000,
+            tol=1e-12,
+        )
+        rejection = _sample_branch_history_rejection(
+            qmatrix,
+            length=1.0,
+            start_state=0,
+            end_state=0,
+            rng=rej_rng,
+            max_attempts=10_000,
+        )
+        uni_stats.append(
+            (len(uni) - 1, sum(end - start for state, start, end in uni if state == 1))
+        )
+        rej_stats.append(
+            (
+                len(rejection) - 1,
+                sum(end - start for state, start, end in rejection if state == 1),
+            )
+        )
+    difference = np.abs(
+        np.mean(uni_stats, axis=0) - np.mean(rej_stats, axis=0)
+    )
+    assert difference[0] < 0.07
+    assert difference[1] < 0.025
+
+
 def test_irreversible_maps_follow_q_and_carry_root_prior():
     """Joint maps preserve an explicit root and forbid reverse transitions."""
     tree = toytree.rtree.unittree(ntips=4, treeheight=2.0, seed=12)
@@ -320,6 +366,31 @@ def test_invalid_max_branch_attempts(tree_data_fit):
             model_fit=fit,
             max_branch_attempts=0,
         )
+
+
+@pytest.mark.parametrize("value", [0, -1, 1.5, True])
+def test_strict_positive_integer_controls(tree_data_fit, value):
+    """Replicate and rejection limits reject coercive numeric inputs."""
+    tree, _, fit = tree_data_fit
+    with pytest.raises(ToytreeError, match="nreplicates"):
+        tree.pcm.simulate_stochastic_map(data="X", model_fit=fit, nreplicates=value)
+    with pytest.raises(ToytreeError, match="max_branch_attempts"):
+        tree.pcm.simulate_stochastic_map(
+            data="X", model_fit=fit, max_branch_attempts=value
+        )
+
+
+def test_seedsequence_is_reproducible(tree_data_fit):
+    """Equivalent SeedSequences reproduce node states and branch histories."""
+    tree, _, fit = tree_data_fit
+    first = tree.pcm.simulate_stochastic_map(
+        "X", fit, nreplicates=2, seed=np.random.SeedSequence(123)
+    )
+    second = tree.pcm.simulate_stochastic_map(
+        "X", fit, nreplicates=2, seed=np.random.SeedSequence(123)
+    )
+    pd.testing.assert_frame_equal(first.node_states, second.node_states)
+    pd.testing.assert_frame_equal(first.segments, second.segments)
 
 
 def test_invalid_engine(tree_data_fit):
