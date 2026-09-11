@@ -47,9 +47,6 @@ nav:
           - parsing tree data: parse_trees.md
           - writing tree data: write_trees.md
 
-      - 'Simulation':
-          - trees and branch rates: random-trees.md
-
       - 'Core Concepts':
           - Node: core-node.md
           - ToyTree: core-toytree.md
@@ -71,6 +68,9 @@ nav:
           - multitree draw cloud: drawing-mtree-cloud.md
           # - demographic models: drawing-demography.md
           # - tree sequences: drawing-tree-sequences.md
+
+      - '[rtree]':
+          - trees and branch rates: random-trees.md
 
       - '[annotate]':
           - tip annotations:
