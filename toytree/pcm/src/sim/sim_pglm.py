@@ -18,87 +18,22 @@ from typing import TYPE_CHECKING, Mapping
 
 import numpy as np
 import pandas as pd
-from patsy import PatsyError, dmatrix
 
 from toytree.core.apis import PhyloCompAPI, add_subpackage_method
 from toytree.pcm.src.phylolinalg._glm_families import get_family_spec
-from toytree.pcm.src.phylolinalg.pgls import _coerce_tip_dataframe
-from toytree.pcm.src.sim.sim_continuous import simulate_continuous_trait
-from toytree.pcm.src.traits.phylosignal_lambda import edges_transform_lambda, max_λ
+from toytree.pcm.src.sim._regression_sim_shared import (
+    build_simulation_design,
+    coerce_beta_vector,
+    merge_tip_predictor_data,
+    simulate_phylogenetic_residual,
+)
+from toytree.pcm.src.sim._utils import RNGSeed, get_rng, validate_bool
 from toytree.utils.src.exceptions import ToytreeError
 
 if TYPE_CHECKING:
     from toytree.core import ToyTree
 
 __all__ = ["simulate_pglm_trait"]
-
-
-def _merge_tip_predictor_data(
-    tree: ToyTree,
-    data: pd.DataFrame | None,
-) -> pd.DataFrame:
-    """Return tip predictors with DataFrame values overriding tree features."""
-    base = tree.get_tip_data().set_index("name")
-    if data is None:
-        return base
-    aligned = _coerce_tip_dataframe(tree, data)
-    merged = base.copy()
-    for col in aligned.columns:
-        merged[col] = aligned[col]
-    return merged
-
-
-def _build_design_for_sim(
-    formula: str,
-    tip_data: pd.DataFrame,
-) -> tuple[str, pd.DataFrame]:
-    """Return response name and Patsy design matrix from formula RHS."""
-    if "~" not in formula:
-        raise ToytreeError("formula must include '~' with response and predictors.")
-    lhs, rhs = formula.split("~", 1)
-    response_name = lhs.strip()
-    if not response_name:
-        raise ToytreeError("formula must include a non-empty response name.")
-    rhs = rhs.strip()
-    if not rhs:
-        raise ToytreeError("formula must include predictors on the right-hand side.")
-    try:
-        xmat = dmatrix(rhs, data=tip_data, return_type="dataframe")
-    except PatsyError as exc:
-        raise ToytreeError(
-            f"Invalid formula or data for simulate_pglm_trait: {exc}"
-        ) from exc
-    if xmat.shape[0] == 0:
-        raise ToytreeError(
-            "No rows remain after applying formula and dropping missing values."
-        )
-    if xmat.shape[0] < 2:
-        raise ToytreeError("At least two retained tips are required for simulation.")
-    return response_name, xmat
-
-
-def _coerce_beta_vector(
-    xmat: pd.DataFrame,
-    betas: Mapping[str, float],
-) -> np.ndarray:
-    """Return beta vector ordered to design columns with strict key matching."""
-    if not isinstance(betas, Mapping):
-        raise ToytreeError("betas must be a mapping from design-term names to values.")
-    colnames = list(xmat.columns)
-    bkeys = set(str(i) for i in betas)
-    xkeys = set(colnames)
-    missing = sorted(xkeys - bkeys)
-    extra = sorted(bkeys - xkeys)
-    if missing or extra:
-        chunks = []
-        if missing:
-            chunks.append(f"missing beta keys: {missing}")
-        if extra:
-            chunks.append(f"unexpected beta keys: {extra}")
-        raise ToytreeError(
-            "betas keys must match Patsy design columns; " + "; ".join(chunks)
-        )
-    return np.asarray([float(betas[name]) for name in colnames], dtype=float)
 
 
 def _require_dispersion_param(
@@ -168,7 +103,7 @@ def simulate_pglm_trait(
     sigma2: float = 0.5,
     data: pd.DataFrame | None = None,
     return_latent: bool = False,
-    seed: int | np.random.Generator | None = None,
+    seed: RNGSeed = None,
 ) -> pd.Series | pd.DataFrame:
     """Return simulated response values from a phylogenetic GLM process.
 
@@ -181,7 +116,9 @@ def simulate_pglm_trait(
     Parameters
     ----------
     tree : ToyTree
-        Tree defining phylogenetic covariance for latent residual simulation.
+        Rooted tree defining latent phylogenetic covariance. A working copy is
+        scaled to root height one, so uniformly rescaling the input tree does
+        not change the generated response distribution.
     formula : str
         Patsy-style formula with a single response label on the left side.
     betas : Mapping[str, float]
@@ -198,17 +135,22 @@ def simulate_pglm_trait(
         ``negative_binomial`` (``alpha``), ``gamma`` (``dispersion``), or
         ``beta`` (``phi``).
     lambda_ : float, default=1.0
-        Pagel's lambda for latent residual covariance.
+        Pagel's lambda for latent residual covariance on the normalized tree.
+        It scales shared covariance while preserving tip variances and must be
+        within the tree-specific valid interval.
     sigma2 : float, default=0.5
-        Brownian variance rate for latent residual simulation.
+        Nonnegative latent residual variance on the root-height-one working-tree
+        scale. Zero removes the phylogenetic residual but response sampling
+        remains stochastic.
     data : pandas.DataFrame or None, default=None
         Optional predictor table alignable to tree tips. Shared columns override
         tree-stored tip features.
     return_latent : bool, default=False
         If True, return a DataFrame with sampled response and latent columns
         ``eta`` and ``mu``. If False, return only sampled response values.
-    seed : int | numpy.random.Generator | None, default=None
-        Seed or random-number generator.
+    seed : int, numpy.random.Generator, numpy.random.SeedSequence, or None
+        Random-number source. A supplied Generator is consumed in place by
+        both latent residual and response sampling.
 
     Returns
     -------
@@ -222,33 +164,23 @@ def simulate_pglm_trait(
         If formula parsing fails, beta names do not match design columns, family
         or link settings are invalid, required family parameters are missing,
         lambda bounds are violated, or latent means fall outside family domains.
+
+    Notes
+    -----
+    This function is an exact generator for the stated latent phylogenetic GLM:
+    it samples one Gaussian phylogenetic residual, applies the inverse link,
+    and then samples the response conditionally. The current ``pglm`` fitter is
+    a pruning-based IRLS approximation rather than the exact integrated latent
+    likelihood. Simulation-to-fit studies should therefore quantify estimator
+    bias and coverage instead of expecting algebraic parameter recovery.
     """
-    if not isinstance(formula, str) or not formula.strip():
-        raise ToytreeError("formula must be a non-empty str.")
-    if not np.isfinite(float(sigma2)) or float(sigma2) <= 0:
-        raise ToytreeError("sigma2 must be a finite float > 0.")
-    if not np.isfinite(float(lambda_)):
-        raise ToytreeError("lambda_ must be a finite float.")
-
-    rng = seed if isinstance(seed, np.random.Generator) else np.random.default_rng(seed)
-
-    # Work on a scaled copy so lambda bounds/transform match pglm and pgls APIs.
-    work_tree = tree.mod.edges_scale_to_root_height(1.0)
-    for node in work_tree:
-        if node._dist <= 0:
-            node._dist = 1e-12
-    work_tree._update()
-
-    max_lambda = float(max_λ(work_tree))
-    lambda_val = float(lambda_)
-    if lambda_val < 0.0 or lambda_val > max_lambda:
-        raise ToytreeError(
-            f"lambda_ must be between 0 and max_λ(tree)={max_lambda:.6g}."
-        )
-
-    tip_data = _merge_tip_predictor_data(work_tree, data)
-    ycol, xmat = _build_design_for_sim(formula, tip_data)
-    beta_vec = _coerce_beta_vector(xmat, betas)
+    return_latent = validate_bool(return_latent, "return_latent")
+    rng = get_rng(seed)
+    tip_data = merge_tip_predictor_data(tree, data)
+    ycol, xmat = build_simulation_design(
+        formula, tip_data, method_name="simulate_pglm_trait"
+    )
+    beta_vec = coerce_beta_vector(xmat, betas)
 
     spec, _ = get_family_spec(
         family=family,
@@ -261,20 +193,15 @@ def simulate_pglm_trait(
     if spec.family in {"negative_binomial", "gamma", "beta"}:
         _require_dispersion_param(spec.family, spec.family_params)
 
-    mu_fixed = xmat.to_numpy(dtype=float) @ beta_vec
-    sim_tree = edges_transform_lambda(work_tree, lambda_val, inplace=False)
-    eps = simulate_continuous_trait(
-        sim_tree,
-        model="bm",
-        params=float(sigma2),
-        root_state=0.0,
-        name="epsilon",
-        tips_only=True,
+    eta_fixed = xmat.to_numpy(dtype=float) @ beta_vec
+    residual = simulate_phylogenetic_residual(
+        tree,
+        lambda_=lambda_,
+        sigma2=sigma2,
+        retained_tips=xmat.index,
         seed=rng,
     )
-    eps.index = sim_tree.get_tip_labels()
-    eps = eps.loc[xmat.index]
-    eta = mu_fixed + eps.to_numpy(dtype=float)
+    eta = eta_fixed + residual.to_numpy(dtype=float)
     mu = spec.inv_link(eta)
     spec.validate_mu(mu)
 

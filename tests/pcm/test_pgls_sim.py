@@ -7,6 +7,10 @@ import pandas as pd
 import pytest
 from patsy import dmatrix
 
+from toytree.pcm.src.sim._regression_sim_shared import (
+    prepare_lambda_tree,
+    simulate_phylogenetic_residual,
+)
 from toytree.utils import ToytreeError
 
 
@@ -103,7 +107,7 @@ def test_data_overrides_tree_features(tree, data, tips):
         formula="y ~ x1",
         betas={"Intercept": 0.0, "x1": 1.0},
         lambda_=0.0,
-        sigma2=1e-12,
+        sigma2=0.0,
         data=data,
         seed=4,
     )
@@ -126,13 +130,13 @@ def test_missing_rows_follow_patsy_drop(tree, data, tips):
     assert out.shape[0] == tree.ntips - 1
 
 
-def test_sigma2_near_zero_matches_deterministic_mean(tree, data):
-    """Approximate deterministic mean when residual variance is near zero."""
+def test_sigma2_zero_matches_deterministic_mean_exactly(tree, data):
+    """Zero residual variance returns the exact Patsy linear predictor."""
     out = tree.pcm.simulate_pgls_trait(
         formula="y ~ x1 + C(group)",
         betas={"Intercept": 0.5, "x1": -1.2, "C(group)[T.B]": 0.7},
         lambda_=1.0,
-        sigma2=1e-12,
+        sigma2=0.0,
         data=data,
         seed=6,
     )
@@ -143,4 +147,72 @@ def test_sigma2_near_zero_matches_deterministic_mean(tree, data):
     beta_map[cat_cols[0]] = 0.7
     beta = np.array([beta_map[col] for col in xmat.columns], dtype=float)
     expected = xmat.to_numpy() @ beta
-    assert np.allclose(out.to_numpy(), expected, atol=1e-4)
+    np.testing.assert_array_equal(out.to_numpy(), expected)
+
+
+def test_seedsequence_is_reproducible(tree, data):
+    """Equivalent SeedSequences reproduce the complete PGLS response."""
+    kwargs = {
+        "formula": "y ~ x1",
+        "betas": {"Intercept": 0.2, "x1": 0.7},
+        "data": data,
+    }
+    first = tree.pcm.simulate_pgls_trait(**kwargs, seed=np.random.SeedSequence(123))
+    second = tree.pcm.simulate_pgls_trait(**kwargs, seed=np.random.SeedSequence(123))
+    pd.testing.assert_series_equal(first, second)
+
+
+@pytest.mark.parametrize("sigma2", [-1.0, np.inf, np.nan, True])
+def test_sigma2_validation(tree, data, sigma2):
+    """Residual variance must be a finite nonnegative real scalar."""
+    with pytest.raises(ToytreeError, match="sigma2"):
+        tree.pcm.simulate_pgls_trait(
+            "y ~ x1",
+            {"Intercept": 0.0, "x1": 1.0},
+            sigma2=sigma2,
+            data=data,
+        )
+
+
+def test_residual_covariance_matches_pagel_lambda(tree):
+    """Replicated residuals recover the analytic normalized-tree covariance."""
+    lambda_value = 0.6
+    sigma2 = 0.7
+    work_tree, _ = prepare_lambda_tree(tree, lambda_value)
+    base = work_tree.pcm.get_vcv_matrix_from_tree(df=False)
+    expected = lambda_value * base
+    np.fill_diagonal(expected, np.diag(base))
+    expected *= sigma2
+
+    labels = pd.Index(tree.get_tip_labels())
+    draws = np.vstack(
+        [
+            simulate_phylogenetic_residual(
+                tree,
+                lambda_=lambda_value,
+                sigma2=sigma2,
+                retained_tips=labels,
+                seed=seed,
+            ).to_numpy()
+            for seed in range(1200)
+        ]
+    )
+    observed = np.cov(draws, rowvar=False, ddof=1)
+    relative_error = np.linalg.norm(observed - expected) / np.linalg.norm(expected)
+    assert relative_error < 0.18
+
+
+def test_uniform_tree_rescaling_does_not_change_seeded_response(tree, data):
+    """PGLS covariance is defined after normalizing the tree to height one."""
+    scaled = tree.mod.edges_scale_to_root_height(10.0)
+    kwargs = {
+        "formula": "y ~ x1",
+        "betas": {"Intercept": 0.3, "x1": -0.8},
+        "lambda_": 0.5,
+        "sigma2": 0.7,
+        "data": data,
+        "seed": 999,
+    }
+    original = tree.pcm.simulate_pgls_trait(**kwargs)
+    rescaled = scaled.pcm.simulate_pgls_trait(**kwargs)
+    pd.testing.assert_series_equal(original, rescaled)

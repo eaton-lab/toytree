@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 
 from toytree import ToytreeError
+from toytree.pcm.src.sim.sim_pglm import _sample_from_family
 from toytree.pcm.src.traits.phylosignal_lambda import max_λ
 
 
@@ -218,7 +219,20 @@ def test_simulate_pglm_trait_formula_validation(tree, data):
 
 
 def test_simulate_pglm_trait_sigma2_and_lambda_finite_validation(tree, data):
-    """Reject invalid sigma2 and non-finite lambda values."""
+    """Allow zero sigma2 but reject negative/nonfinite values and lambda."""
+    deterministic_latent = tree.pcm.simulate_pglm_trait(
+        formula="y ~ x",
+        betas={"Intercept": 0.0, "x": 0.4},
+        family="binomial",
+        link="logit",
+        data=data,
+        sigma2=0.0,
+        return_latent=True,
+        seed=20,
+    )
+    np.testing.assert_allclose(
+        deterministic_latent["eta"].to_numpy(), 0.4 * data["x"].to_numpy()
+    )
     with pytest.raises(ToytreeError):
         tree.pcm.simulate_pglm_trait(
             formula="y ~ x",
@@ -226,7 +240,7 @@ def test_simulate_pglm_trait_sigma2_and_lambda_finite_validation(tree, data):
             family="binomial",
             link="logit",
             data=data,
-            sigma2=0.0,
+            sigma2=-0.1,
         )
     with pytest.raises(ToytreeError):
         tree.pcm.simulate_pglm_trait(
@@ -304,3 +318,38 @@ def test_simulate_pglm_trait_requires_two_retained_tips(tree, data):
             link="logit",
             data=bad,
         )
+
+
+def test_response_family_moments_match_parameterization():
+    """Large conditional samples recover each documented mean and variance."""
+    rng = np.random.default_rng(12345)
+    size = 100_000
+    cases = [
+        ("binomial", 0.3, None, 0.3 * 0.7),
+        ("poisson", 2.0, None, 2.0),
+        ("negative_binomial", 2.0, {"alpha": 0.4}, 2.0 + 0.4 * 2.0**2),
+        ("gamma", 2.0, {"dispersion": 0.4}, 0.4 * 2.0**2),
+        ("beta", 0.3, {"phi": 20.0}, 0.3 * 0.7 / 21.0),
+    ]
+    for family, mean, params, variance in cases:
+        values = _sample_from_family(
+            rng, family, np.full(size, mean), family_params=params
+        )
+        assert abs(float(values.mean()) - mean) < 0.02
+        assert abs(float(values.var()) - variance) < max(0.02, 0.04 * variance)
+
+
+def test_seedsequence_and_return_latent_validation(tree, data):
+    """PGLM supports SeedSequence and strictly validates return_latent."""
+    kwargs = {
+        "formula": "y ~ x",
+        "betas": {"Intercept": 0.0, "x": 0.4},
+        "family": "poisson",
+        "link": "log",
+        "data": data,
+    }
+    first = tree.pcm.simulate_pglm_trait(**kwargs, seed=np.random.SeedSequence(321))
+    second = tree.pcm.simulate_pglm_trait(**kwargs, seed=np.random.SeedSequence(321))
+    pd.testing.assert_series_equal(first, second)
+    with pytest.raises(ToytreeError, match="return_latent must be a bool"):
+        tree.pcm.simulate_pglm_trait(**kwargs, return_latent=1)
