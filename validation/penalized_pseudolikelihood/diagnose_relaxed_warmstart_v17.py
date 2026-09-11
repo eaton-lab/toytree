@@ -34,12 +34,12 @@ from scipy.optimize import approx_fprime
 from scipy.special import gammaln
 
 import toytree
-from toytree.mod._src.penalized_pseudolikelihood.uncorrelated_lognormal import (
+from toytree.mod._src.penalized_pseudolikelihood.relaxed import (
     DIST_FLOOR,
     RATE_FLOOR,
-    _fit_independent_start,
-    _independent_branch_pseudologlik,
-    objective_independent,
+    _fit_relaxed_start,
+    _objective_relaxed,
+    _relaxed_branch_pseudologlik,
 )
 from toytree.mod._src.penalized_pseudolikelihood.utils import (
     _decode_age_params,
@@ -111,15 +111,13 @@ def _problem(manifest: dict[str, Any], ape_fit: dict[str, Any]) -> dict[str, Any
     edata = np.column_stack([observed, gammaln(observed + 1.0)])
     observation_mask = _validate_observation_mask(None, tree.nedges)
     lam = float(manifest["lambda"])
-    valid_loglik = _independent_branch_pseudologlik(
+    valid_loglik = _relaxed_branch_pseudologlik(
         rates,
         ages,
         edges,
         edata,
         lam,
         None,
-        observation_mask,
-        "relaxed",
     )
     params = np.hstack([_pack_log_rates(rates, rate_floor=RATE_FLOOR), age_params])
     return {
@@ -142,7 +140,7 @@ def _problem(manifest: dict[str, Any], ape_fit: dict[str, Any]) -> dict[str, Any
 
 def _objective(problem: dict[str, Any]) -> Callable[[np.ndarray], float]:
     """Return the joint minimized objective for one prepared problem."""
-    return lambda params: objective_independent(
+    return lambda params: _objective_relaxed(
         params,
         False,
         False,
@@ -156,8 +154,6 @@ def _objective(problem: dict[str, Any]) -> Callable[[np.ndarray], float]:
         problem["edata"],
         problem["lam"],
         problem["valid_loglik"],
-        problem["observation_mask"],
-        "relaxed",
     )
 
 
@@ -273,7 +269,7 @@ def _worker(payload: dict[str, Any]) -> dict[str, Any]:
         "model": "relaxed",
     }
     started = time.perf_counter()
-    optimized = _fit_independent_start(fit_payload)
+    optimized = _fit_relaxed_start(fit_payload)
     elapsed = time.perf_counter() - started
     rsize = problem["rates_init"].size
     rates = _unpack_log_rates(optimized["params"][:rsize])
@@ -285,15 +281,13 @@ def _worker(payload: dict[str, Any]) -> dict[str, Any]:
         problem["children_map"],
         dist_floor=DIST_FLOOR,
     )
-    final_penalized = _independent_branch_pseudologlik(
+    final_penalized = _relaxed_branch_pseudologlik(
         rates,
         ages,
         problem["edges"],
         problem["edata"],
         problem["lam"],
         problem["valid_loglik"],
-        problem["observation_mask"],
-        "relaxed",
     )
     record = {
         "warmstart_schema": WARMSTART_SCHEMA,

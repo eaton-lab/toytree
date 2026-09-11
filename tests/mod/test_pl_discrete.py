@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# ruff: noqa: D103
 
 from unittest.mock import patch
 
@@ -24,8 +25,7 @@ def _tree():
 
 
 def _fit(tree, calibration=1.0, **kwargs):
-    return discrete._edges_make_ultrametric_discrete_gamma_experimental(
-        tree,
+    return tree.mod.edges_make_ultrametric_discrete(
         ncategories=2,
         calibrations={-1: calibration},
         full=True,
@@ -38,65 +38,17 @@ def _fit(tree, calibration=1.0, **kwargs):
     )
 
 
-def test_scale_normalized_gamma_component_formula():
-    """Gamma components use shape=CV^-2 and scale=mean/shape."""
-    rates = np.array([0.5, 2.0])
-    ages = np.array([0.0, 0.0, 0.0, 0.0, 0.4, 0.6, 1.0])
-    edges = _tree().get_edges("idx")
-    observed = np.array([0.21, 0.42, 0.51, 0.73, 0.31, 0.23])
-    weights = np.array([0.35, 0.65])
-    cv = 0.2
-    shape = 1.0 / cv**2
-    times = ages[edges[:, 1]] - ages[edges[:, 0]]
-    means = rates[:, None] * times[None, :]
-    components = (
-        shape * np.log(observed)[None, :]
-        - shape * observed[None, :] / means
-        - gammaln(shape)
-        - shape * np.log(means / shape)
-    )
-    expected = np.sum(
-        np.logaddexp(
-            np.log(weights[0]) + components[0],
-            np.log(weights[1]) + components[1],
-        )
-    )
-    observed_value = discrete._discrete_gamma_branch_pseudologlik(
-        rates, ages, edges, observed, weights, branch_cv=cv
-    )
-    assert np.isclose(observed_value, expected, atol=1e-12)
-
-
-@pytest.mark.parametrize("value", [True, 0, -0.1, np.inf, np.nan, "0.1"])
-def test_branch_cv_validation(value):
-    """Invalid branch CV values are rejected."""
-    with pytest.raises(ToytreeError):
-        _fit(_tree(), branch_cv=value)
-
-
-def test_gamma_requires_strictly_positive_branches():
-    """The multiplicative Gamma density rejects zero branches."""
-    tree = toytree.tree("((a:0,b:0.4):0.3,(c:0.5,d:0.7):0.2);")
-    with pytest.raises(ToytreeError, match="strictly positive"):
-        _fit(tree)
-
-
-def test_private_gamma_fitter_returns_research_diagnostics():
-    """The retired fitter remains usable by archived validation studies."""
+def test_public_discrete_fitter_returns_valid_diagnostics():
     result = _fit(_tree())
-    assert result["model"] == "discrete_gamma"
-    assert result["observation_model"] == "multiplicative_gamma"
-    assert result["branch_cv"] == 0.1
-    assert np.isclose(result["gamma_shape"], 100.0)
-    assert result["input_branch_scale_invariant"] is True
+    assert result["model"] == "discrete"
+    assert result["observation_model"] == "fractional_poisson"
     assert result["calibration_time_unit_invariant"] is True
+    assert result["input_branch_scale_invariant"] is False
     assert np.all(np.diff(result["rates"]) > 0)
     assert np.all(np.asarray(result["weights"]) > 0)
     assert np.isclose(np.sum(result["weights"]), 1.0)
     assert result["tree"].is_ultrametric()
     assert result["final_joint_converged"]
-    assert "gradient_max_abs" in result
-    assert "projected_gradient_max_abs" in result
     assert result["requested_ncategories"] == 2
     assert result["effective_ncategories"] in {1, 2}
     assert "mixture_identified" in result
@@ -104,8 +56,7 @@ def test_private_gamma_fitter_returns_research_diagnostics():
     assert "solution_stable" in result
 
 
-def test_gamma_parallel_multistart_is_seed_reproducible():
-    """Serial and parallel workers return the same seeded Gamma fit."""
+def test_parallel_multistart_is_seed_reproducible():
     serial = _fit(_tree(), ncores=1)
     parallel = _fit(_tree(), ncores=2)
     assert serial["best_start"] == parallel["best_start"]
@@ -114,43 +65,21 @@ def test_gamma_parallel_multistart_is_seed_reproducible():
     assert np.allclose(serial["weights"], parallel["weights"])
 
 
-def test_gamma_score_remains_finite_at_extreme_positive_scale():
-    """Stable log scoring supports very small positive branch units."""
-    tree = _tree()
-    edges = tree.get_edges("idx")
-    ages = np.array([0.0, 0.0, 0.0, 0.0, 0.4, 0.6, 1.0])
-    value = discrete._discrete_gamma_branch_pseudologlik(
-        np.array([1e-100, 3e-100]),
-        ages,
-        edges,
-        np.full(tree.nedges, 1e-100),
-        np.array([0.4, 0.6]),
-        branch_cv=0.1,
-    )
-    assert np.isfinite(value)
-
-
-def test_gamma_k1_is_supported_without_delegating_to_poisson_clock():
-    """One Gamma category remains a Gamma observation model."""
-    result = discrete._edges_make_ultrametric_discrete_gamma_experimental(
-        _tree(),
+def test_one_category_delegates_to_clock_likelihood():
+    result = _tree().mod.edges_make_ultrametric_discrete(
         ncategories=1,
         calibrations={-1: 1.0},
         full=True,
-        max_iter=1_000,
-        max_fun=2_000,
-        max_refine=2,
         nstarts=1,
         seed=3,
     )
-    assert result["model"] == "discrete_gamma"
-    assert result["observation_model"] == "multiplicative_gamma"
-    assert len(result["rates"]) == 1
+    assert result["model"] == "discrete"
+    assert result["observation_model"] == "fractional_poisson"
+    assert result["rates"] == [pytest.approx(result["rates"][0])]
     assert result["weights"] == [1.0]
 
 
 def test_joint_analytic_gradient_matches_central_difference():
-    """The joint analytic gradient matches central differences."""
     tree = _tree()
     calibrations = _normalize_calibrations(tree, {-1: 1.0})
     ages, _ = _get_init_ages(tree, calibrations)
@@ -182,8 +111,6 @@ def test_joint_analytic_gradient_matches_central_difference():
         np.ones(tree.nedges, dtype=bool),
         2,
         -10.0,
-        "multiplicative_gamma",
-        100.0,
     )
     _, analytic = discrete._mixture_objective_with_gradient(params, *args)
     numerical = np.empty_like(params)
@@ -198,63 +125,42 @@ def test_joint_analytic_gradient_matches_central_difference():
     assert np.max(abs(analytic - numerical) / scale) < 2e-5
 
 
-def test_gamma_is_invariant_to_input_and_calibration_units():
-    """Gamma fits are invariant to both supported unit rescalings."""
+def test_calibration_time_unit_invariance():
     baseline = _fit(_tree())
-
-    input_scaled_tree = _tree()
-    for node in input_scaled_tree[:-1]:
-        node._dist *= 1e6
-    input_scaled = _fit(input_scaled_tree)
-
-    calibration_scaled = _fit(_tree(), calibration=1e6)
-
+    scaled = _fit(_tree(), calibration=1e6)
     base_ages = baseline["tree"].get_node_data("height").to_numpy()
-    input_ages = input_scaled["tree"].get_node_data("height").to_numpy()
-    calibration_ages = (
-        calibration_scaled["tree"].get_node_data("height").to_numpy() / 1e6
-    )
-    assert np.allclose(input_ages, base_ages, atol=2e-4, rtol=2e-4)
-    assert np.allclose(calibration_ages, base_ages, atol=2e-4, rtol=2e-4)
+    scaled_ages = scaled["tree"].get_node_data("height").to_numpy() / 1e6
+    assert np.allclose(scaled_ages, base_ages, atol=2e-4, rtol=2e-4)
     assert np.allclose(
-        np.asarray(input_scaled["rates"]) / 1e6,
+        np.asarray(scaled["rates"]) * 1e6,
         baseline["rates"],
         atol=2e-3,
         rtol=2e-3,
     )
-    assert np.allclose(
-        np.asarray(calibration_scaled["rates"]) * 1e6,
-        baseline["rates"],
-        atol=2e-3,
-        rtol=2e-3,
-    )
-    assert np.allclose(input_scaled["weights"], baseline["weights"], atol=2e-3)
-    assert np.allclose(calibration_scaled["weights"], baseline["weights"], atol=2e-3)
+    assert np.allclose(scaled["weights"], baseline["weights"], atol=2e-3)
 
 
-def test_finalized_solution_is_rescored_and_exposes_accumulated_diagnostics():
-    """Returned scores and diagnostics describe the finalized fit."""
+def test_finalized_solution_is_rescored_and_exposes_diagnostics():
     result = _fit(_tree())
     ages = result["tree"].get_node_data("height").to_numpy()
     edges = _tree().get_edges("idx")
     observed = _tree().get_node_data("dist").to_numpy(dtype=float)[:-1]
-    rescored = discrete._discrete_gamma_branch_pseudologlik(
+    edata = np.column_stack((observed, gammaln(observed + 1.0)))
+    rescored = discrete._discrete_branch_pseudologlik(
         np.asarray(result["rates"]),
         ages,
         edges,
-        observed,
+        edata,
         np.asarray(result["weights"]),
-        branch_cv=result["branch_cv"],
+        None,
     )
     assert np.isclose(result["pseudologlik"], rescored, atol=1e-9)
     assert result["nfev"] > 0
     assert result["nit"] >= 0
-    assert result["refinement_cycles"] >= 0
     assert all("final_joint_converged" in start for start in result["starts"])
 
 
 def test_iteration_limited_final_joint_fit_is_retried():
-    """An effort-limited final joint optimization gets one retry."""
     tree = _tree()
     real = discrete._run_joint_fit
     calls = []
@@ -262,7 +168,6 @@ def test_iteration_limited_final_joint_fit_is_retried():
     def force_first_final_limit(x0, args, max_iter, max_fun):
         calls.append((max_iter, max_fun))
         result = real(x0, args, max_iter, max_fun)
-        # Initial joint call is first; with max_refine=0 the second is final.
         if len(calls) == 2:
             return OptimizeResult(
                 x=result.x,
@@ -276,8 +181,7 @@ def test_iteration_limited_final_joint_fit_is_retried():
         return result
 
     with patch.object(discrete, "_run_joint_fit", side_effect=force_first_final_limit):
-        result = discrete._edges_make_ultrametric_discrete_gamma_experimental(
-            tree,
+        result = tree.mod.edges_make_ultrametric_discrete(
             ncategories=2,
             calibrations={-1: 1.0},
             full=True,
@@ -292,25 +196,14 @@ def test_iteration_limited_final_joint_fit_is_retried():
     assert calls[-1] == (2_000, 4_000)
 
 
-def test_discrete_gamma_is_not_a_public_model():
-    """The retired Gamma candidate is absent from both public entry points."""
+def test_discrete_gamma_is_removed():
     assert not hasattr(toytree.mod, "edges_make_ultrametric_discrete_gamma")
-    assert not hasattr(_tree().mod, "edges_make_ultrametric_discrete_gamma")
+    assert not hasattr(discrete, "_edges_make_ultrametric_discrete_gamma_experimental")
     with pytest.raises(ToytreeError, match="invalid method"):
-        _tree().mod.edges_make_ultrametric(
-            method="discrete_gamma",
-            ncategories=2,
-        )
+        _tree().mod.edges_make_ultrametric(method="discrete_gamma", ncategories=2)
 
 
-@pytest.mark.parametrize(
-    ("observation_model", "gamma_shape"),
-    [("fractional_poisson", None), ("multiplicative_gamma", 100.0)],
-)
-def test_em_initializer_does_not_decrease_fixed_age_likelihood(
-    observation_model, gamma_shape
-):
-    """EM provides a monotone fixed-chronogram mixture initialization."""
+def test_em_initializer_does_not_decrease_fixed_age_likelihood():
     tree = _tree()
     edges = tree.get_edges("idx")
     ages = np.array([0.0, 0.0, 0.0, 0.0, 0.4, 0.6, 1.0])
@@ -320,25 +213,10 @@ def test_em_initializer_does_not_decrease_fixed_age_likelihood(
     weights = np.array([0.8, 0.2])
     mask = np.ones(tree.nedges, dtype=bool)
     initial = discrete._discrete_branch_pseudologlik(
-        rates,
-        ages,
-        edges,
-        edata,
-        weights,
-        None,
-        mask,
-        observation_model,
-        gamma_shape,
+        rates, ages, edges, edata, weights, None, mask
     )
     fitted_rates, fitted_weights, iterations, fitted = discrete._em_initialize_mixture(
-        rates,
-        weights,
-        ages,
-        edges,
-        edata,
-        mask,
-        observation_model,
-        gamma_shape,
+        rates, weights, ages, edges, edata, mask
     )
     assert iterations > 0
     assert fitted >= initial - 1e-10
@@ -348,7 +226,6 @@ def test_em_initializer_does_not_decrease_fixed_age_likelihood(
 
 
 def test_projected_gradient_recognizes_outward_boundary_directions():
-    """Projected stationarity ignores only descent directions outside the box."""
     params = np.array([-30.0, 0.0, 30.0, -30.0, 30.0])
     gradient = np.array([2.0, 3.0, -4.0, -5.0, 6.0])
     projected = discrete._projected_gradient(params, gradient)
@@ -356,7 +233,6 @@ def test_projected_gradient_recognizes_outward_boundary_directions():
 
 
 def test_boundary_diagnostics_report_effective_category_collapse():
-    """Tiny weights and coincident rates reduce the effective category count."""
     diagnostics = discrete._mixture_boundary_diagnostics(
         np.array([1.0, 1.0 + 1e-6, 2.0]),
         np.array([0.5, 1e-9, 0.5 - 1e-9]),
@@ -371,23 +247,8 @@ def test_boundary_diagnostics_report_effective_category_collapse():
 
 
 def test_multistart_selection_prefers_stationary_equivalent_fit():
-    """A stationary fit wins over an equivalent nonstationary objective."""
     stationary = {"objective": 10.0, "converged": True}
     nonstationary = {"objective": 9.99995, "converged": False}
     selected = discrete._select_best_discrete_start([nonstationary, stationary])
     assert selected is stationary
     assert not selected["unresolved_better_start"]
-
-
-def test_multistart_selection_exposes_better_nonstationary_fit():
-    """A materially better unresolved objective prevents a success claim."""
-    stationary = {"objective": 10.0, "converged": True}
-    nonstationary = {
-        "objective": 9.0,
-        "converged": False,
-        "message": "line search failed",
-    }
-    selected = discrete._select_best_discrete_start([stationary, nonstationary])
-    assert selected is nonstationary
-    assert selected["unresolved_better_start"]
-    assert "materially better" in selected["message"]

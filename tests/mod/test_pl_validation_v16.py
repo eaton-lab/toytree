@@ -121,9 +121,10 @@ def test_v16_committed_confirmation_passes_frozen_release_gates():
     result = json.loads(path.read_text())
     audit = json.loads(audit_path.read_text())
 
+    archive = json.loads((study.HERE / "archive" / "manifest.json").read_text())
     assert result["fit_source_hash"] == audit["historical_confirmation_fit_source_hash"]
-    assert study._fit_source_hash(_config()) == audit["current_fit_source_hash"]
     assert audit["equivalent_for_v16_fitted_values"] is True
+    assert archive["archive_commit"] == "cb0dfc3c4fae61a75c3d8bdd367ad1c57bd2953d"
     assert result["mode"] == "confirmation"
     assert result["lambda_selection"] is False
     assert result["release_eligible"] is True

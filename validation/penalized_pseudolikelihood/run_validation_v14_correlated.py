@@ -34,7 +34,7 @@ for _name in (
 import numpy as np
 
 from toytree.mod._src.penalized_pseudolikelihood.correlated import (
-    edges_make_ultrametric_correlated,
+    _edges_make_ultrametric_correlated as edges_make_ultrametric_correlated,
 )
 from validation.penalized_pseudolikelihood import (
     run_validation_v13_correlated as v13,

@@ -7,14 +7,16 @@ from typing import Any, Union
 import numpy as np
 from loguru import logger
 from scipy.optimize import OptimizeResult, minimize
-from scipy.special import expit, gammaln
+from scipy.special import gammaln
 
 from toytree.core import ToyTree
 from toytree.core.apis import TreeModAPI, add_subpackage_method
 from toytree.mod._src.penalized_pseudolikelihood.clock import (
-    edges_make_ultrametric_clock,
+    _edges_make_ultrametric_clock as edges_make_ultrametric_clock,
 )
 from toytree.mod._src.penalized_pseudolikelihood.optimization import (
+    assess_solution_stability,
+    decode_age_params_with_jacobian,
     direct_age_linear_constraint,
     minimize_profiled_ages,
     optimizer_stopped_at_limit,
@@ -36,7 +38,6 @@ from toytree.mod._src.penalized_pseudolikelihood.utils import (
     _validate_branch_lengths,
     _validate_lambda,
     _validate_observation_mask,
-    get_tree_with_correlated_rates,
 )
 from toytree.utils import ToytreeError
 
@@ -84,58 +85,6 @@ def _validate_correlated_warm_start(
     if positive and np.any(array <= 0.0):
         raise ValueError(f"{name} values must be strictly positive.")
     return array.copy()
-
-
-def _assess_correlated_solution_stability(
-    starts: list[dict[str, Any]],
-    best: dict[str, Any],
-    ntips: int,
-    objective_atol: float = SOLUTION_OBJECTIVE_ATOL,
-    objective_rtol: float = SOLUTION_OBJECTIVE_RTOL,
-    age_tolerance: float = SOLUTION_MAX_NORMALIZED_AGE_DIFFERENCE,
-) -> dict[str, Any]:
-    """Compare chronograms from converged, near-optimal multistarts."""
-    converged = [
-        result
-        for result in starts
-        if result.get("converged", False)
-        and np.isfinite(result.get("objective", np.inf))
-        and "ages" in result
-    ]
-    assessed = len(converged) >= 2
-    best_objective = float(best["objective"])
-    objective_tolerance = float(objective_atol) + float(objective_rtol) * max(
-        1.0, abs(best_objective)
-    )
-    near_optimal = [
-        result
-        for result in converged
-        if float(result["objective"]) - best_objective <= objective_tolerance
-    ]
-    best_ages = np.asarray(best["ages"], dtype=float)
-    root_age = max(abs(float(best_ages[-1])), DIST_FLOOR)
-    differences = [
-        float(
-            np.max(
-                np.abs(
-                    np.asarray(result["ages"], dtype=float)[ntips:] - best_ages[ntips:]
-                )
-            )
-            / root_age
-        )
-        for result in near_optimal
-    ]
-    maximum = max(differences, default=0.0)
-    stable = None if not assessed else bool(maximum <= float(age_tolerance))
-    return {
-        "stability_assessed": assessed,
-        "solution_stable": stable,
-        "converged_starts": len(converged),
-        "near_optimal_starts": len(near_optimal),
-        "objective_equivalence_tolerance": objective_tolerance,
-        "maximum_age_difference_tolerance": float(age_tolerance),
-        "max_near_optimal_age_difference": float(maximum),
-    }
 
 
 def _correlated_penalty_hessian(parent_edges: np.ndarray) -> np.ndarray:
@@ -962,8 +911,7 @@ def _canonical_calibration_ratio(value: float, scale: float) -> float:
     return float(f"{ratio:.15g}")
 
 
-@add_subpackage_method(TreeModAPI)
-def edges_make_ultrametric_correlated(
+def _edges_make_ultrametric_correlated(
     tree: ToyTree,
     lam: float,
     calibrations: Calibrations | None = None,
@@ -1295,7 +1243,7 @@ def edges_make_ultrametric_correlated(
     for result in starts:
         finalize_start(result)
     preliminary_best = _select_best_multistart(starts)
-    preliminary_stability = _assess_correlated_solution_stability(
+    preliminary_stability = assess_solution_stability(
         starts, preliminary_best, ntips=tree.ntips
     )
     basin_confirmation_run = False
@@ -1328,7 +1276,7 @@ def edges_make_ultrametric_correlated(
         basin_confirmation_run = True
 
     best = _select_best_multistart(starts)
-    stability = _assess_correlated_solution_stability(starts, best, ntips=tree.ntips)
+    stability = assess_solution_stability(starts, best, ntips=tree.ntips)
     best_basin_replicates = int(stability["near_optimal_starts"])
     best_basin_replicated = best_basin_replicates >= 2
     stability["best_basin_replicates"] = best_basin_replicates
@@ -1545,58 +1493,6 @@ def _correlated_branch_pseudologlik(
     return float(pseudologlik - lam * penalty)
 
 
-def _decode_age_params_with_jacobian(
-    age_params: np.ndarray,
-    ages_base: np.ndarray,
-    ages_idxs: np.ndarray,
-    ages_bounds: list[tuple[float, float]],
-    children_map: dict[int, np.ndarray],
-    dist_floor: float = DIST_FLOOR,
-) -> tuple[np.ndarray, np.ndarray]:
-    """Decode ages and their piecewise Jacobian with respect to parameters."""
-    ages_hat = np.asarray(ages_base, dtype=float).copy()
-    nparams = age_params.size
-    jacobian = np.zeros((ages_hat.size, nparams), dtype=float)
-    for pidx, (z, nidx, (lo, hi)) in enumerate(zip(age_params, ages_idxs, ages_bounds)):
-        nidx = int(nidx)
-        child_idxs = children_map.get(nidx, np.array([], dtype=int))
-        child_max = float(ages_hat[child_idxs].max()) if child_idxs.size else 0.0
-        lo_eff = max(float(lo), child_max + dist_floor)
-        lo_jac = np.zeros(nparams, dtype=float)
-        if child_idxs.size and child_max + dist_floor > float(lo):
-            child_idx = int(child_idxs[np.argmax(ages_hat[child_idxs])])
-            lo_jac = jacobian[child_idx].copy()
-        if np.isfinite(hi):
-            if lo_eff >= float(hi):
-                raise ValueError(
-                    f"cannot decode node {nidx} age: effective lower bound "
-                    f"{lo_eff:.6g} is not below upper bound {float(hi):.6g}."
-                )
-            width = float(hi) - lo_eff
-            absolute_margin = max(
-                2.0 * dist_floor,
-                8.0 * np.spacing(max(abs(lo_eff), abs(float(hi)), 1.0)),
-            )
-            fraction_margin = min(0.25, absolute_margin / width)
-            raw_fraction = float(expit(z))
-            fraction = float(
-                np.clip(raw_fraction, fraction_margin, 1.0 - fraction_margin)
-            )
-            age = lo_eff + width * fraction
-            jacobian[nidx] = (1.0 - fraction) * lo_jac
-            if fraction == raw_fraction:
-                jacobian[nidx, pidx] += width * fraction * (1.0 - fraction)
-        else:
-            clipped = float(np.clip(z, -700.0, 700.0))
-            offset = float(np.exp(clipped))
-            age = lo_eff + offset
-            jacobian[nidx] = lo_jac
-            if -700.0 < z < 700.0:
-                jacobian[nidx, pidx] += offset
-        ages_hat[nidx] = age
-    return ages_hat, jacobian
-
-
 def _correlated_penalty_gradient(
     log_rates: np.ndarray, parent_edges: np.ndarray
 ) -> np.ndarray:
@@ -1651,7 +1547,7 @@ def objective_correlated_with_gradient(
     elif fixed_rates and not fixed_ages:
         log_rates = np.log(np.clip(rates, RATE_FLOOR, None))
         rates_hat = rates
-        ages_hat, age_jacobian = _decode_age_params_with_jacobian(
+        ages_hat, age_jacobian = decode_age_params_with_jacobian(
             params,
             ages_base,
             ages_idxs,
@@ -1661,7 +1557,7 @@ def objective_correlated_with_gradient(
     else:
         log_rates = np.asarray(params[:rsize], dtype=float)
         rates_hat = _unpack_log_rates(log_rates)
-        ages_hat, age_jacobian = _decode_age_params_with_jacobian(
+        ages_hat, age_jacobian = decode_age_params_with_jacobian(
             params[rsize : rsize + asize],
             ages_base,
             ages_idxs,
@@ -1754,19 +1650,38 @@ def objective_correlated(
     return objective
 
 
-if __name__ == "__main__":
-    import toytree
+@add_subpackage_method(TreeModAPI)
+def edges_make_ultrametric_correlated(
+    tree: ToyTree,
+    lam: float,
+    calibrations: Calibrations | None = None,
+    full: bool = False,
+    inplace: bool = False,
+    max_iter: int = 100_000,
+    max_fun: int = 100_000,
+    max_refine: int = 20,
+    nstarts: int = 4,
+    ncores: int = 1,
+    seed: int | None = None,
+) -> Union[ToyTree, dict[str, Any]]:
+    """Fit complete-tree correlated log-rate smoothing.
 
-    toytree.set_log_level("DEBUG")
-
-    tree = get_tree_with_correlated_rates(ntips=40, mean=3, sigma=2, seed=123)
-    res = edges_make_ultrametric_correlated(
-        tree,
-        lam=0.5,
-        calibrations={-1: 20.0},
-        full=True,
-        max_iter=2000,
-        max_fun=2000,
-        max_refine=4,
+    Adjacent log rates are smoothed across every edge, including basal edges.
+    ``lam`` is a user-supplied smoothing assumption; automatic estimation is
+    intentionally not provided. Input edge units are arbitrary additive units,
+    and calibrations define the returned time unit. Without calibrations, root
+    age is one and returned times are relative.
+    """
+    return _edges_make_ultrametric_correlated(
+        tree=tree,
+        lam=lam,
+        calibrations=calibrations,
+        full=full,
+        inplace=inplace,
+        max_iter=max_iter,
+        max_fun=max_fun,
+        max_refine=max_refine,
+        nstarts=nstarts,
+        ncores=ncores,
+        seed=seed,
     )
-    print(res)

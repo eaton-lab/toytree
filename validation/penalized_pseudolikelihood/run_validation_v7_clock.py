@@ -38,9 +38,9 @@ import scipy
 
 import toytree
 from toytree.mod._src.penalized_pseudolikelihood.clock import (
-    edges_make_ultrametric_clock,
+    _edges_make_ultrametric_clock as edges_make_ultrametric_clock,
 )
-from validation.penalized_pseudolikelihood.run_validation_v2 import (
+from validation.penalized_pseudolikelihood.simulation_helpers import (
     _scale_true_tree,
 )
 

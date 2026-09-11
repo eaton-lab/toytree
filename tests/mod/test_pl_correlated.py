@@ -2,20 +2,22 @@ from unittest.mock import patch
 
 import numpy as np
 from conftest import PytestCompat
+from pl_test_helpers import (
+    get_tree_with_correlated_rates,
+)
 from scipy.optimize import OptimizeResult
 
 from toytree.mod._src.penalized_pseudolikelihood.correlated import (
-    _assess_correlated_solution_stability,
     _canonical_calibration_ratio,
-    _correlated_branch_pseudologlik,
     _correlated_penalty,
     _correlated_penalty_gradient,
     _correlated_penalty_hessian,
+    _edges_make_ultrametric_correlated,
     _fit_profiled_correlated_rates,
     edges_make_ultrametric_correlated,
 )
-from toytree.mod._src.penalized_pseudolikelihood.utils import (
-    get_tree_with_correlated_rates,
+from toytree.mod._src.penalized_pseudolikelihood.optimization import (
+    assess_solution_stability,
 )
 from toytree.utils import ToytreeError
 
@@ -162,7 +164,7 @@ class TestPenalizedLikelihoodCorrelated(PytestCompat):
                 "ages": np.array([0.0, 0.0, 0.5]),
             },
         ]
-        result = _assess_correlated_solution_stability(
+        result = assess_solution_stability(
             starts,
             best=starts[0],
             ntips=2,
@@ -179,7 +181,7 @@ class TestPenalizedLikelihoodCorrelated(PytestCompat):
         ages = tree.get_node_data("height").to_numpy(dtype=float)
         times = ages[edges[:, 1]] - ages[edges[:, 0]]
         dists = tree.get_node_data("dist").to_numpy(dtype=float)[:-1]
-        result = edges_make_ultrametric_correlated(
+        result = _edges_make_ultrametric_correlated(
             tree,
             lam=1.0,
             calibrations={-1: float(ages[-1])},
@@ -348,94 +350,6 @@ class TestPenalizedLikelihoodCorrelated(PytestCompat):
                 nstarts=1,
             )
         self.assertLess(scaled_errors[0], 1e-5)
-
-    def test_multiplicative_gamma_loss_is_branch_scale_invariant(self):
-        """Gamma working loss is unchanged by a common branch-rate scale."""
-        tree = get_tree_with_correlated_rates(ntips=6, mean=1.0, sigma=0.5, seed=19)
-        edges = np.asarray(tree.get_edges("idx"), dtype=int)
-        ages = tree.get_node_data("height").to_numpy(dtype=float)
-        times = ages[edges[:, 1]] - ages[edges[:, 0]]
-        rates = np.linspace(0.7, 1.3, tree.nedges)
-        observed = times * rates * np.linspace(0.9, 1.1, tree.nedges)
-        edata = np.column_stack([observed, np.zeros(tree.nedges)])
-        parents = {int(child): idx for idx, (child, _) in enumerate(edges)}
-        parent_edges = np.asarray(
-            [parents.get(int(parent), -1) for _, parent in edges], dtype=int
-        )
-        baseline = _correlated_branch_pseudologlik(
-            rates,
-            ages,
-            edges,
-            edata,
-            parent_edges,
-            2.0,
-            None,
-            observation_loss="multiplicative_gamma",
-        )
-        scaled = _correlated_branch_pseudologlik(
-            rates * 1e3,
-            ages,
-            edges,
-            np.column_stack([observed * 1e3, np.zeros(tree.nedges)]),
-            parent_edges,
-            2.0,
-            None,
-            observation_loss="multiplicative_gamma",
-        )
-        self.assertTrue(np.isclose(baseline, scaled))
-
-    def test_multiplicative_gamma_gradient_matches_central_difference(self):
-        """The private Gamma working loss has a correct analytic gradient."""
-        tree = get_tree_with_correlated_rates(ntips=6, mean=1.0, sigma=0.5, seed=457)
-        scaled_errors = []
-
-        def checking_minimize(fun, x0, args, **kwargs):
-            x0 = np.asarray(x0, dtype=float)
-            value, gradient = fun(x0, *args)
-            if not scaled_errors:
-                epsilon = 1e-6
-                numerical = np.empty_like(x0)
-                for idx in range(x0.size):
-                    delta = np.zeros_like(x0)
-                    delta[idx] = epsilon
-                    upper = fun(x0 + delta, *args)[0]
-                    lower = fun(x0 - delta, *args)[0]
-                    numerical[idx] = (upper - lower) / (2.0 * epsilon)
-                scale = np.maximum(1.0, np.maximum(abs(gradient), abs(numerical)))
-                scaled_errors.append(float(np.max(abs(gradient - numerical) / scale)))
-            return OptimizeResult(
-                x=x0.copy(),
-                fun=float(value),
-                success=True,
-                message="converged",
-                nfev=1,
-                nit=0,
-                jac=np.asarray(gradient),
-            )
-
-        with patch(
-            "toytree.mod._src.penalized_pseudolikelihood.correlated.minimize",
-            side_effect=checking_minimize,
-        ):
-            result = edges_make_ultrametric_correlated(
-                tree,
-                lam=3.0,
-                calibrations={-1: 1.0},
-                full=True,
-                max_refine=0,
-                _observation_loss="multiplicative_gamma",
-            )
-        self.assertEqual(result["observation_loss"], "multiplicative_gamma")
-        self.assertLess(scaled_errors[0], 1e-5)
-
-    def test_multiplicative_gamma_rejects_zero_observation(self):
-        """The validation-only Gamma loss never clips or hides zero branches."""
-        tree = get_tree_with_correlated_rates(ntips=6, mean=1.0, sigma=0.5, seed=22)
-        tree = tree.set_node_data("dist", {0: 0.0}, inplace=False)
-        with self.assertRaisesRegex(ValueError, "strictly positive"):
-            edges_make_ultrametric_correlated(
-                tree, lam=1.0, _observation_loss="multiplicative_gamma"
-            )
 
     def test_iteration_limit_polish_is_retried_once(self):
         """An iteration-limited final polish resumes with a larger budget."""

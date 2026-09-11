@@ -3,8 +3,7 @@
 """Discrete-mixture branch-length pseudolikelihood fitting."""
 
 import warnings
-from numbers import Real
-from typing import Any, Literal, Union
+from typing import Any, Union
 
 import numpy as np
 from loguru import logger
@@ -14,7 +13,7 @@ from scipy.special import gammaln, logsumexp
 from toytree.core import ToyTree
 from toytree.core.apis import TreeModAPI, add_subpackage_method
 from toytree.mod._src.penalized_pseudolikelihood.clock import (
-    edges_make_ultrametric_clock,
+    _edges_make_ultrametric_clock as edges_make_ultrametric_clock,
 )
 from toytree.mod._src.penalized_pseudolikelihood.optimization import (
     assess_solution_stability,
@@ -32,8 +31,6 @@ from toytree.mod._src.penalized_pseudolikelihood.utils import (
     _run_multistart,
     _validate_branch_lengths,
     _validate_ncategories,
-    _validate_observation_mask,
-    get_tree_with_categorical_rates,
 )
 from toytree.utils import ToytreeError
 
@@ -41,23 +38,11 @@ __all__ = ["edges_make_ultrametric_discrete"]
 RATE_FLOOR = 1e-12
 DIST_FLOOR = 1e-12
 INVALID_LOG_LIK_DROP = 1e6
-DEFAULT_BRANCH_CV = 0.1
 MIXTURE_WEIGHT_BOUNDARY = 1e-6
 MIXTURE_LOG_RATE_GAP_BOUNDARY = 1e-4
 NORMALIZED_TIME_BOUNDARY = 100.0 * DIST_FLOOR
 PROJECTED_GRADIENT_TOL = 1e-4
 PARAMETER_BOUND = 30.0
-ObservationModel = Literal["fractional_poisson", "multiplicative_gamma"]
-
-
-def _validate_branch_cv(branch_cv: Any) -> float:
-    """Return a finite, strictly positive Gamma branch CV."""
-    if isinstance(branch_cv, bool) or not isinstance(branch_cv, Real):
-        raise ToytreeError("branch_cv must be a finite positive real number.")
-    value = float(branch_cv)
-    if not np.isfinite(value) or value <= 0.0:
-        raise ToytreeError("branch_cv must be a finite positive real number.")
-    return value
 
 
 def _unpack_simplex_logits(logits: np.ndarray) -> tuple[np.ndarray, np.ndarray]:
@@ -139,17 +124,16 @@ def _em_initialize_mixture(
     edges: np.ndarray,
     edata: np.ndarray,
     observation_mask: np.ndarray,
-    observation_model: ObservationModel,
-    gamma_shape: float | None,
     max_iter: int = 250,
     tolerance: float = 1e-10,
 ) -> tuple[np.ndarray, np.ndarray, int, float]:
-    """Optimize rates and weights by EM while holding node ages fixed."""
+    """Optimize fractional-Poisson rates and weights at fixed node ages."""
     rates_hat = np.sort(np.clip(np.asarray(rates, dtype=float), RATE_FLOOR, None))
     weights_hat = np.clip(np.asarray(weights, dtype=float), np.finfo(float).tiny, None)
     weights_hat = weights_hat / weights_hat.sum()
     mask = np.asarray(observation_mask, dtype=bool)
     observed = np.asarray(edata[:, 0], dtype=float)[mask]
+    log_factorials = np.asarray(edata[:, 1], dtype=float)[mask]
     times = (ages[edges[:, 1]] - ages[edges[:, 0]])[mask]
     if not observed.size or np.any(times <= DIST_FLOOR):
         return rates_hat, weights_hat, 0, -np.inf
@@ -158,20 +142,7 @@ def _em_initialize_mixture(
     iterations = 0
     for iterations in range(1, max(1, int(max_iter)) + 1):
         means = rates_hat[:, None] * times[None, :]
-        if observation_model == "fractional_poisson":
-            components = (
-                observed[None, :] * np.log(means) - means - edata[mask, 1][None, :]
-            )
-        else:
-            if gamma_shape is None or np.any(observed <= 0.0):
-                return rates_hat, weights_hat, iterations - 1, -np.inf
-            shape = float(gamma_shape)
-            components = (
-                shape * np.log(observed)[None, :]
-                - shape * observed[None, :] / means
-                - gammaln(shape)
-                - shape * np.log(means / shape)
-            )
+        components = observed[None, :] * np.log(means) - means - log_factorials[None, :]
         log_joint = components + np.log(weights_hat)[:, None]
         branch_scores = logsumexp(log_joint, axis=0)
         responsibilities = np.exp(log_joint - branch_scores[None, :])
@@ -181,32 +152,16 @@ def _em_initialize_mixture(
             component_mass / observed.size, np.finfo(float).tiny, None
         )
         weights_new = weights_new / weights_new.sum()
-        if observation_model == "fractional_poisson":
-            numerator = np.sum(responsibilities * observed[None, :], axis=1)
-            denominator = np.sum(responsibilities * times[None, :], axis=1)
-            rates_new = numerator / np.maximum(denominator, RATE_FLOOR)
-        else:
-            rates_new = np.sum(
-                responsibilities * (observed / times)[None, :], axis=1
-            ) / np.maximum(component_mass, RATE_FLOOR)
+        numerator = np.sum(responsibilities * observed[None, :], axis=1)
+        denominator = np.sum(responsibilities * times[None, :], axis=1)
+        rates_new = numerator / np.maximum(denominator, RATE_FLOOR)
         rates_new = np.clip(rates_new, RATE_FLOOR, None)
         order = np.argsort(rates_new, kind="stable")
         rates_hat = rates_new[order]
         weights_hat = weights_new[order]
 
         means = rates_hat[:, None] * times[None, :]
-        if observation_model == "fractional_poisson":
-            components = (
-                observed[None, :] * np.log(means) - means - edata[mask, 1][None, :]
-            )
-        else:
-            shape = float(gamma_shape)
-            components = (
-                shape * np.log(observed)[None, :]
-                - shape * observed[None, :] / means
-                - gammaln(shape)
-                - shape * np.log(means / shape)
-            )
+        components = observed[None, :] * np.log(means) - means - log_factorials[None, :]
         score = float(
             np.sum(
                 logsumexp(
@@ -282,10 +237,8 @@ def _mixture_objective_with_gradient(
     observation_mask: np.ndarray,
     ncategories: int,
     valid_loglik: float,
-    observation_model: ObservationModel,
-    gamma_shape: float | None,
 ) -> tuple[float, np.ndarray]:
-    """Return joint negative mixture log-likelihood and analytic gradient."""
+    """Return joint fractional-Poisson mixture objective and gradient."""
     rsize = int(ncategories)
     asize = int(ages_idxs.size)
     rates, rate_jac = _unpack_ordered_rates_with_jacobian(params[:rsize])
@@ -313,21 +266,8 @@ def _mixture_objective_with_gradient(
     ):
         return -(valid_loglik - INVALID_LOG_LIK_DROP), np.zeros_like(params)
 
-    if observation_model == "fractional_poisson":
-        components = observed[None, :] * np.log(means) - means - edata[:, 1][None, :]
-        dlog_dmean = observed[None, :] / means - 1.0
-    else:
-        if gamma_shape is None or np.any(observed <= 0.0):
-            return -(valid_loglik - INVALID_LOG_LIK_DROP), np.zeros_like(params)
-        shape = float(gamma_shape)
-        components = (
-            shape * np.log(observed)[None, :]
-            - shape * observed[None, :] / means
-            - gammaln(shape)
-            - shape * np.log(means / shape)
-        )
-        dlog_dmean = shape * (observed[None, :] / means - 1.0) / means
-
+    components = observed[None, :] * np.log(means) - means - edata[:, 1][None, :]
+    dlog_dmean = observed[None, :] / means - 1.0
     log_joint = components + np.log(weights)[:, None]
     branch_scores = logsumexp(log_joint, axis=0)
     responsibilities = np.exp(log_joint - branch_scores[None, :])
@@ -346,11 +286,7 @@ def _mixture_objective_with_gradient(
         np.sum(responsibilities[:-1], axis=1) - int(mask.sum()) * weights[:-1]
     )
     gradient = -np.concatenate(
-        (
-            rate_jac.T @ rate_score,
-            age_jac.T @ age_score,
-            weight_score,
-        )
+        (rate_jac.T @ rate_score, age_jac.T @ age_score, weight_score)
     )
     if not np.isfinite(loglik) or np.any(~np.isfinite(gradient)):
         return -(valid_loglik - INVALID_LOG_LIK_DROP), np.zeros_like(params)
@@ -445,8 +381,6 @@ def _fit_discrete_start(payload: dict[str, Any]) -> dict[str, Any]:
         payload["observation_mask"],
         int(payload["rate_params_init"].size),
         float(payload["valid_loglik"]),
-        payload.get("observation_model", "fractional_poisson"),
-        payload.get("gamma_shape"),
     )
     max_iter = int(payload["max_iter"])
     max_fun = int(payload["max_fun"])
@@ -474,8 +408,6 @@ def _fit_discrete_start(payload: dict[str, Any]) -> dict[str, Any]:
         payload["edges"],
         payload["edata"],
         payload["observation_mask"],
-        payload.get("observation_model", "fractional_poisson"),
-        payload.get("gamma_shape"),
     )
     params[:rsize] = _pack_ordered_rates(em_rates)
     if fsize:
@@ -679,9 +611,6 @@ def edges_make_ultrametric_discrete(
     nstarts: int = 8,
     ncores: int = 1,
     seed: int | None = None,
-    _observation_mask: np.ndarray | None = None,
-    _observation_model: ObservationModel = "fractional_poisson",
-    _branch_cv: float | None = None,
 ) -> Union[ToyTree, dict[str, Any]]:
     """Fit the chronos-compatible fractional-Poisson discrete mixture.
 
@@ -759,12 +688,6 @@ def edges_make_ultrametric_discrete(
 
     """
     ncategories = _validate_ncategories(ncategories, tree.nedges)
-    if _observation_model not in {"fractional_poisson", "multiplicative_gamma"}:
-        raise ValueError(f"unknown observation model: {_observation_model}")
-    gamma_shape = None
-    if _observation_model == "multiplicative_gamma":
-        _branch_cv = _validate_branch_cv(_branch_cv)
-        gamma_shape = 1.0 / (_branch_cv * _branch_cv)
     if calibrations is None:
         calibrations = {}
     calibrations = _normalize_calibrations(
@@ -774,7 +697,7 @@ def edges_make_ultrametric_discrete(
     )
 
     # strict identity with clock model when ncategories == 1.
-    if int(ncategories) == 1 and _observation_model == "fractional_poisson":
+    if int(ncategories) == 1:
         cres = edges_make_ultrametric_clock(
             tree=tree,
             calibrations=calibrations,
@@ -786,7 +709,6 @@ def edges_make_ultrametric_discrete(
             nstarts=nstarts,
             ncores=ncores,
             seed=seed,
-            _observation_mask=_observation_mask,
         )
         if not full:
             return cres
@@ -812,39 +734,8 @@ def edges_make_ultrametric_discrete(
             logger.warning("One-category discrete fit reached a branch-time boundary.")
         return dres
 
-    # Normalize Gamma input and calibration units internally. The transformed
-    # optimization problem is identical under either supported unit change,
-    # including its absolute stopping criteria and starting coordinates.
     dists_o = _validate_branch_lengths(tree)
-    observation_scale = 1.0
-    time_scale = 1.0
     fit_tree = tree
-    if _observation_model == "multiplicative_gamma":
-        if np.any(dists_o <= 0.0):
-            raise ToytreeError(
-                "The experimental multiplicative-Gamma fitter requires "
-                "strictly positive branch lengths."
-            )
-        observation_scale = float(np.exp(np.mean(np.log(dists_o))))
-        normalized_dists = np.round(dists_o / observation_scale, 10)
-        original_edges = tree.get_edges("idx")
-        fit_tree = tree.set_node_data(
-            "dist",
-            {
-                int(child): float(normalized_dists[index])
-                for index, (child, _) in enumerate(original_edges)
-            },
-            inplace=False,
-        )
-        if calibrations:
-            time_scale = max(float(upper) for _, upper in calibrations.values())
-            calibrations = {
-                int(idx): (
-                    round(float(lower) / time_scale, 14),
-                    round(float(upper) / time_scale, 14),
-                )
-                for idx, (lower, upper) in calibrations.items()
-            }
 
     # Initialize with a profiled strict-clock chronogram. This uses branch
     # information and is equivariant to both supported unit changes.
@@ -861,7 +752,6 @@ def edges_make_ultrametric_discrete(
             nstarts=1,
             ncores=1,
             seed=seed,
-            _observation_mask=_observation_mask,
             _direct_age_fallback=False,
         )
         if clock_start["converged"]:
@@ -877,7 +767,7 @@ def edges_make_ultrametric_discrete(
     dists_fit = _validate_branch_lengths(fit_tree)
     dists_lf = gammaln(dists_fit + 1.0)
     edata = np.vstack([dists_fit, dists_lf]).T
-    observation_mask = _validate_observation_mask(_observation_mask, fit_tree.nedges)
+    observation_mask = np.ones(fit_tree.nedges, dtype=bool)
 
     # get starting rates as old/new edge dists. Then bin the rates into
     # ncategories, as we will infer N rates and assign edges to bins.
@@ -919,8 +809,6 @@ def edges_make_ultrametric_discrete(
         weights_init,
         None,
         observation_mask,
-        _observation_model,
-        gamma_shape,
     )
 
     params = np.hstack(
@@ -976,8 +864,6 @@ def edges_make_ultrametric_discrete(
                 max_iter=max_iter,
                 max_fun=max_fun,
                 max_refine=max_refine,
-                observation_model=_observation_model,
-                gamma_shape=gamma_shape,
             )
         )
     starts = _run_multistart(_fit_discrete_start, payloads, ncores=ncores)
@@ -1004,8 +890,6 @@ def edges_make_ultrametric_discrete(
                 candidate_weights,
                 valid_loglik,
                 observation_mask,
-                _observation_model,
-                gamma_shape,
             )
             result["ages"] = finalized
             result["objective"] = -float(candidate_loglik)
@@ -1035,11 +919,9 @@ def edges_make_ultrametric_discrete(
         weights,
         valid_loglik,
         observation_mask,
-        _observation_model,
-        gamma_shape,
     )
-    ages = ages_fit * time_scale
-    rates = rates_fit * observation_scale / time_scale
+    ages = ages_fit
+    rates = rates_fit
     time_dists = ages[edges[:, 1]] - ages[edges[:, 0]]
     expected = time_dists * float(np.dot(weights, rates))
     stability = assess_solution_stability(starts, best, ntips=fit_tree.ntips)
@@ -1069,27 +951,13 @@ def edges_make_ultrametric_discrete(
     if not full:
         return output_tree
     return {
-        "model": (
-            "discrete"
-            if _observation_model == "fractional_poisson"
-            else "discrete_gamma"
-        ),
+        "model": "discrete",
         "pseudologlik": pseudologlik,
         "penalized_pseudologlik": pseudologlik,
-        "observation_model": _observation_model,
+        "observation_model": "fractional_poisson",
         "branch_length_units": "input_tree_units",
         "calibration_time_unit_invariant": True,
-        "input_branch_scale_invariant": (_observation_model == "multiplicative_gamma"),
-        **(
-            {
-                "branch_cv": float(_branch_cv),
-                "gamma_shape": float(gamma_shape),
-                "observation_scale": observation_scale,
-                "time_scale": time_scale,
-            }
-            if _observation_model == "multiplicative_gamma"
-            else {}
-        ),
+        "input_branch_scale_invariant": False,
         "nparams": len(bounds),
         "ncategories": ncategories,
         "requested_ncategories": ncategories,
@@ -1157,8 +1025,6 @@ def objective_discrete(
     weights,
     valid_loglik,
     observation_mask,
-    observation_model: ObservationModel = "fractional_poisson",
-    gamma_shape: float | None = None,
 ):
     """Return neg log-likelihood under discrete model."""
     # [RATES]
@@ -1223,8 +1089,6 @@ def objective_discrete(
         weights_hat,
         valid_loglik,
         observation_mask,
-        observation_model,
-        gamma_shape,
     )
     return -_discrete_branch_pseudologlik(*args)
 
@@ -1237,8 +1101,6 @@ def _discrete_branch_pseudologlik(
     weights_hat,
     valid_loglik,
     observation_mask=None,
-    observation_model: ObservationModel = "fractional_poisson",
-    gamma_shape: float | None = None,
 ) -> float:
     """Return the stable branchwise finite-mixture pseudologlikelihood."""
     if valid_loglik is None:
@@ -1264,140 +1126,18 @@ def _discrete_branch_pseudologlik(
         return invalid_score
 
     observed = edata[:, 0]
-    if observation_model == "fractional_poisson":
-        category_loglik = (
-            observed[np.newaxis, :] * np.log(pdists)
-            - pdists
-            - edata[:, 1][np.newaxis, :]
-        )
-    elif observation_model == "multiplicative_gamma":
-        if gamma_shape is None or gamma_shape <= 0.0 or np.any(observed <= 0.0):
-            return invalid_score
-        shape = float(gamma_shape)
-        category_loglik = (
-            shape * np.log(observed)[np.newaxis, :]
-            - shape * observed[np.newaxis, :] / pdists
-            - gammaln(shape)
-            - shape * np.log(pdists / shape)
-        )
-    else:
-        raise ValueError(f"unknown observation model: {observation_model}")
+    category_loglik = (
+        observed[np.newaxis, :] * np.log(pdists) - pdists - edata[:, 1][np.newaxis, :]
+    )
     if np.any(~np.isfinite(category_loglik)):
         return invalid_score
-    mask = _validate_observation_mask(observation_mask, edges.shape[0])
+    mask = (
+        np.ones(edges.shape[0], dtype=bool)
+        if observation_mask is None
+        else np.asarray(observation_mask, dtype=bool)
+    )
     branch_scores = logsumexp(
         category_loglik + np.log(weights_hat)[:, np.newaxis], axis=0
     )
     pseudologlik = np.sum(branch_scores[mask])
     return float(pseudologlik) if np.isfinite(pseudologlik) else invalid_score
-
-
-def _discrete_gamma_branch_pseudologlik(
-    rates_hat,
-    ages_hat,
-    edges,
-    observed,
-    weights_hat,
-    branch_cv: float = DEFAULT_BRANCH_CV,
-    valid_loglik=None,
-    observation_mask=None,
-) -> float:
-    """Return the multiplicative-Gamma finite-mixture log-likelihood."""
-    cv = _validate_branch_cv(branch_cv)
-    values = np.asarray(observed, dtype=float)
-    edata = np.vstack([values, np.zeros(values.size)]).T
-    return _discrete_branch_pseudologlik(
-        rates_hat,
-        ages_hat,
-        edges,
-        edata,
-        weights_hat,
-        valid_loglik,
-        observation_mask,
-        observation_model="multiplicative_gamma",
-        gamma_shape=1.0 / (cv * cv),
-    )
-
-
-def _edges_make_ultrametric_discrete_gamma_experimental(
-    tree: ToyTree,
-    ncategories: int,
-    calibrations: Calibrations | None = None,
-    branch_cv: float = DEFAULT_BRANCH_CV,
-    full: bool = False,
-    inplace: bool = False,
-    max_iter: int = 100_000,
-    max_fun: int = 100_000,
-    max_refine: int = 20,
-    nstarts: int = 16,
-    ncores: int = 1,
-    seed: int | None = None,
-    _observation_mask: np.ndarray | None = None,
-) -> Union[ToyTree, dict[str, Any]]:
-    """Fit the retired multiplicative-Gamma mixture for research replays.
-
-    branch_cv is the fixed within-category coefficient of variation of an
-    observed branch around rate times elapsed time. It describes branch-noise
-    or estimation dispersion, not biological among-branch rate variation.
-    The default is 0.1; estimate it from replicate/bootstrap branch lengths
-    when possible, or assess sensitivity at 0.05, 0.1, 0.2, and 0.3.
-
-    The reported score is `log f(x) + log(x)` per branch, which differs from
-    the Gamma log-density only by a data-only term and has identical parameter
-    estimates. It must not be compared directly with the fractional-Poisson
-    score from `edges_make_ultrametric_discrete`. This model is invariant to
-    changes in both input-branch and calibration-time units. This private
-    helper is retained only to reproduce the V8/V10 validation studies. Its
-    free-age solution did not achieve multistart saturation and it is not a
-    supported public dating model. Use UCLN for continuous iid lognormal rates.
-
-    Full results separate numerical convergence from mixture support using
-    `mixture_identified`, `effective_ncategories`, `boundary_solution`,
-    and `boundary_reasons`. A converged boundary result is a valid fit but
-    does not show that all requested categories are identifiable.
-
-    Sixteen starts are used by default because the concentrated likelihood
-    at small ``branch_cv`` values has more local optima than the
-    fractional-Poisson compatibility model. Starts can run concurrently by
-    setting ``ncores`` greater than one.
-    """
-    return edges_make_ultrametric_discrete(
-        tree=tree,
-        ncategories=ncategories,
-        calibrations=calibrations,
-        full=full,
-        inplace=inplace,
-        max_iter=max_iter,
-        max_fun=max_fun,
-        max_refine=max_refine,
-        nstarts=nstarts,
-        ncores=ncores,
-        seed=seed,
-        _observation_mask=_observation_mask,
-        _observation_model="multiplicative_gamma",
-        _branch_cv=branch_cv,
-    )
-
-
-if __name__ == "__main__":
-    import numpy as np
-
-    import toytree
-
-    toytree.set_log_level("DEBUG")
-
-    tree = get_tree_with_categorical_rates(ntips=50, nrates=2, seed=123)
-    res = edges_make_ultrametric_discrete(
-        tree,
-        calibrations={-1: 1},
-        ncategories=2,
-        full=True,
-        max_fun=1e6,
-        max_iter=1e6,
-        max_refine=50,
-    )
-    print(res)
-    tree._draw_browser(tmpdir="~")
-    res["tree"]._draw_browser(tmpdir="~")
-    # c1, _, _ = tree.draw(ts='s', use_edge_lengths=True, scale_bar=True)
-    # tree.write("/tmp/test.nwk")

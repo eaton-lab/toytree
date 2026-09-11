@@ -1,0 +1,56 @@
+{
+  "archive_commit": "cb0dfc3c4fae61a75c3d8bdd367ad1c57bd2953d",
+  "large_artifacts": {
+    "v18/results-v18-pilot.json": {
+      "blob": "803c792878e796b9fc5be03cb4cba0a2de403f44",
+      "bytes": 52888895,
+      "commit": "321852a",
+      "sha256": "d2261efc0e77d1429e8e80da51f7bbaab014ba50c376db34fe6c9b6fea1c9128"
+    }
+  },
+  "purpose": "Exact recovery of superseded or rejected penalized-pseudolikelihood development workflows after production cleanup.",
+  "recovery": {
+    "single_file": "git show cb0dfc3c4fae61a75c3d8bdd367ad1c57bd2953d:PATH",
+    "worktree": "git worktree add /tmp/toytree-pl-archive cb0dfc3c4fae61a75c3d8bdd367ad1c57bd2953d"
+  },
+  "schema_version": 1,
+  "workflows": {
+    "correlated_lambda_selection": {
+      "status": "rejected",
+      "versions": [
+        "v3",
+        "v5",
+        "v6",
+        "v9",
+        "v18"
+      ]
+    },
+    "cross_family_model_selection": {
+      "status": "rejected",
+      "versions": [
+        "v1",
+        "v2"
+      ]
+    },
+    "discrete_gamma": {
+      "status": "retired",
+      "versions": [
+        "v8",
+        "v10"
+      ]
+    },
+    "phiic": {
+      "status": "removed_unvalidated",
+      "versions": [
+        "pre-v2"
+      ]
+    },
+    "ucln_lambda_selection": {
+      "status": "rejected",
+      "versions": [
+        "v4",
+        "v18"
+      ]
+    }
+  }
+}

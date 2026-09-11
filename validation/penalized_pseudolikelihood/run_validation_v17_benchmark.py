@@ -56,7 +56,7 @@ from toytree.mod._src.penalized_pseudolikelihood.relaxed import (
 from toytree.mod._src.penalized_pseudolikelihood.uncorrelated_lognormal import (
     edges_make_ultrametric_uncorrelated_lognormal,
 )
-from validation.penalized_pseudolikelihood.run_validation_v2 import (
+from validation.penalized_pseudolikelihood.simulation_helpers import (
     _scale_true_tree,
     _simulate_rates,
 )

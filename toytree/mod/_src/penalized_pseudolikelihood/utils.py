@@ -475,9 +475,7 @@ def _decode_age_params(
             )
             fraction_margin = min(0.25, absolute_margin / width)
             fraction = float(_sigmoid(np.array([z]))[0])
-            fraction = float(
-                np.clip(fraction, fraction_margin, 1.0 - fraction_margin)
-            )
+            fraction = float(np.clip(fraction, fraction_margin, 1.0 - fraction_margin))
             age = lo_eff + width * fraction
         else:
             age = lo_eff + float(np.exp(np.clip(z, -700.0, 700.0)))
@@ -570,88 +568,3 @@ def _get_params_bounds(
     # get indices of edge rates that need to be estimated (all)
     rates_bounds = {i: (PARAM_MIN, PARAM_MAX) for i in np.arange(tree.nnodes - 1)}
     return rates_bounds, ages_bounds
-
-
-def get_tree_with_categorical_rates(ntips: int, nrates: int, seed: int) -> ToyTree:
-    """Return a ToyTree with edges scaled by categorical rate variation.
-
-    Rate categories are evenly assigned (linspace) between 1 and 10
-    and each edge is randomly assigned to a category. The rate scaler
-    for that edge is then sampled from a gamma distribution with
-    G(3, RATE) where the alpha=3 sets mean == stderr. Example,
-    nrates=2 will generate the rate distributions:
-        - G(3, 1)    [mean=3, std=1.73]
-        - G(3, 10)   [mean=30, std=17.25]
-    """
-    import toytree
-
-    rng = np.random.default_rng(seed=seed)
-    tree = toytree.rtree.unittree(ntips, seed=123)
-    rates = np.linspace(1, 10, nrates)
-    for node in tree:
-        gidx = rng.choice(nrates)
-        node._dist = node._dist * rng.gamma(shape=3, scale=rates[gidx])
-    tree._update()
-    return tree
-
-
-def get_tree_with_uncorrelated_rates(
-    ntips: int, mean: float = 1.0, sigma: float = 1.0, seed: int = None
-) -> ToyTree:
-    """Return a ToyTree with edges scaled by uncorrelated relaxed-clock rates.
-
-    A gamma distribution is parameterized with a shape and scale to
-    match the desired mean and sigma values, and each branch dist
-    value is multiplied by a randomly sampled rate parameter from this
-    distribution.
-
-    Rate categories are evenly assigned (linspace) between 1 and 10
-    and each edge is randomly assigned to a category. The rate scaler
-    for that edge is then sampled from a gamma distribution with
-    G(3, RATE).
-    """
-    import toytree
-
-    rng = np.random.default_rng(seed=seed)
-    tree = toytree.rtree.unittree(ntips, seed=123)
-    shape = (mean / sigma) ** 2
-    scale = sigma**2 / mean
-    rates = rng.gamma(shape=shape, scale=scale, size=tree.nnodes)
-    for node in tree:
-        node._dist = node._dist * rates[node.idx]
-    tree._update()
-    return tree
-
-
-def get_tree_with_correlated_rates(
-    ntips: int, mean: float = 0.0, sigma: float = 1.0, seed: int = None
-) -> ToyTree:
-    """Return a ToyTree with edges scaled by correlated relaxed-clock rates.
-
-    A gamma distribution is parameterized with a shape and scale to
-    match the desired mean and sigma values, and each branch dist
-    value is multiplied by a randomly sampled rate parameter from this
-    distribution.
-
-    Rate categories are evenly assigned (linspace) between 1 and 10
-    and each edge is randomly assigned to a category. The rate scaler
-    for that edge is then sampled from a gamma distribution with
-    G(3, RATE).
-    """
-    import toytree
-
-    rng = np.random.default_rng(seed=seed)
-    tree = toytree.rtree.unittree(ntips, seed=123)
-    shape = (mean / sigma) ** 2
-    scale = sigma**2 / mean
-    rates = rng.gamma(shape=shape, scale=scale, size=tree.nnodes)
-    for node in tree:
-        node._dist = node._dist * rates[node.idx]
-    return tree
-
-
-if __name__ == "__main__":
-    rng = np.random.default_rng(123)
-
-    t = get_tree_with_uncorrelated_rates(ntips=50, mean=3, sigma=3)
-    t._draw_browser(tmpdir="~")

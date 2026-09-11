@@ -3,6 +3,9 @@
 from unittest.mock import patch
 
 import numpy as np
+from pl_test_helpers import (
+    get_tree_with_categorical_rates,
+)
 from scipy.optimize import OptimizeResult
 from scipy.special import gammaln
 
@@ -18,7 +21,6 @@ from toytree.mod._src.penalized_pseudolikelihood.utils import (
     _get_init_ages,
     _get_params_bounds,
     _normalize_calibrations,
-    get_tree_with_categorical_rates,
 )
 
 

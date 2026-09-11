@@ -35,11 +35,9 @@ from scipy.special import gammaln
 
 import toytree
 from toytree.mod._src.penalized_pseudolikelihood.relaxed import (
-    edges_make_ultrametric_relaxed,
-)
-from toytree.mod._src.penalized_pseudolikelihood.uncorrelated_lognormal import (
-    _independent_branch_pseudologlik,
+    _relaxed_branch_pseudologlik,
     _relaxed_penalty,
+    edges_make_ultrametric_relaxed,
 )
 from validation.penalized_pseudolikelihood import (
     run_validation_v17_benchmark as v17,
@@ -141,23 +139,21 @@ def _evaluate_fit(manifest: dict[str, Any], fit: dict[str, Any]) -> dict[str, An
     ages = _age_array(tree, fit)
     rates = _rate_array(tree, fit)
     lam = float(manifest["lambda"])
-    raw = _independent_branch_pseudologlik(
+    raw = _relaxed_branch_pseudologlik(
         rates,
         ages,
         edges,
         edata,
         0.0,
         None,
-        model="relaxed",
     )
-    penalized = _independent_branch_pseudologlik(
+    penalized = _relaxed_branch_pseudologlik(
         rates,
         ages,
         edges,
         edata,
         lam,
         None,
-        model="relaxed",
     )
     reported = fit.get("penalized_pseudologlik")
     return {

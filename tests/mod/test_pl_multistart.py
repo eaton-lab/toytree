@@ -3,6 +3,11 @@
 
 import numpy as np
 from conftest import PytestCompat
+from pl_test_helpers import (
+    get_tree_with_categorical_rates,
+    get_tree_with_correlated_rates,
+    get_tree_with_uncorrelated_rates,
+)
 
 from toytree.mod._src.penalized_pseudolikelihood.clock import (
     edges_make_ultrametric_clock,
@@ -11,7 +16,6 @@ from toytree.mod._src.penalized_pseudolikelihood.correlated import (
     edges_make_ultrametric_correlated,
 )
 from toytree.mod._src.penalized_pseudolikelihood.discrete import (
-    _edges_make_ultrametric_discrete_gamma_experimental,
     edges_make_ultrametric_discrete,
 )
 from toytree.mod._src.penalized_pseudolikelihood.uncorrelated_lognormal import (
@@ -19,9 +23,6 @@ from toytree.mod._src.penalized_pseudolikelihood.uncorrelated_lognormal import (
 )
 from toytree.mod._src.penalized_pseudolikelihood.utils import (
     _run_multistart,
-    get_tree_with_categorical_rates,
-    get_tree_with_correlated_rates,
-    get_tree_with_uncorrelated_rates,
 )
 
 
@@ -162,20 +163,3 @@ class TestPenalizedLikelihoodMultistart(PytestCompat):
             seed=9,
         )
         self.assertEqual(result["nstarts"], 8)
-
-    def test_private_discrete_gamma_default_uses_sixteen_starts(self):
-        """Archived Gamma replays retain their historical start count."""
-        tree = get_tree_with_categorical_rates(ntips=6, nrates=2, seed=321)
-        result = _edges_make_ultrametric_discrete_gamma_experimental(
-            tree,
-            ncategories=2,
-            calibrations={-1: 1.0},
-            branch_cv=0.1,
-            full=True,
-            max_iter=300,
-            max_fun=600,
-            max_refine=2,
-            ncores=1,
-            seed=9,
-        )
-        self.assertEqual(result["nstarts"], 16)

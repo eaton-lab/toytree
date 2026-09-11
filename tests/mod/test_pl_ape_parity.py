@@ -13,8 +13,8 @@ from toytree.mod._src.penalized_pseudolikelihood.clock import (
 from toytree.mod._src.penalized_pseudolikelihood.discrete import (
     _discrete_branch_pseudologlik,
 )
-from toytree.mod._src.penalized_pseudolikelihood.uncorrelated_lognormal import (
-    _independent_branch_pseudologlik,
+from toytree.mod._src.penalized_pseudolikelihood.relaxed import (
+    _relaxed_branch_pseudologlik,
     _relaxed_penalty,
 )
 
@@ -95,14 +95,13 @@ def test_relaxed_fixed_objective_matches_ape_5_8_1():
     ages, edges, edata = _fixed_fit_inputs(reference, model)
     rates = np.asarray(model["rates"])
     penalty = _relaxed_penalty(rates)
-    observed = _independent_branch_pseudologlik(
+    observed = _relaxed_branch_pseudologlik(
         rates,
         ages,
         edges,
         edata,
         reference["lambda"],
         valid_loglik=None,
-        model="relaxed",
     )
     assert np.isclose(penalty, model["penalty"], atol=1e-12)
     assert np.isclose(observed, model["penalized_loglik"], atol=1e-12)

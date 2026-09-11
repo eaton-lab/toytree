@@ -10,8 +10,24 @@
     "description": "Fractional-Poisson branch-length pseudolikelihood on finite non-negative additive edge lengths.",
     "status": "documented_model_assumption"
   },
-  "schema_version": 1,
+  "public_api": [
+    "edges_make_ultrametric",
+    "edges_make_ultrametric_clock",
+    "edges_make_ultrametric_discrete",
+    "edges_make_ultrametric_relaxed",
+    "edges_make_ultrametric_uncorrelated_lognormal",
+    "edges_make_ultrametric_correlated"
+  ],
+  "schema_version": 2,
   "workflows": {
+    "automatic_lambda_selection": {
+      "evidence": [
+        "validation/penalized_pseudolikelihood/v18/summary-v18-pilot.json"
+      ],
+      "public_api": null,
+      "scope": "Per-tree CV did not identify lambda precisely enough for a general public estimator. Supply lambda and report sensitivity.",
+      "status": "unsupported_by_design"
+    },
     "clock": {
       "evidence": [
         "validation/penalized_pseudolikelihood/v7/results-v7-confirmation.json"
@@ -24,23 +40,15 @@
         "validation/penalized_pseudolikelihood/v16/results-v16-confirmation.json"
       ],
       "public_api": "edges_make_ultrametric_correlated",
-      "scope": "User-supplied positive lambda.",
+      "scope": "User-supplied positive lambda; report sensitivity across scientifically plausible values.",
       "status": "validated_fixed_lambda"
-    },
-    "correlated_lambda_cv": {
-      "evidence": [
-        "validation/penalized_pseudolikelihood/v9/diagnostics-v9-selectors-uncertainty-replay.json"
-      ],
-      "public_api": "edges_make_ultrametric_correlated_lambda_cv",
-      "scope": "Exploratory point selection; supported lambda ranges and chronograms can remain broad.",
-      "status": "experimental"
     },
     "cross_family_model_selection": {
       "evidence": [
         "validation/penalized_pseudolikelihood/README.md"
       ],
       "public_api": null,
-      "status": "not_public"
+      "status": "unsupported_by_design"
     },
     "discrete": {
       "evidence": [
@@ -56,21 +64,24 @@
         "validation/penalized_pseudolikelihood/README-v10.md"
       ],
       "public_api": null,
-      "status": "not_implemented"
+      "scope": "Choose ncategories a priori and report sensitivity; no automatic selector is exposed.",
+      "status": "explicit_only"
     },
     "discrete_gamma": {
       "evidence": [
         "validation/penalized_pseudolikelihood/v10/results-v10-pilot.json"
       ],
       "public_api": null,
-      "status": "retired_private"
+      "scope": "Prototype removed from the active source; recoverable from the pinned archive commit.",
+      "status": "retired_removed"
     },
     "phiic": {
       "evidence": [
         "validation/penalized_pseudolikelihood/README.md"
       ],
       "public_api": null,
-      "status": "not_implemented"
+      "scope": "Not calculated or exposed.",
+      "status": "removed_unvalidated"
     },
     "relaxed": {
       "evidence": [
@@ -89,15 +100,8 @@
         "validation/penalized_pseudolikelihood/v12/compatibility-v12-current.json"
       ],
       "public_api": "edges_make_ultrametric_uncorrelated_lognormal",
-      "scope": "User-supplied positive lambda and positive continuous additive branches; zero-rich fits require passing fit-specific diagnostics.",
+      "scope": "User-supplied positive lambda; validated for positive continuous additive branches, with zero-rich fits conditional on diagnostics.",
       "status": "validated_fixed_lambda_positive_branches"
-    },
-    "uncorrelated_lognormal_lambda_selection": {
-      "evidence": [
-        "validation/penalized_pseudolikelihood/README-v12.md"
-      ],
-      "public_api": null,
-      "status": "not_implemented"
     }
   }
 }

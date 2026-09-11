@@ -77,9 +77,6 @@ _MODULE_EXPORTS = {
     "toytree.mod._src.penalized_pseudolikelihood.make_ultrametric": [
         "edges_make_ultrametric"
     ],
-    "toytree.mod._src.penalized_pseudolikelihood.lambda_cv": [
-        "edges_make_ultrametric_correlated_lambda_cv"
-    ],
     "toytree.mod._src.tree_move": [
         "move_nni_n",
         "iter_nni_n",

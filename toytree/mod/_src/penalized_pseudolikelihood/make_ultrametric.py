@@ -158,14 +158,12 @@ def edges_make_ultrametric(
     """Make a tree ultrametric using one explicitly configured workflow.
 
     All supported fits use a fractional-Poisson branch-length
-    pseudolikelihood. This function fits one explicitly configured model. Use
-    :meth:`edges_make_ultrametric_correlated_lambda_cv` to select lambda by
-    terminal-edge cross-validation within the correlated-rate model. The
-    correlated estimator at a supplied lambda is validated within its
-    documented scope; the lambda-CV point selector remains experimental.
-    UCLN fitting at a supplied lambda is validated for positive continuous
-    branch lengths within its documented scope. ToyTree does not currently
-    expose a per-tree UCLN lambda selector.
+    pseudolikelihood. This function fits one explicitly configured model.
+    Correlated and UCLN fits require a user-supplied ``lam``. Development
+    studies found that per-tree cross-validation did not identify lambda
+    precisely enough for a general estimator, so ToyTree intentionally exposes
+    no automatic lambda selector. Choose lambda from external information and
+    report sensitivity across scientifically plausible values.
 
     The strict clock is validated directly, while ``discrete`` is validated
     for ape::chronos compatibility with an explicit category count. The

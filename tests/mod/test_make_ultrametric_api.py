@@ -4,6 +4,11 @@ from unittest.mock import patch
 
 import numpy as np
 from conftest import PytestCompat
+from pl_test_helpers import (
+    get_tree_with_categorical_rates,
+    get_tree_with_correlated_rates,
+    get_tree_with_uncorrelated_rates,
+)
 from scipy.special import gammaln
 
 import toytree
@@ -13,11 +18,6 @@ from toytree.mod._src.penalized_pseudolikelihood.discrete import (
     _pack_simplex_weights,
     _unpack_ordered_rate_params,
     _unpack_simplex_logits,
-)
-from toytree.mod._src.penalized_pseudolikelihood.utils import (
-    get_tree_with_categorical_rates,
-    get_tree_with_correlated_rates,
-    get_tree_with_uncorrelated_rates,
 )
 from toytree.utils import ToytreeError
 
@@ -121,9 +121,7 @@ class TestMakeUltrametricAPI(PytestCompat):
 
     def test_correlated_reports_raw_and_penalized_scores(self):
         """Correlated output reports consistent objective components."""
-        tree = get_tree_with_correlated_rates(
-            ntips=10, mean=1.0, sigma=1.0, seed=123
-        )
+        tree = get_tree_with_correlated_rates(ntips=10, mean=1.0, sigma=1.0, seed=123)
         result = tree.mod.edges_make_ultrametric(
             method="correlated",
             calibrations={-1: 1.0},

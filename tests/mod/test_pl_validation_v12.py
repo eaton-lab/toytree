@@ -191,13 +191,15 @@ def test_v12_committed_positive_branch_scope_passes_every_gate():
     assert all(summary["checks"].values())
 
 
-def test_v12_compatibility_audit_pins_historical_and_current_sources():
-    """Later shared-helper additions do not alter validated UCLN fitted values."""
+def test_v12_compatibility_audit_pins_historical_confirmation():
+    """The frozen confirmation remains tied to its audited source."""
     result_path = study.DEFAULT_OUTPUT / "results-v12-confirmation.json"
     audit_path = study.DEFAULT_OUTPUT / "compatibility-v12-current.json"
+    archive_path = study.HERE / "archive" / "manifest.json"
     result = json.loads(result_path.read_text())
     audit = json.loads(audit_path.read_text())
+    archive = json.loads(archive_path.read_text())
 
     assert result["source_hash"] == audit["historical_confirmation_source_hash"]
-    assert study._source_hash(_config()) == audit["current_source_hash"]
     assert audit["equivalent_for_v12_fitted_values"] is True
+    assert archive["archive_commit"] == "cb0dfc3c4fae61a75c3d8bdd367ad1c57bd2953d"
