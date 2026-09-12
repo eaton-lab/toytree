@@ -71,7 +71,11 @@ def test_get_timetree_node_ages_pairwise_uses_child_internal_id(monkeypatch):
         "fetch_json_timetree_pairwise",
         _mock_fetch_json_timetree_pairwise,
     )
-    table = client.get_timetree_node_ages(tree=tree, endpoint="pairwise")
+    table = client.get_timetree_node_ages(
+        tree=tree,
+        endpoint="pairwise",
+        on_conflict="adjust",
+    )
     assert list(table.index) == [3, 4]
     # node 3 uses tips A and B; node 4 uses internal child X (=111) and tip C (=33)
     assert calls == [(11, 22), (33, 111)]
@@ -96,7 +100,11 @@ def test_get_timetree_node_ages_pairwise_descendant_fallback(monkeypatch):
         "fetch_json_timetree_pairwise",
         _mock_fetch_json_timetree_pairwise,
     )
-    table = client.get_timetree_node_ages(tree=tree, endpoint="pairwise")
+    table = client.get_timetree_node_ages(
+        tree=tree,
+        endpoint="pairwise",
+        on_conflict="adjust",
+    )
     # root node should pair nearest descendant from X clade (A=11) with C=33.
     assert calls[1] == (11, 33)
     assert table.loc[4, "status"] == "ok"
@@ -151,12 +159,92 @@ def test_get_timetree_node_ages_age_columns_and_ci_clip(monkeypatch):
         "fetch_json_timetree_pairwise",
         _mock_fetch_json_timetree_pairwise,
     )
-    table = client.get_timetree_node_ages(tree=tree, endpoint="pairwise")
+    table = client.get_timetree_node_ages(
+        tree=tree,
+        endpoint="pairwise",
+        on_conflict="adjust",
+    )
     assert "age_raw" in table.columns
     assert "age_set_method" in table.columns
     assert float(table.loc[3, "age_raw"]) == pytest.approx(20.0)
     assert float(table.loc[3, "age"]) == pytest.approx(9.5)
     assert table.loc[3, "age_set_method"] == "calibrated_ci_clipped"
+
+
+def test_get_timetree_node_ages_prefers_adjusted_and_retains_provenance(monkeypatch):
+    """Adjusted ages are default while both TimeTree estimates are retained."""
+    tree = _tree_with_ncbi()
+    payloads = {
+        (11, 22): {
+            "precomputed_age": 7.0,
+            "adjusted_age": 6.5,
+            "precomputed_ci_low": 5.0,
+            "precomputed_ci_high": 9.0,
+            "all_total": 12,
+        },
+        (33, 111): {"precomputed_age": 12.0, "adjusted_age": 11.0},
+    }
+    monkeypatch.setattr(
+        timetree._TimeTreeClient,
+        "fetch_json_timetree_pairwise",
+        lambda self, a, b, endpoint="summaryjson": payloads[(a, b)],
+    )
+    table = timetree._TimeTreeClient(cache=False).get_timetree_node_ages(tree)
+    assert table.loc[3, "age"] == pytest.approx(6.5)
+    assert table.loc[3, "precomputed_age"] == pytest.approx(7.0)
+    assert table.loc[3, "adjusted_age"] == pytest.approx(6.5)
+    assert table.loc[3, "age_source"] == "adjusted"
+    assert table.loc[3, "all_total"] == 12
+
+
+def test_extract_age_data_accepts_current_nested_response_shape():
+    """Parse adjusted and median ages from the current nested API payload."""
+    payload = {
+        "studies": {
+            "adjusted_age": 6.7,
+            "sum_median_time": 7.1,
+            "precomputed_ci_low": 5.8,
+            "precomputed_ci_high": 8.3,
+            "all_total": 19,
+            "taxon_id": 123,
+            "mrca_ttid": 456,
+        }
+    }
+    parsed = timetree._TimeTreeClient(cache=False)._extract_age_data(payload)
+    assert parsed["age"] == pytest.approx(6.7)
+    assert parsed["adjusted_age"] == pytest.approx(6.7)
+    assert parsed["precomputed_age"] == pytest.approx(7.1)
+    assert parsed["age_source"] == "adjusted"
+    assert parsed["ci_low"] == pytest.approx(5.8)
+    assert parsed["ci_high"] == pytest.approx(8.3)
+    assert parsed["all_total"] == 19
+    assert parsed["taxon_id"] == 123
+    assert parsed["mrca_ttid"] == 456
+
+
+def test_get_timetree_node_ages_preserves_conflict_by_default(monkeypatch, capsys):
+    """Default conflict policy warns without silently changing reported ages."""
+    tree = _tree_with_ncbi()
+    payloads = {
+        (11, 22): {"adjusted_age": 20.0},
+        (33, 111): {"adjusted_age": 10.0},
+    }
+    monkeypatch.setattr(
+        timetree._TimeTreeClient,
+        "fetch_json_timetree_pairwise",
+        lambda self, a, b, endpoint="summaryjson": payloads[(a, b)],
+    )
+    table = timetree._TimeTreeClient(cache=False).get_timetree_node_ages(tree)
+    assert table.loc[3, "age"] == 20.0
+    assert table.loc[3, "age_set_method"] == "calibrated_conflict_preserved"
+    assert "preserving 1 conflicting" in capsys.readouterr().err
+
+
+def test_pair_candidates_round_robin_across_child_pairs():
+    """Multifurcation candidates are balanced across child-clade pairs."""
+    groups = [[1, 2], [3, 4], [5, 6]]
+    pairs = timetree._TimeTreeClient._build_pair_candidates(groups, max_pairs=3)
+    assert pairs == [(1, 3), (1, 5), (3, 5)]
 
 
 def test_get_timetree_node_ages_forced_clip_when_ci_infeasible(monkeypatch):
@@ -181,7 +269,11 @@ def test_get_timetree_node_ages_forced_clip_when_ci_infeasible(monkeypatch):
         "fetch_json_timetree_pairwise",
         _mock_fetch_json_timetree_pairwise,
     )
-    table = client.get_timetree_node_ages(tree=tree, endpoint="pairwise")
+    table = client.get_timetree_node_ages(
+        tree=tree,
+        endpoint="pairwise",
+        on_conflict="adjust",
+    )
     assert float(table.loc[3, "age"]) < float(table.loc[4, "age"])
     assert table.loc[3, "age_set_method"] == "calibrated_forced_clip"
 
@@ -216,14 +308,19 @@ def test_get_timetree_node_ages_imputed_edge_count(monkeypatch):
         "fetch_json_timetree_pairwise",
         _mock_fetch_json_timetree_pairwise,
     )
-    table = client.get_timetree_node_ages(tree=tree, endpoint="pairwise")
+    table = client.get_timetree_node_ages(
+        tree=tree,
+        endpoint="pairwise",
+        on_conflict="adjust",
+        impute_missing=True,
+    )
     # Y idx=5 receives path medians: [7, 7, 5] -> 7.
     assert float(table.loc[5, "age"]) == pytest.approx(7.0)
     assert table.loc[5, "age_set_method"] == "imputed_edge_count"
 
 
-def test_get_timetree_node_ages_imputed_root(monkeypatch):
-    """Impute root age when root retrieval is missing but descendants are known."""
+def test_get_timetree_node_ages_does_not_extrapolate_missing_root(monkeypatch):
+    """Never invent a root age beyond the observed TimeTree anchors."""
     tree = _tree_with_ncbi()
 
     payloads = {
@@ -240,9 +337,13 @@ def test_get_timetree_node_ages_imputed_root(monkeypatch):
         "fetch_json_timetree_pairwise",
         _mock_fetch_json_timetree_pairwise,
     )
-    table = client.get_timetree_node_ages(tree=tree, endpoint="pairwise")
-    assert table.loc[4, "age_set_method"] == "imputed_root"
-    assert float(table.loc[4, "age"]) > float(table.loc[3, "age"])
+    table = client.get_timetree_node_ages(
+        tree=tree,
+        endpoint="pairwise",
+        impute_missing=True,
+    )
+    assert table.loc[4, "age_set_method"] == "unresolved"
+    assert pd.isna(table.loc[4, "age"])
 
 
 def test_get_timetree_node_ages_internal_monotonicity(monkeypatch):
@@ -275,7 +376,12 @@ def test_get_timetree_node_ages_internal_monotonicity(monkeypatch):
         "fetch_json_timetree_pairwise",
         _mock_fetch_json_timetree_pairwise,
     )
-    table = client.get_timetree_node_ages(tree=tree, endpoint="pairwise")
+    table = client.get_timetree_node_ages(
+        tree=tree,
+        endpoint="pairwise",
+        on_conflict="adjust",
+        impute_missing=True,
+    )
 
     for parent in tree[tree.ntips :]:
         parent_age = float(table.loc[parent.idx, "age"])
@@ -398,6 +504,7 @@ def test_public_signatures():
             "backoff_factor",
             "cache",
             "cache_dir",
+            "cache_ttl",
             "session",
         ],
         "reset_timetree_client": [],
@@ -415,6 +522,10 @@ def test_public_signatures():
             "endpoint",
             "data",
             "max_pairs",
+            "age_source",
+            "on_conflict",
+            "impute_missing",
+            "on_error",
         ],
     }
     for name, params in expected.items():

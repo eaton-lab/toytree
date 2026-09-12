@@ -10,28 +10,22 @@ for internal nodes on a ``ToyTree``.
 
 from __future__ import annotations
 
-import hashlib
-import json
-import pickle
 import sys
-import tempfile
 from collections import defaultdict
 from itertools import combinations, product
 from pathlib import Path
 from typing import Any, Literal, Sequence
-from urllib.parse import urljoin
 
 import numpy as np
 import pandas as pd
-import requests
 from requests import Session
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
 from toytree import ToyTree
 from toytree.utils import ToytreeError
 
-URI = "http://timetree.temple.edu/api/"
+from ._transport import JSONServiceClient
+
+URI = "https://timetree.org/api/"
 HEADERS = {"User-Agent": "toytree"}
 
 __all__ = [
@@ -43,7 +37,7 @@ __all__ = [
 ]
 
 
-class _TimeTreeClient:
+class _TimeTreeClient(JSONServiceClient):
     """Private TimeTree client for transport, retries, and cache."""
 
     def __init__(
@@ -54,79 +48,22 @@ class _TimeTreeClient:
         backoff_factor: float = 0.5,
         cache: bool = True,
         cache_dir: str | Path | None = None,
+        cache_ttl: float | None = 7 * 24 * 60 * 60,
         session: Session | None = None,
     ) -> None:
-        self.base_url = base_url
-        self.timeout = float(timeout)
-        self.max_retries = int(max_retries)
-        self.backoff_factor = float(backoff_factor)
-        self.cache = bool(cache)
-        self.cache_dir = (
-            Path(cache_dir).expanduser()
-            if cache_dir is not None
-            else Path(tempfile.gettempdir()) / "toytree_timetree_cache"
-        )
-        self._session = session
-
-    @staticmethod
-    def _build_session(max_retries: int, backoff_factor: float) -> Session:
-        """Create a requests session with retry and backoff."""
-        retry = Retry(
-            total=max_retries,
-            connect=max_retries,
-            read=max_retries,
+        super().__init__(
+            base_url=base_url,
+            timeout=timeout,
+            max_retries=max_retries,
             backoff_factor=backoff_factor,
-            status_forcelist=(429, 500, 502, 503, 504),
-            allowed_methods=frozenset({"GET"}),
-            raise_on_status=False,
-        )
-        adapter = HTTPAdapter(max_retries=retry)
-        session = requests.Session()
-        session.headers.update(HEADERS)
-        session.mount("https://", adapter)
-        session.mount("http://", adapter)
-        return session
-
-    @staticmethod
-    def _error_from_response(
-        endpoint: str,
-        exc: Exception,
-        response: requests.Response | None,
-    ) -> ToytreeError:
-        """Construct a standardized ToytreeError from an HTTP failure."""
-        status = None if response is None else response.status_code
-        snippet = ""
-        if response is not None:
-            snippet = response.text[:500].replace("\n", " ")
-        return ToytreeError(
-            f"TimeTree request failed at endpoint '{endpoint}'. "
-            f"status={status!r}. error={exc}. response_snippet={snippet!r}"
+            cache=cache,
+            cache_dir=cache_dir,
+            cache_ttl=cache_ttl,
+            session=session,
         )
 
-    @staticmethod
-    def _hash_payload(payload: dict[str, Any]) -> str:
-        """Return deterministic hash of cache metadata."""
-        dumped = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
-        return hashlib.sha256(dumped.encode("utf-8")).hexdigest()
-
-    def _cache_path(self, namespace: str, payload: dict[str, Any]) -> Path:
-        """Return cache path for namespace + payload hash."""
-        return self.cache_dir / namespace / f"{self._hash_payload(payload)}.pkl"
-
-    def _cache_read(self, path: Path) -> Any | None:
-        """Read cache entry if available."""
-        if not self.cache or not path.exists():
-            return None
-        with path.open("rb") as ihandle:
-            return pickle.load(ihandle)
-
-    def _cache_write(self, path: Path, data: Any) -> None:
-        """Write cache entry if caching is enabled."""
-        if not self.cache:
-            return
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("wb") as ohandle:
-            pickle.dump(data, ohandle, protocol=pickle.HIGHEST_PROTOCOL)
+    service_name = "timetree"
+    default_headers = HEADERS
 
     def _request_json(
         self,
@@ -135,33 +72,12 @@ class _TimeTreeClient:
         cache_namespace: str = "json",
     ) -> dict[str, Any]:
         """GET endpoint and return parsed JSON payload."""
-        cache_path = self._cache_path(cache_namespace, {"endpoint": endpoint})
-        if use_cache:
-            cached = self._cache_read(cache_path)
-            if cached is not None:
-                return cached
-
-        response: requests.Response | None = None
-        url = urljoin(self.base_url, endpoint.lstrip("/"))
-        try:
-            response = self.session.get(url=url, timeout=self.timeout)
-            response.raise_for_status()
-            data = response.json()
-            if use_cache:
-                self._cache_write(cache_path, data)
-            return data
-        except Exception as exc:
-            raise self._error_from_response(endpoint, exc, response) from exc
-
-    @property
-    def session(self) -> Session:
-        """Return active requests session, creating lazily when needed."""
-        if self._session is None:
-            self._session = self._build_session(
-                self.max_retries,
-                self.backoff_factor,
-            )
-        return self._session
+        return super()._request_json(
+            endpoint,
+            method="GET",
+            use_cache=use_cache,
+            cache_namespace=cache_namespace,
+        )
 
     @staticmethod
     def _coerce_ncbi_ids(ncbi_ids: Sequence[int], min_items: int = 2) -> list[int]:
@@ -231,22 +147,68 @@ class _TimeTreeClient:
         except Exception:
             return pd.NA
 
-    def _extract_age_data(self, payload: dict[str, Any]) -> dict[str, Any]:
+    def _extract_age_data(
+        self,
+        payload: dict[str, Any],
+        age_source: Literal["adjusted", "precomputed"] = "adjusted",
+    ) -> dict[str, Any]:
         """Return standardized age/metadata fields from a TimeTree payload."""
-        age = self._as_float(payload.get("precomputed_age"))
-        if pd.isna(age) or age <= 0:
-            adjusted = self._as_float(payload.get("adjusted_age"))
-            if not pd.isna(adjusted) and adjusted > 0:
-                age = adjusted
-            else:
-                age = float("nan")
+        studies = payload.get("studies", {})
+        if not isinstance(studies, dict):
+            studies = {}
+
+        def first(*values: Any) -> Any:
+            return next(
+                (value for value in values if value is not None and not pd.isna(value)),
+                None,
+            )
+
+        precomputed = self._as_float(
+            first(
+                payload.get("precomputed_age"),
+                payload.get("sum_median_time"),
+                studies.get("precomputed_age"),
+                studies.get("sum_median_time"),
+            )
+        )
+        adjusted = self._as_float(
+            first(payload.get("adjusted_age"), studies.get("adjusted_age"))
+        )
+        preferred = adjusted if age_source == "adjusted" else precomputed
+        fallback = precomputed if age_source == "adjusted" else adjusted
+        if pd.isna(preferred) or preferred <= 0:
+            age = fallback if not pd.isna(fallback) and fallback > 0 else float("nan")
+            selected_source = "precomputed" if age_source == "adjusted" else "adjusted"
+        else:
+            age = preferred
+            selected_source = age_source
+        if pd.isna(age):
+            selected_source = "missing"
         return {
             "age": age,
-            "ci_low": self._as_float(payload.get("precomputed_ci_low")),
-            "ci_high": self._as_float(payload.get("precomputed_ci_high")),
-            "all_total": self._as_int(payload.get("all_total")),
-            "taxon_id": self._as_int(payload.get("taxon_id")),
-            "mrca_ttid": self._as_int(payload.get("mrca_ttid")),
+            "precomputed_age": precomputed,
+            "adjusted_age": adjusted,
+            "age_source": selected_source,
+            "ci_low": self._as_float(
+                first(
+                    payload.get("precomputed_ci_low"), studies.get("precomputed_ci_low")
+                )
+            ),
+            "ci_high": self._as_float(
+                first(
+                    payload.get("precomputed_ci_high"),
+                    studies.get("precomputed_ci_high"),
+                )
+            ),
+            "all_total": self._as_int(
+                first(payload.get("all_total"), studies.get("all_total"))
+            ),
+            "taxon_id": self._as_int(
+                first(payload.get("taxon_id"), studies.get("taxon_id"))
+            ),
+            "mrca_ttid": self._as_int(
+                first(payload.get("mrca_ttid"), studies.get("mrca_ttid"))
+            ),
         }
 
     @staticmethod
@@ -351,9 +313,10 @@ class _TimeTreeClient:
         max_pairs: int,
     ) -> list[tuple[int, int]]:
         """Return deterministic cross-child pair candidates capped at max_pairs."""
-        out: list[tuple[int, int]] = []
+        queues: list[list[tuple[int, int]]] = []
         seen: set[tuple[int, int]] = set()
         for i, j in combinations(range(len(child_groups)), 2):
+            queue: list[tuple[int, int]] = []
             for left, right in product(child_groups[i], child_groups[j]):
                 if left == right:
                     continue
@@ -361,9 +324,22 @@ class _TimeTreeClient:
                 if pair in seen:
                     continue
                 seen.add(pair)
-                out.append(pair)
-                if len(out) >= max_pairs:
-                    return out
+                queue.append(pair)
+            if queue:
+                queues.append(queue)
+        out: list[tuple[int, int]] = []
+        offset = 0
+        while queues and len(out) < max_pairs:
+            remaining = []
+            for queue in queues:
+                if offset < len(queue):
+                    out.append(queue[offset])
+                    if len(out) >= max_pairs:
+                        break
+                if offset + 1 < len(queue):
+                    remaining.append(queue)
+            queues = remaining
+            offset += 1
         return out
 
     def _query_pairwise_node(
@@ -371,6 +347,8 @@ class _TimeTreeClient:
         node_idx: int,
         child_groups: list[list[int]],
         max_pairs: int,
+        age_source: Literal["adjusted", "precomputed"],
+        on_error: Literal["raise", "warn", "ignore"],
     ) -> dict[str, Any]:
         """Query pairwise endpoint for one node and return standardized row."""
         row = {
@@ -390,6 +368,9 @@ class _TimeTreeClient:
             "n_pairs_success": 0,
             "query_pairs_used": tuple(),
             "pairwise_ages": tuple(),
+            "precomputed_age": float("nan"),
+            "adjusted_age": float("nan"),
+            "age_source": "missing",
         }
 
         if len(child_groups) < 2:
@@ -406,6 +387,8 @@ class _TimeTreeClient:
         success_lows: list[float] = []
         success_highs: list[float] = []
         success_all_total: list[int] = []
+        success_precomputed: list[float] = []
+        success_adjusted: list[float] = []
 
         for pair in pairs[:max_pairs]:
             row["n_pairs_attempted"] += 1
@@ -415,7 +398,7 @@ class _TimeTreeClient:
                     pair[1],
                     endpoint="summaryjson",
                 )
-                parsed = self._extract_age_data(payload)
+                parsed = self._extract_age_data(payload, age_source=age_source)
                 age = parsed["age"]
                 if pd.isna(age):
                     continue
@@ -428,7 +411,15 @@ class _TimeTreeClient:
                     success_highs.append(float(parsed["ci_high"]))
                 if parsed["all_total"] is not pd.NA:
                     success_all_total.append(int(parsed["all_total"]))
-            except Exception:
+                if not pd.isna(parsed["precomputed_age"]):
+                    success_precomputed.append(float(parsed["precomputed_age"]))
+                if not pd.isna(parsed["adjusted_age"]):
+                    success_adjusted.append(float(parsed["adjusted_age"]))
+            except Exception as exc:
+                if on_error == "raise":
+                    raise
+                row["status"] = "error"
+                row["reason"] = str(exc)
                 continue
 
         if not success_ages:
@@ -441,6 +432,11 @@ class _TimeTreeClient:
         row["query_pairs_used"] = tuple(success_pairs)
         row["pairwise_ages"] = tuple(success_ages)
         row["age"] = float(np.median(np.asarray(success_ages, dtype=float)))
+        row["age_source"] = age_source
+        if success_precomputed:
+            row["precomputed_age"] = float(np.median(success_precomputed))
+        if success_adjusted:
+            row["adjusted_age"] = float(np.median(success_adjusted))
         if success_lows:
             row["ci_low"] = float(np.min(np.asarray(success_lows, dtype=float)))
         if success_highs:
@@ -453,6 +449,8 @@ class _TimeTreeClient:
         self,
         node_idx: int,
         child_groups: list[list[int]],
+        age_source: Literal["adjusted", "precomputed"],
+        on_error: Literal["raise", "warn", "ignore"],
     ) -> dict[str, Any]:
         """Query MRCA endpoint for one node and return standardized row."""
         query_ids: list[int] = []
@@ -479,6 +477,9 @@ class _TimeTreeClient:
             "n_pairs_success": 0,
             "query_pairs_used": tuple(),
             "pairwise_ages": tuple(),
+            "precomputed_age": float("nan"),
+            "adjusted_age": float("nan"),
+            "age_source": "missing",
         }
 
         if len(query_ids) < 2:
@@ -486,7 +487,7 @@ class _TimeTreeClient:
 
         try:
             payload = self.fetch_json_timetree_mrca(query_ids, endpoint="json")
-            parsed = self._extract_age_data(payload)
+            parsed = self._extract_age_data(payload, age_source=age_source)
             row.update(parsed)
             if pd.isna(row["age"]):
                 row["reason"] = "missing_age"
@@ -494,6 +495,8 @@ class _TimeTreeClient:
                 row["status"] = "ok"
                 row["reason"] = "ok"
         except Exception as exc:
+            if on_error == "raise":
+                raise
             row["status"] = "error"
             row["reason"] = str(exc)
         return row
@@ -566,42 +569,33 @@ class _TimeTreeClient:
                     else:
                         table.at[child.idx, "age_set_method"] = "calibrated_forced_clip"
 
-    def _get_default_root_step(self, tree: ToyTree, ages: pd.Series) -> float:
-        """Return fallback increment used when root age must be imputed."""
-        deltas: list[float] = []
-        for node in tree[tree.ntips :]:
-            if node.up is None or node.up.idx not in ages.index:
+    def _find_conflicting_ages(
+        self,
+        tree: ToyTree,
+        table: pd.DataFrame,
+        atol: float = 1e-9,
+    ) -> list[tuple[int, int]]:
+        """Return ``(parent_idx, child_idx)`` pairs with reversed ages."""
+        conflicts: list[tuple[int, int]] = []
+        for parent in tree.treenode.traverse("levelorder"):
+            if parent.is_leaf() or parent.idx not in table.index:
                 continue
-            parent_age = self._as_float(ages.at[node.up.idx])
-            child_age = self._as_float(ages.at[node.idx])
-            if pd.isna(parent_age) or pd.isna(child_age):
+            parent_age = self._as_float(table.at[parent.idx, "age"])
+            if pd.isna(parent_age):
                 continue
-            if parent_age > child_age:
-                deltas.append(parent_age - child_age)
-        if deltas:
-            return float(np.median(np.asarray(deltas, dtype=float)))
-
-        finite_ages = pd.to_numeric(ages, errors="coerce")
-        finite_ages = finite_ages[np.isfinite(finite_ages.to_numpy())]
-        if finite_ages.empty:
-            return 1.0
-        return max(1.0, float(np.median(finite_ages.to_numpy(dtype=float))) * 0.05)
+            for child in parent.children:
+                if child.is_leaf() or child.idx not in table.index:
+                    continue
+                child_age = self._as_float(table.at[child.idx, "age"])
+                if not pd.isna(child_age) and child_age > parent_age + atol:
+                    conflicts.append((parent.idx, child.idx))
+        return conflicts
 
     def _impute_missing_internal_ages(self, tree: ToyTree, table: pd.DataFrame) -> None:
-        """Fill unresolved internal ages by edge-count interpolation."""
+        """Interpolate unresolved ages only between observed time anchors."""
         if table.empty:
             return
         ages = table["age"]
-        root_idx = tree.treenode.idx
-        if root_idx in ages.index and pd.isna(ages.at[root_idx]):
-            finite = pd.to_numeric(ages, errors="coerce")
-            finite = finite[np.isfinite(finite.to_numpy())]
-            step = self._get_default_root_step(tree, ages)
-            if finite.empty:
-                ages.at[root_idx] = step
-            else:
-                ages.at[root_idx] = float(finite.max()) + step
-            table.at[root_idx, "age_set_method"] = "imputed_root"
 
         candidates: dict[int, list[float]] = defaultdict(list)
         for tip in tree[: tree.ntips]:
@@ -648,6 +642,10 @@ class _TimeTreeClient:
         endpoint: Literal["mrca", "pairwise"] = "pairwise",
         data: pd.Series | None = None,
         max_pairs: int = 3,
+        age_source: Literal["adjusted", "precomputed"] = "adjusted",
+        on_conflict: Literal["warn", "adjust", "raise"] = "warn",
+        impute_missing: bool = False,
+        on_error: Literal["warn", "raise", "ignore"] = "warn",
     ) -> pd.DataFrame:
         """Return TimeTree ages for internal nodes of a tree.
 
@@ -668,20 +666,37 @@ class _TimeTreeClient:
         max_pairs : int, default=3
             Maximum number of pairwise queries attempted per internal node when
             ``endpoint="pairwise"``.
+        age_source : {"adjusted", "precomputed"}, default="adjusted"
+            Preferred TimeTree estimate. Adjusted ages are recommended because
+            TimeTree computes them to reconcile chronology across its tree.
+            The alternative value is retained and used only as a fallback.
+        on_conflict : {"warn", "adjust", "raise"}, default="warn"
+            Behavior when independently retrieved child and parent ages are
+            chronologically inconsistent. ``"warn"`` preserves the reported
+            estimates, ``"adjust"`` deterministically clips child ages, and
+            ``"raise"`` stops without returning a table.
+        impute_missing : bool, default=False
+            If True, interpolate missing internal ages only when they lie
+            between observed descendant and ancestor anchors. Missing roots
+            and nodes outside observed anchors remain missing.
+        on_error : {"warn", "raise", "ignore"}, default="warn"
+            Behavior when a TimeTree request fails. ``"raise"`` preserves the
+            transport exception. Other modes record an error row; ``"warn"``
+            also prints a summary after all nodes have been attempted.
 
         Returns
         -------
         pandas.DataFrame
             DataFrame indexed by internal-node idx labels with columns:
-            ``age``, ``age_raw``, ``age_set_method``, ``ci_low``, ``ci_high``,
+            ``age``, ``precomputed_age``, ``adjusted_age``, ``age_source``,
+            ``age_raw``, ``age_set_method``, ``ci_low``, ``ci_high``,
             ``status``, ``reason``,
             ``endpoint``, ``query_ncbi_ids``, ``n_query_ids``,
             ``all_total``, ``taxon_id``, ``mrca_ttid``,
             ``n_pairs_attempted``, ``n_pairs_success``,
             ``query_pairs_used``, and ``pairwise_ages``.
-            Final ``age`` values are post-processed to avoid parent-child
-            conflicts, and unresolved nodes are imputed by edge-count linear
-            interpolation between calibrated anchors.
+            Rows preserve TimeTree provenance and the original input-tree node
+            order. Ages are not altered or imputed by default.
 
         Raises
         ------
@@ -694,6 +709,12 @@ class _TimeTreeClient:
             raise ToytreeError(f"invalid endpoint option: {endpoint!r}")
         if max_pairs < 1:
             raise ToytreeError("max_pairs must be >= 1.")
+        if age_source not in ("adjusted", "precomputed"):
+            raise ToytreeError(f"invalid age_source option: {age_source!r}")
+        if on_conflict not in ("warn", "adjust", "raise"):
+            raise ToytreeError(f"invalid on_conflict option: {on_conflict!r}")
+        if on_error not in ("warn", "raise", "ignore"):
+            raise ToytreeError(f"invalid on_error option: {on_error!r}")
         node_to_ncbi = self._get_node_ncbi_map(tree, data)
 
         rows: list[dict[str, Any]] = []
@@ -709,13 +730,18 @@ class _TimeTreeClient:
                     child_groups.append(cands)
             if endpoint == "mrca":
                 row = self._query_mrca_node(
-                    node_idx=node.idx, child_groups=child_groups
+                    node_idx=node.idx,
+                    child_groups=child_groups,
+                    age_source=age_source,
+                    on_error=on_error,
                 )
             else:
                 row = self._query_pairwise_node(
                     node_idx=node.idx,
                     child_groups=child_groups,
                     max_pairs=max_pairs,
+                    age_source=age_source,
+                    on_error=on_error,
                 )
             rows.append(row)
 
@@ -724,6 +750,9 @@ class _TimeTreeClient:
             return pd.DataFrame(
                 columns=[
                     "age",
+                    "precomputed_age",
+                    "adjusted_age",
+                    "age_source",
                     "age_raw",
                     "age_set_method",
                     "ci_low",
@@ -743,13 +772,29 @@ class _TimeTreeClient:
                 ]
             )
 
-        table = table.set_index("node_idx").sort_index()
+        table = table.set_index("node_idx")
         self._initialize_age_columns(table)
-        self._resolve_conflicting_ages(tree=tree, table=table)
-        self._impute_missing_internal_ages(tree=tree, table=table)
-        self._resolve_conflicting_ages(tree=tree, table=table)
+        conflicts = self._find_conflicting_ages(tree, table)
+        if conflicts and on_conflict == "raise":
+            raise ToytreeError(
+                f"TimeTree ages contain {len(conflicts)} parent-child conflicts."
+            )
+        if conflicts and on_conflict == "adjust":
+            self._resolve_conflicting_ages(tree=tree, table=table)
+        elif conflicts:
+            for _, child_idx in conflicts:
+                table.at[child_idx, "age_set_method"] = "calibrated_conflict_preserved"
+            print(
+                f"WARNING: preserving {len(conflicts)} conflicting TimeTree "
+                "parent-child age estimates.",
+                file=sys.stderr,
+            )
+        if impute_missing:
+            self._impute_missing_internal_ages(tree=tree, table=table)
+            if on_conflict == "adjust":
+                self._resolve_conflicting_ages(tree=tree, table=table)
         n_non_ok = int((table["status"] != "ok").sum())
-        if n_non_ok:
+        if n_non_ok and on_error == "warn":
             n_unresolved = int((table["status"] == "unresolved").sum())
             n_error = int((table["status"] == "error").sum())
             print(
@@ -778,13 +823,14 @@ def configure_timetree_client(
     backoff_factor: float = 0.5,
     cache: bool = True,
     cache_dir: str | Path | None = None,
+    cache_ttl: float | None = 7 * 24 * 60 * 60,
     session: Session | None = None,
 ) -> None:
     """Configure the module-level TimeTree client.
 
     Parameters
     ----------
-    base_url : str, default="http://timetree.temple.edu/api/"
+    base_url : str, default="https://timetree.org/api/"
         Base URL for TimeTree requests.
     timeout : float, default=20.0
         Request timeout in seconds.
@@ -796,6 +842,8 @@ def configure_timetree_client(
         If True, enable local on-disk response caching.
     cache_dir : str | pathlib.Path | None, default=None
         Optional cache directory override.
+    cache_ttl : float or None, default=604800
+        Maximum cache age in seconds, or ``None`` for no expiry.
     session : requests.Session | None, default=None
         Optional preconfigured session.
 
@@ -809,6 +857,8 @@ def configure_timetree_client(
         Not raised directly by this function.
     """
     global _DEFAULT_CLIENT
+    if _DEFAULT_CLIENT is not None:
+        _DEFAULT_CLIENT.close()
     _DEFAULT_CLIENT = _TimeTreeClient(
         base_url=base_url,
         timeout=timeout,
@@ -816,13 +866,29 @@ def configure_timetree_client(
         backoff_factor=backoff_factor,
         cache=cache,
         cache_dir=cache_dir,
+        cache_ttl=cache_ttl,
         session=session,
     )
 
 
 def reset_timetree_client() -> None:
-    """Reset module-level TimeTree client to default lazy initialization."""
+    """Close and discard the configured module-level TimeTree client.
+
+    Returns
+    -------
+    None
+        The next public TimeTree request lazily creates a client with default
+        transport and cache settings.
+
+    Notes
+    -----
+    A requests session created internally by ToyTree is closed. A session
+    supplied by the caller to :func:`configure_timetree_client` remains owned
+    by the caller and is not closed.
+    """
     global _DEFAULT_CLIENT
+    if _DEFAULT_CLIENT is not None:
+        _DEFAULT_CLIENT.close()
     _DEFAULT_CLIENT = None
 
 
@@ -893,6 +959,10 @@ def get_timetree_node_ages(
     endpoint: Literal["mrca", "pairwise"] = "pairwise",
     data: pd.Series | None = None,
     max_pairs: int = 3,
+    age_source: Literal["adjusted", "precomputed"] = "adjusted",
+    on_conflict: Literal["warn", "adjust", "raise"] = "warn",
+    impute_missing: bool = False,
+    on_error: Literal["warn", "raise", "ignore"] = "warn",
 ) -> pd.DataFrame:
     """Return reconciled TimeTree divergence ages for internal nodes on a tree.
 
@@ -906,13 +976,24 @@ def get_timetree_node_ages(
         Optional Series override of NCBI IDs with node idx as index.
     max_pairs : int, default=3
         Maximum number of pairwise queries attempted per internal node.
+    age_source : {"adjusted", "precomputed"}, default="adjusted"
+        Preferred TimeTree age field. Both fields and the selected source are
+        retained in the output.
+    on_conflict : {"warn", "adjust", "raise"}, default="warn"
+        Preserve and warn about conflicting ages, adjust child ages, or raise.
+    impute_missing : bool, default=False
+        Whether to interpolate unsupported internal-node ages. Missing values
+        are retained by default.
+    on_error : {"warn", "raise", "ignore"}, default="warn"
+        Whether request failures are summarized, immediately raised, or only
+        represented in result rows.
 
     Returns
     -------
     pandas.DataFrame
         Internal-node age table indexed by ``node_idx``.
-        Includes ``age_raw`` and ``age_set_method`` columns describing raw
-        TimeTree retrieval values and deterministic reconciliation/imputation.
+        Includes raw adjusted and precomputed values, confidence bounds, study
+        counts, query provenance, and any requested reconciliation method.
 
     Raises
     ------
@@ -924,6 +1005,10 @@ def get_timetree_node_ages(
         endpoint=endpoint,
         data=data,
         max_pairs=max_pairs,
+        age_source=age_source,
+        on_conflict=on_conflict,
+        impute_missing=impute_missing,
+        on_error=on_error,
     )
 
 

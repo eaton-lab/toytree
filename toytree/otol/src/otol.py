@@ -19,27 +19,21 @@ Tree data concepts
 
 from __future__ import annotations
 
-import hashlib
 import json
-import pickle
 import re
 import sys
-import tempfile
-from collections import Counter
 from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Literal, Sequence
-from urllib.parse import urljoin
 
 import pandas as pd
-import requests
 from requests import Session
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
+from toytree.core import ToyTree
 from toytree.utils import ToytreeError
 
 from . import induced_tree
+from ._transport import JSONServiceClient
 
 URI = "https://api.opentreeoflife.org/v3/"
 HEADERS_JSON = {"content-type": "application/json", "User-Agent": "toytree"}
@@ -65,12 +59,14 @@ __all__ = [
     "fetch_json_studies_by_taxa",
     "fetch_json_studies_by_doi",
     "resolve_taxonomic_names",
+    "fetch_tree_from_taxonomy",
+    "fetch_tree_from_synthesis",
     "fetch_newick_subtree_from_taxonomy",
     "fetch_newick_induced_tree_otol",
 ]
 
 
-class _OTOLClient:
+class _OTOLClient(JSONServiceClient):
     """Private OTOL client for transport, retries, and cache."""
 
     def __init__(
@@ -81,118 +77,22 @@ class _OTOLClient:
         backoff_factor: float = 0.5,
         cache: bool = True,
         cache_dir: str | Path | None = None,
+        cache_ttl: float | None = 7 * 24 * 60 * 60,
         session: Session | None = None,
     ) -> None:
-        self.base_url = base_url
-        self.timeout = float(timeout)
-        self.max_retries = int(max_retries)
-        self.backoff_factor = float(backoff_factor)
-        self.cache = bool(cache)
-        self.cache_dir = (
-            Path(cache_dir).expanduser()
-            if cache_dir is not None
-            else Path(tempfile.gettempdir()) / "toytree_otol_cache"
-        )
-        self._session = session
-
-    @staticmethod
-    def _build_session(max_retries: int, backoff_factor: float) -> Session:
-        """Create a requests session with retry and backoff."""
-        retry = Retry(
-            total=max_retries,
-            connect=max_retries,
-            read=max_retries,
+        super().__init__(
+            base_url=base_url,
+            timeout=timeout,
+            max_retries=max_retries,
             backoff_factor=backoff_factor,
-            status_forcelist=(429, 500, 502, 503, 504),
-            allowed_methods=frozenset({"GET", "POST"}),
-            raise_on_status=False,
-        )
-        adapter = HTTPAdapter(max_retries=retry)
-        session = requests.Session()
-        session.headers.update(HEADERS_JSON)
-        session.mount("https://", adapter)
-        session.mount("http://", adapter)
-        return session
-
-    @staticmethod
-    def _error_from_response(
-        endpoint: str,
-        exc: Exception,
-        response: requests.Response | None,
-    ) -> ToytreeError:
-        """Construct a standardized ToytreeError from an HTTP failure."""
-        status = None if response is None else response.status_code
-        snippet = ""
-        if response is not None:
-            snippet = response.text[:500].replace("\n", " ")
-        return ToytreeError(
-            f"OTOL request failed at endpoint '{endpoint}'. "
-            f"status={status!r}. error={exc}. response_snippet={snippet!r}"
+            cache=cache,
+            cache_dir=cache_dir,
+            cache_ttl=cache_ttl,
+            session=session,
         )
 
-    @staticmethod
-    def _hash_payload(payload: dict[str, Any]) -> str:
-        """Return deterministic hash of request payload."""
-        dumped = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
-        return hashlib.sha256(dumped.encode("utf-8")).hexdigest()
-
-    def _cache_path(self, namespace: str, payload: dict[str, Any]) -> Path:
-        """Return cache path for namespace + payload hash."""
-        return self.cache_dir / namespace / f"{self._hash_payload(payload)}.pkl"
-
-    def _cache_read(self, path: Path) -> Any | None:
-        """Read cache entry if available."""
-        if not self.cache or not path.exists():
-            return None
-        with path.open("rb") as ihandle:
-            return pickle.load(ihandle)
-
-    def _cache_write(self, path: Path, data: Any) -> None:
-        """Write cache entry if caching is enabled."""
-        if not self.cache:
-            return
-        path.parent.mkdir(parents=True, exist_ok=True)
-        with path.open("wb") as ohandle:
-            pickle.dump(data, ohandle, protocol=pickle.HIGHEST_PROTOCOL)
-
-    def _request_json(
-        self,
-        endpoint: str,
-        payload: dict[str, Any],
-        use_cache: bool = False,
-        cache_namespace: str = "json",
-    ) -> dict[str, Any]:
-        """POST JSON payload and return parsed JSON."""
-        cache_path = self._cache_path(
-            cache_namespace,
-            {"endpoint": endpoint, "payload": payload},
-        )
-        if use_cache:
-            cached = self._cache_read(cache_path)
-            if cached is not None:
-                return cached
-
-        response: requests.Response | None = None
-        url = urljoin(self.base_url, endpoint)
-        try:
-            response = self.session.post(url=url, json=payload, timeout=self.timeout)
-            response.raise_for_status()
-            data = response.json()
-            if use_cache:
-                self._cache_write(cache_path, data)
-            return data
-        except Exception as exc:
-            raise self._error_from_response(endpoint, exc, response) from exc
-
-    @property
-    def session(self) -> Session:
-        """Return active requests session, creating lazily when needed."""
-        if self._session is None:
-            self._session = self._build_session(
-                self.max_retries,
-                self.backoff_factor,
-            )
-        return self._session
+    service_name = "opentree"
+    default_headers = HEADERS_JSON
 
     @staticmethod
     def _to_list(query: str | int | Sequence[str] | Sequence[int]) -> list[str | int]:
@@ -771,23 +671,159 @@ class _OTOLClient:
             )
         return labels
 
+    def fetch_tree_from_taxonomy(
+        self,
+        resolved: pd.DataFrame,
+        label_template: str = "{matched_name}_ott{ott_id}",
+        force_as_tips: bool = True,
+    ) -> ToyTree:
+        """Return a ToyTree representing OpenTree taxonomy ancestry.
+
+        Taxonomic lineage identities are merged directly into a parent-child
+        trie. Ranks are retained as metadata but are not treated as distances;
+        every edge therefore has arbitrary unit length.
+        """
+        resolved = self._validate_resolved_taxa_table(resolved)
+        labels = self._coerce_resolved_taxa(resolved, label_template)
+        ott_ids = list(labels)
+        records = self.fetch_json_taxon_info(ott_ids, include_lineage=True)
+        tree = induced_tree.build_taxonomy_tree(
+            records,
+            ott_ids,
+            force_as_tips=force_as_tips,
+        )
+        ncbi_by_ott = {
+            int(row["ott_id"]): row["ncbi_id"] for row in resolved.to_dict("records")
+        }
+        for node in tree:
+            ott = getattr(node, "ott_id", pd.NA)
+            if pd.isna(ott):
+                node.ncbi_id = pd.NA
+                continue
+            ott = int(ott)
+            node.ncbi_id = ncbi_by_ott.get(ott, pd.NA)
+            if node.is_leaf() and ott in labels:
+                node.name = labels[ott]
+        tree._update()
+        return tree
+
+    def fetch_tree_from_synthesis(
+        self,
+        resolved: pd.DataFrame,
+        label_template: str = "{matched_name}_ott{ott_id}",
+        constrain_by_taxonomy: bool = True,
+        force_as_tips: bool = True,
+    ) -> ToyTree:
+        """Return a ToyTree induced from the OpenTree synthetic tree."""
+        import toytree
+
+        resolved = self._validate_resolved_taxa_table(resolved)
+        labels = self._coerce_resolved_taxa(resolved, label_template)
+        ott_ids = list(labels)
+        payload = self.fetch_json_induced_subtree(ott_ids, label_format="name_and_id")
+        newick = payload.get("newick")
+        broken = payload.get("broken", {})
+        if not isinstance(newick, str) or not newick.strip():
+            raise ToytreeError("induced subtree response has no usable Newick tree.")
+        if not isinstance(broken, dict):
+            raise ToytreeError("induced subtree response has malformed 'broken' data.")
+
+        induced = toytree.tree(newick)
+        induced, present = induced_tree._normalize_induced_tips_to_ott(induced)
+        records = self.fetch_json_taxon_info(ott_ids, include_lineage=True)
+
+        if constrain_by_taxonomy:
+            tree = induced_tree.build_taxonomy_tree(
+                records,
+                ott_ids,
+                force_as_tips=force_as_tips,
+            )
+            tree = induced_tree._refine_scaffold_with_induced(tree, induced)
+        else:
+            tree = induced
+            for token, anchor_label in broken.items():
+                ott = induced_tree._parse_ott_id_token(token)
+                anchor = induced_tree._resolve_anchor_node(tree, str(anchor_label))
+                tree = tree.mod.add_child_node(anchor, name=f"ott{ott}", dist=1.0)
+
+            if force_as_tips:
+                present_set = set(present)
+                for node in list(tree[tree.ntips :]):
+                    ott = induced_tree._parse_ott_id_from_label(str(node.name))
+                    if ott in labels and ott not in present_set:
+                        node.name = ""
+                        child = toytree.Node(name=f"ott{ott}", dist=1.0)
+                        child.ott_id = ott
+                        node._add_child(child)
+                tree._update()
+
+        ncbi_by_ott = {
+            int(row["ott_id"]): row["ncbi_id"] for row in resolved.to_dict("records")
+        }
+        for node in tree:
+            existing = getattr(node, "ott_id", pd.NA)
+            if pd.notna(existing):
+                ott = int(existing)
+            else:
+                parsed = induced_tree._parse_ott_id_from_label(str(node.name))
+                # Synthetic internal labels such as ``mrcaott2ott3`` are node
+                # identifiers, not taxon identities. Only query tips receive
+                # taxon metadata from a parsed label.
+                ott = parsed if node.is_leaf() and parsed in labels else None
+            if ott is None:
+                if not hasattr(node, "ott_id"):
+                    node.ott_id = pd.NA
+                if not hasattr(node, "ncbi_id"):
+                    node.ncbi_id = pd.NA
+                continue
+            node.ott_id = ott
+            node.ncbi_id = ncbi_by_ott.get(ott, pd.NA)
+            if node.is_leaf() and ott in labels:
+                node.name = labels[ott]
+        tree.mod.edges_extend_tips_to_align(inplace=True)
+        tree.mod.ladderize(inplace=True)
+        return tree
+
+    def fetch_newick_induced_tree_otol(
+        self,
+        resolved: pd.DataFrame,
+        label_template: str = "{matched_name}",
+        constrain_by_taxonomy: bool = True,
+        force_as_tips: bool = True,
+    ) -> str:
+        """Deprecated string wrapper around :meth:`fetch_tree_from_synthesis`."""
+        import warnings
+
+        warnings.warn(
+            "fetch_newick_induced_tree_otol() is deprecated; use "
+            "fetch_tree_from_synthesis() for a ToyTree result.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
+        tree = self.fetch_tree_from_synthesis(
+            resolved,
+            label_template=label_template,
+            constrain_by_taxonomy=constrain_by_taxonomy,
+            force_as_tips=force_as_tips,
+        )
+        return tree.write(
+            internal_labels="name",
+            dist_formatter=None,
+            features=["ott_id", "ncbi_id"],
+        )
+
     def fetch_newick_subtree_from_taxonomy(
         self,
         resolved: pd.DataFrame,
         label_template: str = "{matched_name}_ott{ott_id}",
     ) -> str:
-        """Infer a Newick subtree from taxonomic lineage similarity.
-
-        This method fetches taxonomic information for each tip builds a rank
-        distance matrix, where lower values representing a lower taxon rank
-        MRCA, and then builds a UPGMA tree from this matrix. Taxon names are
-        assigned to internal nodes as well.
+        """Return deprecated Newick serialization of a taxonomy tree.
 
         Parameters
         ----------
         resolved : pandas.DataFrame
             Output table from ``resolve_taxonomic_names`` with one matched row
-            per OTOL taxon. Duplicate ``ott_id`` rows are allowed here.
+            per unique OTOL taxon.
         label_template : str, default="{matched_name}_ott{ott_id}"
             Python format string applied to each resolved row to generate the
             final output tip labels. Available fields include ``key``,
@@ -797,356 +833,34 @@ class _OTOLClient:
         Returns
         -------
         str
-            A rooted Newick string inferred from pairwise lineage-rank
-            distances and rooted using taxonomy-informed clades when possible.
-            If no compatible taxonomy-informed outgroup clade is monophyletic
-            in the inferred topology, midpoint rooting is used as fallback.
-            When an input taxon is reassigned to an internal node, it is not
-            also retained as a terminal tip. When duplicate matched rows share
-            a terminal ``ott_id``, the returned tree inserts an artificial
-            ``{taxon_name}_ott{ott_id}_group`` parent with missing ``ott_id``.
-            Duplicate surviving tip labels are allowed but warned on.
+            A rooted Newick string with NHX identifier metadata. The topology
+            is built directly from taxonomy ancestry and edge lengths are
+            arbitrary units.
 
         Raises
         ------
         ToytreeError
-            Raised if query is empty or lineage records are malformed.
+            If rows, labels, or lineage records are invalid.
 
         Notes
         -----
-        **Distance Metric Calculation:**
-        This function uses **absolute MRCA depth** rather than cophenetic distance.
-        UPGMA assumes an ultrametric tree (all tips represent the present and are
-        equidistant from the root). Because taxonomic lineages often have uneven
-        resolutions (e.g., missing intermediate ranks), cophenetic path lengths
-        artificially shorten branches for sparsely resolved taxa, distorting the
-        topology. Absolute MRCA depth acts as a proxy for divergence time, aligning
-        splits purely by their highest shared rank. This correctly satisfies UPGMA's
-        ultrametric requirement and yields a biologically accurate tree.
-
-        If one or more matched input taxa also label inferred internal nodes,
-        those taxa are retained only on the internal nodes and a summary
-        warning is printed to stderr because the returned tree will have fewer
-        tips than matched input rows.
+        This compatibility wrapper emits ``DeprecationWarning``. Use
+        :meth:`fetch_tree_from_taxonomy` for the primary ToyTree API.
         """
-        import toytree
+        import warnings
 
-        resolved = self._validate_resolved_taxa_table(resolved)
-        resolved_rows: list[dict[str, Any]] = []
-        ott_to_rows: dict[int, list[dict[str, Any]]] = {}
-        unique_ott_ids: list[int] = []
-        for idx, row in resolved.iterrows():
-            record = row.to_dict()
-            ott = int(record["ott_id"])
-            record["ott_id"] = ott
-            record["row_index"] = idx
-            resolved_rows.append(record)
-            if ott not in ott_to_rows:
-                ott_to_rows[ott] = []
-                unique_ott_ids.append(ott)
-            ott_to_rows[ott].append(record)
-
-        # Build the topology on unique OTT ids first so duplicate matched rows
-        # can later be expanded only where they survive as terminal taxa.
-        ott_to_label = {ott: f"ott{ott}" for ott in unique_ott_ids}
-        label_to_ott = {j: i for (i, j) in ott_to_label.items()}
-
-        # get list[dict[str,Any]] of lineage maps from each taxon to root.
-        # TODO: for very large queries does this need to be broken into multiple calls?
-        lineages = self.fetch_json_taxon_info(
-            unique_ott_ids,
-            include_lineage=True,
+        warnings.warn(
+            "fetch_newick_subtree_from_taxonomy() is deprecated; use "
+            "fetch_tree_from_taxonomy() for a ToyTree result.",
+            DeprecationWarning,
+            stacklevel=2,
         )
-
-        # fill dict[str,str] mapping label to taxon lineage map
-        label_to_lineage: dict[str, tuple[str, str]] = {}
-        ott_to_taxon_name: dict[int, str] = {}
-        for rec in lineages:
-            ott = rec.get("ott_id")
-            if ott is None:
-                raise ToytreeError("lineage record missing required key 'ott_id'.")
-            ott = int(ott)
-            label = ott_to_label[ott]
-            ott_to_taxon_name[ott] = str(rec.get("name", f"ott{ott}"))
-            lineage = []
-            for tax in rec.get("lineage", []):
-                ncbi = [i for i in tax.get("tax_sources", []) if i.startswith("ncbi:")]
-                ncbi = int(ncbi[0][5:]) if ncbi else float("nan")
-                lineage.append(
-                    (tax["name"], tax["rank"], tax["ott_id"], ncbi),
-                )
-            label_to_lineage[label] = lineage
-
-        # get taxonomy cophenetic distance matrix and infer UPGMA distance tree.
-        dist, _ = induced_tree.build_cophenetic_distance_matrix_from_taxonomy(
-            label_to_lineage
+        tree = self.fetch_tree_from_taxonomy(resolved, label_template)
+        return tree.write(
+            internal_labels="name",
+            dist_formatter=None,
+            features=["ott_id", "ncbi_id", "taxonomic_rank"],
         )
-        tree = toytree.infer.upgma_tree(dist)
-
-        def _get_mrca_taxon(label_to_lineage, tnames):
-            """Return lowest shared ancestor info among tips 'tnames."""
-            base_path = label_to_lineage[tnames[0]]
-            for t, _, ott, ncbi in base_path:
-                if all([t in [i[0] for i in label_to_lineage[j]] for j in tnames[1:]]):
-                    return t, ott, ncbi
-
-        # assign names to internal nodes
-        for node in tree:
-            if node.is_leaf():
-                node.ott_id = label_to_ott[node.name]
-                node.ncbi_id = ott_to_rows[node.ott_id][0]["ncbi_id"]
-                continue
-
-            # get name and IDs for internal nodes
-            tnames = node.get_leaf_names()
-            _name, _ott, _ncbi = _get_mrca_taxon(label_to_lineage, tnames)
-            node.name = _name
-            node.ott_id = _ott
-            node.ncbi_id = _ncbi
-
-            # if name is same as a child, keep here and set child to OTT
-            for child in node.children:
-                if child.name == node.name:
-                    child.name = f"ott{_ott}"
-            node._dist = 1.0
-        tree._update()
-
-        # Mixed-rank inputs can include ancestor taxa that are also inferred
-        # as internal nodes; keep those taxa once as internals, not as tips.
-        internal_ott_ids = {
-            int(node.ott_id)
-            for node in tree[tree.ntips :]
-            if pd.notna(getattr(node, "ott_id", pd.NA))
-        }
-
-        # Only labels that survive as tips are checked for collisions. Rows
-        # reassigned to internal nodes do not materialize as terminal labels.
-        final_tip_labels = []
-        for ott, rows in ott_to_rows.items():
-            if ott in internal_ott_ids:
-                continue
-            for row in rows:
-                row["tip_label"] = self._format_resolved_taxon_label(
-                    row=row,
-                    label_template=label_template,
-                    idx=row["row_index"],
-                )
-                final_tip_labels.append(row["tip_label"])
-        duplicate_tip_labels = {
-            label: count
-            for label, count in Counter(final_tip_labels).items()
-            if count > 1
-        }
-        if duplicate_tip_labels:
-            duplicates = ", ".join(
-                f"{label!r} ({count})"
-                for label, count in sorted(duplicate_tip_labels.items())
-            )
-            print(
-                "WARNING: label_template formatting produced duplicate tip labels: "
-                f"{duplicates}. Choose a more specific label_template if you need "
-                "unique tip names.",
-                file=sys.stderr,
-            )
-
-        assigned_to_internal = 0
-        for node in list(tree[: tree.ntips]):
-            node_ott = getattr(node, "ott_id", pd.NA)
-            if pd.isna(node_ott):
-                continue
-            node_ott = int(node_ott)
-            rows = ott_to_rows[node_ott]
-            if node_ott in internal_ott_ids:
-                assigned_to_internal += len(rows)
-                continue
-            if len(rows) == 1:
-                node.name = rows[0]["tip_label"]
-                node.ncbi_id = rows[0]["ncbi_id"]
-                continue
-
-            # Preserve a single taxonomy-backed attachment point, then expand
-            # duplicate matched rows into child tips underneath that parent.
-            taxon_name = ott_to_taxon_name.get(node_ott, rows[0]["matched_name"])
-            node.name = self._normalize_label_token(f"{taxon_name}_ott{node_ott}_group")
-            node.ott_id = pd.NA
-            node.ncbi_id = pd.NA
-            for row in rows:
-                child = toytree.Node(name=row["tip_label"], dist=0.0)
-                child.ott_id = node_ott
-                child.ncbi_id = row["ncbi_id"]
-                node._add_child(child)
-        tree._update()
-
-        if assigned_to_internal:
-            tip_labels_to_keep = [
-                node.name
-                for node in tree[: tree.ntips]
-                if not (
-                    pd.notna(getattr(node, "ott_id", pd.NA))
-                    and int(node.ott_id) in internal_ott_ids
-                )
-            ]
-            ndups = assigned_to_internal
-            ntips = len(tip_labels_to_keep)
-            ntaxa = len(resolved_rows)
-            assigned = "taxon was" if ndups == 1 else "taxa were"
-            node_word = "node" if ndups == 1 else "nodes"
-            tip_word = "tip" if ntips == 1 else "tips"
-            print(
-                f"WARNING: {ndups} matched input {assigned} assigned to internal "
-                f"{node_word}; returning {ntips} {tip_word} for {ntaxa} matched taxa.",
-                file=sys.stderr,
-            )
-            tree = tree.mod.prune(*tip_labels_to_keep, require_root=False)
-
-        tree.mod.edges_extend_tips_to_align(inplace=True)
-
-        # write with internal node IDs as NHX metadata
-        return tree
-        # if store_ids:
-        #     return tree.write(
-        #         internal_labels="name", dist_formatter=None,
-        #         features=["ott_id", "ncbi_id"]
-        #         )
-        # return tree.write(internal_labels="name", dist_formatter=None)
-
-    def get_induced_subtree_from_otol(
-        self,
-        resolved: pd.DataFrame,
-        label_template: str = "{matched_name}",
-        constrain_by_taxonomy: bool = True,
-        force_as_tips: bool = True,
-    ) -> str:
-        """Return induced OTOL Newick with optional taxonomy constraints.
-
-        Parameters
-        ----------
-        resolved : pandas.DataFrame
-            Output table from ``resolve_taxonomic_names`` with one matched row
-            per OTOL taxon.
-        label_template : str, default="{matched_name}"
-            Python format string applied to each resolved row to generate the
-            final output tip labels. If output includes additional OTT IDs not
-            present in ``resolved`` (for example from broken-node insertion),
-            those labels are filled from taxonomy names as ``{name}_ott{ott_id}``.
-            Available fields include ``key``, ``query``, ``matched_name``,
-            ``ott_id``, ``ncbi_id``, ``query_id``, and ``ncbi_suffix``.
-        constrain_by_taxonomy : bool, default=True
-            If True, enforce taxonomy scaffold constraints and use induced
-            topology only to resolve compatible polytomies. If False, use the
-            induced OTOL topology directly and insert broken tips on that tree.
-        force_as_tips : bool, default=True
-            Queries are forced as tip nodes, even if they are internal in
-            the induced tree. This ensures the returned tree will have the
-            same number of tips and the number of queries. If False, a query
-            that is an ancestor of another node will not appear as a tip.
-
-        See Also
-        --------
-        :func:`toytree.otol.get_timetree_node_ages`
-        """
-        import toytree
-
-        # get dict[int,str] mapping ott<id> to template style label str
-        ott_to_label = self._coerce_resolved_taxa(
-            resolved=resolved,
-            label_template=label_template,
-        )
-        # label_to_ott = {j: i for (i, j) in ott_to_label.items()}
-        ott_to_ncbi = {i["ott_id"]: i["ncbi_id"] for i in resolved.to_dict("records")}
-
-        # get newick and broken from API call to induced tree
-        payload = self.fetch_json_induced_subtree(
-            list(ott_to_label), label_format="name_and_id"
-        )
-        newick = payload.get("newick", "")
-        broken = payload.get("broken", {})
-        if (not newick) or (not isinstance(broken, dict)):
-            raise ToytreeError("induced subtree payload malformed")
-
-        # we do not support broken nodes currently
-        if broken:
-            raise ToytreeError(
-                "broken nodes present. This method does not currently support "
-                "splitting non-monophyletic higher-level taxa. Enter species "
-                "input names to avoid this problem."
-            )
-
-        # build the induced tree from newick
-        itree = toytree.tree(newick)
-        # return itree
-
-        # assign names and IDs to nodes
-        internal_tips = []
-        for node in itree:
-            # nothing to do for generic mrca nodes
-            if node.name.startswith("mrcaott"):
-                continue
-            # get OTT ID
-            ott_id = int(node.name.strip("'").strip('"').rsplit("ott")[-1])
-            # set label and IDs to resolved queries
-            if ott_id in ott_to_label:
-                node.name = ott_to_label[ott_id]
-                node.ott_id = ott_id
-                node.ncbi_id = ott_to_ncbi[ott_id]
-
-                # store if the query was imputed as internal
-                if not node.is_leaf():
-                    internal_tips.append(node)
-
-        # optionally enforce resolved queries as tips
-        if force_as_tips:
-            for node in internal_tips:
-                tmp = toytree.Node(name=node.name)
-                tmp.ott_id = node.ott_id
-                tmp.ncbi_id = node.ncbi_id
-                node.name = "null"
-                node.ott_id = pd.NA
-                node.ncbi_id = pd.NA
-                node._add_child(tmp)
-                itree._update()
-
-        # clean up the tree
-        itree.mod.remove_unary_nodes(inplace=True).ladderize(inplace=True)
-
-        # optionally constrain by taxonomy.
-        if constrain_by_taxonomy:
-            ttree = fetch_newick_subtree_from_taxonomy(resolved, label_template)
-
-            # iteratively resolve polytomies in taxon tree using resolved
-            # splits in the synthetic otol tree.
-            while 1:
-                nnodes_start = ttree.nnodes
-
-                # get nodes to resolve
-                to_resolve = []
-                for node in ttree:
-                    tchilds = len(node.children)
-                    if tchilds > 2:
-                        tips = node.get_leaf_names()
-                        snode = itree.get_mrca_node(*tips)
-                        schilds = len(snode.children)
-                        if schilds < tchilds:
-                            ctips = []
-                            for child in snode.children:
-                                ctips.append(
-                                    [i for i in child.get_leaf_names() if i in tips]
-                                )  # noqa
-                            to_resolve.append((tips, ctips))
-
-                # resolve polytomy nodes
-                for clade, split in to_resolve:
-                    # skip if clade in taxonomy tree
-                    try:
-                        ttree.mod.resolve_node(*clade, splits=split, inplace=True)
-                    except ToytreeError:
-                        pass
-                if ttree.nnodes == nnodes_start:
-                    break
-            itree = ttree
-
-        itree.mod.edges_extend_tips_to_align(inplace=True).ladderize(inplace=True)
-        return itree
 
 
 _DEFAULT_CLIENT: _OTOLClient | None = None
@@ -1182,6 +896,7 @@ def configure_client(
     backoff_factor: float = 0.5,
     cache: bool = True,
     cache_dir: str | Path | None = None,
+    cache_ttl: float | None = 7 * 24 * 60 * 60,
     session: Session | None = None,
 ) -> None:
     """Configure the module-level OTOL client.
@@ -1200,6 +915,9 @@ def configure_client(
         If True, cache selected endpoint responses on disk.
     cache_dir : str or pathlib.Path or None, default=None
         Directory used for cache files.
+    cache_ttl : float or None, default=604800
+        Maximum cache age in seconds. Set to ``None`` to retain entries
+        indefinitely or zero to force revalidation on every request.
     session : requests.Session or None, default=None
         Optional user-provided session.
 
@@ -1221,6 +939,8 @@ def configure_client(
     This function configures local behavior only and does not call an OTOL endpoint.
     """
     global _DEFAULT_CLIENT
+    if _DEFAULT_CLIENT is not None:
+        _DEFAULT_CLIENT.close()
     _DEFAULT_CLIENT = _OTOLClient(
         base_url=base_url,
         timeout=timeout,
@@ -1228,6 +948,7 @@ def configure_client(
         backoff_factor=backoff_factor,
         cache=cache,
         cache_dir=cache_dir,
+        cache_ttl=cache_ttl,
         session=session,
     )
 
@@ -1257,6 +978,8 @@ def reset_client() -> None:
     This function resets local state only and does not call an OTOL endpoint.
     """
     global _DEFAULT_CLIENT
+    if _DEFAULT_CLIENT is not None:
+        _DEFAULT_CLIENT.close()
     _DEFAULT_CLIENT = None
 
 
@@ -1677,23 +1400,109 @@ def resolve_taxonomic_names(
     )
 
 
+def fetch_tree_from_taxonomy(
+    resolved: pd.DataFrame,
+    label_template: str = "{matched_name}_ott{ott_id}",
+    force_as_tips: bool = True,
+) -> ToyTree:
+    """Build a taxonomy topology and return it as a ToyTree.
+
+    Parameters
+    ----------
+    resolved : pandas.DataFrame
+        Matched rows returned by :func:`resolve_taxonomic_names`. Every row
+        must have ``status == 'matched'`` and a unique, non-missing ``ott_id``.
+    label_template : str, default="{matched_name}_ott{ott_id}"
+        Python format template for query tip names. Supported fields are
+        ``key``, ``query``, ``matched_name``, ``ott_id``, ``ncbi_id``,
+        ``query_id``, and ``ncbi_suffix``. Generated names must be unique.
+    force_as_tips : bool, default=True
+        If True, a queried taxon that is an ancestor of another query is
+        represented by an added terminal child. If False, it remains only as
+        its natural internal taxonomy node.
+
+    Returns
+    -------
+    ToyTree
+        A rooted taxonomy tree. Nodes store ``ott_id``, ``ncbi_id``, and
+        ``taxonomic_rank`` features. Edge lengths are arbitrary unit lengths:
+        OpenTree taxonomy provides ancestry but no divergence-time metric.
+
+    Raises
+    ------
+    ToytreeError
+        If rows are unresolved or duplicated, labels collide, or OpenTree
+        returns incomplete or inconsistent lineage data.
+
+    Notes
+    -----
+    The topology is built by merging ancestor identities into a lineage trie;
+    taxonomic ranks are never converted into pseudo-distances.
+    """
+    return _get_default_client().fetch_tree_from_taxonomy(
+        resolved,
+        label_template=label_template,
+        force_as_tips=force_as_tips,
+    )
+
+
+def fetch_tree_from_synthesis(
+    resolved: pd.DataFrame,
+    label_template: str = "{matched_name}_ott{ott_id}",
+    constrain_by_taxonomy: bool = True,
+    force_as_tips: bool = True,
+) -> ToyTree:
+    """Build an OpenTree synthesis topology and return it as a ToyTree.
+
+    Parameters
+    ----------
+    resolved : pandas.DataFrame
+        Matched rows returned by :func:`resolve_taxonomic_names`. Every row
+        must have ``status == 'matched'`` and a unique, non-missing ``ott_id``.
+    label_template : str, default="{matched_name}_ott{ott_id}"
+        Python format template for query tip names. Supported fields are
+        ``key``, ``query``, ``matched_name``, ``ott_id``, ``ncbi_id``,
+        ``query_id``, and ``ncbi_suffix``. Generated names must be unique.
+    constrain_by_taxonomy : bool, default=True
+        If True, taxonomy clades are hard constraints and compatible synthesis
+        clades refine their polytomies. If False, use the synthetic induced
+        tree directly and attach taxa reported as broken under their supplied
+        synthesis anchor.
+    force_as_tips : bool, default=True
+        If True, queried ancestors are represented by terminal children so all
+        queries occur as tips. If False, ancestor queries may remain internal.
+
+    Returns
+    -------
+    ToyTree
+        A rooted tree with ``ott_id`` and ``ncbi_id`` node features and tip
+        names generated from ``label_template``. Edge lengths are topological,
+        not divergence times.
+
+    Raises
+    ------
+    ToytreeError
+        If resolution rows, labels, API payloads, or lineage data are invalid.
+    """
+    return _get_default_client().fetch_tree_from_synthesis(
+        resolved,
+        label_template=label_template,
+        constrain_by_taxonomy=constrain_by_taxonomy,
+        force_as_tips=force_as_tips,
+    )
+
+
 def fetch_newick_subtree_from_taxonomy(
     resolved: pd.DataFrame,
     label_template: str = "{matched_name}_ott{ott_id}",
 ) -> str:
-    """Infer a Newick subtree from taxonomic lineage similarity.
-
-    This helper is designed for taxonomy-informed tree construction from a
-    list of resolved taxa. It fetches lineage-enriched taxon records from
-    OTOL, converts shared lineage ranks into a pairwise distance matrix,
-    infers a distance tree (UPGMA), labels internal nodes from shared lineage
-    taxa, and returns a Newick string.
+    """Return deprecated Newick serialization of an OpenTree taxonomy tree.
 
     Parameters
     ----------
     resolved : pandas.DataFrame
         Output table from ``resolve_taxonomic_names`` with one matched row per
-        OTOL taxon. Duplicate ``ott_id`` rows are allowed here.
+        unique OTOL taxon.
     label_template : str, default="{matched_name}_ott{ott_id}"
         Python format string applied to each resolved row to generate final
         output tip labels. Available fields include ``key``, ``query``,
@@ -1703,18 +1512,19 @@ def fetch_newick_subtree_from_taxonomy(
     Returns
     -------
     str
-        Newick string with internal node labels set to lineage-derived
-        ``{name}_ott{ott_id}`` when available. If a matched input taxon is
-        reassigned to an internal node then the returned tree has fewer tips
-        than matched input rows, and a summary warning is printed to stderr.
-        Duplicate matched rows that remain as terminal taxa are expanded under
-        an artificial ``{taxon_name}_ott{ott_id}_group`` parent with missing
-        ``ott_id``. Duplicate surviving tip labels are allowed but warned on.
+        Rooted Newick with lineage-derived internal labels and NHX identifier
+        metadata. Edge lengths are arbitrary topological units.
 
     Raises
     ------
     ToytreeError
-        If query is empty or lineage records are malformed.
+        If rows, labels, or lineage records are invalid.
+
+    Notes
+    -----
+    This compatibility wrapper emits ``DeprecationWarning``. New code should
+    call :func:`fetch_tree_from_taxonomy` and serialize the returned ToyTree
+    explicitly when needed.
 
     Examples
     --------
@@ -1739,6 +1549,7 @@ def fetch_newick_induced_tree_otol(
     resolved: pd.DataFrame,
     label_template: str = "{matched_name}",
     constrain_by_taxonomy: bool = True,
+    force_as_tips: bool = True,
 ) -> str:
     """Return induced OTOL Newick with optional taxonomy constraints.
 
@@ -1758,6 +1569,8 @@ def fetch_newick_induced_tree_otol(
         If True, taxonomy scaffolding is enforced and induced topology is used
         to resolve compatible polytomies. If False, the induced OTOL topology
         is used directly.
+    force_as_tips : bool, default=True
+        If True, queried ancestor taxa are represented as terminal children.
 
     Returns
     -------
@@ -1787,6 +1600,7 @@ def fetch_newick_induced_tree_otol(
         resolved=resolved,
         label_template=label_template,
         constrain_by_taxonomy=constrain_by_taxonomy,
+        force_as_tips=force_as_tips,
     )
 
 
