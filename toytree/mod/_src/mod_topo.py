@@ -786,7 +786,7 @@ def drop_tips(
         nodes = [tree[i.idx] for i in nodes]
 
     # raise exception if all tips were selected
-    if len(nodes) == tree.nnodes:
+    if sum(node.is_leaf() for node in nodes) == tree.ntips:
         msg = "Cannot drop all tips from the tree."
         raise ValueError(msg)
     internal = []
