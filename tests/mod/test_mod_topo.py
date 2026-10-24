@@ -11,6 +11,7 @@
 - toytree.mod.drop_tips
 """
 
+import pytest
 from conftest import PytestCompat
 
 import toytree
@@ -413,6 +414,28 @@ class TestModDropTips(PytestCompat):
             capsys.readouterr().err,
             "Only tip Nodes are removed. See `mod.remove_nodes`.\n",
         )
+
+
+@pytest.mark.parametrize("inplace", [False, True])
+@pytest.mark.parametrize("selection", ["names", "indices", "nodes", "regex", "mixed"])
+def test_drop_all_tip_queries_leave_input_unchanged(selection, inplace, capsys):
+    """Reject all-tip queries before deleting any nodes."""
+    tree = toytree.tree("((a:1,b:2):3,c:4);")
+    if selection == "names":
+        query = tree.get_tip_labels()
+    elif selection == "indices":
+        query = list(range(tree.ntips))
+    elif selection == "nodes":
+        query = list(tree[:tree.ntips])
+    elif selection == "regex":
+        query = ["~^[abc]$"]
+    else:
+        query = tree.get_tip_labels() + [tree.get_mrca_node("a", "b")]
+    before = tree.write()
+    with pytest.raises(ValueError, match="Cannot drop all tips from the tree"):
+        tree.mod.drop_tips(*query, inplace=inplace)
+    assert tree.write() == before
+    assert capsys.readouterr().err == ""
 
 
 class TestModExtractSubtree(PytestCompat):
