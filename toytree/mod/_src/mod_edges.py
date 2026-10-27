@@ -154,24 +154,22 @@ def edges_multiplier(
     This scales the entire tree height and all nodes in unison, similar
     to `edges_scale_to_root_height` but instead of setting the root
     to a specific value, the value is sampled from a gamma distribution.
-    The current mean root height serves as the mean of the distribution
-    mean = (a / b); the user enter's a value for a to determine the
-    variance of the distribution (a / b**2), smaller values have larger
-    variance.
+    The current root height is the mean of the resulting root-height
+    distribution. All edge lengths are scaled by the same unit-mean
+    gamma variate; smaller alpha values give larger variance.
 
     Parameters
     ----------
     alpha: float
-        The node height multiplier will be sampled from a gamma dist
-        with parameters (a,b), where b will be automatically set so
-        that the mean = a/b = current root height.
+        Shape of the gamma distribution used to sample the multiplier.
+        Its scale is 1 / alpha, giving a mean of 1 and variance 1 / alpha.
     inplace: bool
         Transform tree in place and return it, or return a copy.
     seed: int or None or RNG
         Random number generator seed used to sample new heights.
     """
     tree = tree if inplace else tree.copy()
-    beta = tree.treenode.height / alpha
+    beta = 1.0 / alpha
     multiplier = np.random.default_rng(seed).gamma(shape=alpha, scale=beta)
     for node in tree:
         node._dist = node._dist * multiplier
